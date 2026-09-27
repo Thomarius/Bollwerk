@@ -122,6 +122,29 @@ export const BlueprintStyleSchema = z.strictObject({
 });
 export type BlueprintStyleConfig = z.infer<typeof BlueprintStyleSchema>;
 
+/**
+ * Night's torchlight, the one thing it draws that the pixel style does not. Light falls
+ * on the ground, under the walls, never on their colour: warm stone turned azure grey.
+ */
+export const NightStyleSchema = z.strictObject({
+  /** Across the pool of light round a sealed castle's torches. */
+  torchPoolTiles: z.number().positive(),
+  /** How bright the pool is at its heart, blended additively. */
+  torchGlowAlpha: z.number().min(0).max(1),
+  /** The quickest of a flame's flickers. */
+  torchFlickerMs: z.number().int().positive(),
+  /** A torch catching as its castle is sealed; doused ones go out in a fifth of it. */
+  torchIgniteMs: z.number().int().positive(),
+  /** The ground a muzzle flash lights, and for how long. */
+  muzzleLightTiles: z.number().positive(),
+  muzzleLightMs: z.number().int().positive(),
+  /** The glow round a shot in flight, burning as it goes. */
+  shotGlowTiles: z.number().positive(),
+  /** A smouldering breach's glow on the ground at its brightest. */
+  breachGlowAlpha: z.number().min(0).max(1),
+});
+export type NightStyleConfig = z.infer<typeof NightStyleSchema>;
+
 /** The parchment look: an old map, in ink and watercolour on sepia paper. */
 export const ParchmentStyleSchema = z.strictObject({
   /** The ink line round walls, castles and guns, and along the coast. */
@@ -290,6 +313,7 @@ export const ArtConfigSchema = z
     flat: FlatStyleSchema,
     cyberpunk: CyberpunkStyleSchema,
     blueprint: BlueprintStyleSchema,
+    night: NightStyleSchema,
     parchment: ParchmentStyleSchema,
     /** Effects both styles draw alike, because they carry information. */
     effects: z.strictObject({

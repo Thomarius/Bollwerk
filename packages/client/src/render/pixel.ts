@@ -161,6 +161,18 @@ export class PixelTheme implements Theme {
   private view: ViewTransform = { tile: 16, originX: 0, originY: 0 };
   private round = 0;
 
+  /**
+   * Night's torchlight: light on the ground in the territory layer, under the walls so
+   * it never colours them, and round flames and shots in flight above them. Both blend
+   * additively. Unused by the pixel style itself.
+   */
+  private readonly groundLight = new Graphics();
+  private readonly airLight = new Graphics();
+  /** Muzzle flashes lighting the ground, in tile coordinates. */
+  private lights: { x: number; y: number; age: number }[] = [];
+  /** Each castle's torches: how far alight, 0 to 1, and whether it was sealed. */
+  private readonly torches = new Map<number, { lit: number; sealed: boolean }>();
+
   /** `id` is the style this draws, which decides the palette it is handed. */
   constructor(seed = 1, id: ArtStyle = 'pixel') {
     this.seed = seed;
@@ -175,7 +187,14 @@ export class PixelTheme implements Theme {
     this.structureLayer = layers.structures;
     this.effectLayer = layers.effects;
 
-    layers.territory.addChild(this.courtLayer, this.craterLayer, this.territoryGfx);
+    layers.territory.addChild(
+      this.courtLayer,
+      this.craterLayer,
+      this.territoryGfx,
+      this.groundLight,
+    );
+    this.groundLight.blendMode = 'add';
+    this.airLight.blendMode = 'add';
     layers.effects.addChild(this.effectGfx);
     layers.overlay.addChild(this.ghostLayer, this.overlayGfx);
     return Promise.resolve();
@@ -189,6 +208,8 @@ export class PixelTheme implements Theme {
     this.overlayGfx.destroy();
     this.ghostLayer.destroy({ children: true });
     this.effectGfx.destroy();
+    this.groundLight.destroy();
+    this.airLight.destroy();
     this.courtLayer.destroy({ children: true });
     this.craterLayer.destroy({ children: true });
     for (const texture of this.textures.values()) texture.destroy();
@@ -597,6 +618,7 @@ export class PixelTheme implements Theme {
     const reach = this.art.generators.cannon.barrelLengthPx / this.art.tileSizePx + 0.15;
     const mx = shot.fromX + 0.5 + Math.sin(angle) * reach;
     const my = shot.fromY + 0.5 - Math.cos(angle) * reach;
+    if (this.torchlit) this.lights.push({ x: mx, y: my, age: 0 });
     for (let k = 0; k < this.art.generators.fx.muzzleSmokePuffs; k++) {
       const push = 0.4 + Math.random() * 0.5;
       this.puffs.push({
@@ -643,8 +665,11 @@ export class PixelTheme implements Theme {
     this.clock += frame.deltaMs;
     this.animateWater(frame.deltaMs);
     this.effectLayer.removeChildren();
-    this.effectLayer.addChild(g);
+    this.effectLayer.addChild(g, this.airLight);
     this.age(state);
+    this.groundLight.clear();
+    this.airLight.clear();
+    if (this.torchlit) this.drawTorchlight(state, view, frame);
 
     drawSealGlow(g, view, frame.sealGlow, this.art);
     this.landings.draw(g, view, this.art, frame.deltaMs);
@@ -689,6 +714,16 @@ export class PixelTheme implements Theme {
       const ball = this.place(this.effectLayer, KEY.shot, view, 0, 0, size);
       ball.x = tileX(view, x + 0.5) - (view.tile * size) / 2;
       ball.y = tileY(view, y + 0.5 - lift) - (view.tile * size) / 2;
+      if (this.torchlit) {
+        // Burning shot, glowing as it goes.
+        const glow = view.tile * this.art.night.shotGlowTiles;
+        const bx = tileX(view, x + 0.5);
+        const by = tileY(view, y + 0.5 - lift);
+        this.airLight.circle(bx, by, glow);
+        this.airLight.fill({ color: hex(this.art.palette.emberMid), alpha: 0.28 });
+        this.airLight.circle(bx, by, glow * 0.5);
+        this.airLight.fill({ color: hex(this.art.palette.emberHot), alpha: 0.35 });
+      }
 
       drawShotTarget(g, view, state, shot, t, this.art, frame.humanPlayer);
     }
@@ -716,6 +751,106 @@ export class PixelTheme implements Theme {
       g.fill({ color: f.colour, alpha: Math.max(0, 1 - f.age / life) });
     }
     this.fragments = this.fragments.filter((f) => f.age < life);
+  }
+
+  /** Whether this is Night, which is lit by torches; the pixel style is not. */
+  private get torchlit(): boolean {
+    return this.id === 'night';
+  }
+
+  /**
+   * Night's torchlight. Every sealed castle has two torches flanking its gate and a warm
+   * pool of light on the ground round them, so a lit castle reads as sealed and a dark
+   * one as breached across the map: a breach douses them with a puff of smoke, and
+   * sealing again lights them. Muzzle flashes light the ground round a gun for a moment,
+   * and a smouldering breach glows as long as its embers do.
+   */
+  private drawTorchlight(state: MatchState, view: ViewTransform, frame: EffectFrame): void {
+    const night = this.art.night;
+    const { palette } = this.art;
+    const ground = this.groundLight;
+    const g = this.effectGfx;
+    const warm = hex(palette.emberMid);
+    const pool = (x: number, y: number, radius: number, alpha: number): void => {
+      // Three discs, each inside the last, so the light is brightest at its heart.
+      for (const k of [1, 0.66, 0.36]) {
+        ground.circle(tileX(view, x), tileY(view, y), view.tile * radius * k);
+        ground.fill({ color: warm, alpha: alpha * 0.4 });
+      }
+    };
+    const flicker = (seed: number): number =>
+      0.8 +
+      0.12 * Math.sin(this.clock / night.torchFlickerMs + seed * 1.7) +
+      0.08 * Math.sin(this.clock / (night.torchFlickerMs * 0.43) + seed * 3.1);
+
+    for (const castle of state.castles) {
+      const sealed = frame.castleSealed[castle.id] ?? false;
+      const torch = this.torches.get(castle.id) ?? { lit: sealed ? 1 : 0, sealed };
+      const spots = [-1, 1].map((side) => ({
+        x: castle.x + castle.w / 2 + side * castle.w * 0.3,
+        y: castle.y + castle.h * 0.78,
+      }));
+      const next = nextTorch(torch, sealed, frame.deltaMs, night.torchIgniteMs);
+      if (next.doused) {
+        // Doused: a puff of smoke from each torch as it goes out.
+        for (const spot of spots) {
+          for (let k = 0; k < 3; k++) {
+            this.puffs.push({
+              x: spot.x,
+              y: spot.y - 0.3,
+              vx: (Math.random() - 0.5) * 0.3,
+              vy: -0.5 - Math.random() * 0.3,
+              age: -k * 70,
+            });
+          }
+        }
+      }
+      torch.sealed = next.sealed;
+      torch.lit = next.lit;
+      this.torches.set(castle.id, torch);
+      if (torch.lit <= 0) continue;
+
+      spots.forEach((spot, k) => {
+        const f = flicker(castle.id * 2 + k) * torch.lit;
+        pool(
+          spot.x,
+          spot.y + 0.3,
+          (night.torchPoolTiles / 2) * (0.92 + 0.08 * f),
+          night.torchGlowAlpha * f,
+        );
+        // The torch: a short stave, and its flame swaying a little as it burns.
+        const sx = tileX(view, spot.x);
+        const sy = tileY(view, spot.y);
+        const t = view.tile;
+        g.rect(sx - t * 0.04, sy - t * 0.15, t * 0.08, t * 0.3);
+        g.fill({ color: hex(palette.rockDark) });
+        const sway = Math.sin(this.clock / (night.torchFlickerMs * 1.9) + k * 2) * t * 0.03;
+        const fx = sx + sway;
+        const fy = sy - t * 0.25;
+        g.circle(fx, fy, t * 0.16 * f);
+        g.fill({ color: warm, alpha: 0.95 });
+        g.circle(fx, fy + t * 0.03, t * 0.08 * f);
+        g.fill({ color: hex(palette.emberHot) });
+        this.airLight.circle(fx, fy, t * 0.55 * f);
+        this.airLight.fill({ color: warm, alpha: 0.28 * f });
+      });
+    }
+
+    const span = night.muzzleLightMs;
+    for (const light of this.lights) {
+      light.age += frame.deltaMs;
+      const k = light.age / span;
+      if (k < 1)
+        pool(light.x, light.y, night.muzzleLightTiles / 2, night.torchGlowAlpha * 1.4 * (1 - k));
+    }
+    this.lights = this.lights.filter((light) => light.age < span);
+
+    const smoulder = this.art.generators.fx.smoulderMs;
+    for (const s of this.smoulders) {
+      const life = 1 - s.age / smoulder;
+      if (life > 0)
+        pool(s.x + 0.5, s.y + 0.5, 0.75, night.breachGlowAlpha * life * flicker(s.seed * 10));
+    }
   }
 
   /** Two rings spreading and fading on the water where a shot went in. */
@@ -1028,6 +1163,25 @@ export class PixelTheme implements Theme {
 
     if (ghost.aiming) drawFireReticle(g, view, ghost, this.art, humanPlayer);
   }
+}
+
+/**
+ * A castle's torches one frame on: catching over `igniteMs` while it is sealed, going out
+ * five times as fast once it is not, and doused — smoke to be puffed — at the moment a
+ * lit castle loses its seal.
+ */
+export function nextTorch(
+  torch: { lit: number; sealed: boolean },
+  sealed: boolean,
+  deltaMs: number,
+  igniteMs: number,
+): { lit: number; sealed: boolean; doused: boolean } {
+  const rate = deltaMs / (sealed ? igniteMs : igniteMs / 5);
+  return {
+    lit: Math.max(0, Math.min(1, torch.lit + (sealed ? rate : -rate))),
+    sealed,
+    doused: torch.sealed && !sealed && torch.lit > 0,
+  };
 }
 
 /**

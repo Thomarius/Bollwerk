@@ -934,6 +934,16 @@
     "seaHatchAlpha": 0.22,
     "territoryAlpha": 0.4
   },
+  "night": {
+    "torchPoolTiles": 4.4,
+    "torchGlowAlpha": 0.32,
+    "torchFlickerMs": 140,
+    "torchIgniteMs": 450,
+    "muzzleLightTiles": 2.2,
+    "muzzleLightMs": 220,
+    "shotGlowTiles": 0.55,
+    "breachGlowAlpha": 0.18
+  },
   "parchment": {
     "inkWidthPx": 1.5,
     "contourTiles": [1.5],

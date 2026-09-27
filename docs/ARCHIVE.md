@@ -1987,3 +1987,14 @@ last three rounds, were drawn in the effects layer above the walls and showed th
 wall rebuilt over them; they now have a layer of their own under the structures, as the
 pixel style's scorch marks do. Checked at two and eight players, close up, sealed and
 breached, across a wipe from Pixel art, and as menu titles alone and split.
+
+**Night's torchlight — done**, as agreed: torches at every sealed castle with a pool of
+light that is lit while sealed and doused by a breach, light from muzzle flashes,
+burning shot and smouldering breaches, and a torch at each end of Night's menu title
+lighting the stone. Built into the pixel theme and switched on for Night alone. The
+rule learnt from the warm stone held: light on the ground goes in the territory layer,
+under the walls, so every player keeps their colour, checked at eight players; flames
+and the glow round shots in flight are above. The first pool, 2.6 tiles across at 0.22,
+was all but hidden by the guns packed round each castle; 4.4 tiles at 0.32 reads.
+Seen in one frame: a sealed castle lit, and a breached one dark with its breaches
+glowing. The torches' lighting and dousing is a pure function (`nextTorch`), tested.

@@ -169,6 +169,7 @@ export function moonlitTitle(text: string, art: ArtConfig): Title {
     }
   }
   drawStone(p, text, own, waterFoam, NIGHT_PAD);
+  lightTorches(p, own, w, h);
   return {
     src: p.canvas.toDataURL(),
     cellPx: STONE,
@@ -177,6 +178,33 @@ export function moonlitTitle(text: string, art: ArtConfig): Title {
     smooth: false,
     flicker: false,
   };
+}
+
+/**
+ * A torch at either end of Night's title, and their warm light on the stone: laid over
+ * what is drawn already and nowhere else, as the game's torchlight falls on the ground
+ * and not on the sky.
+ */
+function lightTorches(p: Pixels, art: ArtConfig, w: number, h: number): void {
+  const { emberHot, emberMid, rockDark } = art.palette;
+  const ctx = p.canvas.getContext('2d');
+  if (ctx === null) return;
+  const cy = Math.round(h / 2) + 3;
+  for (const x of [3, w - 5]) {
+    // The warm light, on the stone and the halo only.
+    const light = ctx.createRadialGradient(x + 1, cy - 4, 1, x + 1, cy - 4, 20);
+    light.addColorStop(0, `${emberMid}b0`);
+    light.addColorStop(1, `${emberMid}00`);
+    ctx.globalCompositeOperation = 'source-atop';
+    ctx.fillStyle = light;
+    ctx.fillRect(x - 20, cy - 24, 42, 40);
+    ctx.globalCompositeOperation = 'source-over';
+    // The torch: a stave, and a flame with a hot heart.
+    p.rect(x + 0.5, cy - 3, 1, 7, rockDark);
+    p.rect(x, cy - 7, 2, 4, emberMid);
+    p.set(x + 1, cy - 8, emberMid, 0.8);
+    p.rect(x, cy - 5, 2, 2, emberHot);
+  }
 }
 
 /**

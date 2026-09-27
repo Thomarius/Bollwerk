@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 
 import { stateFromAscii } from '@rampart/sim';
 
-import { seaDepth } from './pixel.js';
+import { nextTorch, seaDepth } from './pixel.js';
 import { createTheme } from './scene.js';
 import { FlagHoist, hex, playerColour, tileX, tileY, type ViewTransform } from './theme.js';
 
@@ -120,5 +120,25 @@ describe('flags, hoisted and lowered', () => {
     expect(flags.lowering(0)).toBe(false);
     expect(flags.raised(0, at, art)).toBeCloseTo(height);
     expect(flags.raised(0, at + up, art)).toBe(1);
+  });
+});
+
+describe("Night's torches", () => {
+  it('catch over the ignite time while the castle is sealed', () => {
+    let torch = { lit: 0, sealed: false };
+    torch = nextTorch(torch, true, 225, 450);
+    expect(torch.lit).toBeCloseTo(0.5);
+    torch = nextTorch(torch, true, 450, 450);
+    expect(torch.lit).toBe(1);
+  });
+
+  it('are doused once, as a lit castle loses its seal, and go out fast', () => {
+    const lit = { lit: 1, sealed: true };
+    const breached = nextTorch(lit, false, 45, 450);
+    expect(breached.doused).toBe(true);
+    expect(breached.lit).toBeCloseTo(0.5);
+    // Already out: no second puff of smoke.
+    expect(nextTorch({ lit: 0, sealed: true }, false, 45, 450).doused).toBe(false);
+    expect(nextTorch(breached, false, 45, 450).doused).toBe(false);
   });
 });

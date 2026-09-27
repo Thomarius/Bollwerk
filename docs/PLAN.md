@@ -347,6 +347,13 @@ look like. Adding a style is a name in `ArtStyleSchema`, the looks it is made fo
 sprites are generated at boot from `art.default.json` plus the match seed — nothing binary
 is committed except audio.
 
+**Night is torchlit** (`art.night`): two torches flank the gate of every sealed castle
+with a warm pool of light on the ground round them, doused with a puff of smoke by a
+breach and lit again by sealing, so lit reads as sealed across the map; muzzle flashes
+light the ground round a gun, shots glow as burning shot, and a smouldering breach
+glows. The light on the ground is drawn in the territory layer, under the walls, so it
+never colours them.
+
 **Each style has colours of its own** (`stylePalettes`): any palette entries, and the
 player ramps and team families whole, laid over the shared ones by `artForStyle`, which is
 what every theme is handed. What a style leaves out it shares, and a style may be an
@@ -793,8 +800,8 @@ and a different palette, rather than writing a second large `Theme` class.
 look, **Cyberpunk comes next**, ahead of Blueprint:
 
 1. **Night** — **done**: the pixel theme under its own palette, for both looks. Moonlit
-   islands on a near-black sea, walls in bright moonlit stone. **Torchlight is the one open item**
-   (below): palette alone could not do it (ARCHIVE 11g).
+   islands on a near-black sea, walls in bright moonlit stone, and torchlight (below), which palette
+   alone could not do (ARCHIVE 11g).
 2. **Blueprint — done** (§7). Planned as a build look; offered for both at the user's
    wish, for more choice, with no area tags on sealed ground — the game is arcade and
    the board should not carry much text. As planned: blue drafting paper with a grid,
@@ -821,9 +828,9 @@ not planned: a retro arcade CRT look, an arcane runic theme, and a high-contrast
 with a pattern per player, the last the one worth reconsidering for six to eight players.
 Cyberpunk stays as it is, its sea pulses included in the build look.
 
-**Next: torchlight for Night — agreed 2026-09-27, not started.** Night is the pixel
-theme under its own palette; torchlight is drawing code of its own, switched on for
-Night alone, so the pixel style is untouched. **The light falls on the ground, not on
+**Torchlight for Night — done** (agreed and built 2026-09-27; tunables in `art.night`).
+Night is the pixel theme under its own palette; torchlight is drawing code of its own,
+switched on for Night alone, so the pixel style is untouched. **The light falls on the ground, not on
 the walls' colour**: warm stone was tried and turned azure walls grey (ARCHIVE 11g).
 
 - **Torches at every sealed castle**: two flanking the gate, flames flickering a little
