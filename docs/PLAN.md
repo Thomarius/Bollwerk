@@ -451,8 +451,13 @@ breached castle's flag is lowered, struck in a darker shade, rather than vanishi
 
 **Combat, in cyberpunk** (`cyberpunk.ts`, a combat look only). The board as a circuit at
 night: **brightness means structure and colour ownership**. Walls are a neon line round
-the outside of each run in the owner's colour, over a dark body with each block's cell
-faint in it, so a thick wall still shows the block a shot takes; land is a dark grid
+the outside of each run's top in the owner's colour, over a body with each block's cell
+faint in it, so a thick wall still shows the block a shot takes. **Walls stand up as the
+pixel style's do, to the same height** (`frontFacePx`), so the two agree as the banner
+swaps them: a block with nothing to its south shows a darker front face with a strip of
+light, and the owner's colour spills onto the ground in front, where a shadow would vanish
+on a board this dark. Castles have faces too, in the pixel keep's proportion, and guns
+stand on a mount whose side shows; land is a dark grid
 tinted faintly by owner; the sea is near black, crossed by seeded circuit traces kept
 clear of the coast and fading toward it, with pulses running along them. Castles are
 housings with a core that blazes and breathes while sealed and dims when breached, and

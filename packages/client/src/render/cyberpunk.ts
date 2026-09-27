@@ -113,6 +113,24 @@ export function circuitTraces(
   return traces;
 }
 
+/** A colour darkened toward black by `amount`, 0 to 1. */
+function dimmed(colour: number, amount: number): number {
+  const k = 1 - amount;
+  const r = Math.round(((colour >> 16) & 0xff) * k);
+  const g = Math.round(((colour >> 8) & 0xff) * k);
+  const b = Math.round((colour & 0xff) * k);
+  return (r << 16) | (g << 8) | b;
+}
+
+/** `a` moved toward `b` by `amount`, 0 to 1. */
+function mixed(a: number, b: number, amount: number): number {
+  const channel = (shift: number): number => {
+    const from = (a >> shift) & 0xff;
+    return Math.round(from + (((b >> shift) & 0xff) - from) * amount) << shift;
+  };
+  return channel(16) | channel(8) | channel(0);
+}
+
 /** A point `distance` tiles along a trace. */
 function along(trace: Trace, distance: number): { x: number; y: number } {
   let left = distance;
@@ -421,65 +439,100 @@ export class CyberpunkTheme implements Theme {
           : -1
         : -1;
 
-    // Walls, batched per owner: a dark body, and a neon line round the outside of each
-    // run, so a wall reads as one lit tube however it bends. Owner 0 is an eliminated
-    // player's rubble, dead and unlit.
-    for (let owner = 0; owner <= state.players.length; owner++) {
-      let any = false;
-      for (let i = 0; i < state.structure.length; i++) {
-        if (state.structure[i] !== Structure.Wall || state.owner[i] !== owner) continue;
-        const x = i % state.width;
-        g.rect(tileX(view, x), tileY(view, (i - x) / state.width), view.tile, view.tile);
-        any = true;
-      }
-      if (!any) continue;
-      g.fill({
-        color: owner === 0 ? hex(palette.rockDark) : this.colour(owner - 1, 'dark'),
-        alpha: 0.75,
-      });
-      // Each block's cell, faint, so a thick wall still shows the blocks a shot takes out.
-      const inset = Math.max(1, view.tile * 0.18);
+    // Walls, batched per owner, standing up as the pixel style's do, and to the same
+    // height, so the two agree as the banner swaps them: a block with nothing to its
+    // south shows a front face below its top. The top is a dark body with a neon line
+    // round the outside of each run, the face a darker panel with a light strip, and the
+    // owner's colour spills onto the ground in front, where a shadow would vanish on this
+    // dark a board.
+    const face = view.tile * (this.art.generators.wall.frontFacePx / this.art.tileSizePx);
+    for (let owner = 1; owner <= state.players.length; owner++) {
+      const mine = (x: number, y: number): boolean => wallOf(x, y) === owner;
+      const faced = (x: number, y: number): boolean => mine(x, y) && !mine(x, y + 1);
+      const blocks: { x: number; y: number; left: number; top: number; lip: number }[] = [];
       for (let i = 0; i < state.structure.length; i++) {
         if (state.structure[i] !== Structure.Wall || state.owner[i] !== owner) continue;
         const x = i % state.width;
         const y = (i - x) / state.width;
-        g.rect(
-          tileX(view, x) + inset,
-          tileY(view, y) + inset,
-          view.tile - inset * 2,
-          view.tile - inset * 2,
-        );
+        const top = tileY(view, y);
+        blocks.push({
+          x,
+          y,
+          left: tileX(view, x),
+          top,
+          lip: top + view.tile - (faced(x, y) ? face : 0),
+        });
       }
-      g.stroke({
-        width: 1,
-        color: owner === 0 ? hex(palette.rockMid) : this.colour(owner - 1, 'base'),
-        alpha: 0.35,
-      });
-      for (let i = 0; i < state.structure.length; i++) {
-        if (state.structure[i] !== Structure.Wall || state.owner[i] !== owner) continue;
-        const x = i % state.width;
-        const y = (i - x) / state.width;
-        this.edges(g, view, x, y, (nx, ny) => wallOf(nx, ny) === owner);
+      if (blocks.length === 0) continue;
+      const player = owner - 1;
+      const t = view.tile;
+
+      for (const b of blocks) g.rect(b.left, b.top, t, b.lip - b.top);
+      // The top lit a step above the face, which is what stands the wall up.
+      g.fill({ color: mixed(this.colour(player, 'dark'), this.colour(player, 'base'), 0.3) });
+      for (const b of blocks) if (faced(b.x, b.y)) g.rect(b.left, b.lip, t, face);
+      g.fill({ color: dimmed(this.colour(player, 'dark'), 0.55) });
+
+      // The face's strip of light, and its edges: where it meets the ground, and its ends.
+      for (const b of blocks) {
+        if (!faced(b.x, b.y)) continue;
+        g.moveTo(b.left, b.lip + face / 2).lineTo(b.left + t, b.lip + face / 2);
       }
-      if (owner === 0) {
-        g.stroke({ width: 1, color: hex(palette.rockMid), alpha: 0.7 });
-        continue;
+      g.stroke({ width: 1, color: this.colour(player, 'base'), alpha: 0.5 });
+      for (const b of blocks) {
+        if (!faced(b.x, b.y)) continue;
+        const bottom = b.top + t;
+        g.moveTo(b.left, bottom).lineTo(b.left + t, bottom);
+        if (!faced(b.x - 1, b.y)) g.moveTo(b.left, b.lip).lineTo(b.left, bottom);
+        if (!faced(b.x + 1, b.y)) g.moveTo(b.left + t, b.lip).lineTo(b.left + t, bottom);
       }
-      g.stroke({ width: line, color: this.colour(owner - 1, 'light') });
-      for (let i = 0; i < state.structure.length; i++) {
-        if (state.structure[i] !== Structure.Wall || state.owner[i] !== owner) continue;
-        const x = i % state.width;
-        const y = (i - x) / state.width;
-        this.edges(glow, view, x, y, (nx, ny) => wallOf(nx, ny) === owner);
+      g.stroke({ width: 1, color: this.colour(player, 'base'), alpha: 0.6 });
+
+      // Each block's cell on its top, faint, so a thick wall still shows the blocks a
+      // shot takes out.
+      const inset = Math.max(1, t * 0.18);
+      for (const b of blocks) {
+        g.rect(b.left + inset, b.top + inset, t - inset * 2, b.lip - b.top - inset * 2);
       }
+      g.stroke({ width: 1, color: this.colour(player, 'base'), alpha: 0.35 });
+
+      // The rim of the tops: the brightest line on the board, and its glow.
+      for (const target of [g, glow]) {
+        for (const b of blocks) this.rim(target, b, t, face, mine, faced);
+      }
+      g.stroke({ width: line, color: this.colour(player, 'light') });
       glow.stroke({
         width: glowWidth,
-        color: this.colour(owner - 1, 'base'),
+        color: this.colour(player, 'base'),
         alpha: this.style.glowAlpha,
       });
+
+      // Light spilling onto the ground in front of each face, fading away from it.
+      for (const [depth, alpha] of [
+        [0.35, 0.08],
+        [0.15, 0.1],
+      ] as const) {
+        for (const b of blocks) if (faced(b.x, b.y)) glow.rect(b.left, b.top + t, t, t * depth);
+        glow.fill({ color: this.colour(player, 'base'), alpha });
+      }
     }
 
-    // Castles: a dark housing with a lit rim. The core, which pulses, is an effect.
+    // An eliminated player's rubble: dead, unlit, and lying down, so it has no face.
+    for (let i = 0; i < state.structure.length; i++) {
+      if (state.structure[i] !== Structure.Wall || state.owner[i] !== 0) continue;
+      const x = i % state.width;
+      g.rect(tileX(view, x), tileY(view, (i - x) / state.width), view.tile, view.tile);
+    }
+    g.fill({ color: hex(palette.rockDark), alpha: 0.75 });
+    for (let i = 0; i < state.structure.length; i++) {
+      if (state.structure[i] !== Structure.Wall || state.owner[i] !== 0) continue;
+      const x = i % state.width;
+      this.edges(g, view, x, (i - x) / state.width, (nx, ny) => wallOf(nx, ny) === 0);
+    }
+    g.stroke({ width: 1, color: hex(palette.rockMid), alpha: 0.7 });
+
+    // Castles: a dark housing with a lit rim over a front face, as tall as the pixel
+    // keep's. The core, which pulses, is an effect.
     for (const castle of state.castles) {
       const owner = castle.islandId - 1;
       const x = tileX(view, castle.x);
@@ -487,35 +540,57 @@ export class CyberpunkTheme implements Theme {
       const w = castle.w * view.tile;
       const h = castle.h * view.tile;
       const inset = view.tile * 0.12;
-      g.rect(x + inset, y + inset, w - inset * 2, h - inset * 2);
-      g.fill({ color: this.colour(owner, 'dark') });
+      const drop = this.castleFace(castle) * view.tile;
+      const lip = y + h - inset - drop;
+      g.rect(x + inset, lip, w - inset * 2, drop);
+      g.fill({ color: dimmed(this.colour(owner, 'dark'), 0.55) });
+      g.stroke({ width: 1, color: this.colour(owner, 'base'), alpha: 0.6 });
+      g.moveTo(x + inset, lip + drop / 2).lineTo(x + w - inset, lip + drop / 2);
+      g.stroke({ width: 1, color: this.colour(owner, 'base'), alpha: 0.5 });
+      g.rect(x + inset, y + inset, w - inset * 2, lip - y - inset);
+      g.fill({ color: mixed(this.colour(owner, 'dark'), this.colour(owner, 'base'), 0.3) });
       g.stroke({ width: line, color: this.colour(owner, 'light') });
       // Corner brackets, which is what makes it read as a component rather than a block.
       const arm = Math.min(w, h) * 0.28;
       for (const [cx, cy, sx, sy] of [
         [x, y, 1, 1],
         [x + w, y, -1, 1],
-        [x, y + h, 1, -1],
-        [x + w, y + h, -1, -1],
+        [x, lip + inset, 1, -1],
+        [x + w, lip + inset, -1, -1],
       ] as const) {
         g.moveTo(cx + sx * arm, cy)
           .lineTo(cx, cy)
           .lineTo(cx, cy + sy * arm);
       }
       g.stroke({ width: line, color: this.colour(owner, 'base') });
-      glow.rect(x + inset, y + inset, w - inset * 2, h - inset * 2);
+      glow.rect(x + inset, y + inset, w - inset * 2, lip - y - inset);
       glow.stroke({
         width: glowWidth,
         color: this.colour(owner, 'base'),
         alpha: this.style.glowAlpha,
       });
+      glow.rect(x + inset, y + h - inset, w - inset * 2, view.tile * 0.3);
+      glow.fill({ color: this.colour(owner, 'base'), alpha: 0.1 });
     }
 
-    // Guns: a ring on a dark mount. The barrel turns, so it is drawn with the effects.
+    // Guns: a ring on a mount that stands a little off the ground, its side showing
+    // below it. The barrel turns, so it is drawn with the effects.
     for (const cannon of state.cannons) {
       const cx = tileX(view, cannon.x + cannon.w / 2);
       const cy = tileY(view, cannon.y + cannon.h / 2);
       const r = (Math.min(cannon.w, cannon.h) * view.tile) / 2 - view.tile * 0.15;
+      const side = face * 0.6;
+      g.circle(cx, cy + side, r);
+      g.fill({
+        color: cannon.active
+          ? dimmed(this.colour(cannon.owner, 'dark'), 0.5)
+          : hex(palette.grassDark),
+      });
+      g.stroke({
+        width: 1,
+        color: cannon.active ? this.colour(cannon.owner, 'base') : hex(palette.rockDark),
+        alpha: 0.6,
+      });
       g.circle(cx, cy, r);
       g.fill({ color: cannon.active ? this.colour(cannon.owner, 'dark') : hex(palette.grassMid) });
       g.stroke({
@@ -531,6 +606,40 @@ export class CyberpunkTheme implements Theme {
         alpha: this.style.glowAlpha,
       });
     }
+  }
+
+  /**
+   * The outline of a wall block's top, where it does not run on into its neighbours':
+   * along its north side, along its lip where it has a face, down its open sides to the
+   * lip, and down the stretch of a shared side where the neighbour has a face and it
+   * does not, since there its top meets that face.
+   */
+  private rim(
+    g: Graphics,
+    b: { x: number; y: number; left: number; top: number; lip: number },
+    t: number,
+    face: number,
+    mine: (x: number, y: number) => boolean,
+    faced: (x: number, y: number) => boolean,
+  ): void {
+    const right = b.left + t;
+    const bottom = b.top + t;
+    if (!mine(b.x, b.y - 1)) g.moveTo(b.left, b.top).lineTo(right, b.top);
+    if (faced(b.x, b.y)) g.moveTo(b.left, b.lip).lineTo(right, b.lip);
+    for (const [dx, at] of [
+      [-1, b.left],
+      [1, right],
+    ] as const) {
+      if (!mine(b.x + dx, b.y)) g.moveTo(at, b.top).lineTo(at, b.lip);
+      else if (!faced(b.x, b.y) && faced(b.x + dx, b.y))
+        g.moveTo(at, bottom - face).lineTo(at, bottom);
+    }
+  }
+
+  /** Height of a castle's front face, in tiles: the pixel keep's, in proportion. */
+  private castleFace(castle: { h: number }): number {
+    const { frontFacePx } = this.art.generators.wall;
+    return (castle.h * (frontFacePx + 2)) / (this.art.tileSizePx * 3);
   }
 
   // ------------------------------------------------------------------ events
@@ -659,7 +768,7 @@ export class CyberpunkTheme implements Theme {
       const owner = castle.islandId - 1;
       const sealed = frame.castleSealed[castle.id] ?? false;
       const cx = tileX(view, castle.x + castle.w / 2);
-      const cy = tileY(view, castle.y + castle.h / 2);
+      const cy = tileY(view, castle.y + (castle.h - this.castleFace(castle)) / 2);
       const breath = 0.5 + 0.5 * Math.sin(this.clock / 420 + castle.id);
       const r = view.tile * (sealed ? 0.34 + 0.06 * breath : 0.26);
       glow.circle(cx, cy, r * 2.1);
@@ -802,7 +911,7 @@ export class CyberpunkTheme implements Theme {
       const owner = castle.islandId - 1;
       const colour = this.colour(owner, lowering ? 'dark' : 'base');
       const beamX = tileX(view, castle.x + castle.w / 2);
-      const beamFoot = tileY(view, castle.y + castle.h / 2);
+      const beamFoot = tileY(view, castle.y + (castle.h - this.castleFace(castle)) / 2);
       const flagW = view.tile * 1.3;
       const flagH = view.tile * 0.8;
       const lowest = tileY(view, castle.y) - flagH * 0.3;

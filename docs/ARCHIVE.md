@@ -1913,3 +1913,13 @@ tint was halved, so that sealed ground stands out from the land. Screenshots at 
 four and eight players, in teams of two, and mid-wipe against Minimal. The sub-second
 effects — impact glitch, sparks, the power-down flicker, the hologram's flicker — need a
 person to see them.
+
+**Cyberpunk walls in 3D — done**, asked for by the user so that the swap from a textured
+build look reads as the same walls lit differently. The pixel style's geometry, not its
+look: a front face on every block with nothing to its south, at `frontFacePx` of the
+tile, so faces line up exactly across the banner; the neon rim moves to the top's lip,
+and down a shared side where a neighbour has a face and the block does not. Pixel casts
+a shadow; on near-black ground a shadow is invisible, so the owner's colour spills onto
+the ground in front instead. The first try barely read, because the top and the face
+were nearly the same darkness; lifting the top 30% toward the owner's base colour and
+darkening the face made it stand up.
