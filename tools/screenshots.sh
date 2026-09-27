@@ -35,6 +35,8 @@ SCENES=(
   "build-night|$GAME&snapshot=build&round=3&style=night|2000"
   "combat-night|$BASE/?autostart=1&players=2&seed=5&snapshot=combat&round=3&style=night|4200"
   "wipe-night|$WATCH&snapshot=build&round=2&buildStyle=flat&combatStyle=night|30500"
+  "build-cyber|$GAME&snapshot=build&round=3&style=cyberpunk|2000"
+  "cannons-cyber|$GAME&snapshot=cannon_place&round=2&style=cyberpunk|2000"
   "combat-cyber|$BASE/?autostart=1&players=2&seed=5&snapshot=combat&round=3&style=cyberpunk|4200"
   "four-cyber|$BASE/?autostart=1&players=4&seed=3&snapshot=combat&round=3&style=cyberpunk|3000"
   "eight-cyber|$BASE/?autostart=1&players=8&seed=3&snapshot=combat&round=3&style=cyberpunk|3000"

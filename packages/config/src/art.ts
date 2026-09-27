@@ -45,8 +45,8 @@ export type PlayerPalette = z.infer<typeof PlayerPaletteSchema>;
 /**
  * Visual styles are interchangeable implementations of one renderer interface.
  * `flat` is the minimal look: solid colour, no textures, no atlas to generate. `night` is
- * the pixel style under a palette of its own (`stylePalettes`). `cyberpunk` is a combat look
-alone: neon outlines on a dark circuit board.
+ * the pixel style under a palette of its own (`stylePalettes`). `cyberpunk` is neon outlines on
+a dark circuit board.
  */
 export const ArtStyleSchema = z.enum(['flat', 'pixel', 'night', 'cyberpunk']);
 export type ArtStyle = z.infer<typeof ArtStyleSchema>;
@@ -68,7 +68,7 @@ export const FlatStyleSchema = z.strictObject({
 export type FlatStyleConfig = z.infer<typeof FlatStyleSchema>;
 
 /**
- * The cyberpunk combat look. Brightness means structure and colour ownership, so walls
+ * The cyberpunk look. Brightness means structure and colour ownership, so walls
  * are the brightest lines on the board. Glow is a second, wider shape blended additively
  * rather than a bloom filter, which costs frame rate at eight players. Sizes in tiles
  * where they should scale with the map, in pixels where a line must stay crisp.
@@ -124,7 +124,7 @@ export type ArtStyles = z.infer<typeof ArtStylesSchema>;
 
 /**
  * Which looks each style is made for. A style may be made for one look only — a calm
- * drafting-paper build look, a neon combat look — and is then offered for that one
+ * drafting-paper build look, say — and is then offered for that one
  * alone. A property of the drawing code rather than a tunable, so it lives here, and a
  * style cannot be added without saying.
  */
@@ -132,8 +132,7 @@ export const STYLE_LOOKS: Record<ArtStyle, readonly ArtLook[]> = {
   flat: ['build', 'combat'],
   pixel: ['build', 'combat'],
   night: ['build', 'combat'],
-  // Neon is for the fight; building wants something calmer to plan on.
-  cyberpunk: ['combat'],
+  cyberpunk: ['build', 'combat'],
 };
 
 export function styleServes(

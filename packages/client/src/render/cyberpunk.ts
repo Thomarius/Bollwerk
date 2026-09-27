@@ -194,7 +194,7 @@ interface Aim {
 const RECOIL_MS = 160;
 
 /**
- * The cyberpunk combat look: the board as a circuit at night.
+ * The cyberpunk look: the board as a circuit at night, for building and for combat.
  *
  * Brightness means structure and colour means ownership, so the walls are the brightest
  * lines on the board, each in its owner's neon, with land a dark grid and the sea near
@@ -221,6 +221,7 @@ export class CyberpunkTheme implements Theme {
   private readonly effectGfx = new Graphics();
   private readonly effectGlow = new Graphics();
   private readonly overlayGfx = new Graphics();
+  private readonly overlayGlow = new Graphics();
 
   private traces: Trace[] = [];
   private traceKey = '';
@@ -248,14 +249,19 @@ export class CyberpunkTheme implements Theme {
   init(layers: ThemeLayers, art: ArtConfig): Promise<void> {
     this.art = art;
     this.style = art.cyberpunk;
-    for (const glow of [this.territoryGlow, this.structureGlow, this.effectGlow]) {
+    for (const glow of [
+      this.territoryGlow,
+      this.structureGlow,
+      this.effectGlow,
+      this.overlayGlow,
+    ]) {
       glow.blendMode = 'add';
     }
     layers.terrain.addChild(this.terrainGfx);
     layers.territory.addChild(this.territoryGfx, this.territoryGlow);
     layers.structures.addChild(this.structureGlow, this.structureGfx);
     layers.effects.addChild(this.effectGfx, this.effectGlow);
-    layers.overlay.addChild(this.overlayGfx);
+    layers.overlay.addChild(this.overlayGlow, this.overlayGfx);
     return Promise.resolve();
   }
 
@@ -269,6 +275,7 @@ export class CyberpunkTheme implements Theme {
       this.effectGfx,
       this.effectGlow,
       this.overlayGfx,
+      this.overlayGlow,
     ]) {
       g.destroy();
     }
@@ -445,76 +452,20 @@ export class CyberpunkTheme implements Theme {
     // round the outside of each run, the face a darker panel with a light strip, and the
     // owner's colour spills onto the ground in front, where a shadow would vanish on this
     // dark a board.
-    const face = view.tile * (this.art.generators.wall.frontFacePx / this.art.tileSizePx);
     for (let owner = 1; owner <= state.players.length; owner++) {
-      const mine = (x: number, y: number): boolean => wallOf(x, y) === owner;
-      const faced = (x: number, y: number): boolean => mine(x, y) && !mine(x, y + 1);
-      const blocks: { x: number; y: number; left: number; top: number; lip: number }[] = [];
+      const cells: Cell[] = [];
       for (let i = 0; i < state.structure.length; i++) {
         if (state.structure[i] !== Structure.Wall || state.owner[i] !== owner) continue;
         const x = i % state.width;
-        const y = (i - x) / state.width;
-        const top = tileY(view, y);
-        blocks.push({
-          x,
-          y,
-          left: tileX(view, x),
-          top,
-          lip: top + view.tile - (faced(x, y) ? face : 0),
-        });
+        cells.push({ x, y: (i - x) / state.width });
       }
-      if (blocks.length === 0) continue;
+      if (cells.length === 0) continue;
       const player = owner - 1;
-      const t = view.tile;
-
-      for (const b of blocks) g.rect(b.left, b.top, t, b.lip - b.top);
-      // The top lit a step above the face, which is what stands the wall up.
-      g.fill({ color: mixed(this.colour(player, 'dark'), this.colour(player, 'base'), 0.3) });
-      for (const b of blocks) if (faced(b.x, b.y)) g.rect(b.left, b.lip, t, face);
-      g.fill({ color: dimmed(this.colour(player, 'dark'), 0.55) });
-
-      // The face's strip of light, and its edges: where it meets the ground, and its ends.
-      for (const b of blocks) {
-        if (!faced(b.x, b.y)) continue;
-        g.moveTo(b.left, b.lip + face / 2).lineTo(b.left + t, b.lip + face / 2);
-      }
-      g.stroke({ width: 1, color: this.colour(player, 'base'), alpha: 0.5 });
-      for (const b of blocks) {
-        if (!faced(b.x, b.y)) continue;
-        const bottom = b.top + t;
-        g.moveTo(b.left, bottom).lineTo(b.left + t, bottom);
-        if (!faced(b.x - 1, b.y)) g.moveTo(b.left, b.lip).lineTo(b.left, bottom);
-        if (!faced(b.x + 1, b.y)) g.moveTo(b.left + t, b.lip).lineTo(b.left + t, bottom);
-      }
-      g.stroke({ width: 1, color: this.colour(player, 'base'), alpha: 0.6 });
-
-      // Each block's cell on its top, faint, so a thick wall still shows the blocks a
-      // shot takes out.
-      const inset = Math.max(1, t * 0.18);
-      for (const b of blocks) {
-        g.rect(b.left + inset, b.top + inset, t - inset * 2, b.lip - b.top - inset * 2);
-      }
-      g.stroke({ width: 1, color: this.colour(player, 'base'), alpha: 0.35 });
-
-      // The rim of the tops: the brightest line on the board, and its glow.
-      for (const target of [g, glow]) {
-        for (const b of blocks) this.rim(target, b, t, face, mine, faced);
-      }
-      g.stroke({ width: line, color: this.colour(player, 'light') });
-      glow.stroke({
-        width: glowWidth,
-        color: this.colour(player, 'base'),
-        alpha: this.style.glowAlpha,
+      this.drawWall(g, glow, view, cells, (x, y) => wallOf(x, y) === owner, {
+        dark: this.colour(player, 'dark'),
+        base: this.colour(player, 'base'),
+        light: this.colour(player, 'light'),
       });
-
-      // Light spilling onto the ground in front of each face, fading away from it.
-      for (const [depth, alpha] of [
-        [0.35, 0.08],
-        [0.15, 0.1],
-      ] as const) {
-        for (const b of blocks) if (faced(b.x, b.y)) glow.rect(b.left, b.top + t, t, t * depth);
-        glow.fill({ color: this.colour(player, 'base'), alpha });
-      }
     }
 
     // An eliminated player's rubble: dead, unlit, and lying down, so it has no face.
@@ -579,7 +530,7 @@ export class CyberpunkTheme implements Theme {
       const cx = tileX(view, cannon.x + cannon.w / 2);
       const cy = tileY(view, cannon.y + cannon.h / 2);
       const r = (Math.min(cannon.w, cannon.h) * view.tile) / 2 - view.tile * 0.15;
-      const side = face * 0.6;
+      const side = (view.tile * this.art.generators.wall.frontFacePx * 0.6) / this.art.tileSizePx;
       g.circle(cx, cy + side, r);
       g.fill({
         color: cannon.active
@@ -605,6 +556,140 @@ export class CyberpunkTheme implements Theme {
         color: this.colour(cannon.owner, 'base'),
         alpha: this.style.glowAlpha,
       });
+    }
+  }
+
+  /**
+   * The piece in hand as the wall it would make, joined to itself and to the player's
+   * wall standing, faces and all, in the player's colour and outlined in the valid ink —
+   * or, where it does not fit, only a red outline round a faint fill.
+   */
+  private drawGhostWall(
+    state: MatchState,
+    view: ViewTransform,
+    ghost: Ghost,
+    humanPlayer: number,
+  ): void {
+    const anchor = ghost.tile;
+    if (anchor === null) return;
+    const cells = ghost.cells.map(([ox, oy]) => ({ x: anchor.x + ox, y: anchor.y + oy }));
+    const inPiece = new Set(cells.map((c) => `${c.x},${c.y}`));
+    const standing = (x: number, y: number): boolean =>
+      x >= 0 &&
+      y >= 0 &&
+      x < state.width &&
+      y < state.height &&
+      state.structure[y * state.width + x] === Structure.Wall &&
+      state.owner[y * state.width + x] === humanPlayer + 1;
+    const red = hex(this.art.palette.uiInvalid);
+    const g = this.overlayGfx;
+    if (ghost.valid) {
+      this.drawWall(
+        g,
+        this.overlayGlow,
+        view,
+        cells,
+        (x, y) => inPiece.has(`${x},${y}`) || standing(x, y),
+        {
+          dark: this.colour(humanPlayer, 'dark'),
+          base: this.colour(humanPlayer, 'base'),
+          light: this.colour(humanPlayer, 'light'),
+        },
+        0.85,
+      );
+    } else {
+      // Hollow where it does not fit: a wall in red would be the crimson player's own
+      // colour, so the difference is in the form — no body, only an outline — not the hue.
+      for (const { x, y } of cells) g.rect(tileX(view, x), tileY(view, y), view.tile, view.tile);
+      g.fill({ color: red, alpha: 0.15 });
+    }
+    for (const { x, y } of cells) {
+      const left = tileX(view, x);
+      const top = tileY(view, y);
+      const right = left + view.tile;
+      const bottom = top + view.tile;
+      if (!inPiece.has(`${x},${y - 1}`)) g.moveTo(left, top).lineTo(right, top);
+      if (!inPiece.has(`${x + 1},${y}`)) g.moveTo(right, top).lineTo(right, bottom);
+      if (!inPiece.has(`${x},${y + 1}`)) g.moveTo(left, bottom).lineTo(right, bottom);
+      if (!inPiece.has(`${x - 1},${y}`)) g.moveTo(left, top).lineTo(left, bottom);
+    }
+    g.stroke(
+      ghost.valid
+        ? { width: 1, color: hex(this.art.palette.uiValid), alpha: 0.8 }
+        : { width: this.style.wallLinePx, color: red, alpha: 0.9 },
+    );
+  }
+
+  /**
+   * Wall blocks standing up, in one set of colours: tops lit a step above their front
+   * faces, each face with a strip of light and the colour spilling onto the ground in
+   * front, the rim of the tops brightest of all. `joins` says which tiles count as the
+   * same wall, for the rim and for whether a block has anything to its south. Standing
+   * walls and the piece in hand are both drawn with it, so a piece looks like the wall
+   * it will make.
+   */
+  private drawWall(
+    g: Graphics,
+    glow: Graphics,
+    view: ViewTransform,
+    cells: readonly Cell[],
+    joins: (x: number, y: number) => boolean,
+    ink: { dark: number; base: number; light: number },
+    alpha = 1,
+  ): void {
+    const t = view.tile;
+    const face = t * (this.art.generators.wall.frontFacePx / this.art.tileSizePx);
+    const line = this.style.wallLinePx;
+    const glowWidth = Math.max(line * 2, t * this.style.glowWidthTiles);
+    const faced = (x: number, y: number): boolean => joins(x, y) && !joins(x, y + 1);
+    const blocks = cells.map(({ x, y }) => {
+      const top = tileY(view, y);
+      return { x, y, left: tileX(view, x), top, lip: top + t - (faced(x, y) ? face : 0) };
+    });
+
+    for (const b of blocks) g.rect(b.left, b.top, t, b.lip - b.top);
+    // The top lit a step above the face, which is what stands the wall up.
+    g.fill({ color: mixed(ink.dark, ink.base, 0.3), alpha });
+    for (const b of blocks) if (faced(b.x, b.y)) g.rect(b.left, b.lip, t, face);
+    g.fill({ color: dimmed(ink.dark, 0.55), alpha });
+
+    // The face's strip of light, and its edges: where it meets the ground, and its ends.
+    for (const b of blocks) {
+      if (!faced(b.x, b.y)) continue;
+      g.moveTo(b.left, b.lip + face / 2).lineTo(b.left + t, b.lip + face / 2);
+    }
+    g.stroke({ width: 1, color: ink.base, alpha: 0.5 * alpha });
+    for (const b of blocks) {
+      if (!faced(b.x, b.y)) continue;
+      const bottom = b.top + t;
+      g.moveTo(b.left, bottom).lineTo(b.left + t, bottom);
+      if (!faced(b.x - 1, b.y)) g.moveTo(b.left, b.lip).lineTo(b.left, bottom);
+      if (!faced(b.x + 1, b.y)) g.moveTo(b.left + t, b.lip).lineTo(b.left + t, bottom);
+    }
+    g.stroke({ width: 1, color: ink.base, alpha: 0.6 * alpha });
+
+    // Each block's cell on its top, faint, so a thick wall still shows the blocks a shot
+    // takes out.
+    const inset = Math.max(1, t * 0.18);
+    for (const b of blocks) {
+      g.rect(b.left + inset, b.top + inset, t - inset * 2, b.lip - b.top - inset * 2);
+    }
+    g.stroke({ width: 1, color: ink.base, alpha: 0.35 * alpha });
+
+    // The rim of the tops: the brightest line on the board, and its glow.
+    for (const target of [g, glow]) {
+      for (const b of blocks) this.rim(target, b, t, face, joins, faced);
+    }
+    g.stroke({ width: line, color: ink.light, alpha });
+    glow.stroke({ width: glowWidth, color: ink.base, alpha: this.style.glowAlpha * alpha });
+
+    // Light spilling onto the ground in front of each face, fading away from it.
+    for (const [depth, spill] of [
+      [0.35, 0.08],
+      [0.15, 0.1],
+    ] as const) {
+      for (const b of blocks) if (faced(b.x, b.y)) glow.rect(b.left, b.top + t, t, t * depth);
+      glow.fill({ color: ink.base, alpha: spill * alpha });
     }
   }
 
@@ -709,8 +794,38 @@ export class CyberpunkTheme implements Theme {
     this.fades.push({ x: block.x, y: block.y, age: 0, colour });
   }
 
+  /**
+   * A piece set down: it settles, and sparks run off its outer edges — the neon
+   * counterpart of the dust the pixel style kicks up, as brief.
+   */
   noteLanding(cells: readonly Cell[], owner: number): void {
     this.landings.add(cells, owner);
+    const inPiece = new Set(cells.map((c) => `${c.x},${c.y}`));
+    const colours = [this.colour(owner, 'light'), hex(this.art.palette.uiInk)];
+    const count = this.art.effects.landingDustPerEdge;
+    for (const cell of cells) {
+      for (const [dx, dy] of [
+        [0, -1],
+        [1, 0],
+        [0, 1],
+        [-1, 0],
+      ] as const) {
+        if (inPiece.has(`${cell.x + dx},${cell.y + dy}`)) continue;
+        for (let k = 0; k < count; k++) {
+          const along = Math.random() - 0.5;
+          this.sparks.push({
+            x: cell.x + 0.5 + dx * 0.5 + (dy === 0 ? 0 : along),
+            y: cell.y + 0.5 + dy * 0.5 + (dx === 0 ? 0 : along),
+            vx: dx * (0.8 + Math.random() * 1.2) + (Math.random() - 0.5) * 0.6,
+            vy: dy * (0.8 + Math.random() * 1.2) + (Math.random() - 0.5) * 0.6,
+            age: 0,
+            life: 200 + Math.random() * 220,
+            colour: colours[k % 2]!,
+            gravity: 0,
+          });
+        }
+      }
+    }
   }
 
   // ------------------------------------------------------------------ effects
@@ -1095,12 +1210,13 @@ export class CyberpunkTheme implements Theme {
   // ------------------------------------------------------------------ overlay
 
   /**
-   * Combat's overlay is the aiming cursor. The rest is here because a look is shown
-   * whole during a wipe, and a combat look may still be on screen as building begins.
+   * Everything a player aims or builds by: the aiming cursor in combat, the piece in
+   * hand while building, the gun being placed, the castles to choose from.
    */
   drawOverlay(state: MatchState, view: ViewTransform, ghost: Ghost, humanPlayer: number): void {
     const g = this.overlayGfx;
     g.clear();
+    this.overlayGlow.clear();
     drawOvertimeBorder(g, state, view, this.art, performance.now());
     for (const castle of ghost.selectable) {
       g.rect(
@@ -1115,25 +1231,36 @@ export class CyberpunkTheme implements Theme {
     if (!ghost.tile) return;
     const colour = ghost.valid ? hex(this.art.palette.uiValid) : hex(this.art.palette.uiInvalid);
     if (state.phase === 'build' && ghost.cells.length > 0) {
-      for (const [ox, oy] of ghost.cells) {
-        g.rect(
-          tileX(view, ghost.tile.x + ox),
-          tileY(view, ghost.tile.y + oy),
-          view.tile,
-          view.tile,
-        );
-      }
-      g.fill({ color: colour, alpha: 0.55 });
+      this.drawGhostWall(state, view, ghost, humanPlayer);
       return;
     }
     if (state.phase === 'cannon_place' && ghost.footprint) {
+      // The gun as its lit ring, in the ink that says whether it fits.
+      const cx = tileX(view, ghost.tile.x + ghost.footprint.w / 2);
+      const cy = tileY(view, ghost.tile.y + ghost.footprint.h / 2);
+      const r = (Math.min(ghost.footprint.w, ghost.footprint.h) * view.tile) / 2 - view.tile * 0.15;
       g.rect(
         tileX(view, ghost.tile.x),
         tileY(view, ghost.tile.y),
         ghost.footprint.w * view.tile,
         ghost.footprint.h * view.tile,
       );
-      g.fill({ color: colour, alpha: 0.5 });
+      g.fill({ color: colour, alpha: 0.18 });
+      g.circle(cx, cy, r);
+      g.stroke({ width: this.style.wallLinePx, color: colour, alpha: 0.9 });
+      if (!ghost.valid) {
+        // Struck through, as the aiming cursor is when nothing is ready: red alone would
+        // vanish on the crimson player's own wall.
+        const d = r * Math.SQRT1_2;
+        g.moveTo(cx - d, cy + d).lineTo(cx + d, cy - d);
+        g.stroke({ width: this.style.wallLinePx, color: colour, alpha: 0.9 });
+      }
+      this.overlayGlow.circle(cx, cy, r);
+      this.overlayGlow.stroke({
+        width: view.tile * this.style.glowWidthTiles,
+        color: colour,
+        alpha: this.style.glowAlpha,
+      });
       return;
     }
     if (ghost.aiming) drawFireReticle(g, view, ghost, this.art, humanPlayer);

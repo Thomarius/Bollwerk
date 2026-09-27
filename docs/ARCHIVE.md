@@ -1944,3 +1944,16 @@ every title reports how its letters sit in its image so `titleLayout` can show a
 them at one letter height, stone exactly as before. Minimal's first gap was a quarter of
 a block and read as dots; drawn at twice the resolution with a one-pixel gap it reads
 as blocks. Checked in a browser, the title changing with each dropdown.
+
+**Cyberpunk opened to building — done.** Asked by the user whether anything justified
+refusing it as a build look: nothing did. The restriction was taste carried over from
+the plan ("building wants something calmer"), and the theme already drew everything a
+build look needs, since a look is drawn whole during a wipe. What was thin as a build
+look was filled in: the piece in hand is drawn by the same code as standing wall, joined
+to the player's own wall, with faces; a gun being placed is a lit ring; a placed piece
+throws sparks, as the pixel style throws dust. **The first invalid preview was a red
+wall, which for the crimson player differed from a valid one by a one-pixel outline** —
+so an invalid piece is now hollow, a red outline round a faint fill, and an invalid gun
+is struck through. Seen by hovering in a scripted browser, valid and invalid, piece and
+gun. The one-look mechanism stays, tested against a table with a one-look style, for
+Blueprint.

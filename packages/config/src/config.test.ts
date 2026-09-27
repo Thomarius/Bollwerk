@@ -313,12 +313,9 @@ describe('styles per look', () => {
     expect(chooseStyle('combat', ['pixel', 'night'], 'flat', looks)).toBe('pixel');
   });
 
-  it('offers cyberpunk for combat alone, and refuses it as the default build look', () => {
+  it('offers every shipped style for both looks, cyberpunk included', () => {
+    expect(stylesFor('build')).toContain('cyberpunk');
     expect(stylesFor('combat')).toContain('cyberpunk');
-    expect(stylesFor('build')).not.toContain('cyberpunk');
-    const styles = { build: 'cyberpunk', combat: 'pixel' };
-    expect(ArtConfigSchema.safeParse({ ...defaultArtConfig, styles }).success).toBe(false);
-    expect(chooseStyle('build', ['cyberpunk'], 'flat')).toBe('flat');
   });
 
   it('falls back past a missing, unknown or stale choice', () => {

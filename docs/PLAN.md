@@ -453,8 +453,7 @@ fires. In both styles the mark where a shot will land pulses ever faster as it n
 turns red and thick when it is coming down on the watching player's own wall; and a
 breached castle's flag is lowered, struck in a darker shade, rather than vanishing.
 
-**Combat, in cyberpunk** (`cyberpunk.ts`, a combat look only). The board as a circuit at
-night: **brightness means structure and colour ownership**. Walls are a neon line round
+**Cyberpunk** (`cyberpunk.ts`), for either look. The board as a circuit at night: **brightness means structure and colour ownership**. Walls are a neon line round
 the outside of each run's top in the owner's colour, over a body with each block's cell
 faint in it, so a thick wall still shows the block a shot takes. **Walls stand up as the
 pixel style's do, to the same height** (`frontFacePx`), so the two agree as the banner
@@ -472,6 +471,12 @@ guns throw sparks instead of smoke and flicker as they lose or regain power. Glo
 wider shape on an additive layer under each bright line, not a bloom filter. Its player
 ramps are neon restylings of the shared ones, the same hues with each team family's
 order of lightness kept, so teammates still tell apart.
+
+While building, the piece in hand is drawn as the wall it will make — joined to the
+wall standing, faces and all, outlined in the valid ink — and where it does not fit as a
+hollow red outline: a wall in red would be the crimson player's own colour, so the
+difference is in form, not hue. A gun being placed is its lit ring, struck through where
+it cannot go. A placed piece throws sparks off its outer edges.
 
 **Looking at it.** `tools/screenshots.sh` captures fixed states against the dev server —
 in real time through Playwright, which renders fine where virtual time does not — using
@@ -764,8 +769,8 @@ look, **Cyberpunk comes next**, ahead of Blueprint:
    technical lines, castles as plan symbols, sealed ground hatched. Clean, calm and
    informative, which is what building needs — a better build look than Minimal, which
    stays as the style to debug against.
-3. **Cyberpunk — done** (§7), neon menu title included — a **combat look**, the user's
-   idea. As planned: **Circuits, not runes** (runes are
+3. **Cyberpunk — done** (§7), neon menu title included — planned as a combat look, the
+   user's idea, and opened to building too (ARCHIVE 11g). As planned: **Circuits, not runes** (runes are
    another theme, arcane, not planned). Brightness means structure and colour means
    ownership: walls are the brightest outlines on the board, each in its owner's neon;
    land is a dark grid, the sea near black with circuit traces and pulses running along
