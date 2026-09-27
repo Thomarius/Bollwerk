@@ -1629,3 +1629,36 @@ music; the key now belongs to the match alone. That left a mute saved from befor
 visible sign and no way out outside a match — the user reported "no sound at all", and an
 instrumented browser showed every file decoding and playing at zero gain — so a **Sound**
 switch now sits in the corner of every screen and shows the saved state.
+
+## 11e. Recording human play
+
+For the human test sessions that 11.2 waits on. Decided with the user: automatic, no
+questionnaire (feedback comes separately, compiled), no notice to players, no replay
+viewer — data for tuning only.
+
+- **A match is its inputs.** The simulation is deterministic, so a recording is the
+  header (seed, the exact ruleset, terrain settings, players with team and tier, `null`
+  for a person) and the actions of each tick something was done on, plus a fingerprint
+  every 30 ticks and an end line. JSON lines, written as the match runs, so an abandoned
+  match keeps everything but its end. A ten-round match is under 100 KB.
+- **The server records its own rooms** through a callback, so `Room` stays free of files.
+  **A local match** records inside `LocalMatch` — a person's move lands between ticks,
+  ahead of the bots' on that tick, and the recording keeps that order — and the page
+  sends the lines to the server it came from, batched, with `sendBeacon` if the tab
+  closes. Uploads are validated line by line; a file must open with its own header.
+- **`--replay`** in the headless harness runs recordings through the same statistics as a
+  bot soak. The code moved into `stats.ts` for it, and a soak's table came out identical
+  to the one before the move, hashes and all.
+- Checked end to end over a real server: a local match and an online room with two people
+  both recorded, and both replayed exactly; a full ten-round local match replayed to 23
+  rows, the person's seat among them. `npm start -w` runs the harness from its own
+  directory, so replay paths are resolved from where the command was typed (`INIT_CWD`).
+
+**Statistics written as a match ends**, at the user's request, so nothing is run by hand
+after a session: the server replays the finished recording and writes `<id>.stats.csv`
+beside it. A replay of a whole ten-round match with every measurement takes about 0.2 s
+(the heaviest single measurement about 15 ms), so it runs in the server process, deferred
+past the step that ended the match. The statistics code moved to a shared package,
+`packages/analysis`, for the server and the harness alike; printing the summary stayed
+with the harness. One setting, `recordings.enabled`, turns recording, uploads and
+statistics off together — checked on a live server: no folder, uploads refused.

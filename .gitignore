@@ -8,3 +8,6 @@ coverage/
 .env
 .env.*
 !.env.example
+
+# Match recordings from test sessions: data, not source (docs/PLAN.md, recordings).
+recordings/

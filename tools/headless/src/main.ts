@@ -2,25 +2,25 @@ import { writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { validateConfigBundle, type ConfigBundle } from '@rampart/config';
+import { validateConfigBundle } from '@rampart/config';
 import { loadConfigBundle } from '@rampart/config/node';
-import { Bot, DIFFICULTIES, cannonRoom, cheapestPlanFor, type Difficulty } from '@rampart/ai';
+import { Bot, DIFFICULTIES, type Difficulty } from '@rampart/ai';
 import {
   Rng,
-  Structure,
-  Terrain,
   applyAction,
   createMatch,
   drainEvents,
   generateTerrain,
   hashMatchState,
-  pieceCells,
-  poolForRound,
   renderAscii,
   seatOrder,
   step,
   type MatchState,
 } from '@rampart/sim';
+
+import { replayAll } from './replay.js';
+import { summariseStats } from './summary.js';
+import { RoundStats, statsCsv, type StatRow } from '@rampart/analysis';
 
 /**
  * Headless harness: runs matches with no renderer.
@@ -43,6 +43,8 @@ interface Args {
   teams: number;
   /** Overrides `scoring.maxRounds`; undefined keeps the ruleset's, null lifts the cap. */
   maxRounds: number | null | undefined;
+  /** Recordings to replay, files or directories of them, instead of running bots. */
+  replay: string[];
 }
 
 /**
@@ -74,6 +76,7 @@ function parseArgs(argv: string[]): Args {
     stats: null,
     maxRounds: undefined,
     teams: 1,
+    replay: [],
   };
   for (let i = 0; i < argv.length; i++) {
     const flag = argv[i];
@@ -120,10 +123,18 @@ function parseArgs(argv: string[]): Args {
       case '--map':
         args.map = true;
         break;
+      case '--replay':
+        // Every argument up to the next flag: files, or directories of recordings.
+        while (argv[i + 1] !== undefined && !(argv[i + 1] as string).startsWith('--')) {
+          args.replay.push(argv[i + 1] as string);
+          i++;
+        }
+        break;
       case '--help':
         console.log(
           'usage: npm start -w @rampart/headless -- [--matches N] [--players N] [--seed N] ' +
-            `[--max-ticks N] [--max-rounds N|none] [--teams N] [--difficulty ${DIFFICULTIES.join('|')}[,...]] [--stats FILE] [--map]`,
+            `[--max-ticks N] [--max-rounds N|none] [--teams N] [--difficulty ${DIFFICULTIES.join('|')}[,...]] [--stats FILE] [--map]\n` +
+            '       npm start -w @rampart/headless -- --replay recordings/ [more files or dirs] [--stats FILE]',
         );
         process.exit(0);
     }
@@ -137,187 +148,6 @@ function describeOutcome(state: MatchState): string {
   if (state.winners.length === 0) return 'no winner';
   const who = state.winners.map((id) => `player ${id}`).join(' + ');
   return state.endedBy === 'round_cap' ? `${who} on points` : `${who} last standing`;
-}
-
-// ------------------------------------------------------------------------- stats
-
-/**
- * One row per player per round, sampled at the resolution that ends a build phase.
- *
- * That moment and no other: `enclosedCastles` is live during a build phase, so it is
- * legitimately zero mid-repair, and the sweep runs inside the same step — so the
- * cannon and wall counts here are what the next barrage will actually meet.
- */
-interface StatRow {
-  seed: number;
-  round: number;
-  player: number;
-  difficulty: Difficulty;
-  enclosedCastles: number;
-  cannonsAwarded: number;
-  eliminated: boolean;
-  cannonsOwned: number;
-  cannonsActive: number;
-  cannonRoom: number;
-  wallTiles: number;
-  piecesPlaced: number;
-  piecesBudget: number;
-  shotsFired: number;
-  territoryPoints: number;
-  damagePoints: number;
-  /** Banked total after this round. */
-  score: number;
-  /**
-   * Cells the tightest possible seal needed as the build phase opened, and how many it
-   * still needed on the phase's last tick. Together they say why a round failed:
-   * a repair larger than the phase could ever build, or one that fit and was missed.
-   */
-  repairAtBuild: number;
-  repairLeft: number;
-  /**
-   * Of the cells still missing on the last tick, how many no piece in this player's bag
-   * could cover at all — holes the round's pieces are too big for.
-   */
-  repairStuck: number;
-}
-
-const STAT_COLUMNS: (keyof StatRow)[] = [
-  'seed',
-  'round',
-  'player',
-  'difficulty',
-  'enclosedCastles',
-  'cannonsAwarded',
-  'eliminated',
-  'cannonsOwned',
-  'cannonsActive',
-  'cannonRoom',
-  'wallTiles',
-  'piecesPlaced',
-  'piecesBudget',
-  'shotsFired',
-  'territoryPoints',
-  'damagePoints',
-  'score',
-  'repairAtBuild',
-  'repairLeft',
-  'repairStuck',
-];
-
-/**
- * Pieces this tier could lay in a whole build phase.
- *
- * The same arithmetic the bot itself prices a plan with — base plus per-cell over an
- * average piece of 3.5 cells — so `piecesPlaced / piecesBudget` reads directly as how
- * much of the phase a bot actually used. A bot that seals early and then stands idle
- * shows up here as a ratio well under one, with nothing else needing to be measured.
- */
-function piecesBudget(bundle: ConfigBundle, difficulty: Difficulty): number {
-  const profile = bundle.ai.profiles[difficulty];
-  if (profile === undefined) return 0;
-  const perPiece = profile.placementBaseMs + profile.placementPerCellMs * 3.5;
-  return bundle.ruleset.phases.buildMs / perPiece;
-}
-
-function wallTilesOf(state: MatchState, playerId: number): number {
-  const islandId = state.players[playerId]?.islandId;
-  let tiles = 0;
-  for (let i = 0; i < state.structure.length; i++) {
-    if (state.structure[i] === Structure.Wall && state.islandId[i] === islandId) tiles++;
-  }
-  return tiles;
-}
-
-/** Whether any piece in the player's current bag can legally cover tile `i`. */
-function coverable(state: MatchState, playerId: number, i: number): boolean {
-  const player = state.players[playerId];
-  if (player === undefined) return false;
-  const tx = i % state.width;
-  const ty = (i - tx) / state.width;
-  const fits = (x: number, y: number): boolean => {
-    if (x < 0 || y < 0 || x >= state.width || y >= state.height) return false;
-    const j = y * state.width + x;
-    return (
-      state.terrain[j] === Terrain.Land &&
-      state.structure[j] === Structure.Empty &&
-      state.islandId[j] === player.islandId
-    );
-  };
-  for (const id of poolForRound(state.ruleset, player.pieceRound).ids) {
-    for (let rotation = 0; rotation < 4; rotation++) {
-      const cells = pieceCells(id, rotation);
-      // Every way of laying this piece so that one of its cells lands on the tile.
-      for (const [ax, ay] of cells) {
-        if (cells.every(([cx, cy]) => fits(tx - ax + cx, ty - ay + cy))) return true;
-      }
-    }
-  }
-  return false;
-}
-
-function writeStats(path: string, rows: StatRow[]): void {
-  const lines = [STAT_COLUMNS.join(',')];
-  for (const row of rows) {
-    lines.push(
-      STAT_COLUMNS.map((column) => {
-        const value = row[column];
-        return typeof value === 'number' ? Number(value.toFixed(2)) : String(value);
-      }).join(','),
-    );
-  }
-  writeFileSync(path, `${lines.join('\n')}\n`, 'utf8');
-}
-
-function mean(values: number[]): number {
-  if (values.length === 0) return 0;
-  return values.reduce((a, b) => a + b, 0) / values.length;
-}
-
-/**
- * The summary worth reading without opening the file.
- *
- * Active cannons and cannon room are the two numbers the stalemate is made of: a bot
- * whose wall has nowhere to put a gun cannot spend what it earns, and a table of
- * those cannot finish a match however long it runs.
- */
-function summariseStats(rows: StatRow[]): void {
-  const byTier = new Map<Difficulty, StatRow[]>();
-  for (const row of rows) {
-    if (row.eliminated) continue;
-    const list = byTier.get(row.difficulty);
-    if (list === undefined) byTier.set(row.difficulty, [row]);
-    else list.push(row);
-  }
-  if (byTier.size === 0) return;
-
-  console.log('\nper surviving player-round, averaged:');
-  console.log('  tier     sealed  owned  active  idle%   room  wall  pieces/budget   terr   dmg');
-  for (const tier of DIFFICULTIES) {
-    const list = byTier.get(tier);
-    if (list === undefined) continue;
-    const owned = mean(list.map((r) => r.cannonsOwned));
-    const active = mean(list.map((r) => r.cannonsActive));
-    const idle = owned === 0 ? 0 : (1 - active / owned) * 100;
-    const used = mean(
-      list.map((r) => (r.piecesBudget === 0 ? 0 : r.piecesPlaced / r.piecesBudget)),
-    );
-    console.log(
-      `  ${tier.padEnd(8)} ${mean(list.map((r) => r.enclosedCastles))
-        .toFixed(2)
-        .padStart(5)}  ${owned.toFixed(1).padStart(5)}  ${active.toFixed(1).padStart(6)}  ` +
-        `${idle.toFixed(0).padStart(4)}%  ${mean(list.map((r) => r.cannonRoom))
-          .toFixed(1)
-          .padStart(4)}  ${mean(list.map((r) => r.wallTiles))
-          .toFixed(0)
-          .padStart(4)}  ${(used * 100).toFixed(0).padStart(11)}%  ${mean(
-          list.map((r) => r.territoryPoints),
-        )
-          .toFixed(0)
-          .padStart(5)}  ${mean(list.map((r) => r.damagePoints))
-          .toFixed(0)
-          .padStart(4)}`,
-    );
-  }
 }
 
 // ------------------------------------------------------------------------- teams
@@ -424,6 +254,16 @@ if (problems.length > 0) {
   process.exit(1);
 }
 
+if (args.replay.length > 0) {
+  const rows = replayAll(bundle, args.replay);
+  if (args.stats !== null) {
+    writeFileSync(args.stats, statsCsv(rows), 'utf8');
+    console.log(`\n${rows.length} row(s) written to ${args.stats}`);
+  }
+  summariseStats(rows);
+  process.exit(0);
+}
+
 if (args.map) {
   const map = generateTerrain(bundle.terrain, args.players, args.seed);
   const structure = new Uint8Array(map.width * map.height);
@@ -484,19 +324,7 @@ for (let i = 0; i < args.matches; i++) {
   const bots = state.players.map((p) => new Bot(p.id, seatTier(p.id)));
   let refused = 0;
 
-  // Reset at every resolution, so a row counts only its own round's work.
-  const placed = new Map<number, number>();
-  const fired = new Map<number, number>();
-  const repairAtBuild = new Map<number, number>();
-  const repairLeft = new Map<number, number>();
-  const repairStuck = new Map<number, number>();
-  /**
-   * The tightest wall that would seal a castle, in cells still to fill — zero for a wall
-   * that stands. Asked of the min cut rather than of `enclosedCastles`, which is not
-   * recomputed when shots land and so still says "sealed" as a breached phase opens.
-   */
-  const tightestRepair = (id: number): number =>
-    cheapestPlanFor(state, id, 1, 1)?.cost ?? Number.POSITIVE_INFINITY;
+  const sampler = new RoundStats(bundle, `sim-${seed}`, seed, seatTier);
 
   while (state.phase !== 'game_over' && state.tick < args.maxTicks) {
     for (const player of state.players) {
@@ -505,72 +333,9 @@ for (let i = 0; i < args.matches; i++) {
     }
     step(state);
     const events = drainEvents(state);
-    if (args.stats === null) continue;
-
-    // Measured once as the phase opens and once on its last tick, which is the last
-    // moment before the resolution wipes a failed island.
-    if (state.phase === 'build' && state.tick === state.phaseEndTick - 1) {
-      for (const p of state.players) {
-        if (p.eliminated) continue;
-        const plan = cheapestPlanFor(state, p.id, 1, 1);
-        repairLeft.set(p.id, plan?.cost ?? Number.POSITIVE_INFINITY);
-        const missing = plan?.tiles.filter((i) => state.structure[i] === Structure.Empty) ?? [];
-        repairStuck.set(p.id, missing.filter((i) => !coverable(state, p.id, i)).length);
-      }
-    }
-
-    for (const event of events) {
-      if (event.kind === 'phase_changed' && event.phase === 'build') {
-        for (const p of state.players) {
-          if (!p.eliminated) repairAtBuild.set(p.id, tightestRepair(p.id));
-        }
-      } else if (event.kind === 'piece_placed') {
-        placed.set(event.player, (placed.get(event.player) ?? 0) + 1);
-      } else if (event.kind === 'shot_fired') {
-        fired.set(event.shot.owner, (fired.get(event.shot.owner) ?? 0) + 1);
-      } else if (event.kind === 'round_resolved') {
-        // Sampled after the step that produced the event, so the sweep has already
-        // run and these are the walls and guns the next barrage will meet.
-        for (const result of event.results) {
-          let owned = 0;
-          let active = 0;
-          for (const cannon of state.cannons) {
-            if (cannon.owner !== result.player) continue;
-            owned++;
-            if (cannon.active) active++;
-          }
-          const tier = seatTier(result.player);
-          stats.push({
-            seed,
-            round: event.round,
-            player: result.player,
-            difficulty: tier,
-            enclosedCastles: result.enclosedCastles,
-            cannonsAwarded: result.cannonsAwarded,
-            eliminated: result.eliminated,
-            cannonsOwned: owned,
-            cannonsActive: active,
-            cannonRoom: cannonRoom(state, result.player),
-            wallTiles: wallTilesOf(state, result.player),
-            piecesPlaced: placed.get(result.player) ?? 0,
-            piecesBudget: piecesBudget(bundle, tier),
-            shotsFired: fired.get(result.player) ?? 0,
-            territoryPoints: result.territoryPoints,
-            damagePoints: result.damagePoints,
-            score: state.players[result.player]?.score ?? 0,
-            repairAtBuild: repairAtBuild.get(result.player) ?? 0,
-            repairLeft: repairLeft.get(result.player) ?? 0,
-            repairStuck: repairStuck.get(result.player) ?? 0,
-          });
-        }
-        placed.clear();
-        fired.clear();
-        repairAtBuild.clear();
-        repairLeft.clear();
-        repairStuck.clear();
-      }
-    }
+    if (args.stats !== null) sampler.observe(state, events);
   }
+  stats.push(...sampler.rows);
   if (refused > 0) refusedTotal += refused;
 
   if (args.teams > 1) layouts.push(teamLayout(state));
@@ -618,7 +383,7 @@ if (new Set(table).size > 1) {
 }
 
 if (args.stats !== null) {
-  writeStats(args.stats, stats);
+  writeFileSync(args.stats, statsCsv(stats), 'utf8');
   summariseStats(stats);
   console.log(`\n${stats.length} row(s) written to ${args.stats}`);
 }

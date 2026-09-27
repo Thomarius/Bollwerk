@@ -10,6 +10,7 @@ WORKDIR /app
 # Every workspace's package.json has to be present or `npm ci` refuses the lockfile.
 COPY package.json package-lock.json ./
 COPY packages/ai/package.json packages/ai/
+COPY packages/analysis/package.json packages/analysis/
 COPY packages/client/package.json packages/client/
 COPY packages/config/package.json packages/config/
 COPY packages/protocol/package.json packages/protocol/

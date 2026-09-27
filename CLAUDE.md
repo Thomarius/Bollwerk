@@ -20,6 +20,7 @@ npm run dev   -w @rampart/client    # play offline at http://localhost:5173
 npm start     -w @rampart/server    # serves the built client at http://localhost:8080
 npm start     -w @rampart/headless -- --matches 8 --players 3 --difficulty gunner --stats out.csv
 npm start     -w @rampart/headless -- --map --players 3 --seed 2   # print a map as ASCII
+npm start     -w @rampart/headless -- --replay recordings/ --stats human.csv   # recorded human play
 tools/screenshots.sh /tmp/shots [scene...]   # client in fixed states, against the dev server
 ```
 
@@ -160,6 +161,18 @@ for diagnosing failed rounds, `repairAtBuild`, `repairLeft` and `repairStuck`: w
 tightest seal needed as the phase opened, what was still missing at its end, and how much
 of that no piece in the bag could fill. Prefer this to watching; watching is for forming
 the hypothesis.
+
+**Human play is recorded** into `recordings/` (git-ignored): every match the server runs,
+and every local match a page served by it plays, one `<id>.jsonl` each — header, the
+actions of each tick, end (`protocol/src/recording.ts`). A dev-server page has nowhere to
+send them and records nothing, as does `&snapshot=`. When a match ends the server writes
+its statistics beside it, `<id>.stats.csv`, the same table a bot soak's `--stats` writes,
+a person's seat's tier `human`. `--replay` does the same for any recordings by hand — an
+abandoned match, or new columns over old sessions — and says whether each replay was
+exact. One switch turns all of it off: `recordings.enabled` in `config/server.default.json`.
+The statistics code is `packages/analysis`, shared by the server and the harness. A
+recording replays exactly only against the code that made it, since the rules travel in
+its header but the simulation does not: record the commit with a test session.
 
 ## What has already been tried, so it is not tried again
 

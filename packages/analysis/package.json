@@ -1,15 +1,16 @@
 {
-  "name": "@rampart/headless",
+  "name": "@rampart/analysis",
   "version": "0.0.0",
   "private": true,
   "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
   "scripts": {
-    "typecheck": "tsc --noEmit",
-    "start": "tsx src/main.ts"
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@rampart/ai": "*",
-    "@rampart/analysis": "*",
     "@rampart/config": "*",
     "@rampart/protocol": "*",
     "@rampart/sim": "*"

@@ -31,5 +31,10 @@
     "onPhaseChange": true,
     "keepaliveIntervalMs": 15000
   },
-  "botDifficulty": "gunner"
+  "botDifficulty": "gunner",
+  "recordings": {
+    "enabled": true,
+    "dir": "recordings",
+    "maxUploadBytes": 1048576
+  }
 }

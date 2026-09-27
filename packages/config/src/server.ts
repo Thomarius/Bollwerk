@@ -37,6 +37,17 @@ export const ServerConfigSchema = z.strictObject({
     onPhaseChange: z.boolean(),
     keepaliveIntervalMs: z.number().int().positive(),
   }),
+
+  /**
+   * Match recordings for tuning against human play: every match the server runs, and
+   * every local one a browser sends, as a file in `dir` (relative to the repository).
+   */
+  recordings: z.strictObject({
+    enabled: z.boolean(),
+    dir: z.string().min(1),
+    /** The most a browser may send in one request; it sends a little at a time. */
+    maxUploadBytes: z.number().int().positive(),
+  }),
 });
 
 export type ServerConfig = z.infer<typeof ServerConfigSchema>;

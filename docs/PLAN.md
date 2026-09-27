@@ -502,6 +502,12 @@ two recruits 9 of 12. Records in the archive from before 10l are historical.
 - **Headless harness** — `tools/headless` runs bot-vs-bot matches without rendering.
   `--stats FILE` writes a row per player per round at each resolution; prefer it to
   watching. Watching is for forming the hypothesis.
+- **Recorded human play** — every match is recorded to `recordings/` as it runs: the
+  server writes its rooms' matches, and a local match sends its lines to the server that
+  served the page. When a match ends the server writes its statistics beside it
+  (`<id>.stats.csv`); `--replay FILES|DIRS` does the same by hand, and checks each replay
+  exact. `recordings.enabled` in the server config turns it all off. Recordings replay exactly
+  only against the code that made them.
 
 Tests state expectations as ASCII pictures where the subject is geometric
 (`stateFromAscii`, with an optional island overlay for walls and castles that belong to
@@ -606,6 +612,11 @@ than assumed, bot targeting. **Not levers:** the cap length, and combat and buil
 strongest opponent, which spreads damage and keeps everyone alive — the opposite of what
 this target needs. Finishing off the weakest, as a personality trait (11.6), may matter
 as much as either rule.
+
+**Recording it** (ARCHIVE 11e): every test match lands in `recordings/` with its
+statistics beside it once it ends — the same per-round table the bots produce — so how often a person loses a
+castle, how much of the build phase they use and what repair they leave undone are
+measured, not recalled. The user's impressions come separately, as compiled feedback.
 
 **What to take from the user's play first:** whether building already feels tight at
 default speed, whether a delay would feel like a penalty or like the original's pace,

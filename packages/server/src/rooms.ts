@@ -1,6 +1,8 @@
 import type { ConfigBundle } from '@rampart/config';
 import { Rng } from '@rampart/sim';
 
+import type { RecordingLine } from '@rampart/protocol';
+
 import { Room } from './room.js';
 
 /**
@@ -16,6 +18,8 @@ export class RoomManager {
   constructor(
     private readonly config: ConfigBundle,
     seed = Date.now() >>> 0,
+    /** A fresh writer for each room's match recording, or nothing to record. */
+    private readonly recorder?: () => (line: RecordingLine) => void,
   ) {
     this.rng = new Rng(seed);
   }
@@ -39,6 +43,7 @@ export class RoomManager {
       server: this.config.server,
       ai: this.config.ai,
       seed: this.rng.nextU32(),
+      ...(this.recorder === undefined ? {} : { record: this.recorder() }),
     });
     this.rooms.set(room.code, room);
     return room;

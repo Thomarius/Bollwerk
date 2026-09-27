@@ -37,6 +37,7 @@ import { buildHints, type BuildHints } from './hints.js';
 import { timerSpot } from './timerSpot.js';
 import { installBackdrop, stoneTitle } from './decor.js';
 import { drawPreview, tablePreview } from './preview.js';
+import { RecordingUpload } from './recordingUpload.js';
 import {
   floodFrom,
   floodOver,
@@ -216,13 +217,19 @@ interface Setup {
 const SETTING_BOUNDS = defaultConfigBundle.server.lobbySettings;
 const DEFAULT_SETTINGS = defaultSettings(defaultConfigBundle.ruleset, SETTING_BOUNDS);
 
-/** An offline match on the default rules with the menu's settings over them. */
-function localMatchFor(setup: Setup): LocalMatch {
+/**
+ * An offline match on the default rules with the menu's settings over them, recorded
+ * for tuning unless `record` is false — a dev shortcut into a phase is not a match
+ * anyone played. The recording goes to the server the page came from; see
+ * `recordingUpload.ts`.
+ */
+function localMatchFor(setup: Setup, record = true): LocalMatch {
   return new LocalMatch({
     seed: setup.seed,
     seats: setup.seats,
     ...(setup.teams === undefined ? {} : { teams: setup.teams }),
     ruleset: applySettings(defaultConfigBundle.ruleset, setup.settings),
+    ...(record ? { record: new RecordingUpload().write } : {}),
   });
 }
 
@@ -1294,8 +1301,8 @@ if (params.get('autostart') === '1') {
       ? { teams: defaultTeams(count, Number(params.get('teams'))) }
       : {}),
   };
-  const match = localMatchFor(setup);
   const phase = params.get('snapshot');
+  const match = localMatchFor(setup, phase === null);
   // &round=N stops at that phase in round N or later, for looking at a match deep in.
   if (phase !== null && PHASES.includes(phase as Phase)) {
     match.fastForwardTo(

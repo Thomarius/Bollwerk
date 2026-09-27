@@ -1,5 +1,6 @@
 import { defaultRuleset, defaultTerrainConfig, type Ruleset } from '@rampart/config';
 import { Bot, type Difficulty } from '@rampart/ai';
+import { MatchRecorder, recordingId, type RecordingLine } from '@rampart/protocol';
 
 import {
   Rng,
@@ -26,6 +27,8 @@ export interface LocalMatchOptions {
   /** Each seat's team, by seat. Omitted, every seat is on its own. */
   teams?: readonly number[];
   ruleset?: Ruleset;
+  /** Where the match's recording goes, line by line; see `recording.ts`. */
+  record?: (line: RecordingLine) => void;
 }
 
 /**
@@ -44,6 +47,9 @@ export class LocalMatch {
   private readonly tickMs: number;
   private accumulator = 0;
   private events: MatchEvent[] = [];
+  private recorder: MatchRecorder | null = null;
+  /** Everything applied on the current tick, in order, for the recording. */
+  private applied: Action[] = [];
 
   constructor(options: LocalMatchOptions) {
     const ruleset = options.ruleset ?? defaultRuleset;
@@ -75,6 +81,24 @@ export class LocalMatch {
     });
     this.rng = new Rng(options.seed ^ 0x5f3759df);
     this.tickMs = 1000 / ruleset.tickRateHz;
+
+    if (options.record !== undefined) {
+      const startedAt = new Date();
+      const unique = Math.floor(Math.random() * 0xffffffff).toString(36);
+      this.recorder = new MatchRecorder(options.record, {
+        id: recordingId('local', startedAt, unique),
+        source: 'local',
+        startedAt: startedAt.toISOString(),
+        code: null,
+        seed: options.seed,
+        ruleset,
+        terrain: defaultTerrainConfig,
+        players: players.map((p, id) => ({
+          ...p,
+          difficulty: seats[order.indexOf(id)] ?? null,
+        })),
+      });
+    }
   }
 
   /** Fraction of the way into the current tick, for smooth shot interpolation. */
@@ -88,7 +112,11 @@ export class LocalMatch {
 
   /** Applies a human action immediately; returns null when accepted. */
   submit(action: Action): Rejection | null {
-    return applyAction(this.state, action);
+    const rejection = applyAction(this.state, action);
+    // Applied on the tick about to be stepped, ahead of the bots' — the order a replay
+    // must apply them in.
+    if (rejection === null) this.applied.push(action);
+    return rejection;
   }
 
   /**
@@ -113,6 +141,8 @@ export class LocalMatch {
    * deterministically, without waiting out the clock or playing to get there.
    */
   fastForwardTo(phase: Phase, fromRound = 0, humanIdle = false, maxTicks = 40_000): void {
+    // A dev shortcut, not a match anyone played: nothing of it is worth keeping.
+    this.recorder = null;
     const arrived = (): boolean => this.state.phase === phase && this.state.round >= fromRound;
     while (!arrived() && this.state.tick < maxTicks && !this.finished) {
       for (const player of this.state.players) {
@@ -132,10 +162,13 @@ export class LocalMatch {
     for (const player of this.state.players) {
       if (player.id === this.humanPlayer || player.eliminated) continue;
       const action = this.bots.get(player.id)?.think(this.state, this.rng) ?? null;
-      if (action !== null) applyAction(this.state, action);
+      if (action !== null && applyAction(this.state, action) === null) this.applied.push(action);
     }
+    const tick = this.state.tick;
     step(this.state);
     this.events.push(...drainEvents(this.state));
+    this.recorder?.stepped(tick, this.applied, this.state);
+    this.applied = [];
   }
 
   /** Fast-forwarding drives every seat, including the person's. */

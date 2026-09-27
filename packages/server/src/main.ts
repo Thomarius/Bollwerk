@@ -13,10 +13,48 @@ import { WebSocketServer, type WebSocket } from 'ws';
 
 import { repoRoot } from './paths.js';
 import type { Connection, Room } from './room.js';
+import { RecordingStore } from './recordings.js';
 import { RoomManager } from './rooms.js';
 
 const bundle = loadConfigBundle(repoRoot);
-const rooms = new RoomManager(bundle);
+/**
+ * Recordings of every match, for tuning the rules against people rather than bots; see
+ * `recordings.ts`. On by default: the files are small, and a test session is exactly the
+ * data there is least of.
+ */
+const store = bundle.server.recordings.enabled
+  ? new RecordingStore(
+      join(repoRoot, bundle.server.recordings.dir),
+      bundle.server.recordings.maxUploadBytes,
+      bundle,
+      // The server's own news goes to stderr, as its start-up line does.
+      (message) => console.error(message),
+    )
+  : null;
+const rooms = new RoomManager(bundle, undefined, store === null ? undefined : () => store.writer());
+
+/**
+ * A local match's recording, sent a few lines at a time by the browser playing it:
+ * `POST /recordings/<id>` with the lines as the body.
+ */
+function receiveRecording(req: IncomingMessage, res: ServerResponse, id: string): void {
+  if (store === null) {
+    res.writeHead(404).end();
+    return;
+  }
+  const chunks: Buffer[] = [];
+  let size = 0;
+  req.on('data', (chunk: Buffer) => {
+    size += chunk.length;
+    if (size > bundle.server.recordings.maxUploadBytes) req.destroy();
+    else chunks.push(chunk);
+  });
+  req.on('end', () => {
+    const result = store.upload(id, Buffer.concat(chunks).toString('utf8'));
+    res.writeHead(result.ok ? 204 : 400, { 'content-type': 'text/plain' });
+    res.end(result.ok ? undefined : result.reason);
+  });
+}
 
 const MIME: Record<string, string> = {
   '.html': 'text/html; charset=utf-8',
@@ -54,7 +92,14 @@ function serveStatic(req: IncomingMessage, res: ServerResponse): void {
   createReadStream(file).pipe(res);
 }
 
-const http = createServer(serveStatic);
+const http = createServer((req, res) => {
+  const upload = /^\/recordings\/([^/]+)$/.exec(req.url ?? '');
+  if (req.method === 'POST' && upload !== null) {
+    receiveRecording(req, res, upload[1] as string);
+    return;
+  }
+  serveStatic(req, res);
+});
 const wss = new WebSocketServer({ server: http });
 
 let nextConnectionId = 0;

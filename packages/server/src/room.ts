@@ -14,8 +14,11 @@ import {
 import { Bot, type Difficulty } from '@rampart/ai';
 import {
   ActionSchema,
+  MatchRecorder,
   PROTOCOL_VERSION,
   captureSnapshot,
+  recordingId,
+  type RecordingLine,
   type ClientMessage,
   type Seat as WireSeat,
   type ServerMessage,
@@ -65,6 +68,12 @@ export interface RoomOptions {
   server: ServerConfig;
   ai: AiConfig;
   seed?: number;
+  /**
+   * Where the lines of this room's match recording go, if anywhere. The room builds
+   * them; the process decides whether and where to keep them, so the room stays free of
+   * files and its tests of disks.
+   */
+  record?: (line: RecordingLine) => void;
 }
 
 /** How often the server sends its state fingerprint for clients to check against. */
@@ -109,6 +118,7 @@ export class Room {
   /** A bot the host has put in their own seat, to watch rather than play. */
   private hostBot: Difficulty | null = null;
   private idle = 0;
+  private recorder: MatchRecorder | null = null;
 
   constructor(options: RoomOptions) {
     this.options = options;
@@ -362,21 +372,39 @@ export class Room {
       hosting.bot = true;
       difficulties[hostSeat] = this.hostBot;
     }
+    // Who played each player at the start, for the recording: a bot's tier, or a person.
+    const tiers = new Array<Difficulty | null>(this.seats.length).fill(null);
     this.seats.forEach((seat, index) => {
       const player = order[index] as number;
       players[player] = { name: seat.name, isBot: seat.bot, team: this.teams[index] ?? index };
+      tiers[player] = seat.bot ? (difficulties[index] ?? null) : null;
       seat.playerId = player;
     });
     this.hostId = this.seats[hostSeat]?.playerId ?? 0;
 
+    // The server's rules with the host's settings over them. It travels in the snapshot
+    // like any ruleset, so every client runs exactly these.
+    const ruleset = applySettings(this.options.ruleset, this.settings);
     this.state = createMatch({
       seed,
-      // The server's rules with the host's settings over them. It travels in the
-      // snapshot like any ruleset, so every client runs exactly these.
-      ruleset: applySettings(this.options.ruleset, this.settings),
+      ruleset,
       terrainConfig: this.options.terrain,
       players,
     });
+
+    if (this.options.record !== undefined) {
+      const startedAt = new Date();
+      this.recorder = new MatchRecorder(this.options.record, {
+        id: recordingId('server', startedAt, this.code),
+        source: 'server',
+        startedAt: startedAt.toISOString(),
+        code: this.code,
+        seed,
+        ruleset,
+        terrain: this.options.terrain,
+        players: players.map((p, id) => ({ ...p, difficulty: tiers[id] ?? null })),
+      });
+    }
 
     this.seats.forEach((seat, index) => {
       // A seat a person holds still gets a bot, ready to cover them if they drop.
@@ -435,6 +463,7 @@ export class Room {
     const tick = state.tick;
     step(state);
     drainEvents(state);
+    this.recorder?.stepped(tick, applied, state);
 
     const commit: ServerMessage = { type: 'commit', tick, actions: applied };
     if (tick % HASH_EVERY_TICKS === 0) commit.hash = hashMatchState(state);
