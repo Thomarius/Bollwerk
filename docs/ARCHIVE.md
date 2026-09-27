@@ -1878,3 +1878,15 @@ fills the window behind the board with its own sea, under the same mask as the r
 it. Checked with a temporary purple sea for pixel only: the flat look kept its own, and
 the wipe split the margins at the banner. With no overrides, before and after screenshots
 of both styles differ only by the clock.
+
+**Step 2, every theme reading its own palette, needed no code**: the pixel sprite sheet is
+generated from the art each theme is handed, and every shared helper in `theme.ts` takes
+that art too.
+
+**Night — done.** The pixel theme under a second style name, `night`, with fourteen
+palette entries of its own and the shared player ramps. A near-black sea, dark cool land,
+and the shore's pale rim telling the two apart. **Warm stone for torch-lit walls was tried
+first and failed**: walls are the stone sprite multiplied by the owner's colour, so a warm
+stone turned azure walls grey and violet greyish, which breaks the rule that a player
+keeps their hue. Neutral, bright stone keeps all eight hues at eight players. The dark
+stone was lifted once, because breached, inert guns vanished into the ground.

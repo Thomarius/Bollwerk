@@ -44,9 +44,10 @@ export type PlayerPalette = z.infer<typeof PlayerPaletteSchema>;
 
 /**
  * Visual styles are interchangeable implementations of one renderer interface.
- * `flat` is the minimal look: solid colour, no textures, no atlas to generate.
+ * `flat` is the minimal look: solid colour, no textures, no atlas to generate. `night` is
+ * the pixel style under a palette of its own (`stylePalettes`).
  */
-export const ArtStyleSchema = z.enum(['flat', 'pixel']);
+export const ArtStyleSchema = z.enum(['flat', 'pixel', 'night']);
 export type ArtStyle = z.infer<typeof ArtStyleSchema>;
 
 export const FlatStyleSchema = z.strictObject({

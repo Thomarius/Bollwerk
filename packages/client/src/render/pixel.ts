@@ -1,4 +1,4 @@
-import type { ArtConfig } from '@rampart/config';
+import type { ArtConfig, ArtStyle } from '@rampart/config';
 import { Structure, Terrain, type MatchState, type Shot } from '@rampart/sim';
 import { Container, Graphics, Sprite, Texture } from 'pixi.js';
 
@@ -114,7 +114,7 @@ function washed(colour: number, amount: number): number {
  * colour — both read the same palette.
  */
 export class PixelTheme implements Theme {
-  readonly id = 'pixel' as const;
+  readonly id: ArtStyle;
 
   private art!: ArtConfig;
   private textures = new Map<string, Texture>();
@@ -161,8 +161,10 @@ export class PixelTheme implements Theme {
   private view: ViewTransform = { tile: 16, originX: 0, originY: 0 };
   private round = 0;
 
-  constructor(seed = 1) {
+  /** `id` is the style this draws, which decides the palette it is handed. */
+  constructor(seed = 1, id: ArtStyle = 'pixel') {
     this.seed = seed;
+    this.id = id;
   }
 
   init(layers: ThemeLayers, art: ArtConfig): Promise<void> {

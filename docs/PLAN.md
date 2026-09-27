@@ -349,7 +349,8 @@ is committed except audio.
 
 **Each style has colours of its own** (`stylePalettes`): any palette entries, and the
 player ramps and team families whole, laid over the shared ones by `artForStyle`, which is
-what every theme is handed. What a style leaves out it shares. **A style may restyle a
+what every theme is handed. What a style leaves out it shares, and a style may be an
+existing theme under new colours — **Night** is the pixel theme under its own palette. **A style may restyle a
 player's colour but not move its hue** more than `MAX_STYLE_HUE_SHIFT`, since the looks
 swap mid-match; the schema refuses it, and ramps that drop, reorder or rename players. The
 HUD, menu and lobby keep the shared colours. Each look fills the window behind the board
@@ -725,8 +726,10 @@ and a different palette, rather than writing a second large `Theme` class.
 **The themes.** Agreed 2026-09-27: after per-style palettes, Night and styles offered per
 look, **Cyberpunk comes next**, ahead of Blueprint:
 
-1. **Night** — pixel art, palette only: moonlit islands, a dark sea, torch-lit walls.
-   The proof that per-style palettes work; both looks.
+1. **Night** — **done**: the pixel theme under its own palette, for both looks. Moonlit
+   islands on a near-black sea, walls in bright moonlit stone. Torch-lit walls were
+   planned, and palette alone cannot do them (ARCHIVE 11g); a warm glow drawn round
+   castles is the way, if wanted.
 2. **Blueprint** — a **build look**: blue drafting paper with a grid, walls as white
    technical lines, castles as plan symbols, sealed ground hatched. Clean, calm and
    informative, which is what building needs — a better build look than Minimal, which

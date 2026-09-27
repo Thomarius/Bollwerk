@@ -208,7 +208,26 @@
       }
     ]
   ],
-  "stylePalettes": {},
+  "stylePalettes": {
+    "night": {
+      "palette": {
+        "waterDeep": "#030817",
+        "waterMid": "#081631",
+        "waterShallow": "#10284a",
+        "waterFoam": "#6f8fbf",
+        "sand": "#7c8698",
+        "grassDark": "#0f2226",
+        "grassMid": "#183530",
+        "grassLight": "#28503f",
+        "rockDark": "#4a4852",
+        "rockMid": "#a4a2a0",
+        "rockLight": "#ecebe6",
+        "shadow": "#000005",
+        "craterDark": "#0a0808",
+        "craterMid": "#231c18"
+      }
+    }
+  },
   "dither": {
     "enabled": true,
     "matrix": "bayer4",

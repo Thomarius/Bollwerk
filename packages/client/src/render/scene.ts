@@ -26,7 +26,10 @@ export function createTheme(style: ArtStyle, seed = 1): Theme {
     case 'flat':
       return new FlatTheme();
     case 'pixel':
-      return new PixelTheme(seed);
+    case 'night':
+      // Night is the pixel style under its own palette: the same sprites, generated
+      // from different colours.
+      return new PixelTheme(seed, style);
   }
 }
 

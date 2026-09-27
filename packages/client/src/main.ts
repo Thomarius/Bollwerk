@@ -267,7 +267,11 @@ function readStyles(): ArtStyles {
 }
 
 /** Names for the styles, as the menu offers them. */
-const STYLE_NAMES: Record<ArtStyle, string> = { flat: 'Minimal', pixel: 'Pixel art' };
+const STYLE_NAMES: Record<ArtStyle, string> = {
+  flat: 'Minimal',
+  pixel: 'Pixel art',
+  night: 'Night',
+};
 
 function styleOptions(): string {
   return ArtStyleSchema.options
