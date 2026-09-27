@@ -95,6 +95,48 @@ body {
   image-rendering: pixelated;
 }
 
+/*
+ * Each style's title has its own size and scaling, set inline from the title itself
+ * (decor.ts). Cyberpunk's neon sign flickers on, as the game's holograms do.
+ */
+.menu h1.title img.flicker {
+  animation: neon-on 1.4s linear both;
+}
+
+@keyframes neon-on {
+  0% {
+    opacity: 0.1;
+  }
+  8% {
+    opacity: 1;
+  }
+  10% {
+    opacity: 0.15;
+  }
+  18% {
+    opacity: 0.9;
+  }
+  21% {
+    opacity: 0.3;
+  }
+  34% {
+    opacity: 1;
+  }
+  37% {
+    opacity: 0.6;
+  }
+  42%,
+  100% {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .menu h1.title img.flicker {
+    animation: none;
+  }
+}
+
 .menu h1 {
   margin: 0 0 0.75rem;
   font-size: 1.5rem;

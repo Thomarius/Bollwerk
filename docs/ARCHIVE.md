@@ -1923,3 +1923,24 @@ a shadow; on near-black ground a shadow is invisible, so the owner's colour spil
 the ground in front instead. The first try barely read, because the top and the face
 were nearly the same darkness; lifting the top 30% toward the owner's base colour and
 darkening the face made it stand up.
+
+**Cyberpunk's neon title — done.** The menu's title follows the combat look: while it is
+Cyberpunk, the stone letters give way to the same 5x7 glyphs as a neon sign, in the
+style's own magenta with a canvas-shadow glow and a white core, flickering on by a CSS
+animation (off under reduced motion). Tubes run between cells side by side or one above
+the other, and diagonally only where two cells meet at a corner alone, so an M reads as
+strokes rather than a grid (`neonTubes`, tested). Smooth rather than pixel art, drawn
+with room for the glow, which a negative margin gives back so the letters stand where
+the stone ones do. Checked in a browser: the title switches as the dropdown changes, and
+the building look's dropdown does not offer Cyberpunk.
+
+**A title for every style — done**, the user's request once the neon one was in: stone
+stays Pixel art's; Minimal's is flat blocks with a hairline gap, as its walls, each
+letter in a player's colour; Night's is the stone in Night's palette, moonlight on the
+top edge instead of gold, a pale halo and a few seeded stars. `TITLES` is a record over
+every style, so a future style must bring one. The menu shows the title of the look
+chosen last (the combat look as it opens, so the default pair still shows stone), and
+every title reports how its letters sit in its image so `titleLayout` can show all of
+them at one letter height, stone exactly as before. Minimal's first gap was a quarter of
+a block and read as dots; drawn at twice the resolution with a one-pixel gap it reads
+as blocks. Checked in a browser, the title changing with each dropdown.

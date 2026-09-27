@@ -343,7 +343,7 @@ sender's seat**, so a client cannot act for someone else.
 Two visual styles, flat and pixel, behind one `Theme` interface: the scene owns the
 camera, the layer stacks, dirty tracking and input mapping; a theme owns only what things
 look like. Adding a style is a name in `ArtStyleSchema`, the looks it is made for in
-`STYLE_LOOKS`, a `Theme`, and a case in `createTheme`; more are planned in §11.9. All
+`STYLE_LOOKS`, a `Theme`, a case in `createTheme`, and a menu title in `decor.ts`; more are planned in §11.9. All
 sprites are generated at boot from `art.default.json` plus the match seed — nothing binary
 is committed except audio.
 
@@ -380,9 +380,13 @@ loop is barely driven; headless Chrome catches a crash on load and nothing else.
 pattern that works is to pull the decision out into a pure function and test that —
 `bannersFor` in `banners.ts`, `lobbyMarkup` in `lobby.ts`, the score text in `scores.ts`.
 
-**The menu and lobby** are dressed in the game's own art (`decor.ts`): the title set in
-stone blocks, and the pixel sea drifting behind the panel. The lobby shows the map the
-table will play (`preview.ts`) — each island in the colour its seat will play and numbered
+**The menu and lobby** are dressed in the game's own art (`decor.ts`): **every style has
+a title of its own**, the same 5x7 letters in its look — stone threaded with gold for
+Pixel art, flat blocks in the players' colours for Minimal, moonlit stone with a halo
+and stars for Night, a neon sign that flickers on for Cyberpunk. The menu shows the
+title of the look chosen last, the combat look as it opens; `titleLayout` sizes each so
+the letters stand in one place whatever room its glow needs. Behind the panel the pixel
+sea drifts. The lobby shows the map the table will play (`preview.ts`) — each island in the colour its seat will play and numbered
 for it, the viewer's own ringed — beside seat cards that carry the same number and
 colour, a rank badge per bot tier, and columns per team. A newcomer's card flashes as they
 sit down.
@@ -736,6 +740,9 @@ and a different palette, rather than writing a second large `Theme` class.
 
 **Rules every theme keeps:**
 
+- **A title of its own for the menu** (`TITLES` in `decor.ts`, a record over every
+  style, so none can be added without one).
+
 - **A player keeps their hue across the look swap.** If red became magenta under the
   banner, nobody could follow who is who. A theme may restyle a player's colour — neon,
   ink, pastel — but not change it; the eight colours and the team families must stay
@@ -757,8 +764,8 @@ look, **Cyberpunk comes next**, ahead of Blueprint:
    technical lines, castles as plan symbols, sealed ground hatched. Clean, calm and
    informative, which is what building needs — a better build look than Minimal, which
    stays as the style to debug against.
-3. **Cyberpunk — done** (§7) — a **combat look**, the user's idea. Still open from its
-   brief: **a neon title for the menu**. As planned: **Circuits, not runes** (runes are
+3. **Cyberpunk — done** (§7), neon menu title included — a **combat look**, the user's
+   idea. As planned: **Circuits, not runes** (runes are
    another theme, arcane, not planned). Brightness means structure and colour means
    ownership: walls are the brightest outlines on the board, each in its owner's neon;
    land is a dark grid, the sea near black with circuit traces and pulses running along

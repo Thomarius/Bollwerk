@@ -135,7 +135,7 @@ send compiled feedback. PLAN.md §11 opens with where to start:
    free-for-all (team seating is measured, and fair).
 4. Independent of balance: bots as personality × skill (§11.6), and **alternative visual
    themes** (§11.9): per-style palettes, Night and the Cyberpunk combat look are done;
-   a Blueprint build look and Parchment are next, and Cyberpunk's neon menu title.
+   a Blueprint build look and Parchment are next.
 
 ## Measuring the bots
 
