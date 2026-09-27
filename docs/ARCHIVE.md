@@ -1899,3 +1899,17 @@ parameters and the menu's saved choice go through `chooseStyle`, which takes the
 candidate made for the look, so a stale saved choice or `?style=` naming a one-look style
 falls through instead of drawing a look in a style never made for it. Every shipped style
 still serves both looks, so the rules are tested against a table with a one-look style.
+
+**Cyberpunk — done.** A theme of its own (`cyberpunk.ts`), drawn from shapes like the
+flat style, for combat only. Its colours are a palette of eighteen entries and neon
+player ramps generated from the shared ones: the hue kept exactly, saturation raised, and
+lightness mapped as 0.3 + 0.6 L so that each team family keeps its order of lightness —
+maxing every colour to one lightness would have made azure, sky, navy and steel one
+colour. Its tunables are `art.cyberpunk`. Glow is a second Graphics per layer with
+additive blending, as planned; no filter was needed. From the first screenshots, two
+changes: a thick wall read as one slab of colour, heavier than the sealed ground inside
+it, so its body was darkened and each block's cell drawn faint in it; and the island
+tint was halved, so that sealed ground stands out from the land. Screenshots at two,
+four and eight players, in teams of two, and mid-wipe against Minimal. The sub-second
+effects — impact glitch, sparks, the power-down flicker, the hologram's flicker — need a
+person to see them.

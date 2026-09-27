@@ -1,5 +1,8 @@
 {
-  "styles": { "build": "flat", "combat": "pixel" },
+  "styles": {
+    "build": "flat",
+    "combat": "pixel"
+  },
   "tileSizePx": 16,
   "atlasSizePx": 2048,
   "pixelSnap": true,
@@ -226,6 +229,209 @@
         "craterDark": "#0a0808",
         "craterMid": "#231c18"
       }
+    },
+    "cyberpunk": {
+      "palette": {
+        "waterDeep": "#010104",
+        "waterMid": "#030308",
+        "waterShallow": "#0a2a3c",
+        "waterFoam": "#2ee6ff",
+        "sand": "#1c2438",
+        "grassDark": "#06080e",
+        "grassMid": "#0b0e18",
+        "grassLight": "#1a2336",
+        "rockDark": "#2a2e3a",
+        "rockMid": "#5a6072",
+        "rockLight": "#c8d4ea",
+        "shadow": "#000000",
+        "craterDark": "#000000",
+        "craterMid": "#10121c",
+        "emberHot": "#fff4b0",
+        "emberMid": "#ff3df2",
+        "emberCool": "#6a2cff",
+        "uiInk": "#eaf6ff",
+        "uiInvalid": "#ff3355"
+      },
+      "players": [
+        {
+          "name": "crimson",
+          "base": "#f4354d",
+          "light": "#ff909e",
+          "dark": "#6b0c18",
+          "hueRotate": 0
+        },
+        {
+          "name": "azure",
+          "base": "#3578f4",
+          "light": "#90b7ff",
+          "dark": "#0c2d6b",
+          "hueRotate": 215
+        },
+        {
+          "name": "amber",
+          "base": "#f5bb3e",
+          "light": "#ffdf9a",
+          "dark": "#6e4f0c",
+          "hueRotate": 45
+        },
+        {
+          "name": "viridian",
+          "base": "#22f38b",
+          "light": "#7dffbe",
+          "dark": "#0b6438",
+          "hueRotate": 150
+        },
+        {
+          "name": "lime",
+          "base": "#8af435",
+          "light": "#c1ff90",
+          "dark": "#366b0c",
+          "hueRotate": 101
+        },
+        {
+          "name": "teal",
+          "base": "#35e2f4",
+          "light": "#90f5ff",
+          "dark": "#0c626b",
+          "hueRotate": 193
+        },
+        {
+          "name": "violet",
+          "base": "#8635f4",
+          "light": "#bf90ff",
+          "dark": "#340c6b",
+          "hueRotate": 273
+        },
+        {
+          "name": "magenta",
+          "base": "#f435d6",
+          "light": "#ff90ee",
+          "dark": "#6b0c5c",
+          "hueRotate": 317
+        }
+      ],
+      "teamFamilies": [
+        [
+          {
+            "name": "crimson",
+            "base": "#f4354d",
+            "light": "#ff909e",
+            "dark": "#6b0c18",
+            "hueRotate": 352
+          },
+          {
+            "name": "orange",
+            "base": "#f58848",
+            "light": "#ffc6a4",
+            "dark": "#73320c",
+            "hueRotate": 22
+          },
+          {
+            "name": "magenta",
+            "base": "#f435b1",
+            "light": "#ff90d8",
+            "dark": "#6b0c4a",
+            "hueRotate": 321
+          },
+          {
+            "name": "maroon",
+            "base": "#f21010",
+            "light": "#ff6a6a",
+            "dark": "#5d0a0a",
+            "hueRotate": 0
+          }
+        ],
+        [
+          {
+            "name": "azure",
+            "base": "#3578f4",
+            "light": "#90b7ff",
+            "dark": "#0c2d6b",
+            "hueRotate": 219
+          },
+          {
+            "name": "sky",
+            "base": "#62bbf7",
+            "light": "#c0e6ff",
+            "dark": "#0b517f",
+            "hueRotate": 204
+          },
+          {
+            "name": "navy",
+            "base": "#122df3",
+            "light": "#6c7eff",
+            "dark": "#0a145e",
+            "hueRotate": 233
+          },
+          {
+            "name": "steel",
+            "base": "#22ccf3",
+            "light": "#7de7ff",
+            "dark": "#0b5364",
+            "hueRotate": 191
+          }
+        ],
+        [
+          {
+            "name": "viridian",
+            "base": "#22f38b",
+            "light": "#7dffbe",
+            "dark": "#0b6438",
+            "hueRotate": 150
+          },
+          {
+            "name": "lime",
+            "base": "#acf435",
+            "light": "#d5ff90",
+            "dark": "#476b0c",
+            "hueRotate": 82
+          },
+          {
+            "name": "forest",
+            "base": "#0ce245",
+            "light": "#55ff83",
+            "dark": "#0a561e",
+            "hueRotate": 136
+          },
+          {
+            "name": "mint",
+            "base": "#5ef7c4",
+            "light": "#bbffe8",
+            "dark": "#0e7a56",
+            "hueRotate": 160
+          }
+        ],
+        [
+          {
+            "name": "violet",
+            "base": "#8635f4",
+            "light": "#bf90ff",
+            "dark": "#340c6b",
+            "hueRotate": 266
+          },
+          {
+            "name": "lavender",
+            "base": "#ac79f8",
+            "light": "#e8d8ff",
+            "dark": "#3e0f85",
+            "hueRotate": 264
+          },
+          {
+            "name": "plum",
+            "base": "#f312c6",
+            "light": "#ff6ce2",
+            "dark": "#5e0a4d",
+            "hueRotate": 312
+          },
+          {
+            "name": "indigo",
+            "base": "#3c1ef3",
+            "light": "#8b78ff",
+            "dark": "#170b62",
+            "hueRotate": 249
+          }
+        ]
+      ]
     }
   },
   "dither": {
@@ -296,6 +502,19 @@
     "castleCoreScale": 0.45,
     "cannonBoreScale": 0.34,
     "crumbleMs": 450
+  },
+  "cyberpunk": {
+    "wallLinePx": 2,
+    "glowWidthTiles": 0.55,
+    "glowAlpha": 0.3,
+    "gridAlpha": 0.55,
+    "territoryAlpha": 0.16,
+    "tracesPerSeaTile": 0.035,
+    "traceFadeTiles": 3,
+    "pulseTilesPerSecond": 7,
+    "hologramFlickerMs": 420,
+    "powerDownMs": 650,
+    "glitchMs": 280
   },
   "effects": {
     "sealFloodTilesPerSecond": 16,

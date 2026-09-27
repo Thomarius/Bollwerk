@@ -449,6 +449,21 @@ fires. In both styles the mark where a shot will land pulses ever faster as it n
 turns red and thick when it is coming down on the watching player's own wall; and a
 breached castle's flag is lowered, struck in a darker shade, rather than vanishing.
 
+**Combat, in cyberpunk** (`cyberpunk.ts`, a combat look only). The board as a circuit at
+night: **brightness means structure and colour ownership**. Walls are a neon line round
+the outside of each run in the owner's colour, over a dark body with each block's cell
+faint in it, so a thick wall still shows the block a shot takes; land is a dark grid
+tinted faintly by owner; the sea is near black, crossed by seeded circuit traces kept
+clear of the coast and fading toward it, with pulses running along them. Castles are
+housings with a core that blazes and breathes while sealed and dims when breached, and
+fly a hologram flag that flickers on and flickers out as it is lowered. Sealed ground is
+a lit grid floor. Shots are plasma tracers with a point on the ground below; an impact
+is a flash, a ring and a moment of glitch; a breach shorts out in arcs that die away;
+guns throw sparks instead of smoke and flicker as they lose or regain power. Glow is a
+wider shape on an additive layer under each bright line, not a bloom filter. Its player
+ramps are neon restylings of the shared ones, the same hues with each team family's
+order of lightness kept, so teammates still tell apart.
+
 **Looking at it.** `tools/screenshots.sh` captures fixed states against the dev server —
 in real time through Playwright, which renders fine where virtual time does not — using
 `&snapshot`, `&round`, `&idle` and a wait. Anything lasting under a second (debris, the
@@ -545,7 +560,7 @@ every resolution against an independent search, not only on unit pictures.
 | M7  | Balance pass                                              | **In progress**         |
 | M8  | Team mode, and one lobby for online and offline           | Done                    |
 | M9  | Visual pass: phase themes, banner wipe, effects, lobby    | Done (§11.8)            |
-| M10 | Alternative visual themes: Night, Blueprint, Cyberpunk…   | Planned (§11.9)         |
+| M10 | Alternative visual themes: Night, Blueprint, Cyberpunk…   | **In progress** (§11.9) |
 
 ---
 
@@ -737,7 +752,8 @@ look, **Cyberpunk comes next**, ahead of Blueprint:
    technical lines, castles as plan symbols, sealed ground hatched. Clean, calm and
    informative, which is what building needs — a better build look than Minimal, which
    stays as the style to debug against.
-3. **Cyberpunk** — a **combat look**, the user's idea. **Circuits, not runes** (runes are
+3. **Cyberpunk — done** (§7) — a **combat look**, the user's idea. Still open from its
+   brief: **a neon title for the menu**. As planned: **Circuits, not runes** (runes are
    another theme, arcane, not planned). Brightness means structure and colour means
    ownership: walls are the brightest outlines on the board, each in its owner's neon;
    land is a dark grid, the sea near black with circuit traces and pulses running along

@@ -5,6 +5,7 @@ import { Application, Container, Graphics } from 'pixi.js';
 import type { SealGlow } from '../seal.js';
 import type { Look } from '../transition.js';
 
+import { CyberpunkTheme } from './cyberpunk.js';
 import { FlatTheme } from './flat.js';
 import { PixelTheme } from './pixel.js';
 import {
@@ -30,6 +31,8 @@ export function createTheme(style: ArtStyle, seed = 1): Theme {
       // Night is the pixel style under its own palette: the same sprites, generated
       // from different colours.
       return new PixelTheme(seed, style);
+    case 'cyberpunk':
+      return new CyberpunkTheme(seed);
   }
 }
 

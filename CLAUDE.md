@@ -30,7 +30,7 @@ wait rather than assuming it hung.
 Client dev query parameters: `?autostart=1&players=3&seed=7` (a random seed without it),
 `&snapshot=build` to jump to a phase (`&round=N` for one deep in a match, `&idle=1` to
 leave your seat undriven on the way, so you are soon knocked out), `&speed=10`,
-`&style=flat|pixel` for both looks
+`&style=flat|pixel|night|cyberpunk` for both looks (a one-look style sets only its own)
 (`&buildStyle=`, `&combatStyle=` for one), `&watch=1&bots=marshal` to observe a bot match,
 `&rounds=12` for the round cap, `&teams=2` for teams of two in seat order. `?host=8` opens
 the lobby at eight seats — a room if a server answers, a local table if not —
@@ -134,8 +134,8 @@ send compiled feedback. PLAN.md §11 opens with where to start:
 3. Measurements never taken (§11.4): the full ladder, and seat bias at 6 and 8 players in
    free-for-all (team seating is measured, and fair).
 4. Independent of balance: bots as personality × skill (§11.6), and **alternative visual
-   themes** (§11.9 — Night, a Blueprint build look, a Cyberpunk combat look, Parchment),
-   which start with per-style palettes.
+   themes** (§11.9): per-style palettes, Night and the Cyberpunk combat look are done;
+   a Blueprint build look and Parchment are next, and Cyberpunk's neon menu title.
 
 ## Measuring the bots
 
