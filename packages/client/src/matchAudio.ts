@@ -49,7 +49,6 @@ const COUNTDOWN_FROM = 3;
 
 export class MatchAudio {
   private phase: Phase | null = null;
-  private enclosed = 0;
   private countedAt = -1;
 
   constructor(
@@ -86,7 +85,7 @@ export class MatchAudio {
           if (event.player === this.humanPlayer) this.audio.play('select');
           break;
         case 'cannon_placed':
-          if (event.player === this.humanPlayer) this.audio.play('select');
+          if (event.player === this.humanPlayer) this.audio.play('place_cannon');
           break;
         case 'piece_placed':
           if (event.player === this.humanPlayer) this.audio.play('piece_place');
@@ -138,25 +137,43 @@ export class MatchAudio {
   }
 
   /**
-   * Ground won and lost, judged at the resolution and against the round before.
+   * A round that ends with nothing of the player's sealed: the life it costs them.
    *
-   * The fanfare is for a wall that closed around a castle the player was not already
-   * holding — not merely for still being enclosed, which is true of every round they
-   * survive. Losing ground gets its counterpart, except when they are knocked out
-   * entirely, which has its own cue and should not be crowded.
+   * Judged on "nothing sealed" rather than on holding fewer castles than last round —
+   * going from two castles to one is still a sealed round, not a failure. Being knocked
+   * out has its own cue and is not crowded with this one.
    */
   private resolved(
     results: readonly { player: number; enclosedCastles: number; eliminated: boolean }[],
   ): void {
     if (this.watching) return;
     const mine = results.find((r) => r.player === this.humanPlayer);
-    if (mine === undefined) return;
+    if (mine === undefined || mine.eliminated) return;
+    if (mine.enclosedCastles === 0) this.audio.play('enclosure_failed');
+  }
 
-    const before = this.enclosed;
-    this.enclosed = mine.enclosedCastles;
-    if (mine.eliminated) return;
-    if (mine.enclosedCastles > before) this.audio.play('enclosure_success');
-    else if (mine.enclosedCastles < before) this.audio.play('enclosure_failed');
+  /**
+   * The fanfare, the moment a wall closes round one of the player's castles while
+   * building — a breach repaired or new ground taken — as the board stands, which is
+   * what the flood of new territory shows at the same instant.
+   *
+   * It used to wait for the resolution and sound only when the player held more castles
+   * than the round before, so the usual round — breached, repaired, holding the same one
+   * castle — made no sound at all, and the one time it did play, at the end of round
+   * one, it was lost under the scoring. Only while building: a castle chosen after a
+   * continue is sealed by its ring, which is not the player's doing and has its own cue.
+   */
+  sealed(
+    state: Pick<MatchState, 'phase' | 'castles' | 'players'>,
+    before: readonly boolean[],
+    after: readonly boolean[],
+  ): void {
+    if (this.watching || state.phase !== 'build') return;
+    const island = state.players[this.humanPlayer]?.islandId;
+    const newlySealed = state.castles.some(
+      (castle) => castle.islandId === island && after[castle.id] === true && !before[castle.id],
+    );
+    if (newlySealed) this.audio.play('enclosure_success');
   }
 
   /**

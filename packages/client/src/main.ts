@@ -107,9 +107,30 @@ const unlock = (): void => audio.unlock();
 globalThis.addEventListener('pointerdown', unlock, { capture: true });
 globalThis.addEventListener('keydown', unlock, { capture: true });
 
-globalThis.addEventListener('keydown', (event) => {
-  if (event.key === 'm' || event.key === 'M') audio.setMuted(!audio.isMuted);
-});
+/**
+ * A sound switch on every screen, showing whether sound is on. Mute is remembered by the
+ * browser, so without it a mute set once — as the old M key did whenever a name with an
+ * "m" was typed in the lobby — silenced every later visit with nothing on screen to say
+ * so, and nothing outside a match to undo it.
+ */
+function installSoundButton(): void {
+  const button = document.createElement('button');
+  button.id = 'sound';
+  const show = (): void => {
+    button.textContent = audio.isMuted ? 'Sound off' : 'Sound on';
+    button.classList.toggle('off', audio.isMuted);
+    button.setAttribute('aria-pressed', String(!audio.isMuted));
+  };
+  button.addEventListener('click', () => {
+    audio.setMuted(!audio.isMuted);
+    show();
+  });
+  // The match's M key changes it too.
+  globalThis.addEventListener('keyup', show);
+  show();
+  document.body.append(button);
+}
+installSoundButton();
 
 const params = new URLSearchParams(globalThis.location.search);
 
@@ -894,21 +915,24 @@ async function runSession(session: Session, setup: Setup): Promise<void> {
   fit();
   globalThis.addEventListener('resize', fit);
 
-  const restart = (event: KeyboardEvent): void => {
+  // Keys belong to the match alone, and go with it. M was once bound for the whole page,
+  // so typing a name with an "m" in it in the lobby muted the music.
+  const keys = (event: KeyboardEvent): void => {
+    if (event.key === 'm' || event.key === 'M') audio.setMuted(!audio.isMuted);
     // R returns to the menu once a match is over, whether it was played or watched.
     if ((event.key === 'r' || event.key === 'R') && session.finished) {
       cleanup();
       showMenu();
     }
   };
-  globalThis.addEventListener('keydown', restart);
+  globalThis.addEventListener('keydown', keys);
 
   let frame = 0;
   const cleanup = (): void => {
     cancelAnimationFrame(frame);
     controls.detach();
     globalThis.removeEventListener('resize', fit);
-    globalThis.removeEventListener('keydown', restart);
+    globalThis.removeEventListener('keydown', keys);
     scene.app.destroy(true);
   };
 
@@ -1186,7 +1210,9 @@ async function runSession(session: Session, setup: Setup): Promise<void> {
     if (structuresChanged) drawBoard();
     if (territoryChanged || structuresChanged) {
       const before = live.territory;
+      const sealedBefore = live.castleEnclosed;
       live = computeEnclosure(session.state);
+      matchAudio.sealed(session.state, sealedBefore, live.castleEnclosed);
       const now = performance.now();
       const flood = floodFrom(
         before,

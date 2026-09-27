@@ -26,9 +26,20 @@ from one another — music as `.mp3` and a voice line as `.wav` is fine.
 production server knows a content type for; another would be served as an unknown binary,
 which still plays but is worth adding to the `MIME` table in `packages/server/src/main.ts`.
 
-Cues with `"variants": N` may optionally be supplied as numbered files
-(`cannon_fire.ogg`, `cannon_fire.2.ogg`, `cannon_fire.3.ogg`) and are chosen at random
-to avoid repetition fatigue. A single unnumbered file is sufficient.
+Cues with `"variants": N` may be supplied as numbered files (`cannon_fire.ogg`,
+`cannon_fire.2.ogg`, `cannon_fire.3.ogg`), one chosen at random each time the cue plays,
+to avoid repetition fatigue. Music takes variants too: `music_admin` comes round every
+round, so each time it starts it picks one of its tracks. A single unnumbered file is
+sufficient.
+
+**Every file here must be named by the manifest**, and a cue that has files must claim
+exactly as many variants as it has: `config/src/audioFiles.test.ts` checks both, since an
+unregistered file is simply never played and nothing else would say so. A cue with no
+files at all is allowed — it is silent until one arrives.
+
+**Still to come**: `wall_destroyed`. The manifest already names its file
+(`sfx/wall_destroyed.ogg`, with a second variant); drop it in under that name, or change
+the name in the manifest, and it plays.
 
 These files are committed rather than ignored. The deployment image is built from a clean
 checkout, so an ignored cue is a cue the image would not have.
@@ -42,27 +53,31 @@ will be silent rather than noisy**.
 
 ## What plays when
 
-| Cue                              | Fires on                                                           |
-| -------------------------------- | ------------------------------------------------------------------ |
-| `music_menu`                     | The menu and the online lobby                                      |
-| `music_admin`                    | Castle select, cannon placement, building                          |
-| `music_battle`                   | Combat — started during the intermission before it, so it leads in |
-| `music_victory` / `music_defeat` | Game over, according to whether you won                            |
-| `voice_fire`                     | Combat begins. Spoken                                              |
-| `voice_cease_fire`               | Combat ends. Spoken. Shots in the air still land                   |
-| `select`                         | A castle chosen, a cannon placed, a menu button pressed            |
-| `cannon_fire`                    | Any cannon firing, yours or theirs                                 |
-| `shot_impact`                    | Any shot landing                                                   |
-| `wall_destroyed`                 | That shot took a wall block out, rather than hitting open ground   |
-| `piece_place`                    | You placed a build piece                                           |
-| `piece_rotate`                   | You rotated one                                                    |
-| `piece_invalid`                  | You clicked somewhere the piece or cannon cannot go                |
-| `enclosure_success`              | A wall closed around a castle you were not already holding         |
-| `enclosure_failed`               | You are holding less than you were last round                      |
-| `player_eliminated`              | Anyone knocked out                                                 |
-| `countdown_tick`                 | Each of the last three seconds of a timed phase                    |
+| Cue                              | Fires on                                                                                                      |
+| -------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| `music_menu`                     | The menu and the online lobby                                                                                 |
+| `music_admin`                    | Castle select, cannon placement, building                                                                     |
+| `music_battle`                   | Combat — started during the intermission before it, so it leads in                                            |
+| `music_victory` / `music_defeat` | Game over, according to whether you won                                                                       |
+| `voice_fire`                     | Combat begins. Spoken                                                                                         |
+| `voice_cease_fire`               | Combat ends. Spoken. Shots in the air still land                                                              |
+| `select`                         | A castle chosen, a menu button pressed                                                                        |
+| `place_cannon`                   | You set a cannon down                                                                                         |
+| `cannon_fire`                    | Any cannon firing, yours or theirs                                                                            |
+| `shot_impact`                    | Any shot landing                                                                                              |
+| `wall_destroyed`                 | That shot took a wall block out, rather than hitting open ground                                              |
+| `piece_place`                    | You placed a build piece                                                                                      |
+| `piece_rotate`                   | You rotated one                                                                                               |
+| `piece_invalid`                  | You clicked somewhere the piece or cannon cannot go                                                           |
+| `enclosure_success`              | While building, the moment your wall closes round one of your castles — a breach repaired or new ground taken |
+| `enclosure_failed`               | A round ends with nothing of yours sealed: the one that costs a life                                          |
+| `player_eliminated`              | Anyone knocked out                                                                                            |
+| `countdown_tick`                 | Each of the last three seconds of a timed phase                                                               |
 
 Identical cues starting within 60ms of each other are dropped: a barrage is dozens of
 shots and stacking copies of one sample sounds like distortion rather than like guns.
 
-`M` toggles mute, and the choice is remembered.
+The **Sound** switch in the bottom left corner of every screen mutes and unmutes, and `M`
+does the same during a match. The choice is remembered by the browser, which is why the
+switch always shows it. There are no keys in the menu or lobby, where they would fire
+while a name is being typed.

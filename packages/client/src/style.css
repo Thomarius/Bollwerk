@@ -921,3 +921,29 @@ table.final tr.you td:nth-child(2) {
   min-width: 9ch;
   margin-right: auto;
 }
+
+/* The sound switch, on every screen (main.ts). Bottom left, which nothing else uses. */
+#sound {
+  position: fixed;
+  left: 0.75rem;
+  bottom: 0.6rem;
+  z-index: 5;
+  padding: 0.25rem 0.6rem;
+  border: 1px solid var(--edge);
+  background: rgb(10 10 18 / 70%);
+  color: var(--muted);
+  font: inherit;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+#sound:hover {
+  color: var(--ink);
+}
+
+#sound.off {
+  border-color: var(--accent);
+  color: var(--accent);
+}

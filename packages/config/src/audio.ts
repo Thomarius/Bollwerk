@@ -6,8 +6,10 @@ import { z } from 'zod';
  * so code and manifest cannot drift apart.
  */
 export const SFX_CUES = [
-  /** Committing a choice: a castle at the start, a cannon onto sealed ground. */
+  /** Committing a choice: a castle chosen, a menu button pressed. */
   'select',
+  /** A cannon set down on sealed ground: the player's own, heavier than a menu click. */
+  'place_cannon',
   'cannon_fire',
   'shot_impact',
   /** The shot hit wall rather than open ground — the shooter's fire is working. */
@@ -16,9 +18,9 @@ export const SFX_CUES = [
   'voice_fire',
   /** Spoken. Closes it: no further shots can be started. */
   'voice_cease_fire',
-  /** Fanfare: a wall closed this round that took in a castle the player did not hold. */
+  /** Fanfare: while building, the moment a wall closes round one of the player's castles. */
   'enclosure_success',
-  /** Its counterpart: ground held last round that is no longer sealed. */
+  /** A round ends with nothing of the player's sealed: the one that costs a life. */
   'enclosure_failed',
   'player_eliminated',
   'piece_place',
@@ -52,6 +54,11 @@ const SfxEntrySchema = z.strictObject({
 const MusicEntrySchema = z.strictObject({
   file: z.string().min(1),
   volume: z.number().min(0).max(1),
+  /**
+   * Numbered alternate tracks, one chosen at random each time the cue starts — so the
+   * phases that come round every round do not play the same piece every time.
+   */
+  variants: z.number().int().positive().optional(),
   loop: z.boolean(),
 });
 

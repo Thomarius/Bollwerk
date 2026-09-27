@@ -93,9 +93,48 @@ describe('match audio', () => {
     expect(audio.sfx).toEqual(['piece_place']);
   });
 
-  it('sounds the fanfare for ground newly won, and not for merely holding it', () => {
+  it('sets a cannon down with its own sound, not the menu click', () => {
     const { audio, match } = setup();
-    const resolved = (enclosedCastles: number, eliminated = false): MatchEvent => ({
+    match.handle([
+      { kind: 'cannon_placed', tick: 1, player: HUMAN, cannonId: 0, x: 3, y: 3 },
+      { kind: 'cannon_placed', tick: 1, player: 1, cannonId: 1, x: 9, y: 9 },
+      { kind: 'castle_selected', tick: 1, player: HUMAN, castleId: 0 },
+    ]);
+    // A rival's cannon is not acknowledged; a castle chosen is still a plain selection.
+    expect(audio.sfx).toEqual(['place_cannon', 'select']);
+  });
+
+  it('sounds the fanfare the moment a wall closes round one of the player’s castles', () => {
+    const { audio, match } = setup();
+    // Player 0 owns island 1 and castles 0 and 1; castle 2 is a rival's.
+    const board = (phase: Phase) =>
+      ({
+        phase,
+        players: [{ islandId: 1 }, { islandId: 2 }],
+        castles: [
+          { id: 0, islandId: 1 },
+          { id: 1, islandId: 1 },
+          { id: 2, islandId: 2 },
+        ],
+      }) as unknown as MatchState;
+
+    // A breach repaired: castle 0 unsealed, then sealed again.
+    match.sealed(board('build'), [false, false, false], [true, false, false]);
+    expect(audio.sfx).toEqual(['enclosure_success']);
+    // Holding it is not news, and neither is a rival sealing theirs.
+    match.sealed(board('build'), [true, false, false], [true, false, true]);
+    expect(audio.sfx).toEqual(['enclosure_success']);
+    // A second castle taken is news again.
+    match.sealed(board('build'), [true, false, true], [true, true, true]);
+    expect(audio.sfx).toEqual(['enclosure_success', 'enclosure_success']);
+    // Outside building — the ring a chosen castle comes with — it is not the player's doing.
+    match.sealed(board('cannon_place'), [false, false, false], [true, false, false]);
+    expect(audio.sfx).toHaveLength(2);
+  });
+
+  it('sounds the failure for a round that ends with nothing sealed', () => {
+    const { audio, match } = setup();
+    const resolved = (enclosedCastles: number): MatchEvent => ({
       kind: 'round_resolved',
       tick: 1,
       round: 1,
@@ -104,25 +143,18 @@ describe('match audio', () => {
           player: HUMAN,
           enclosedCastles,
           cannonsAwarded: 2,
-          eliminated,
+          eliminated: false,
           territoryPoints: 0,
           damagePoints: 0,
         },
       ],
     });
-
-    match.handle([resolved(1)]);
-    expect(audio.sfx).toEqual(['enclosure_success']);
-
-    // Still holding one castle is every round a player survives; it is not news.
-    match.handle([resolved(1)]);
-    expect(audio.sfx).toEqual(['enclosure_success']);
-
-    match.handle([resolved(2)]);
-    expect(audio.sfx).toEqual(['enclosure_success', 'enclosure_success']);
-
-    match.handle([resolved(1)]);
-    expect(audio.sfx.at(-1)).toBe('enclosure_failed');
+    // Holding a castle, one or several, is no failure — two down to one included.
+    match.handle([resolved(2), resolved(1)]);
+    expect(audio.sfx).toEqual([]);
+    // Nothing sealed: the round that costs a life.
+    match.handle([resolved(0)]);
+    expect(audio.sfx).toEqual(['enclosure_failed']);
   });
 
   it('leaves an elimination to its own cue rather than crowding it', () => {

@@ -639,8 +639,9 @@ balanced means.
 
 ### 11.5 Smaller
 
-- Audio files: 2 of 18 cues exist. The rest are the user's to produce; the manifest and
-  every trigger are wired.
+- Audio files: 18 of 19 cues supplied. Still missing: `wall_destroyed` — the user's to
+  produce; the manifest names it and every trigger is wired. A test keeps the manifest and
+  the folder in step.
 - Islands look boxy; `coastlineRoughness` and `noiseFrequency` are config.
 - Rings at 5 and 7 players make considerably larger maps than grids would. One JSON edit.
 

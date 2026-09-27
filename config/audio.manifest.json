@@ -4,24 +4,25 @@
   "missingFilesAreSilent": true,
   "sfx": {
     "select": { "file": "sfx/select.wav", "volume": 0.5 },
+    "place_cannon": { "file": "sfx/place_cannon.mp3", "volume": 0.6, "variants": 2 },
     "cannon_fire": { "file": "sfx/cannon_fire.ogg", "volume": 0.7, "variants": 3 },
-    "shot_impact": { "file": "sfx/shot_impact.ogg", "volume": 0.8, "variants": 3 },
+    "shot_impact": { "file": "sfx/shot_impact.wav", "volume": 0.8, "variants": 9 },
     "wall_destroyed": { "file": "sfx/wall_destroyed.ogg", "volume": 0.6, "variants": 2 },
     "voice_fire": { "file": "sfx/voice_fire.ogg", "volume": 1.0 },
     "voice_cease_fire": { "file": "sfx/voice_cease_fire.ogg", "volume": 1.0 },
-    "enclosure_success": { "file": "sfx/enclosure_success.ogg", "volume": 0.9 },
-    "enclosure_failed": { "file": "sfx/enclosure_failed.ogg", "volume": 0.9 },
-    "player_eliminated": { "file": "sfx/player_eliminated.ogg", "volume": 0.9 },
-    "piece_place": { "file": "sfx/piece_place.ogg", "volume": 0.45, "variants": 3 },
-    "piece_rotate": { "file": "sfx/piece_rotate.ogg", "volume": 0.35 },
-    "piece_invalid": { "file": "sfx/piece_invalid.ogg", "volume": 0.4 },
-    "countdown_tick": { "file": "sfx/countdown_tick.ogg", "volume": 0.5 }
+    "enclosure_success": { "file": "sfx/enclosure_success.wav", "volume": 0.9 },
+    "enclosure_failed": { "file": "sfx/enclosure_failed.mp3", "volume": 0.9 },
+    "player_eliminated": { "file": "sfx/player_eliminated.mp3", "volume": 0.9 },
+    "piece_place": { "file": "sfx/piece_place.wav", "volume": 0.45, "variants": 3 },
+    "piece_rotate": { "file": "sfx/piece_rotate.wav", "volume": 0.35, "variants": 3 },
+    "piece_invalid": { "file": "sfx/piece_invalid.wav", "volume": 0.4 },
+    "countdown_tick": { "file": "sfx/countdown_tick.wav", "volume": 0.5 }
   },
   "music": {
-    "music_menu": { "file": "music/menu.mp3", "volume": 0.5, "loop": true },
-    "music_admin": { "file": "music/admin.ogg", "volume": 0.5, "loop": true },
-    "music_battle": { "file": "music/battle.ogg", "volume": 0.5, "loop": true },
-    "music_victory": { "file": "music/victory.ogg", "volume": 0.6, "loop": false },
-    "music_defeat": { "file": "music/defeat.ogg", "volume": 0.6, "loop": false }
+    "music_menu": { "file": "music/music_menu.mp3", "volume": 0.5, "loop": true },
+    "music_admin": { "file": "music/music_admin.mp3", "volume": 0.5, "variants": 3, "loop": true },
+    "music_battle": { "file": "music/music_battle.ogg", "volume": 0.5, "loop": true },
+    "music_victory": { "file": "music/music_victory.mp3", "volume": 0.6, "loop": false },
+    "music_defeat": { "file": "music/music_defeat.ogg", "volume": 0.6, "loop": false }
   }
 }

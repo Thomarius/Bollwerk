@@ -192,7 +192,7 @@ export class Audio {
       add(cue, `${this.manifest.basePath}/${entry.file}`, entry.variants ?? 1);
     }
     for (const [cue, entry] of Object.entries(this.manifest.music)) {
-      add(cue, `${this.manifest.basePath}/${entry.file}`, 1);
+      add(cue, `${this.manifest.basePath}/${entry.file}`, entry.variants ?? 1);
     }
     await Promise.all(jobs);
   }

@@ -1602,3 +1602,30 @@ per-seat team dropdowns are gone; a seat's team is the column it sits in.
   their side too.
 - Checked over a real socket with host and guest (both moved onto Team B; the match
   agreed, islands as the preview dealt them), and in the local lobby.
+
+## 11d. The user's audio, registered; the enclosure cues moved
+
+The user supplied 15 of the 18 cues. The manifest had drifted from the folder — six
+effects supplied as `.wav` where it named `.ogg`, new variant counts, renamed music — so
+21 files would never have played; `config/src/audioFiles.test.ts` now fails on any file
+the manifest does not name, or a variant count a supplied cue does not have. Music takes
+`variants` too, so the build-phase track can rotate among the three supplied. All 29
+files were decoded in Chromium.
+
+**The fanfare was never heard in play**, the user reported, and rightly: it was judged
+at the resolution against the castles held the round before, so the usual round —
+breached, repaired, holding the same castle — made no sound, and its one reliable
+outing, the end of round one, was buried under the scoring. It now plays the moment a
+placement seals one of the player's castles while building, together with the flood of
+new ground. `enclosure_failed` now means a round that ends with nothing sealed — the one
+that costs a life — rather than holding fewer castles than before, which counted two
+down to one as failure.
+
+**Later the same day**: the user's second batch — `enclosure_failed`, `player_eliminated`,
+more `piece_place` variants, and a new cue, `place_cannon`, which replaces the menu click
+when a cannon is set down — brings it to 18 of 19; `wall_destroyed` is left out for now.
+**M had muted the whole page**, so typing a name with an "m" in the lobby muted the
+music; the key now belongs to the match alone. That left a mute saved from before with no
+visible sign and no way out outside a match — the user reported "no sound at all", and an
+instrumented browser showed every file decoding and playing at zero gain — so a **Sound**
+switch now sits in the corner of every screen and shows the saved state.

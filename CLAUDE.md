@@ -144,8 +144,10 @@ away; the pixel style made cinematic; effects for building, combat, the end of a
 and of a match; a lobby showing the real map, with a seed fixed and random when a table
 is set and the host free to seat a bot in their own place.
 
-**No audio files exist yet** beyond two test files; the user is producing them, and
-missing files are silent by design. `assets/audio/README.md` lists every cue.
+**Audio: 18 of 19 cues supplied** by the user; only `wall_destroyed` is still to come,
+and missing files are silent by design.
+`assets/audio/README.md` lists every cue; `audioFiles.test.ts` fails if a file in the folder
+is not in the manifest.
 
 ## Measuring the bots
 
