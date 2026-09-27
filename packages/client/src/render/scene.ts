@@ -5,8 +5,10 @@ import { Application, Container, Graphics } from 'pixi.js';
 import type { SealGlow } from '../seal.js';
 import type { Look } from '../transition.js';
 
+import { BlueprintTheme } from './blueprint.js';
 import { CyberpunkTheme } from './cyberpunk.js';
 import { FlatTheme } from './flat.js';
+import { ParchmentTheme } from './parchment.js';
 import { PixelTheme } from './pixel.js';
 import {
   hex,
@@ -33,6 +35,10 @@ export function createTheme(style: ArtStyle, seed = 1): Theme {
       return new PixelTheme(seed, style);
     case 'cyberpunk':
       return new CyberpunkTheme(seed);
+    case 'blueprint':
+      return new BlueprintTheme();
+    case 'parchment':
+      return new ParchmentTheme(seed);
   }
 }
 

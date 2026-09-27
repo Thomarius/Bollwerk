@@ -91,7 +91,8 @@ body {
  * along the cut.
  */
 .menu h1.title {
-  margin-bottom: 1rem;
+  /* Room for the drawn titles' plates, which reach a little past their letters. */
+  margin-bottom: 1.4rem;
 }
 
 .title-split {

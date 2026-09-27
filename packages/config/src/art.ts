@@ -46,9 +46,17 @@ export type PlayerPalette = z.infer<typeof PlayerPaletteSchema>;
  * Visual styles are interchangeable implementations of one renderer interface.
  * `flat` is the minimal look: solid colour, no textures, no atlas to generate. `night` is
  * the pixel style under a palette of its own (`stylePalettes`). `cyberpunk` is neon outlines on
-a dark circuit board.
+a dark circuit board, `blueprint` a plan in white ink on blue paper, `parchment` an old
+hand-drawn map.
  */
-export const ArtStyleSchema = z.enum(['flat', 'pixel', 'night', 'cyberpunk']);
+export const ArtStyleSchema = z.enum([
+  'flat',
+  'pixel',
+  'night',
+  'cyberpunk',
+  'blueprint',
+  'parchment',
+]);
 export type ArtStyle = z.infer<typeof ArtStyleSchema>;
 
 export const FlatStyleSchema = z.strictObject({
@@ -98,6 +106,39 @@ export const CyberpunkStyleSchema = z.strictObject({
 });
 export type CyberpunkStyleConfig = z.infer<typeof CyberpunkStyleSchema>;
 
+/** The blueprint look: the board as an architect's plan, in ink on blue paper. */
+export const BlueprintStyleSchema = z.strictObject({
+  /** The ink line round walls, castles and guns. */
+  lineWidthPx: z.number().positive(),
+  /** Between the lines of hatching, in walls and sealed ground. */
+  hatchTiles: z.number().positive(),
+  /** The drafting grid over the whole sheet, and a heavier line every so many tiles. */
+  gridAlpha: z.number().min(0).max(1),
+  gridMajorEvery: z.number().int().positive(),
+  /** The diagonal hatching that marks water on a plan. */
+  seaHatchAlpha: z.number().min(0).max(1),
+  /** Sealed ground's cross-hatching in the owner's ink. */
+  territoryAlpha: z.number().min(0).max(1),
+});
+export type BlueprintStyleConfig = z.infer<typeof BlueprintStyleSchema>;
+
+/** The parchment look: an old map, in ink and watercolour on sepia paper. */
+export const ParchmentStyleSchema = z.strictObject({
+  /** The ink line round walls, castles and guns, and along the coast. */
+  inkWidthPx: z.number().positive(),
+  /** The engraver's lines rippling out from each coast, at these distances in tiles. */
+  contourTiles: z.array(z.number().positive()),
+  /** Wave strokes on the open sea, per tile of it. */
+  wavesPerSeaTile: z.number().nonnegative(),
+  /** The paper's grain and stains, over land and sea alike. */
+  grainAlpha: z.number().min(0).max(1),
+  /** Sealed ground's watercolour wash in the owner's colour. */
+  washAlpha: z.number().min(0).max(1),
+  /** The shadow a wall or castle casts on the paper to its south. */
+  shadowAlpha: z.number().min(0).max(1),
+});
+export type ParchmentStyleConfig = z.infer<typeof ParchmentStyleSchema>;
+
 /**
  * Which style draws which part of the match. The combat look is on screen during combat
  * and the build look everywhere else; the banners either side of combat swap one for the
@@ -133,6 +174,8 @@ export const STYLE_LOOKS: Record<ArtStyle, readonly ArtLook[]> = {
   pixel: ['build', 'combat'],
   night: ['build', 'combat'],
   cyberpunk: ['build', 'combat'],
+  blueprint: ['build', 'combat'],
+  parchment: ['build', 'combat'],
 };
 
 export function styleServes(
@@ -246,6 +289,8 @@ export const ArtConfigSchema = z
     styles: ArtStylesSchema,
     flat: FlatStyleSchema,
     cyberpunk: CyberpunkStyleSchema,
+    blueprint: BlueprintStyleSchema,
+    parchment: ParchmentStyleSchema,
     /** Effects both styles draw alike, because they carry information. */
     effects: z.strictObject({
       /** How fast newly sealed ground floods out from the castle. */

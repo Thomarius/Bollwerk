@@ -450,6 +450,78 @@ export class Fireworks {
   }
 }
 
+/** A colour darkened toward black by `amount`, 0 to 1. */
+export function dimmed(colour: number, amount: number): number {
+  const k = 1 - amount;
+  const r = Math.round(((colour >> 16) & 0xff) * k);
+  const g = Math.round(((colour >> 8) & 0xff) * k);
+  const b = Math.round((colour & 0xff) * k);
+  return (r << 16) | (g << 8) | b;
+}
+
+/** `a` moved toward `b` by `amount`, 0 to 1. */
+export function mixed(a: number, b: number, amount: number): number {
+  const channel = (shift: number): number => {
+    const from = (a >> shift) & 0xff;
+    return Math.round(from + (((b >> shift) & 0xff) - from) * amount) << shift;
+  };
+  return channel(16) | channel(8) | channel(0);
+}
+
+/** Where a gun points, and how long ago it last fired. */
+export interface Aim {
+  angle: number;
+  firedAgo: number;
+}
+
+/**
+ * Where each gun points, for the styles drawn from shapes: at its last target once it
+ * has fired, and until then at the nearest castle of another team, which is what a gun
+ * faces — never a teammate's.
+ */
+export class GunAims {
+  private readonly aims = new Map<number, Aim>();
+
+  /** A gun has fired this shot: it turns to the target and starts its recoil. */
+  fire(shot: Shot): number {
+    const angle = Math.atan2(shot.toX - shot.fromX, -(shot.toY - shot.fromY));
+    this.aims.set(shot.cannonId, { angle, firedAgo: 0 });
+    return angle;
+  }
+
+  of(state: MatchState, cannonId: number): Aim | null {
+    const known = this.aims.get(cannonId);
+    if (known !== undefined) return known;
+    const cannon = state.cannons.find((c) => c.id === cannonId);
+    if (cannon === undefined) return null;
+    const cx = cannon.x + cannon.w / 2;
+    const cy = cannon.y + cannon.h / 2;
+    let best = Number.POSITIVE_INFINITY;
+    let angle = 0;
+    for (const castle of state.castles) {
+      const owner = state.players[castle.islandId - 1];
+      if (owner === undefined || owner.team === state.players[cannon.owner]?.team) continue;
+      const dx = castle.x + castle.w / 2 - cx;
+      const dy = castle.y + castle.h / 2 - cy;
+      const d = dx * dx + dy * dy;
+      if (d < best) {
+        best = d;
+        angle = Math.atan2(dx, -dy);
+      }
+    }
+    const aim = { angle, firedAgo: Number.POSITIVE_INFINITY };
+    this.aims.set(cannonId, aim);
+    return aim;
+  }
+
+  /** Forgets guns that no longer exist, so a continue's wiped island starts clean. */
+  prune(state: MatchState): void {
+    if (this.aims.size <= state.cannons.length) return;
+    const live = new Set(state.cannons.map((c) => c.id));
+    for (const id of this.aims.keys()) if (!live.has(id)) this.aims.delete(id);
+  }
+}
+
 export function hex(value: string): number {
   return Number.parseInt(value.slice(1), 16);
 }

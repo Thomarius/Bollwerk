@@ -1966,4 +1966,24 @@ cell, so two stacked images coincide letter for letter, and CSS clip-paths cut t
 the line. The sweep is a pure function of time (`titleSweep`), a round in miniature that
 keeps the game's rule that the arriving look is above a banner's line, and is tested to
 change a row only as the line passes it — an earlier sketch that looped the line would
-have flipped half the word at once. The backdrop per style is next (PLAN 11.9).
+have flipped half the word at once. A backdrop per style, split the same way, was planned
+next and then dropped by the user: changing backdrops would be too distracting.
+
+**Blueprint and Parchment — done**, both for either look at the user's wish ("better
+give the players more options"), without area tags ("arcade style, not too much
+information on the main screen"), and with Parchment's wax seals in owner colours. The
+wall geometry and hatching moved out of Cyberpunk into `walls.ts`, tested as ASCII
+pictures, and the three shape-drawn styles build on it; Cyberpunk's walls were checked
+pixel-identical after the move. Gun aiming, copied between styles until then, became
+`GunAims`. Both palettes' player ramps are generated from the shared ones with the hue
+kept exactly and each team family's order of lightness kept: Blueprint's washed toward
+white (L 0.55 + 0.3 L), Parchment's muted and darkened to read as ink on paper
+(L 0.16 + 0.42 L, saturation at most 0.62). Parchment is the first light style, so its
+`uiInk` is dark: the shared build hints, flood core and reticle draw in it. From the
+first screenshots, Parchment's two contour lines read as boxy frames round every island
+at eight players and were cut to one, and its wax seals came out small and cog-like and
+were made larger and smoother. Found in the user's first game with it: ink stains, which
+last three rounds, were drawn in the effects layer above the walls and showed through
+wall rebuilt over them; they now have a layer of their own under the structures, as the
+pixel style's scorch marks do. Checked at two and eight players, close up, sealed and
+breached, across a wipe from Pixel art, and as menu titles alone and split.

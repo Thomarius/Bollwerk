@@ -3,8 +3,10 @@ import { Rng, Structure, Terrain, type MatchState, type Shot } from '@rampart/si
 import { Graphics } from 'pixi.js';
 
 import { seaDepth } from './pixel.js';
+import { trace, wallGeometry } from './walls.js';
 import {
   FlagHoist,
+  GunAims,
   Fireworks,
   Landings,
   dimEliminated,
@@ -13,7 +15,9 @@ import {
   drawOvertimeBorder,
   drawSealGlow,
   drawShotTarget,
+  dimmed,
   hex,
+  mixed,
   playerColour,
   shotLift,
   tileX,
@@ -113,24 +117,6 @@ export function circuitTraces(
   return traces;
 }
 
-/** A colour darkened toward black by `amount`, 0 to 1. */
-function dimmed(colour: number, amount: number): number {
-  const k = 1 - amount;
-  const r = Math.round(((colour >> 16) & 0xff) * k);
-  const g = Math.round(((colour >> 8) & 0xff) * k);
-  const b = Math.round((colour & 0xff) * k);
-  return (r << 16) | (g << 8) | b;
-}
-
-/** `a` moved toward `b` by `amount`, 0 to 1. */
-function mixed(a: number, b: number, amount: number): number {
-  const channel = (shift: number): number => {
-    const from = (a >> shift) & 0xff;
-    return Math.round(from + (((b >> shift) & 0xff) - from) * amount) << shift;
-  };
-  return channel(16) | channel(8) | channel(0);
-}
-
 /** A point `distance` tiles along a trace. */
 function along(trace: Trace, distance: number): { x: number; y: number } {
   let left = distance;
@@ -184,12 +170,6 @@ interface Fade {
   colour: number;
 }
 
-/** Where a gun points, and how long ago it last fired. */
-interface Aim {
-  angle: number;
-  firedAgo: number;
-}
-
 /** How long a recoil takes to come home. */
 const RECOIL_MS = 160;
 
@@ -232,7 +212,7 @@ export class CyberpunkTheme implements Theme {
   private shorts: Short[] = [];
   private sparks: Spark[] = [];
   private fades: Fade[] = [];
-  private readonly aims = new Map<number, Aim>();
+  private readonly aims = new GunAims();
   /** Each gun's power, and when it last changed, for the flicker as it goes. */
   private readonly power = new Map<number, { active: boolean; since: number }>();
   /** When each castle's hologram came on, for its flicker. */
@@ -638,49 +618,32 @@ export class CyberpunkTheme implements Theme {
     alpha = 1,
   ): void {
     const t = view.tile;
-    const face = t * (this.art.generators.wall.frontFacePx / this.art.tileSizePx);
     const line = this.style.wallLinePx;
     const glowWidth = Math.max(line * 2, t * this.style.glowWidthTiles);
-    const faced = (x: number, y: number): boolean => joins(x, y) && !joins(x, y + 1);
-    const blocks = cells.map(({ x, y }) => {
-      const top = tileY(view, y);
-      return { x, y, left: tileX(view, x), top, lip: top + t - (faced(x, y) ? face : 0) };
-    });
+    const wall = wallGeometry(cells, joins, view, this.faceFraction());
 
-    for (const b of blocks) g.rect(b.left, b.top, t, b.lip - b.top);
+    for (const r of wall.tops) g.rect(r.x, r.y, r.w, r.h);
     // The top lit a step above the face, which is what stands the wall up.
     g.fill({ color: mixed(ink.dark, ink.base, 0.3), alpha });
-    for (const b of blocks) if (faced(b.x, b.y)) g.rect(b.left, b.lip, t, face);
+    for (const r of wall.faces) g.rect(r.x, r.y, r.w, r.h);
     g.fill({ color: dimmed(ink.dark, 0.55), alpha });
 
     // The face's strip of light, and its edges: where it meets the ground, and its ends.
-    for (const b of blocks) {
-      if (!faced(b.x, b.y)) continue;
-      g.moveTo(b.left, b.lip + face / 2).lineTo(b.left + t, b.lip + face / 2);
-    }
+    trace(g, wall.strips);
     g.stroke({ width: 1, color: ink.base, alpha: 0.5 * alpha });
-    for (const b of blocks) {
-      if (!faced(b.x, b.y)) continue;
-      const bottom = b.top + t;
-      g.moveTo(b.left, bottom).lineTo(b.left + t, bottom);
-      if (!faced(b.x - 1, b.y)) g.moveTo(b.left, b.lip).lineTo(b.left, bottom);
-      if (!faced(b.x + 1, b.y)) g.moveTo(b.left + t, b.lip).lineTo(b.left + t, bottom);
-    }
+    trace(g, wall.faceEdges);
     g.stroke({ width: 1, color: ink.base, alpha: 0.6 * alpha });
 
     // Each block's cell on its top, faint, so a thick wall still shows the blocks a shot
     // takes out.
     const inset = Math.max(1, t * 0.18);
-    for (const b of blocks) {
-      g.rect(b.left + inset, b.top + inset, t - inset * 2, b.lip - b.top - inset * 2);
-    }
+    for (const r of wall.tops) g.rect(r.x + inset, r.y + inset, r.w - inset * 2, r.h - inset * 2);
     g.stroke({ width: 1, color: ink.base, alpha: 0.35 * alpha });
 
     // The rim of the tops: the brightest line on the board, and its glow.
-    for (const target of [g, glow]) {
-      for (const b of blocks) this.rim(target, b, t, face, joins, faced);
-    }
+    trace(g, wall.rim);
     g.stroke({ width: line, color: ink.light, alpha });
+    trace(glow, wall.rim);
     glow.stroke({ width: glowWidth, color: ink.base, alpha: this.style.glowAlpha * alpha });
 
     // Light spilling onto the ground in front of each face, fading away from it.
@@ -688,37 +651,14 @@ export class CyberpunkTheme implements Theme {
       [0.35, 0.08],
       [0.15, 0.1],
     ] as const) {
-      for (const b of blocks) if (faced(b.x, b.y)) glow.rect(b.left, b.top + t, t, t * depth);
+      for (const r of wall.faces) glow.rect(r.x, r.y + r.h, r.w, t * depth);
       glow.fill({ color: ink.base, alpha: spill * alpha });
     }
   }
 
-  /**
-   * The outline of a wall block's top, where it does not run on into its neighbours':
-   * along its north side, along its lip where it has a face, down its open sides to the
-   * lip, and down the stretch of a shared side where the neighbour has a face and it
-   * does not, since there its top meets that face.
-   */
-  private rim(
-    g: Graphics,
-    b: { x: number; y: number; left: number; top: number; lip: number },
-    t: number,
-    face: number,
-    mine: (x: number, y: number) => boolean,
-    faced: (x: number, y: number) => boolean,
-  ): void {
-    const right = b.left + t;
-    const bottom = b.top + t;
-    if (!mine(b.x, b.y - 1)) g.moveTo(b.left, b.top).lineTo(right, b.top);
-    if (faced(b.x, b.y)) g.moveTo(b.left, b.lip).lineTo(right, b.lip);
-    for (const [dx, at] of [
-      [-1, b.left],
-      [1, right],
-    ] as const) {
-      if (!mine(b.x + dx, b.y)) g.moveTo(at, b.top).lineTo(at, b.lip);
-      else if (!faced(b.x, b.y) && faced(b.x + dx, b.y))
-        g.moveTo(at, bottom - face).lineTo(at, bottom);
-    }
+  /** A wall's front face, as a fraction of a tile: the pixel style's, so the two agree. */
+  private faceFraction(): number {
+    return this.art.generators.wall.frontFacePx / this.art.tileSizePx;
   }
 
   /** Height of a castle's front face, in tiles: the pixel keep's, in proportion. */
@@ -730,8 +670,7 @@ export class CyberpunkTheme implements Theme {
   // ------------------------------------------------------------------ events
 
   noteShot(shot: Shot): void {
-    const angle = Math.atan2(shot.toX - shot.fromX, -(shot.toY - shot.fromY));
-    this.aims.set(shot.cannonId, { angle, firedAgo: 0 });
+    const angle = this.aims.fire(shot);
     // Sparks from the muzzle in place of smoke, thrown out along the barrel.
     const reach = 0.95;
     const mx = shot.fromX + 0.5 + Math.sin(angle) * reach;
@@ -899,38 +838,12 @@ export class CyberpunkTheme implements Theme {
     }
   }
 
-  /** Aims a gun that has not fired yet at the nearest castle of another team. */
-  private aimFor(state: MatchState, cannonId: number): Aim | null {
-    const known = this.aims.get(cannonId);
-    if (known !== undefined) return known;
-    const cannon = state.cannons.find((c) => c.id === cannonId);
-    if (cannon === undefined) return null;
-    const cx = cannon.x + cannon.w / 2;
-    const cy = cannon.y + cannon.h / 2;
-    let best = Number.POSITIVE_INFINITY;
-    let angle = 0;
-    for (const castle of state.castles) {
-      const owner = state.players[castle.islandId - 1];
-      if (owner === undefined || owner.team === state.players[cannon.owner]?.team) continue;
-      const dx = castle.x + castle.w / 2 - cx;
-      const dy = castle.y + castle.h / 2 - cy;
-      const d = dx * dx + dy * dy;
-      if (d < best) {
-        best = d;
-        angle = Math.atan2(dx, -dy);
-      }
-    }
-    const aim = { angle, firedAgo: Number.POSITIVE_INFINITY };
-    this.aims.set(cannonId, aim);
-    return aim;
-  }
-
   /** Barrels as lit rails from the mount toward the last target, kicking back on firing. */
   private drawBarrels(state: MatchState, view: ViewTransform, deltaMs: number): void {
     const g = this.effectGfx;
     const glow = this.effectGlow;
     for (const cannon of state.cannons) {
-      const aim = this.aimFor(state, cannon.id);
+      const aim = this.aims.of(state, cannon.id);
       if (aim === null) continue;
       aim.firedAgo += deltaMs;
       const kick = Math.max(0, 1 - aim.firedAgo / RECOIL_MS);
@@ -960,10 +873,7 @@ export class CyberpunkTheme implements Theme {
         glow.fill({ color: hex(this.art.palette.uiInk), alpha: 0.8 * kick });
       }
     }
-    if (this.aims.size > state.cannons.length) {
-      const live = new Set(state.cannons.map((c) => c.id));
-      for (const id of this.aims.keys()) if (!live.has(id)) this.aims.delete(id);
-    }
+    this.aims.prune(state);
   }
 
   /**

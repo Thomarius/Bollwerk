@@ -3,6 +3,7 @@ import { Rng } from '@rampart/sim';
 
 import { Pixels } from './render/pixel/canvas.js';
 import { water } from './render/pixel/generators.js';
+import { hatch } from './render/walls.js';
 
 /**
  * The menu and lobby's dressing: a pixel-art title in the stone of the game's walls, and
@@ -288,6 +289,185 @@ export function neonTitle(text: string, art: ArtConfig): Title {
   return { src: canvas.toDataURL(), ...title };
 }
 
+/** Canvas pixels per bitmap cell in the drawn titles, Blueprint's and Parchment's. */
+const DRAWN_CELL = 10;
+/** Room round their letters: for the sheet and dimension line, or the ribbon. */
+const DRAWN_PAD = 16;
+
+/** A smooth canvas for a drawn title, the word's cells and where each one stands. */
+function drawnCanvas(text: string): {
+  canvas: HTMLCanvasElement;
+  ctx: CanvasRenderingContext2D | null;
+  cells: { x: number; y: number }[];
+  has: (x: number, y: number) => boolean;
+  cols: number;
+} {
+  const letters = glyphsOf(text);
+  const cols = letters.length * 6 - 1;
+  const canvas = document.createElement('canvas');
+  canvas.width = cols * DRAWN_CELL + DRAWN_PAD * 2;
+  canvas.height = 7 * DRAWN_CELL + DRAWN_PAD * 2;
+  const cells = cellsOf(letters);
+  const set = new Set(cells.map((c) => `${c.x},${c.y}`));
+  return { canvas, ctx: canvas.getContext('2d'), cells, has: (x, y) => set.has(`${x},${y}`), cols };
+}
+
+/** Where cell edges face out of the word, in canvas pixels. */
+function wordOutline(
+  cells: readonly { x: number; y: number }[],
+  has: (x: number, y: number) => boolean,
+): [number, number, number, number][] {
+  const at = (v: number): number => DRAWN_PAD + v * DRAWN_CELL;
+  const out: [number, number, number, number][] = [];
+  for (const { x, y } of cells) {
+    if (!has(x, y - 1)) out.push([at(x), at(y), at(x + 1), at(y)]);
+    if (!has(x, y + 1)) out.push([at(x), at(y + 1), at(x + 1), at(y + 1)]);
+    if (!has(x - 1, y)) out.push([at(x), at(y), at(x), at(y + 1)]);
+    if (!has(x + 1, y)) out.push([at(x + 1), at(y), at(x + 1), at(y + 1)]);
+  }
+  return out;
+}
+
+/**
+ * Blueprint's title: the word drawn as a plan draws walls — outlined in white, hatched
+ * inside — on a sheet of blue drafting paper, with a dimension line under it.
+ */
+export function planTitle(text: string, art: ArtConfig): Title {
+  const { waterMid, grassLight, rockLight, waterFoam } = artForStyle(art, 'blueprint').palette;
+  const { canvas, ctx, cells, has, cols } = drawnCanvas(text);
+  const title = { cellPx: DRAWN_CELL, padPx: DRAWN_PAD, tailPx: 0, smooth: true, flicker: false };
+  if (ctx === null) return { src: canvas.toDataURL(), ...title };
+  const at = (v: number): number => DRAWN_PAD + v * DRAWN_CELL;
+  // The sheet, and its grid.
+  ctx.fillStyle = waterMid;
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.strokeStyle = grassLight;
+  ctx.globalAlpha = 0.18;
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  for (let x = DRAWN_PAD % DRAWN_CELL; x < canvas.width; x += DRAWN_CELL) {
+    ctx.moveTo(x + 0.5, 0);
+    ctx.lineTo(x + 0.5, canvas.height);
+  }
+  for (let y = DRAWN_PAD % DRAWN_CELL; y < canvas.height; y += DRAWN_CELL) {
+    ctx.moveTo(0, y + 0.5);
+    ctx.lineTo(canvas.width, y + 0.5);
+  }
+  ctx.stroke();
+  // Hatching inside the letters.
+  ctx.globalAlpha = 0.55;
+  ctx.strokeStyle = waterFoam;
+  ctx.beginPath();
+  for (const { x, y } of cells) {
+    for (const s of hatch({ x: at(x), y: at(y), w: DRAWN_CELL, h: DRAWN_CELL }, 4, '\\')) {
+      ctx.moveTo(s.x1, s.y1);
+      ctx.lineTo(s.x2, s.y2);
+    }
+  }
+  ctx.stroke();
+  // The outline, and the construction lines it was drawn from, running on past it.
+  ctx.strokeStyle = rockLight;
+  ctx.globalAlpha = 0.25;
+  ctx.beginPath();
+  for (const [x1, y1, x2, y2] of wordOutline(cells, has)) {
+    const dx = Math.sign(x2 - x1) * 4;
+    const dy = Math.sign(y2 - y1) * 4;
+    ctx.moveTo(x1 - dx, y1 - dy);
+    ctx.lineTo(x2 + dx, y2 + dy);
+  }
+  ctx.stroke();
+  ctx.globalAlpha = 1;
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  for (const [x1, y1, x2, y2] of wordOutline(cells, has)) {
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x2, y2);
+  }
+  ctx.stroke();
+  // The dimension line: the word's width, arrowed between two ticks, below it.
+  const y = at(7) + DRAWN_PAD / 2;
+  const left = at(0);
+  const right = at(cols);
+  ctx.lineWidth = 1;
+  ctx.globalAlpha = 0.8;
+  ctx.beginPath();
+  ctx.moveTo(left, y);
+  ctx.lineTo(right, y);
+  for (const [x, dir] of [
+    [left, 1],
+    [right, -1],
+  ] as const) {
+    ctx.moveTo(x, y - 5);
+    ctx.lineTo(x, y + 5);
+    ctx.moveTo(x, y);
+    ctx.lineTo(x + dir * 6, y - 3);
+    ctx.moveTo(x, y);
+    ctx.lineTo(x + dir * 6, y + 3);
+  }
+  ctx.stroke();
+  return { src: canvas.toDataURL(), ...title };
+}
+
+/**
+ * Parchment's title: the word in sepia ink, its strokes shaded by a hatching laid to
+ * their south-east, on a ribbon of parchment with forked ends, as a map's cartouche.
+ */
+export function inkedTitle(text: string, art: ArtConfig): Title {
+  const { grassMid, rockDark, rockMid, craterMid } = artForStyle(art, 'parchment').palette;
+  const { canvas, ctx, cells, has } = drawnCanvas(text);
+  const title = { cellPx: DRAWN_CELL, padPx: DRAWN_PAD, tailPx: 0, smooth: true, flicker: false };
+  if (ctx === null) return { src: canvas.toDataURL(), ...title };
+  const at = (v: number): number => DRAWN_PAD + v * DRAWN_CELL;
+  const w = canvas.width;
+  const h = canvas.height;
+  // The ribbon, its ends forked.
+  const top = DRAWN_PAD * 0.45;
+  const bottom = h - DRAWN_PAD * 0.45;
+  const notch = DRAWN_PAD * 0.8;
+  ctx.beginPath();
+  ctx.moveTo(1, top);
+  ctx.lineTo(w - 1, top);
+  ctx.lineTo(w - notch, (top + bottom) / 2);
+  ctx.lineTo(w - 1, bottom);
+  ctx.lineTo(1, bottom);
+  ctx.lineTo(notch, (top + bottom) / 2);
+  ctx.closePath();
+  ctx.fillStyle = grassMid;
+  ctx.fill();
+  ctx.strokeStyle = rockMid;
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+  // The hatching that shades each stroke, laid a little to its south-east.
+  ctx.strokeStyle = craterMid;
+  ctx.globalAlpha = 0.5;
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  for (const { x, y } of cells) {
+    for (const s of hatch(
+      { x: at(x) + 2.5, y: at(y) + 2.5, w: DRAWN_CELL, h: DRAWN_CELL },
+      3,
+      '/',
+    )) {
+      ctx.moveTo(s.x1, s.y1);
+      ctx.lineTo(s.x2, s.y2);
+    }
+  }
+  ctx.stroke();
+  // The letters, in ink.
+  ctx.globalAlpha = 1;
+  ctx.fillStyle = rockDark;
+  for (const { x, y } of cells) ctx.fillRect(at(x), at(y), DRAWN_CELL + 0.5, DRAWN_CELL + 0.5);
+  ctx.strokeStyle = rockDark;
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  for (const [x1, y1, x2, y2] of wordOutline(cells, has)) {
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x2, y2);
+  }
+  ctx.stroke();
+  return { src: canvas.toDataURL(), ...title };
+}
+
 /**
  * Every style's title. A record over every style, so a new style cannot be added without
  * one: the menu shows the title of the look chosen last.
@@ -297,6 +477,8 @@ const TITLES: Record<ArtStyle, (text: string, art: ArtConfig) => Title> = {
   pixel: stoneTitle,
   night: moonlitTitle,
   cyberpunk: neonTitle,
+  blueprint: planTitle,
+  parchment: inkedTitle,
 };
 
 export function titleFor(style: ArtStyle, art: ArtConfig): Title {

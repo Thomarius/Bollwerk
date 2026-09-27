@@ -275,6 +275,8 @@ const STYLE_NAMES: Record<ArtStyle, string> = {
   pixel: 'Pixel art',
   night: 'Night',
   cyberpunk: 'Cyberpunk',
+  blueprint: 'Blueprint',
+  parchment: 'Parchment',
 };
 
 function styleOptions(look: ArtLook): string {

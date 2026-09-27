@@ -483,6 +483,32 @@ hollow red outline: a wall in red would be the crimson player's own colour, so t
 difference is in form, not hue. A gun being placed is its lit ring, struck through where
 it cannot go. A placed piece throws sparks off its outer edges.
 
+**Blueprint** (`blueprint.ts`), for either look: an architect's plan in ink on blue
+paper. A drafting grid over the whole sheet, heavier every few tiles; the sea hatched as
+a plan marks water, the coast a bold white contour. Walls are outlined and hatched
+inside, as walls are on a plan, and stand up to the pixel style's height; castles are a
+keep in plan with round corner towers, filled in while sealed and flying a pennant;
+guns are survey marks with an arrowhead barrel, silenced ones a dashed ring. Sealed
+ground is cross-hatched in the owner's ink inside a dashed boundary. Shots are a
+projectile symbol riding a dashed trajectory; a block shot away is crossed out in red
+for as long as the pixel breach would smoulder. The piece in hand is dashed, as proposed
+construction is — hatched where it fits, crossed out where it does not. Player colours
+are the shared hues washed toward white, so they read on blue.
+
+**Parchment** (`parchment.ts`), for either look, and the one light style: an old map in
+ink and watercolour. Generated paper grain, a few stains and darkened edges; a bold ink
+coast with an engraver's contour rippling out from it, wave strokes on the open sea, and
+a compass rose under the big timer. Walls are inked stone, their faces cross-hatched,
+casting a shadow on the paper; castles are drawn with battlements and a gate. Sealed
+ground is an uneven watercolour wash pooling at its edge, inside a dotted border, and a
+sealed castle bears **a wax seal in its owner's colour**, pressed on as it seals and
+cracking in two when it is breached. Shots are ink dots on a dotted course and leave ink
+stains that fade over `fx.craterRounds`. Its colours are ink dark enough to read on
+paper, `uiInk` included, which the shared helpers draw their warnings in.
+
+The three shape-drawn styles share `walls.ts`: the wall geometry (tops, faces, rim), and
+hatching laid on one lattice so neighbouring tiles hatch as one fill.
+
 **Looking at it.** `tools/screenshots.sh` captures fixed states against the dev server —
 in real time through Playwright, which renders fine where virtual time does not — using
 `&snapshot`, `&round`, `&idle` and a wait. Anything lasting under a second (debris, the
@@ -579,7 +605,7 @@ every resolution against an independent search, not only on unit pictures.
 | M7  | Balance pass                                              | **In progress**         |
 | M8  | Team mode, and one lobby for online and offline           | Done                    |
 | M9  | Visual pass: phase themes, banner wipe, effects, lobby    | Done (§11.8)            |
-| M10 | Alternative visual themes: Night, Blueprint, Cyberpunk…   | **In progress** (§11.9) |
+| M10 | Alternative visual themes: Night, Blueprint, Cyberpunk…   | Done (§11.9)            |
 
 ---
 
@@ -770,10 +796,11 @@ look, **Cyberpunk comes next**, ahead of Blueprint:
    islands on a near-black sea, walls in bright moonlit stone. Torch-lit walls were
    planned, and palette alone cannot do them (ARCHIVE 11g); a warm glow drawn round
    castles is the way, if wanted.
-2. **Blueprint** — a **build look**: blue drafting paper with a grid, walls as white
-   technical lines, castles as plan symbols, sealed ground hatched. Clean, calm and
-   informative, which is what building needs — a better build look than Minimal, which
-   stays as the style to debug against.
+2. **Blueprint — done** (§7). Planned as a build look; offered for both at the user's
+   wish, for more choice, with no area tags on sealed ground — the game is arcade and
+   the board should not carry much text. As planned: blue drafting paper with a grid,
+   walls as white technical lines, castles as plan symbols, sealed ground hatched.
+   Minimal stays as the style to debug against.
 3. **Cyberpunk — done** (§7), neon menu title included — planned as a combat look, the
    user's idea, and opened to building too (ARCHIVE 11g). As planned: **Circuits, not runes** (runes are
    another theme, arcane, not planned). Brightness means structure and colour means
@@ -786,16 +813,9 @@ look, **Cyberpunk comes next**, ahead of Blueprint:
    for the menu. Glow by additive blending of a second, larger shape rather than a bloom
    filter, which costs frame rate at eight players; try the filter only if that is not
    enough.
-4. **Parchment map** — **both looks**, perhaps: sepia land, the sea in ink hatching and
-   wave strokes, walls as inked stone, sealed castles marked with red wax seals, shots as
-   ink blots. Very readable, and the opposite of cyberpunk.
-
-**Next, asked for by the user: a backdrop per style for the menu and lobby.** The page
-behind the panel is the pixel sea whatever is chosen. Each style would bring its own —
-the pixel sea, Night's dark water, Cyberpunk's circuit traces with their pulses,
-Minimal's flat blue — split between the two chosen looks as the title is, or the build
-look's behind the panel and the combat look's behind the title. Like the titles, a
-record over every style.
+4. **Parchment map — done** (§7), both looks. As planned, except that the wax seals are
+   in each owner's colour rather than red, which would have been one player's: sepia
+   land, the sea in ink contours and wave strokes, walls as inked stone, shots as ink.
 
 **Considered and left for later**: a retro arcade CRT look (few colours, scanlines, a
 screen filter) close to the 1990 original; an arcane runic theme; a high-contrast,
