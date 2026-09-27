@@ -793,9 +793,8 @@ and a different palette, rather than writing a second large `Theme` class.
 look, **Cyberpunk comes next**, ahead of Blueprint:
 
 1. **Night** — **done**: the pixel theme under its own palette, for both looks. Moonlit
-   islands on a near-black sea, walls in bright moonlit stone. Torch-lit walls were
-   planned, and palette alone cannot do them (ARCHIVE 11g); a warm glow drawn round
-   castles is the way, if wanted.
+   islands on a near-black sea, walls in bright moonlit stone. **Torchlight is the one open item**
+   (below): palette alone could not do it (ARCHIVE 11g).
 2. **Blueprint — done** (§7). Planned as a build look; offered for both at the user's
    wish, for more choice, with no area tags on sealed ground — the game is arcade and
    the board should not carry much text. As planned: blue drafting paper with a grid,
@@ -817,10 +816,32 @@ look, **Cyberpunk comes next**, ahead of Blueprint:
    in each owner's colour rather than red, which would have been one player's: sepia
    land, the sea in ink contours and wave strokes, walls as inked stone, shots as ink.
 
-**Considered and left for later**: a retro arcade CRT look (few colours, scanlines, a
-screen filter) close to the 1990 original; an arcane runic theme; a high-contrast,
-colour-blind friendly theme with a pattern per player — worth doing for six to eight
-players whatever else is chosen.
+**No further styles for now** (decided 2026-09-27): the six are enough. Considered and
+not planned: a retro arcade CRT look, an arcane runic theme, and a high-contrast theme
+with a pattern per player, the last the one worth reconsidering for six to eight players.
+Cyberpunk stays as it is, its sea pulses included in the build look.
+
+**Next: torchlight for Night — agreed 2026-09-27, not started.** Night is the pixel
+theme under its own palette; torchlight is drawing code of its own, switched on for
+Night alone, so the pixel style is untouched. **The light falls on the ground, not on
+the walls' colour**: warm stone was tried and turned azure walls grey (ARCHIVE 11g).
+
+- **Torches at every sealed castle**: two flanking the gate, flames flickering a little
+  out of step, and a warm pool of light on the ground two or three tiles across, fading
+  at its edge and breathing with the flicker — a wider shape blended additively, as
+  Cyberpunk's glow is. **The torches carry information**: a sealed castle is lit, a breach
+  douses them with a puff of smoke, and re-sealing relights them, so lit means sealed and
+  dark means breached across the whole map.
+- **Light from combat**: muzzle flashes briefly light the ground round the gun; shots
+  carry a small warm glow, as burning shot; a breach casts a faint flickering glow for as
+  long as its embers smoulder.
+- **A torchlit menu title**: Night's title with a small torch beside the word and its
+  warm light on the stone.
+- **Readability**: the pools stay faint over walls, so every player keeps their colour —
+  checked at eight players, with the brightness capped if a colour drifts. Sizes,
+  flicker and brightness are config. Faces keep their height, so wipes still line up.
+- **Not included**: darkening everything outside the light, which would hide a board
+  that building and aiming need whole; torches along the walls, which is clutter.
 
 **Verification** as in 11.8: screenshots of each look in combat and building, both
 styles mid-wipe, and every player colour side by side at eight players.
