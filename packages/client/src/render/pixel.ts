@@ -329,7 +329,7 @@ export class PixelTheme implements Theme {
     }
     const g = this.territoryGfx;
     g.clear();
-    dimEliminated(g, state, view);
+    dimEliminated(g, state, view, hex(this.art.palette.shadow));
   }
 
   drawStructures(state: MatchState, view: ViewTransform): void {

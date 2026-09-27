@@ -1859,3 +1859,22 @@ bundle in a read-only copy of the image's layout. Fixed twice over: the Dockerfi
 `/app/recordings` and gives it to `node`, and a server that cannot make its recordings
 folder now warns and runs on without recording (`openRecordingStore`), since a recording
 is never worth the game server.
+
+## 11g. Alternative visual themes (M10)
+
+Planned in PLAN §11.9, agreed 2026-09-27: per-style palettes, then Night as the proof of
+them, then offering each look only the styles made for it; Cyberpunk is the next theme
+after those.
+
+**Per-style palettes — done.** `stylePalettes` in `art.default.json` lays a style's own
+colours over the shared ones; `artForStyle` does the laying, and every theme is handed its
+result, so no theme's drawing code changed. Overrides rather than a full palette per style,
+since a new theme mostly recolours land and sea and would otherwise repeat the rest.
+Player ramps are overridden whole and checked against the shared ones by name, order and
+hue: a hue may move at most 15 degrees, the gap between azure and sky in one team family.
+One thing a palette alone could not do: the canvas has a single background colour, the
+sea's, so a style with a sea of its own would sit in the other's frame. Each look now
+fills the window behind the board with its own sea, under the same mask as the rest of
+it. Checked with a temporary purple sea for pixel only: the flat look kept its own, and
+the wipe split the margins at the banner. With no overrides, before and after screenshots
+of both styles differ only by the clock.

@@ -252,7 +252,7 @@ snapshot, because a client on different rules would desync rather than merely lo
 | `ruleset.default.json` | Phase lengths, cannon rewards and footprint, shot flight and damage, the piece catalogue and its size schedule, enclosure rules, elimination and continues, scoring and the round cap |
 | `terrain.default.json` | Island size and shape, the generation box, castle placement, the starting ring, the per-player-count pattern table                                                                    |
 | `ai.default.json`      | One profile per bot tier: pace and aim in milliseconds and human units, and playstyle switches                                                                                        |
-| `art.default.json`     | Palettes, per-player colour ramps, sprite generator parameters                                                                                                                        |
+| `art.default.json`     | Palettes, per-player colour ramps and each style's own over them, sprite generator parameters                                                                                         |
 | `audio.manifest.json`  | Cue names to files; see `assets/audio/README.md` for what fires each one                                                                                                              |
 | `server.default.json`  | Ports, room limits, rate limits, reconnect grace, and the bounds of what a host may set in the lobby                                                                                  |
 
@@ -346,6 +346,14 @@ look like. Adding a style is a name in `ArtStyleSchema`, a `Theme`, and a case i
 `createTheme`; more are planned in §11.9. All
 sprites are generated at boot from `art.default.json` plus the match seed — nothing binary
 is committed except audio.
+
+**Each style has colours of its own** (`stylePalettes`): any palette entries, and the
+player ramps and team families whole, laid over the shared ones by `artForStyle`, which is
+what every theme is handed. What a style leaves out it shares. **A style may restyle a
+player's colour but not move its hue** more than `MAX_STYLE_HUE_SHIFT`, since the looks
+swap mid-match; the schema refuses it, and ramps that drop, reorder or rename players. The
+HUD, menu and lobby keep the shared colours. Each look fills the window behind the board
+with its own sea, so a wipe splits the margins as it splits the board.
 
 Audio is driven by simulation events, so what a player hears is what the server actually
 did. Missing files are silent by design, which is what lets the game ship before the audio
@@ -698,12 +706,9 @@ The result is §7; the plan as agreed, and how each package turned out, are ARCH
 protocol or ruleset change. A style may be made for the **build look, the combat look or
 both**, and the menu offers each look only the styles made for it.
 
-**First, per-style palettes.** Today one palette in `art.default.json` serves both styles
-and the pixel generators read it, so a new theme cannot have colours of its own. Give each
-style its own palette (and, where it needs them, its own player ramps), validated like
-everything else. The cheapest way to a new textured theme is then to let the pixel theme
-take a different set of sprite generators and a different palette, rather than writing a
-second large `Theme` class.
+**First, per-style palettes — done** (§7, `stylePalettes`). The cheapest way to a new
+textured theme is now to let the pixel theme take a different set of sprite generators
+and a different palette, rather than writing a second large `Theme` class.
 
 **Rules every theme keeps:**
 
@@ -717,7 +722,8 @@ second large `Theme` class.
 - **Land, sea, wall and sealed ground tell apart at a glance**, including in a dark
   theme.
 
-**The themes, in the order to build them:**
+**The themes.** Agreed 2026-09-27: after per-style palettes, Night and styles offered per
+look, **Cyberpunk comes next**, ahead of Blueprint:
 
 1. **Night** — pixel art, palette only: moonlit islands, a dark sea, torch-lit walls.
    The proof that per-style palettes work; both looks.

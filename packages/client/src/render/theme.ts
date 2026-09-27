@@ -117,7 +117,12 @@ export interface Ghost {
  * Greys out the island of every player who is out, for the rest of the match: their
  * rubble stays on the board, and without this it read as a player still in it.
  */
-export function dimEliminated(g: Graphics, state: MatchState, view: ViewTransform): void {
+export function dimEliminated(
+  g: Graphics,
+  state: MatchState,
+  view: ViewTransform,
+  shade: number,
+): void {
   const out = new Set(state.players.filter((p) => p.eliminated).map((p) => p.islandId));
   if (out.size === 0) return;
   for (let i = 0; i < state.islandId.length; i++) {
@@ -125,7 +130,7 @@ export function dimEliminated(g: Graphics, state: MatchState, view: ViewTransfor
     const x = i % state.width;
     g.rect(tileX(view, x), tileY(view, (i - x) / state.width), view.tile, view.tile);
   }
-  g.fill({ color: 0x0a0a12, alpha: 0.55 });
+  g.fill({ color: shade, alpha: 0.55 });
 }
 
 /**

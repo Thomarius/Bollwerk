@@ -30,10 +30,23 @@ export function createTheme(style: ArtStyle, seed = 1): Theme {
   }
 }
 
+/** One look: the theme that draws it, and the art in that theme's own colours. */
+export interface SceneLook {
+  theme: Theme;
+  art: ArtConfig;
+}
+
 /** A theme and the layer stack it owns, under one root so it can be masked whole. */
 interface Slot {
   theme: Theme;
+  art: ArtConfig;
   root: Container;
+  /**
+   * The look's sea, filling the window behind the board. The canvas has one background
+   * colour, and a look with a sea of its own would otherwise sit in the other's frame —
+   * during a wipe, half in each.
+   */
+  backdrop: Graphics;
   layers: ThemeLayers;
   /** Screen-space rectangle this look is confined to during a wipe. */
   mask: Graphics;
@@ -100,16 +113,17 @@ export class Scene {
     structures: MatchState | null;
   } = { state: null, territory: null, structures: null };
 
+  /** `art` is the shared art, for what no look restyles: the shake. */
   async init(
     canvas: HTMLCanvasElement,
-    themes: Record<Look, Theme>,
+    looks: Record<Look, SceneLook>,
     art: ArtConfig = defaultArtConfig,
   ): Promise<void> {
     this.art = art;
     await this.app.init({
       canvas,
-      // Matches the generated sea, so the map does not sit in a visible frame.
-      background: hex(art.palette.waterMid),
+      // Under the looks' own backdrops, and only ever seen before the first is drawn.
+      background: hex(looks.build.art.palette.waterMid),
       antialias: false,
       resolution: Math.min(2, globalThis.devicePixelRatio || 1),
       autoDensity: true,
@@ -119,16 +133,18 @@ export class Scene {
     this.app.ticker.autoStart = false;
     this.app.ticker.stop();
 
-    const build = await this.slotFor(themes.build);
-    const combat = themes.combat === themes.build ? build : await this.slotFor(themes.combat);
+    const build = await this.slotFor(looks.build);
+    const combat = looks.combat === looks.build ? build : await this.slotFor(looks.combat);
     this.slots = { build, combat };
     this.applyVisibility();
   }
 
-  private async slotFor(theme: Theme): Promise<Slot> {
+  private async slotFor({ theme, art }: SceneLook): Promise<Slot> {
     const layers = newLayers();
     const root = new Container();
+    const backdrop = new Graphics();
     root.addChild(
+      backdrop,
       layers.terrain,
       layers.territory,
       layers.structures,
@@ -138,8 +154,8 @@ export class Scene {
     const mask = new Graphics();
     // Masks live beside the roots, so the shake moves them with the board.
     this.app.stage.addChild(root, mask);
-    await theme.init(layers, this.art);
-    return { theme, root, layers, mask, stale: false };
+    await theme.init(layers, art);
+    return { theme, art, root, backdrop, layers, mask, stale: false };
   }
 
   /** The styles in use, one per look. */
@@ -232,6 +248,13 @@ export class Scene {
       originX: Math.floor((width - tile * state.width) / 2),
       originY: topInset + Math.floor((usable - tile * state.height) / 2),
     };
+    for (const slot of this.all()) {
+      // Past the edges by the shake's reach, so it never shows the canvas beneath.
+      const margin = this.art.generators.fx.shakePx;
+      slot.backdrop.clear();
+      slot.backdrop.rect(-margin, -margin, width + 2 * margin, height + 2 * margin);
+      slot.backdrop.fill({ color: hex(slot.art.palette.waterMid) });
+    }
     this.applyVisibility();
   }
 

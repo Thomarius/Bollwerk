@@ -77,6 +77,78 @@ export const ArtStylesSchema = z.strictObject({
 });
 export type ArtStyles = z.infer<typeof ArtStylesSchema>;
 
+/**
+ * A style's own colours, over the shared ones: any palette entries it names, and the
+ * player ramps whole if it restyles them. What it leaves out it shares, so a style that
+ * sets nothing looks exactly as it did before styles had colours of their own.
+ */
+export const StylePaletteSchema = z.strictObject({
+  palette: PaletteSchema.partial().optional(),
+  players: z.array(PlayerPaletteSchema).optional(),
+  teamFamilies: z.array(z.array(PlayerPaletteSchema).min(1)).optional(),
+});
+export type StylePalette = z.infer<typeof StylePaletteSchema>;
+
+/**
+ * How far, in degrees, a style may move a player's hue. The looks swap under the banner
+ * mid-match, so a style may restyle a player's colour — neon, ink, pastel — but not
+ * change it: red that became magenta under the banner could not be followed. Fifteen is
+ * the gap between the two closest hues of one team family (azure and sky), which tell
+ * apart by lightness instead.
+ */
+export const MAX_STYLE_HUE_SHIFT = 15;
+
+/** Hue of a #rrggbb colour in degrees, or null for a grey, which has none. */
+export function hueOf(colour: string): number | null {
+  const [r, g, b] = [1, 3, 5].map((i) => Number.parseInt(colour.slice(i, i + 2), 16) / 255) as [
+    number,
+    number,
+    number,
+  ];
+  const max = Math.max(r, g, b);
+  const span = max - Math.min(r, g, b);
+  if (span === 0) return null;
+  const sector = max === r ? (g - b) / span : max === g ? (b - r) / span + 2 : (r - g) / span + 4;
+  return (sector * 60 + 360) % 360;
+}
+
+/** Problems with a style's ramps against the shared ones they restyle, one per player. */
+function rampProblems(own: readonly PlayerPalette[], shared: readonly PlayerPalette[]): string[] {
+  if (own.length !== shared.length) {
+    return [`has ${own.length} players where the shared ramps have ${shared.length}`];
+  }
+  const problems: string[] = [];
+  own.forEach((entry, i) => {
+    const base = shared[i]!;
+    if (entry.name !== base.name) {
+      problems.push(`player ${i} is "${entry.name}" where the shared ramps have "${base.name}"`);
+      return;
+    }
+    const [a, b] = [hueOf(entry.base), hueOf(base.base)];
+    const shift = a === null || b === null ? 180 : Math.abs(((a - b + 540) % 360) - 180);
+    if (shift > MAX_STYLE_HUE_SHIFT) {
+      problems.push(`"${entry.name}" moves its hue by ${Math.round(shift)} degrees`);
+    }
+  });
+  return problems;
+}
+
+/**
+ * The art as one style draws it: the shared config with that style's own colours laid
+ * over it. Every theme is handed this rather than the shared art.
+ */
+export function artForStyle(art: ArtConfig, style: ArtStyle): ArtConfig {
+  const own = art.stylePalettes[style];
+  if (own === undefined) return art;
+  return {
+    ...art,
+    // Parsed from JSON, so an entry is present with a colour or absent, never undefined.
+    palette: { ...art.palette, ...own.palette } as Palette,
+    players: own.players ?? art.players,
+    teamFamilies: own.teamFamilies ?? art.teamFamilies,
+  };
+}
+
 export const ArtConfigSchema = z
   .strictObject({
     styles: ArtStylesSchema,
@@ -123,6 +195,8 @@ export const ArtConfigSchema = z
      * also carries a letter.
      */
     teamFamilies: z.array(z.array(PlayerPaletteSchema).min(1)).min(2),
+    /** Each style's own colours, where it has any; see `StylePaletteSchema`. */
+    stylePalettes: z.partialRecord(ArtStyleSchema, StylePaletteSchema),
 
     dither: z.strictObject({
       enabled: z.boolean(),
@@ -205,6 +279,27 @@ export const ArtConfigSchema = z
   .refine((a) => a.generators.castle.towerCountRange[0] <= a.generators.castle.towerCountRange[1], {
     message: 'towerCountRange must be [min, max] with min <= max',
     path: ['generators', 'castle', 'towerCountRange'],
+  })
+  .superRefine((a, ctx) => {
+    for (const [style, own] of Object.entries(a.stylePalettes)) {
+      const problems = [
+        ...(own?.players ? rampProblems(own.players, a.players) : []),
+        ...(own?.teamFamilies
+          ? own.teamFamilies.length === a.teamFamilies.length
+            ? own.teamFamilies.flatMap((family, t) =>
+                rampProblems(family, a.teamFamilies[t]!).map((p) => `team family ${t} ${p}`),
+              )
+            : [`has ${own.teamFamilies.length} team families, not ${a.teamFamilies.length}`]
+          : []),
+      ];
+      for (const problem of problems) {
+        ctx.addIssue({
+          code: 'custom',
+          message: `style "${style}": ${problem}`,
+          path: ['stylePalettes', style],
+        });
+      }
+    }
   });
 
 export type ArtConfig = z.infer<typeof ArtConfigSchema>;

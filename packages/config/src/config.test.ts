@@ -4,6 +4,8 @@ import {
   type AudioManifest,
   ArtConfigSchema,
   AudioManifestSchema,
+  artForStyle,
+  hueOf,
   MUSIC_CUES,
   RulesetSchema,
   SFX_CUES,
@@ -229,5 +231,61 @@ describe('lobby settings', () => {
       },
     });
     expect(problems.some((p) => p.includes('lobbySettings.maxRounds'))).toBe(true);
+  });
+});
+
+describe('style palettes', () => {
+  const players = defaultArtConfig.players;
+  const withStyle = (own: object) => ({ ...defaultArtConfig, stylePalettes: { pixel: own } });
+
+  it('leaves a style with no colours of its own exactly on the shared art', () => {
+    expect(artForStyle(defaultArtConfig, 'pixel')).toBe(defaultArtConfig);
+  });
+
+  it("lays a style's entries over the shared palette and keeps the rest", () => {
+    const art = ArtConfigSchema.parse(withStyle({ palette: { waterMid: '#000010' } }));
+    const pixel = artForStyle(art, 'pixel');
+    expect(pixel.palette.waterMid).toBe('#000010');
+    expect(pixel.palette.sand).toBe(defaultArtConfig.palette.sand);
+    expect(artForStyle(art, 'flat').palette.waterMid).toBe(defaultArtConfig.palette.waterMid);
+  });
+
+  it('reads hues, and knows a grey has none', () => {
+    expect(hueOf('#ff0000')).toBe(0);
+    expect(hueOf('#00ff00')).toBe(120);
+    expect(hueOf('#0000ff')).toBe(240);
+    expect(hueOf('#808080')).toBeNull();
+  });
+
+  it('accepts restyled ramps that keep every hue', () => {
+    // Crimson brightened to neon, across the 0-degree seam: 352 to 348.
+    const neon = players.map((p, i) => (i === 0 ? { ...p, base: '#ff2a55' } : p));
+    expect(ArtConfigSchema.safeParse(withStyle({ players: neon })).success).toBe(true);
+  });
+
+  it("refuses a ramp that changes a player's hue, since the looks swap mid-match", () => {
+    const magenta = players.map((p, i) => (i === 0 ? { ...p, base: '#c828af' } : p));
+    const result = ArtConfigSchema.safeParse(withStyle({ players: magenta }));
+    expect(result.success).toBe(false);
+    expect(result.error?.issues[0]?.message).toMatch(/crimson.*hue/);
+  });
+
+  it('refuses ramps that drop, reorder or rename players', () => {
+    expect(ArtConfigSchema.safeParse(withStyle({ players: players.slice(1) })).success).toBe(false);
+    const swapped = [players[1], players[0], ...players.slice(2)];
+    expect(ArtConfigSchema.safeParse(withStyle({ players: swapped })).success).toBe(false);
+    const families = defaultArtConfig.teamFamilies.slice(1);
+    expect(ArtConfigSchema.safeParse(withStyle({ teamFamilies: families })).success).toBe(false);
+  });
+
+  it('refuses colours for a style that does not exist', () => {
+    const bad = { ...defaultArtConfig, stylePalettes: { nonsense: {} } };
+    expect(ArtConfigSchema.safeParse(bad).success).toBe(false);
+  });
+
+  it('refuses a palette entry no style knows', () => {
+    expect(
+      ArtConfigSchema.safeParse(withStyle({ palette: { waterMidd: '#000000' } })).success,
+    ).toBe(false);
   });
 });

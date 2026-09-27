@@ -208,6 +208,7 @@
       }
     ]
   ],
+  "stylePalettes": {},
   "dither": {
     "enabled": true,
     "matrix": "bayer4",

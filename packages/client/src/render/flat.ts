@@ -153,7 +153,7 @@ export class FlatTheme implements Theme {
         });
       }
     }
-    dimEliminated(g, state, view);
+    dimEliminated(g, state, view, hex(this.art.palette.shadow));
   }
 
   drawStructures(state: MatchState, view: ViewTransform): void {

@@ -1,6 +1,7 @@
 import {
   ArtStyleSchema,
   applySettings,
+  artForStyle,
   defaultArtConfig,
   defaultConfigBundle,
   defaultSettings,
@@ -59,7 +60,7 @@ import {
 import { ServerConnection } from './net/connection.js';
 import { NetworkMatch } from './net/networkMatch.js';
 import type { ServerMessage } from '@rampart/protocol';
-import { Scene, createTheme, type Ghost } from './render/scene.js';
+import { Scene, createTheme, type Ghost, type SceneLook } from './render/scene.js';
 
 /**
  * Rampart client.
@@ -764,20 +765,21 @@ async function runSession(session: Session, setup: Setup): Promise<void> {
   if (!canvas || !hudRoot || !bannerRoot) throw new Error('missing stage');
 
   const scene = new Scene();
-  // Colours for this match: families by team in a team match, distinct otherwise.
-  const palette = matchPalette(defaultConfigBundle.art, session.state);
-  useMatchPalette(palette);
+  // Colours for this match: families by team in a team match, distinct otherwise. The
+  // HUD takes the shared ramps, and each look its own style's restyling of them.
+  const art = defaultConfigBundle.art;
+  useMatchPalette(matchPalette(art, session.state));
+  const lookFor = (style: ArtStyle): SceneLook => {
+    const own = artForStyle(art, style);
+    return {
+      theme: createTheme(style, setup.seed),
+      art: { ...own, players: matchPalette(own, session.state) },
+    };
+  };
   // One theme when both looks are the same style, so the wipe has nothing to change.
-  const buildTheme = createTheme(setup.styles.build, setup.seed);
-  const combatTheme =
-    setup.styles.combat === setup.styles.build
-      ? buildTheme
-      : createTheme(setup.styles.combat, setup.seed);
-  await scene.init(
-    canvas,
-    { build: buildTheme, combat: combatTheme },
-    { ...defaultConfigBundle.art, players: palette },
-  );
+  const build = lookFor(setup.styles.build);
+  const combat = setup.styles.combat === setup.styles.build ? build : lookFor(setup.styles.combat);
+  await scene.init(canvas, { build, combat }, art);
 
   const hud = new Hud(hudRoot, bannerRoot);
   const matchAudio = new MatchAudio(audio, session.humanPlayer);
