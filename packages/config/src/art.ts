@@ -274,6 +274,13 @@ export const ArtConfigSchema = z
       /** The points an island banked, over it, after each resolution. */
       pointsBannerMs: z.number().int().positive(),
     }),
+    /** The menu's title, split between the two chosen looks at a banner's line. */
+    menu: z.strictObject({
+      /** One sweep of the line across it, as the banners cross the board. */
+      titleSweepMs: z.number().int().positive(),
+      /** Between sweeps, while the menu is open. */
+      titleSweepEveryMs: z.number().int().positive(),
+    }),
     tileSizePx: z.number().int().positive(),
     atlasSizePx: z.number().int().positive(),
     pixelSnap: z.boolean(),

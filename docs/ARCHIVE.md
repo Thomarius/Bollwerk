@@ -1957,3 +1957,13 @@ so an invalid piece is now hollow, a red outline round a faint fill, and an inva
 is struck through. Seen by hovering in a scripted browser, valid and invalid, piece and
 gun. The one-look mechanism stays, tested against a table with a one-look style, for
 Blueprint.
+
+**The menu title in both looks — done**, the user's idea, "one part in the build theme
+and another in the combat theme". Of the ideas offered (a split at a banner's line, the
+line sweeping as the banners do, a split by word, a split backdrop, a live preview), the
+first two together: every title already puts its letters in one place at 8 pixels a
+cell, so two stacked images coincide letter for letter, and CSS clip-paths cut them at
+the line. The sweep is a pure function of time (`titleSweep`), a round in miniature that
+keeps the game's rule that the arriving look is above a banner's line, and is tested to
+change a row only as the line passes it — an earlier sketch that looped the line would
+have flipped half the word at once. The backdrop per style is next (PLAN 11.9).

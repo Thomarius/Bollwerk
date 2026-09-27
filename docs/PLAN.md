@@ -383,9 +383,14 @@ pattern that works is to pull the decision out into a pure function and test tha
 **The menu and lobby** are dressed in the game's own art (`decor.ts`): **every style has
 a title of its own**, the same 5x7 letters in its look — stone threaded with gold for
 Pixel art, flat blocks in the players' colours for Minimal, moonlit stone with a halo
-and stars for Night, a neon sign that flickers on for Cyberpunk. The menu shows the
-title of the look chosen last, the combat look as it opens; `titleLayout` sizes each so
-the letters stand in one place whatever room its glow needs. Behind the panel the pixel
+and stars for Night, a neon sign that flickers on for Cyberpunk. **The menu shows both
+chosen looks at once** (`SplitTitle`): the build look's title above a banner's gold line
+and the combat look's below, the letters coinciding, since `titleLayout` sizes every
+title so they stand in one place whatever room its glow needs. The line sweeps across as
+the menu opens, as either choice changes, and every `menu.titleSweepEveryMs` — a round in
+miniature, each banner bringing the arriving look above it as on the board: down out of
+the word, a combat banner across it, a build banner back to the middle. Still under
+reduced motion; one title and no line when both looks are one style. Behind the panel the pixel
 sea drifts. The lobby shows the map the table will play (`preview.ts`) — each island in the colour its seat will play and numbered
 for it, the viewer's own ringed — beside seat cards that carry the same number and
 colour, a rank badge per bot tier, and columns per team. A newcomer's card flashes as they
@@ -784,6 +789,13 @@ look, **Cyberpunk comes next**, ahead of Blueprint:
 4. **Parchment map** — **both looks**, perhaps: sepia land, the sea in ink hatching and
    wave strokes, walls as inked stone, sealed castles marked with red wax seals, shots as
    ink blots. Very readable, and the opposite of cyberpunk.
+
+**Next, asked for by the user: a backdrop per style for the menu and lobby.** The page
+behind the panel is the pixel sea whatever is chosen. Each style would bring its own —
+the pixel sea, Night's dark water, Cyberpunk's circuit traces with their pulses,
+Minimal's flat blue — split between the two chosen looks as the title is, or the build
+look's behind the panel and the combat look's behind the title. Like the titles, a
+record over every style.
 
 **Considered and left for later**: a retro arcade CRT look (few colours, scanlines, a
 screen filter) close to the 1990 original; an arcane runic theme; a high-contrast,

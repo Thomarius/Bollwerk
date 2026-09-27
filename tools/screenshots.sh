@@ -22,10 +22,11 @@ WATCH="$GAME&watch=1&bots=gunner"
 
 # name|query appended to the base|milliseconds to wait
 SCENES=(
-  "menu|$BASE/|1500"
-  "menu-neon|$BASE/?combatStyle=cyberpunk|2500"
-  "menu-night|$BASE/?combatStyle=night|1500"
-  "menu-minimal|$BASE/?combatStyle=flat|1500"
+  # The title sweeps once as the menu opens, so these wait for it to come to rest.
+  "menu|$BASE/|4000"
+  "menu-neon|$BASE/?buildStyle=pixel&combatStyle=cyberpunk|4000"
+  "menu-night|$BASE/?buildStyle=flat&combatStyle=night|4000"
+  "menu-one|$BASE/?style=pixel|2000"
   # The lobby, with the map it will play; no server under the dev server, so a local table.
   "lobby|$BASE/?host=3&seed=5&name=Ada|3000"
   "lobby-eight|$BASE/?host=8&seed=11&name=Ada|3000"

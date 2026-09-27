@@ -530,5 +530,9 @@
   },
   "hud": {
     "pointsBannerMs": 8000
+  },
+  "menu": {
+    "titleSweepMs": 2600,
+    "titleSweepEveryMs": 12000
   }
 }

@@ -38,7 +38,7 @@ import { LocalMatch } from './localMatch.js';
 import { announcementLines, isTeamMatch, teamLetter } from './scores.js';
 import { buildHints, type BuildHints } from './hints.js';
 import { timerSpot } from './timerSpot.js';
-import { installBackdrop, titleFor, titleLayout } from './decor.js';
+import { SplitTitle, installBackdrop } from './decor.js';
 import { drawPreview, tablePreview } from './preview.js';
 import { RecordingUpload } from './recordingUpload.js';
 import {
@@ -299,7 +299,7 @@ function showMenu(): void {
   audio.music('music_menu');
   app!.innerHTML = `
     <div class="menu">
-      <h1 class="title"><img id="title" alt="Rampart" /></h1>
+      <h1 class="title"><span class="title-split" id="title"></span></h1>
       <p>Shoot down their walls. Rebuild yours before the next barrage.
          Fail to seal a castle and you lose a life.</p>
       <label>Name <input id="name" type="text" maxlength="16" value="Player" /></label>
@@ -322,28 +322,21 @@ function showMenu(): void {
   const combatField = document.querySelector<HTMLSelectElement>('#combat-style');
   if (combatField) combatField.value = styles.combat;
 
-  // Each style has a title of its own, and the menu shows the one for the look chosen
-  // last — the combat look as it opens, the cinematic one.
-  const showTitle = (style: ArtStyle): void => {
-    const img = document.querySelector<HTMLImageElement>('#title');
-    if (!img || img.dataset.style === style) return;
-    const title = titleFor(style, defaultConfigBundle.art);
-    const { height, margin } = titleLayout(title);
-    img.dataset.style = style;
-    img.src = title.src;
-    img.style.height = `${height}px`;
-    img.style.margin = `${margin}px`;
-    img.style.imageRendering = title.smooth ? 'auto' : 'pixelated';
-    img.classList.toggle('flicker', title.flicker);
-  };
-  showTitle(styles.combat);
-  for (const [look, field] of [
-    ['build', buildField],
-    ['combat', combatField],
-  ] as const) {
-    field?.addEventListener('change', () =>
-      showTitle(chooseStyle(look, [field.value], styles[look])),
-    );
+  // The title in both chosen looks at once, split by a banner's line that sweeps across
+  // as either choice changes — what the two choices mean, shown rather than said.
+  const titleRoot = document.querySelector<HTMLElement>('#title');
+  if (titleRoot) {
+    const title = new SplitTitle(titleRoot, defaultConfigBundle.art);
+    const chosen = (): Record<ArtLook, ArtStyle> => ({
+      build: chooseStyle('build', [buildField?.value], styles.build),
+      combat: chooseStyle('combat', [combatField?.value], styles.combat),
+    });
+    title.show(chosen());
+    title.sweep();
+    title.repeat();
+    for (const field of [buildField, combatField]) {
+      field?.addEventListener('change', () => title.show(chosen()));
+    }
   }
 
   document.querySelector('#play')?.addEventListener('click', () => {

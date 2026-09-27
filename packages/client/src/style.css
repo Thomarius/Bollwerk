@@ -84,22 +84,57 @@ body {
   box-shadow: 0 1rem 3rem rgb(0 0 0 / 50%);
 }
 
-/* The title set in stone blocks (decor.ts), scaled on the pixel grid. */
+/*
+ * The title in both chosen looks (SplitTitle in decor.ts): two layers over one box the
+ * size of the letters, each image placed and sized inline so the letters coincide, cut
+ * at --split by clip-paths reaching past the box for the glow, with a banner's gold line
+ * along the cut.
+ */
 .menu h1.title {
   margin-bottom: 1rem;
 }
 
-.menu h1.title img {
+.title-split {
+  position: relative;
   display: block;
-  height: 60px;
-  image-rendering: pixelated;
+  --split: 28px;
 }
 
-/*
- * Each style's title has its own size and scaling, set inline from the title itself
- * (decor.ts). Cyberpunk's neon sign flickers on, as the game's holograms do.
- */
-.menu h1.title img.flicker {
+.title-layer {
+  position: absolute;
+  inset: 0;
+}
+
+.title-layer img {
+  position: absolute;
+  display: block;
+  max-width: none;
+}
+
+.title-layer[data-side='above'] {
+  clip-path: inset(-40px -40px calc(100% - var(--split)) -40px);
+}
+
+.title-layer[data-side='below'] {
+  clip-path: inset(var(--split) -40px -40px -40px);
+}
+
+.title-line {
+  position: absolute;
+  left: -14px;
+  right: -14px;
+  top: calc(var(--split) - 1px);
+  height: 2px;
+  background: var(--accent);
+  box-shadow: 0 0 6px var(--accent);
+}
+
+.title-line[hidden] {
+  display: none;
+}
+
+/* Cyberpunk's neon sign flickers on, as the game's holograms do. */
+.title-layer img.flicker {
   animation: neon-on 1.4s linear both;
 }
 
@@ -132,7 +167,7 @@ body {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .menu h1.title img.flicker {
+  .title-layer img.flicker {
     animation: none;
   }
 }
