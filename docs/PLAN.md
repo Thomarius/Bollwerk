@@ -231,9 +231,11 @@ RampartRemake/
 │   ├── sim/           deterministic core — no DOM, no Node, no I/O
 │   ├── protocol/      wire messages and validators
 │   ├── ai/            bot logic
-│   ├── server/        authoritative match server
+│   ├── analysis/      per-round match statistics, shared by the server and the harness
+│   ├── server/        authoritative match server, and the recorder of every match
 │   └── client/        renderer, UI, procedural asset generators
-├── tools/headless/    bot-vs-bot harness for balance tuning and soak tests
+├── tools/headless/    bot-vs-bot harness for balance tuning and soak tests, and replays
+├── recordings/        recorded matches and their statistics (git-ignored; §9)
 └── Dockerfile         build the client, bundle the server, ship three directories
 ```
 
@@ -331,15 +333,17 @@ sender's seat**, so a client cannot act for someone else.
 - **Lobby settings are a mechanism, not a special case**: an explicit list of typed
   settings (`config/src/settings.ts`), bounded by `server.lobbySettings`, accepted only
   from the host before the start, refused whole when out of bounds, and applied over the
-  server's ruleset — which is re-validated and travels in the snapshot. Only `maxRounds`
-  exists so far; game speed and team mode are meant to join it.
+  server's ruleset — which is re-validated and travels in the snapshot. `maxRounds` and
+  `teamSize` exist; game speed is meant to join them.
 
 ---
 
 ## 7. `packages/client`
 
-Two visual styles behind one `Theme` interface: the scene owns the camera, the layer
-stacks, dirty tracking and input mapping; a theme owns only what things look like. All
+Two visual styles, flat and pixel, behind one `Theme` interface: the scene owns the
+camera, the layer stacks, dirty tracking and input mapping; a theme owns only what things
+look like. Adding a style is a name in `ArtStyleSchema`, a `Theme`, and a case in
+`createTheme`; more are planned in §11.9. All
 sprites are generated at boot from `art.default.json` plus the match seed — nothing binary
 is committed except audio.
 
@@ -520,28 +524,33 @@ every resolution against an independent search, not only on unit pictures.
 
 ## 10. Milestones
 
-| #   | Goal                                                      | State                    |
-| --- | --------------------------------------------------------- | ------------------------ |
-| M0  | Scaffold, config schemas, CI                              | Done                     |
-| M1  | Simulation core                                           | Done                     |
-| M2  | Playable locally, placeholder art                         | Done                     |
-| M3  | Style abstraction, then procedural art                    | Done                     |
-| M4  | Online multiplayer                                        | Done                     |
-| M5  | AI opponents                                              | Done                     |
-| M6  | Full scope: 2–8 players, audio, lobby, Docker, deployment | Done but for audio files |
-| M7  | Balance pass                                              | **In progress**          |
-| M8  | Team mode, and one lobby for online and offline           | Done                     |
-| M9  | Visual pass: phase themes, banner wipe, effects, lobby    | Done (§11.8)             |
+| #   | Goal                                                      | State                   |
+| --- | --------------------------------------------------------- | ----------------------- |
+| M0  | Scaffold, config schemas, CI                              | Done                    |
+| M1  | Simulation core                                           | Done                    |
+| M2  | Playable locally, placeholder art                         | Done                    |
+| M3  | Style abstraction, then procedural art                    | Done                    |
+| M4  | Online multiplayer                                        | Done                    |
+| M5  | AI opponents                                              | Done                    |
+| M6  | Full scope: 2–8 players, audio, lobby, Docker, deployment | Done, one sound to come |
+| M7  | Balance pass                                              | **In progress**         |
+| M8  | Team mode, and one lobby for online and offline           | Done                    |
+| M9  | Visual pass: phase themes, banner wipe, effects, lobby    | Done (§11.8)            |
+| M10 | Alternative visual themes: Night, Blueprint, Cyberpunk…   | Planned (§11.9)         |
 
 ---
 
 ## 11. Open work
 
-**Where to start (2026-09-26).** Team mode and the polish pass are done; the user is
-playing test matches. The next milestone is **11.2, elimination tuning**, as soon as that
-play has given a feel for it — its plan is ready and starts with a baseline measurement.
-Beside it, independent of balance: **11.6**, bots as personality × skill. **11.8**, the
-visual pass, is done. Smaller items are in 11.5.
+**Where to start (2026-09-27).** The user is running human test sessions, and every match
+is recorded with its statistics (§9, ARCHIVE 11e); the user will also send compiled
+feedback. The next milestone is **11.2, elimination tuning**: its plan is ready, starts
+with a baseline measurement, and can now set the bots against rounds people actually
+played — `recordings/*.stats.csv`, or `--replay` over the folder. A recording replays
+exactly only against the commit it was made with (`45bcd92` for the first sessions).
+Independent of balance and ready to start: **11.6**, bots as personality × skill, and
+**11.9**, alternative visual themes, beginning with per-style palettes. Smaller items are
+in 11.5.
 
 ### 11.1 Round cap and points scoring — done
 
@@ -549,8 +558,9 @@ The rules are §1.7, the lobby setting §6; how they were settled is ARCHIVE 10r
 
 ### 11.2 Elimination tuning — planned, waiting on human play
 
-**Agreed 2026-09-25, not started.** The user is playing a few matches first, so the
-tuning is not fitted to the bots and misses the human experience.
+**Agreed 2026-09-25, not started.** The user is playing test sessions first, so the
+tuning is not fitted to the bots alone; those sessions are recorded (§9), and the user
+will send compiled feedback.
 
 **Changed since it was planned**: overtime shipped (§1.6), a little more wall per round
 for everyone; and team matches eliminate even less than free-for-all — 5 in 180 at gunner
@@ -675,185 +685,68 @@ teaching one to help without wrecking a person's plan is its own question.
 
 ### 11.8 Visual pass — done
 
-**Agreed 2026-09-26, finished the same day** (ARCHIVE 10w–10z, 11a, 11b). Everything here
-is client-side and cosmetic: no sim, protocol or ruleset change, so it cannot desync a match or move a balance measurement,
-and it can proceed while 11.2 waits on human play. Cosmetic randomness may use
-`Math.random` (the client is outside the lint rule), but durations, sizes and counts
-belong in `art.default.json` like every other visual tunable, not in code.
+Agreed and finished on 2026-09-26, touching no game logic: two looks swapped by the
+banners either side of combat, the sweep drawn away under the "Place cannons" banner
+(V1); the pixel style made the cinematic combat look (V2); effects for building (V3),
+combat (V4), the end of a round and of a match (V6); a lobby showing the real map (V5).
+The result is §7; the plan as agreed, and how each package turned out, are ARCHIVE
+10w–10z, 11a, 11b and 11f.
 
-**Verification, for every package.** Headless Chrome cannot check anything timed (§7), so
-each package pulls its decisions into pure functions with unit tests — which look is on
-screen, where the wipe line is, which walls are still drawn — adds a scene to
-`tools/screenshots.sh` where a still frame shows it, and leaves anything under a second
-to be looked at by a person.
+### 11.9 Alternative visual themes — planned
 
-Work packages in order. V1 is the feature; V2–V6 are independent of each other and can
-be taken in any order after it, though V2 comes first because V1 makes the pixel style
-the combat look specifically.
+**Agreed with the user 2026-09-27, not started.** Client-side only, like 11.8: no sim,
+protocol or ruleset change. A style may be made for the **build look, the combat look or
+both**, and the menu offers each look only the styles made for it.
 
-#### V1 — Phase themes and the banner wipe — done
+**First, per-style palettes.** Today one palette in `art.default.json` serves both styles
+and the pixel generators read it, so a new theme cannot have colours of its own. Give each
+style its own palette (and, where it needs them, its own player ramps), validated like
+everything else. The cheapest way to a new textured theme is then to let the pixel theme
+take a different set of sprite generators and a different palette, rather than writing a
+second large `Theme` class.
 
-Kept as it was planned, for the record; how it turned out is §7 and ARCHIVE 10w.
+**Rules every theme keeps:**
 
-**The original.** The banners either side of the combat phase cross the screen from top
-to bottom, and the board beneath changes as the banner passes: from the simple, flat look
-of building to the more realistic, cinematic look of combat before it, and back after.
-The banner between the build and cannon phases does not change the look; instead it
-carries the sweep of loose wall, which vanishes row by row as the banner passes over.
+- **A player keeps their hue across the look swap.** If red became magenta under the
+  banner, nobody could follow who is who. A theme may restyle a player's colour — neon,
+  ink, pastel — but not change it; the eight colours and the team families must stay
+  distinguishable in every theme.
+- **Information stays readable**: the flood of newly sealed ground, the red mark over
+  your own wall, the overtime border, the aiming cursor. These are shared helpers in
+  `theme.ts`; a theme restyles them only where it keeps them legible.
+- **Land, sea, wall and sealed ground tell apart at a glance**, including in a dark
+  theme.
 
-**Today** all three parts exist but are not joined: one style is chosen for the whole
-match (`Scene.useTheme` is called once), the announcement is a CSS animation across the
-window that knows nothing of the board (`@keyframes sweep`), and the sweep is drawn the
-moment the sim applies it at the resolution — before the banner shows — although the sim
-already reports exactly which tiles went (`walls_swept`, ignored by the client).
+**The themes, in the order to build them:**
 
-**Decided with the user:**
+1. **Night** — pixel art, palette only: moonlit islands, a dark sea, torch-lit walls.
+   The proof that per-style palettes work; both looks.
+2. **Blueprint** — a **build look**: blue drafting paper with a grid, walls as white
+   technical lines, castles as plan symbols, sealed ground hatched. Clean, calm and
+   informative, which is what building needs — a better build look than Minimal, which
+   stays as the style to debug against.
+3. **Cyberpunk** — a **combat look**, the user's idea. **Circuits, not runes** (runes are
+   another theme, arcane, not planned). Brightness means structure and colour means
+   ownership: walls are the brightest outlines on the board, each in its owner's neon;
+   land is a dark grid, the sea near black with circuit traces and pulses running along
+   them, fading toward the islands. Castles have a glowing core; sealed ground is a lit
+   grid floor in the owner's colour; flags are holograms that flicker on; shots are
+   plasma tracers, impacts bursts of light and glitch, gun smoke sparks; a breach shorts
+   out with sparks and goes dark; an inert gun powers down with a flicker. A neon title
+   for the menu. Glow by additive blending of a second, larger shape rather than a bloom
+   filter, which costs frame rate at eight players; try the filter only if that is not
+   enough.
+4. **Parchment map** — **both looks**, perhaps: sepia land, the sea in ink hatching and
+   wave strokes, walls as inked stone, sealed castles marked with red wax seals, shots as
+   ink blots. Very readable, and the opposite of cyberpunk.
 
-- Two style settings, **build look** and **combat look**, default **flat** and **pixel**.
-  The combat look is on screen during combat; the build look everywhere else — castle
-  choice, cannon placement, building. Both are chosen from the same list of styles, so a
-  new style is offered for either, and **choosing the same style for both switches
-  nothing** (the banner still sweeps; nothing changes under it). No separate "classic"
-  mode: it is simply the default pair.
-- **"Fire!" wipes build → combat, "Rebuild" wipes combat → build**, and "Place cannons"
-  carries the sweep. The sim is untouched: it still sweeps at the resolution, and the
-  client only delays _drawing_ it. That is safe because nothing is playable during an
-  intermission, and the next phase does not begin until the banner has left.
-- **No special rule** for the rare round in which nobody has cannons to place and the
-  sim goes straight to combat: the pending sweep is drawn away by whichever banner comes
-  next, so that "Fire!" carries both the sweep and the wipe.
-- The styles stay a per-player choice in the menu, not a table setting: they are how you
-  see the game, not its rules, so they never travel to the server or the snapshot.
+**Considered and left for later**: a retro arcade CRT look (few colours, scanlines, a
+screen filter) close to the 1990 original; an arcane runic theme; a high-contrast,
+colour-blind friendly theme with a pattern per player — worth doing for six to eight
+players whatever else is chosen.
 
-**Steps:**
-
-1. **Settings.** `art.style` becomes `art.styles: { build, combat }`, both `ArtStyleSchema`,
-   defaulting to `flat` and `pixel`. The menu's single Style select becomes two, "Building"
-   and "Combat", remembered in `localStorage`. `?style=X` still sets both, for the
-   screenshot script and old links; `?buildStyle=` and `?combatStyle=` set one each.
-2. **Which look, as a pure function** of state alone, so a client joining mid-intermission
-   gets it right without history. Before an intermission the look is combat exactly when
-   `pendingPhase === 'build'` (only combat leads there); after it, combat exactly when
-   `pendingPhase === 'combat'`. Outside intermissions it follows the phase.
-3. **The banner follows the sim clock.** Its progress becomes a pure function of
-   `(tick + tickFraction, phaseEndTick, bannerTicks)` and is applied as a transform each
-   frame, replacing the CSS keyframes and the `animationend` removal. Then the wipe line
-   _is_ the banner, and both stay right through dropped frames and at `&speed=`. The
-   announcement's text and standings lines are unchanged.
-4. **Two themes alive at once.** The Scene gets one layer stack per look, each under its
-   own root container. Separate stacks are necessary as well as clean: the pixel style
-   calls `removeChildren()` on its layers and would wipe the flat style's graphics if
-   they shared. During a wipe each root is masked by a screen-space rectangle split at
-   the banner's centre line — new look above, old below — covering the whole canvas, so
-   the pixel sea beyond the board switches with it. Outside a wipe only the current look
-   is visible and drawn.
-5. **Cost.** The hidden look is not kept up to date; it is marked dirty on any change and
-   redrawn in full (terrain, territory, structures) when a wipe begins and on resize, so
-   steady-state cost is what it is today. Its own state — cannon aims, flags, the water's
-   frame — simply survives being hidden. Check the frame rate mid-wipe at eight players,
-   where both terrains are live; the pixel terrain is the large one.
-6. **Effects and overlay.** Only visible looks draw effects. There are no shots in the air
-   during a banner — the intermission waits for the last to land — so a wipe never cuts
-   a shot in half; debris from the last impact may still be falling and is simply
-   clipped. The overlay comes from the look of the coming phase from the moment its
-   banner starts, so the aiming cursor that appears with "Fire!" is already the combat
-   one. The HTML layer (team tags, island banners, big timer) is above the canvas and
-   takes no part. The shake moves the stage and so moves both.
-7. **The sweep, drawn late.** On `walls_swept` the client keeps the tile list and draws
-   structures from a display copy in which those tiles are still wall until the banner
-   line passes their row, as `drawTerritory` already draws from the live enclosure rather
-   than the state. **The owner must come from the board the client last drew**: the sim
-   has already zeroed `owner` for swept tiles, and `islandId` is wrong for an eliminated
-   player's rubble. Territory needs no such treatment — a loop enclosing anything cannot
-   be swept (§1.3). Each tile crumbles as it goes: a new `Theme.noteCrumble(x, y, owner)`,
-   a puff of debris in the pixel style and a short fade in the flat one. A client that
-   joins mid-intermission never saw the event and shows the walls already gone, which is
-   correct.
-8. **Tests.** Pure: the look before and after every kind of intermission; banner
-   progress at its start, middle and end; which swept tiles are still drawn for a given
-   line. Screenshots: a new scene caught mid-wipe into combat, and one mid-sweep on "Place
-   cannons" (real-time Playwright, with `&snapshot=` and a wait into the banner). Then a
-   person watches a whole round at normal speed.
-9. **Docs.** §7 describes the two looks and the wipe; the style parameters in CLAUDE.md
-   change.
-
-#### V2 — The pixel style as the combat look — done
-
-Kept as planned, for the record; how it turned out is §7 and ARCHIVE 10x.
-
-Now that it is the cinematic half of a pair, push it further from the flat style.
-
-- **Use what is generated but never drawn.** The atlas already holds crater decals and
-  damaged-wall variants (`wall.<mask>.<damage>`), but `drawStructures` only ever asks for
-  damage 0 and the `craters` container stays empty. Scorch marks where shots land on open
-  ground; cracked wall beside a breach, tracked by the client from impacts. Both kept by
-  the pixel theme, which is hidden while building — whether they fade over rounds or are
-  cleared by the "Rebuild" wipe is decided by looking.
-- **Pseudo-3D.** Walls with a south-facing front and a drop shadow; castles with a front
-  face and corner towers. The original's combat view was in perspective; this is the
-  cheap version of it.
-- **Sealed ground** as a courtyard or cobble pattern instead of an alpha tint, so "sealed"
-  reads at a glance.
-- **Water**: animated foam along the shore, deeper colour away from land.
-- **Rubble**: an eliminated player's wall gets its own broken texture rather than
-  grey-tinted wall.
-- **Inert cannons**: a drooping barrel and a wisp of dark smoke rather than a red strike
-  through. The flat style keeps the strike-through, where plain information is the point.
-
-#### V3 — Build-phase effects — done
-
-Kept as planned, for the record; how it turned out is §7 and ARCHIVE 10y.
-
-In both styles where they are information, shared through `theme.ts` as the build hints
-and fire reticle already are; per style where they are decoration.
-
-- **Sealing a castle**: the territory floods outward from the castle in BFS order and its
-  flag goes up. The single most satisfying moment in the game, and today it just appears.
-- **A piece lands** with a slight settle and a dust puff, rather than appearing.
-- **The ghost joins up**: in the pixel style the held piece previews with the wall shapes
-  it would form with its neighbours.
-- **Overtime** shows as a pulsing red border round the board.
-
-#### V4 — Combat effects — done
-
-Kept as planned, for the record; how it turned out is §7 and ARCHIVE 10z.
-
-- **The lob**: the ball grows toward the top of its arc while its ground shadow shrinks.
-- **Impacts by what they hit**: a splash ring in water, dust on grass, embers and smoke
-  lingering a few seconds on a destroyed wall.
-- **Incoming**: the target marker pulses faster as impact nears, more strongly on your
-  own wall.
-- **Breach**: a castle's flag comes down when it is breached mid-combat, rather than
-  vanishing.
-- **Muzzle smoke** drifting from each gun after it fires.
-
-#### V5 — Lobby and menu — done
-
-Kept as planned, for the record; how it turned out is §6, §7 and ARCHIVE 11a. Decided
-with the user: the seed is drawn when the table is set, so the preview is the real map;
-it is random each time a lobby opens (`?seed=` still sets one); and the host may seat a
-bot in their own place, which replaces the "watch the bots" button.
-
-- **A mini-map** of the table as it stands: the pattern for the chosen player count,
-  generated from the seed exactly as a match would be, with team letters. Islands are
-  shuffled among seats at the start, so it shows teams, not who gets which island.
-  **Open:** offline the menu's seed is known; online the room draws its seed only at the
-  start, so either the room draws it when the table is created (a server change, but not
-  a game-logic one) or the preview shows a representative map.
-- **Seat cards** in team columns, each with its colour swatch and a small rank insignia
-  per tier, instead of plain rows.
-- **An animated background**: the pixel sea behind the panel, or a blurred bot match being
-  watched.
-- A **pixel-art title**, and a little feedback when a person takes a seat or the room code
-  is copied.
-
-#### V6 — Resolution and match moments — done
-
-Kept as planned, for the record; how it turned out is §7 and ARCHIVE 11b.
-
-- **Points count up** across the territory as they are banked, during the intermission.
-- **A lost life** crumbles the island's walls outward rather than clearing them at once.
-- **Game over**: fireworks over the winning island(s).
+**Verification** as in 11.8: screenshots of each look in combat and building, both
+styles mid-wipe, and every player colour side by side at eight players.
 
 ---
 

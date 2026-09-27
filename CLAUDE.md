@@ -27,9 +27,10 @@ tools/screenshots.sh /tmp/shots [scene...]   # client in fixed states, against t
 `npm run check` takes a few minutes, mostly bot matches. Run it in the background and
 wait rather than assuming it hung.
 
-Client dev query parameters: `?autostart=1&players=3&seed=7` (a random seed without it), `&snapshot=build` to jump
-to a phase (`&round=N` for one deep in a match, `&idle=1` to leave your seat undriven on
-the way, so you are soon knocked out), `&speed=10`, `&style=flat|pixel` for both looks
+Client dev query parameters: `?autostart=1&players=3&seed=7` (a random seed without it),
+`&snapshot=build` to jump to a phase (`&round=N` for one deep in a match, `&idle=1` to
+leave your seat undriven on the way, so you are soon knocked out), `&speed=10`,
+`&style=flat|pixel` for both looks
 (`&buildStyle=`, `&combatStyle=` for one), `&watch=1&bots=marshal` to observe a bot match,
 `&rounds=12` for the round cap, `&teams=2` for teams of two in seat order. `?host=8` opens
 the lobby at eight seats — a room if a server answers, a local table if not —
@@ -44,7 +45,8 @@ Join reach the same lobby, which sets the map, players, teams, bots and rounds.
 | `sim`            | The deterministic game core. No DOM, no Node, no I/O.                      |
 | `protocol`       | Wire messages and validators.                                              |
 | `ai`             | Bots: min-cut sealing, 0-1 BFS attack, difficulty tiers.                   |
-| `server`         | Authoritative match server, rooms, WebSocket.                              |
+| `analysis`       | Per-round match statistics, for bot soaks and recorded human play alike.   |
+| `server`         | Authoritative match server, rooms, WebSocket, match recordings.            |
 | `client`         | Pixi renderer, two visual styles, controls, HUD, netcode client.           |
 | `tools/headless` | Bot-vs-bot soak runs and map dumps.                                        |
 
@@ -108,47 +110,32 @@ Full detail in PLAN.md §1. The parts that surprise people:
   default. A placed block belongs to the island, not to whoever placed it.
 - **Seats are shuffled onto islands at the start**, server and local alike. Player p still
   owns island p + 1; the room tells each connection which player it has become, so never
-  assume the first seat is player 0.
+  assume the first seat is player 0. **Teams belong to seats**, and the host chooses who
+  sits where; the seed is fixed when the table is set, so the lobby shows the real map.
 
 ## Status
 
-**M0–M5 done.** M6 done but for audio files: deployment (`Dockerfile`, one process,
-verified by a CI job since there is no Docker on this machine), audio wired end to end,
-2–8 players, and the lobby (tested at eight seats over a real socket; code copying, seat
-colours, tier descriptions).
+**Done**: M0–M6 (deployment verified by a CI job, since there is no Docker on this
+machine; 18 of 19 sound cues supplied by the user, `wall_destroyed` still to come), M8
+team mode (ARCHIVE 10u), M9 the visual pass (§11.8: a build and a combat look swapped by
+the banners, effects throughout, a lobby showing the real map), and the recording of
+every match (ARCHIVE 11e).
 
-**M8, team mode, is done** (PLAN.md §1.8, ARCHIVE 10u): equal teams, shared score and
-lives, losing together, no friendly fire, building on a teammate's island (people only by
-default), one lobby for online and offline, islands shuffled among seats, colour families
-and team tags. So is a polish pass driven by the user's own play (ARCHIVE 10t): leak marks
-tried and removed, a big timer mid-map, a cursor that says whether it will fire, overtime.
+**Now**: the user is running human test sessions, recorded from commit `45bcd92`, and will
+send compiled feedback. PLAN.md §11 opens with where to start:
 
-**M7, the balance pass, is where the work is.** PLAN.md §11 opens with where to start, then
-lists it in priority order:
-
-1. **Round cap and points scoring — done** (§1.7, ARCHIVE 10r). A match ends at
-   `maxRounds` or when one player is left; at the cap the best surviving score wins. Most
-   matches reach the cap, so **the scoring formula is the game's balance**.
-2. **Elimination tuning** (§11.2) — planned, waiting on the user's own play. Target: half
-   of 3–4 player matches end with one player left before the cap. Weights stay; levers
-   are one continue instead of two and a new placement delay, measured against careful
-   bots and an ambitious points-driven one that stands in for human play.
-3. **Two-player balance** (§11.3), to be re-measured under the cap before anything is tried.
-4. Measurements never taken (§11.4): the full ladder, and seat bias at 6 and 8 players in
+1. **Elimination tuning** (§11.2), the next milestone — planned, and now able to use the
+   recorded human rounds. Target: half of 3–4 player matches end with one player left
+   before the cap. Weights stay; levers are one continue instead of two and a new
+   placement delay, measured against careful bots and an ambitious points-driven one.
+   The round cap and points scoring are done (§1.7): most matches reach the cap, so **the
+   scoring formula is the game's balance**.
+2. **Two-player balance** (§11.3), to be re-measured under the cap before anything is tried.
+3. Measurements never taken (§11.4): the full ladder, and seat bias at 6 and 8 players in
    free-for-all (team seating is measured, and fair).
-5. Bots as personality × skill (§11.6), independent of balance.
-
-**M9, the visual pass (§11.8), is done** (ARCHIVE 10w–11b), and touched no game logic:
-a build look and a combat look (flat and pixel by default) swapped by the banners either
-side of combat as they cross the board, the "Place cannons" banner drawing the sweep
-away; the pixel style made cinematic; effects for building, combat, the end of a round
-and of a match; a lobby showing the real map, with a seed fixed and random when a table
-is set and the host free to seat a bot in their own place.
-
-**Audio: 18 of 19 cues supplied** by the user; only `wall_destroyed` is still to come,
-and missing files are silent by design.
-`assets/audio/README.md` lists every cue; `audioFiles.test.ts` fails if a file in the folder
-is not in the manifest.
+4. Independent of balance: bots as personality × skill (§11.6), and **alternative visual
+   themes** (§11.9 — Night, a Blueprint build look, a Cyberpunk combat look, Parchment),
+   which start with per-style palettes.
 
 ## Measuring the bots
 
