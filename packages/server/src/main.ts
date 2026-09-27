@@ -13,7 +13,7 @@ import { WebSocketServer, type WebSocket } from 'ws';
 
 import { repoRoot } from './paths.js';
 import type { Connection, Room } from './room.js';
-import { RecordingStore } from './recordings.js';
+import { openRecordingStore } from './recordings.js';
 import { RoomManager } from './rooms.js';
 
 const bundle = loadConfigBundle(repoRoot);
@@ -23,7 +23,7 @@ const bundle = loadConfigBundle(repoRoot);
  * data there is least of.
  */
 const store = bundle.server.recordings.enabled
-  ? new RecordingStore(
+  ? openRecordingStore(
       join(repoRoot, bundle.server.recordings.dir),
       bundle.server.recordings.maxUploadBytes,
       bundle,

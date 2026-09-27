@@ -100,3 +100,23 @@ export class RecordingStore {
     return { ok: true };
   }
 }
+
+/**
+ * The store, or null with a warning when its folder cannot be made — the server runs on
+ * without recording rather than not at all. A recording is never worth a game server:
+ * the deployment image once crashed at start-up because it runs as an unprivileged user
+ * who could not create `recordings/` in a directory owned by root (ARCHIVE 11e).
+ */
+export function openRecordingStore(
+  dir: string,
+  maxUploadBytes: number,
+  bundle: ConfigBundle,
+  log: (message: string) => void,
+): RecordingStore | null {
+  try {
+    return new RecordingStore(dir, maxUploadBytes, bundle, log);
+  } catch (error) {
+    log(`recordings disabled: cannot use ${dir} (${String(error).slice(0, 120)})`);
+    return null;
+  }
+}

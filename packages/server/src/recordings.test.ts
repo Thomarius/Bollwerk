@@ -1,4 +1,4 @@
-import { mkdtempSync, readFileSync, readdirSync } from 'node:fs';
+import { mkdtempSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -7,7 +7,7 @@ import { parseRecording, replayRecording, type RecordingLine } from '@rampart/pr
 import { describe, expect, it } from 'vitest';
 
 import { Room, type Connection } from './room.js';
-import { RecordingStore } from './recordings.js';
+import { RecordingStore, openRecordingStore } from './recordings.js';
 
 function room(record: (line: RecordingLine) => void): Room {
   return new Room({
@@ -157,5 +157,22 @@ describe('the recording store', () => {
     expect(body.length).toBeGreaterThan(0);
     expect(body.length % 2).toBe(0);
     expect(body.every((row) => row.includes(',gunner,'))).toBe(true);
+  });
+
+  it('runs on without recording when its folder cannot be made, rather than crash', () => {
+    // Beneath a plain file, which no user can make a directory in — not even root, so
+    // this holds wherever the tests run. The image once died at start-up on exactly
+    // this, as an unprivileged user in a directory owned by root.
+    const dir = mkdtempSync(join(tmpdir(), 'rec-'));
+    writeFileSync(join(dir, 'file'), '');
+    const said: string[] = [];
+    const store = openRecordingStore(
+      join(dir, 'file', 'recordings'),
+      1 << 20,
+      defaultConfigBundle,
+      (m) => said.push(m),
+    );
+    expect(store).toBeNull();
+    expect(said[0]).toMatch(/^recordings disabled/);
   });
 });

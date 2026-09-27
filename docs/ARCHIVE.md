@@ -1850,3 +1850,12 @@ Kept as planned, for the record; how it turned out is §7 and ARCHIVE 11b.
 - **Game over**: fireworks over the winning island(s).
 
 ---
+
+**The image failed CI after recording landed** (`45bcd92`): the server created
+`recordings/` at start-up, the image runs it as the unprivileged `node` user in an `/app`
+owned by root, and `mkdir` failed with EACCES — the server died before it listened, and
+the job's 30-second wait for an answer ran out. Reproduced without Docker by starting the
+bundle in a read-only copy of the image's layout. Fixed twice over: the Dockerfile makes
+`/app/recordings` and gives it to `node`, and a server that cannot make its recordings
+folder now warns and runs on without recording (`openRecordingStore`), since a recording
+is never worth the game server.

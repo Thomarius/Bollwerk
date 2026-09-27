@@ -42,6 +42,12 @@ COPY --from=build /app/config ./config
 COPY --from=build /app/packages/client/dist ./packages/client/dist
 COPY --from=build /app/packages/server/dist ./packages/server/dist
 
+# Match recordings (docs/PLAN.md §9), which the server writes as it runs. The server
+# runs as `node`, who cannot create a directory in /app, owned by root — so it is made
+# here and handed over. Inside a container the files go when the container does; mount a
+# volume at /app/recordings to keep them.
+RUN mkdir -p /app/recordings && chown node:node /app/recordings
+
 USER node
 
 # The config file's port, which PORT overrides — hosts that assign one (Fly, Railway)
