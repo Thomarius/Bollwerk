@@ -1,7 +1,8 @@
 import {
-  ArtStyleSchema,
   applySettings,
   artForStyle,
+  chooseStyle,
+  stylesFor,
   defaultArtConfig,
   defaultConfigBundle,
   defaultSettings,
@@ -9,6 +10,7 @@ import {
   mergeSettings,
   reshapeTable,
   validateConfigBundle,
+  type ArtLook,
   type ArtStyle,
   type ArtStyles,
   type MatchSettings,
@@ -139,18 +141,11 @@ const params = new URLSearchParams(globalThis.location.search);
 /** Where the menu remembers the two looks, so they survive a reload. */
 const STYLES_KEY = 'rampart.styles';
 
-function storedStyles(): Partial<ArtStyles> {
+/** What the menu saved, unchecked: `chooseStyle` decides whether each is still usable. */
+function storedStyles(): Partial<Record<ArtLook, unknown>> {
   try {
     const raw: unknown = JSON.parse(globalThis.localStorage?.getItem(STYLES_KEY) ?? '{}');
-    const stored = raw as Record<string, unknown>;
-    return {
-      ...(ArtStyleSchema.safeParse(stored.build).success
-        ? { build: stored.build as ArtStyle }
-        : {}),
-      ...(ArtStyleSchema.safeParse(stored.combat).success
-        ? { combat: stored.combat as ArtStyle }
-        : {}),
-    };
+    return typeof raw === 'object' && raw !== null ? raw : {};
   } catch {
     return {};
   }
@@ -159,17 +154,21 @@ function storedStyles(): Partial<ArtStyles> {
 /**
  * The look for building and the look for combat. `?style=` sets both, which is what the
  * screenshot script and older links mean by it; `?buildStyle=` and `?combatStyle=` set
- * one each. Then what the menu last saved, then the configured default pair.
+ * one each. Then what the menu last saved, then the configured default pair — each only
+ * if it is a style made for that look, so `?style=` naming a combat-only style changes
+ * combat and leaves building alone.
  */
 function preferredStyles(): ArtStyles {
-  const both = ArtStyleSchema.safeParse(params.get('style'));
-  const build = ArtStyleSchema.safeParse(params.get('buildStyle'));
-  const combat = ArtStyleSchema.safeParse(params.get('combatStyle'));
   const stored = storedStyles();
   const fallback = defaultArtConfig.styles;
+  const both = params.get('style');
   return {
-    build: build.data ?? both.data ?? stored.build ?? fallback.build,
-    combat: combat.data ?? both.data ?? stored.combat ?? fallback.combat,
+    build: chooseStyle('build', [params.get('buildStyle'), both, stored.build], fallback.build),
+    combat: chooseStyle(
+      'combat',
+      [params.get('combatStyle'), both, stored.combat],
+      fallback.combat,
+    ),
   };
 }
 const timeScale = Math.max(1, Number(params.get('speed') ?? 1));
@@ -251,11 +250,15 @@ interface Common {
 function readStyles(): ArtStyles {
   const fallback = preferredStyles();
   const styles: ArtStyles = {
-    build: ArtStyleSchema.catch(fallback.build).parse(
-      document.querySelector<HTMLSelectElement>('#build-style')?.value,
+    build: chooseStyle(
+      'build',
+      [document.querySelector<HTMLSelectElement>('#build-style')?.value],
+      fallback.build,
     ),
-    combat: ArtStyleSchema.catch(fallback.combat).parse(
-      document.querySelector<HTMLSelectElement>('#combat-style')?.value,
+    combat: chooseStyle(
+      'combat',
+      [document.querySelector<HTMLSelectElement>('#combat-style')?.value],
+      fallback.combat,
     ),
   };
   try {
@@ -266,15 +269,15 @@ function readStyles(): ArtStyles {
   return styles;
 }
 
-/** Names for the styles, as the menu offers them. */
+/** Names for the styles, as the menu offers them, each look only those made for it. */
 const STYLE_NAMES: Record<ArtStyle, string> = {
   flat: 'Minimal',
   pixel: 'Pixel art',
   night: 'Night',
 };
 
-function styleOptions(): string {
-  return ArtStyleSchema.options
+function styleOptions(look: ArtLook): string {
+  return stylesFor(look)
     .map((style) => `<option value="${style}">${STYLE_NAMES[style]}</option>`)
     .join('');
 }
@@ -299,8 +302,8 @@ function showMenu(): void {
       <p>Shoot down their walls. Rebuild yours before the next barrage.
          Fail to seal a castle and you lose a life.</p>
       <label>Name <input id="name" type="text" maxlength="16" value="Player" /></label>
-      <label>Building look <select id="build-style">${styleOptions()}</select></label>
-      <label>Combat look <select id="combat-style">${styleOptions()}</select></label>
+      <label>Building look <select id="build-style">${styleOptions('build')}</select></label>
+      <label>Combat look <select id="combat-style">${styleOptions('combat')}</select></label>
       <button id="play">Play</button>
       <div class="split">
         <input id="code" type="text" maxlength="8" placeholder="room code" />

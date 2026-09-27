@@ -342,8 +342,8 @@ sender's seat**, so a client cannot act for someone else.
 
 Two visual styles, flat and pixel, behind one `Theme` interface: the scene owns the
 camera, the layer stacks, dirty tracking and input mapping; a theme owns only what things
-look like. Adding a style is a name in `ArtStyleSchema`, a `Theme`, and a case in
-`createTheme`; more are planned in §11.9. All
+look like. Adding a style is a name in `ArtStyleSchema`, the looks it is made for in
+`STYLE_LOOKS`, a `Theme`, and a case in `createTheme`; more are planned in §11.9. All
 sprites are generated at boot from `art.default.json` plus the match seed — nothing binary
 is committed except audio.
 
@@ -703,9 +703,12 @@ The result is §7; the plan as agreed, and how each package turned out, are ARCH
 
 ### 11.9 Alternative visual themes — planned
 
-**Agreed with the user 2026-09-27, not started.** Client-side only, like 11.8: no sim,
-protocol or ruleset change. A style may be made for the **build look, the combat look or
-both**, and the menu offers each look only the styles made for it.
+**Agreed with the user 2026-09-27; per-style palettes, Night and styles per look done.**
+Client-side only, like 11.8: no sim, protocol or ruleset change. A style may be made for
+the **build look, the combat look or both** (`STYLE_LOOKS`): the menu offers each look
+only the styles made for it, the schema refuses a default pair that breaks it, and a
+link's or a saved choice that names a style not made for a look falls through to the next
+(`chooseStyle`) — so `?style=` naming a combat-only style changes combat alone.
 
 **First, per-style palettes — done** (§7, `stylePalettes`). The cheapest way to a new
 textured theme is now to let the pixel theme take a different set of sprite generators

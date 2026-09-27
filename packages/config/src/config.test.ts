@@ -5,7 +5,10 @@ import {
   ArtConfigSchema,
   AudioManifestSchema,
   artForStyle,
+  chooseStyle,
   hueOf,
+  STYLE_LOOKS,
+  stylesFor,
   MUSIC_CUES,
   RulesetSchema,
   SFX_CUES,
@@ -287,5 +290,31 @@ describe('style palettes', () => {
     expect(
       ArtConfigSchema.safeParse(withStyle({ palette: { waterMidd: '#000000' } })).success,
     ).toBe(false);
+  });
+});
+
+describe('styles per look', () => {
+  // No shipped style is made for one look yet, so the rules are tried on a table that has
+  // one: pixel for combat alone.
+  const looks = { ...STYLE_LOOKS, pixel: ['combat'] as const };
+
+  it('offers every shipped style for a look it is made for, the defaults included', () => {
+    expect(stylesFor('build')).toContain(defaultArtConfig.styles.build);
+    expect(stylesFor('combat')).toContain(defaultArtConfig.styles.combat);
+  });
+
+  it('offers a look only the styles made for it', () => {
+    expect(stylesFor('build', looks)).not.toContain('pixel');
+    expect(stylesFor('combat', looks)).toContain('pixel');
+  });
+
+  it('takes the first candidate made for the look, and falls through the rest', () => {
+    expect(chooseStyle('build', ['pixel', 'night'], 'flat', looks)).toBe('night');
+    expect(chooseStyle('combat', ['pixel', 'night'], 'flat', looks)).toBe('pixel');
+  });
+
+  it('falls back past a missing, unknown or stale choice', () => {
+    expect(chooseStyle('build', [null, undefined, 'sepia', 42], 'flat', looks)).toBe('flat');
+    expect(chooseStyle('build', ['pixel'], 'flat', looks)).toBe('flat');
   });
 });

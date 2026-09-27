@@ -72,11 +72,69 @@ export type FlatStyleConfig = z.infer<typeof FlatStyleSchema>;
  * other as they cross the board, as the original did. The same style for both switches
  * nothing.
  */
-export const ArtStylesSchema = z.strictObject({
-  build: ArtStyleSchema,
-  combat: ArtStyleSchema,
-});
+/** One of the two looks a match is drawn in. */
+export type ArtLook = 'build' | 'combat';
+
+export const ArtStylesSchema = z
+  .strictObject({
+    build: ArtStyleSchema,
+    combat: ArtStyleSchema,
+  })
+  .refine((styles) => styleServes(styles.build, 'build'), {
+    message: 'the build look must be a style made for building',
+    path: ['build'],
+  })
+  .refine((styles) => styleServes(styles.combat, 'combat'), {
+    message: 'the combat look must be a style made for combat',
+    path: ['combat'],
+  });
 export type ArtStyles = z.infer<typeof ArtStylesSchema>;
+
+/**
+ * Which looks each style is made for. A style may be made for one look only — a calm
+ * drafting-paper build look, a neon combat look — and is then offered for that one
+ * alone. A property of the drawing code rather than a tunable, so it lives here, and a
+ * style cannot be added without saying.
+ */
+export const STYLE_LOOKS: Record<ArtStyle, readonly ArtLook[]> = {
+  flat: ['build', 'combat'],
+  pixel: ['build', 'combat'],
+  night: ['build', 'combat'],
+};
+
+export function styleServes(
+  style: ArtStyle,
+  look: ArtLook,
+  looks: Record<ArtStyle, readonly ArtLook[]> = STYLE_LOOKS,
+): boolean {
+  return looks[style].includes(look);
+}
+
+/** The styles made for a look, in the order the menu offers them. */
+export function stylesFor(
+  look: ArtLook,
+  looks: Record<ArtStyle, readonly ArtLook[]> = STYLE_LOOKS,
+): ArtStyle[] {
+  return ArtStyleSchema.options.filter((style) => styleServes(style, look, looks));
+}
+
+/**
+ * The first of `candidates` that names a style made for `look` — a link's, then what the
+ * menu saved, then the default, say — so a stale or hand-typed choice falls through to
+ * the next rather than drawing a look in a style that was never made for it.
+ */
+export function chooseStyle(
+  look: ArtLook,
+  candidates: readonly unknown[],
+  fallback: ArtStyle,
+  looks: Record<ArtStyle, readonly ArtLook[]> = STYLE_LOOKS,
+): ArtStyle {
+  for (const candidate of candidates) {
+    const style = ArtStyleSchema.safeParse(candidate);
+    if (style.success && styleServes(style.data, look, looks)) return style.data;
+  }
+  return fallback;
+}
 
 /**
  * A style's own colours, over the shared ones: any palette entries it names, and the

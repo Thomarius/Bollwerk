@@ -1890,3 +1890,12 @@ first and failed**: walls are the stone sprite multiplied by the owner's colour,
 stone turned azure walls grey and violet greyish, which breaks the rule that a player
 keeps their hue. Neutral, bright stone keeps all eight hues at eight players. The dark
 stone was lifted once, because breached, inert guns vanished into the ground.
+
+**Styles per look — done.** `STYLE_LOOKS` in the config package says which looks each
+style is made for: a property of the drawing code rather than a tunable, so a table in
+code, typed so that a style cannot be added without an entry. The menu offers each look
+`stylesFor(look)`; `ArtStylesSchema` refuses a default pair that breaks it; and the URL
+parameters and the menu's saved choice go through `chooseStyle`, which takes the first
+candidate made for the look, so a stale saved choice or `?style=` naming a one-look style
+falls through instead of drawing a look in a style never made for it. Every shipped style
+still serves both looks, so the rules are tested against a table with a one-look style.
