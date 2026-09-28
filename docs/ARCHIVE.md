@@ -2047,3 +2047,16 @@ take. Both shared helpers in `theme.ts`, called by all six styles; `shotLift` no
 any course, not only a shot. Seen in a scripted game at Pixel art, Cyberpunk and
 Parchment: four guns reloading with their rings part filled, and the dotted arc from the
 ringed gun to the cursor, whose first brightness, 0.45, was a little faint on grass.
+
+**U3, the end-of-match summary — done.** A `MatchLog` fed the events the client already
+receives: wall destroyed credited through `shot_fired` to whoever fired, lives from
+`player_continued`, scores and castles at every `round_resolved`. A team's castles are
+its best round together (`mostCastlesOf`), not the sum of its members' separate bests.
+The table gains three columns and an SVG chart of every score by round follows it. Tested
+against hand-made events and a whole three-round match played by bots, where the log's
+last scores and lives agree with the state. Seen at the end of a real ten-round match at
+four players and at teams of two, watched at four times speed: the caption first
+spanned the panel and labelled the chart's start "round 1" where its lines begin from
+nought; the island labels, in the layer above the HUD, sat on top of the summary and now
+step aside at game over; and a jump straight to the end showed noughts, so the columns
+appear only when the log saw a resolution.

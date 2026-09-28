@@ -39,6 +39,7 @@ import { announcementLines, isTeamMatch, teamLetter } from './scores.js';
 import { buildHints, type BuildHints } from './hints.js';
 import { timerSpot } from './timerSpot.js';
 import { SplitTitle, installBackdrop } from './decor.js';
+import { MatchLog } from './summary.js';
 import { drawPreview, tablePreview } from './preview.js';
 import { RecordingUpload } from './recordingUpload.js';
 import {
@@ -811,6 +812,9 @@ async function runSession(session: Session, setup: Setup): Promise<void> {
   await scene.init(canvas, { build, combat }, art);
 
   const hud = new Hud(hudRoot, bannerRoot);
+  // What the end of the match summarises, kept from the events as they come.
+  const matchLog = new MatchLog();
+  hud.useLog(matchLog);
   const matchAudio = new MatchAudio(audio, session.humanPlayer);
 
   /**
@@ -1145,6 +1149,7 @@ async function runSession(session: Session, setup: Setup): Promise<void> {
   }
 
   function applyEvents(events: readonly MatchEvent[]): void {
+    matchLog.note(events, session.state);
     let structuresChanged = false;
     let territoryChanged = false;
     for (const event of events) {

@@ -3,6 +3,8 @@ import type { BannerKind } from './banners.js';
 import { escape } from './lobby.js';
 import { defaultArtConfig } from '@rampart/config';
 
+import { mostCastlesOf, scoreChart, type MatchLog } from './summary.js';
+
 import {
   countUp,
   endOfMatchText,
@@ -287,6 +289,13 @@ export class Hud {
   private frame: { phase: HTMLElement; roster: HTMLElement; rest: HTMLElement } | null = null;
   /** Roster entries by key — `p<player>` or `t<team>` — and the markup each last had. */
   private readonly entries = new Map<string, { node: HTMLElement; html: string }>();
+  /** The match's log, for the summary at its end; see `summary.ts`. */
+  private log: MatchLog | null = null;
+
+  useLog(log: MatchLog): void {
+    this.log = log;
+  }
+
   /** Scores counting up, by the same keys. */
   private readonly counts = new Map<string, { from: number; to: number; since: number }>();
 
@@ -364,6 +373,47 @@ export class Hud {
     entry.node.className = built.className;
     entry.node.title = built.title;
     entry.node.replaceChildren(...built.childNodes);
+  }
+
+  /**
+   * Every score round by round, one line per player — per team in a team match — so the
+   * end of a match shows where it was won. The viewer's own line is drawn heaviest.
+   */
+  private chart(state: MatchState, humanPlayer: number): string {
+    const log = this.log;
+    if (log === null || log.scores.length < 2) return '';
+    const width = 360;
+    const height = 110;
+    const teamed = isTeamMatch(state);
+    const groups = teamed
+      ? [...new Set(state.players.map((p) => p.team))]
+          .sort((a, b) => a - b)
+          .map((team) => state.players.filter((p) => p.team === team).map((p) => p.id))
+      : state.players.map((p) => [p.id]);
+    const series = groups.map((ids, key) => ({
+      key,
+      scores: log.scores.map((round) =>
+        ids.reduce((sum, id) => sum + (round.byPlayer[id] ?? 0), 0),
+      ),
+    }));
+    const lines = scoreChart(series, log.scores.length, width, height)
+      .map((line) => {
+        const ids = groups[line.key] ?? [];
+        const mine = ids.includes(humanPlayer);
+        const d = line.points.map((pt, i) => `${i === 0 ? 'M' : 'L'}${pt.x} ${pt.y}`).join(' ');
+        return `<path d="${d}" stroke="${playerCssColour(ids[0] ?? 0)}" stroke-width="${mine ? 3 : 1.5}" fill="none" stroke-linejoin="round"/>`;
+      })
+      .join('');
+    // The lines start from nought, before the first round seen: the start of the match,
+    // or where a client that joined part-way came in.
+    const first = log.scores[0]?.round ?? 1;
+    const last = log.scores.at(-1)?.round ?? first;
+    const start = first === 1 ? 'start' : `round ${first - 1}`;
+    return (
+      `<figure class="score-chart"><svg viewBox="-4 -4 ${width + 8} ${height + 8}" width="${width}" height="${height}">` +
+      `<line x1="0" y1="${height}" x2="${width}" y2="${height}" class="axis"/>${lines}</svg>` +
+      `<figcaption><span>${start}</span><span>points by round</span><span>round ${last}</span></figcaption></figure>`
+    );
   }
 
   /** `sealed` is castles enclosed as the board stands now, which the sim's count is not. */
@@ -506,9 +556,29 @@ export class Hud {
         `</div>`;
     }
 
+    // The labels over the islands live in the layer above this one, and at the end of a
+    // match they sat on top of the summary; it says who was out, so they step aside.
+    this.bannerRoot.classList.toggle('game-over', state.phase === 'game_over');
     let banner = '';
     if (state.phase === 'game_over') {
       const text = escape(endOfMatchText(state, humanPlayer));
+      // Only a log that saw the match: one that heard no resolution — a jump straight to
+      // the end — would claim noughts it does not know.
+      const log = this.log !== null && this.log.scores.length > 0 ? this.log : null;
+      const sum = (map: ReadonlyMap<number, number> | undefined, ids: readonly number[]): number =>
+        ids.reduce((total, id) => total + (map?.get(id) ?? 0), 0);
+      // What each row did as well as where it finished: the wall it knocked down, the
+      // most castles it held at once, the lives it spent.
+      const stats = (ids: readonly number[]): string =>
+        log === null
+          ? ''
+          : `<td>${sum(log.destroyed, ids)}</td><td>${mostCastlesOf(log, ids)}</td>` +
+            `<td>${sum(log.livesSpent, ids)}</td>`;
+      const head =
+        log === null
+          ? ''
+          : '<tr class="head"><td></td><td></td><td>points</td><td>wall</td>' +
+            '<td>castles</td><td>lives lost</td><td></td></tr>';
       // A table rather than a line: with more than three players a single line of
       // names and numbers could not be read at a glance.
       const rows = teamed
@@ -524,7 +594,7 @@ export class Hud {
               return (
                 `<tr class="${s.eliminated ? 'out' : ''}${mine ? ' you' : ''}">` +
                 `<td>${rank + 1}</td><td>Team ${teamLetter(s.team)} · ${members}</td>` +
-                `<td>${s.score}</td><td>${s.eliminated ? 'out' : ''}</td></tr>`
+                `<td>${s.score}</td>${stats(s.members)}<td>${s.eliminated ? 'out' : ''}</td></tr>`
               );
             })
             .join('')
@@ -533,12 +603,12 @@ export class Hud {
               (s, rank) =>
                 `<tr class="${s.eliminated ? 'out' : ''}${s.player === humanPlayer ? ' you' : ''}">` +
                 `<td>${rank + 1}</td><td><b style="background:${playerCssColour(s.player)}"></b>${escape(s.name)}</td>` +
-                `<td>${s.score}</td><td>${s.eliminated ? 'out' : ''}</td></tr>`,
+                `<td>${s.score}</td>${stats([s.player])}<td>${s.eliminated ? 'out' : ''}</td></tr>`,
             )
             .join('');
-      const table = `<table class="final">${rows}</table>`;
+      const table = `<table class="final">${head}${rows}</table>`;
       const again = humanPlayer < 0 ? 'press R for the menu' : 'press R to play again';
-      banner = `<div class="banner">${text}${table}<small>${again}</small></div>`;
+      banner = `<div class="banner">${text}${table}${this.chart(state, humanPlayer)}<small>${again}</small></div>`;
     }
     // Knocked out: the stamp over your island is the moment, so this is only a quiet
     // line where the controls hint was — a banner in the middle of the screen covered

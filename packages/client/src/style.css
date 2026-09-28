@@ -509,6 +509,51 @@ table.final td b {
   margin-right: 0.5rem;
 }
 
+table.final td:nth-child(n + 4) {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  color: var(--muted);
+}
+
+table.final tr.head td {
+  padding-bottom: 0.35rem;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+/* The island labels, which would sit on top of the summary, step aside for it. */
+#banner.game-over .team-tag,
+#banner.game-over .island-banner {
+  display: none;
+}
+
+/* Every score round by round, under the standings. */
+.score-chart {
+  width: fit-content;
+  margin: 0.9rem auto 0.3rem;
+}
+
+.score-chart svg {
+  display: block;
+  overflow: visible;
+}
+
+.score-chart .axis {
+  stroke: rgb(255 255 255 / 25%);
+  stroke-width: 1;
+}
+
+.score-chart figcaption {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 0.3rem;
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+}
+
 table.final tr.out {
   opacity: 0.45;
 }

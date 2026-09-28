@@ -409,7 +409,11 @@ its castles, both over `effects.tallyMs`. A lost life takes the island's wall do
 from its middle over `effects.lifeCrumbleMs` instead of clearing it in a frame (the
 cannons, removed from the state outright, still go at once). Once the match is over,
 fireworks burst over the winners' islands in their colours for as long as the screen
-stays up.
+stays up, and **the summary** (`summary.ts`) gives each player — each team, in a team
+match — the wall they destroyed, the most castles held at once and the lives lost, with
+every score charted round by round, the viewer's line heaviest. It is kept from the
+events as they arrive, so a client that joined part-way charts from where it came in,
+and one that saw no resolution shows the standings alone.
 
 **Territory holds through combat, as in the original, and is drawn as the board stands
 everywhere else.** The client recomputes the enclosure for display whenever structures
@@ -906,7 +910,7 @@ timer.
 - **Not breach markers**: dropped by the user, who found them very distracting when they
   were tried before — the gap marks removed after the first human play (§7).
 
-**U3 — The end of a match.** A summary under the fireworks: per player the score,
+**U3 — The end of a match — done** (ARCHIVE 11g). A summary under the fireworks: per player the score,
 castles held, wall destroyed and lives spent, and a small chart of every player's score
 round by round, so it shows where the match was won. From the events the client already
 receives.
