@@ -117,12 +117,12 @@ Full detail in PLAN.md §1. The parts that surprise people:
 
 **Done**: M0–M6 (deployment verified by a CI job, since there is no Docker on this
 machine; 18 of 19 sound cues supplied by the user, `wall_destroyed` still to come), M8
-team mode (ARCHIVE 10u), M9 the visual pass (§11.8: a build and a combat look swapped by
+team mode (ARCHIVE 10u), M9 the visual pass (a build and a combat look swapped by
 the banners, effects throughout, a lobby showing the real map), the recording of every
 match (ARCHIVE 11e, each header stamped with the server's commit), M10 six visual styles
-for either look, each with its own menu title and banner (§11.9), and M11 the UI polish
-(§11.10: a compact roster, reload rings and aim line, an end-of-match summary, an
-Effects setting). All display-only work since has left the sim untouched.
+for either look, each with its own menu title and banner, and M11 the UI polish (a
+compact roster, reload rings and aim line, an end-of-match summary, an Effects setting).
+All display-only work since has left the sim untouched.
 
 **Now**: the user is running human test sessions — the first, one person against two
 gunners, is in `recordings/` and replays exact — and will send compiled feedback.
@@ -138,7 +138,7 @@ PLAN.md §11 opens with where to start:
 3. Measurements never taken (§11.4): the full ladder, and seat bias at 6 and 8 players in
    free-for-all (team seating is measured, and fair).
 4. Independent of balance: bots as personality × skill (§11.6). The visual work of
-   §11.8–11.10 is done; no more styles are planned.
+   M9–M11 is done, its plans in ARCHIVE 11h; no more styles are planned.
 
 ## Measuring the bots
 

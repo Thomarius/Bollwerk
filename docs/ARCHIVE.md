@@ -2083,3 +2083,165 @@ system, for the title's sweep and the roster's slide, and a class on the page mi
 stylesheet's reduced-motion rules — and, beyond what the system setting did, it stops
 the board's shake. Seen: four lobby maps, the pulse on a person's four castles and the
 bots' choices bursting, the menu's new field.
+
+## 11h. Finished work moved out of the plan (2026-09-28)
+
+PLAN keeps only open work, so the sections of its §11 that were finished moved here as
+they stood, under their old numbers, which commits and the entries above cite. The
+theme rules every style keeps moved into PLAN §7, and team mode's one open item, bots
+that do not help a teammate build, into PLAN 11.5.
+
+### Formerly PLAN 11.1 Round cap and points scoring — done
+
+The rules are §1.7, the lobby setting §6; how they were settled is ARCHIVE 10r.
+
+### Formerly PLAN 11.7 Team mode — done
+
+The rules are §1.8, seating and the lobby §6; how it was built and measured is ARCHIVE 10u.
+Left open: **bots do not help a teammate build**, even under `crossIslandBuild: all` —
+teaching one to help without wrecking a person's plan is its own question.
+
+### Formerly PLAN 11.8 Visual pass — done
+
+Agreed and finished on 2026-09-26, touching no game logic: two looks swapped by the
+banners either side of combat, the sweep drawn away under the "Place cannons" banner
+(V1); the pixel style made the cinematic combat look (V2); effects for building (V3),
+combat (V4), the end of a round and of a match (V6); a lobby showing the real map (V5).
+The result is §7; the plan as agreed, and how each package turned out, are ARCHIVE
+10w–10z, 11a, 11b and 11f.
+
+### Formerly PLAN 11.9 Alternative visual themes — done
+
+**Agreed with the user 2026-09-27; per-style palettes, Night and styles per look done.**
+Client-side only, like 11.8: no sim, protocol or ruleset change. A style may be made for
+the **build look, the combat look or both** (`STYLE_LOOKS`): the menu offers each look
+only the styles made for it, the schema refuses a default pair that breaks it, and a
+link's or a saved choice that names a style not made for a look falls through to the next
+(`chooseStyle`) — so `?style=` naming a combat-only style changes combat alone.
+
+**First, per-style palettes — done** (§7, `stylePalettes`). The cheapest way to a new
+textured theme is now to let the pixel theme take a different set of sprite generators
+and a different palette, rather than writing a second large `Theme` class.
+
+**Rules every theme keeps:**
+
+- **A title of its own for the menu** (`TITLES` in `decor.ts`, a record over every
+  style, so none can be added without one).
+
+- **A player keeps their hue across the look swap.** If red became magenta under the
+  banner, nobody could follow who is who. A theme may restyle a player's colour — neon,
+  ink, pastel — but not change it; the eight colours and the team families must stay
+  distinguishable in every theme.
+- **Information stays readable**: the flood of newly sealed ground, the red mark over
+  your own wall, the overtime border, the aiming cursor. These are shared helpers in
+  `theme.ts`; a theme restyles them only where it keeps them legible.
+- **Land, sea, wall and sealed ground tell apart at a glance**, including in a dark
+  theme.
+
+**The themes.** Agreed 2026-09-27: after per-style palettes, Night and styles offered per
+look, **Cyberpunk comes next**, ahead of Blueprint:
+
+1. **Night** — **done**: the pixel theme under its own palette, for both looks. Moonlit
+   islands on a near-black sea, walls in bright moonlit stone, and torchlight (below), which palette
+   alone could not do (ARCHIVE 11g).
+2. **Blueprint — done** (§7). Planned as a build look; offered for both at the user's
+   wish, for more choice, with no area tags on sealed ground — the game is arcade and
+   the board should not carry much text. As planned: blue drafting paper with a grid,
+   walls as white technical lines, castles as plan symbols, sealed ground hatched.
+   Minimal stays as the style to debug against.
+3. **Cyberpunk — done** (§7), neon menu title included — planned as a combat look, the
+   user's idea, and opened to building too (ARCHIVE 11g). As planned: **Circuits, not runes** (runes are
+   another theme, arcane, not planned). Brightness means structure and colour means
+   ownership: walls are the brightest outlines on the board, each in its owner's neon;
+   land is a dark grid, the sea near black with circuit traces and pulses running along
+   them, fading toward the islands. Castles have a glowing core; sealed ground is a lit
+   grid floor in the owner's colour; flags are holograms that flicker on; shots are
+   plasma tracers, impacts bursts of light and glitch, gun smoke sparks; a breach shorts
+   out with sparks and goes dark; an inert gun powers down with a flicker. A neon title
+   for the menu. Glow by additive blending of a second, larger shape rather than a bloom
+   filter, which costs frame rate at eight players; try the filter only if that is not
+   enough.
+4. **Parchment map — done** (§7), both looks. As planned, except that the wax seals are
+   in each owner's colour rather than red, which would have been one player's: sepia
+   land, the sea in ink contours and wave strokes, walls as inked stone, shots as ink.
+
+**No further styles for now** (decided 2026-09-27): the six are enough. Considered and
+not planned: a retro arcade CRT look, an arcane runic theme, and a high-contrast theme
+with a pattern per player, the last the one worth reconsidering for six to eight players.
+Cyberpunk stays as it is, its sea pulses included in the build look.
+
+**Torchlight for Night — done** (agreed and built 2026-09-27; tunables in `art.night`).
+Night is the pixel theme under its own palette; torchlight is drawing code of its own,
+switched on for Night alone, so the pixel style is untouched. **The light falls on the ground, not on
+the walls' colour**: warm stone was tried and turned azure walls grey (ARCHIVE 11g).
+
+- **Torches at every sealed castle**: two flanking the gate, flames flickering a little
+  out of step, and a warm pool of light on the ground two or three tiles across, fading
+  at its edge and breathing with the flicker — a wider shape blended additively, as
+  Cyberpunk's glow is. **The torches carry information**: a sealed castle is lit, a breach
+  douses them with a puff of smoke, and re-sealing relights them, so lit means sealed and
+  dark means breached across the whole map.
+- **Light from combat**: muzzle flashes briefly light the ground round the gun; shots
+  carry a small warm glow, as burning shot; a breach casts a faint flickering glow for as
+  long as its embers smoulder.
+- **A torchlit menu title**: Night's title with a small torch beside the word and its
+  warm light on the stone.
+- **Readability**: the pools stay faint over walls, so every player keeps their colour —
+  checked at eight players, with the brightness capped if a colour drifts. Sizes,
+  flicker and brightness are config. Faces keep their height, so wipes still line up.
+- **Not included**: darkening everything outside the light, which would hide a board
+  that building and aiming need whole; torches along the walls, which is clutter.
+
+**Verification** as in 11.8: screenshots of each look in combat and building, both
+styles mid-wipe, and every player colour side by side at eight players.
+
+### Formerly PLAN 11.10 UI and effects polish — done
+
+**Agreed with the user 2026-09-28 and done the same day**, while human testing went on.
+Display only, like 11.8 and 11.9: no sim, protocol or ruleset change. Anything drawn on
+the board is a shared helper in `theme.ts`, drawn in every theme's colours, as the
+aiming cursor is; anything timed is a pure function with tests, since headless Chrome
+cannot check it; tunables go in `art.default.json`. In this order:
+
+**U1 — The HUD, readable at eight — done** (ARCHIVE 11g). The eight-player
+screenshots wrapped each roster entry onto three lines and "round 3 / 10" under the
+timer.
+
+- A compact roster at six to eight players: icons for castles, guns and lives rather
+  than words, a narrower entry, the team layout checked the same way.
+- Scores that move: the roster's numbers count up as points bank, as the island banners
+  already do, and rows slide into a new order rather than jumping.
+- The clock louder at the end: the big timer figure in the sea pulses and turns red over
+  the last seconds of a build phase, as the clock's cue sounds.
+- Checked with screenshots at two, four and eight players, free-for-all and teams of two.
+
+**U2 — Combat aids — done** (ARCHIVE 11g).
+
+- Reload rings: a thin ring round each of the player's own guns filling as its shot
+  flies, and a brief flash when it is ready — flight time is the reload, and nothing on
+  the board says which guns will fire.
+- An aim line: while aiming, a faint line from the ready gun a click would fire to the
+  cursor, chosen by the rule the game uses, so it is never wrong.
+- **Not breach markers**: dropped by the user, who found them very distracting when they
+  were tried before — the gap marks removed after the first human play (§7).
+
+**U3 — The end of a match — done** (ARCHIVE 11g). A summary under the fireworks: per player the score,
+castles held, wall destroyed and lives spent, and a small chart of every player's score
+round by round, so it shows where the match was won. From the events the client already
+receives.
+
+**U4 — Banners in the arriving look — done** (ARCHIVE 11g). The phase banner is one dark band with gold text
+in every style, though it is exactly where the look changes. Each style gets its own: a
+neon strip for Cyberpunk, a parchment ribbon for Parchment, a drawing's title block for
+Blueprint, flat colour for Minimal; Pixel art and Night keep today's. A record over every
+style, as the titles are, so a new style must bring one. The wipe's geometry does not
+change.
+
+**U5 — Before the match — done** (ARCHIVE 11g).
+
+- The lobby's map in the chosen build look's colours, not plain ones.
+- Castle choice with more to it: the castles to choose pulse softly, and each player's
+  choice is marked on their island as they make it.
+- An effects setting in the menu, full or reduced, saved with the looks: reduced turns
+  off the shake, the flashes of the sweep and the title's repeating sweep, for anyone who
+  wants that without changing their system's reduced-motion setting.
