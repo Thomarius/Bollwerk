@@ -2025,3 +2025,15 @@ code: the server now stamps every header it writes — its own rooms' and browse
 uploads alike, overwriting any claim a page makes — with its commit, from git or from
 `RAMPART_COMMIT`, which the image is built with and CI passes. The field is optional, so
 earlier recordings still read.
+
+**U1, the HUD readable at eight — done.** The HUD rebuilt its whole markup every frame,
+so nothing in it could animate; the roster now has a container of its own whose entries
+are kept and only their contents rewritten, which lets scores count up (`countUp`,
+tested, over `tallyMs`) and a change of places slide. Free-for-all is now in standing,
+best first — reusing `standings`, which the end screen already sorted by; a team match
+keeps the fixed team order chosen in 10u. Past four players in free-for-all the words
+give way to icons, with the words on hover; the phase block never wraps; the bar's gap
+tightened. Eight entries first fitted at 1400 pixels and overflowed at 1280, and fit at
+both after the spacing was cut. The big timer, already red for the last three seconds,
+now beats on each, and on overtime's three. Probed in a browser: scores climbing over
+about 1.4 s at a resolution with a change of places, and the beat on 3, 2 and 1.

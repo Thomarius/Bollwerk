@@ -2,6 +2,7 @@ import type { MatchState } from '@rampart/sim';
 import { describe, expect, it } from 'vitest';
 
 import {
+  countUp,
   announcementLines,
   endOfMatchText,
   finalRoundNext,
@@ -124,5 +125,19 @@ describe('in a team match', () => {
     const over = state({ players, winners: [0, 2], endedBy: 'round_cap' });
     expect(endOfMatchText(over, 2)).toBe('Your team wins on points');
     expect(endOfMatchText(over, 1)).toBe('Team A wins on points');
+  });
+});
+
+describe('a score counting up', () => {
+  it('runs from the old score to the new one, and stays there', () => {
+    expect(countUp(100, 200, 0, 1400)).toBe(100);
+    expect(countUp(100, 200, 1400, 1400)).toBe(200);
+    expect(countUp(100, 200, 5000, 1400)).toBe(200);
+  });
+
+  it('moves quickly at first and settles as it arrives', () => {
+    const half = countUp(0, 100, 700, 1400);
+    expect(half).toBeGreaterThan(50);
+    expect(half).toBeLessThan(100);
   });
 });

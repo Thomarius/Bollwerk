@@ -1,7 +1,10 @@
 import { playerCssColour } from './colours.js';
 import type { BannerKind } from './banners.js';
 import { escape } from './lobby.js';
+import { defaultArtConfig } from '@rampart/config';
+
 import {
+  countUp,
   endOfMatchText,
   isTeamMatch,
   roundLabel,
@@ -135,8 +138,18 @@ export class Hud {
       this.bannerRoot.append(this.bigTimer);
     }
     const text = String(seconds);
-    if (this.bigTimer.textContent !== text) this.bigTimer.textContent = text;
-    this.bigTimer.classList.toggle('urgent', seconds <= 3);
+    const urgent = seconds <= 3;
+    if (this.bigTimer.textContent !== text) {
+      this.bigTimer.textContent = text;
+      // A beat on every second of the last three, with the clock's tick: restarted by
+      // taking the class off and putting it back once the change has been seen.
+      this.bigTimer.classList.remove('beat');
+      if (urgent) {
+        void this.bigTimer.offsetWidth;
+        this.bigTimer.classList.add('beat');
+      }
+    }
+    this.bigTimer.classList.toggle('urgent', urgent);
     this.bigTimer.style.left = `${at.x}px`;
     this.bigTimer.style.top = `${at.y}px`;
     this.bigTimer.style.fontSize = `${Math.round(at.sizePx * 0.75)}px`;
@@ -267,6 +280,92 @@ export class Hud {
     }
   }
 
+  /**
+   * The HUD's frame, built once: the phase and the rest are rewritten every frame, the
+   * roster is kept, so its entries can count up and slide rather than being replaced.
+   */
+  private frame: { phase: HTMLElement; roster: HTMLElement; rest: HTMLElement } | null = null;
+  /** Roster entries by key — `p<player>` or `t<team>` — and the markup each last had. */
+  private readonly entries = new Map<string, { node: HTMLElement; html: string }>();
+  /** Scores counting up, by the same keys. */
+  private readonly counts = new Map<string, { from: number; to: number; since: number }>();
+
+  private layout(): { phase: HTMLElement; roster: HTMLElement; rest: HTMLElement } {
+    if (this.frame !== null && this.frame.roster.isConnected) return this.frame;
+    this.root.innerHTML =
+      '<div class="bar"><div class="phase"></div><ul class="roster"></ul></div>' +
+      '<div class="hud-rest"></div>';
+    this.entries.clear();
+    this.frame = {
+      phase: this.root.querySelector<HTMLElement>('.phase')!,
+      roster: this.root.querySelector<HTMLElement>('.roster')!,
+      rest: this.root.querySelector<HTMLElement>('.hud-rest')!,
+    };
+    return this.frame;
+  }
+
+  /** A score as shown: counting up to a new total over `tallyMs`, as banked points do. */
+  private shownScore(key: string, target: number, now: number): number {
+    const span = defaultArtConfig.effects.tallyMs;
+    const count = this.counts.get(key);
+    if (count === undefined) {
+      this.counts.set(key, { from: target, to: target, since: now });
+      return target;
+    }
+    if (count.to !== target) {
+      count.from = countUp(count.from, count.to, now - count.since, span);
+      count.to = target;
+      count.since = now;
+    }
+    return countUp(count.from, count.to, now - count.since, span);
+  }
+
+  /**
+   * Puts the roster's entries in this order, sliding any that moved from where they
+   * were rather than letting them jump — so a change of places reads as one.
+   */
+  private placeEntries(roster: HTMLElement, order: readonly string[]): void {
+    const want = order.flatMap((key) => {
+      const entry = this.entries.get(key);
+      return entry === undefined ? [] : [entry.node];
+    });
+    const current = [...roster.children];
+    if (current.length === want.length && current.every((node, i) => node === want[i])) return;
+    const was = new Map(current.map((node) => [node, node.getBoundingClientRect().left]));
+    roster.replaceChildren(...want);
+    if (globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return;
+    for (const node of want) {
+      const left = was.get(node);
+      if (left === undefined) continue;
+      const dx = left - node.getBoundingClientRect().left;
+      if (Math.abs(dx) < 1) continue;
+      node.style.transition = 'none';
+      node.style.transform = `translateX(${dx}px)`;
+      void node.offsetWidth;
+      node.style.transition = 'transform 360ms ease';
+      node.style.transform = '';
+    }
+  }
+
+  /** Sets an entry's markup, touching the page only when it has changed. */
+  private entry(key: string, html: string): void {
+    let entry = this.entries.get(key);
+    if (entry === undefined) {
+      entry = { node: document.createElement('li'), html: '' };
+      this.entries.set(key, entry);
+    }
+    if (entry.html === html) return;
+    entry.html = html;
+    // The outer element is kept, so its slide survives; only what is inside it changes.
+    const template = document.createElement('template');
+    template.innerHTML = html;
+    const built = template.content.firstElementChild as HTMLElement | null;
+    if (built === null) return;
+    entry.node.className = built.className;
+    entry.node.title = built.title;
+    entry.node.replaceChildren(...built.childNodes);
+  }
+
   /** `sealed` is castles enclosed as the board stands now, which the sim's count is not. */
   update(
     state: MatchState,
@@ -306,43 +405,62 @@ export class Hud {
       return `<span class="lives${left === 1 ? ' last' : ''}" title="${left} of ${total} lives">${pips}</span>`;
     };
     const teamed = isTeamMatch(state);
+    const now = performance.now();
+    // Past four players in free-for-all, icons rather than words, so eight entries fit
+    // one line of the bar: at eight the words wrapped each onto three, under the time bar.
+    const compact = !teamed && state.players.length > 4;
     const playerItem = (p: (typeof state.players)[number]): string => {
       const cannons = state.cannons.filter((c) => c.owner === p.id);
       const live = cannons.filter((c) => c.active).length;
       const classes = ['player', p.eliminated ? 'out' : '', p.id === humanPlayer ? 'you' : '']
         .filter(Boolean)
         .join(' ');
-      const castles = `${sealed[p.id] ?? 0} castle${sealed[p.id] === 1 ? '' : 's'}`;
+      const held = sealed[p.id] ?? 0;
+      const castles = `${held} castle${held === 1 ? '' : 's'}`;
+      const guns = `${live}/${cannons.length} guns`;
+      const score = this.shownScore(`p${p.id}`, p.score, now);
       // In a team match the score and lives belong to the team, so they head its group.
       // Past four players a team's members get only their names: their team's score and
       // lives head the group, their castles fly banners on the board, and the details
       // wrapped a crowded bar onto two lines.
       const status = p.eliminated
-        ? `eliminated round ${p.eliminatedRound}`
+        ? `${compact ? 'out' : 'eliminated'} round ${p.eliminatedRound}`
         : teamed && state.players.length > 4
           ? ''
           : teamed
-            ? `${castles} · ${live}/${cannons.length} guns`
-            : `${p.score} pts · ${castles} · ${live}/${cannons.length} guns · ${livesOf(p.team)}`;
-      return `<li class="${classes}"><b style="background:${playerCssColour(p.id)}"></b>${escape(p.name)}<span>${status}</span></li>`;
+            ? `${castles} · ${guns}`
+            : compact
+              ? `<em>${score}</em> <i>♜</i>${held} <i>⊙</i>${live}/${cannons.length} ${livesOf(p.team)}`
+              : `${score} pts · ${castles} · ${guns} · ${livesOf(p.team)}`;
+      const title = compact && !p.eliminated ? ` title="${score} pts · ${castles} · ${guns}"` : '';
+      return `<li class="${classes}"${title}><b style="background:${playerCssColour(p.id)}"></b>${escape(p.name)}<span>${status}</span></li>`;
     };
-    // A team match groups the roster by team, in team order so it never reshuffles as
-    // scores change, each headed by its letter, score and pooled lives.
-    const roster = teamed
-      ? [...new Set(state.players.map((p) => p.team))]
-          .sort((a, b) => a - b)
-          .map((team) => {
-            const members = state.players.filter((p) => p.team === team);
-            const out = members.every((p) => p.eliminated);
-            const mine = members.some((p) => p.id === humanPlayer);
-            return (
-              `<li class="team${out ? ' out' : ''}${mine ? ' mine' : ''}">` +
-              `<div class="team-head"><b class="letter">${teamLetter(team)}</b>${teamScore(state, team)} pts · ${out ? 'out' : livesOf(team)}</div>` +
-              `<ul>${members.map(playerItem).join('')}</ul></li>`
-            );
-          })
-          .join('')
-      : state.players.map(playerItem).join('');
+    const { phase: phaseRoot, roster: rosterRoot, rest } = this.layout();
+    rosterRoot.classList.toggle('compact', compact);
+    // Free-for-all in standing, best first, so a change of places slides; a team match
+    // groups by team in team order, which never reshuffles, each headed by its letter,
+    // score and pooled lives.
+    let order: string[];
+    if (teamed) {
+      const teams = [...new Set(state.players.map((p) => p.team))].sort((a, b) => a - b);
+      for (const team of teams) {
+        const members = state.players.filter((p) => p.team === team);
+        const out = members.every((p) => p.eliminated);
+        const mine = members.some((p) => p.id === humanPlayer);
+        const score = this.shownScore(`t${team}`, teamScore(state, team), now);
+        this.entry(
+          `t${team}`,
+          `<li class="team${out ? ' out' : ''}${mine ? ' mine' : ''}">` +
+            `<div class="team-head"><b class="letter">${teamLetter(team)}</b>${score} pts · ${out ? 'out' : livesOf(team)}</div>` +
+            `<ul>${members.map(playerItem).join('')}</ul></li>`,
+        );
+      }
+      order = teams.map((team) => `t${team}`);
+    } else {
+      for (const p of state.players) this.entry(`p${p.id}`, playerItem(p));
+      order = standings(state).map((s) => `p${s.player}`);
+    }
+    this.placeEntries(rosterRoot, order);
 
     // A player who has just spent a continue chooses a castle in the cannon phase
     // before any guns, so for them this phase is a castle choice first.
@@ -437,28 +555,21 @@ export class Hud {
               : 'Place the piece you are holding · no more after it'
             : PHASE_HINT[state.phase];
 
-    this.root.innerHTML = `
-      <div class="bar">
-        <div class="phase">
-          <strong>${waiting ? `Next: ${label}` : label}</strong>
-          ${
-            // Hidden rather than removed, so the round label does not jump sideways
-            // every intermission; and there is no clock to show once the match is over.
-            waiting || state.phase === 'game_over'
-              ? `<span class="timer" style="visibility:hidden">${secondsLeft.toFixed(1)}s</span>`
-              : `<span class="timer">${secondsLeft.toFixed(1)}s</span>`
-          }
-          <span class="round">${roundLabel(state)}</span>
-        </div>
-        <ul class="roster">${roster}</ul>
-      </div>
-      ${timebar}
-      ${queue}
-      ${cannonCount}
-      <div class="hint">${hint}</div>
-      ${status ? `<div class="net">${status}</div>` : ''}
-      ${banner}
-    `;
+    phaseRoot.innerHTML =
+      `<strong>${waiting ? `Next: ${label}` : label}</strong>` +
+      // Hidden rather than removed, so the round label does not jump sideways every
+      // intermission; and there is no clock to show once the match is over.
+      (waiting || state.phase === 'game_over'
+        ? `<span class="timer" style="visibility:hidden">${secondsLeft.toFixed(1)}s</span>`
+        : `<span class="timer">${secondsLeft.toFixed(1)}s</span>`) +
+      `<span class="round">${roundLabel(state)}</span>`;
+    rest.innerHTML =
+      timebar +
+      queue +
+      cannonCount +
+      `<div class="hint">${hint}</div>` +
+      (status ? `<div class="net">${status}</div>` : '') +
+      banner;
   }
 }
 

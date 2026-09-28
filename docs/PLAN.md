@@ -424,6 +424,13 @@ stands, so the "Rebuild" banner reveals what was lost as it crosses; with one st
 both looks the switch comes as building begins. The roster's castle count holds with the
 combat look and updates as building begins.
 
+**The roster** is kept across frames rather than rebuilt, so its entries can move:
+free-for-all is in standing, best first, and a change of places slides; scores count up
+as they bank, over `effects.tallyMs`, as the island banners do; a team match keeps team
+order. Past four players in free-for-all an entry is icons — ♜ castles, ⊙ guns, the
+lives pips — with the words on hover, so eight fit one line at 1280 pixels wide. The big
+timer beats on each of the last three seconds, with the clock's tick.
+
 **Feedback a player builds by.** While nothing of yours is sealed, your castles are
 outlined (`hints.ts`). The gap itself used to be marked too, and was removed after the
 first human play: the marks were hard to tell from the piece ghost and from laid wall, and
@@ -870,8 +877,9 @@ the board is a shared helper in `theme.ts`, drawn in every theme's colours, as t
 aiming cursor is; anything timed is a pure function with tests, since headless Chrome
 cannot check it; tunables go in `art.default.json`. In this order:
 
-**U1 — The HUD, readable at eight.** The eight-player screenshots wrap each roster
-entry onto three lines and "round 3 / 10" under the timer.
+**U1 — The HUD, readable at eight — done** (ARCHIVE 11g). The eight-player
+screenshots wrapped each roster entry onto three lines and "round 3 / 10" under the
+timer.
 
 - A compact roster at six to eight players: icons for castles, guns and lives rather
   than words, a narrower entry, the team layout checked the same way.

@@ -154,3 +154,15 @@ export function endOfMatchText(state: MatchState, humanPlayer: number): string {
   if (winners.includes(humanPlayer)) return `You share the win${onPoints}`;
   return `${names(winners.map((id) => state.players[id]?.name ?? '?'))} share the win${onPoints}`;
 }
+
+/**
+ * A score on its way from `from` to `to`, `elapsedMs` into a count lasting `spanMs`:
+ * quick at first and settling as it arrives, in whole points, as the island banners
+ * count the points they bank.
+ */
+export function countUp(from: number, to: number, elapsedMs: number, spanMs: number): number {
+  if (elapsedMs >= spanMs || spanMs <= 0) return to;
+  const t = Math.max(0, elapsedMs / spanMs);
+  const eased = 1 - (1 - t) * (1 - t);
+  return Math.round(from + (to - from) * eased);
+}

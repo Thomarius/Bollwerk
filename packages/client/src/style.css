@@ -244,11 +244,22 @@ body {
 
 .bar {
   display: flex;
-  gap: 2rem;
+  gap: 1.25rem;
   align-items: flex-start;
   justify-content: space-between;
   padding: 0.75rem 1rem;
   background: linear-gradient(#0a0a12dd, #0a0a1200);
+}
+
+/* Never wrapped: at eight players the round label once fell under the clock. */
+.phase {
+  flex: none;
+  white-space: nowrap;
+}
+
+/* Timebar, queue, hint and banner, rewritten each frame beside the kept roster. */
+.hud-rest {
+  display: contents;
 }
 
 .phase strong {
@@ -294,6 +305,27 @@ body {
   grid-column: 2;
   color: var(--muted);
   font-size: 11px;
+  white-space: nowrap;
+}
+
+/* Six to eight players in free-for-all: icons for words, and closer together. */
+.roster.compact {
+  gap: 0.7rem;
+}
+
+.roster.compact .lives {
+  letter-spacing: 0;
+}
+
+.roster .player em {
+  font-style: normal;
+  color: var(--ink);
+}
+
+.roster .player i {
+  font-style: normal;
+  margin: 0 1px 0 3px;
+  opacity: 0.75;
 }
 
 .roster .team {
@@ -729,6 +761,27 @@ table.final tr.you td:nth-child(2) {
 
 .big-timer.urgent {
   color: rgb(255 106 112 / 75%);
+}
+
+/* A beat on each of the last three seconds, with the clock's tick. */
+.big-timer.beat {
+  animation: timer-beat 420ms ease-out;
+}
+
+@keyframes timer-beat {
+  0% {
+    transform: translate(-50%, -50%) scale(1.3);
+    color: rgb(255 106 112 / 100%);
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .big-timer.beat {
+    animation: none;
+  }
 }
 
 /* Cannons ready, just off the aiming cursor's upper right. */
