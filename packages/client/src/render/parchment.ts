@@ -10,7 +10,9 @@ import {
   Fireworks,
   GunAims,
   Landings,
+  ReloadRings,
   dimEliminated,
+  drawAimLine,
   drawBuildHints,
   drawFireReticle,
   drawOvertimeBorder,
@@ -123,6 +125,8 @@ export class ParchmentTheme implements Theme {
   private fades: Fade[] = [];
   private readonly aims = new GunAims();
   private readonly landings = new Landings();
+  /** The player's own guns reloading; see `ReloadRings`. */
+  private readonly reloads = new ReloadRings();
   private readonly fireworks = new Fireworks();
   private readonly flags = new FlagHoist();
   private clock = 0;
@@ -704,6 +708,15 @@ export class ParchmentTheme implements Theme {
     this.drawStains(view);
     drawSealGlow(g, view, frame.sealGlow, this.art);
     this.landings.draw(g, view, this.art, frame.deltaMs);
+    this.reloads.draw(
+      g,
+      view,
+      state,
+      this.art,
+      frame.humanPlayer,
+      frame.tickFraction,
+      frame.deltaMs,
+    );
     this.drawRipples(view, frame.deltaMs);
     this.drawFades(view, frame.deltaMs);
     this.drawBarrels(state, view, frame.deltaMs);
@@ -969,6 +982,7 @@ export class ParchmentTheme implements Theme {
       return;
     }
 
+    drawAimLine(g, view, state, ghost, this.art, humanPlayer);
     if (ghost.aiming) drawFireReticle(g, view, ghost, this.art, humanPlayer);
   }
 }

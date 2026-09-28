@@ -45,9 +45,9 @@ export type PlayerPalette = z.infer<typeof PlayerPaletteSchema>;
 /**
  * Visual styles are interchangeable implementations of one renderer interface.
  * `flat` is the minimal look: solid colour, no textures, no atlas to generate. `night` is
- * the pixel style under a palette of its own (`stylePalettes`). `cyberpunk` is neon outlines on
-a dark circuit board, `blueprint` a plan in white ink on blue paper, `parchment` an old
-hand-drawn map.
+ * the pixel style under a palette of its own (`stylePalettes`). `cyberpunk` is neon
+ * outlines on a dark circuit board, `blueprint` a plan in white ink on blue paper,
+ * `parchment` an old hand-drawn map.
  */
 export const ArtStyleSchema = z.enum([
   'flat',
@@ -162,14 +162,15 @@ export const ParchmentStyleSchema = z.strictObject({
 });
 export type ParchmentStyleConfig = z.infer<typeof ParchmentStyleSchema>;
 
+/** One of the two looks a match is drawn in. */
+export type ArtLook = 'build' | 'combat';
+
 /**
  * Which style draws which part of the match. The combat look is on screen during combat
  * and the build look everywhere else; the banners either side of combat swap one for the
  * other as they cross the board, as the original did. The same style for both switches
  * nothing.
  */
-/** One of the two looks a match is drawn in. */
-export type ArtLook = 'build' | 'combat';
 
 export const ArtStylesSchema = z
   .strictObject({
@@ -337,6 +338,10 @@ export const ArtConfigSchema = z
       lifeCrumbleMs: z.number().int().positive(),
       /** Between rockets over the winners, once the match is over. */
       fireworkEveryMs: z.number().int().positive(),
+      /** The flash off a gun as its shot lands and it is ready to fire again. */
+      readyFlashMs: z.number().int().positive(),
+      /** The dotted course from the gun a click would fire to the cursor. */
+      aimLineAlpha: z.number().min(0).max(1),
     }),
     /** How long the HUD holds its news. */
     hud: z.strictObject({

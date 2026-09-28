@@ -9,7 +9,9 @@ import {
   GunAims,
   Fireworks,
   Landings,
+  ReloadRings,
   dimEliminated,
+  drawAimLine,
   drawBuildHints,
   drawFireReticle,
   drawOvertimeBorder,
@@ -218,6 +220,8 @@ export class CyberpunkTheme implements Theme {
   /** When each castle's hologram came on, for its flicker. */
   private readonly projected = new Map<number, number>();
   private readonly landings = new Landings();
+  /** The player's own guns reloading; see `ReloadRings`. */
+  private readonly reloads = new ReloadRings();
   private readonly fireworks = new Fireworks();
   private readonly flags = new FlagHoist();
   private clock = 0;
@@ -779,6 +783,15 @@ export class CyberpunkTheme implements Theme {
     this.drawPulses(view);
     drawSealGlow(g, view, frame.sealGlow, this.art);
     this.landings.draw(g, view, this.art, frame.deltaMs);
+    this.reloads.draw(
+      g,
+      view,
+      state,
+      this.art,
+      frame.humanPlayer,
+      frame.tickFraction,
+      frame.deltaMs,
+    );
     this.drawCores(state, view, frame);
     this.drawBarrels(state, view, frame.deltaMs);
     this.drawPowerDowns(state, view);
@@ -1173,6 +1186,7 @@ export class CyberpunkTheme implements Theme {
       });
       return;
     }
+    drawAimLine(g, view, state, ghost, this.art, humanPlayer);
     if (ghost.aiming) drawFireReticle(g, view, ghost, this.art, humanPlayer);
   }
 }

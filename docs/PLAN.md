@@ -424,6 +424,13 @@ stands, so the "Rebuild" banner reveals what was lost as it crosses; with one st
 both looks the switch comes as building begins. The roster's castle count holds with the
 combat look and updates as building begins.
 
+**Combat aids** (`ReloadRings`, `drawAimLine`, shared by every style). A ring round
+each of the player's own guns fills as its shot flies and flashes off the gun as it
+lands, since flight time is the reload and nothing else says which guns can fire; ready
+guns carry none. While aiming, a dotted arc runs from the gun a click would fire —
+chosen by `findReadyCannon`, the rule `fire` uses — to the cursor, lifted as the shot
+will be, with a ring round that gun; only where a click would fire.
+
 **The roster** is kept across frames rather than rebuilt, so its entries can move:
 free-for-all is in standing, best first, and a change of places slides; scores count up
 as they bank, over `effects.tallyMs`, as the island banners do; a team match keeps team
@@ -889,16 +896,15 @@ timer.
   the last seconds of a build phase, as the clock's cue sounds.
 - Checked with screenshots at two, four and eight players, free-for-all and teams of two.
 
-**U2 — Combat aids.**
+**U2 — Combat aids — done** (ARCHIVE 11g).
 
 - Reload rings: a thin ring round each of the player's own guns filling as its shot
   flies, and a brief flash when it is ready — flight time is the reload, and nothing on
   the board says which guns will fire.
 - An aim line: while aiming, a faint line from the ready gun a click would fire to the
   cursor, chosen by the rule the game uses, so it is never wrong.
-- Breach markers: a small mark on each of the player's own blocks shot away, held until
-  it is rebuilt, so the gaps are easy to find as building begins. Easily dropped if it
-  proves too much help.
+- **Not breach markers**: dropped by the user, who found them very distracting when they
+  were tried before — the gap marks removed after the first human play (§7).
 
 **U3 — The end of a match.** A summary under the fireworks: per player the score,
 castles held, wall destroyed and lives spent, and a small chart of every player's score

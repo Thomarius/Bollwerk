@@ -2037,3 +2037,13 @@ tightened. Eight entries first fitted at 1400 pixels and overflowed at 1280, and
 both after the spacing was cut. The big timer, already red for the last three seconds,
 now beats on each, and on overtime's three. Probed in a browser: scores climbing over
 about 1.4 s at a resolution with a change of places, and the beat on 3, 2 and 1.
+
+**U2, combat aids — done**, less the breach markers, which the user dropped: they were
+tried before, as the gap marks removed after the first human play, and were very
+distracting. Reload rings round the player's own guns, filling with each shot's flight
+and flashing as it lands, and an aim line from the gun a click would fire — the sim's
+own `findReadyCannon`, so it cannot disagree with `fire` — along the arc the shot will
+take. Both shared helpers in `theme.ts`, called by all six styles; `shotLift` now takes
+any course, not only a shot. Seen in a scripted game at Pixel art, Cyberpunk and
+Parchment: four guns reloading with their rings part filled, and the dotted arc from the
+ringed gun to the cursor, whose first brightness, 0.45, was a little faint on grass.

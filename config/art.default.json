@@ -962,7 +962,9 @@
     "overtimePulseMs": 800,
     "tallyMs": 1400,
     "lifeCrumbleMs": 1600,
-    "fireworkEveryMs": 300
+    "fireworkEveryMs": 300,
+    "readyFlashMs": 280,
+    "aimLineAlpha": 0.55
   },
   "hud": {
     "pointsBannerMs": 8000

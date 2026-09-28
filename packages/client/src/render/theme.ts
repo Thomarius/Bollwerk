@@ -1,5 +1,5 @@
 import type { ArtConfig, ArtStyle } from '@rampart/config';
-import { Structure, type MatchState, type Shot } from '@rampart/sim';
+import { Structure, findReadyCannon, type MatchState, type Shot } from '@rampart/sim';
 import type { Container, Graphics } from 'pixi.js';
 
 import type { SealGlow } from '../seal.js';
@@ -468,6 +468,111 @@ export function mixed(a: number, b: number, amount: number): number {
   return channel(16) | channel(8) | channel(0);
 }
 
+/**
+ * A ring round each of the player's own guns while its shot is in flight, filling as the
+ * shot flies, and a flash off the gun as it lands: flight time is the reload, and
+ * nothing else on the board says which guns a click can fire. Ready guns carry no ring,
+ * so the board stays quiet where nothing is waiting. Shared by every style, in the
+ * player's colour, like the aiming cursor.
+ */
+export class ReloadRings {
+  /** Guns that had a shot in flight last frame. */
+  private loading = new Set<number>();
+  private flashes: { x: number; y: number; r: number; age: number }[] = [];
+
+  draw(
+    g: Graphics,
+    view: ViewTransform,
+    state: MatchState,
+    art: ArtConfig,
+    humanPlayer: number,
+    tickFraction: number,
+    deltaMs: number,
+  ): void {
+    if (humanPlayer < 0) return;
+    const now = state.tick + tickFraction;
+    const colour = playerColour(art, humanPlayer, 'light');
+    const width = Math.max(1.5, view.tile / 9);
+    const shots = new Map(state.shots.map((shot) => [shot.id, shot]));
+    const loading = new Set<number>();
+    for (const cannon of state.cannons) {
+      if (cannon.owner !== humanPlayer) continue;
+      const cx = tileX(view, cannon.x + cannon.w / 2);
+      const cy = tileY(view, cannon.y + cannon.h / 2);
+      const r = (Math.min(cannon.w, cannon.h) * view.tile) / 2 + view.tile * 0.08;
+      if (cannon.shotId === null) {
+        if (this.loading.has(cannon.id) && cannon.active) {
+          this.flashes.push({ x: cx - view.originX, y: cy - view.originY, r, age: 0 });
+        }
+        continue;
+      }
+      loading.add(cannon.id);
+      const shot = shots.get(cannon.shotId);
+      if (shot === undefined) continue;
+      const span = shot.impactTick - shot.launchTick;
+      const p = span <= 0 ? 1 : Math.min(1, Math.max(0, (now - shot.launchTick) / span));
+      g.circle(cx, cy, r);
+      g.stroke({ width, color: colour, alpha: 0.18 });
+      g.moveTo(cx, cy - r);
+      g.arc(cx, cy, r, -Math.PI / 2, -Math.PI / 2 + p * Math.PI * 2);
+      g.stroke({ width, color: colour, alpha: 0.8 });
+    }
+    this.loading = loading;
+
+    const span = art.effects.readyFlashMs;
+    for (const flash of this.flashes) {
+      flash.age += deltaMs;
+      const t = flash.age / span;
+      if (t >= 1) continue;
+      g.circle(flash.x + view.originX, flash.y + view.originY, flash.r * (1 + 0.45 * t));
+      g.stroke({ width: width * (1.6 - t), color: colour, alpha: 1 - t });
+    }
+    this.flashes = this.flashes.filter((flash) => flash.age < span);
+  }
+}
+
+/**
+ * While aiming, the course a click would send a shot on: a dotted arc from the gun the
+ * game would fire — `findReadyCannon`, the rule `fire` itself uses, so it is never
+ * wrong — to the cursor, lifted as the shot will be, and a ring round that gun. Only
+ * where a click would fire. Shared by every style.
+ */
+export function drawAimLine(
+  g: Graphics,
+  view: ViewTransform,
+  state: MatchState,
+  ghost: Ghost,
+  art: ArtConfig,
+  humanPlayer: number,
+): void {
+  if (!ghost.aiming || !ghost.valid || ghost.tile === null || humanPlayer < 0) return;
+  const cannon = findReadyCannon(state, humanPlayer, ghost.tile.x, ghost.tile.y);
+  if (cannon === null) return;
+  const course = {
+    fromX: cannon.x + (cannon.w - 1) / 2,
+    fromY: cannon.y + (cannon.h - 1) / 2,
+    toX: ghost.tile.x,
+    toY: ghost.tile.y,
+  };
+  const colour = playerColour(art, humanPlayer, 'light');
+  const alpha = art.effects.aimLineAlpha;
+  const distance = Math.hypot(course.toX - course.fromX, course.toY - course.fromY);
+  const dots = Math.max(3, Math.ceil(distance / 0.7));
+  for (let k = 1; k < dots; k++) {
+    const t = k / dots;
+    const x = course.fromX + (course.toX - course.fromX) * t;
+    const y = course.fromY + (course.toY - course.fromY) * t - shotLift(course, t);
+    g.circle(tileX(view, x + 0.5), tileY(view, y + 0.5), Math.max(1.2, view.tile * 0.07));
+  }
+  g.fill({ color: colour, alpha });
+  g.circle(
+    tileX(view, cannon.x + cannon.w / 2),
+    tileY(view, cannon.y + cannon.h / 2),
+    (Math.min(cannon.w, cannon.h) * view.tile) / 2 + view.tile * 0.18,
+  );
+  g.stroke({ width: Math.max(1.5, view.tile / 9), color: colour, alpha: Math.min(1, alpha * 1.8) });
+}
+
 /** Where a gun points, and how long ago it last fired. */
 export interface Aim {
   angle: number;
@@ -557,7 +662,7 @@ const ARC_RISE = 0.22;
 const ARC_MAX_TILES = 5;
 
 /** How far above the ground a shot rides, in tiles, at progress `t` through its flight. */
-export function shotLift(shot: Shot, t: number): number {
+export function shotLift(shot: Pick<Shot, 'fromX' | 'fromY' | 'toX' | 'toY'>, t: number): number {
   const dx = shot.toX - shot.fromX;
   const dy = shot.toY - shot.fromY;
   const range = Math.sqrt(dx * dx + dy * dy);

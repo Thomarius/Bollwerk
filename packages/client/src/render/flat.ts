@@ -6,7 +6,9 @@ import {
   FlagHoist,
   Fireworks,
   Landings,
+  ReloadRings,
   dimEliminated,
+  drawAimLine,
   drawBuildHints,
   drawFireReticle,
   drawOvertimeBorder,
@@ -69,6 +71,8 @@ export class FlatTheme implements Theme {
   private impacts: Impact[] = [];
   private crumbles: Crumble[] = [];
   private readonly landings = new Landings();
+  /** The player's own guns reloading; see `ReloadRings`. */
+  private readonly reloads = new ReloadRings();
   private readonly fireworks = new Fireworks();
   private readonly flags = new FlagHoist();
   /** Milliseconds of drawing, for the flags. */
@@ -226,6 +230,15 @@ export class FlatTheme implements Theme {
 
     drawSealGlow(g, view, frame.sealGlow, this.art);
     this.landings.draw(g, view, this.art, frame.deltaMs);
+    this.reloads.draw(
+      g,
+      view,
+      state,
+      this.art,
+      frame.humanPlayer,
+      frame.tickFraction,
+      frame.deltaMs,
+    );
     this.fireworks.draw(g, view, this.art, frame.celebrate, frame.deltaMs);
     this.drawFlags(state, view, frame);
 
@@ -351,6 +364,7 @@ export class FlatTheme implements Theme {
       return;
     }
 
+    drawAimLine(g, view, state, ghost, this.art, humanPlayer);
     if (ghost.aiming) drawFireReticle(g, view, ghost, this.art, humanPlayer);
   }
 }
