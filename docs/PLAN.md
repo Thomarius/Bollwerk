@@ -340,10 +340,12 @@ sender's seat**, so a client cannot act for someone else.
 
 ## 7. `packages/client`
 
-Two visual styles, flat and pixel, behind one `Theme` interface: the scene owns the
-camera, the layer stacks, dirty tracking and input mapping; a theme owns only what things
-look like. Adding a style is a name in `ArtStyleSchema`, the looks it is made for in
-`STYLE_LOOKS`, a `Theme`, a case in `createTheme`, and a menu title in `decor.ts`; more are planned in §11.9. All
+Six visual styles — Minimal (`flat`), Pixel art, Night, Cyberpunk, Blueprint and
+Parchment — behind one `Theme` interface: the scene owns the camera, the layer stacks,
+dirty tracking and input mapping; a theme owns only what things look like. Adding a style
+is a name in `ArtStyleSchema`, the looks it is made for in `STYLE_LOOKS`, a `Theme`, a
+case in `createTheme`, a menu title in `decor.ts` and a banner class in `hud.ts`; the
+types refuse a style missing any of them. No more are planned (§11.9). All
 sprites are generated at boot from `art.default.json` plus the match seed — nothing binary
 is committed except audio.
 
@@ -652,6 +654,7 @@ every resolution against an independent search, not only on unit pictures.
 | M8  | Team mode, and one lobby for online and offline           | Done                    |
 | M9  | Visual pass: phase themes, banner wipe, effects, lobby    | Done (§11.8)            |
 | M10 | Alternative visual themes: Night, Blueprint, Cyberpunk…   | Done (§11.9)            |
+| M11 | UI and effects polish: roster, combat aids, summary…      | Done (§11.10)           |
 
 ---
 
@@ -663,8 +666,8 @@ feedback. The next milestone is **11.2, elimination tuning**: its plan is ready,
 with a baseline measurement, and can now set the bots against rounds people actually
 played — `recordings/*.stats.csv`, or `--replay` over the folder. A recording replays
 exactly only against the commit it was made with, which the server now writes into each
-recording's header. Independent of balance: **11.6**, bots as personality × skill. The UI
-and effects polish of **11.10** is done. The themes of 11.9 are done. Smaller items are in 11.5.
+recording's header. Independent of balance: **11.6**, bots as personality × skill. The
+visual work of 11.8–11.10 is done. Smaller items are in 11.5.
 
 ### 11.1 Round cap and points scoring — done
 
@@ -741,6 +744,11 @@ as much as either rule.
 statistics beside it once it ends — the same per-round table the bots produce — so how often a person loses a
 castle, how much of the build phase they use and what repair they leave undone are
 measured, not recalled. The user's impressions come separately, as compiled feedback.
+
+**The first human game** (2026-09-28, one person against two gunners, ten rounds, in
+`recordings/`): the person won on points, 1658 to 1245 and 1062, and failed to seal in
+two rounds of ten — 20%, about twice the bots' 11%. One game; the number the bracket
+rests on, to be firmed up by the sessions still to come.
 
 **What to take from the user's play first:** whether building already feels tight at
 default speed, whether a delay would feel like a penalty or like the original's pace,

@@ -47,7 +47,7 @@ Join reach the same lobby, which sets the map, players, teams, bots and rounds.
 | `ai`             | Bots: min-cut sealing, 0-1 BFS attack, difficulty tiers.                   |
 | `analysis`       | Per-round match statistics, for bot soaks and recorded human play alike.   |
 | `server`         | Authoritative match server, rooms, WebSocket, match recordings.            |
-| `client`         | Pixi renderer, two visual styles, controls, HUD, netcode client.           |
+| `client`         | Pixi renderer, six visual styles, controls, HUD, netcode client.           |
 | `tools/headless` | Bot-vs-bot soak runs and map dumps.                                        |
 
 Internal packages export TypeScript source directly, so there is no build step between
@@ -118,11 +118,15 @@ Full detail in PLAN.md §1. The parts that surprise people:
 **Done**: M0–M6 (deployment verified by a CI job, since there is no Docker on this
 machine; 18 of 19 sound cues supplied by the user, `wall_destroyed` still to come), M8
 team mode (ARCHIVE 10u), M9 the visual pass (§11.8: a build and a combat look swapped by
-the banners, effects throughout, a lobby showing the real map), and the recording of
-every match (ARCHIVE 11e).
+the banners, effects throughout, a lobby showing the real map), the recording of every
+match (ARCHIVE 11e, each header stamped with the server's commit), M10 six visual styles
+for either look, each with its own menu title and banner (§11.9), and M11 the UI polish
+(§11.10: a compact roster, reload rings and aim line, an end-of-match summary, an
+Effects setting). All display-only work since has left the sim untouched.
 
-**Now**: the user is running human test sessions, recorded from commit `45bcd92`, and will
-send compiled feedback. PLAN.md §11 opens with where to start:
+**Now**: the user is running human test sessions — the first, one person against two
+gunners, is in `recordings/` and replays exact — and will send compiled feedback.
+PLAN.md §11 opens with where to start:
 
 1. **Elimination tuning** (§11.2), the next milestone — planned, and now able to use the
    recorded human rounds. Target: half of 3–4 player matches end with one player left
@@ -133,11 +137,8 @@ send compiled feedback. PLAN.md §11 opens with where to start:
 2. **Two-player balance** (§11.3), to be re-measured under the cap before anything is tried.
 3. Measurements never taken (§11.4): the full ladder, and seat bias at 6 and 8 players in
    free-for-all (team seating is measured, and fair).
-4. Independent of balance: bots as personality × skill (§11.6), and **alternative visual
-   themes** (§11.9): done — Minimal, Pixel art, Night, Cyberpunk, Blueprint and
-   Parchment, each for either look, each with its own menu title and banner; and the
-   UI polish of §11.10 (a compact roster, reload rings and aim line, an end-of-match
-   summary, an Effects setting).
+4. Independent of balance: bots as personality × skill (§11.6). The visual work of
+   §11.8–11.10 is done; no more styles are planned.
 
 ## Measuring the bots
 
