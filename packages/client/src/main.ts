@@ -1038,6 +1038,8 @@ async function runSession(session: Session, setup: Setup): Promise<void> {
         hud.announce(
           choosing ? 'castle_select' : (state.pendingPhase ?? 'combat'),
           announcementLines(state, resolvedSinceAnnounce),
+          // Drawn in the look it brings, since it is where the look changes.
+          setup.styles[after],
         );
         resolvedSinceAnnounce = false;
       }

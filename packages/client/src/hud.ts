@@ -1,7 +1,7 @@
 import { playerCssColour } from './colours.js';
 import type { BannerKind } from './banners.js';
 import { escape } from './lobby.js';
-import { defaultArtConfig } from '@rampart/config';
+import { defaultArtConfig, type ArtStyle } from '@rampart/config';
 
 import { mostCastlesOf, scoreChart, type MatchLog } from './summary.js';
 
@@ -25,6 +25,21 @@ import {
   type MatchState,
   type Phase,
 } from '@rampart/sim';
+
+/**
+ * The phase banner each style draws, as a class of `.phase-call`: a record over every
+ * style, so a new one must bring its own, as it must a menu title. The banner is where
+ * the look changes, so it takes the look it brings — the arriving one. Pixel art and
+ * Night keep the dark band with gold that every style once shared.
+ */
+const BANNER_CLASS: Record<ArtStyle, string> = {
+  flat: 'banner-flat',
+  pixel: 'banner-classic',
+  night: 'banner-classic',
+  cyberpunk: 'banner-neon',
+  blueprint: 'banner-plan',
+  parchment: 'banner-ribbon',
+};
 
 const PHASE_LABEL: Record<Phase, string> = {
   lobby: 'Waiting',
@@ -188,12 +203,12 @@ export class Hud {
    * for the final round — so neither needs a pause of its own. It enters above the top
    * of the screen; `placeAnnouncement` moves it from there.
    */
-  announce(phase: Phase, lines: readonly AnnouncementLine[] = []): void {
+  announce(phase: Phase, lines: readonly AnnouncementLine[] = [], style: ArtStyle = 'pixel'): void {
     this.clearAnnouncement();
     const text = PHASE_CALL[phase];
     if (text === '') return;
     const banner = document.createElement('div');
-    banner.className = 'phase-call';
+    banner.className = `phase-call ${BANNER_CLASS[style]}`;
     banner.textContent = text;
     for (const line of lines) {
       const small = document.createElement('small');

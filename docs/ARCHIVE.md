@@ -2060,3 +2060,13 @@ spanned the panel and labelled the chart's start "round 1" where its lines begin
 nought; the island labels, in the layer above the HUD, sat on top of the summary and now
 step aside at game over; and a jump straight to the end showed noughts, so the columns
 appear only when the log saw a resolution.
+
+**U4, banners in the arriving look — done.** The phase banner is HTML, so each style's is
+a class of `.phase-call` in CSS, chosen by a record over every style (`BANNER_CLASS`), so
+a new style must bring one as it must a title; the announcement takes the style of the
+look that arrives with it. Only the dress changes: the wipe follows the band's middle,
+measured each frame, whatever padding a style gives it. Seen mid-crossing in every
+style; Blueprint's first title block was the sheet's own blue and read only by its
+rules, so it is a deeper blue laid on the drawing. One capture showed a white band over
+the board that two repeats and a probe of the page could not reproduce — taken seconds
+after the stylesheet changed, most likely the dev server swapping it in.

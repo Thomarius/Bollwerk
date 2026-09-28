@@ -369,6 +369,11 @@ does. **A missing file cannot be told from its HTTP status** — the static hand
 an unknown path with `index.html` and a 200 — so absence is detected by failure to decode,
 and a corrupt file is silent rather than noisy.
 
+**Each banner is drawn in the look it brings** (`BANNER_CLASS` in `hud.ts`, a record
+over every style): flat gold for Minimal, a neon strip that flickers on for Cyberpunk, a
+title block of deeper blue paper ruled double for Blueprint, an inked ribbon with forked
+ends for Parchment, and the dark band with gold for Pixel art and Night.
+
 **Two looks, swapped by the banners, as in the original** (`transition.ts`). Each player
 chooses a style for building and one for combat (`art.styles`: flat and pixel by
 default). Combat is drawn in the combat look, everything else in the build look, and the
@@ -915,7 +920,7 @@ castles held, wall destroyed and lives spent, and a small chart of every player'
 round by round, so it shows where the match was won. From the events the client already
 receives.
 
-**U4 — Banners in the arriving look.** The phase banner is one dark band with gold text
+**U4 — Banners in the arriving look — done** (ARCHIVE 11g). The phase banner is one dark band with gold text
 in every style, though it is exactly where the look changes. Each style gets its own: a
 neon strip for Cyberpunk, a parchment ribbon for Parchment, a drawing's title block for
 Blueprint, flat colour for Minimal; Pixel art and Night keep today's. A record over every

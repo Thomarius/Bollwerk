@@ -476,6 +476,105 @@ body {
   transform: translateY(-100%);
 }
 
+/*
+ * Each style's own banner (BANNER_CLASS in hud.ts), in the look it brings. Only the dress
+ * changes: the band's middle is where the looks swap, measured each frame, so any padding
+ * a style gives it is followed exactly.
+ */
+
+/* Minimal: flat colour and hard edges, nothing more. */
+.phase-call.banner-flat {
+  border: none;
+  background: #d8b84a;
+  color: #14141c;
+  font-weight: 700;
+}
+
+.phase-call.banner-flat small,
+.phase-call.banner-flat small.news {
+  color: #2a2a34;
+}
+
+/* Cyberpunk: a neon strip, cyan above and magenta below, flickering on. */
+.phase-call.banner-neon {
+  border-top: 2px solid #2ee6ff;
+  border-bottom: 2px solid #ff3df2;
+  background: linear-gradient(#050510e8, #0c0420e8);
+  box-shadow:
+    0 -2px 14px #2ee6ff66,
+    0 2px 14px #ff3df266,
+    inset 0 0 28px #ff3df21f;
+  color: #ffd6fb;
+  text-shadow:
+    0 0 6px #ff3df2,
+    0 0 18px #ff3df2;
+  animation: neon-on 800ms linear both;
+}
+
+.phase-call.banner-neon small {
+  color: #9fe9ff;
+  text-shadow: 0 0 6px #2ee6ff;
+}
+
+.phase-call.banner-neon small.news {
+  color: #ff90ee;
+  text-shadow: 0 0 6px #ff3df2;
+}
+
+/* Blueprint: a drawing's title block — blue paper with its grid, ruled double in white. */
+.phase-call.banner-plan {
+  border-top: 2px solid #eef4ff;
+  border-bottom: 2px solid #eef4ff;
+  /* A deeper blue than the sheet, so it reads as a title block laid on the drawing. */
+  background-color: #10325f;
+  background-image:
+    linear-gradient(#8fb4e62e 1px, transparent 1px),
+    linear-gradient(90deg, #8fb4e62e 1px, transparent 1px);
+  background-size: 16px 16px;
+  box-shadow:
+    inset 0 5px 0 #10325f,
+    inset 0 6px 0 #eef4ffaa,
+    inset 0 -5px 0 #10325f,
+    inset 0 -6px 0 #eef4ffaa;
+  color: #eef4ff;
+  font-weight: 400;
+}
+
+.phase-call.banner-plan small {
+  color: #bcd3f2;
+}
+
+.phase-call.banner-plan small.news {
+  color: #ffd966;
+}
+
+/* Parchment: a ribbon with forked ends, lettered in ink. */
+.phase-call.banner-ribbon {
+  border-top: 2px solid #3b2a1a;
+  border-bottom: 2px solid #3b2a1a;
+  background: linear-gradient(#efe3c2, #dfcca0);
+  color: #3b2a1a;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-style: italic;
+  letter-spacing: 0.18em;
+  clip-path: polygon(0 0, 100% 0, calc(100% - 2.4rem) 50%, 100% 100%, 0 100%, 2.4rem 50%);
+}
+
+.phase-call.banner-ribbon small {
+  color: #5a4630;
+  font-style: normal;
+}
+
+.phase-call.banner-ribbon small.news {
+  color: #8a2a1a;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .phase-call.banner-neon {
+    animation: none;
+  }
+}
+
 .phase-call small.news {
   color: var(--accent);
   font-size: 1.1rem;
