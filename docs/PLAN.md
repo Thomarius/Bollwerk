@@ -627,15 +627,15 @@ every resolution against an independent search, not only on unit pictures.
 
 ## 11. Open work
 
-**Where to start (2026-09-27).** The user is running human test sessions, and every match
+**Where to start (2026-09-28).** The user is running human test sessions, and every match
 is recorded with its statistics (§9, ARCHIVE 11e); the user will also send compiled
 feedback. The next milestone is **11.2, elimination tuning**: its plan is ready, starts
 with a baseline measurement, and can now set the bots against rounds people actually
 played — `recordings/*.stats.csv`, or `--replay` over the folder. A recording replays
-exactly only against the commit it was made with (`45bcd92` for the first sessions).
-Independent of balance and ready to start: **11.6**, bots as personality × skill, and
-**11.9**, alternative visual themes, beginning with per-style palettes. Smaller items are
-in 11.5.
+exactly only against the commit it was made with, which the server now writes into each
+recording's header. Independent of balance: **11.10**, UI and effects polish, in five
+packages (U1–U5), to run while testing goes on; and **11.6**, bots as personality ×
+skill. The themes of 11.9 are done. Smaller items are in 11.5.
 
 ### 11.1 Round cap and points scoring — done
 
@@ -861,6 +861,57 @@ the walls' colour**: warm stone was tried and turned azure walls grey (ARCHIVE 1
 
 **Verification** as in 11.8: screenshots of each look in combat and building, both
 styles mid-wipe, and every player colour side by side at eight players.
+
+### 11.10 UI and effects polish — planned
+
+**Agreed with the user 2026-09-28, not started**, to run while human testing goes on.
+Display only, like 11.8 and 11.9: no sim, protocol or ruleset change. Anything drawn on
+the board is a shared helper in `theme.ts`, drawn in every theme's colours, as the
+aiming cursor is; anything timed is a pure function with tests, since headless Chrome
+cannot check it; tunables go in `art.default.json`. In this order:
+
+**U1 — The HUD, readable at eight.** The eight-player screenshots wrap each roster
+entry onto three lines and "round 3 / 10" under the timer.
+
+- A compact roster at six to eight players: icons for castles, guns and lives rather
+  than words, a narrower entry, the team layout checked the same way.
+- Scores that move: the roster's numbers count up as points bank, as the island banners
+  already do, and rows slide into a new order rather than jumping.
+- The clock louder at the end: the big timer figure in the sea pulses and turns red over
+  the last seconds of a build phase, as the clock's cue sounds.
+- Checked with screenshots at two, four and eight players, free-for-all and teams of two.
+
+**U2 — Combat aids.**
+
+- Reload rings: a thin ring round each of the player's own guns filling as its shot
+  flies, and a brief flash when it is ready — flight time is the reload, and nothing on
+  the board says which guns will fire.
+- An aim line: while aiming, a faint line from the ready gun a click would fire to the
+  cursor, chosen by the rule the game uses, so it is never wrong.
+- Breach markers: a small mark on each of the player's own blocks shot away, held until
+  it is rebuilt, so the gaps are easy to find as building begins. Easily dropped if it
+  proves too much help.
+
+**U3 — The end of a match.** A summary under the fireworks: per player the score,
+castles held, wall destroyed and lives spent, and a small chart of every player's score
+round by round, so it shows where the match was won. From the events the client already
+receives.
+
+**U4 — Banners in the arriving look.** The phase banner is one dark band with gold text
+in every style, though it is exactly where the look changes. Each style gets its own: a
+neon strip for Cyberpunk, a parchment ribbon for Parchment, a drawing's title block for
+Blueprint, flat colour for Minimal; Pixel art and Night keep today's. A record over every
+style, as the titles are, so a new style must bring one. The wipe's geometry does not
+change.
+
+**U5 — Before the match.**
+
+- The lobby's map in the chosen build look's colours, not plain ones.
+- Castle choice with more to it: the castles to choose pulse softly, and each player's
+  choice is marked on their island as they make it.
+- An effects setting in the menu, full or reduced, saved with the looks: reduced turns
+  off the shake, the flashes of the sweep and the title's repeating sweep, for anyone who
+  wants that without changing their system's reduced-motion setting.
 
 ---
 
