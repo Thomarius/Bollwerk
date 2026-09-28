@@ -82,6 +82,10 @@ export type FlatStyleConfig = z.infer<typeof FlatStyleSchema>;
  * where they should scale with the map, in pixels where a line must stay crisp.
  */
 export const CyberpunkStyleSchema = z.strictObject({
+  /** Thin rain over the city, as streaks on screen at once per thousand tiles of view. */
+  rainPerThousandTiles: z.number().nonnegative(),
+  /** How far a wall hit's flash is split into its colours, in pixels. */
+  splitPx: z.number().nonnegative(),
   /** The bright line round the outside of a wall, a castle and a gun. */
   wallLinePx: z.number().positive(),
   /** Width of the glow drawn under every bright line. */
@@ -173,6 +177,22 @@ export const PixelStyleSchema = z.strictObject({
   boatTilesPerSecond: z.number().positive(),
   gulls: z.number().int().nonnegative(),
   fishEveryMs: z.number().int().positive(),
+  /** The strongest the light of the day is laid on the ground, at sunset in the last round. */
+  daylightAlpha: z.number().min(0).max(1),
+  /** How often a match has each weather, relatively. */
+  weatherOdds: z.strictObject({
+    clear: z.number().nonnegative(),
+    overcast: z.number().nonnegative(),
+    rain: z.number().nonnegative(),
+    fog: z.number().nonnegative(),
+  }),
+  /** Rain falling, as streaks on screen at once per thousand tiles of view. */
+  rainPerThousandTiles: z.number().nonnegative(),
+  /** Night: fireflies over the land, per hundred tiles of it. */
+  firefliesPerHundredTiles: z.number().nonnegative(),
+  /** Night: a lighthouse's beam, how far it reaches and one turn of it. */
+  beamTiles: z.number().positive(),
+  beamTurnMs: z.number().int().positive(),
 });
 export type PixelStyleConfig = z.infer<typeof PixelStyleSchema>;
 

@@ -354,7 +354,18 @@ with a warm pool of light on the ground round them, doused with a puff of smoke 
 breach and lit again by sealing, so lit reads as sealed across the map; muzzle flashes
 light the ground round a gun, shots glow as burning shot, and a smouldering breach
 glows. The light on the ground is drawn in the territory layer, under the walls, so it
-never colours them.
+never colours them. On the sea, a path of moonlight shimmers down the deeper band of
+open ocean, a lighthouse stands off the outward corner of every island with its beam
+turning over the water (lit into the ground, like the pools), and fireflies wink over the
+land.
+
+**The pixel style's day and weather** (`pixel/atmosphere.ts`, `art.pixel`): the light
+follows the round, morning gold at the first, plain at noon, sunset at the last, as a
+tint on the ground and sea under the walls, so no player's colour moves. Each match has
+weather drawn from its seed: clear, overcast (more clouds, darker, a grey cast), rain
+(streaks and rings on the sea, as well) or fog (pale banks drifting where the clouds'
+shadows would). Cyberpunk has thin rain of its own, and a wall hit's flash splits into
+its colours for a moment.
 
 **Rules every style keeps**, so the looks can swap mid-match:
 
@@ -457,9 +468,11 @@ will be, with a ring round that gun; only where a click would fire.
 **Before the match.** The lobby's map is drawn in the chosen build look's colours, its
 seat numbers and ring in the shared ink. The castles a player may choose breathe in the
 accent (`drawSelectable`), and every choice, anyone's, sets off rings in the chooser's
-colour from the castle (`drawChoices`). The menu's **Effects** setting, full or reduced
-(`motion.ts`), does what the system's reduced-motion setting does — no flicker, no beat,
-no slide, no title sweep — and also stops the board's shake; either one reduces.
+colour from the castle (`drawChoices`). The menu's **Effects** setting, high, full or
+reduced (`motion.ts`): reduced does what the system's reduced-motion setting does — no
+flicker, no beat, no slide, no title sweep, no rain — and also stops the board's shake;
+either one reduces. High is full with the glow of Night and Cyberpunk bloomed by a real
+blur filter, asked for rather than given since it costs frame rate at eight players.
 
 **The roster** is kept across frames rather than rebuilt, so its entries can move:
 free-for-all is in standing, best first, and a change of places slides; scores count up
@@ -867,15 +880,9 @@ grid, with glints and crests; cloud shadows. Night took all of it but the clouds
 cleared by building and sealing; boats, gulls and fish on the outer ocean in Pixel art
 and Night. Fields were left out: flat patches of colour read as sealed ground.
 
-**W4 — Atmosphere** (M), one atmosphere layer shared by the styles that use it.
-
-- Time of day by round in Pixel art, morning at round one to sunset at the last.
-- Weather drawn per match — clear, overcast, rain, light fog — never enough to hide the board.
-- Night: the moon reflected in the sea, stars glinting in it, fireflies over the land;
-  lighthouse beams sweeping slowly from the islands' corners.
-- Cyberpunk: thin rain and a moment of colour split on big impacts.
-- Bloom for Night and Cyberpunk as a real filter behind a new **High** Effects setting,
-  since it was avoided for frame rate at eight players. Reduced stills the weather.
+**W4 — Atmosphere — done** (ARCHIVE 11l): the day by round and weather per match in
+Pixel art; the moon's path, lighthouses and fireflies at Night; Cyberpunk's rain and
+colour split; bloom behind a new High Effects setting.
 
 **W5 — The board, felt** (M).
 

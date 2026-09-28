@@ -1,6 +1,8 @@
 import type { ArtConfig, CyberpunkStyleConfig } from '@rampart/config';
 import { Rng, Structure, Terrain, type MatchState, type Shot } from '@rampart/sim';
-import { Graphics } from 'pixi.js';
+import { BlurFilter, Graphics } from 'pixi.js';
+
+import { bloomWanted, motionReduced } from '../motion.js';
 
 import { seaDepth } from './pixel.js';
 import { trace, wallGeometry } from './walls.js';
@@ -234,6 +236,9 @@ export class CyberpunkTheme implements Theme {
   private readonly fireworks = new Fireworks();
   private readonly flags = new FlagHoist();
   private clock = 0;
+  /** Rain over the city, in tile coordinates, across the area drawn. */
+  private rain: { x: number; y: number; speed: number }[] = [];
+  private drawn = { x0: 0, y0: 0, x1: 0, y1: 0 };
 
   constructor(seed = 1) {
     this.seed = seed;
@@ -249,6 +254,8 @@ export class CyberpunkTheme implements Theme {
       this.overlayGlow,
     ]) {
       glow.blendMode = 'add';
+      // High effects: the glow bloomed by a real blur, not only a wider shape under it.
+      if (bloomWanted()) glow.filters = [new BlurFilter({ strength: 5, quality: 2 })];
     }
     layers.terrain.addChild(this.terrainGfx);
     layers.territory.addChild(this.scenery.gfx, this.territoryGfx, this.territoryGlow);
@@ -298,6 +305,12 @@ export class CyberpunkTheme implements Theme {
     // The circuit runs out past the board to the window's edge, as the pixel sea does.
     const marginX = Math.ceil(view.originX / view.tile) + 1;
     const marginY = Math.ceil(view.originY / view.tile) + 1;
+    this.drawn = {
+      x0: -marginX,
+      y0: -marginY,
+      x1: state.width + marginX,
+      y1: state.height + marginY,
+    };
     const key = `${marginX},${marginY}`;
     if (key !== this.traceKey) {
       this.traceKey = key;
@@ -423,6 +436,40 @@ export class CyberpunkTheme implements Theme {
       glow.stroke({ width: 1, color: this.colour(player, 'base'), alpha: this.style.gridAlpha });
     }
     dimEliminated(g, state, view, hex(this.art.palette.shadow));
+  }
+
+  /**
+   * Thin rain over the city, falling fast and nearly straight, faint in the sea's neon so
+   * it reads as weather and never as a shot. None when motion is reduced.
+   */
+  private drawRain(view: ViewTransform, deltaMs: number): void {
+    if (motionReduced()) {
+      this.rain = [];
+      return;
+    }
+    const { x0, y0, x1, y1 } = this.drawn;
+    const wanted = Math.round(((x1 - x0) * (y1 - y0) * this.style.rainPerThousandTiles) / 1000);
+    while (this.rain.length < wanted) {
+      this.rain.push({
+        x: x0 + Math.random() * (x1 - x0),
+        y: y0 + Math.random() * (y1 - y0),
+        speed: 18 + Math.random() * 10,
+      });
+    }
+    const g = this.effectGfx;
+    const dt = deltaMs / 1000;
+    for (const drop of this.rain) {
+      drop.y += drop.speed * dt;
+      drop.x += drop.speed * 0.08 * dt;
+      if (drop.y > y1) {
+        drop.y = y0;
+        drop.x = x0 + Math.random() * (x1 - x0);
+      }
+      const x = tileX(view, drop.x);
+      const y = tileY(view, drop.y);
+      g.moveTo(x, y).lineTo(x - view.tile * 0.05, y - view.tile * 0.6);
+    }
+    g.stroke({ width: 1, color: hex(this.art.palette.waterFoam), alpha: 0.16 });
   }
 
   // ------------------------------------------------------------------ structures
@@ -795,6 +842,7 @@ export class CyberpunkTheme implements Theme {
     this.clock += frame.deltaMs;
 
     this.drawPulses(view);
+    this.drawRain(view, frame.deltaMs);
     drawSealGlow(g, view, frame.sealGlow, this.art);
     this.landings.draw(g, view, this.art, frame.deltaMs);
     this.scenery.drawPuffs(g, view, frame.deltaMs);
@@ -1068,6 +1116,21 @@ export class CyberpunkTheme implements Theme {
       glow.fill({ color: hex(this.art.palette.uiInk), alpha: 0.7 * (1 - t) * (1 - t) });
       glow.circle(cx, cy, view.tile * (0.4 + 2 * t));
       glow.stroke({ width: Math.max(2, view.tile / 6), color: burst.colour, alpha: 1 - t });
+      if (burst.onWall && t < 0.5) {
+        // A wall hit splits the light into its colours for a moment, as a lens does.
+        const split = this.style.splitPx * (1 - t * 2);
+        for (const [dx, colour] of [
+          [-split, hex(this.art.palette.emberMid)],
+          [split, hex(this.art.palette.waterFoam)],
+        ] as const) {
+          glow.circle(cx + dx, cy, view.tile * (0.4 + 2 * t));
+          glow.stroke({
+            width: Math.max(1, view.tile / 10),
+            color: colour,
+            alpha: 0.7 * (1 - t * 2),
+          });
+        }
+      }
       // Glitch: bars of colour torn sideways across the point, jumping every few frames.
       const jump = Math.floor(burst.age / 40);
       const colours = [

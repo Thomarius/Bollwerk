@@ -917,6 +917,8 @@
     "crumbleMs": 450
   },
   "cyberpunk": {
+    "rainPerThousandTiles": 70,
+    "splitPx": 3,
     "wallLinePx": 2,
     "glowWidthTiles": 0.55,
     "glowAlpha": 0.3,
@@ -960,7 +962,13 @@
     "boatEveryMs": 16000,
     "boatTilesPerSecond": 0.5,
     "gulls": 3,
-    "fishEveryMs": 2400
+    "fishEveryMs": 2400,
+    "daylightAlpha": 0.16,
+    "weatherOdds": { "clear": 5, "overcast": 2, "rain": 1.5, "fog": 1.5 },
+    "rainPerThousandTiles": 90,
+    "firefliesPerHundredTiles": 1.2,
+    "beamTiles": 7,
+    "beamTurnMs": 9000
   },
   "scenery": {
     "clustersPerHundredTiles": 1.8,

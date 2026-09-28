@@ -7,5 +7,7 @@ describe('the effects setting', () => {
     expect(isMotionReduced('full', false)).toBe(false);
     expect(isMotionReduced('reduced', false)).toBe(true);
     expect(isMotionReduced('full', true)).toBe(true);
+    // High is full motion with bloom on top, not less motion.
+    expect(isMotionReduced('high', false)).toBe(false);
   });
 });

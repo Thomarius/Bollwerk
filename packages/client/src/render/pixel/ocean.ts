@@ -83,6 +83,11 @@ export class OceanLife {
   private untilBoat = 0;
   private untilFish = 0;
 
+  /** Rows of open water right across the screen, clear of the land. */
+  rows(): number[] {
+    return this.ocean.rows;
+  }
+
   /** The ocean to keep to, measured again whenever the board is laid out. */
   layout(state: MatchState, view: ViewTransform, art: ArtConfig): void {
     this.ocean = outerOcean(state, view);

@@ -2338,3 +2338,34 @@ PLAN 11.11 W3, in every style. Display only; tunables in `art.scenery` and `art.
   flies, on screen and out from under the HUD — for which the view now carries the HUD's
   inset. None under reduced motion.
 - Seen in every style at three players and in Pixel art at two, close up.
+
+## 11l. The second visual pass, W4: atmosphere
+
+PLAN 11.11 W4. Display only; tunables in `art.pixel` and `art.cyberpunk`.
+
+- **The day by round** (`daylight`, tested): morning gold as a match opens, plain noon
+  light, sunset at the last round, coming round every ten rounds when there is no cap.
+  **A tint on the ground and sea only**, in the territory layer under the walls — the
+  rule the torchlight taught, since a wash over everything shifts every player's hue.
+- **Weather per match** (`weatherFor`, tested), from the seed and `weatherOdds`: clear,
+  overcast (two and a half times the clouds, darker, a grey cast on the ground), rain
+  (overcast, with streaks slanting on the wind over everything and rings on the sea) or
+  fog (pale banks drifting where the clouds' shadows would). None at Night, and no rain
+  under reduced motion. Seeds 1, 2, 5 and 7 give rain, fog, clear and overcast, which the
+  screenshot scenes use.
+- **Night's sea**: a lighthouse off the outward corner of every island — the one farthest
+  from the middle of the map, on the sea tile diagonally beyond its land, so nothing is
+  ever built under it — whose beam turns over the water, lit into the ground layer like
+  the torches' pools. A path of moonlight on the outer ocean: **first kept above the
+  land, where at three players it sat under the HUD bar and was never seen**; it takes
+  the deeper band now. Fireflies wander and wink over the land. Its glints, from W2, are
+  the stars on the water the plan asked for.
+- **Cyberpunk**: thin fast rain in the sea's neon, faint enough to read as weather and not
+  as a shot, and a wall hit's flash split into magenta and cyan for a moment.
+- **Bloom**: the Effects setting gains **High**, full with the glow layers of Night and
+  Cyberpunk under a blur filter — the filter the plan for Cyberpunk held back for frame
+  rate at eight players, now there for whoever asks. Read as a theme is made, so it
+  takes effect from the next match.
+- Seen in each weather at three players, at the last round's sunset, and at Night at two
+  and three; the rain's movement, the fireflies' winking and the beams' turning need a
+  person to see them.

@@ -4,13 +4,14 @@
  * reduced-motion setting, which is honoured as well. Chosen in the menu, kept with the
  * looks.
  */
-export type EffectsLevel = 'full' | 'reduced';
+export type EffectsLevel = 'high' | 'full' | 'reduced';
 
 const KEY = 'rampart.effects';
 
 export function storedEffects(): EffectsLevel {
   try {
-    return globalThis.localStorage?.getItem(KEY) === 'reduced' ? 'reduced' : 'full';
+    const stored = globalThis.localStorage?.getItem(KEY);
+    return stored === 'reduced' || stored === 'high' ? stored : 'full';
   } catch {
     return 'full';
   }
@@ -23,6 +24,14 @@ export function saveEffects(level: EffectsLevel): void {
     // Storage refused, as in some private windows: the choice holds for this page only.
   }
   applyEffects(level);
+}
+
+/**
+ * High is full with the glow of the dark styles bloomed by a real blur filter, which
+ * costs frame rate at eight players and so is asked for rather than given.
+ */
+export function bloomWanted(): boolean {
+  return storedEffects() === 'high';
 }
 
 /** Motion is reduced when the player chose so, or their system asks for it. */

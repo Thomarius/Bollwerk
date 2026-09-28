@@ -313,7 +313,7 @@ function showMenu(): void {
       <label>Name <input id="name" type="text" maxlength="16" value="Player" /></label>
       <label>Building look <select id="build-style">${styleOptions('build')}</select></label>
       <label>Combat look <select id="combat-style">${styleOptions('combat')}</select></label>
-      <label>Effects <select id="effects"><option value="full">Full</option><option value="reduced">Reduced</option></select></label>
+      <label>Effects <select id="effects"><option value="high">High</option><option value="full">Full</option><option value="reduced">Reduced</option></select></label>
       <button id="play">Play</button>
       <div class="split">
         <input id="code" type="text" maxlength="8" placeholder="room code" />
@@ -334,7 +334,11 @@ function showMenu(): void {
   if (effectsField) {
     effectsField.value = storedEffects();
     effectsField.addEventListener('change', () =>
-      saveEffects(effectsField.value === 'reduced' ? 'reduced' : 'full'),
+      saveEffects(
+        effectsField.value === 'reduced' || effectsField.value === 'high'
+          ? effectsField.value
+          : 'full',
+      ),
     );
   }
 

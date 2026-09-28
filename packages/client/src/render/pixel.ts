@@ -1,10 +1,11 @@
 import type { ArtConfig, ArtStyle } from '@rampart/config';
 import { Structure, Terrain, type MatchState, type Shot } from '@rampart/sim';
-import { Container, Graphics, Sprite, Texture } from 'pixi.js';
+import { BlurFilter, Container, Graphics, Sprite, Texture } from 'pixi.js';
 
-import { motionReduced } from '../motion.js';
+import { bloomWanted, motionReduced } from '../motion.js';
 
 import { SEA_NE, SEA_NW, SEA_SE, SEA_SW, filletCorners } from './pixel/coast.js';
+import { daylight, weatherFor, type Weather } from './pixel/atmosphere.js';
 import { OceanLife } from './pixel/ocean.js';
 import { SceneryTracker } from './scenery.js';
 import { CASTLE_WINDOWS, E, FILLET_CORNERS, KEY, N, S, W, buildAtlas } from './pixel/generators.js';
@@ -179,6 +180,16 @@ export class PixelTheme implements Theme {
   private readonly sceneryLayer = new Container();
   private islandId: Uint8Array | null = null;
   private readonly ocean = new OceanLife();
+  /** The light of the day and the weather's cast, on the ground and sea under the walls. */
+  private readonly daylightGfx = new Graphics();
+  private weather: Weather = 'clear';
+  private rain: { x: number; y: number; speed: number }[] = [];
+  /** Rings where raindrops strike the sea. */
+  private ripples: Glint[] = [];
+  /** Night: fireflies over the land, and lighthouses on the sea off each island. */
+  private land: Cell[] = [];
+  private fireflies: { x: number; y: number; phase: number; drift: number }[] = [];
+  private lighthouses: Cell[] = [];
   private glints: Glint[] = [];
   private crests: Glint[] = [];
   private clouds: Cloud[] = [];
@@ -248,11 +259,17 @@ export class PixelTheme implements Theme {
       this.courtLayer,
       this.craterLayer,
       this.sceneryLayer,
+      this.daylightGfx,
       this.territoryGfx,
       this.groundLight,
     );
     this.groundLight.blendMode = 'add';
     this.airLight.blendMode = 'add';
+    if (this.torchlit && bloomWanted()) {
+      // High effects: the light bloomed by a real blur rather than only the wider shapes.
+      this.groundLight.filters = [new BlurFilter({ strength: 6, quality: 2 })];
+      this.airLight.filters = [new BlurFilter({ strength: 4, quality: 2 })];
+    }
     layers.effects.addChild(this.effectGfx);
     layers.overlay.addChild(this.ghostLayer, this.overlayGfx);
     return Promise.resolve();
@@ -415,6 +432,8 @@ export class PixelTheme implements Theme {
     this.terrainLayer.addChild(this.seaGfx);
     this.islandId = state.islandId;
     this.ocean.layout(state, view, this.art);
+    this.weather = this.torchlit ? 'clear' : weatherFor(state.seed, this.art.pixel.weatherOdds);
+    this.layoutNight(state);
     this.scenery.sync(state, this.art.scenery);
     this.layoutScenery();
     this.drawn = {
@@ -816,7 +835,10 @@ export class PixelTheme implements Theme {
     const still = motionReduced();
     this.drawSea(view, frame.deltaMs, still);
     this.drawClouds(view, frame.deltaMs, still);
+    this.drawDaylight(state, view);
+    this.drawRain(view, frame.deltaMs, still);
     if (this.torchlit) this.drawTorchlight(state, view, frame);
+    this.drawNight(view, frame.deltaMs, still);
     this.drawWindows(state, view, frame);
 
     drawSealGlow(g, view, frame.sealGlow, this.art);
@@ -954,6 +976,19 @@ export class PixelTheme implements Theme {
     }
     this.glints = this.glints.filter((glint) => glint.age < glint.life);
 
+    for (const ripple of this.ripples) {
+      ripple.age += deltaMs;
+      const t = Math.min(1, ripple.age / ripple.life);
+      g.ellipse(
+        tileX(view, ripple.x),
+        tileY(view, ripple.y),
+        view.tile * 0.25 * t + px,
+        view.tile * 0.1 * t + px,
+      );
+      g.stroke({ width: px, color: light, alpha: 0.35 * (1 - t) });
+    }
+    this.ripples = this.ripples.filter((ripple) => ripple.age < ripple.life);
+
     const wind = this.art.pixel.windTilesPerSecond * (deltaMs / 1000);
     const foam = hex(this.art.palette.waterFoam);
     const deep = hex(this.art.palette.waterDeep);
@@ -992,7 +1027,13 @@ export class PixelTheme implements Theme {
     const spanX = x1 - x0;
     const spanY = y1 - y0;
     if (spanX <= 0 || spanY <= 0) return;
-    const wanted = Math.round((spanX * spanY * style.cloudsPerThousandTiles) / 1000);
+    // An overcast or rainy match has more of them and darker; fog is clouds on the water,
+    // pale banks drifting instead of shadows.
+    const heavy = this.weather === 'overcast' || this.weather === 'rain';
+    const fog = this.weather === 'fog';
+    const wanted = Math.round(
+      (spanX * spanY * style.cloudsPerThousandTiles * (heavy ? 2.5 : fog ? 1.6 : 1)) / 1000,
+    );
     if (this.clouds.length !== wanted) {
       const [small, large] = style.cloudTiles;
       this.clouds = Array.from({ length: wanted }, () => {
@@ -1007,9 +1048,9 @@ export class PixelTheme implements Theme {
       });
     }
     const drift = still ? 0 : style.windTilesPerSecond * (deltaMs / 1000);
-    const colour = hex(this.art.palette.shadow);
+    const colour = hex(fog ? this.art.palette.uiInk : this.art.palette.shadow);
     const rings = [1, 0.86, 0.72, 0.58, 0.44, 0.3];
-    const alpha = style.cloudShadowAlpha / rings.length;
+    const alpha = (style.cloudShadowAlpha * (heavy ? 1.25 : fog ? 1.1 : 1)) / rings.length;
     for (const cloud of this.clouds) {
       cloud.x += drift * WIND_X;
       cloud.y += drift * WIND_Y;
@@ -1026,6 +1067,220 @@ export class PixelTheme implements Theme {
           g.fill({ color: colour, alpha });
         }
       }
+    }
+  }
+
+  /**
+   * The light of the day, and the grey of an overcast sky, laid over the ground and the
+   * sea in the territory layer — under the walls, so no player's colour moves with it.
+   * Night keeps its own light.
+   */
+  private drawDaylight(state: MatchState, view: ViewTransform): void {
+    const g = this.daylightGfx;
+    g.clear();
+    if (this.torchlit) return;
+    const { x0, y0, x1, y1 } = this.drawn;
+    const area = (): void => {
+      g.rect(tileX(view, x0), tileY(view, y0), (x1 - x0) * view.tile, (y1 - y0) * view.tile);
+    };
+    const day = daylight(
+      state.round,
+      state.ruleset.scoring.maxRounds,
+      this.art.pixel.daylightAlpha,
+    );
+    if (day.alpha > 0) {
+      area();
+      g.fill({ color: day.colour, alpha: day.alpha });
+    }
+    if (this.weather === 'overcast' || this.weather === 'rain') {
+      area();
+      g.fill({ color: hex(this.art.palette.rockDark), alpha: 0.12 });
+    }
+  }
+
+  /**
+   * Rain in a rainy match: fine streaks slanting with the wind over everything, and
+   * rings where drops strike the sea. None when motion is reduced.
+   */
+  private drawRain(view: ViewTransform, deltaMs: number, still: boolean): void {
+    if (this.weather !== 'rain' || still) {
+      this.rain = [];
+      this.ripples = [];
+      return;
+    }
+    const g = this.effectGfx;
+    const { x0, y0, x1, y1 } = this.drawn;
+    const wanted = Math.round(((x1 - x0) * (y1 - y0) * this.art.pixel.rainPerThousandTiles) / 1000);
+    while (this.rain.length < wanted) {
+      this.rain.push({
+        x: x0 + Math.random() * (x1 - x0),
+        y: y0 + Math.random() * (y1 - y0),
+        speed: 14 + Math.random() * 8,
+      });
+    }
+    const dt = deltaMs / 1000;
+    for (const drop of this.rain) {
+      drop.y += drop.speed * dt;
+      drop.x += drop.speed * 0.25 * dt;
+      if (drop.y > y1) {
+        drop.y = y0;
+        drop.x = x0 + Math.random() * (x1 - x0);
+      }
+      const x = tileX(view, drop.x);
+      const y = tileY(view, drop.y);
+      g.moveTo(x, y).lineTo(x - view.tile * 0.12, y - view.tile * 0.5);
+    }
+    g.stroke({ width: 1, color: hex(this.art.palette.rockLight), alpha: 0.3 });
+    // Rings where drops strike the sea, as the glints are born.
+    const rings = this.seaCells.length * 0.03 * dt;
+    for (let k = 0; k < Math.floor(rings) + (Math.random() < rings % 1 ? 1 : 0); k++) {
+      const cell = this.seaCells[Math.floor(Math.random() * this.seaCells.length)];
+      if (cell !== undefined) {
+        this.ripples.push({
+          x: cell.x + Math.random(),
+          y: cell.y + Math.random(),
+          age: 0,
+          life: 500,
+        });
+      }
+    }
+  }
+
+  /**
+   * Night's land and lighthouses, measured when the board is laid out: the tiles of land
+   * the fireflies wander, and for each island a lighthouse on the sea off the corner of it
+   * farthest from the middle of the map, where it looks out over open water.
+   */
+  private layoutNight(state: MatchState): void {
+    this.land = [];
+    this.lighthouses = [];
+    this.fireflies = [];
+    if (!this.torchlit) return;
+    const boxes = new Map<number, { x0: number; y0: number; x1: number; y1: number }>();
+    for (let i = 0; i < state.terrain.length; i++) {
+      if (state.terrain[i] !== Terrain.Land) continue;
+      const x = i % state.width;
+      const y = (i - x) / state.width;
+      this.land.push({ x, y });
+      const id = state.islandId[i] as number;
+      const box = boxes.get(id) ?? { x0: x, y0: y, x1: x, y1: y };
+      box.x0 = Math.min(box.x0, x);
+      box.y0 = Math.min(box.y0, y);
+      box.x1 = Math.max(box.x1, x);
+      box.y1 = Math.max(box.y1, y);
+      boxes.set(id, box);
+    }
+    const mx = state.width / 2;
+    const my = state.height / 2;
+    const sea = (x: number, y: number): boolean =>
+      x < 0 ||
+      y < 0 ||
+      x >= state.width ||
+      y >= state.height ||
+      state.terrain[y * state.width + x] !== Terrain.Land;
+    for (const box of boxes.values()) {
+      const corners: Cell[] = [
+        { x: box.x0 - 1, y: box.y0 - 1 },
+        { x: box.x1 + 1, y: box.y0 - 1 },
+        { x: box.x1 + 1, y: box.y1 + 1 },
+        { x: box.x0 - 1, y: box.y1 + 1 },
+      ];
+      const far = corners
+        .filter((c) => sea(c.x, c.y))
+        .sort((a, b) => Math.hypot(b.x - mx, b.y - my) - Math.hypot(a.x - mx, a.y - my))[0];
+      if (far !== undefined) this.lighthouses.push(far);
+    }
+    const count = Math.round((this.land.length * this.art.pixel.firefliesPerHundredTiles) / 100);
+    for (let k = 0; k < count; k++) {
+      const at = this.land[Math.floor(Math.random() * this.land.length)] as Cell;
+      this.fireflies.push({
+        x: at.x + Math.random(),
+        y: at.y + Math.random(),
+        phase: Math.random() * Math.PI * 2,
+        drift: Math.random() * Math.PI * 2,
+      });
+    }
+  }
+
+  /**
+   * Night on the sea and land: a path of moonlight shimmering on the outer ocean, fireflies
+   * winking over the fields, and a lighthouse off each island whose beam turns slowly over
+   * the water — lit into the ground, under the walls, like the torches' pools.
+   */
+  private drawNight(view: ViewTransform, deltaMs: number, still: boolean): void {
+    if (!this.torchlit) return;
+    const { palette } = this.art;
+    const t = view.tile;
+    const px = Math.max(1, Math.round(t / this.art.tileSizePx));
+    const sea = this.seaGfx;
+
+    // The moon's path: short bright dashes down a column of the outer ocean, in whichever
+    // band of it clear of the land is the deeper, shimmering. Above the land alone, it was
+    // under the HUD bar at three players.
+    const bands: number[][] = [];
+    for (const y of this.ocean.rows()) {
+      const last = bands[bands.length - 1];
+      if (last !== undefined && last[last.length - 1] === y - 1) last.push(y);
+      else bands.push([y]);
+    }
+    const rows = bands.sort((a, b) => b.length - a.length)[0] ?? [];
+    if (rows.length > 0) {
+      const column = tileX(view, this.drawn.x0 + (this.drawn.x1 - this.drawn.x0) * 0.72);
+      rows.forEach((y, k) => {
+        const spread = t * (0.6 + k * 0.35);
+        for (let d = 0; d < 3; d++) {
+          const wobble = still ? 0 : Math.sin(this.clock / 300 + y * 1.7 + d * 2.3);
+          const x = Math.round(column + (d - 1) * spread * 0.6 + wobble * t * 0.3);
+          sea.rect(x, Math.round(tileY(view, y + 0.5)), Math.round(t * 0.5), px);
+        }
+      });
+      sea.fill({ color: hex(palette.uiInk), alpha: 0.45 });
+    }
+
+    // Lighthouses: a white tower on a rock, its lamp lit, the beam turning over the water.
+    const turn = still ? 0 : (this.clock / this.art.pixel.beamTurnMs) * Math.PI * 2;
+    const reach = t * this.art.pixel.beamTiles;
+    this.lighthouses.forEach((spot, k) => {
+      const cx = tileX(view, spot.x + 0.5);
+      const cy = tileY(view, spot.y + 0.5);
+      sea.ellipse(cx, cy + t * 0.25, t * 0.4, t * 0.18);
+      sea.fill({ color: hex(palette.rockDark) });
+      sea.rect(cx - t * 0.12, cy - t * 0.45, t * 0.24, t * 0.7);
+      sea.fill({ color: hex(palette.rockLight) });
+      sea.rect(cx - t * 0.12, cy - t * 0.15, t * 0.24, t * 0.12);
+      sea.fill({ color: hex(palette.emberCool) });
+      sea.circle(cx, cy - t * 0.5, t * 0.1);
+      sea.fill({ color: hex(palette.emberHot) });
+      const angle = turn + k * 1.9;
+      const width = 0.16;
+      this.groundLight.poly([
+        cx,
+        cy - t * 0.5,
+        cx + Math.cos(angle - width) * reach,
+        cy - t * 0.5 + Math.sin(angle - width) * reach,
+        cx + Math.cos(angle + width) * reach,
+        cy - t * 0.5 + Math.sin(angle + width) * reach,
+      ]);
+      this.groundLight.fill({ color: hex(palette.emberHot), alpha: 0.16 });
+      this.airLight.circle(cx, cy - t * 0.5, t * 0.35);
+      this.airLight.fill({ color: hex(palette.emberMid), alpha: 0.3 });
+    });
+
+    // Fireflies wandering and winking; none when motion is reduced.
+    if (still) return;
+    const dt = deltaMs / 1000;
+    for (const fly of this.fireflies) {
+      fly.drift += (Math.random() - 0.5) * 2 * dt;
+      fly.x += Math.cos(fly.drift) * 0.3 * dt;
+      fly.y += Math.sin(fly.drift) * 0.3 * dt;
+      const glow = Math.max(0, Math.sin(this.clock / 700 + fly.phase));
+      if (glow <= 0.05) continue;
+      const x = tileX(view, fly.x);
+      const y = tileY(view, fly.y);
+      this.airLight.circle(x, y, t * 0.18);
+      this.airLight.fill({ color: 0xd8ff6a, alpha: 0.25 * glow });
+      this.effectGfx.rect(x, y, px, px);
+      this.effectGfx.fill({ color: 0xf0ffb0, alpha: glow });
     }
   }
 
