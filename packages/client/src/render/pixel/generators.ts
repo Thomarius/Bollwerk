@@ -4,6 +4,7 @@ import { Rng } from '@rampart/sim';
 import type { Texture } from 'pixi.js';
 
 import { Atlas, Pixels } from './canvas.js';
+import { SEA_NE, SEA_NW, SEA_SE, SEA_SW, coastDistance, filletDistance } from './coast.js';
 
 /**
  * Every sprite in the game, drawn from code.
@@ -17,10 +18,12 @@ import { Atlas, Pixels } from './canvas.js';
  */
 
 export const KEY = {
-  water: (frame: number) => `water.${frame}`,
+  water: (frame: number, variant: number) => `water.${variant}.${frame}`,
   grass: (variant: number) => `grass.${variant}`,
   rock: (variant: number) => `rock.${variant}`,
   shore: (mask: number) => `shore.${mask}`,
+  beach: (mask: number) => `beach.${mask}`,
+  fillet: (corner: number) => `fillet.${corner}`,
   wall: (mask: number, damage: number) => `wall.${mask}.${damage}`,
   rubble: (variant: number) => `rubble.${variant}`,
   court: (variant: number) => `court.${variant}`,
@@ -29,6 +32,7 @@ export const KEY = {
   banner: (frame: number) => `banner.${frame}`,
   cannon: 'cannon',
   barrel: (step: number, recoil: number) => `barrel.${step}.${recoil}`,
+  carriage: (step: number, recoil: number) => `carriage.${step}.${recoil}`,
   droop: (step: number) => `droop.${step}`,
   shot: 'shot',
   crater: (variant: number) => `crater.${variant}`,
@@ -41,12 +45,43 @@ export const E = 2;
 export const S = 4;
 export const W = 8;
 
+/** The corners a sea tile may be filled in at, as the shore mask's diagonal bits. */
+export const FILLET_CORNERS = [SEA_NW, SEA_NE, SEA_SE, SEA_SW] as const;
+
+/**
+ * Where a castle's windows are, as fractions of its sprite: the keep's two and a slit in
+ * each front tower. They are dark in the sprite and lit over it while the castle is
+ * sealed, since a tinted sprite cannot hold a warm light in every owner's colour.
+ */
+export const CASTLE_WINDOWS: readonly { x: number; y: number; w: number; h: number }[] = [
+  { x: 19 / 48, y: 31 / 48, w: 2 / 48, h: 2 / 48 },
+  { x: 27 / 48, y: 31 / 48, w: 2 / 48, h: 2 / 48 },
+  { x: 7 / 48, y: 40 / 48, w: 2 / 48, h: 3 / 48 },
+  { x: 39 / 48, y: 40 / 48, w: 2 / 48, h: 3 / 48 },
+];
+
+/** Mixes two `#rrggbb` colours, `t` of the way from `a` to `b`. */
+function mix(a: string, b: string, t: number): string {
+  const ca = parseInt(a.slice(1), 16);
+  const cb = parseInt(b.slice(1), 16);
+  const channel = (shift: number): number =>
+    Math.round(((ca >> shift) & 0xff) * (1 - t) + ((cb >> shift) & 0xff) * t);
+  const out = (channel(16) << 16) | (channel(8) << 8) | channel(0);
+  return `#${out.toString(16).padStart(6, '0')}`;
+}
+
+/**
+ * A frame of sea. Each variant has flecks of its own, the same in every frame, so tiles
+ * drawn from different variants break up the grid one tile repeated made across the
+ * whole sea — and a tile does not flicker as its frames turn.
+ */
 export function water(
   art: ArtConfig,
-  rng: Rng,
+  seed: number,
   size: number,
   frame: number,
   frames: number,
+  variant: number,
 ): Pixels {
   const p = new Pixels(size, size);
   const { waterDeep, waterMid, waterShallow, waterFoam } = art.palette;
@@ -62,7 +97,7 @@ export function water(
       else if (band === 3) p.set(x, y, waterShallow, 0.4);
     }
   }
-  p.speckle(rng, waterFoam, 0.012);
+  p.speckle(new Rng(seed * 31 + variant), waterFoam, 0.012);
   return p;
 }
 
@@ -92,7 +127,10 @@ function rock(art: ArtConfig, rng: Rng, size: number): Pixels {
 }
 
 /**
- * Land that meets water, keyed by which sides the sea is on.
+ * Land that meets water, keyed by which sides the sea is on: grass, cut back to the
+ * coast where its corners are rounded (`coast.ts`), so the sea drawn beneath shows.
+ * The sand is a sprite of its own (`beach`), since the grass carries its owner's tint
+ * and sand tinted as hard turned the coast into a coloured rim.
  *
  * Generated for all 256 neighbour combinations rather than the usual reduced blob set:
  * at 16 pixels a tile the whole run costs a few kilobytes, and covering every case
@@ -100,44 +138,60 @@ function rock(art: ArtConfig, rng: Rng, size: number): Pixels {
  */
 function shore(art: ArtConfig, rng: Rng, size: number, mask: number): Pixels {
   const p = grass(art, rng, size);
-  const { sand, waterFoam } = art.palette;
-  const fringe = 3;
-
-  const edge = (side: number, at: (i: number, depth: number) => [number, number]): void => {
-    if ((mask & side) === 0) return;
-    for (let i = 0; i < size; i++) {
-      for (let depth = 0; depth < fringe; depth++) {
-        // Ragged rather than ruler-straight, so coastlines do not look stamped.
-        if (depth === fringe - 1 && rng.nextFloat() < 0.5) continue;
-        const [x, y] = at(i, depth);
-        p.set(x, y, sand);
-        if (depth === 0 && rng.nextFloat() < 0.35) p.set(x, y, waterFoam);
-      }
-    }
-  };
-
-  edge(N, (i, d) => [i, d]);
-  edge(S, (i, d) => [i, size - 1 - d]);
-  edge(W, (i, d) => [d, i]);
-  edge(E, (i, d) => [size - 1 - d, i]);
-
-  // Diagonal-only neighbours get a corner dab, otherwise a headland reads as square.
-  const corners: [number, number, number, number][] = [
-    [16, 0, 0, 1],
-    [32, size - 1, 0, -1],
-    [64, size - 1, size - 1, -1],
-    [128, 0, size - 1, 1],
-  ];
-  for (const [bit, cx, cy, dx] of corners) {
-    if ((mask & bit) === 0) continue;
-    const dy = cy === 0 ? 1 : -1;
-    for (let i = 0; i < fringe; i++) {
-      for (let j = 0; j < fringe - i; j++) {
-        p.set(cx + dx * i, cy + dy * j, sand);
-      }
+  const radius = art.generators.terrain.coastRadiusPx;
+  for (let y = 0; y < size; y++) {
+    for (let x = 0; x < size; x++) {
+      if (coastDistance(mask, x, y, size, radius) < 0) p.clear(x, y);
     }
   }
   return p;
+}
+
+/**
+ * Sand along a coast, `distance` giving each pixel's distance from the sea: wet and
+ * flecked with foam at the water's edge, dry above it, and ragged where it gives way to
+ * the grass so the coast does not look stamped.
+ */
+function sandFrom(
+  art: ArtConfig,
+  rng: Rng,
+  size: number,
+  distance: (x: number, y: number) => number,
+): Pixels {
+  const p = new Pixels(size, size);
+  const { sand, craterMid, waterFoam, grassLight } = art.palette;
+  const band = art.generators.terrain.beachPx;
+  const wet = mix(sand, craterMid, 0.35);
+  const bright = mix(sand, '#ffffff', 0.25);
+  for (let y = 0; y < size; y++) {
+    for (let x = 0; x < size; x++) {
+      const d = distance(x, y);
+      if (d < 0 || d >= band) continue;
+      if (d >= band - 1 && rng.nextFloat() < 0.45) continue;
+      if (d < 1) {
+        p.set(x, y, rng.nextFloat() < 0.3 ? waterFoam : wet);
+        continue;
+      }
+      const roll = rng.nextFloat();
+      p.set(x, y, roll < 0.1 ? bright : roll < 0.16 ? grassLight : sand);
+    }
+  }
+  return p;
+}
+
+function beach(art: ArtConfig, rng: Rng, size: number, mask: number): Pixels {
+  const radius = art.generators.terrain.coastRadiusPx;
+  return sandFrom(art, rng, size, (x, y) => coastDistance(mask, x, y, size, radius));
+}
+
+/** Land filling one corner of a sea tile where the coast turns inward: all beach. */
+function fillet(art: ArtConfig, rng: Rng, size: number, corner: number): Pixels {
+  const radius = art.generators.terrain.coastRadiusPx;
+  return sandFrom(art, rng, size, (x, y) => {
+    const d = filletDistance(corner, x, y, size, radius);
+    // Nothing of the sand's ragged edge here: the fillet is shallower than the beach.
+    return d > 0 ? Math.min(d, 1.5) : -1;
+  });
 }
 
 /**
@@ -272,54 +326,195 @@ function foam(art: ArtConfig, rng: Rng, size: number, mask: number): Pixels {
   return p;
 }
 
-/** The keep: a walled block with battlements, a gate and a banner. */
+/**
+ * The castle: a curtain wall round a paved court, a round tower at each corner, a keep
+ * in the middle under a hipped roof, and a gate in the front face. Seen from above with
+ * light from the north, as the walls are: tops lit, faces toward the viewer in shade.
+ * Drawn at 48 pixels, three sprite tiles, which the board scales to the castle's size;
+ * the windows (`CASTLE_WINDOWS`) are left dark here and lit over it.
+ *
+ * A sealed castle flies a banner in its owner's colour, drawn over this as its own
+ * sprite so it can wave and come down when the wall is breached.
+ */
 function castle(art: ArtConfig, rng: Rng, size: number): Pixels {
   const p = new Pixels(size, size);
-  const { rockMid, rockLight, rockDark, shadow, uiAccent } = art.palette;
+  const { rockMid, rockLight, rockDark, shadow, sand } = art.palette;
   const merlon = art.generators.castle.battlementPeriodPx;
-
-  p.rect(1, 3, size - 2, size - 4, rockMid);
-  p.speckle(rng, rockDark, 0.12, (_x, y) => y > 3 && y < size - 2);
-  p.speckle(rng, rockLight, 0.08, (_x, y) => y > 3 && y < size - 2);
-
-  // Battlements along the top.
-  for (let x = 1; x < size - 1; x++) {
-    const solid = Math.floor(x / merlon) % 2 === 0;
-    if (solid) p.rect(x, 1, 1, 3, rockMid);
-    else p.rect(x, 3, 1, 1, rockDark);
-  }
-  for (let x = 1; x < size - 1; x++) p.set(x, 1, rockLight, 0.6);
-
-  // Corner towers.
-  for (const tx of [1, size - 5]) {
-    p.rect(tx, 1, 4, size - 2, rockMid);
-    p.rect(tx, 1, 4, 1, rockLight);
-    for (let y = 2; y < size - 1; y++) p.set(tx, y, rockLight, 0.35);
-  }
-
-  // The front face, below the roofline, in shade: it is what stands the keep up off
-  // the ground rather than leaving it a plan drawn on it.
+  const k = size / 48;
+  const at = (v: number): number => Math.round(v * k);
   const face = art.generators.wall.frontFacePx + 2;
-  p.rect(1, size - face - 1, size - 2, face, rockDark, 0.55);
-  for (let x = 1; x < size - 1; x++) p.set(x, size - face - 2, rockLight, 0.6);
+  const foot = size - 1;
+  const lip = foot - face;
 
-  // The gate. A sealed castle flies a banner in its owner's colour, drawn over this as
-  // its own sprite so it can wave and come down when the wall is breached.
+  // The curtain wall's top, outlined, and its front face below the roofline.
+  p.rect(at(3), at(5), at(42), lip - at(5) + 1, shadow);
+  p.rect(at(4), at(6), at(40), lip - at(6), rockMid);
+  p.speckle(rng, rockDark, 0.1, (x, y) => x > at(4) && x < at(43) && y > at(6) && y < lip);
+  for (let x = at(4); x < at(44); x++) {
+    // Battlements on its outer rim, lit from the north.
+    const solid = Math.floor(x / merlon) % 2 === 0;
+    p.set(x, at(6), solid ? rockLight : rockDark);
+  }
+  p.rect(at(4), lip, at(40), face, rockDark);
+  p.rect(at(4), lip, at(40), face, shadow, 0.35);
+  for (let x = at(4); x < at(44); x++) p.set(x, lip - 1, rockLight, 0.6);
+  for (let x = at(4); x < at(44); x += 4) p.rect(x, lip + 1, 1, face - 2, shadow, 0.4);
+  for (let x = at(3); x < at(45); x++) p.set(x, foot, shadow, 0.9);
+
+  // The court inside it, paved.
+  p.rect(at(9), at(11), at(30), at(25), shadow, 0.6);
+  p.rect(at(10), at(12), at(28), at(23), mix(rockLight, sand, 0.4));
+  p.speckle(rng, rockMid, 0.12, (x, y) => x >= at(10) && x < at(38) && y >= at(12) && y < at(35));
+
+  // The keep: a hipped roof over a shaded front with two windows.
+  const kx0 = at(15);
+  const kx1 = at(33);
+  const ky0 = at(12);
+  const ky1 = at(29);
+  const kFace = at(34);
+  p.rect(kx0 - 1, ky0 - 1, kx1 - kx0 + 2, kFace - ky0 + 2, shadow);
+  const midX = (kx0 + kx1 - 1) / 2;
+  const midY = (ky0 + ky1 - 1) / 2;
+  for (let y = ky0; y < ky1; y++) {
+    for (let x = kx0; x < kx1; x++) {
+      // Four slopes meeting at a ridge: the north and west lit, the others in shade.
+      const fx = (x - midX) / ((kx1 - kx0) / 2);
+      const fy = (y - midY) / ((ky1 - ky0) / 2);
+      const colour =
+        Math.abs(fy) >= Math.abs(fx)
+          ? fy < 0
+            ? rockLight
+            : rockDark
+          : fx < 0
+            ? mix(rockLight, rockMid, 0.5)
+            : rockMid;
+      p.set(x, y, colour);
+    }
+  }
+  for (let x = kx0 + 2; x < kx1 - 2; x++) p.set(x, Math.round(midY), shadow, 0.5);
+  p.rect(kx0, ky1, kx1 - kx0, kFace - ky1, rockDark);
+  p.rect(kx0, ky1, kx1 - kx0, kFace - ky1, shadow, 0.3);
+  for (const w of CASTLE_WINDOWS.slice(0, 2)) {
+    p.rect(
+      Math.round(w.x * size),
+      Math.round(w.y * size),
+      Math.max(1, at(2)),
+      Math.max(1, at(2)),
+      shadow,
+    );
+  }
+
+  // Round towers at the corners, standing up: a shaded drum, crenellated top, dark hatch.
+  const tower = (cx: number, cy: number, drop: number): void => {
+    const r = 6.5 * k;
+    p.rect(cx - r, cy, 2 * r + 1, drop, shadow);
+    p.rect(cx - r + 1, cy, 2 * r - 1, drop - 1, rockDark);
+    p.disc(cx, cy, r + 1, shadow);
+    p.disc(cx, cy, r, rockMid);
+    for (let a = 0; a < 12; a++) {
+      if (a % 2 === 1) continue;
+      const angle = (a / 12) * Math.PI * 2;
+      p.set(cx + Math.cos(angle) * (r - 0.8), cy + Math.sin(angle) * (r - 0.8), rockLight);
+    }
+    p.disc(cx, cy, r * 0.5, rockDark);
+    p.set(cx - r * 0.5, cy - r * 0.6, rockLight);
+  };
+  tower(at(8), at(9), at(5));
+  tower(at(39), at(9), at(5));
+  tower(at(8), at(36), foot - at(36));
+  tower(at(39), at(36), foot - at(36));
+  for (const w of CASTLE_WINDOWS.slice(2)) {
+    p.rect(
+      Math.round(w.x * size),
+      Math.round(w.y * size),
+      Math.max(1, at(2)),
+      Math.max(1, at(3)),
+      shadow,
+    );
+  }
+
+  // The gate: an arch in the front face with its portcullis down.
   const gate = Math.floor(size / 2);
-  p.rect(gate - 2, size - 7, 4, 6, shadow);
-  p.disc(gate, size - 7, 2, shadow);
-  p.rect(gate - 1, 5, 2, 2, uiAccent, 0.5);
-
-  for (let x = 1; x < size - 1; x++) p.set(x, size - 1, shadow, 0.7);
+  const gw = at(6);
+  p.rect(gate - gw / 2, lip - at(1), gw, foot - lip + at(1), shadow);
+  p.disc(gate - 0.5, lip - at(1), gw / 2, shadow);
+  for (let x = gate - gw / 2 + 1; x < gate + gw / 2; x += 2)
+    p.rect(x, lip - at(2), 1, foot - lip + at(1), rockMid, 0.55);
   return p;
 }
 
-/** A gun emplacement's stone base. The barrel is a separate sprite so it can turn. */
+/**
+ * A gun pit: a ring of dressed stone round a sunken floor, lit on its northern rim. The
+ * carriage and barrel are sprites of their own, so they can turn.
+ */
 function cannon(art: ArtConfig, size: number): Pixels {
   const p = new Pixels(size, size);
-  const { rockDark, rockMid } = art.palette;
-  p.disc(size / 2 - 0.5, size / 2 - 0.5, size / 2 - 1, rockMid);
-  p.disc(size / 2 - 0.5, size / 2 - 0.5, size / 2 - 3, rockDark);
+  const { rockDark, rockMid, rockLight, shadow } = art.palette;
+  const c = size / 2 - 0.5;
+  const outer = size / 2 - 1;
+  const inner = outer - 3.5;
+  p.disc(c, c, outer + 0.6, shadow);
+  p.disc(c, c, outer, rockMid);
+  for (let y = 0; y < size; y++) {
+    for (let x = 0; x < size; x++) {
+      const dx = x - c;
+      const dy = y - c;
+      const r = Math.hypot(dx, dy);
+      if (r > outer || r < inner) continue;
+      const angle = Math.atan2(dy, dx);
+      // Joints between the stones, and the light on whichever face turns north.
+      if (((((angle / (Math.PI * 2)) * 14) % 1) + 1) % 1 < 0.12) p.set(x, y, rockDark);
+      else if (dy < -outer * 0.35 && r > inner + 1) p.set(x, y, rockLight, 0.7);
+      else if (dy > outer * 0.45) p.set(x, y, rockDark, 0.5);
+    }
+  }
+  p.disc(c, c, inner, shadow);
+  p.disc(c, c + 0.6, inner - 1, rockDark);
+  return p;
+}
+
+/**
+ * A gun's wooden carriage, turned with its barrel `step` of `steps` from north and run
+ * back by `recoil`: two cheeks, a transom, and a wheel either side. Untinted, since wood
+ * in the owner's colour stopped reading as wood; the barrel above carries the colour.
+ */
+function carriage(
+  art: ArtConfig,
+  size: number,
+  step: number,
+  steps: number,
+  recoil: number,
+): Pixels {
+  const p = new Pixels(size, size);
+  const { craterMid, sand, shadow } = art.palette;
+  const wood = mix(craterMid, sand, 0.35);
+  const woodLight = mix(craterMid, sand, 0.6);
+  const woodDark = craterMid;
+  const angle = (2 * Math.PI * step) / steps;
+  const ux = Math.sin(angle);
+  const uy = -Math.cos(angle);
+  const centre = size / 2 - 0.5;
+  for (let y = 0; y < size; y++) {
+    for (let x = 0; x < size; x++) {
+      const rx = x - centre;
+      const ry = y - centre;
+      const along = rx * ux + ry * uy + recoil;
+      const across = -rx * uy + ry * ux;
+      const side = Math.abs(across);
+      let colour: string | null = null;
+      if (along >= -1.5 && along <= 3.5 && side >= 4.2 && side <= 6.4) {
+        // A wheel, its tread darker and a light spoke across it.
+        colour = Math.abs(along - 1) < 0.6 ? woodLight : side > 5.8 ? shadow : woodDark;
+      } else if (along >= -4.5 && along <= 7 && side >= 2.4 && side <= 4.2) {
+        colour = across < 0 ? woodLight : wood;
+      } else if (along >= -4.5 && along <= -2.8 && side < 2.4) {
+        colour = wood;
+      } else if (Math.abs(along - 1) < 0.5 && side < 4.2) {
+        colour = shadow;
+      }
+      if (colour !== null) p.set(x, y, colour);
+    }
+  }
   return p;
 }
 
@@ -339,11 +534,13 @@ function barrel(
 ): Pixels {
   const p = new Pixels(size, size);
   const { rockMid, rockLight, shadow, emberMid } = art.palette;
-  const half = 2.5;
   const angle = (2 * Math.PI * step) / steps;
   const ux = Math.sin(angle);
   const uy = -Math.cos(angle);
   const centre = size / 2 - 0.5;
+  // Thick at the breech, tapering along the chase, swelling again at the muzzle.
+  const halfAt = (along: number): number =>
+    along > length - 1.8 ? 2.3 : 2.9 - (0.9 * Math.max(0, along)) / Math.max(1, length);
 
   for (let y = 0; y < size; y++) {
     for (let x = 0; x < size; x++) {
@@ -351,17 +548,24 @@ function barrel(
       const ry = y - centre;
       const along = rx * ux + ry * uy + recoil;
       const across = -rx * uy + ry * ux;
-      if (along < 0 || along > length || Math.abs(across) > half) continue;
-      // Lighter than the base it sits on, or it disappears into it.
+      // The knob at the breech.
+      if (Math.hypot(along + 3, across) <= 1.4) {
+        p.set(x, y, across < 0 ? rockLight : rockMid);
+        continue;
+      }
+      const half = halfAt(along);
+      if (along < -2 || along > length || Math.abs(across) > half) continue;
+      // Lighter than the carriage and pit under it, or it disappears into them.
       let colour = rockMid;
       if (across < -half + 1) colour = rockLight;
       else if (across > half - 1) colour = shadow;
-      if (along > length - 2) colour = rockLight;
+      // Reinforcing bands, and the lip of the muzzle.
+      if (Math.abs(along - 1) < 0.5 || Math.abs(along - length * 0.5) < 0.5) colour = rockLight;
+      if (along > length - 1) colour = Math.abs(across) < 1.1 ? shadow : rockLight;
       p.set(x, y, colour);
-      if (lit && along > length - 1 && Math.abs(across) < 1.2) p.set(x, y, emberMid, 0.6);
+      if (lit && along > length - 1 && Math.abs(across) < 1.1) p.set(x, y, emberMid, 0.6);
     }
   }
-  p.disc(centre, centre, 2, rockLight);
   return p;
 }
 
@@ -430,13 +634,20 @@ export function buildAtlas(art: ArtConfig, seed: number): Map<string, Texture> {
   const atlas = new Atlas();
   const rng = new Rng(seed);
 
-  for (let f = 0; f < gen.terrain.waterAnimFrames; f++) {
-    atlas.add(KEY.water(f), water(art, rng, tile, f, gen.terrain.waterAnimFrames));
+  for (let v = 0; v < gen.terrain.waterVariants; v++) {
+    for (let f = 0; f < gen.terrain.waterAnimFrames; f++) {
+      atlas.add(KEY.water(f, v), water(art, seed, tile, f, gen.terrain.waterAnimFrames, v));
+    }
   }
   for (let v = 0; v < gen.terrain.grassVariants; v++)
     atlas.add(KEY.grass(v), grass(art, rng, tile));
   for (let v = 0; v < gen.terrain.rockVariants; v++) atlas.add(KEY.rock(v), rock(art, rng, tile));
-  for (let mask = 0; mask < 256; mask++) atlas.add(KEY.shore(mask), shore(art, rng, tile, mask));
+  for (let mask = 0; mask < 256; mask++) {
+    atlas.add(KEY.shore(mask), shore(art, rng, tile, mask));
+    atlas.add(KEY.beach(mask), beach(art, rng, tile, mask));
+  }
+  for (const corner of FILLET_CORNERS)
+    atlas.add(KEY.fillet(corner), fillet(art, rng, tile, corner));
 
   for (let mask = 0; mask < 16; mask++) {
     for (let damage = 0; damage < gen.wall.damageStates; damage++) {
@@ -462,6 +673,7 @@ export function buildAtlas(art: ArtConfig, seed: number): Map<string, Texture> {
   for (let step = 0; step < gen.cannon.rotationSteps; step++) {
     for (let r = 0; r < gen.cannon.recoilFrames; r++) {
       atlas.add(KEY.barrel(step, r), barrel(art, tile * 2, step, gen.cannon.rotationSteps, r));
+      atlas.add(KEY.carriage(step, r), carriage(art, tile * 2, step, gen.cannon.rotationSteps, r));
     }
   }
   // An inert gun's barrel, slumped: short, as a barrel tipped toward the ground looks

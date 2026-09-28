@@ -145,6 +145,29 @@ export const NightStyleSchema = z.strictObject({
 });
 export type NightStyleConfig = z.infer<typeof NightStyleSchema>;
 
+/**
+ * What the pixel style draws beyond its sprites, and Night with it: the sea's glints and
+ * crests, the shadows of clouds, the light in a sealed castle's windows.
+ */
+export const PixelStyleSchema = z.strictObject({
+  /** Glints winking on the sea: how many a tile of water starts in a second, and how long each lasts. */
+  glintsPerTileSecond: z.number().nonnegative(),
+  glintMs: z.number().int().positive(),
+  /** Wave crests on the open sea, forming, drifting with the wind and breaking up. */
+  crestsPerTileSecond: z.number().nonnegative(),
+  crestMs: z.number().int().positive(),
+  /** Clouds overhead, as the shadows they cast: how many to a thousand tiles of view. */
+  cloudsPerThousandTiles: z.number().nonnegative(),
+  /** Across one cloud, the smallest and the largest. */
+  cloudTiles: z.tuple([z.number().positive(), z.number().positive()]),
+  cloudShadowAlpha: z.number().min(0).max(1),
+  /** The wind the clouds and the crests drift on. */
+  windTilesPerSecond: z.number().nonnegative(),
+  /** A sealed castle's lit windows, at their brightest. */
+  windowGlowAlpha: z.number().min(0).max(1),
+});
+export type PixelStyleConfig = z.infer<typeof PixelStyleSchema>;
+
 /** The parchment look: an old map, in ink and watercolour on sepia paper. */
 export const ParchmentStyleSchema = z.strictObject({
   /** The ink line round walls, castles and guns, and along the coast. */
@@ -315,6 +338,7 @@ export const ArtConfigSchema = z
     cyberpunk: CyberpunkStyleSchema,
     blueprint: BlueprintStyleSchema,
     night: NightStyleSchema,
+    pixel: PixelStyleSchema,
     parchment: ParchmentStyleSchema,
     /** Effects both styles draw alike, because they carry information. */
     effects: z.strictObject({
@@ -396,6 +420,16 @@ export const ArtConfigSchema = z
         depthShadeStrength: z.number().min(0).max(1),
         /** One breath of the surf along the coast. */
         foamCycleMs: z.number().int().positive(),
+        /** Sea tiles drawn apart, so the water does not repeat in a visible grid. */
+        waterVariants: z.number().int().positive(),
+        /** The sand between grass and sea, in sprite pixels. */
+        beachPx: z.number().int().positive(),
+        /**
+         * The radius a coast's corners are rounded to, in sprite pixels: cut back where
+         * the land turns outward, filled in where it turns in. Drawing only; the land a
+         * player may build on is the tiles, as ever.
+         */
+        coastRadiusPx: z.number().int().nonnegative(),
       }),
       wall: z.strictObject({
         neighbourVariants: z.literal(16),

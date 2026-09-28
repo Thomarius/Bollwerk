@@ -41,6 +41,12 @@ export class Pixels {
     this.ctx.globalAlpha = 1;
   }
 
+  /** Makes a pixel transparent again, where the sea beneath is to show. */
+  clear(x: number, y: number): void {
+    if (x < 0 || y < 0 || x >= this.width || y >= this.height) return;
+    this.ctx.clearRect(Math.floor(x), Math.floor(y), 1, 1);
+  }
+
   fill(colour: string): void {
     this.rect(0, 0, this.width, this.height, colour);
   }

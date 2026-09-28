@@ -2269,3 +2269,42 @@ The first package of PLAN 11.11, all four found in the screenshots taken to plan
   margin below the board is also shallower than the one above it by the HUD's inset. The
   view now carries the canvas size, and the rose is placed in the sea actually on screen.
   Seen at two, three and eight players.
+
+## 11j. The second visual pass, W2: the pixel style upgraded
+
+PLAN 11.11 W2, in the pixel theme and so in Night, which is that theme under its own
+palette. Display only; the new tunables are `art.pixel` and three under
+`generators.terrain`.
+
+- **Castles** were a tinted box with a gate. The sprite is a curtain wall round a paved
+  court, a round tower standing at each corner, a keep under a hipped roof lit from the
+  north, and a portcullis in the front face, at the same face height as before so the
+  wipe still lines up. The windows are dark in the sprite and lit over it while the castle
+  is sealed: the sprite is multiplied by its owner's colour, so a warm light drawn into it
+  would have come out green on one island and grey on another.
+- **Guns** were a dark disc under a turning barrel. They stand in a pit of dressed stone,
+  on a wooden carriage — cheeks, transom, a wheel either side — that turns and recoils
+  with the barrel, generated at every step and recoil frame as the barrels are. The wood
+  is its own sprite and untinted, since wood in the owner's colour stopped reading as
+  wood; the pit's rim and the iron barrel carry the colour.
+- **The coast.** The sand was three ragged pixels inside a shore tile tinted as hard as
+  the grass beside it, which made every coast a coloured rim. The beach is now a sprite of
+  its own, over the grass, tinted only faintly. Corners are rounded inside their tiles
+  (`coast.ts`, tested): cut back where the land turns outward, with the sea drawn beneath
+  the tile, and filled in where it turns inward, with a fillet of beach in the corner of
+  the sea tile, the two measured to one arc so the beach runs across the seam without a
+  step. **A fillet goes only where three tiles of land close round a corner**: two
+  meeting at a point are not joined, since the escape flood is 8-connected and the sea
+  passes between them — a fillet there would draw a seal that is not.
+- **The sea** repeated one tile everywhere, and its flecks made a visible grid. Tiles now
+  come in variants (`waterVariants`), scattered by a hash, each with flecks of its own that
+  no longer change frame to frame. Glints wink at a rate per tile of sea, and crests form
+  on open water at least three tiles from land and drift with the wind. **The first
+  crests were little arcs and read as gulls**; a crest is now a lit dash over the shade of
+  its trough.
+- **Cloud shadows** drift over everything, wrapping round the area drawn. **The first
+  were dark smudges** — small, round, too dark — and read as dirt on the sea; they are
+  now twice the size, wider than tall, fainter, and softened by six rings a blob.
+- **Reduced motion**: the clouds stand still, and there are no glints, which flicker, or
+  crests, which drift. **Night** has no clouds, having no sun; its glints are moonlight.
+- Seen at two, three and eight players, both styles, close up and whole.

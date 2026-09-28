@@ -2,7 +2,10 @@ import type { ArtConfig, ArtStyle } from '@rampart/config';
 import { Structure, Terrain, type MatchState, type Shot } from '@rampart/sim';
 import { Container, Graphics, Sprite, Texture } from 'pixi.js';
 
-import { E, KEY, N, S, W, buildAtlas } from './pixel/generators.js';
+import { motionReduced } from '../motion.js';
+
+import { SEA_NE, SEA_NW, SEA_SE, SEA_SW, filletCorners } from './pixel/coast.js';
+import { CASTLE_WINDOWS, E, FILLET_CORNERS, KEY, N, S, W, buildAtlas } from './pixel/generators.js';
 import {
   FlagHoist,
   Fireworks,
@@ -90,6 +93,22 @@ interface Surf {
   phase: number;
 }
 
+/** A glint of light on the sea, or a wave crest drifting on it, in tile coordinates. */
+interface Glint {
+  x: number;
+  y: number;
+  age: number;
+  life: number;
+}
+
+/** A cloud's shadow: blobs round a centre, in tiles, drifting with the wind. */
+interface Cloud {
+  x: number;
+  y: number;
+  blobs: { dx: number; dy: number; r: number }[];
+  reach: number;
+}
+
 /** Where a cannon points, and how long ago it last fired. */
 interface Aim {
   angle: number;
@@ -98,6 +117,18 @@ interface Aim {
 
 /** How long each recoil and muzzle-flash frame is held. */
 const FX_FRAME_MS = 50;
+
+/** The tile across each corner a sea tile may be filled in at. */
+const ACROSS: Record<number, [number, number]> = {
+  [SEA_NW]: [-1, -1],
+  [SEA_NE]: [1, -1],
+  [SEA_SE]: [1, 1],
+  [SEA_SW]: [-1, 1],
+};
+
+/** The way the wind blows, as a unit vector: mostly east, a little south. */
+const WIND_X = 0.94;
+const WIND_Y = 0.34;
 
 /** Mixes a colour toward white, so tinting a texture shifts its hue without crushing it. */
 function washed(colour: number, amount: number): number {
@@ -133,6 +164,19 @@ export class PixelTheme implements Theme {
 
   /** Water sprites are kept so the sea can be animated without rebuilding the map. */
   private waterSprites: Sprite[] = [];
+  /** Which variant of the sea each of `waterSprites` is drawn from. */
+  private waterVariants: number[] = [];
+  /** Open water far enough from land for a crest to drift without reaching it. */
+  private openSea: Cell[] = [];
+  /** Every tile of water drawn, for the glints. */
+  private seaCells: Cell[] = [];
+  private readonly seaGfx = new Graphics();
+  private readonly cloudGfx = new Graphics();
+  private glints: Glint[] = [];
+  private crests: Glint[] = [];
+  private clouds: Cloud[] = [];
+  /** The tiles drawn, margin and all, which the clouds wrap round. */
+  private drawn = { x0: 0, y0: 0, x1: 0, y1: 0 };
   private waterFrame = -1;
   private waterElapsed = 0;
   private blasts: Blast[] = [];
@@ -216,11 +260,14 @@ export class PixelTheme implements Theme {
     this.effectGfx.destroy();
     this.groundLight.destroy();
     this.airLight.destroy();
+    this.seaGfx.destroy();
+    this.cloudGfx.destroy();
     this.courtLayer.destroy({ children: true });
     this.craterLayer.destroy({ children: true });
     for (const texture of this.textures.values()) texture.destroy();
     this.textures.clear();
     this.waterSprites = [];
+    this.waterVariants = [];
     this.surf = [];
   }
 
@@ -251,6 +298,9 @@ export class PixelTheme implements Theme {
   drawTerrain(state: MatchState, view: ViewTransform): void {
     this.terrainLayer.removeChildren();
     this.waterSprites = [];
+    this.waterVariants = [];
+    this.openSea = [];
+    this.seaCells = [];
     this.surf = [];
     this.waterFrame = -1;
     this.terrain = state.terrain;
@@ -265,6 +315,17 @@ export class PixelTheme implements Theme {
       state.terrain[y * state.width + x] === Terrain.Land;
 
     const variants = this.art.generators.terrain.grassVariants;
+    const seaVariants = this.art.generators.terrain.waterVariants;
+    const sea = (x: number, y: number): Sprite => {
+      // Scattered by a hash of the tile rather than in a pattern, which would show.
+      const variant = (((x * 73856093) ^ (y * 19349663)) >>> 0) % seaVariants;
+      const sprite = this.place(this.terrainLayer, KEY.water(0, variant), view, x, y);
+      this.waterSprites.push(sprite);
+      this.waterVariants.push(variant);
+      return sprite;
+    };
+    const beachTint = (owner: number): number =>
+      owner >= 0 ? washed(playerColour(this.art, owner, 'base'), 0.82) : 0xffffff;
 
     // Water runs past the board to the window's edge. Drawn only across the grid, the
     // animated sea stopped in a hard rectangle with the page's flat blue beyond it.
@@ -279,13 +340,14 @@ export class PixelTheme implements Theme {
         const inside = x >= 0 && y >= 0 && x < state.width && y < state.height;
         const i = y * state.width + x;
         if (!inside || state.terrain[i] !== Terrain.Land) {
-          const sprite = this.place(this.terrainLayer, KEY.water(0), view, x, y);
-          this.waterSprites.push(sprite);
+          const sprite = sea(x, y);
           // Darker the further from land, so the islands stand in shallows and the
           // channels between them read as open sea.
           const d = depth[(y + marginY) * spanX + (x + marginX)] as number;
           const shade = Math.round(255 * (1 - (strength * Math.max(0, d - 1)) / (deepest - 1)));
           sprite.tint = (shade << 16) | (shade << 8) | Math.min(255, shade + 24);
+          this.seaCells.push({ x, y });
+          if (d >= 3) this.openSea.push({ x, y });
 
           let coast = 0;
           if (land(x, y - 1)) coast |= N;
@@ -295,6 +357,16 @@ export class PixelTheme implements Theme {
           if (coast !== 0) {
             const surf = this.place(this.terrainLayer, KEY.foam(coast), view, x, y);
             this.surf.push({ sprite: surf, phase: ((x * 7 + y * 11) % 13) / 13 });
+          }
+          // Where the coast turns inward, the corner of the sea is filled with beach.
+          const corners = filletCorners((dx, dy) => land(x + dx, y + dy));
+          for (const corner of FILLET_CORNERS) {
+            if ((corners & corner) === 0) continue;
+            // Tinted for the island across the corner, which the fillet belongs to.
+            const [dx, dy] = ACROSS[corner] as [number, number];
+            const owner = (state.islandId[(y + dy) * state.width + x + dx] as number) - 1;
+            const fillet = this.place(this.terrainLayer, KEY.fillet(corner), view, x, y);
+            fillet.tint = beachTint(owner);
           }
           continue;
         }
@@ -311,6 +383,8 @@ export class PixelTheme implements Theme {
         if (!land(x + 1, y + 1)) mask |= 64;
         if (!land(x - 1, y + 1)) mask |= 128;
 
+        // A coast tile's rounded corners show the sea, so it is laid on some.
+        if (mask !== 0) sea(x, y).tint = 0xffffff;
         const key = mask === 0 ? KEY.grass((x * 7 + y * 13) % variants) : KEY.shore(mask);
         const sprite = this.place(this.terrainLayer, key, view, x, y);
 
@@ -323,8 +397,19 @@ export class PixelTheme implements Theme {
           const wash = mask === 0 ? 0.78 : 0.45;
           sprite.tint = washed(playerColour(this.art, owner, 'base'), wash);
         }
+        // The beach over it, tinted faintly: sand as hard-tinted as the grass beside it
+        // made the coast a coloured rim rather than a shore.
+        if (mask !== 0)
+          this.place(this.terrainLayer, KEY.beach(mask), view, x, y).tint = beachTint(owner);
       }
     }
+    this.terrainLayer.addChild(this.seaGfx);
+    this.drawn = {
+      x0: -marginX,
+      y0: -marginY,
+      x1: state.width + marginX,
+      y1: state.height + marginY,
+    };
     this.layoutCraters();
   }
 
@@ -671,11 +756,15 @@ export class PixelTheme implements Theme {
     this.clock += frame.deltaMs;
     this.animateWater(frame.deltaMs);
     this.effectLayer.removeChildren();
-    this.effectLayer.addChild(g, this.airLight);
+    this.effectLayer.addChild(this.cloudGfx, g, this.airLight);
     this.age(state);
     this.groundLight.clear();
     this.airLight.clear();
+    const still = motionReduced();
+    this.drawSea(view, frame.deltaMs, still);
+    this.drawClouds(view, frame.deltaMs, still);
     if (this.torchlit) this.drawTorchlight(state, view, frame);
+    this.drawWindows(state, view, frame);
 
     drawSealGlow(g, view, frame.sealGlow, this.art);
     this.landings.draw(g, view, this.art, frame.deltaMs);
@@ -767,6 +856,152 @@ export class PixelTheme implements Theme {
       g.fill({ color: f.colour, alpha: Math.max(0, 1 - f.age / life) });
     }
     this.fragments = this.fragments.filter((f) => f.age < life);
+  }
+
+  /**
+   * Life on the sea: glints winking where the light catches it, and wave crests forming
+   * on open water, drifting with the wind and breaking up. Both are born at random, at a
+   * rate per tile of sea, so a large map is no busier than a small one. A glint is a
+   * flicker, so there are none when motion is reduced; nor crests, which drift.
+   */
+  private drawSea(view: ViewTransform, deltaMs: number, still: boolean): void {
+    const g = this.seaGfx;
+    g.clear();
+    if (still) {
+      this.glints = [];
+      this.crests = [];
+      return;
+    }
+    const style = this.art.pixel;
+    const spawn = (cells: Cell[], rate: number, life: number, into: Glint[]): void => {
+      let due = cells.length * rate * (deltaMs / 1000);
+      while (due > 0 && cells.length > 0) {
+        if (due < 1 && Math.random() >= due) break;
+        const cell = cells[Math.floor(Math.random() * cells.length)] as Cell;
+        into.push({ x: cell.x + Math.random(), y: cell.y + Math.random(), age: 0, life });
+        due -= 1;
+      }
+    };
+    spawn(this.seaCells, style.glintsPerTileSecond, style.glintMs, this.glints);
+    spawn(this.openSea, style.crestsPerTileSecond, style.crestMs, this.crests);
+
+    // One sprite pixel at the size the board is drawn, so the sea's life is pixel art too.
+    const px = Math.max(1, Math.round(view.tile / this.art.tileSizePx));
+    const light = hex(this.art.palette.uiInk);
+    for (const glint of this.glints) {
+      glint.age += deltaMs;
+      const bright = Math.sin(Math.PI * Math.min(1, glint.age / glint.life));
+      const x = Math.round(tileX(view, glint.x));
+      const y = Math.round(tileY(view, glint.y));
+      g.rect(x - px, y, px * 3, px);
+      g.rect(x, y - px, px, px * 3);
+      g.fill({ color: light, alpha: 0.35 * bright });
+      g.rect(x, y, px, px);
+      g.fill({ color: light, alpha: 0.8 * bright });
+    }
+    this.glints = this.glints.filter((glint) => glint.age < glint.life);
+
+    const wind = this.art.pixel.windTilesPerSecond * (deltaMs / 1000);
+    const foam = hex(this.art.palette.waterFoam);
+    const deep = hex(this.art.palette.waterDeep);
+    for (const crest of this.crests) {
+      crest.age += deltaMs;
+      crest.x += wind * WIND_X;
+      crest.y += wind * WIND_Y;
+      const t = crest.age / crest.life;
+      const strength = Math.sin(Math.PI * Math.min(1, t));
+      // A crest: a lit line over the shade of its trough, lengthening as it forms and
+      // fading as it breaks. An arc, tried first, read as a gull.
+      const half = Math.round(view.tile * (0.3 + 0.35 * strength));
+      const cx = Math.round(tileX(view, crest.x));
+      const cy = Math.round(tileY(view, crest.y));
+      g.rect(cx - half, cy, half * 2, px);
+      g.fill({ color: foam, alpha: 0.45 * strength });
+      g.rect(cx - Math.round(half * 0.6), cy + px, Math.round(half * 1.2), px);
+      g.fill({ color: deep, alpha: 0.5 * strength });
+    }
+    this.crests = this.crests.filter((crest) => crest.age < crest.life);
+  }
+
+  /**
+   * The shadows of clouds passing over, drifting with the wind across everything drawn
+   * and round again. Soft-edged: each blob is six discs, each inside the last, and
+   * where blobs overlap the shadow deepens as a cloud thickens in its middle. Night has
+   * none — there is no sun to cast them. Still when motion is reduced, not gone.
+   */
+  private drawClouds(view: ViewTransform, deltaMs: number, still: boolean): void {
+    const g = this.cloudGfx;
+    g.clear();
+    if (this.torchlit) return;
+    const style = this.art.pixel;
+    const { x0, y0, x1, y1 } = this.drawn;
+    const spanX = x1 - x0;
+    const spanY = y1 - y0;
+    if (spanX <= 0 || spanY <= 0) return;
+    const wanted = Math.round((spanX * spanY * style.cloudsPerThousandTiles) / 1000);
+    if (this.clouds.length !== wanted) {
+      const [small, large] = style.cloudTiles;
+      this.clouds = Array.from({ length: wanted }, () => {
+        const size = small + Math.random() * (large - small);
+        // Wider than tall, as clouds' shadows fall, from a spread of blobs.
+        const blobs = Array.from({ length: 6 + Math.floor(Math.random() * 4) }, () => ({
+          dx: (Math.random() - 0.5) * size * 1.1,
+          dy: (Math.random() - 0.5) * size * 0.35,
+          r: size * (0.14 + Math.random() * 0.14),
+        }));
+        return { x: x0 + Math.random() * spanX, y: y0 + Math.random() * spanY, blobs, reach: size };
+      });
+    }
+    const drift = still ? 0 : style.windTilesPerSecond * (deltaMs / 1000);
+    const colour = hex(this.art.palette.shadow);
+    const rings = [1, 0.86, 0.72, 0.58, 0.44, 0.3];
+    const alpha = style.cloudShadowAlpha / rings.length;
+    for (const cloud of this.clouds) {
+      cloud.x += drift * WIND_X;
+      cloud.y += drift * WIND_Y;
+      // Round again once wholly past the far edge, entering from the near one.
+      if (cloud.x - cloud.reach > x1) cloud.x -= spanX + cloud.reach * 2;
+      if (cloud.y - cloud.reach > y1) cloud.y -= spanY + cloud.reach * 2;
+      for (const blob of cloud.blobs) {
+        for (const k of rings) {
+          g.circle(
+            tileX(view, cloud.x + blob.dx),
+            tileY(view, cloud.y + blob.dy),
+            view.tile * blob.r * k,
+          );
+          g.fill({ color: colour, alpha });
+        }
+      }
+    }
+  }
+
+  /**
+   * A sealed castle's windows lit, warm whatever its owner's colour: the sprite is tinted,
+   * so the light is drawn over it rather than into it. Dark once breached, like Night's
+   * torches — and with them, on Night, a little light spilling out.
+   */
+  private drawWindows(state: MatchState, view: ViewTransform, frame: EffectFrame): void {
+    const g = this.effectGfx;
+    const glow = this.art.pixel.windowGlowAlpha;
+    const warm = hex(this.art.palette.emberHot);
+    for (const castle of state.castles) {
+      if (!(frame.castleSealed[castle.id] ?? false)) continue;
+      const w = castle.w * view.tile;
+      const h = castle.h * view.tile;
+      const left = tileX(view, castle.x);
+      const top = tileY(view, castle.y);
+      CASTLE_WINDOWS.forEach((window, k) => {
+        const flicker = 0.85 + 0.15 * Math.sin(this.clock / 230 + castle.id * 1.3 + k * 2.1);
+        const x = left + window.x * w;
+        const y = top + window.y * h;
+        g.rect(x, y, Math.max(1, window.w * w), Math.max(1, window.h * h));
+        g.fill({ color: warm, alpha: glow * flicker });
+        if (this.torchlit) {
+          this.airLight.circle(x + (window.w * w) / 2, y + (window.h * h) / 2, view.tile * 0.3);
+          this.airLight.fill({ color: hex(this.art.palette.emberMid), alpha: 0.18 * flicker });
+        }
+      });
+    }
   }
 
   /** Whether this is Night, which is lit by torches; the pixel style is not. */
@@ -1002,6 +1237,16 @@ export class PixelTheme implements Theme {
       // Back at once, then home a frame at a time.
       const kick = Math.floor(aim.firedAgo / FX_FRAME_MS);
       const recoil = kick < recoilFrames ? recoilFrames - 1 - kick : 0;
+      // The carriage runs back with the barrel, and a silenced one stands dark.
+      const bed = this.place(
+        this.effectLayer,
+        KEY.carriage(step, recoil),
+        view,
+        cannon.x,
+        cannon.y,
+        cannon.w,
+      );
+      if (!cannon.active) bed.tint = 0x8a8a8a;
       const sprite = this.place(
         this.effectLayer,
         cannon.active ? KEY.barrel(step, recoil) : KEY.droop(step),
@@ -1136,8 +1381,12 @@ export class PixelTheme implements Theme {
       Math.floor(this.waterElapsed / this.art.generators.terrain.waterAnimMsPerFrame) % frames;
     if (next === this.waterFrame) return;
     this.waterFrame = next;
-    const texture = this.texture(KEY.water(next));
-    for (const sprite of this.waterSprites) sprite.texture = texture;
+    const textures = Array.from({ length: this.art.generators.terrain.waterVariants }, (_, v) =>
+      this.texture(KEY.water(next, v)),
+    );
+    this.waterSprites.forEach((sprite, k) => {
+      sprite.texture = textures[this.waterVariants[k] as number] as Texture;
+    });
   }
 
   drawOverlay(state: MatchState, view: ViewTransform, ghost: Ghost, humanPlayer: number): void {

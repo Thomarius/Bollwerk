@@ -501,8 +501,16 @@ shot breaks your own wall. The flat style stays plain, as the one to debug again
 **The pixel style is the cinematic one**, since it is the default combat look. Light falls
 from the north: a wall block with nothing to its south shows a dark front face under a
 light lip, and walls, castles and guns cast a shadow onto the ground south of them. Sealed
-ground is paved in the owner's colour rather than tinted. The sea darkens with distance
-from land and surf breathes along the coasts. A shot on land leaves a scorch mark that
+ground is paved in the owner's colour rather than tinted. Castles are a curtain wall
+round a paved court, a round tower at each corner and a keep under a hipped roof, its
+windows lit while the castle is sealed; guns stand in a stone pit on a wooden carriage
+that turns and runs back with the barrel, the wood untinted and the iron in the owner's
+colour. The coast is a beach of its own sprite, tinted only faintly so it reads as sand,
+rounded where the land turns outward and filled in where it turns in (`coast.ts`) — never
+across a diagonal join, which the sea passes. The sea darkens with distance from land,
+surf breathes along the coasts, its tiles come in variants so it shows no grid, glints
+wink on it and crests drift on open water, and clouds' shadows pass over the board
+(`art.pixel`; none at Night, glints and crests none under reduced motion). A shot on land leaves a scorch mark that
 fades over `fx.craterRounds`; the blocks either side of a breach crack for the rest of the
 round. An eliminated player's wall is rubble, and an inert gun slumps its barrel and
 smoulders instead of being struck through.
@@ -837,15 +845,9 @@ Packages in order; W1 first and W8 last, W7 before W8, the rest independent.
 sea washed apart from its land, its compass rose moved off the big timer, Blueprint's
 inert guns in the owner's ink.
 
-**W2 — Pixel art upgrade** (M–L). Night is the pixel theme under its own palette, so it
-takes all of this and is checked with it.
-
-- Castles as a keep with corner towers, battlements, a gate and lit windows, not a tinted box.
-- Guns on a wooden carriage with a metal barrel, a clearer silhouette than a dark disc.
-- A sand strip along the shore and a coast rounded within its tiles, against the boxy
-  islands of 11.5 — drawing only; the terrain is untouched.
-- A livelier sea: glints, drifting wave lines, foam following the coast.
-- Cloud shadows drifting slowly across the board.
+**W2 — Pixel art upgrade — done** (ARCHIVE 11j): castles with towers, a keep and lit
+windows; guns on carriages in stone pits; beaches and a rounded coast; a sea without a
+grid, with glints and crests; cloud shadows. Night took all of it but the clouds.
 
 **W3 — Living land** (M).
 

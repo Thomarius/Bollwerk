@@ -661,10 +661,9 @@ export function installBackdrop(art: ArtConfig): void {
   const size = art.tileSizePx;
   // Several tiles side by side, so the pattern repeats less obviously than one would.
   const sheet = new Pixels(size * frames, size);
-  const rng = new Rng(7);
   const ctx = sheet.canvas.getContext('2d');
   for (let f = 0; f < frames; f++) {
-    ctx?.drawImage(water(art, rng, size, f, frames).canvas, f * size, 0);
+    ctx?.drawImage(water(art, 7, size, f, frames, f).canvas, f * size, 0);
   }
   const backdrop = document.createElement('div');
   backdrop.id = 'backdrop';

@@ -860,7 +860,10 @@
       "courtyardVariants": 4,
       "depthShadeTiles": 9,
       "depthShadeStrength": 0.3,
-      "foamCycleMs": 2600
+      "foamCycleMs": 2600,
+      "waterVariants": 4,
+      "beachPx": 4,
+      "coastRadiusPx": 5
     },
     "wall": {
       "neighbourVariants": 16,
@@ -943,6 +946,17 @@
     "muzzleLightMs": 220,
     "shotGlowTiles": 0.55,
     "breachGlowAlpha": 0.18
+  },
+  "pixel": {
+    "glintsPerTileSecond": 0.012,
+    "glintMs": 520,
+    "crestsPerTileSecond": 0.004,
+    "crestMs": 4200,
+    "cloudsPerThousandTiles": 1.2,
+    "cloudTiles": [9, 18],
+    "cloudShadowAlpha": 0.09,
+    "windTilesPerSecond": 0.3,
+    "windowGlowAlpha": 0.9
   },
   "parchment": {
     "inkWidthPx": 1.5,
