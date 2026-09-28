@@ -13,6 +13,8 @@ import {
   dimEliminated,
   drawAimLine,
   drawBuildHints,
+  drawChoices,
+  drawSelectable,
   drawFireReticle,
   drawOvertimeBorder,
   drawSealGlow,
@@ -783,6 +785,7 @@ export class CyberpunkTheme implements Theme {
     this.drawPulses(view);
     drawSealGlow(g, view, frame.sealGlow, this.art);
     this.landings.draw(g, view, this.art, frame.deltaMs);
+    drawChoices(g, view, frame.choices, this.art);
     this.reloads.draw(
       g,
       view,
@@ -1141,15 +1144,7 @@ export class CyberpunkTheme implements Theme {
     g.clear();
     this.overlayGlow.clear();
     drawOvertimeBorder(g, state, view, this.art, performance.now());
-    for (const castle of ghost.selectable) {
-      g.rect(
-        tileX(view, castle.x),
-        tileY(view, castle.y),
-        castle.w * view.tile,
-        castle.h * view.tile,
-      );
-      g.stroke({ width: 2, color: hex(this.art.palette.uiAccent) });
-    }
+    drawSelectable(g, view, ghost, this.art, performance.now());
     drawBuildHints(g, view, ghost, this.art, performance.now());
     if (!ghost.tile) return;
     const colour = ghost.valid ? hex(this.art.palette.uiValid) : hex(this.art.palette.uiInvalid);

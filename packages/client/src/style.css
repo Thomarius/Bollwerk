@@ -70,6 +70,14 @@ body {
   }
 }
 
+/* The menu's Effects: Reduced does what the system's reduced-motion setting does. */
+body.reduced-effects #backdrop,
+body.reduced-effects .title-layer img.flicker,
+body.reduced-effects .phase-call.banner-neon,
+body.reduced-effects .big-timer.beat {
+  animation: none;
+}
+
 /* ---------- menu ---------- */
 
 .menu {

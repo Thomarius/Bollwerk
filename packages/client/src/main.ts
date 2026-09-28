@@ -40,6 +40,7 @@ import { buildHints, type BuildHints } from './hints.js';
 import { timerSpot } from './timerSpot.js';
 import { SplitTitle, installBackdrop } from './decor.js';
 import { MatchLog } from './summary.js';
+import { applyEffects, motionReduced, saveEffects, storedEffects } from './motion.js';
 import { drawPreview, tablePreview } from './preview.js';
 import { RecordingUpload } from './recordingUpload.js';
 import {
@@ -66,6 +67,7 @@ import { ServerConnection } from './net/connection.js';
 import { NetworkMatch } from './net/networkMatch.js';
 import type { ServerMessage } from '@rampart/protocol';
 import { Scene, createTheme, type Ghost, type SceneLook } from './render/scene.js';
+import type { Choice } from './render/theme.js';
 
 /**
  * Rampart client.
@@ -84,6 +86,7 @@ if (problems.length > 0) {
 const app = document.querySelector<HTMLElement>('#app');
 if (!app) throw new Error('missing #app');
 installBackdrop(defaultConfigBundle.art);
+applyEffects();
 
 /** Surfaces failures on the page: a renderer that throws otherwise looks like a black screen. */
 function showError(source: string, detail: unknown): void {
@@ -310,6 +313,7 @@ function showMenu(): void {
       <label>Name <input id="name" type="text" maxlength="16" value="Player" /></label>
       <label>Building look <select id="build-style">${styleOptions('build')}</select></label>
       <label>Combat look <select id="combat-style">${styleOptions('combat')}</select></label>
+      <label>Effects <select id="effects"><option value="full">Full</option><option value="reduced">Reduced</option></select></label>
       <button id="play">Play</button>
       <div class="split">
         <input id="code" type="text" maxlength="8" placeholder="room code" />
@@ -326,6 +330,13 @@ function showMenu(): void {
   if (buildField) buildField.value = styles.build;
   const combatField = document.querySelector<HTMLSelectElement>('#combat-style');
   if (combatField) combatField.value = styles.combat;
+  const effectsField = document.querySelector<HTMLSelectElement>('#effects');
+  if (effectsField) {
+    effectsField.value = storedEffects();
+    effectsField.addEventListener('change', () =>
+      saveEffects(effectsField.value === 'reduced' ? 'reduced' : 'full'),
+    );
+  }
 
   // The title in both chosen looks at once, split by a banner's line that sweeps across
   // as either choice changes — what the two choices mean, shown rather than said.
@@ -403,8 +414,12 @@ function drawLobby(view: LobbyView, on: LobbyHandlers): void {
   const { art, terrain } = defaultConfigBundle;
   const preview = tablePreview(view.seed, view.playerCount, view.teams, art, terrain);
   app!.innerHTML = lobbyMarkup({ ...view, seatColours: preview.colourOfSeat.map((c) => c.base) });
+  // The map in the colours of the build look chosen in the menu, which is how the match
+  // will open; the seat cards keep the shared colours, which read on the lobby's panel.
+  const look = artForStyle(art, preferredStyles().build);
+  const map = tablePreview(view.seed, view.playerCount, view.teams, look, terrain);
   const canvas = document.querySelector<HTMLCanvasElement>('#map-preview');
-  if (canvas !== null) drawPreview(canvas, preview, view.humanPlayer, art, 320);
+  if (canvas !== null) drawPreview(canvas, map, view.humanPlayer, look, 320, art);
   const number = (id: string, apply: (n: number) => void): void => {
     const field = document.querySelector<HTMLSelectElement>(id);
     field?.addEventListener('change', () => {
@@ -948,6 +963,9 @@ async function runSession(session: Session, setup: Setup): Promise<void> {
     drawBoard();
   }
 
+  /** Castles chosen lately, for the burst each choice sets off; see `drawChoices`. */
+  let choices: { castleId: number; owner: number; at: number }[] = [];
+
   /** The board's enclosure as it stands, for display; see `Scene.drawTerritory`. */
   let live = computeEnclosure(session.state);
   /**
@@ -1166,7 +1184,9 @@ async function runSession(session: Session, setup: Setup): Promise<void> {
           scene.noteImpact(event.x, event.y, debris);
           // Only for your own wall: shots land all over the map, all the time.
           const human = session.humanPlayer;
-          if (human >= 0 && debris.some((d) => d.owner === human)) scene.shake();
+          if (human >= 0 && !motionReduced() && debris.some((d) => d.owner === human)) {
+            scene.shake();
+          }
           if (event.destroyed.length > 0) structuresChanged = true;
           break;
         }
@@ -1184,6 +1204,7 @@ async function runSession(session: Session, setup: Setup): Promise<void> {
           break;
         }
         case 'castle_selected':
+          choices.push({ castleId: event.castleId, owner: event.player, at: performance.now() });
           structuresChanged = true;
           territoryChanged = true;
           break;
@@ -1287,6 +1308,15 @@ async function runSession(session: Session, setup: Setup): Promise<void> {
     }
   }
 
+  function recentChoices(now: number): Choice[] {
+    const span = defaultConfigBundle.art.effects.choiceBurstMs;
+    choices = choices.filter((c) => now - c.at < span);
+    return choices.flatMap((c) => {
+      const castle = session.state.castles.find((k) => k.id === c.castleId);
+      return castle === undefined ? [] : [{ castle, owner: c.owner, ageMs: now - c.at }];
+    });
+  }
+
   let last = performance.now();
   const loop = (now: number): void => {
     const delta = now - last;
@@ -1325,6 +1355,7 @@ async function runSession(session: Session, setup: Setup): Promise<void> {
       advanceFloods(),
       session.humanPlayer,
       celebrate,
+      recentChoices(now),
     );
     const ghost = { ...controls.ghost(), ...hints };
     scene.drawOverlay(session.state, ghost, session.humanPlayer);

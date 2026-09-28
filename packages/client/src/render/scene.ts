@@ -13,6 +13,7 @@ import { PixelTheme } from './pixel.js';
 import {
   hex,
   type Celebration,
+  type Choice,
   type Cell,
   type Debris,
   type Ghost,
@@ -331,6 +332,7 @@ export class Scene {
     sealGlow: readonly SealGlow[] = [],
     humanPlayer = -1,
     celebrate: readonly Celebration[] = [],
+    choices: readonly Choice[] = [],
   ): void {
     this.applyShake(deltaMs);
     for (const slot of this.visible()) {
@@ -341,6 +343,7 @@ export class Scene {
         sealGlow,
         humanPlayer,
         celebrate,
+        choices,
       });
     }
   }

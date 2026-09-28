@@ -74,6 +74,8 @@ export interface EffectFrame {
   sealGlow: readonly SealGlow[];
   /** The player at this screen, or -1 when watching: whose wall is under threat. */
   humanPlayer: number;
+  /** Castles just chosen, for the burst that marks each choice; see `drawChoices`. */
+  choices: readonly Choice[];
   /** Winners' islands, by centre and owner, once the match is over: fireworks there. */
   celebrate: readonly Celebration[];
 }
@@ -571,6 +573,80 @@ export function drawAimLine(
     (Math.min(cannon.w, cannon.h) * view.tile) / 2 + view.tile * 0.18,
   );
   g.stroke({ width: Math.max(1.5, view.tile / 9), color: colour, alpha: Math.min(1, alpha * 1.8) });
+}
+
+/**
+ * The castles a player may choose, outlined and breathing, so the choice asks to be
+ * made rather than sitting there as a frame. Shared by every style, in its accent.
+ */
+export function drawSelectable(
+  g: Graphics,
+  view: ViewTransform,
+  ghost: Ghost,
+  art: ArtConfig,
+  nowMs: number,
+): void {
+  if (ghost.selectable.length === 0) return;
+  const pulse = 0.5 + 0.5 * Math.sin(nowMs / 260);
+  const accent = hex(art.palette.uiAccent);
+  for (const castle of ghost.selectable) {
+    const grow = view.tile * 0.12 * pulse;
+    g.rect(
+      tileX(view, castle.x) - grow,
+      tileY(view, castle.y) - grow,
+      castle.w * view.tile + grow * 2,
+      castle.h * view.tile + grow * 2,
+    );
+  }
+  g.stroke({ width: Math.max(2, view.tile / 7), color: accent, alpha: 0.55 + 0.45 * pulse });
+  for (const castle of ghost.selectable) {
+    g.rect(
+      tileX(view, castle.x),
+      tileY(view, castle.y),
+      castle.w * view.tile,
+      castle.h * view.tile,
+    );
+  }
+  g.fill({ color: accent, alpha: 0.12 * pulse });
+}
+
+/** A castle just chosen, by whom and how long ago. */
+export interface Choice {
+  castle: { x: number; y: number; w: number; h: number };
+  owner: number;
+  ageMs: number;
+}
+
+/**
+ * The moment a castle is chosen, for everyone to see: two rings in the chooser's colour
+ * breaking outward from it, the second a beat after the first. Shared by every style.
+ */
+export function drawChoices(
+  g: Graphics,
+  view: ViewTransform,
+  choices: readonly Choice[],
+  art: ArtConfig,
+): void {
+  const span = art.effects.choiceBurstMs;
+  for (const choice of choices) {
+    for (const lag of [0, 0.25]) {
+      const t = choice.ageMs / span - lag;
+      if (t <= 0 || t >= 1) continue;
+      const grow = view.tile * 2 * t;
+      const { x, y, w, h } = choice.castle;
+      g.rect(
+        tileX(view, x) - grow,
+        tileY(view, y) - grow,
+        w * view.tile + grow * 2,
+        h * view.tile + grow * 2,
+      );
+      g.stroke({
+        width: Math.max(2, view.tile / 6) * (1 - t),
+        color: playerColour(art, choice.owner, 'light'),
+        alpha: 1 - t,
+      });
+    }
+  }
 }
 
 /** Where a gun points, and how long ago it last fired. */

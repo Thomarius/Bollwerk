@@ -10,6 +10,8 @@ import {
   dimEliminated,
   drawAimLine,
   drawBuildHints,
+  drawChoices,
+  drawSelectable,
   drawFireReticle,
   drawOvertimeBorder,
   drawSealGlow,
@@ -230,6 +232,7 @@ export class FlatTheme implements Theme {
 
     drawSealGlow(g, view, frame.sealGlow, this.art);
     this.landings.draw(g, view, this.art, frame.deltaMs);
+    drawChoices(g, view, frame.choices, this.art);
     this.reloads.draw(
       g,
       view,
@@ -325,15 +328,7 @@ export class FlatTheme implements Theme {
     g.clear();
     drawOvertimeBorder(g, state, view, this.art, performance.now());
 
-    for (const castle of ghost.selectable) {
-      g.rect(
-        tileX(view, castle.x),
-        tileY(view, castle.y),
-        castle.w * view.tile,
-        castle.h * view.tile,
-      );
-      g.stroke({ width: this.style.outlineWidthPx, color: hex(this.art.palette.uiAccent) });
-    }
+    drawSelectable(g, view, ghost, this.art, performance.now());
 
     drawBuildHints(g, view, ghost, this.art, performance.now());
 

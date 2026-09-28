@@ -963,6 +963,7 @@
     "tallyMs": 1400,
     "lifeCrumbleMs": 1600,
     "fireworkEveryMs": 300,
+    "choiceBurstMs": 900,
     "readyFlashMs": 280,
     "aimLineAlpha": 0.55
   },

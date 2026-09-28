@@ -14,6 +14,8 @@ import {
   dimEliminated,
   drawAimLine,
   drawBuildHints,
+  drawChoices,
+  drawSelectable,
   drawFireReticle,
   drawOvertimeBorder,
   drawSealGlow,
@@ -708,6 +710,7 @@ export class ParchmentTheme implements Theme {
     this.drawStains(view);
     drawSealGlow(g, view, frame.sealGlow, this.art);
     this.landings.draw(g, view, this.art, frame.deltaMs);
+    drawChoices(g, view, frame.choices, this.art);
     this.reloads.draw(
       g,
       view,
@@ -930,10 +933,7 @@ export class ParchmentTheme implements Theme {
     const t = view.tile;
     const { palette } = this.art;
     drawOvertimeBorder(g, state, view, this.art, performance.now());
-    for (const castle of ghost.selectable) {
-      g.rect(tileX(view, castle.x), tileY(view, castle.y), castle.w * t, castle.h * t);
-      g.stroke({ width: 2, color: hex(palette.uiAccent) });
-    }
+    drawSelectable(g, view, ghost, this.art, performance.now());
     drawBuildHints(g, view, ghost, this.art, performance.now());
     if (!ghost.tile) return;
     const anchor = ghost.tile;

@@ -11,6 +11,8 @@ import {
   dimEliminated,
   drawAimLine,
   drawBuildHints,
+  drawChoices,
+  drawSelectable,
   drawFireReticle,
   drawOvertimeBorder,
   drawSealGlow,
@@ -677,6 +679,7 @@ export class PixelTheme implements Theme {
 
     drawSealGlow(g, view, frame.sealGlow, this.art);
     this.landings.draw(g, view, this.art, frame.deltaMs);
+    drawChoices(g, view, frame.choices, this.art);
     this.reloads.draw(
       g,
       view,
@@ -1143,15 +1146,7 @@ export class PixelTheme implements Theme {
     this.ghostLayer.removeChildren();
     drawOvertimeBorder(g, state, view, this.art, performance.now());
 
-    for (const castle of ghost.selectable) {
-      g.rect(
-        tileX(view, castle.x),
-        tileY(view, castle.y),
-        castle.w * view.tile,
-        castle.h * view.tile,
-      );
-      g.stroke({ width: 2, color: hex(this.art.palette.uiAccent) });
-    }
+    drawSelectable(g, view, ghost, this.art, performance.now());
 
     drawBuildHints(g, view, ghost, this.art, performance.now());
 

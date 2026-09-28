@@ -338,6 +338,8 @@ export const ArtConfigSchema = z
       lifeCrumbleMs: z.number().int().positive(),
       /** Between rockets over the winners, once the match is over. */
       fireworkEveryMs: z.number().int().positive(),
+      /** The rings breaking out from a castle as a player chooses it. */
+      choiceBurstMs: z.number().int().positive(),
       /** The flash off a gun as its shot lands and it is ready to fire again. */
       readyFlashMs: z.number().int().positive(),
       /** The dotted course from the gun a click would fire to the cursor. */

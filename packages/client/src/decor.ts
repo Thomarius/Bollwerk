@@ -3,6 +3,7 @@ import { Rng } from '@rampart/sim';
 
 import { Pixels } from './render/pixel/canvas.js';
 import { water } from './render/pixel/generators.js';
+import { motionReduced } from './motion.js';
 import { hatch } from './render/walls.js';
 
 /**
@@ -608,7 +609,7 @@ export class SplitTitle {
 
   /** Sweeps the line across once, unless motion is unwelcome or one style shows both. */
   sweep(): void {
-    if (this.same || globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return;
+    if (this.same || motionReduced()) return;
     const already = this.sweepStart !== null;
     this.sweepStart = performance.now();
     if (!already) requestAnimationFrame(this.tick);

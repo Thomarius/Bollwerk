@@ -440,6 +440,13 @@ guns carry none. While aiming, a dotted arc runs from the gun a click would fire
 chosen by `findReadyCannon`, the rule `fire` uses — to the cursor, lifted as the shot
 will be, with a ring round that gun; only where a click would fire.
 
+**Before the match.** The lobby's map is drawn in the chosen build look's colours, its
+seat numbers and ring in the shared ink. The castles a player may choose breathe in the
+accent (`drawSelectable`), and every choice, anyone's, sets off rings in the chooser's
+colour from the castle (`drawChoices`). The menu's **Effects** setting, full or reduced
+(`motion.ts`), does what the system's reduced-motion setting does — no flicker, no beat,
+no slide, no title sweep — and also stops the board's shake; either one reduces.
+
 **The roster** is kept across frames rather than rebuilt, so its entries can move:
 free-for-all is in standing, best first, and a change of places slides; scores count up
 as they bank, over `effects.tallyMs`, as the island banners do; a team match keeps team
@@ -656,9 +663,8 @@ feedback. The next milestone is **11.2, elimination tuning**: its plan is ready,
 with a baseline measurement, and can now set the bots against rounds people actually
 played — `recordings/*.stats.csv`, or `--replay` over the folder. A recording replays
 exactly only against the commit it was made with, which the server now writes into each
-recording's header. Independent of balance: **11.10**, UI and effects polish, in five
-packages (U1–U5), to run while testing goes on; and **11.6**, bots as personality ×
-skill. The themes of 11.9 are done. Smaller items are in 11.5.
+recording's header. Independent of balance: **11.6**, bots as personality × skill. The UI
+and effects polish of **11.10** is done. The themes of 11.9 are done. Smaller items are in 11.5.
 
 ### 11.1 Round cap and points scoring — done
 
@@ -885,9 +891,9 @@ the walls' colour**: warm stone was tried and turned azure walls grey (ARCHIVE 1
 **Verification** as in 11.8: screenshots of each look in combat and building, both
 styles mid-wipe, and every player colour side by side at eight players.
 
-### 11.10 UI and effects polish — planned
+### 11.10 UI and effects polish — done
 
-**Agreed with the user 2026-09-28, not started**, to run while human testing goes on.
+**Agreed with the user 2026-09-28 and done the same day**, while human testing went on.
 Display only, like 11.8 and 11.9: no sim, protocol or ruleset change. Anything drawn on
 the board is a shared helper in `theme.ts`, drawn in every theme's colours, as the
 aiming cursor is; anything timed is a pure function with tests, since headless Chrome
@@ -927,7 +933,7 @@ Blueprint, flat colour for Minimal; Pixel art and Night keep today's. A record o
 style, as the titles are, so a new style must bring one. The wipe's geometry does not
 change.
 
-**U5 — Before the match.**
+**U5 — Before the match — done** (ARCHIVE 11g).
 
 - The lobby's map in the chosen build look's colours, not plain ones.
 - Castle choice with more to it: the castles to choose pulse softly, and each player's

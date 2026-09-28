@@ -84,6 +84,10 @@ export function islandCentres(terrain: GeneratedTerrain): Map<number, { x: numbe
  * Paints the preview: sea, each island in its seat's colour with its castles, and the
  * seat's number over it — the same number the seat's card carries — with the viewer's
  * own island ringed. Pixel-exact at a whole-number scale, like the game's pixel style.
+ *
+ * `art` is the chosen build look's, so the table looks like the game it will be; the
+ * numbers and the ring take `ink`, the shared UI's, since a look's own ink need not
+ * read on its islands — Parchment's is near black.
  */
 export function drawPreview(
   canvas: HTMLCanvasElement,
@@ -91,6 +95,7 @@ export function drawPreview(
   viewerSeat: number,
   art: ArtConfig,
   maxWidthPx: number,
+  ink: ArtConfig = art,
 ): void {
   const { terrain } = preview;
   const scale = Math.max(2, Math.floor(maxWidthPx / terrain.width));
@@ -133,14 +138,14 @@ export function drawPreview(
     const cy = (centre.y + 0.5) * scale;
     ctx.fillStyle = 'rgb(10 10 18 / 60%)';
     ctx.fillText(String(seat + 1), cx + 1, cy + 1);
-    ctx.fillStyle = art.palette.uiInk;
+    ctx.fillStyle = ink.palette.uiInk;
     ctx.fillText(String(seat + 1), cx, cy);
   }
 
   // The viewer's island, outlined, so "where am I" needs no looking up.
   const mine = preview.playerOfSeat[viewerSeat];
   if (mine === undefined) return;
-  ctx.fillStyle = art.palette.uiAccent;
+  ctx.fillStyle = ink.palette.uiAccent;
   for (let i = 0; i < terrain.terrain.length; i++) {
     if (terrain.islandId[i] !== mine + 1 || terrain.terrain[i] !== Terrain.Land) continue;
     const x = i % terrain.width;

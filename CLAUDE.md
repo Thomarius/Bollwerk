@@ -135,7 +135,9 @@ send compiled feedback. PLAN.md §11 opens with where to start:
    free-for-all (team seating is measured, and fair).
 4. Independent of balance: bots as personality × skill (§11.6), and **alternative visual
    themes** (§11.9): done — Minimal, Pixel art, Night, Cyberpunk, Blueprint and
-   Parchment, each for either look, each with its own menu title.
+   Parchment, each for either look, each with its own menu title and banner; and the
+   UI polish of §11.10 (a compact roster, reload rings and aim line, an end-of-match
+   summary, an Effects setting).
 
 ## Measuring the bots
 

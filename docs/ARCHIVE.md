@@ -2070,3 +2070,16 @@ style; Blueprint's first title block was the sheet's own blue and read only by i
 rules, so it is a deeper blue laid on the drawing. One capture showed a white band over
 the board that two repeats and a probe of the page could not reproduce — taken seconds
 after the stylesheet changed, most likely the dev server swapping it in.
+
+**U5, before the match — done**, which completes 11.10. The lobby's map takes the chosen
+build look's colours, with its seat numbers and ring in the shared ink, since Parchment's
+own is near black on its islands; the seat cards keep the shared colours, which read on
+the lobby's panel. Castle choice already raised the ring at once, so what it lacked was
+the ask and the moment: the castles to choose now breathe in the accent, shared by every
+style in place of five plain outlines, and each choice, anyone's, breaks two rings out
+from the castle in the chooser's colour (`choiceBurstMs`). The menu's Effects setting is
+kept with the looks; `motion.ts` answers whether motion is reduced, from it or from the
+system, for the title's sweep and the roster's slide, and a class on the page mirrors the
+stylesheet's reduced-motion rules — and, beyond what the system setting did, it stops
+the board's shake. Seen: four lobby maps, the pulse on a person's four castles and the
+bots' choices bursting, the menu's new field.

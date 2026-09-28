@@ -3,6 +3,7 @@ import type { BannerKind } from './banners.js';
 import { escape } from './lobby.js';
 import { defaultArtConfig, type ArtStyle } from '@rampart/config';
 
+import { motionReduced } from './motion.js';
 import { mostCastlesOf, scoreChart, type MatchLog } from './summary.js';
 
 import {
@@ -357,7 +358,7 @@ export class Hud {
     if (current.length === want.length && current.every((node, i) => node === want[i])) return;
     const was = new Map(current.map((node) => [node, node.getBoundingClientRect().left]));
     roster.replaceChildren(...want);
-    if (globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return;
+    if (motionReduced()) return;
     for (const node of want) {
       const left = was.get(node);
       if (left === undefined) continue;
