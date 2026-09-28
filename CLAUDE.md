@@ -159,7 +159,8 @@ abandoned match, or new columns over old sessions — and says whether each repl
 exact. One switch turns all of it off: `recordings.enabled` in `config/server.default.json`.
 The statistics code is `packages/analysis`, shared by the server and the harness. A
 recording replays exactly only against the code that made it, since the rules travel in
-its header but the simulation does not: record the commit with a test session.
+its header but the simulation does not — so the server stamps each header with its commit
+(`-dirty` if the tree had changes), and `--replay` names it.
 
 ## What has already been tried, so it is not tried again
 

@@ -30,9 +30,12 @@ export function summariseStats(rows: StatRow[]): void {
     const owned = mean(list.map((r) => r.cannonsOwned));
     const active = mean(list.map((r) => r.cannonsActive));
     const idle = owned === 0 ? 0 : (1 - active / owned) * 100;
-    const used = mean(
-      list.map((r) => (r.piecesBudget === 0 ? 0 : r.piecesPlaced / r.piecesBudget)),
-    );
+    // A person has no budget, and gets a dash rather than a ratio.
+    const rated = list.filter((r) => r.piecesBudget !== null && r.piecesBudget > 0);
+    const used =
+      rated.length === 0
+        ? null
+        : mean(rated.map((r) => r.piecesPlaced / (r.piecesBudget as number)));
     console.log(
       `  ${tier.padEnd(8)} ${mean(list.map((r) => r.enclosedCastles))
         .toFixed(2)
@@ -41,7 +44,9 @@ export function summariseStats(rows: StatRow[]): void {
           .toFixed(1)
           .padStart(4)}  ${mean(list.map((r) => r.wallTiles))
           .toFixed(0)
-          .padStart(4)}  ${(used * 100).toFixed(0).padStart(11)}%  ${mean(
+          .padStart(
+            4,
+          )}  ${(used === null ? '—' : `${(used * 100).toFixed(0)}%`).padStart(12)}  ${mean(
           list.map((r) => r.territoryPoints),
         )
           .toFixed(0)

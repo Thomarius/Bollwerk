@@ -2012,3 +2012,16 @@ when to hold is a pure function beside the look swap (`holdsCombatEnclosure`), t
 No theme changed. Seen: mid-combat with many walls broken, every castle still lit in
 Night and Cyberpunk; and under the "Rebuild" banner, Pixel art above the line already
 showing both players' castles unsealed, Cyberpunk below still lit.
+
+**The first recorded test game — checked.** One person against two gunners, played
+locally through a page the server served: the recording and its statistics were written
+as designed, and `--replay` found it exact, with statistics identical to the server's.
+(The person won on points at the cap, 1658 to 1245 and 1062, failing to seal in two
+rounds of ten — twice the bots' usual rate, the number 11.2 rests on.) Two fixes came of
+it. The pieces budget, priced from a bot tier's pace, was written as 0 for a person and
+read as "used none of the phase"; it is now empty, and the summary shows a dash. And a
+recording did not say which code made it, though it replays exactly only against that
+code: the server now stamps every header it writes — its own rooms' and browsers'
+uploads alike, overwriting any claim a page makes — with its commit, from git or from
+`RAMPART_COMMIT`, which the image is built with and CI passes. The field is optional, so
+earlier recordings still read.

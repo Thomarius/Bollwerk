@@ -8,6 +8,7 @@ import { describe, expect, it } from 'vitest';
 
 import { Room, type Connection } from './room.js';
 import { RecordingStore, openRecordingStore } from './recordings.js';
+import { codeVersion } from './version.js';
 
 function room(record: (line: RecordingLine) => void): Room {
   return new Room({
@@ -81,6 +82,32 @@ describe('the recording store', () => {
     expect(store.upload(id, body(tick(5), tick(9)))).toEqual({ ok: true });
     const lines = parseRecording(readFileSync(join(dir, `${id}.jsonl`), 'utf8'));
     expect(lines.map((l) => l.kind)).toEqual(['header', 'tick', 'tick', 'tick']);
+  });
+
+  it('stamps every header with the code it runs, whatever the browser claimed', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'rec-'));
+    const store = new RecordingStore(dir, 1 << 20, defaultConfigBundle, undefined, 'abc123def456');
+    const uploaded = '20260927-100000-local-stamp1';
+    const claimed = { ...header(uploaded), commit: 'whatever-the-page-said' } as RecordingLine;
+    expect(store.upload(uploaded, body(claimed, tick(1))).ok).toBe(true);
+    const own = '20260927-100000-server-stamp2';
+    const write = store.writer();
+    write(header(own));
+    write(tick(1));
+    for (const id of [uploaded, own]) {
+      const first = parseRecording(readFileSync(join(dir, `${id}.jsonl`), 'utf8'))[0];
+      expect(first?.kind === 'header' && first.commit).toBe('abc123def456');
+    }
+  });
+
+  it('writes no commit it does not know, and still reads recordings made without one', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'rec-'));
+    const store = new RecordingStore(dir, 1 << 20, defaultConfigBundle);
+    const id = '20260927-100000-local-nocode';
+    const claimed = { ...header(id), commit: 'a-browser-guess' } as RecordingLine;
+    expect(store.upload(id, body(claimed)).ok).toBe(true);
+    const first = parseRecording(readFileSync(join(dir, `${id}.jsonl`), 'utf8'))[0];
+    expect(first?.kind === 'header' && 'commit' in first).toBe(false);
   });
 
   it('refuses anything that is not a recording, or would not start one properly', () => {
@@ -174,5 +201,15 @@ describe('the recording store', () => {
     );
     expect(store).toBeNull();
     expect(said[0]).toMatch(/^recordings disabled/);
+  });
+});
+
+describe('the code version', () => {
+  it('is what the image was built with, when it says', () => {
+    expect(codeVersion('/nonexistent', { RAMPART_COMMIT: ' 0123abcd ' })).toBe('0123abcd');
+  });
+
+  it('is unknown rather than an error where there is no repository to ask', () => {
+    expect(codeVersion(tmpdir(), {})).toBeNull();
   });
 });

@@ -593,7 +593,10 @@ two recruits 9 of 12. Records in the archive from before 10l are historical.
   served the page. When a match ends the server writes its statistics beside it
   (`<id>.stats.csv`); `--replay FILES|DIRS` does the same by hand, and checks each replay
   exact. `recordings.enabled` in the server config turns it all off. Recordings replay exactly
-  only against the code that made them.
+  only against the code that made them, so **the server stamps every header with its
+  commit** (`-dirty` with uncommitted changes; `RAMPART_COMMIT` in the image, which has no
+  repository), and `--replay` names it, and says to check it out when a replay diverges.
+  A person's seat has no pieces budget, and its cell in the table is left empty.
 
 Tests state expectations as ASCII pictures where the subject is geometric
 (`stateFromAscii`, with an optional island overlay for walls and castles that belong to

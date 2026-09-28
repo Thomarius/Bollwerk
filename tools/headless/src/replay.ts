@@ -65,10 +65,14 @@ export function replayAll(bundle: ConfigBundle, paths: readonly string[]): StatR
     const exact =
       result.mismatches.length === 0 && result.refused === 0
         ? 'exact'
-        : `DIVERGED at tick ${result.mismatches[0] ?? '?'}, ${result.refused} refused — recorded with different code`;
+        : `DIVERGED at tick ${result.mismatches[0] ?? '?'}, ${result.refused} refused — ` +
+          (header.commit === undefined
+            ? 'recorded with different code'
+            : `recorded with ${header.commit}; check that out to replay it`);
     console.log(
       `  ${header.id}  ${header.source}  ${String(result.state.round).padStart(2)} rounds  ` +
-        `${outcomeOf(result.state)}  [${exact}]\n    ${who}`,
+        `${outcomeOf(result.state)}  [${exact}]\n    ${who}` +
+        (header.commit === undefined ? '' : `  (code ${header.commit})`),
     );
   }
   return rows;

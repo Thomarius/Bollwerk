@@ -37,7 +37,8 @@ export interface StatRow {
   cannonRoom: number;
   wallTiles: number;
   piecesPlaced: number;
-  piecesBudget: number;
+  /** Null for a person, who has no pace to price a phase with. */
+  piecesBudget: number | null;
   shotsFired: number;
   territoryPoints: number;
   damagePoints: number;
@@ -89,11 +90,12 @@ const STAT_COLUMNS: (keyof StatRow)[] = [
  * much of the phase a bot actually used. A bot that seals early and then stands idle
  * shows up here as a ratio well under one, with nothing else needing to be measured.
  */
-export function piecesBudget(bundle: ConfigBundle, difficulty: Tier): number {
-  // A person has no pace to price a phase with; their pieces are counted, not rated.
-  if (difficulty === 'human') return 0;
+export function piecesBudget(bundle: ConfigBundle, difficulty: Tier): number | null {
+  // A person has no pace to price a phase with; their pieces are counted, not rated. A
+  // zero here once read in the table as "used none of it".
+  if (difficulty === 'human') return null;
   const profile = bundle.ai.profiles[difficulty];
-  if (profile === undefined) return 0;
+  if (profile === undefined) return null;
   const perPiece = profile.placementBaseMs + profile.placementPerCellMs * 3.5;
   return bundle.ruleset.phases.buildMs / perPiece;
 }
@@ -141,6 +143,7 @@ export function statsCsv(rows: readonly StatRow[]): string {
     lines.push(
       STAT_COLUMNS.map((column) => {
         const value = row[column];
+        if (value === null) return '';
         return typeof value === 'number' ? Number(value.toFixed(2)) : String(value);
       }).join(','),
     );

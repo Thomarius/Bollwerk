@@ -38,6 +38,13 @@ export const RecordingHeaderSchema = z.strictObject({
   source: z.enum(['server', 'local']),
   /** Wall-clock time the match started, ISO 8601. Never read by the replay. */
   startedAt: z.string(),
+  /**
+   * The code that made it — the commit, `-dirty` with uncommitted changes — stamped by
+   * the server as it writes the file, whoever played the match; the browser's own claim
+   * is overwritten. A recording replays exactly only against this code. Absent from
+   * recordings made before it was kept, and when the server could not tell.
+   */
+  commit: z.string().min(1).optional(),
   /** The room's code, for a match played through the server. */
   code: z.string().nullable(),
   seed: z.number().int().nonnegative(),

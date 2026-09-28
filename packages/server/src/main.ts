@@ -14,6 +14,7 @@ import { WebSocketServer, type WebSocket } from 'ws';
 import { repoRoot } from './paths.js';
 import type { Connection, Room } from './room.js';
 import { openRecordingStore } from './recordings.js';
+import { codeVersion } from './version.js';
 import { RoomManager } from './rooms.js';
 
 const bundle = loadConfigBundle(repoRoot);
@@ -29,6 +30,7 @@ const store = bundle.server.recordings.enabled
       bundle,
       // The server's own news goes to stderr, as its start-up line does.
       (message) => console.error(message),
+      codeVersion(repoRoot),
     )
   : null;
 const rooms = new RoomManager(bundle, undefined, store === null ? undefined : () => store.writer());
