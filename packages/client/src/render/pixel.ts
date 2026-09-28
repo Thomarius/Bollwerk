@@ -11,12 +11,15 @@ import { SceneryTracker } from './scenery.js';
 import { CASTLE_WINDOWS, E, FILLET_CORNERS, KEY, N, S, W, buildAtlas } from './pixel/generators.js';
 import {
   FlagHoist,
+  GhostMotion,
   Fireworks,
   Landings,
   ReloadRings,
+  RuinSmoke,
   dimEliminated,
   drawAimLine,
   drawBuildHints,
+  drawSealPreview,
   drawChoices,
   drawSelectable,
   drawFireReticle,
@@ -162,6 +165,22 @@ export class PixelTheme implements Theme {
   private structureLayer!: Container;
   private effectLayer!: Container;
   private readonly territoryGfx = new Graphics();
+  private readonly ghostMotion = new GhostMotion();
+  /** Under the piece's sprites: the shadow it casts while held. */
+  private readonly ghostShadow = new Graphics();
+  private readonly ruins = new RuinSmoke();
+  /** Chunks of wall thrown out by a shot, tumbling and then lying where they fell. */
+  private chunks: {
+    x: number;
+    y: number;
+    z: number;
+    vx: number;
+    vy: number;
+    vz: number;
+    age: number;
+    colour: number;
+    size: number;
+  }[] = [];
   private readonly overlayGfx = new Graphics();
   private readonly effectGfx = new Graphics();
 
@@ -271,7 +290,7 @@ export class PixelTheme implements Theme {
       this.airLight.filters = [new BlurFilter({ strength: 4, quality: 2 })];
     }
     layers.effects.addChild(this.effectGfx);
-    layers.overlay.addChild(this.ghostLayer, this.overlayGfx);
+    layers.overlay.addChild(this.ghostShadow, this.ghostLayer, this.overlayGfx);
     return Promise.resolve();
   }
 
@@ -286,6 +305,7 @@ export class PixelTheme implements Theme {
     this.groundLight.destroy();
     this.airLight.destroy();
     this.seaGfx.destroy();
+    this.ghostShadow.destroy();
     this.cloudGfx.destroy();
     this.courtLayer.destroy({ children: true });
     this.sceneryLayer.destroy({ children: true });
@@ -643,6 +663,24 @@ export class PixelTheme implements Theme {
         this.cracks.set(index, { level, round: this.round });
       }
     }
+    // Chunks of the block itself, thrown out a little way to lie as rubble for a while.
+    for (const block of debris) {
+      for (let k = 0; k < 4; k++) {
+        const angle = Math.random() * Math.PI * 2;
+        const speed = 0.6 + Math.random() * 1.1;
+        this.chunks.push({
+          x: block.x + 0.5,
+          y: block.y + 0.5,
+          z: 0.2,
+          vx: Math.cos(angle) * speed,
+          vy: Math.sin(angle) * speed * 0.7,
+          vz: 2.2 + Math.random() * 1.6,
+          age: 0,
+          colour: playerColour(this.art, block.owner, k % 2 === 0 ? 'dark' : 'base'),
+          size: 0.16 + Math.random() * 0.1,
+        });
+      }
+    }
     const count = this.art.generators.fx.debrisPerTile;
     for (const block of debris) {
       const colour = playerColour(this.art, block.owner, 'base');
@@ -843,6 +881,15 @@ export class PixelTheme implements Theme {
 
     drawSealGlow(g, view, frame.sealGlow, this.art);
     this.landings.draw(g, view, this.art, frame.deltaMs);
+    this.ruins.draw(
+      g,
+      view,
+      state,
+      hex(this.art.palette.rockLight),
+      hex(this.art.palette.emberMid),
+      frame.deltaMs,
+    );
+    this.drawChunks(view, frame.deltaMs);
     drawChoices(g, view, frame.choices, this.art);
     this.reloads.draw(
       g,
@@ -1313,6 +1360,46 @@ export class PixelTheme implements Theme {
     }
   }
 
+  /**
+   * Chunks of a shot-away block: thrown up and out, bouncing once where they come down,
+   * then lying as rubble with their shadows until they fade, over the time the breach
+   * smoulders.
+   */
+  private drawChunks(view: ViewTransform, deltaMs: number): void {
+    const g = this.effectGfx;
+    const dt = deltaMs / 1000;
+    const span = this.art.generators.fx.smoulderMs;
+    const light = hex(this.art.palette.rockLight);
+    for (const c of this.chunks) {
+      c.age += deltaMs;
+      if (c.z > 0 || c.vz > 0) {
+        c.x += c.vx * dt;
+        c.y += c.vy * dt;
+        c.z += c.vz * dt;
+        c.vz -= 9 * dt;
+        if (c.z <= 0) {
+          // One bounce, losing most of its way, then still.
+          c.z = 0;
+          c.vz = Math.abs(c.vz) > 1.5 ? Math.abs(c.vz) * 0.3 : 0;
+          c.vx *= 0.4;
+          c.vy *= 0.4;
+          if (c.vz === 0) c.vx = c.vy = 0;
+        }
+      }
+      const fade = Math.min(1, Math.max(0, (span - c.age) / (span * 0.3)));
+      const s = view.tile * c.size;
+      const x = tileX(view, c.x) - s / 2;
+      const y = tileY(view, c.y - c.z) - s / 2;
+      g.ellipse(tileX(view, c.x), tileY(view, c.y) + s * 0.4, s * 0.6, s * 0.3);
+      g.fill({ color: hex(this.art.palette.shadow), alpha: 0.35 * fade });
+      g.rect(x, y, s, s);
+      g.fill({ color: c.colour, alpha: fade });
+      g.rect(x, y, s, Math.max(1, s * 0.3));
+      g.fill({ color: light, alpha: 0.5 * fade });
+    }
+    this.chunks = this.chunks.filter((c) => c.age < span);
+  }
+
   /** Whether this is Night, which is lit by torches; the pixel style is not. */
   private get torchlit(): boolean {
     return this.id === 'night';
@@ -1595,7 +1682,9 @@ export class PixelTheme implements Theme {
     const g = this.effectGfx;
     this.flags.update(frame.castleSealed, this.clock, this.art);
     for (const castle of state.castles) {
-      const raised = this.flags.raised(castle.id, this.clock, this.art);
+      // A knocked-out player's flags fly at half-mast, struck dark, for the rest of it.
+      const out = state.players[castle.islandId - 1]?.eliminated === true;
+      const raised = out ? 0.5 : this.flags.raised(castle.id, this.clock, this.art);
       if (raised === null) continue;
       // A pole rising from the middle of the castle, the banner hoisted to its head
       // above the roofline, where it reads from across the map.
@@ -1614,7 +1703,7 @@ export class PixelTheme implements Theme {
       sprite.tint = playerColour(
         this.art,
         castle.islandId - 1,
-        this.flags.lowering(castle.id) ? 'dark' : 'base',
+        out || this.flags.lowering(castle.id) ? 'dark' : 'base',
       );
       this.effectLayer.addChild(sprite);
     }
@@ -1701,12 +1790,15 @@ export class PixelTheme implements Theme {
   drawOverlay(state: MatchState, view: ViewTransform, ghost: Ghost, humanPlayer: number): void {
     const g = this.overlayGfx;
     g.clear();
+    this.ghostShadow.clear();
     this.ghostLayer.removeChildren();
     drawOvertimeBorder(g, state, view, this.art, performance.now());
 
     drawSelectable(g, view, ghost, this.art, performance.now());
 
     drawBuildHints(g, view, ghost, this.art, performance.now());
+    drawSealPreview(g, view, ghost, this.art);
+    this.ghostMotion.draw(this.ghostShadow, g, view, ghost, this.art);
 
     if (!ghost.tile) return;
     const colour = ghost.valid ? hex(this.art.palette.uiValid) : hex(this.art.palette.uiInvalid);

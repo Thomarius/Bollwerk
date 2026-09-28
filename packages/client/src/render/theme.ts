@@ -118,6 +118,37 @@ export interface Ghost {
   unsealed: readonly { x: number; y: number; w: number; h: number }[];
   /** Whether to draw the aiming cursor: in combat, and while it is announced. */
   aiming: boolean;
+  /** Ground the piece in hand would seal, when the sealing preview is on (`sealPreview.ts`). */
+  sealing?: readonly Cell[];
+}
+
+/**
+ * The sealing preview: the ground the piece in hand would seal, washed faintly in the
+ * valid ink and outlined, under the piece. Shared by every style, as the other things a
+ * player builds by are.
+ */
+export function drawSealPreview(
+  g: Graphics,
+  view: ViewTransform,
+  ghost: Ghost,
+  art: ArtConfig,
+): void {
+  const cells = ghost.sealing;
+  if (cells === undefined || cells.length === 0 || !ghost.valid) return;
+  const inside = new Set(cells.map((c) => `${c.x},${c.y}`));
+  for (const c of cells) g.rect(tileX(view, c.x), tileY(view, c.y), view.tile, view.tile);
+  g.fill({ color: hex(art.palette.uiValid), alpha: 0.12 });
+  for (const { x, y } of cells) {
+    const left = tileX(view, x);
+    const top = tileY(view, y);
+    const right = left + view.tile;
+    const bottom = top + view.tile;
+    if (!inside.has(`${x},${y - 1}`)) g.moveTo(left, top).lineTo(right, top);
+    if (!inside.has(`${x + 1},${y}`)) g.moveTo(right, top).lineTo(right, bottom);
+    if (!inside.has(`${x},${y + 1}`)) g.moveTo(left, bottom).lineTo(right, bottom);
+    if (!inside.has(`${x - 1},${y}`)) g.moveTo(left, top).lineTo(left, bottom);
+  }
+  g.stroke({ width: Math.max(1, view.tile / 12), color: hex(art.palette.uiValid), alpha: 0.6 });
 }
 
 /**
@@ -367,6 +398,127 @@ export class Landings {
       g.fill({ color: playerColour(art, landing.owner, 'light'), alpha: 0.55 * (1 - t) });
     }
     this.landings = this.landings.filter((landing) => landing.age < span);
+  }
+}
+
+/**
+ * The piece in hand, held: a soft shadow cast under it to the south-east, as if lifted
+ * off the board, and on each turn a quick swing of its outline from where it pointed into
+ * where it points now. Shared by every style; the shadow goes in `under`, beneath the
+ * style's own drawing of the piece, the swing in `over`.
+ */
+export class GhostMotion {
+  private last: { x: number; y: number; key: string; n: number } | null = null;
+  private turnedAt = Number.NEGATIVE_INFINITY;
+
+  draw(under: Graphics, over: Graphics, view: ViewTransform, ghost: Ghost, art: ArtConfig): void {
+    const tile = ghost.tile;
+    if (tile === null || ghost.cells.length === 0) {
+      this.last = null;
+      return;
+    }
+    const now = performance.now();
+    const key = JSON.stringify(ghost.cells);
+    const last = this.last;
+    if (
+      last !== null &&
+      last.x === tile.x &&
+      last.y === tile.y &&
+      last.n === ghost.cells.length &&
+      last.key !== key
+    ) {
+      this.turnedAt = now;
+    }
+    this.last = { x: tile.x, y: tile.y, key, n: ghost.cells.length };
+
+    const t = view.tile;
+    for (const [dx, dy] of ghost.cells) {
+      under.rect(tileX(view, tile.x + dx + 0.14), tileY(view, tile.y + dy + 0.2), t, t);
+    }
+    under.fill({ color: hex(art.palette.shadow), alpha: 0.22 });
+
+    const turnMs = 130;
+    const k = (now - this.turnedAt) / turnMs;
+    if (k >= 1) return;
+    // Swinging from a quarter turn back into place about the piece's middle.
+    const xs = ghost.cells.map(([dx]) => dx);
+    const ys = ghost.cells.map(([, dy]) => dy);
+    const px = tile.x + (Math.min(...xs) + Math.max(...xs) + 1) / 2;
+    const py = tile.y + (Math.min(...ys) + Math.max(...ys) + 1) / 2;
+    const angle = (-Math.PI / 2) * (1 - k) * (1 - k);
+    const cos = Math.cos(angle);
+    const sin = Math.sin(angle);
+    for (const [dx, dy] of ghost.cells) {
+      const corners = [
+        [0, 0],
+        [1, 0],
+        [1, 1],
+        [0, 1],
+      ].flatMap(([cx, cy]) => {
+        const rx = tile.x + dx + (cx as number) - px;
+        const ry = tile.y + dy + (cy as number) - py;
+        return [tileX(view, px + rx * cos - ry * sin), tileY(view, py + rx * sin + ry * cos)];
+      });
+      over.poly(corners);
+    }
+    over.stroke({
+      width: Math.max(1, t / 14),
+      color: hex(art.palette.uiValid),
+      alpha: 0.7 * (1 - k),
+    });
+  }
+}
+
+/**
+ * A knocked-out island's castles burning: flames for a while as the player goes out, and
+ * a thin column of smoke from each for the rest of the match, drifting on the wind. The
+ * greying of the island says who is out; this says it happened. Shared by every style, in
+ * each one's colours; no flames where a style has none to give.
+ */
+export class RuinSmoke {
+  /** When each island was first seen out, by this look's clock. */
+  private readonly since = new Map<number, number>();
+  private clock = 0;
+
+  draw(
+    g: Graphics,
+    view: ViewTransform,
+    state: MatchState,
+    smoke: number,
+    flame: number | null,
+    deltaMs: number,
+  ): void {
+    this.clock += deltaMs;
+    const burnMs = 8000;
+    for (const player of state.players) {
+      if (!player.eliminated) continue;
+      if (!this.since.has(player.islandId)) this.since.set(player.islandId, this.clock);
+      const age = this.clock - (this.since.get(player.islandId) as number);
+      const burning = flame !== null && age < burnMs ? 1 - age / burnMs : 0;
+      for (const castle of state.castles) {
+        if (castle.islandId !== player.islandId) continue;
+        const cx = castle.x + castle.w / 2;
+        const cy = castle.y + castle.h * 0.4;
+        for (let k = 0; k < 5; k++) {
+          const t = (this.clock / 2600 + k / 5 + castle.id * 0.31) % 1;
+          const x = cx + t * 0.9 + Math.sin(t * 6 + castle.id) * 0.12;
+          const y = cy - t * 2.2;
+          g.circle(tileX(view, x), tileY(view, y), view.tile * (0.16 + t * 0.35));
+          g.fill({ color: smoke, alpha: (0.3 + 0.25 * burning) * (1 - t) });
+        }
+        if (burning > 0 && flame !== null) {
+          for (let k = 0; k < 3; k++) {
+            const flicker = 0.7 + 0.3 * Math.sin(this.clock / 90 + k * 2 + castle.id);
+            g.circle(
+              tileX(view, castle.x + castle.w * (0.25 + k * 0.25)),
+              tileY(view, castle.y + castle.h * 0.45),
+              view.tile * 0.22 * flicker * burning,
+            );
+          }
+          g.fill({ color: flame, alpha: 0.85 * burning });
+        }
+      }
+    }
   }
 }
 

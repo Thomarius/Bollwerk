@@ -4,13 +4,16 @@ import { Graphics } from 'pixi.js';
 
 import {
   FlagHoist,
+  GhostMotion,
   Fireworks,
   GunAims,
   Landings,
   ReloadRings,
+  RuinSmoke,
   dimEliminated,
   drawAimLine,
   drawBuildHints,
+  drawSealPreview,
   drawChoices,
   drawSelectable,
   drawFireReticle,
@@ -86,6 +89,16 @@ export class BlueprintTheme implements Theme {
 
   private readonly terrainGfx = new Graphics();
   private readonly territoryGfx = new Graphics();
+  private readonly ghostMotion = new GhostMotion();
+  /**
+   * An eraser's smudge where a block was shot away, for the rest of the round, under the
+   * walls so a block drawn in again covers it; and pencil strokes over a piece just laid,
+   * sketched and then inked over.
+   */
+  private readonly smudgeGfx = new Graphics();
+  private smudges: { x: number; y: number; round: number }[] = [];
+  private pencils: { cells: readonly Cell[]; age: number }[] = [];
+  private readonly ruins = new RuinSmoke();
   /** Trees, bushes and boulders on open land; see `scenery.ts`. */
   private readonly scenery = new SceneryLayer(
     (g, view, items) => drawBlueprintScenery(g, view, items, this.art),
@@ -112,7 +125,7 @@ export class BlueprintTheme implements Theme {
     this.art = art;
     this.style = art.blueprint;
     layers.terrain.addChild(this.terrainGfx);
-    layers.territory.addChild(this.scenery.gfx, this.territoryGfx);
+    layers.territory.addChild(this.scenery.gfx, this.territoryGfx, this.smudgeGfx);
     layers.structures.addChild(this.structureGfx);
     layers.effects.addChild(this.effectGfx);
     layers.overlay.addChild(this.overlayGfx);
@@ -120,6 +133,7 @@ export class BlueprintTheme implements Theme {
   }
 
   destroy(): void {
+    this.smudgeGfx.destroy();
     this.scenery.destroy();
     for (const g of [
       this.terrainGfx,
@@ -269,6 +283,38 @@ export class BlueprintTheme implements Theme {
     dimEliminated(g, state, view, hex(this.art.palette.shadow));
   }
 
+  /** The eraser's smudges and the pencil's strokes; see `smudgeGfx`. */
+  private drawDraftsmanship(state: MatchState, view: ViewTransform, deltaMs: number): void {
+    const t = view.tile;
+    const sm = this.smudgeGfx;
+    sm.clear();
+    for (const s of this.smudges) if (s.round < 0) s.round = state.round;
+    this.smudges = this.smudges.filter((s) => s.round === state.round);
+    for (const s of this.smudges) {
+      const cx = tileX(view, s.x + 0.5);
+      const cy = tileY(view, s.y + 0.5);
+      sm.ellipse(cx, cy, t * 0.55, t * 0.38);
+      sm.fill({ color: hex(this.art.palette.rockLight), alpha: 0.07 });
+      sm.ellipse(cx + t * 0.1, cy - t * 0.05, t * 0.4, t * 0.24);
+      sm.fill({ color: hex(this.art.palette.rockLight), alpha: 0.07 });
+    }
+    const g = this.effectGfx;
+    const span = 700;
+    for (const p of this.pencils) {
+      p.age += deltaMs;
+      const k = p.age / span;
+      if (k >= 1) continue;
+      for (const c of p.cells) {
+        const x = tileX(view, c.x);
+        const y = tileY(view, c.y);
+        g.moveTo(x + t * 0.1, y + t * 0.85).lineTo(x + t * 0.95, y + t * 0.2);
+        g.moveTo(x - t * 0.05, y + t * 0.1).lineTo(x + t * 1.05, y + t * 0.05);
+      }
+      g.stroke({ width: 1, color: hex(this.art.palette.rockLight), alpha: 0.6 * (1 - k) });
+    }
+    this.pencils = this.pencils.filter((p) => p.age < span);
+  }
+
   // ------------------------------------------------------------------ structures
 
   drawStructures(state: MatchState, view: ViewTransform): void {
@@ -411,6 +457,7 @@ export class BlueprintTheme implements Theme {
       x < this.width &&
       this.terrain[y * this.width + x] !== Terrain.Land;
     this.marks.push({ x, y, age: 0, onWall: debris.length > 0, inSea });
+    for (const block of debris) this.smudges.push({ x: block.x, y: block.y, round: -1 });
     for (const block of debris) {
       for (let k = 0; k < 6; k++) {
         const angle = Math.random() * Math.PI * 2;
@@ -435,6 +482,7 @@ export class BlueprintTheme implements Theme {
   }
 
   noteLanding(cells: readonly Cell[], owner: number): void {
+    this.pencils.push({ cells, age: 0 });
     this.scenery.land(cells);
     this.landings.add(cells, owner);
   }
@@ -448,6 +496,8 @@ export class BlueprintTheme implements Theme {
     drawSealGlow(g, view, frame.sealGlow, this.art);
     this.landings.draw(g, view, this.art, frame.deltaMs);
     this.scenery.drawPuffs(g, view, frame.deltaMs);
+    this.drawDraftsmanship(state, view, frame.deltaMs);
+    this.ruins.draw(g, view, state, hex(this.art.palette.rockMid), null, frame.deltaMs);
     drawChoices(g, view, frame.choices, this.art);
     this.reloads.draw(
       g,
@@ -670,6 +720,8 @@ export class BlueprintTheme implements Theme {
     drawOvertimeBorder(g, state, view, this.art, performance.now());
     drawSelectable(g, view, ghost, this.art, performance.now());
     drawBuildHints(g, view, ghost, this.art, performance.now());
+    drawSealPreview(g, view, ghost, this.art);
+    this.ghostMotion.draw(g, g, view, ghost, this.art);
     if (!ghost.tile) return;
     const anchor = ghost.tile;
 

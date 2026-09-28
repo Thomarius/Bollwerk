@@ -41,6 +41,7 @@ import { timerSpot } from './timerSpot.js';
 import { SplitTitle, installBackdrop } from './decor.js';
 import { MatchLog } from './summary.js';
 import { applyEffects, motionReduced, saveEffects, storedEffects } from './motion.js';
+import { saveSealPreview, sealPreviewOn } from './sealPreview.js';
 import { drawPreview, tablePreview } from './preview.js';
 import { RecordingUpload } from './recordingUpload.js';
 import {
@@ -314,6 +315,7 @@ function showMenu(): void {
       <label>Building look <select id="build-style">${styleOptions('build')}</select></label>
       <label>Combat look <select id="combat-style">${styleOptions('combat')}</select></label>
       <label>Effects <select id="effects"><option value="high">High</option><option value="full">Full</option><option value="reduced">Reduced</option></select></label>
+      <label>Sealing preview <select id="seal-preview"><option value="off">Off</option><option value="on">On</option></select></label>
       <button id="play">Play</button>
       <div class="split">
         <input id="code" type="text" maxlength="8" placeholder="room code" />
@@ -330,6 +332,11 @@ function showMenu(): void {
   if (buildField) buildField.value = styles.build;
   const combatField = document.querySelector<HTMLSelectElement>('#combat-style');
   if (combatField) combatField.value = styles.combat;
+  const sealField = document.querySelector<HTMLSelectElement>('#seal-preview');
+  if (sealField) {
+    sealField.value = sealPreviewOn() ? 'on' : 'off';
+    sealField.addEventListener('change', () => saveSealPreview(sealField.value === 'on'));
+  }
   const effectsField = document.querySelector<HTMLSelectElement>('#effects');
   if (effectsField) {
     effectsField.value = storedEffects();
@@ -1212,9 +1219,18 @@ async function runSession(session: Session, setup: Setup): Promise<void> {
           structuresChanged = true;
           territoryChanged = true;
           break;
-        case 'cannon_placed':
+        case 'cannon_placed': {
+          // Set down as a piece is: it settles, throws up the style's dust or sparks, and
+          // knocks flat whatever stood under it.
+          const [w, h] = session.state.ruleset.cannons.footprint;
+          const cells: { x: number; y: number }[] = [];
+          for (let dy = 0; dy < h; dy++) {
+            for (let dx = 0; dx < w; dx++) cells.push({ x: event.x + dx, y: event.y + dy });
+          }
+          scene.noteLanding(cells, event.player);
           structuresChanged = true;
           break;
+        }
         case 'round_resolved': {
           const hold = Math.ceil(
             (defaultConfigBundle.art.hud.pointsBannerMs * session.state.ruleset.tickRateHz) / 1000,

@@ -11,6 +11,8 @@ import {
 } from '@rampart/sim';
 
 import type { Ghost, Scene } from './render/scene.js';
+import type { Cell } from './render/theme.js';
+import { sealPreviewOn, sealingCells } from './sealPreview.js';
 
 /** What a click means for this player right now. */
 export type InputMode = 'castle' | 'cannon' | 'piece' | 'fire' | 'aim' | 'none';
@@ -80,6 +82,8 @@ type InputCue = 'piece_rotate' | 'piece_invalid';
 export class Controls {
   private hover: { x: number; y: number } | null = null;
   private rotation = 0;
+  /** The sealing preview's last answer, asked again only when the question changes. */
+  private sealing: { key: string; cells: Cell[] } = { key: '', cells: [] };
   private detachers: (() => void)[] = [];
 
   constructor(
@@ -198,6 +202,20 @@ export class Controls {
     );
   }
 
+  /**
+   * What the piece would seal where it is held, remembered until the piece, the tile or
+   * the board changes: the ghost is asked for every frame, the enclosure is two floods.
+   */
+  private sealingFor(cells: readonly (readonly [number, number])[], x: number, y: number): Cell[] {
+    let sum = 0;
+    const { structure } = this.state;
+    for (let i = 0; i < structure.length; i++) sum = (sum * 31 + (structure[i] as number)) | 0;
+    const key = `${x},${y},${JSON.stringify(cells)},${sum}`;
+    if (key !== this.sealing.key)
+      this.sealing = { key, cells: sealingCells(this.state, cells, x, y) };
+    return this.sealing.cells;
+  }
+
   /** What the overlay should draw this frame. */
   ghost(): Ghost {
     const state = this.state;
@@ -225,7 +243,17 @@ export class Controls {
       case 'piece': {
         const cells = pieceCells(currentPieceId(state, player), this.rotation);
         const valid = canPlacePiece(state, player, this.rotation, tile.x, tile.y) === null;
-        return { tile, cells, valid, footprint: null, selectable, unsealed: [], aiming: false };
+        const sealing = valid && sealPreviewOn() ? this.sealingFor(cells, tile.x, tile.y) : [];
+        return {
+          tile,
+          cells,
+          valid,
+          footprint: null,
+          selectable,
+          unsealed: [],
+          aiming: false,
+          sealing,
+        };
       }
       case 'cannon': {
         const [w, h] = state.ruleset.cannons.footprint;

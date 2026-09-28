@@ -7,13 +7,16 @@ import { timerSpot, type TimerSpot } from '../timerSpot.js';
 import { seaDepth } from './pixel.js';
 import {
   FlagHoist,
+  GhostMotion,
   Fireworks,
   GunAims,
   Landings,
   ReloadRings,
+  RuinSmoke,
   dimEliminated,
   drawAimLine,
   drawBuildHints,
+  drawSealPreview,
   drawChoices,
   drawSelectable,
   drawFireReticle,
@@ -163,6 +166,8 @@ export class ParchmentTheme implements Theme {
   private readonly terrainGfx = new Graphics();
   private readonly roseGfx = new Graphics();
   private readonly territoryGfx = new Graphics();
+  private readonly ghostMotion = new GhostMotion();
+  private readonly ruins = new RuinSmoke();
   /** Trees, bushes and boulders on open land; see `scenery.ts`. */
   private readonly scenery = new SceneryLayer(
     (g, view, items) => drawParchmentScenery(g, view, items, this.art),
@@ -780,6 +785,7 @@ export class ParchmentTheme implements Theme {
     drawSealGlow(g, view, frame.sealGlow, this.art);
     this.landings.draw(g, view, this.art, frame.deltaMs);
     this.scenery.drawPuffs(g, view, frame.deltaMs);
+    this.ruins.draw(g, view, state, hex(this.art.palette.rockMid), null, frame.deltaMs);
     drawChoices(g, view, frame.choices, this.art);
     this.reloads.draw(
       g,
@@ -1006,6 +1012,8 @@ export class ParchmentTheme implements Theme {
     drawOvertimeBorder(g, state, view, this.art, performance.now());
     drawSelectable(g, view, ghost, this.art, performance.now());
     drawBuildHints(g, view, ghost, this.art, performance.now());
+    drawSealPreview(g, view, ghost, this.art);
+    this.ghostMotion.draw(g, g, view, ghost, this.art);
     if (!ghost.tile) return;
     const anchor = ghost.tile;
 

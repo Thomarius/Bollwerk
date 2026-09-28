@@ -4,12 +4,15 @@ import { Graphics } from 'pixi.js';
 
 import {
   FlagHoist,
+  GhostMotion,
   Fireworks,
   Landings,
   ReloadRings,
+  RuinSmoke,
   dimEliminated,
   drawAimLine,
   drawBuildHints,
+  drawSealPreview,
   drawChoices,
   drawSelectable,
   drawFireReticle,
@@ -68,6 +71,8 @@ export class FlatTheme implements Theme {
 
   private readonly terrainGfx = new Graphics();
   private readonly territoryGfx = new Graphics();
+  private readonly ghostMotion = new GhostMotion();
+  private readonly ruins = new RuinSmoke();
   /** Trees, bushes and boulders on open land; see `scenery.ts`. */
   private readonly scenery = new SceneryLayer(
     (g, view, items) => drawFlatScenery(g, view, items, this.art),
@@ -245,6 +250,7 @@ export class FlatTheme implements Theme {
     drawSealGlow(g, view, frame.sealGlow, this.art);
     this.landings.draw(g, view, this.art, frame.deltaMs);
     this.scenery.drawPuffs(g, view, frame.deltaMs);
+    this.ruins.draw(g, view, state, hex(this.art.palette.rockLight), null, frame.deltaMs);
     drawChoices(g, view, frame.choices, this.art);
     this.reloads.draw(
       g,
@@ -344,6 +350,8 @@ export class FlatTheme implements Theme {
     drawSelectable(g, view, ghost, this.art, performance.now());
 
     drawBuildHints(g, view, ghost, this.art, performance.now());
+    drawSealPreview(g, view, ghost, this.art);
+    this.ghostMotion.draw(g, g, view, ghost, this.art);
 
     if (!ghost.tile) return;
     const colour = ghost.valid ? hex(this.art.palette.uiValid) : hex(this.art.palette.uiInvalid);

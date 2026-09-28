@@ -482,7 +482,14 @@ lives pips — with the words on hover, so eight fit one line at 1280 pixels wid
 timer beats on each of the last three seconds, with the clock's tick.
 
 **Feedback a player builds by.** While nothing of yours is sealed, your castles are
-outlined (`hints.ts`). The gap itself used to be marked too, and was removed after the
+outlined (`hints.ts`). The menu's **Sealing preview**, off by default (`sealPreview.ts`),
+washes and outlines the ground the piece in hand would seal, by the sim's own enclosure
+with the piece stood in as wall; it is for testers to judge, since it carries information.
+The held piece casts a soft shadow and swings as it turns (`GhostMotion`); a placed gun
+settles as a piece does; a knocked-out island's castles burn and then smoke for the rest
+of the match (`RuinSmoke`), and in Pixel art and Night fly their flags at half-mast. Wall
+shot away throws chunks that bounce once and lie as rubble while the breach smoulders, and
+Blueprint smudges where the block was erased and sketches over a piece before inking it. The gap itself used to be marked too, and was removed after the
 first human play: the marks were hard to tell from the piece ghost and from laid wall, and
 read as the only way to repair it when any closing shape will do. Points float up from
 each island as they are banked. **The time left** runs as a bar under the HUD and, in
@@ -884,18 +891,10 @@ and Night. Fields were left out: flat patches of colour read as sealed ground.
 Pixel art; the moon's path, lighthouses and fireflies at Night; Cyberpunk's rain and
 colour split; bloom behind a new High Effects setting.
 
-**W5 — The board, felt** (M).
-
-- Shot-away wall breaks into chunks that tumble and settle as rubble.
-- Blueprint's own marks: an eraser smudge where wall was shot away, pencil corrections.
-- A placed gun drops in with a thud, a ring of dust and a small bounce.
-- The piece in hand rotates with a short tween and casts a soft shadow.
-- A knocked-out island's castles burn with rising smoke and its flags go to half-mast
-  before the grey stamp.
-- **A sealing preview**, behind a setting off by default: while the piece in hand would
-  seal ground, that ground is outlined faintly. It is information, not dressing, and unlike
-  the gap marks removed after the first human play (§7) it shows what a move does rather
-  than prescribing one — to be tried by the testers before it is ever on by default.
+**W5 — The board, felt — done** (ARCHIVE 11m): wall chunks, Blueprint's smudges and
+pencil, guns set down as pieces are, the piece's shadow and swing, knockout smoke and
+half-mast flags, and the sealing preview behind a menu setting, off by default — **for
+the testers to try** before it is ever on by default.
 
 **W6 — Moments** (M).
 

@@ -2369,3 +2369,32 @@ PLAN 11.11 W4. Display only; tunables in `art.pixel` and `art.cyberpunk`.
 - Seen in each weather at three players, at the last round's sunset, and at Night at two
   and three; the rain's movement, the fireflies' winking and the beams' turning need a
   person to see them.
+
+## 11m. The second visual pass, W5: the board, felt
+
+PLAN 11.11 W5. Display only.
+
+- **The sealing preview** (`sealPreview.ts`, tested), a menu setting off by default:
+  while the piece in hand fits and would seal ground, that ground is washed and outlined
+  in the valid ink. It asks the sim's own `computeEnclosure` with the piece's cells stood
+  in as wall, so it cannot disagree with the rules (the lesson of 10v), and counts anyone's
+  ground, for a piece laid on a teammate's island. The ghost is asked for every frame, so
+  the answer is kept until the tile, the piece or the board changes. Unlike the gap marks
+  removed after the first human play it shows what a move would do, not which move to
+  make — but it is information, so the testers are to judge it before it is ever on.
+- **A gun set down** is told to the looks as a landing, so it settles as a piece does and
+  each style's own dust or sparks, and the scenery under it, go with it — no new hook in
+  every theme.
+- **The held piece** casts a soft shadow to the south-east and swings a quarter turn into
+  place as it rotates (`GhostMotion`). Pixel art draws its piece as sprites, so its shadow
+  has a Graphics of its own beneath them.
+- **A knockout** (`RuinSmoke`): the island's castles burn for eight seconds and smoke for
+  the rest of the match, in every style; Pixel art and Night fly the flags at half-mast,
+  struck dark. **The first smoke was dark and vanished on the greyed island**; it is pale.
+- **Wall chunks** in Pixel art and Night: four per block shot away, thrown out, bouncing
+  once, lying with their shadows while the breach smoulders.
+- **Blueprint's draftsmanship**: an eraser's smudge where a block was shot away, for the
+  round and under the walls, so a block drawn in again covers it (the ink stains' lesson,
+  11g); pencil strokes over a piece just laid, fading as it is inked.
+- Seen: the knockout at round five, half-mast and smoke. The preview, the swing, the
+  chunks' bounce and the pencil need a person, and a mouse.
