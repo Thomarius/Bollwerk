@@ -34,6 +34,8 @@ import {
   type ThemeLayers,
   type ViewTransform,
 } from './theme.js';
+import type { SceneryItem } from './scenery.js';
+import { SceneryLayer } from './sceneryLayer.js';
 import { hatch, outline, trace, wallGeometry, type Segment } from './walls.js';
 
 /** Squares tried for the compass rose, largest first. */
@@ -161,6 +163,11 @@ export class ParchmentTheme implements Theme {
   private readonly terrainGfx = new Graphics();
   private readonly roseGfx = new Graphics();
   private readonly territoryGfx = new Graphics();
+  /** Trees, bushes and boulders on open land; see `scenery.ts`. */
+  private readonly scenery = new SceneryLayer(
+    (g, view, items) => drawParchmentScenery(g, view, items, this.art),
+    () => hex(this.art.palette.rockMid),
+  );
   /**
    * Ink stains, over the paper but under the walls, as the pixel style's scorch marks
    * are: a block rebuilt on a stain covers it. Drawn in the effects layer, above the
@@ -198,7 +205,7 @@ export class ParchmentTheme implements Theme {
     this.style = art.parchment;
     this.layers = layers;
     layers.terrain.addChild(this.terrainGfx, this.roseGfx);
-    layers.territory.addChild(this.territoryGfx, this.stainGfx);
+    layers.territory.addChild(this.scenery.gfx, this.territoryGfx, this.stainGfx);
     layers.structures.addChild(this.structureGfx);
     layers.effects.addChild(this.effectGfx);
     layers.overlay.addChild(this.overlayGfx);
@@ -206,6 +213,7 @@ export class ParchmentTheme implements Theme {
   }
 
   destroy(): void {
+    this.scenery.destroy();
     for (const g of [
       this.terrainGfx,
       this.roseGfx,
@@ -242,6 +250,7 @@ export class ParchmentTheme implements Theme {
   // ------------------------------------------------------------------ terrain
 
   drawTerrain(state: MatchState, view: ViewTransform): void {
+    this.scenery.refresh(state, view, this.art, true);
     this.terrain = state.terrain;
     this.width = state.width;
     const g = this.terrainGfx;
@@ -462,6 +471,7 @@ export class ParchmentTheme implements Theme {
    * it and pooling darker along its edge, inside a dotted border.
    */
   drawTerritory(state: MatchState, view: ViewTransform): void {
+    this.scenery.refresh(state, view, this.art);
     const g = this.territoryGfx;
     g.clear();
     const t = view.tile;
@@ -525,6 +535,7 @@ export class ParchmentTheme implements Theme {
   // ------------------------------------------------------------------ structures
 
   drawStructures(state: MatchState, view: ViewTransform): void {
+    this.scenery.refresh(state, view, this.art);
     const g = this.structureGfx;
     g.clear();
     const { palette } = this.art;
@@ -750,6 +761,7 @@ export class ParchmentTheme implements Theme {
   }
 
   noteLanding(cells: readonly Cell[], owner: number): void {
+    this.scenery.land(cells);
     this.landings.add(cells, owner);
   }
 
@@ -767,6 +779,7 @@ export class ParchmentTheme implements Theme {
     this.drawStains(view);
     drawSealGlow(g, view, frame.sealGlow, this.art);
     this.landings.draw(g, view, this.art, frame.deltaMs);
+    this.scenery.drawPuffs(g, view, frame.deltaMs);
     drawChoices(g, view, frame.choices, this.art);
     this.reloads.draw(
       g,
@@ -1042,5 +1055,65 @@ export class ParchmentTheme implements Theme {
 
     drawAimLine(g, view, state, ghost, this.art, humanPlayer);
     if (ghost.aiming) drawFireReticle(g, view, ghost, this.art, humanPlayer);
+  }
+}
+
+/**
+ * Parchment's scenery as an old map draws it: little inked trees with a wash in their
+ * crowns, pines as inked spires, bushes as a pair of humps and boulders as a hummock with
+ * its shaded side hatched — all in the pale ink of the land, not the dark ink of walls.
+ */
+function drawParchmentScenery(
+  g: Graphics,
+  view: ViewTransform,
+  items: readonly SceneryItem[],
+  art: ArtConfig,
+): void {
+  const t = view.tile;
+  const ink = hex(art.palette.rockDark);
+  const wash = hex(art.palette.rockLight);
+  for (const item of items) {
+    const cx = tileX(view, item.x + 0.5 + ((item.variant % 3) - 1) * 0.06);
+    const cy = tileY(view, item.y + 0.5);
+    if (item.kind === 'tree') {
+      g.moveTo(cx, cy + t * 0.1).lineTo(cx, cy + t * 0.36);
+      g.stroke({ width: 1, color: ink, alpha: 0.7 });
+      g.circle(cx, cy - t * 0.04, t * 0.24);
+      g.fill({ color: wash, alpha: 0.5 });
+      g.stroke({ width: 1, color: ink, alpha: 0.75 });
+      // The shaded side, hatched.
+      for (let k = 0; k < 3; k++) {
+        const x = cx + t * (0.04 + k * 0.06);
+        g.moveTo(x, cy - t * 0.1 + k * t * 0.02).lineTo(x + t * 0.06, cy + t * 0.08);
+      }
+      g.stroke({ width: 1, color: ink, alpha: 0.45 });
+    } else if (item.kind === 'pine') {
+      g.poly([cx, cy - t * 0.34, cx + t * 0.18, cy + t * 0.22, cx - t * 0.18, cy + t * 0.22]);
+      g.fill({ color: wash, alpha: 0.5 });
+      g.stroke({ width: 1, color: ink, alpha: 0.75 });
+      g.moveTo(cx, cy + t * 0.22).lineTo(cx, cy + t * 0.36);
+      g.stroke({ width: 1, color: ink, alpha: 0.7 });
+    } else if (item.kind === 'bush') {
+      for (const [dx, r] of [
+        [-0.1, 0.13],
+        [0.1, 0.11],
+      ] as const) {
+        const x = cx + dx * t;
+        const y = cy + t * 0.12;
+        g.moveTo(x - r * t, y);
+        g.arc(x, y, r * t, Math.PI, 0);
+      }
+      g.stroke({ width: 1, color: ink, alpha: 0.7 });
+    } else {
+      const y = cy + t * 0.18;
+      g.moveTo(cx - t * 0.22, y);
+      g.quadraticCurveTo(cx - t * 0.05, cy - t * 0.28, cx + t * 0.22, y);
+      g.stroke({ width: 1, color: ink, alpha: 0.75 });
+      for (let k = 0; k < 3; k++) {
+        const x = cx + t * (0.04 + k * 0.05);
+        g.moveTo(x, y - t * (0.14 - k * 0.04)).lineTo(x + t * 0.03, y);
+      }
+      g.stroke({ width: 1, color: ink, alpha: 0.45 });
+    }
   }
 }

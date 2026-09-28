@@ -62,6 +62,8 @@ export interface ViewTransform {
   /** The canvas, in screen pixels: the board and the margin of sea round it. */
   width: number;
   height: number;
+  /** The first row of the canvas not under the HUD bar. */
+  top: number;
 }
 
 export interface EffectFrame {
@@ -365,6 +367,38 @@ export class Landings {
       g.fill({ color: playerColour(art, landing.owner, 'light'), alpha: 0.55 * (1 - t) });
     }
     this.landings = this.landings.filter((landing) => landing.age < span);
+  }
+}
+
+/**
+ * Scenery knocked flat by a piece landing on it, for the styles drawn from shapes: a few
+ * specks thrown out and settling, in whatever colour the style draws its scenery in.
+ * The pixel style throws leaves of its own.
+ */
+export class ClearingPuffs {
+  private puffs: { x: number; y: number; age: number; colour: number }[] = [];
+
+  add(cells: readonly Cell[], colour: number): void {
+    for (const cell of cells) this.puffs.push({ x: cell.x + 0.5, y: cell.y + 0.5, age: 0, colour });
+  }
+
+  draw(g: Graphics, view: ViewTransform, deltaMs: number): void {
+    const span = 480;
+    for (const puff of this.puffs) {
+      puff.age += deltaMs;
+      const t = Math.min(1, puff.age / span);
+      for (let k = 0; k < 6; k++) {
+        const angle = (k / 6) * Math.PI * 2 + puff.x;
+        const d = 0.15 + 0.45 * t;
+        g.circle(
+          tileX(view, puff.x + Math.cos(angle) * d),
+          tileY(view, puff.y + Math.sin(angle) * d * 0.7 - 0.2 * t),
+          Math.max(1, view.tile * 0.06 * (1 - t * 0.5)),
+        );
+      }
+      g.fill({ color: puff.colour, alpha: 0.8 * (1 - t) });
+    }
+    this.puffs = this.puffs.filter((puff) => puff.age < span);
   }
 }
 

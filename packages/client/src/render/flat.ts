@@ -29,6 +29,8 @@ import {
   type Cell,
   type Debris,
 } from './theme.js';
+import type { SceneryItem } from './scenery.js';
+import { SceneryLayer } from './sceneryLayer.js';
 
 interface Impact {
   x: number;
@@ -66,6 +68,11 @@ export class FlatTheme implements Theme {
 
   private readonly terrainGfx = new Graphics();
   private readonly territoryGfx = new Graphics();
+  /** Trees, bushes and boulders on open land; see `scenery.ts`. */
+  private readonly scenery = new SceneryLayer(
+    (g, view, items) => drawFlatScenery(g, view, items, this.art),
+    () => hex(this.art.palette.grassLight),
+  );
   private readonly structureGfx = new Graphics();
   private readonly effectGfx = new Graphics();
   private readonly overlayGfx = new Graphics();
@@ -84,7 +91,7 @@ export class FlatTheme implements Theme {
     this.art = art;
     this.style = art.flat;
     layers.terrain.addChild(this.terrainGfx);
-    layers.territory.addChild(this.territoryGfx);
+    layers.territory.addChild(this.scenery.gfx, this.territoryGfx);
     layers.structures.addChild(this.structureGfx);
     layers.effects.addChild(this.effectGfx);
     layers.overlay.addChild(this.overlayGfx);
@@ -92,6 +99,7 @@ export class FlatTheme implements Theme {
   }
 
   destroy(): void {
+    this.scenery.destroy();
     for (const g of [
       this.terrainGfx,
       this.territoryGfx,
@@ -119,10 +127,12 @@ export class FlatTheme implements Theme {
   }
 
   noteLanding(cells: readonly Cell[], owner: number): void {
+    this.scenery.land(cells);
     this.landings.add(cells, owner);
   }
 
   drawTerrain(state: MatchState, view: ViewTransform): void {
+    this.scenery.refresh(state, view, this.art, true);
     const g = this.terrainGfx;
     g.clear();
     // Tinted per island, which is the only thing that makes ownership readable
@@ -142,6 +152,7 @@ export class FlatTheme implements Theme {
   }
 
   drawTerritory(state: MatchState, view: ViewTransform): void {
+    this.scenery.refresh(state, view, this.art);
     const g = this.territoryGfx;
     g.clear();
     for (let player = 0; player < state.players.length; player++) {
@@ -163,6 +174,7 @@ export class FlatTheme implements Theme {
   }
 
   drawStructures(state: MatchState, view: ViewTransform): void {
+    this.scenery.refresh(state, view, this.art);
     const g = this.structureGfx;
     g.clear();
     const inset = view.tile >= 6 ? this.style.structureInsetPx : 0;
@@ -232,6 +244,7 @@ export class FlatTheme implements Theme {
 
     drawSealGlow(g, view, frame.sealGlow, this.art);
     this.landings.draw(g, view, this.art, frame.deltaMs);
+    this.scenery.drawPuffs(g, view, frame.deltaMs);
     drawChoices(g, view, frame.choices, this.art);
     this.reloads.draw(
       g,
@@ -362,4 +375,21 @@ export class FlatTheme implements Theme {
     drawAimLine(g, view, state, ghost, this.art, humanPlayer);
     if (ghost.aiming) drawFireReticle(g, view, ghost, this.art, humanPlayer);
   }
+}
+
+/**
+ * Minimal's scenery: a faint dot where each thing stands, larger for a tree, so the land
+ * is not bare and nothing on it competes with the walls.
+ */
+function drawFlatScenery(
+  g: Graphics,
+  view: ViewTransform,
+  items: readonly SceneryItem[],
+  art: ArtConfig,
+): void {
+  for (const item of items) {
+    const r = item.kind === 'tree' || item.kind === 'pine' ? 0.17 : 0.11;
+    g.circle(tileX(view, item.x + 0.5), tileY(view, item.y + 0.5), view.tile * r);
+  }
+  g.fill({ color: hex(art.palette.shadow), alpha: 0.2 });
 }

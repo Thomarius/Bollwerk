@@ -28,6 +28,7 @@ export const KEY = {
   rubble: (variant: number) => `rubble.${variant}`,
   court: (variant: number) => `court.${variant}`,
   foam: (mask: number) => `foam.${mask}`,
+  scenery: (kind: string, variant: number) => `scenery.${kind}.${variant}`,
   castle: 'castle',
   banner: (frame: number) => `banner.${frame}`,
   cannon: 'cannon',
@@ -627,6 +628,98 @@ function blast(art: ArtConfig, rng: Rng, size: number, frame: number, frames: nu
   return p;
 }
 
+/** Variants drawn of each kind of scenery. */
+export const SCENERY_VARIANTS = 4;
+
+/**
+ * Scenery on open land, in one tile: a broadleaf tree, a pine, a bush or a boulder, each
+ * standing on its own shadow cast to the south-east as the walls' are. Round and green
+ * where a wall is square and stone, so none of it can be taken for wall; the boulder,
+ * the one thing of stone, is a single rounded rock with moss on it, not loose stones as
+ * rubble is.
+ */
+function scenery(art: ArtConfig, rng: Rng, size: number, kind: string, variant: number): Pixels {
+  const p = new Pixels(size, size);
+  const { grassDark, grassMid, grassLight, craterMid, shadow, rockMid, rockLight, rockDark } =
+    art.palette;
+  const k = size / 16;
+  const jitter = (variant % 2) * 0.8 - 0.4;
+  const shade = (cx: number, cy: number, rx: number, ry: number): void => {
+    for (let y = 0; y < size; y++) {
+      for (let x = 0; x < size; x++) {
+        const dx = (x + 0.5 - cx) / rx;
+        const dy = (y + 0.5 - cy) / ry;
+        if (dx * dx + dy * dy <= 1) p.set(x, y, shadow, 0.3);
+      }
+    }
+  };
+  const leafy = (cx: number, cy: number, r: number, base: string): void => {
+    p.disc(cx, cy, r + 0.8 * k, mix(base, shadow, 0.45));
+    p.disc(cx, cy, r, base);
+    p.disc(cx - r * 0.3, cy - r * 0.35, r * 0.55, mix(base, grassLight, 0.55));
+    p.speckle(rng, grassLight, 0.08, (x, y) => Math.hypot(x - cx, y - cy) < r - 0.5);
+    p.speckle(rng, mix(base, shadow, 0.3), 0.1, (x, y) => Math.hypot(x - cx, y - cy) < r && y > cy);
+  };
+
+  if (kind === 'tree') {
+    const r = (4.6 + (variant % 3) * 0.5) * k;
+    const cx = 8 * k + jitter * k;
+    const cy = 6.5 * k;
+    shade(cx + 2 * k, 12.5 * k, r * 0.95, 2.4 * k);
+    p.rect(cx - 1 * k, cy + r - 2 * k, 2 * k, 4 * k, craterMid);
+    leafy(cx, cy, r, grassDark);
+  } else if (kind === 'pine') {
+    const cx = Math.round(8 * k + jitter * k);
+    const top = 1.5 * k;
+    const foot = 12.5 * k;
+    shade(cx + 2.5 * k, 13 * k, 4 * k, 1.8 * k);
+    p.rect(cx - 1 * k, foot - 1 * k, 2 * k, 3 * k, craterMid);
+    const dark = mix(grassDark, shadow, 0.25);
+    // Three tiers, each wider than the one above, lit on the west.
+    for (let tier = 0; tier < 3; tier++) {
+      const y0 = top + tier * 3.2 * k;
+      const y1 = y0 + 4.6 * k;
+      for (let y = Math.floor(y0); y < y1; y++) {
+        const half = ((y - y0) / (y1 - y0)) * (2.4 + tier * 1.3) * k + 0.6;
+        for (let x = Math.floor(cx - half); x <= cx + half; x++) {
+          const edge = x <= cx - half + 1 || y >= y1 - 1;
+          p.set(x, y, edge ? mix(dark, shadow, 0.4) : x < cx ? mix(dark, grassMid, 0.5) : dark);
+        }
+      }
+    }
+  } else if (kind === 'bush') {
+    const cy = 10 * k;
+    shade(9.5 * k, 12.5 * k, 5 * k, 1.8 * k);
+    const base = mix(grassDark, grassMid, 0.4);
+    leafy(6 * k + jitter * k, cy, 2.6 * k, base);
+    leafy(10 * k + jitter * k, cy + 0.5 * k, 2.3 * k, base);
+    if (variant >= 2) leafy(8 * k, cy - 2 * k, 2.2 * k, base);
+  } else {
+    // Low and wide, two stones side by side, earthy and mossed: a round grey rock was
+    // a cannonball's double.
+    const blob = (cx: number, cy: number, rx: number, ry: number, colour: string): void => {
+      for (let y = 0; y < size; y++) {
+        for (let x = 0; x < size; x++) {
+          const dx = (x + 0.5 - cx) / rx;
+          const dy = (y + 0.5 - cy) / ry;
+          if (dx * dx + dy * dy <= 1) p.set(x, y, colour);
+        }
+      }
+    };
+    const cx = 7.5 * k + jitter * k;
+    const cy = 10 * k;
+    const stone = mix(rockMid, craterMid, 0.35);
+    shade(cx + 1.5 * k, cy + 2 * k, 5.5 * k, 1.8 * k);
+    blob(cx + 3 * k, cy - 0.5 * k, 2.6 * k, 2 * k, rockDark);
+    blob(cx + 3 * k, cy - 0.8 * k, 2 * k, 1.5 * k, stone);
+    blob(cx, cy, 4 * k, 2.6 * k, rockDark);
+    blob(cx, cy - 0.3 * k, 3.3 * k, 2 * k, stone);
+    blob(cx - 0.8 * k, cy - 1 * k, 1.8 * k, 0.9 * k, mix(stone, rockLight, 0.45));
+    blob(cx + 0.8 * k, cy - 1.6 * k, 1.6 * k, 0.7 * k, grassMid);
+  }
+  return p;
+}
+
 /** Generates every sprite and packs them into one texture. */
 export function buildAtlas(art: ArtConfig, seed: number): Map<string, Texture> {
   const tile = art.tileSizePx;
@@ -661,6 +754,11 @@ export function buildAtlas(art: ArtConfig, seed: number): Map<string, Texture> {
     atlas.add(KEY.court(v), court(art, rng, tile));
   for (let mask = 1; mask < 16; mask++) atlas.add(KEY.foam(mask), foam(art, rng, tile, mask));
 
+  for (const kind of ['tree', 'pine', 'bush', 'rock']) {
+    for (let v = 0; v < SCENERY_VARIANTS; v++) {
+      atlas.add(KEY.scenery(kind, v), scenery(art, rng, tile, kind, v));
+    }
+  }
   atlas.add(KEY.castle, castle(art, rng, tile * 3));
   for (let f = 0; f < gen.castle.bannerWaveFrames; f++) {
     const width = gen.castle.bannerWidthPx;

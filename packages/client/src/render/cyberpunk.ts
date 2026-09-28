@@ -34,6 +34,8 @@ import {
   type ThemeLayers,
   type ViewTransform,
 } from './theme.js';
+import type { SceneryItem } from './scenery.js';
+import { SceneryLayer } from './sceneryLayer.js';
 
 /** A circuit trace on the sea floor, as tile centres in board coordinates. */
 export interface Trace {
@@ -199,6 +201,11 @@ export class CyberpunkTheme implements Theme {
 
   private readonly terrainGfx = new Graphics();
   private readonly territoryGfx = new Graphics();
+  /** Trees, bushes and boulders on open land; see `scenery.ts`. */
+  private readonly scenery = new SceneryLayer(
+    (g, view, items) => drawCyberpunkScenery(g, view, items, this.art),
+    () => hex(this.art.palette.waterFoam),
+  );
   private readonly territoryGlow = new Graphics();
   private readonly structureGfx = new Graphics();
   private readonly structureGlow = new Graphics();
@@ -244,7 +251,7 @@ export class CyberpunkTheme implements Theme {
       glow.blendMode = 'add';
     }
     layers.terrain.addChild(this.terrainGfx);
-    layers.territory.addChild(this.territoryGfx, this.territoryGlow);
+    layers.territory.addChild(this.scenery.gfx, this.territoryGfx, this.territoryGlow);
     layers.structures.addChild(this.structureGlow, this.structureGfx);
     layers.effects.addChild(this.effectGfx, this.effectGlow);
     layers.overlay.addChild(this.overlayGlow, this.overlayGfx);
@@ -252,6 +259,7 @@ export class CyberpunkTheme implements Theme {
   }
 
   destroy(): void {
+    this.scenery.destroy();
     for (const g of [
       this.terrainGfx,
       this.territoryGfx,
@@ -274,6 +282,7 @@ export class CyberpunkTheme implements Theme {
   // ------------------------------------------------------------------ terrain
 
   drawTerrain(state: MatchState, view: ViewTransform): void {
+    this.scenery.refresh(state, view, this.art, true);
     this.terrain = state.terrain;
     this.width = state.width;
     const g = this.terrainGfx;
@@ -389,6 +398,7 @@ export class CyberpunkTheme implements Theme {
 
   /** Sealed ground as a lit floor: the owner's colour under a bright grid. */
   drawTerritory(state: MatchState, view: ViewTransform): void {
+    this.scenery.refresh(state, view, this.art);
     const g = this.territoryGfx;
     const glow = this.territoryGlow;
     g.clear();
@@ -418,6 +428,7 @@ export class CyberpunkTheme implements Theme {
   // ------------------------------------------------------------------ structures
 
   drawStructures(state: MatchState, view: ViewTransform): void {
+    this.scenery.refresh(state, view, this.art);
     const g = this.structureGfx;
     const glow = this.structureGlow;
     g.clear();
@@ -744,6 +755,7 @@ export class CyberpunkTheme implements Theme {
    * counterpart of the dust the pixel style kicks up, as brief.
    */
   noteLanding(cells: readonly Cell[], owner: number): void {
+    this.scenery.land(cells);
     this.landings.add(cells, owner);
     const inPiece = new Set(cells.map((c) => `${c.x},${c.y}`));
     const colours = [this.colour(owner, 'light'), hex(this.art.palette.uiInk)];
@@ -785,6 +797,7 @@ export class CyberpunkTheme implements Theme {
     this.drawPulses(view);
     drawSealGlow(g, view, frame.sealGlow, this.art);
     this.landings.draw(g, view, this.art, frame.deltaMs);
+    this.scenery.drawPuffs(g, view, frame.deltaMs);
     drawChoices(g, view, frame.choices, this.art);
     this.reloads.draw(
       g,
@@ -1184,4 +1197,37 @@ export class CyberpunkTheme implements Theme {
     drawAimLine(g, view, state, ghost, this.art, humanPlayer);
     if (ghost.aiming) drawFireReticle(g, view, ghost, this.art, humanPlayer);
   }
+}
+
+/**
+ * Cyberpunk's scenery: dim nodes on the board's circuit — a pad with a lit point for a
+ * tree, a cross for a pine, a lone point for a bush, a hollow diamond for a boulder. Dim,
+ * since brightness on this board means structure, and neutral, since colour means an owner.
+ */
+function drawCyberpunkScenery(
+  g: Graphics,
+  view: ViewTransform,
+  items: readonly SceneryItem[],
+  art: ArtConfig,
+): void {
+  const t = view.tile;
+  const line = hex(art.palette.rockMid);
+  for (const item of items) {
+    const cx = tileX(view, item.x + 0.5);
+    const cy = tileY(view, item.y + 0.5);
+    const s = t * 0.16;
+    if (item.kind === 'tree') g.rect(cx - s, cy - s, s * 2, s * 2);
+    else if (item.kind === 'pine') {
+      g.moveTo(cx - s, cy).lineTo(cx + s, cy);
+      g.moveTo(cx, cy - s).lineTo(cx, cy + s);
+    } else if (item.kind === 'rock') {
+      g.poly([cx, cy - s, cx + s, cy, cx, cy + s, cx - s, cy]);
+    }
+  }
+  g.stroke({ width: 1, color: line, alpha: 0.55 });
+  for (const item of items) {
+    if (item.kind === 'rock' || item.kind === 'pine') continue;
+    g.circle(tileX(view, item.x + 0.5), tileY(view, item.y + 0.5), Math.max(1, t * 0.05));
+  }
+  g.fill({ color: hex(art.palette.rockLight), alpha: 0.4 });
 }

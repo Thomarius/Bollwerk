@@ -575,6 +575,20 @@ paper, `uiInk` included, which the shared helpers draw their warnings in.
 The three shape-drawn styles share `walls.ts`: the wall geometry (tops, faces, rim), and
 hatching laid on one lattice so neighbouring tiles hatch as one fill.
 
+**Scenery on open land** (`scenery.ts`, `art.scenery`), in every style: copses of trees and
+pines with bushes at their edges, and a few lone trees, bushes and boulders, placed from
+the seed alone so every look puts them on the same tiles — only a step in from the coast,
+and not on or beside a castle. Each style draws its own: trees in Pixel art and Night, a
+landscape plan's scalloped canopies in Blueprint, inked trees in Parchment, dim nodes in
+Cyberpunk, a faint dot in Minimal. **It must never read as wall**, nor as a gun or a
+shot: Blueprint's trees were first a circle with a cross, a gun's survey mark in small,
+and Pixel art's boulders a round grey rock, a cannonball's double. A tile once built on or
+sealed is cleared for the rest of the match, so nothing grows back through a breach; a
+piece landing on scenery knocks it flat with a puff, told to the looks on screen only.
+The pixel style also keeps **life on the outer ocean** (`pixel/ocean.ts`): a boat under
+sail now and then, gulls wheeling, a fish jumping — outside the box round all the land,
+where no shot ever flies, and none of it under reduced motion.
+
 **Looking at it.** `tools/screenshots.sh` captures fixed states against the dev server —
 in real time through Playwright, which renders fine where virtual time does not — using
 `&snapshot`, `&round`, `&idle` and a wait. Anything lasting under a second (debris, the
@@ -849,14 +863,9 @@ inert guns in the owner's ink.
 windows; guns on carriages in stone pits; beaches and a rounded coast; a sea without a
 grid, with glints and crests; cloud shadows. Night took all of it but the clouds.
 
-**W3 — Living land** (M).
-
-- Scenery on free land — trees, rocks, fields — placed from the seed by one shared, tested
-  module, and cleared with a puff when a piece lands on it. Every style draws its own:
-  trees in Pixel art and Night, plan symbols in Blueprint, inked trees in Parchment, lit
-  nodes in Cyberpunk, a faint dot in Minimal. **It must never read as wall.**
-- Life in the open ocean — gulls, a passing sail, a fish jumping — kept out of the
-  channels between islands, where it could be taken for a shot.
+**W3 — Living land — done** (ARCHIVE 11k): scenery on open land in all six styles,
+cleared by building and sealing; boats, gulls and fish on the outer ocean in Pixel art
+and Night. Fields were left out: flat patches of colour read as sealed ground.
 
 **W4 — Atmosphere** (M), one atmosphere layer shared by the styles that use it.
 

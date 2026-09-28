@@ -30,6 +30,8 @@ import {
   type ThemeLayers,
   type ViewTransform,
 } from './theme.js';
+import type { SceneryItem } from './scenery.js';
+import { SceneryLayer } from './sceneryLayer.js';
 import { dashed, hatch, outline, trace, wallGeometry, type Segment } from './walls.js';
 
 /** A mark where a shot landed: rings for a moment, and on a wall a demolition cross. */
@@ -84,6 +86,11 @@ export class BlueprintTheme implements Theme {
 
   private readonly terrainGfx = new Graphics();
   private readonly territoryGfx = new Graphics();
+  /** Trees, bushes and boulders on open land; see `scenery.ts`. */
+  private readonly scenery = new SceneryLayer(
+    (g, view, items) => drawBlueprintScenery(g, view, items, this.art),
+    () => hex(this.art.palette.rockLight),
+  );
   private readonly structureGfx = new Graphics();
   private readonly effectGfx = new Graphics();
   private readonly overlayGfx = new Graphics();
@@ -105,7 +112,7 @@ export class BlueprintTheme implements Theme {
     this.art = art;
     this.style = art.blueprint;
     layers.terrain.addChild(this.terrainGfx);
-    layers.territory.addChild(this.territoryGfx);
+    layers.territory.addChild(this.scenery.gfx, this.territoryGfx);
     layers.structures.addChild(this.structureGfx);
     layers.effects.addChild(this.effectGfx);
     layers.overlay.addChild(this.overlayGfx);
@@ -113,6 +120,7 @@ export class BlueprintTheme implements Theme {
   }
 
   destroy(): void {
+    this.scenery.destroy();
     for (const g of [
       this.terrainGfx,
       this.territoryGfx,
@@ -141,6 +149,7 @@ export class BlueprintTheme implements Theme {
   // ------------------------------------------------------------------ terrain
 
   drawTerrain(state: MatchState, view: ViewTransform): void {
+    this.scenery.refresh(state, view, this.art, true);
     this.terrain = state.terrain;
     this.width = state.width;
     const g = this.terrainGfx;
@@ -226,6 +235,7 @@ export class BlueprintTheme implements Theme {
 
   /** Sealed ground cross-hatched in the owner's ink, inside a dashed boundary. */
   drawTerritory(state: MatchState, view: ViewTransform): void {
+    this.scenery.refresh(state, view, this.art);
     const g = this.territoryGfx;
     g.clear();
     const t = view.tile;
@@ -262,6 +272,7 @@ export class BlueprintTheme implements Theme {
   // ------------------------------------------------------------------ structures
 
   drawStructures(state: MatchState, view: ViewTransform): void {
+    this.scenery.refresh(state, view, this.art);
     const g = this.structureGfx;
     g.clear();
     const { palette } = this.art;
@@ -424,6 +435,7 @@ export class BlueprintTheme implements Theme {
   }
 
   noteLanding(cells: readonly Cell[], owner: number): void {
+    this.scenery.land(cells);
     this.landings.add(cells, owner);
   }
 
@@ -435,6 +447,7 @@ export class BlueprintTheme implements Theme {
     this.clock += frame.deltaMs;
     drawSealGlow(g, view, frame.sealGlow, this.art);
     this.landings.draw(g, view, this.art, frame.deltaMs);
+    this.scenery.drawPuffs(g, view, frame.deltaMs);
     drawChoices(g, view, frame.choices, this.art);
     this.reloads.draw(
       g,
@@ -712,4 +725,62 @@ export class BlueprintTheme implements Theme {
     drawAimLine(g, view, state, ghost, this.art, humanPlayer);
     if (ghost.aiming) drawFireReticle(g, view, ghost, this.art, humanPlayer);
   }
+}
+
+/**
+ * Blueprint's scenery as a plan draws it: a tree its canopy's scalloped edge, a
+ * pine a circle with its needles ticked round it, a bush a small circle, a boulder an
+ * outline with a line of hatching. Thin and pale, beneath the walls' weight.
+ */
+function drawBlueprintScenery(
+  g: Graphics,
+  view: ViewTransform,
+  items: readonly SceneryItem[],
+  art: ArtConfig,
+): void {
+  const t = view.tile;
+  for (const item of items) {
+    const cx = tileX(view, item.x + 0.5);
+    const cy = tileY(view, item.y + 0.5);
+    if (item.kind === 'tree') {
+      // A canopy's scalloped edge, as landscape plans draw trees: a plain circle with a
+      // cross was a gun's survey mark in small.
+      const r = t * (0.3 + (item.variant % 2) * 0.04);
+      const points: number[] = [];
+      for (let k = 0; k < 28; k++) {
+        const a = (k / 28) * Math.PI * 2;
+        const bump = r * (0.84 + 0.16 * Math.abs(Math.sin(a * 3.5)));
+        points.push(cx + Math.cos(a) * bump, cy + Math.sin(a) * bump);
+      }
+      g.poly(points);
+      g.circle(cx, cy, Math.max(1, t * 0.03));
+    } else if (item.kind === 'pine') {
+      const r = t * 0.24;
+      g.circle(cx, cy, r);
+      for (let k = 0; k < 8; k++) {
+        const a = (k / 8) * Math.PI * 2;
+        g.moveTo(cx + Math.cos(a) * r, cy + Math.sin(a) * r);
+        g.lineTo(cx + Math.cos(a) * (r + t * 0.1), cy + Math.sin(a) * (r + t * 0.1));
+      }
+    } else if (item.kind === 'bush') {
+      g.circle(cx - t * 0.1, cy, t * 0.14);
+      g.circle(cx + t * 0.12, cy + t * 0.04, t * 0.12);
+    } else {
+      const r = t * 0.2;
+      g.poly([
+        cx - r,
+        cy + r * 0.5,
+        cx - r * 0.5,
+        cy - r * 0.7,
+        cx + r * 0.6,
+        cy - r * 0.6,
+        cx + r,
+        cy + r * 0.4,
+        cx + r * 0.1,
+        cy + r * 0.8,
+      ]);
+      g.moveTo(cx - r * 0.3, cy + r * 0.5).lineTo(cx + r * 0.4, cy - r * 0.2);
+    }
+  }
+  g.stroke({ width: 1, color: hex(art.palette.rockMid), alpha: 0.7 });
 }

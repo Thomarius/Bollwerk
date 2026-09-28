@@ -165,8 +165,29 @@ export const PixelStyleSchema = z.strictObject({
   windTilesPerSecond: z.number().nonnegative(),
   /** A sealed castle's lit windows, at their brightest. */
   windowGlowAlpha: z.number().min(0).max(1),
+  /**
+   * Life out on the ocean, beyond the islands where no shot flies: a boat under sail
+   * crossing now and then, gulls wheeling, a fish jumping.
+   */
+  boatEveryMs: z.number().int().positive(),
+  boatTilesPerSecond: z.number().positive(),
+  gulls: z.number().int().nonnegative(),
+  fishEveryMs: z.number().int().positive(),
 });
 export type PixelStyleConfig = z.infer<typeof PixelStyleSchema>;
+
+/** Trees, bushes and boulders on open land, placed from the seed; see `scenery.ts`. */
+export const ScenerySchema = z.strictObject({
+  /** Copses, per hundred tiles of open land. */
+  clustersPerHundredTiles: z.number().nonnegative(),
+  /** Across a copse from its centre. */
+  clusterRadiusTiles: z.number().positive(),
+  /** How thickly a copse is filled at its centre, thinning toward its edge. */
+  clusterFill: z.number().min(0).max(1),
+  /** Trees, bushes and boulders standing alone, per hundred tiles of open land. */
+  singlesPerHundredTiles: z.number().nonnegative(),
+});
+export type SceneryConfig = z.infer<typeof ScenerySchema>;
 
 /** The parchment look: an old map, in ink and watercolour on sepia paper. */
 export const ParchmentStyleSchema = z.strictObject({
@@ -340,6 +361,7 @@ export const ArtConfigSchema = z
     night: NightStyleSchema,
     pixel: PixelStyleSchema,
     parchment: ParchmentStyleSchema,
+    scenery: ScenerySchema,
     /** Effects both styles draw alike, because they carry information. */
     effects: z.strictObject({
       /** How fast newly sealed ground floods out from the castle. */

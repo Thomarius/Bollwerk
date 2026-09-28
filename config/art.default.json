@@ -956,7 +956,17 @@
     "cloudTiles": [9, 18],
     "cloudShadowAlpha": 0.09,
     "windTilesPerSecond": 0.3,
-    "windowGlowAlpha": 0.9
+    "windowGlowAlpha": 0.9,
+    "boatEveryMs": 16000,
+    "boatTilesPerSecond": 0.5,
+    "gulls": 3,
+    "fishEveryMs": 2400
+  },
+  "scenery": {
+    "clustersPerHundredTiles": 1.8,
+    "clusterRadiusTiles": 2.2,
+    "clusterFill": 0.6,
+    "singlesPerHundredTiles": 2.5
   },
   "parchment": {
     "inkWidthPx": 1.5,

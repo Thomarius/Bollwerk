@@ -2308,3 +2308,33 @@ palette. Display only; the new tunables are `art.pixel` and three under
 - **Reduced motion**: the clouds stand still, and there are no glints, which flicker, or
   crests, which drift. **Night** has no clouds, having no sun; its glints are moonlight.
 - Seen at two, three and eight players, both styles, close up and whole.
+
+## 11k. The second visual pass, W3: living land
+
+PLAN 11.11 W3, in every style. Display only; tunables in `art.scenery` and `art.pixel`.
+
+- **Scenery** (`scenery.ts`, tested) is placed from the match seed alone, so both looks put
+  a tree on the same tile and the wipe does not move it: copses of broadleaf trees or
+  pines, thinning to bushes at their edges, and lone trees, bushes and boulders. Only
+  inland — a tree on the beach looked washed up — and not on or beside a castle.
+  **Fields**, in the plan, were left out: a flat patch of colour is what sealed ground is.
+- **Cleared for good.** A tile loses its scenery once anything is built on it or it is
+  sealed, and keeps nothing after — so no tree grows back through a breach, and a look
+  holding the enclosure through combat clears no differently in the end. Each look keeps
+  its own tracker, since a hidden look is only redrawn as a wipe reveals it.
+- **The puff** comes only from a piece landing, which the scene tells the looks on screen
+  before their redraw; a tracker puffs only for what it last drew. Clearing on the redraw
+  alone would have had a hidden look, revealed, throw up every tree cleared while it was
+  away. Pixel art and Night knock trees into leaves and boulders into chips; the styles
+  drawn from shapes share `ClearingPuffs`.
+- **Readability, found in the screenshots**: Blueprint's first tree was a circle with a
+  cross — a gun's survey mark in small — and is a landscape plan's scalloped canopy now;
+  Pixel art's first boulder was a round grey rock, the double of a cannonball in flight,
+  and is two low, earthy stones with moss on them. Cyberpunk's nodes are dim and neutral,
+  since on that board brightness means structure and colour an owner.
+- **Ocean life** (`pixel/ocean.ts`, tested), in Pixel art and Night: a boat under sail
+  crossing a row of open water now and then, gulls wheeling with their shadows on the
+  water, a fish jumping. All of it outside the box round the land by a tile, where no shot
+  flies, on screen and out from under the HUD — for which the view now carries the HUD's
+  inset. None under reduced motion.
+- Seen in every style at three players and in Pixel art at two, close up.

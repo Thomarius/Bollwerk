@@ -5,6 +5,8 @@ import { Container, Graphics, Sprite, Texture } from 'pixi.js';
 import { motionReduced } from '../motion.js';
 
 import { SEA_NE, SEA_NW, SEA_SE, SEA_SW, filletCorners } from './pixel/coast.js';
+import { OceanLife } from './pixel/ocean.js';
+import { SceneryTracker } from './scenery.js';
 import { CASTLE_WINDOWS, E, FILLET_CORNERS, KEY, N, S, W, buildAtlas } from './pixel/generators.js';
 import {
   FlagHoist,
@@ -172,6 +174,11 @@ export class PixelTheme implements Theme {
   private seaCells: Cell[] = [];
   private readonly seaGfx = new Graphics();
   private readonly cloudGfx = new Graphics();
+  /** Trees, bushes and boulders on open land; see `scenery.ts`. */
+  private readonly scenery = new SceneryTracker();
+  private readonly sceneryLayer = new Container();
+  private islandId: Uint8Array | null = null;
+  private readonly ocean = new OceanLife();
   private glints: Glint[] = [];
   private crests: Glint[] = [];
   private clouds: Cloud[] = [];
@@ -208,7 +215,7 @@ export class PixelTheme implements Theme {
   /** Remembered from the last draw, since impacts arrive without the board. */
   private terrain: Uint8Array | null = null;
   private width = 0;
-  private view: ViewTransform = { tile: 16, originX: 0, originY: 0, width: 0, height: 0 };
+  private view: ViewTransform = { tile: 16, originX: 0, originY: 0, width: 0, height: 0, top: 0 };
   private round = 0;
 
   /**
@@ -240,6 +247,7 @@ export class PixelTheme implements Theme {
     layers.territory.addChild(
       this.courtLayer,
       this.craterLayer,
+      this.sceneryLayer,
       this.territoryGfx,
       this.groundLight,
     );
@@ -263,6 +271,7 @@ export class PixelTheme implements Theme {
     this.seaGfx.destroy();
     this.cloudGfx.destroy();
     this.courtLayer.destroy({ children: true });
+    this.sceneryLayer.destroy({ children: true });
     this.craterLayer.destroy({ children: true });
     for (const texture of this.textures.values()) texture.destroy();
     this.textures.clear();
@@ -404,6 +413,10 @@ export class PixelTheme implements Theme {
       }
     }
     this.terrainLayer.addChild(this.seaGfx);
+    this.islandId = state.islandId;
+    this.ocean.layout(state, view, this.art);
+    this.scenery.sync(state, this.art.scenery);
+    this.layoutScenery();
     this.drawn = {
       x0: -marginX,
       y0: -marginY,
@@ -411,6 +424,25 @@ export class PixelTheme implements Theme {
       y1: state.height + marginY,
     };
     this.layoutCraters();
+  }
+
+  /**
+   * Trees, bushes and boulders where they still stand, tinted as faintly as the grass
+   * under them so they sit on their island rather than on top of it.
+   */
+  private layoutScenery(): void {
+    this.sceneryLayer.removeChildren();
+    for (const item of this.scenery.visible()) {
+      const sprite = this.place(
+        this.sceneryLayer,
+        KEY.scenery(item.kind, item.variant),
+        this.view,
+        item.x,
+        item.y,
+      );
+      const owner = ((this.islandId?.[item.index] as number | undefined) ?? 0) - 1;
+      if (owner >= 0) sprite.tint = washed(playerColour(this.art, owner, 'base'), 0.88);
+    }
   }
 
   /** Places the scorch marks, whose sprites must follow the camera. */
@@ -444,9 +476,11 @@ export class PixelTheme implements Theme {
     const g = this.territoryGfx;
     g.clear();
     dimEliminated(g, state, view, hex(this.art.palette.shadow));
+    if (this.scenery.sync(state, this.art.scenery)) this.layoutScenery();
   }
 
   drawStructures(state: MatchState, view: ViewTransform): void {
+    if (this.scenery.sync(state, this.art.scenery)) this.layoutScenery();
     this.structureLayer.removeChildren();
     // Shadows first, under everything that casts them.
     const shade = new Graphics();
@@ -614,6 +648,25 @@ export class PixelTheme implements Theme {
    */
   noteLanding(cells: readonly Cell[], owner: number): void {
     this.landings.add(cells, owner);
+    // Whatever stood there is knocked flat: leaves, or chips of the boulder.
+    for (const item of this.scenery.take(cells, this.width)) {
+      const { palette } = this.art;
+      const colours =
+        item.kind === 'rock'
+          ? [hex(palette.rockMid), hex(palette.rockLight)]
+          : [hex(palette.grassDark), hex(palette.grassLight), hex(palette.grassMid)];
+      for (let k = 0; k < 9; k++) {
+        const angle = Math.random() * Math.PI * 2;
+        this.fragments.push({
+          x: item.x + 0.5,
+          y: item.y + 0.4,
+          vx: Math.cos(angle) * (0.8 + Math.random() * 1.2),
+          vy: -1.8 - Math.random() * 1.6,
+          age: 0,
+          colour: colours[k % colours.length] as number,
+        });
+      }
+    }
     const inPiece = new Set(cells.map((c) => `${c.x},${c.y}`));
     const colour = hex(this.art.palette.sand);
     const count = this.art.effects.landingDustPerEdge;
@@ -921,6 +974,7 @@ export class PixelTheme implements Theme {
       g.fill({ color: deep, alpha: 0.5 * strength });
     }
     this.crests = this.crests.filter((crest) => crest.age < crest.life);
+    this.ocean.draw(g, view, this.art, deltaMs);
   }
 
   /**
