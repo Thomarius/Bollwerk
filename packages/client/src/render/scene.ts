@@ -121,7 +121,7 @@ export class Scene {
   /** The last board drawn, so a stale look can be brought up to date as it is revealed. */
   private board: {
     state: MatchState | null;
-    territory: Uint8Array | null;
+    territory: Record<Look, Uint8Array> | null;
     structures: MatchState | null;
   } = { state: null, territory: null, structures: null };
 
@@ -232,9 +232,17 @@ export class Scene {
     const { state, territory, structures } = this.board;
     if (state !== null) slot.theme.drawTerrain(state, this.view);
     if (state !== null && territory !== null)
-      slot.theme.drawTerritory({ ...state, territory }, this.view);
+      slot.theme.drawTerritory({ ...state, territory: territory[this.lookOf(slot)] }, this.view);
     if (structures !== null) slot.theme.drawStructures(structures, this.view);
     slot.stale = false;
+  }
+
+  /**
+   * The look a slot draws. One slot drawing both looks is handed the same board for
+   * each, so either answer serves it.
+   */
+  private lookOf(slot: Slot): Look {
+    return slot === this.slots.combat && slot !== this.slots.build ? 'combat' : 'build';
   }
 
   /** Draws on the looks on screen and marks the rest stale. */
@@ -292,16 +300,18 @@ export class Scene {
   }
 
   /**
-   * Territory as it stands now, not as the sim last recorded it. The sim refreshes
-   * `territory` at placements and resolutions but not when shots land, because a
-   * breach only counts at a resolution — so drawn from state, a castle breached in
-   * combat stayed shaded as sealed until somebody built, which read as the sea being
-   * taken for wall. Display only: what the rules do with a breach is unchanged.
+   * Territory, one board per look: the build look's as the board stands, the combat
+   * look's as combat began (`holdsCombatEnclosure`). Not the sim's own, which is
+   * refreshed at placements and resolutions but not when shots land: drawn from state,
+   * a castle breached in combat stayed shaded into the build phase until somebody built,
+   * which read as the sea being taken for wall. Display only.
    */
-  drawTerritory(state: MatchState, territory: Uint8Array = state.territory): void {
+  drawTerritory(state: MatchState, territory: Record<Look, Uint8Array>): void {
     this.board.state = state;
     this.board.territory = territory;
-    this.paint((slot) => slot.theme.drawTerritory({ ...state, territory }, this.view));
+    this.paint((slot) =>
+      slot.theme.drawTerritory({ ...state, territory: territory[this.lookOf(slot)] }, this.view),
+    );
   }
 
   /**
@@ -317,7 +327,7 @@ export class Scene {
     state: MatchState,
     tickFraction: number,
     deltaMs: number,
-    castleSealed: readonly boolean[],
+    castleSealed: Record<Look, readonly boolean[]>,
     sealGlow: readonly SealGlow[] = [],
     humanPlayer = -1,
     celebrate: readonly Celebration[] = [],
@@ -327,7 +337,7 @@ export class Scene {
       slot.theme.drawEffects(state, this.view, {
         tickFraction,
         deltaMs,
-        castleSealed,
+        castleSealed: castleSealed[this.lookOf(slot)],
         sealGlow,
         humanPlayer,
         celebrate,

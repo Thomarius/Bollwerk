@@ -55,7 +55,9 @@ import {
   crumbleOutward,
   looksAround,
   lostWalls,
+  holdsCombatEnclosure,
   stillStanding,
+  type Look,
   type Ruin,
   type SweptWall,
 } from './transition.js';
@@ -942,10 +944,41 @@ async function runSession(session: Session, setup: Setup): Promise<void> {
     drawBoard();
   }
 
+  /** The board's enclosure as it stands, for display; see `Scene.drawTerritory`. */
+  let live = computeEnclosure(session.state);
+  /**
+   * The enclosure as combat began, held for the combat look and the HUD until building
+   * begins (`holdsCombatEnclosure`); null outside that. A breach counts for nothing until
+   * then, so nothing that says "sealed" should come down with the wall.
+   */
+  let held: ReturnType<typeof computeEnclosure> | null = null;
+  /** One style for both looks: one set of layers, which shows the held board in combat. */
+  const oneLook = setup.styles.build === setup.styles.combat;
+  /** The enclosure a look shows. */
+  const enclosureFor = (look: Look): ReturnType<typeof computeEnclosure> =>
+    held !== null && (look === 'combat' || oneLook) ? held : live;
+
+  /**
+   * Newly sealed ground flooding out from its castle; see `seal.ts`. Started whenever
+   * the enclosure gains territory — a breach closed, a castle chosen, a loop widened —
+   * and drawn in both looks, since it shows exactly what was sealed.
+   */
+  let floods: Flood[] = [];
+  const { sealFloodTilesPerSecond, sealGlowTiles } = defaultConfigBundle.art.effects;
+
+  /** Territory as each look shows it; the live board less what the floods have not reached. */
+  function drawFloodedTerritory(now: number): void {
+    const flooded = territoryDuring(live.territory, floods, now, sealFloodTilesPerSecond);
+    scene.drawTerritory(session.state, {
+      build: enclosureFor('build') === live ? flooded : enclosureFor('build').territory,
+      combat: enclosureFor('combat') === live ? flooded : enclosureFor('combat').territory,
+    });
+  }
+
   const fit = (): void => {
     scene.resize(session.state, globalThis.innerWidth, globalThis.innerHeight, HUD_BAR_PX);
     scene.drawTerrain(session.state);
-    scene.drawTerritory(session.state, computeEnclosure(session.state).territory);
+    drawFloodedTerritory(performance.now());
     drawBoard();
   };
   fit();
@@ -1070,25 +1103,6 @@ async function runSession(session: Session, setup: Setup): Promise<void> {
         ? scene.screenAt(ghost.tile.x + 1.4, ghost.tile.y - 1.1)
         : null,
       count ?? 0,
-    );
-  }
-
-  /** The board's enclosure as it stands, for display; see `Scene.drawTerritory`. */
-  let live = computeEnclosure(session.state);
-
-  /**
-   * Newly sealed ground flooding out from its castle; see `seal.ts`. Started whenever
-   * the enclosure gains territory — a breach closed, a castle chosen, a loop widened —
-   * and drawn in both looks, since it shows exactly what was sealed.
-   */
-  let floods: Flood[] = [];
-  const { sealFloodTilesPerSecond, sealGlowTiles } = defaultConfigBundle.art.effects;
-
-  /** Territory as it stands, less what the floods have not reached yet. */
-  function drawFloodedTerritory(now: number): void {
-    scene.drawTerritory(
-      session.state,
-      territoryDuring(live.territory, floods, now, sealFloodTilesPerSecond),
     );
   }
 
@@ -1245,6 +1259,8 @@ async function runSession(session: Session, setup: Setup): Promise<void> {
     }
     if (structuresChanged) drawBoard();
     if (territoryChanged || structuresChanged) {
+      // Taken before this batch's shots are counted, so it is the board combat began on.
+      held = holdsCombatEnclosure(session.state) ? (held ?? live) : null;
       const before = live.territory;
       const sealedBefore = live.castleEnclosed;
       live = computeEnclosure(session.state);
@@ -1275,7 +1291,12 @@ async function runSession(session: Session, setup: Setup): Promise<void> {
     matchAudio.frame(session.state);
     drawTransition();
     drawIslandBanners();
-    hud.update(session.state, session.humanPlayer, session.status(), live.enclosedCastlesByPlayer);
+    hud.update(
+      session.state,
+      session.humanPlayer,
+      session.status(),
+      enclosureFor('combat').enclosedCastlesByPlayer,
+    );
 
     crumbleRuins();
     // Once the match is over, fireworks over whoever won it.
@@ -1290,7 +1311,10 @@ async function runSession(session: Session, setup: Setup): Promise<void> {
       session.state,
       session.tickFraction,
       delta,
-      live.castleEnclosed,
+      {
+        build: enclosureFor('build').castleEnclosed,
+        combat: enclosureFor('combat').castleEnclosed,
+      },
       advanceFloods(),
       session.humanPlayer,
       celebrate,

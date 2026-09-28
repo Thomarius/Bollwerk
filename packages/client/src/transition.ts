@@ -23,6 +23,20 @@ export function lookOf(phase: Phase): Look {
 }
 
 /**
+ * Whether the combat look — and the HUD's count of castles — shows the enclosure held
+ * from the moment combat began, rather than the board as it stands: through combat and
+ * the landing of its last shots, until the build phase begins. As in the original, a
+ * breach counts for nothing until then, so territory, flags and every other sign of a
+ * sealed castle stay up while the walls come down; the build look always shows the board
+ * as it stands, so the "Rebuild" banner reveals what was lost as it crosses.
+ */
+export function holdsCombatEnclosure(state: Pick<MatchState, 'phase' | 'pendingPhase'>): boolean {
+  return (
+    state.phase === 'combat' || (state.phase === 'intermission' && state.pendingPhase === 'build')
+  );
+}
+
+/**
  * The look before and after the banner of the current intermission — or the phase's own
  * look twice, outside one.
  *

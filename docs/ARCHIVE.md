@@ -1998,3 +1998,17 @@ and the glow round shots in flight are above. The first pool, 2.6 tiles across a
 was all but hidden by the guns packed round each castle; 4.4 tiles at 0.32 reads.
 Seen in one frame: a sealed castle lit, and a breached one dark with its breaches
 glowing. The torches' lighting and dousing is a pure function (`nextTorch`), tested.
+
+**Territory held through combat — done**, the user's request, from the original: a
+breach counts for nothing until the build phase, so the territory and every sign of a
+sealed castle should not come down with the first shots, which in most themes took most
+of the combat look's effects with them. Display only. The client already computed the
+enclosure itself (it had to, after "the sea counted as wall" in 10s: the sim's
+stale territory carried a breached castle's shading into the build phase), so the change
+is which copy each look is handed: the combat look the enclosure as combat began, the
+build look the board as it stands, the HUD's castle count the held one until building
+begins. `Scene` takes a territory and a set of sealed castles per look, and the rule for
+when to hold is a pure function beside the look swap (`holdsCombatEnclosure`), tested.
+No theme changed. Seen: mid-combat with many walls broken, every castle still lit in
+Night and Cyberpunk; and under the "Rebuild" banner, Pixel art above the line already
+showing both players' castles unsealed, Cyberpunk below still lit.

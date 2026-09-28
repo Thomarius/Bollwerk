@@ -411,12 +411,18 @@ cannons, removed from the state outright, still go at once). Once the match is o
 fireworks burst over the winners' islands in their colours for as long as the screen
 stays up.
 
-**Territory is drawn as the board stands, not as the sim last recorded it.** The sim
-refreshes `territory` at placements and resolutions but not when shots land, since a
-breach only counts at a resolution; drawn from state, a castle breached in combat stayed
-shaded as sealed. The client recomputes the enclosure for display whenever structures
-change, and the roster counts castles from it — and so does everything below that says
-"sealed".
+**Territory holds through combat, as in the original, and is drawn as the board stands
+everywhere else.** The client recomputes the enclosure for display whenever structures
+change — not the sim's own, which is refreshed at placements and resolutions but not
+when shots land, and which left a castle breached in combat shaded into the build phase,
+where it read as the sea counting as wall. But a breach counts for nothing until then,
+so **the combat look shows the enclosure as combat began** (`holdsCombatEnclosure`),
+through combat and the landing of its last shots: territory and everything that says
+"sealed" — flags, Cyberpunk's cores, Night's torches, Parchment's seals, Blueprint's
+keeps — stay up while the walls come down. The build look always shows the board as it
+stands, so the "Rebuild" banner reveals what was lost as it crosses; with one style for
+both looks the switch comes as building begins. The roster's castle count holds with the
+combat look and updates as building begins.
 
 **Feedback a player builds by.** While nothing of yours is sealed, your castles are
 outlined (`hints.ts`). The gap itself used to be marked too, and was removed after the

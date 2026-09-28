@@ -14,6 +14,7 @@ import {
   bannerProgress,
   boardWithStanding,
   crumbleOutward,
+  holdsCombatEnclosure,
   looksAround,
   lookOf,
   lostWalls,
@@ -179,5 +180,23 @@ describe('a lost life, taken down outward', () => {
   it('brings a lone block down at once', () => {
     const ruins = crumbleOutward([{ index: 3, owner: 1 }], 10, { x: 3, y: 0 }, 50, 800);
     expect(ruins[0]?.dueMs).toBe(50);
+  });
+});
+
+describe('the enclosure held through combat', () => {
+  const at = (phase: Phase, pendingPhase: Phase | null = null) => ({ phase, pendingPhase });
+
+  it('holds through combat and the landing of its last shots', () => {
+    expect(holdsCombatEnclosure(at('combat'))).toBe(true);
+    expect(holdsCombatEnclosure(at('intermission', 'build'))).toBe(true);
+  });
+
+  it('lets go as building begins, and holds nowhere else', () => {
+    expect(holdsCombatEnclosure(at('build'))).toBe(false);
+    expect(holdsCombatEnclosure(at('cannon_place'))).toBe(false);
+    // The "Fire!" banner: the combat look arrives on the board as it stands, which is
+    // the board combat begins on.
+    expect(holdsCombatEnclosure(at('intermission', 'combat'))).toBe(false);
+    expect(holdsCombatEnclosure(at('intermission', 'cannon_place'))).toBe(false);
   });
 });
