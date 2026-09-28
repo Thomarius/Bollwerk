@@ -164,7 +164,7 @@ export class PixelTheme implements Theme {
   /** Remembered from the last draw, since impacts arrive without the board. */
   private terrain: Uint8Array | null = null;
   private width = 0;
-  private view: ViewTransform = { tile: 16, originX: 0, originY: 0 };
+  private view: ViewTransform = { tile: 16, originX: 0, originY: 0, width: 0, height: 0 };
   private round = 0;
 
   /**

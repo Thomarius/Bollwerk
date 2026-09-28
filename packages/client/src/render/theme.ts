@@ -59,6 +59,9 @@ export interface ViewTransform {
   tile: number;
   originX: number;
   originY: number;
+  /** The canvas, in screen pixels: the board and the margin of sea round it. */
+  width: number;
+  height: number;
 }
 
 export interface EffectFrame {

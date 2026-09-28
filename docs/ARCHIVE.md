@@ -2245,3 +2245,27 @@ change.
 - An effects setting in the menu, full or reduced, saved with the looks: reduced turns
   off the shake, the flashes of the sweep and the title's repeating sweep, for anyone who
   wants that without changing their system's reduced-motion setting.
+
+## 11i. The second visual pass, W1: fixes found in the screenshots
+
+The first package of PLAN 11.11, all four found in the screenshots taken to plan it.
+
+- **Blueprint's stray line.** A thin stroke ran from near the top-left of the window
+  across the first island, in every build-phase capture. Pixi v8 starts each path at the
+  last point of the one before, and `arc` joins its start to the current point by a line,
+  so the dashes of an inert gun's ring — each a bare `arc` — were joined to wherever the
+  previous path had ended. Each dash now moves to its own start first; so does the gun
+  being placed, which had the same fault, and Parchment's broken wax seal, whose rim was
+  drawn from its centre and carried a spoke.
+- **Blueprint's inert guns** were a one-pixel dashed ring in dark rock, all but invisible
+  on the sheet; they are drawn in the owner's ink at the style's line width.
+- **Parchment's sea was the land's paper**, a shade darker, told apart only by the ink of
+  the coast. It is washed a faded grey-green, as old maps colour their seas; the land
+  keeps its warm paper. A palette change alone (`stylePalettes.parchment`).
+- **Parchment's compass rose** sat under the big timer and muddied its figures. It goes
+  to the bottom-right corner, the one the HUD leaves alone (`roseSpot`, tested). The
+  first try measured the corner from the sheet drawn round the map, which runs past the
+  window, and the rose came out half off-screen at two players and wholly at eight; the
+  margin below the board is also shallower than the one above it by the HUD's inset. The
+  view now carries the canvas size, and the rose is placed in the sea actually on screen.
+  Seen at two, three and eight players.

@@ -345,7 +345,7 @@ Parchment — behind one `Theme` interface: the scene owns the camera, the layer
 dirty tracking and input mapping; a theme owns only what things look like. Adding a style
 is a name in `ArtStyleSchema`, the looks it is made for in `STYLE_LOOKS`, a `Theme`, a
 case in `createTheme`, a menu title in `decor.ts` and a banner class in `hud.ts`; the
-types refuse a style missing any of them. No more are planned (ARCHIVE 11h). All
+types refuse a style missing any of them. One more is planned, Toy bricks (11.11 W8). All
 sprites are generated at boot from `art.default.json` plus the match seed — nothing binary
 is committed except audio.
 
@@ -545,7 +545,7 @@ paper. A drafting grid over the whole sheet, heavier every few tiles; the sea ha
 a plan marks water, the coast a bold white contour. Walls are outlined and hatched
 inside, as walls are on a plan, and stand up to the pixel style's height; castles are a
 keep in plan with round corner towers, filled in while sealed and flying a pennant;
-guns are survey marks with an arrowhead barrel, silenced ones a dashed ring. Sealed
+guns are survey marks with an arrowhead barrel, silenced ones a dashed ring in the owner's ink. Sealed
 ground is cross-hatched in the owner's ink inside a dashed boundary. Shots are a
 projectile symbol riding a dashed trajectory; a block shot away is crossed out in red
 for as long as the pixel breach would smoulder. The piece in hand is dashed, as proposed
@@ -553,9 +553,10 @@ construction is — hatched where it fits, crossed out where it does not. Player
 are the shared hues washed toward white, so they read on blue.
 
 **Parchment** (`parchment.ts`), for either look, and the one light style: an old map in
-ink and watercolour. Generated paper grain, a few stains and darkened edges; a bold ink
-coast with an engraver's contour rippling out from it, wave strokes on the open sea, and
-a compass rose under the big timer. Walls are inked stone, their faces cross-hatched,
+ink and watercolour. Generated paper grain, a few stains and darkened edges; a sea
+washed a faded grey-green against the warm paper of the land, a bold ink coast with an
+engraver's contour rippling out from it, wave strokes on the open sea, and a compass rose
+in the sea's bottom-right corner, clear of the HUD and the big timer (`roseSpot`). Walls are inked stone, their faces cross-hatched,
 casting a shadow on the paper; castles are drawn with battlements and a gate. Sealed
 ground is an uneven watercolour wash pooling at its edge, inside a dotted border, and a
 sealed castle bears **a wax seal in its owner's colour**, pressed on as it seals and
@@ -667,6 +668,7 @@ every resolution against an independent search, not only on unit pictures.
 | M9  | Visual pass: phase themes, banner wipe, effects, lobby    | Done (ARCHIVE 11h)      |
 | M10 | Alternative visual themes: Night, Blueprint, Cyberpunk…   | Done (ARCHIVE 11h)      |
 | M11 | UI and effects polish: roster, combat aids, summary…      | Done (ARCHIVE 11h)      |
+| M12 | Second visual pass: scenery, atmosphere, Toy bricks       | **In progress** (11.11) |
 
 ---
 
@@ -678,8 +680,9 @@ feedback. The next milestone is **11.2, elimination tuning**: its plan is ready,
 with a baseline measurement, and can now set the bots against rounds people actually
 played — `recordings/*.stats.csv`, or `--replay` over the folder. A recording replays
 exactly only against the commit it was made with, which the server now writes into each
-recording's header. Independent of balance: **11.6**, bots as personality × skill.
-Smaller items are in 11.5.
+recording's header. Independent of balance: **11.6**, bots as personality × skill,
+and **11.11**, the second visual pass, which runs while the sessions go on. Smaller items are
+in 11.5.
 
 Only open work is kept here. Finished packages move to `ARCHIVE.md` under their old
 numbers — 11.1 scoring, 11.7 team mode, 11.8 the visual pass, 11.9 the themes, 11.10 the
@@ -814,6 +817,89 @@ aggressive, defensive, expander), how the lobby offers the pair, and whether
 11.2.
 
 ---
+
+### 11.11 Second visual pass — agreed, in progress
+
+**Agreed with the user 2026-09-28**, to run while human testing goes on. Display only,
+like 11.8–11.10: no sim, protocol or ruleset change, so it cannot desync a match or move a
+balance measurement. The same discipline: anything timed is a pure function with tests,
+every package adds scenes to `tools/screenshots.sh`, tunables go in `art.default.json`,
+and anything under a second is left for a person to see. The §7 rules every style keeps
+still hold — a player keeps their hue, information stays readable, land, sea, wall and
+sealed ground tell apart. Considered and dropped by the user: a timelapse replay at game
+over (close to the deferred "shipped replays", §12) and an attract mode behind the menu —
+too much work for too little in play. Of the new styles offered (an Arcade 1990 tribute
+with a CRT filter, Winter, Terminal, High contrast, Woodblock), only Toy bricks is taken.
+
+Packages in order; W1 first and W8 last, W7 before W8, the rest independent.
+
+**W1 — Fixes and readability — done** (ARCHIVE 11i): Blueprint's stray line, Parchment's
+sea washed apart from its land, its compass rose moved off the big timer, Blueprint's
+inert guns in the owner's ink.
+
+**W2 — Pixel art upgrade** (M–L). Night is the pixel theme under its own palette, so it
+takes all of this and is checked with it.
+
+- Castles as a keep with corner towers, battlements, a gate and lit windows, not a tinted box.
+- Guns on a wooden carriage with a metal barrel, a clearer silhouette than a dark disc.
+- A sand strip along the shore and a coast rounded within its tiles, against the boxy
+  islands of 11.5 — drawing only; the terrain is untouched.
+- A livelier sea: glints, drifting wave lines, foam following the coast.
+- Cloud shadows drifting slowly across the board.
+
+**W3 — Living land** (M).
+
+- Scenery on free land — trees, rocks, fields — placed from the seed by one shared, tested
+  module, and cleared with a puff when a piece lands on it. Every style draws its own:
+  trees in Pixel art and Night, plan symbols in Blueprint, inked trees in Parchment, lit
+  nodes in Cyberpunk, a faint dot in Minimal. **It must never read as wall.**
+- Life in the open ocean — gulls, a passing sail, a fish jumping — kept out of the
+  channels between islands, where it could be taken for a shot.
+
+**W4 — Atmosphere** (M), one atmosphere layer shared by the styles that use it.
+
+- Time of day by round in Pixel art, morning at round one to sunset at the last.
+- Weather drawn per match — clear, overcast, rain, light fog — never enough to hide the board.
+- Night: the moon reflected in the sea, stars glinting in it, fireflies over the land;
+  lighthouse beams sweeping slowly from the islands' corners.
+- Cyberpunk: thin rain and a moment of colour split on big impacts.
+- Bloom for Night and Cyberpunk as a real filter behind a new **High** Effects setting,
+  since it was avoided for frame rate at eight players. Reduced stills the weather.
+
+**W5 — The board, felt** (M).
+
+- Shot-away wall breaks into chunks that tumble and settle as rubble.
+- Blueprint's own marks: an eraser smudge where wall was shot away, pencil corrections.
+- A placed gun drops in with a thud, a ring of dust and a small bounce.
+- The piece in hand rotates with a short tween and casts a soft shadow.
+- A knocked-out island's castles burn with rising smoke and its flags go to half-mast
+  before the grey stamp.
+- **A sealing preview**, behind a setting off by default: while the piece in hand would
+  seal ground, that ground is outlined faintly. It is information, not dressing, and unlike
+  the gap marks removed after the first human play (§7) it shows what a move does rather
+  than prescribing one — to be tried by the testers before it is ever on by default.
+
+**W6 — Moments** (M).
+
+- **"You are here"** as the match opens: a spotlight or marker on the viewer's island
+  during castle choice, since seats are shuffled onto islands.
+- A camera fly-in at the start and a slow push onto the winner at game over, only while
+  nothing is playable; input mapping must stay exact, and reduced motion keeps it still.
+- The final round marked: its own banner, a stamp, a change of light.
+- A filmstrip in the summary: the board at each round's resolution, beside the chart.
+
+**W7 — The UI in each look** (M).
+
+- The HUD bar dressed per style, as the banners are — a record over every style, so a new
+  one must bring it. The dark monospace bar sits worst over Parchment.
+- The holding / next box drawn in the current look.
+- The lobby's map alive: surf breathing, the castles breathing.
+
+**W8 — Toy bricks** (M–L), a seventh style, for either look. Walls as studded plastic
+bricks, which suits pieces that are already tetrominoes; pieces click down, guns are built
+of bricks, the sea is a blue baseplate, player colours bright and clean. Last, so it is
+built against the finished interfaces: besides the palette, title and banner every style
+brings, its own scenery (W3), atmosphere (W4) and HUD skin (W7).
 
 ## 12. Deferred (explicitly out of scope for v1)
 

@@ -640,9 +640,9 @@
     },
     "parchment": {
       "palette": {
-        "waterDeep": "#a8966e",
-        "waterMid": "#c4b08a",
-        "waterShallow": "#d3c197",
+        "waterDeep": "#96a092",
+        "waterMid": "#adb6a3",
+        "waterShallow": "#c2c6ab",
         "waterFoam": "#5b4630",
         "sand": "#d8c396",
         "grassDark": "#cdb98c",

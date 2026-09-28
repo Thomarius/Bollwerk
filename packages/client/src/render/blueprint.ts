@@ -334,10 +334,15 @@ export class BlueprintTheme implements Theme {
       const cy = tileY(view, cannon.y + cannon.h / 2);
       const r = (Math.min(cannon.w, cannon.h) * t) / 2 - t * 0.2;
       if (!cannon.active) {
-        // Silenced: a dashed ring and no crosshair, as a mark struck from the plan.
+        // Silenced: a dashed ring and no crosshair, as a mark struck from the plan. In the
+        // owner's ink at full weight: a hairline of dark rock all but vanished on the sheet.
         for (let k = 0; k < 12; k += 2) {
-          g.arc(cx, cy, r, (k / 12) * Math.PI * 2, ((k + 1) / 12) * Math.PI * 2);
-          g.stroke({ width: 1, color: hex(palette.rockDark) });
+          // Each dash begins a path of its own: a bare arc would join it by a line to
+          // wherever the last path ended, which drew a stroke across the board.
+          const a = (k / 12) * Math.PI * 2;
+          g.moveTo(cx + Math.cos(a) * r, cy + Math.sin(a) * r);
+          g.arc(cx, cy, r, a, ((k + 1) / 12) * Math.PI * 2);
+          g.stroke({ width: line, color: this.colour(cannon.owner, 'light'), alpha: 0.85 });
         }
         continue;
       }
@@ -687,7 +692,9 @@ export class BlueprintTheme implements Theme {
       const cy = tileY(view, anchor.y + ghost.footprint.h / 2);
       const r = (Math.min(ghost.footprint.w, ghost.footprint.h) * t) / 2 - t * 0.2;
       for (let k = 0; k < 16; k += 2) {
-        g.arc(cx, cy, r, (k / 16) * Math.PI * 2, ((k + 1) / 16) * Math.PI * 2);
+        const a = (k / 16) * Math.PI * 2;
+        g.moveTo(cx + Math.cos(a) * r, cy + Math.sin(a) * r);
+        g.arc(cx, cy, r, a, ((k + 1) / 16) * Math.PI * 2);
         g.stroke({ width: this.style.lineWidthPx, color: colour });
       }
       const reach = r + t * 0.25;

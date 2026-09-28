@@ -116,7 +116,7 @@ export class Scene {
 
   private slots!: Record<Look, Slot>;
   private art: ArtConfig = defaultArtConfig;
-  private view: ViewTransform = { tile: 8, originX: 0, originY: 0 };
+  private view: ViewTransform = { tile: 8, originX: 0, originY: 0, width: 0, height: 0 };
   private shown: LookFrame = { from: 'build', to: 'build', lineY: null };
 
   /** The last board drawn, so a stale look can be brought up to date as it is revealed. */
@@ -268,6 +268,8 @@ export class Scene {
       tile,
       originX: Math.floor((width - tile * state.width) / 2),
       originY: topInset + Math.floor((usable - tile * state.height) / 2),
+      width,
+      height,
     };
     for (const slot of this.all()) {
       // Past the edges by the shake's reach, so it never shows the canvas beneath.

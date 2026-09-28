@@ -7,7 +7,7 @@ import { nextTorch, seaDepth } from './pixel.js';
 import { createTheme } from './scene.js';
 import { FlagHoist, hex, playerColour, tileX, tileY, type ViewTransform } from './theme.js';
 
-const view: ViewTransform = { tile: 10, originX: 4, originY: 7 };
+const view: ViewTransform = { tile: 10, originX: 4, originY: 7, width: 400, height: 300 };
 
 describe('theme helpers', () => {
   it('parses palette colours', () => {

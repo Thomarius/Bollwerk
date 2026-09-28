@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import type { ViewTransform } from './theme.js';
 import { dashed, hatch, outline, wallGeometry, type Segment } from './walls.js';
 
-const view: ViewTransform = { tile: 10, originX: 0, originY: 0 };
+const view: ViewTransform = { tile: 10, originX: 0, originY: 0, width: 400, height: 300 };
 /** Faces of three tenths of a tile, so they are 3 pixels at this view. */
 const FACE = 0.3;
 

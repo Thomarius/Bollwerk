@@ -138,7 +138,9 @@ PLAN.md §11 opens with where to start:
 3. Measurements never taken (§11.4): the full ladder, and seat bias at 6 and 8 players in
    free-for-all (team seating is measured, and fair).
 4. Independent of balance: bots as personality × skill (§11.6). The visual work of
-   M9–M11 is done, its plans in ARCHIVE 11h; no more styles are planned.
+   M9–M11 is done, its plans in ARCHIVE 11h.
+5. **The second visual pass** (§11.11, M12), display only, runs beside the testing: eight
+   packages W1–W8, the last a seventh style, Toy bricks.
 
 ## Measuring the bots
 
