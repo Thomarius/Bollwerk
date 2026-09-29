@@ -842,6 +842,31 @@
           }
         ]
       ]
+    },
+    "bricks": {
+      "palette": {
+        "waterDeep": "#1553b8",
+        "waterMid": "#1b63cc",
+        "waterShallow": "#3d84e0",
+        "waterFoam": "#cfe3ff",
+        "sand": "#f2d27a",
+        "grassDark": "#1f7a34",
+        "grassMid": "#2e9a45",
+        "grassLight": "#63c46f",
+        "rockDark": "#6b7079",
+        "rockMid": "#a3a9b3",
+        "rockLight": "#e4e7ec",
+        "shadow": "#10213d",
+        "craterDark": "#3a3f47",
+        "craterMid": "#6b7079",
+        "emberHot": "#fff6c8",
+        "emberMid": "#ffc93c",
+        "emberCool": "#ff7a2e",
+        "uiInk": "#ffffff",
+        "uiAccent": "#ffd23c",
+        "uiValid": "#7dffb0",
+        "uiInvalid": "#ff4d5e"
+      }
     }
   },
   "dither": {
@@ -964,7 +989,12 @@
     "gulls": 3,
     "fishEveryMs": 2400,
     "daylightAlpha": 0.16,
-    "weatherOdds": { "clear": 5, "overcast": 2, "rain": 1.5, "fog": 1.5 },
+    "weatherOdds": {
+      "clear": 5,
+      "overcast": 2,
+      "rain": 1.5,
+      "fog": 1.5
+    },
     "rainPerThousandTiles": 90,
     "firefliesPerHundredTiles": 1.2,
     "beamTiles": 7,
@@ -983,6 +1013,13 @@
     "grainAlpha": 0.35,
     "washAlpha": 0.24,
     "shadowAlpha": 0.22
+  },
+  "bricks": {
+    "studScale": 0.34,
+    "landStudAlpha": 0.5,
+    "seaStudAlpha": 0.16,
+    "territoryAlpha": 0.8,
+    "sheenAlpha": 0.35
   },
   "effects": {
     "sealFloodTilesPerSecond": 16,

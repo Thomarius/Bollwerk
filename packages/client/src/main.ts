@@ -295,6 +295,7 @@ const STYLE_NAMES: Record<ArtStyle, string> = {
   cyberpunk: 'Cyberpunk',
   blueprint: 'Blueprint',
   parchment: 'Parchment',
+  bricks: 'Toy bricks',
 };
 
 function styleOptions(look: ArtLook): string {

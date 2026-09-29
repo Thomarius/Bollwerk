@@ -2584,3 +2584,28 @@ panel past four players — the user chose the first.
   same instant: nothing clipped at 1024, 1280 or 1920. Names at eight characters instead
   of nine changed nothing — the status line is the widest — and trimming the icons'
   margins and the gaps' scaling closed the last seven pixels at 1024.
+
+## 11u. The second visual pass, W8: Toy bricks
+
+PLAN 11.11 W8, the last package, which completes M12. A seventh style for either look,
+built from shapes like Cyberpunk, Blueprint and Parchment on the shared wall geometry, so
+its walls stand to the pixel style's height and a wipe lines up. Agreed with the user:
+shapes rather than sprites, a faint stud on the sea so it stays calm, bright studs on
+the land, a light plastic sheen and no weather, and "Toy bricks", never a trademark. The
+pixel style's shown name became Medieval in the same stretch, its id unchanged.
+
+- **Everything a style brings**, which the types list the moment the name is added: the
+  theme (`bricks.ts`), a palette of its own (green and blue baseplates, grey stone; the
+  shared player colours are bright and clean already, so no ramps), a title (the word in
+  studded bricks, a letter a player's colour), a banner (a long yellow brick with a row of
+  studs), a HUD skin (a blue baseplate under a yellow rule, the piece box with rounded
+  plastic corners) and a menu name.
+- **Readability, from the first screenshots**: the studs on walls were in the bricks' own
+  colour and barely showed, and are in the lighter shade; sealed ground, smooth tiles over
+  the studs at 0.55, came out brownish and faint over the green, and is at 0.8.
+- The invalid piece is hollow, a red outline with a cross in each cell, and an invalid
+  gun struck through — the lesson of Cyberpunk: a red brick would be the crimson player's.
+- Seen: building and combat at two and three players, the player's shots in the air, a
+  close look at walls, guns, a castle and sealed tiles, a wipe from Medieval, and the menu
+  title split with Minimal. Scenes in `screenshots.sh`. The click, the tumbling bricks and
+  the bounce need a person.

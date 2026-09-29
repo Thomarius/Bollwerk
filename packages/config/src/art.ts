@@ -47,7 +47,7 @@ export type PlayerPalette = z.infer<typeof PlayerPaletteSchema>;
  * `flat` is the minimal look: solid colour, no textures, no atlas to generate. `night` is
  * the pixel style under a palette of its own (`stylePalettes`). `cyberpunk` is neon
  * outlines on a dark circuit board, `blueprint` a plan in white ink on blue paper,
- * `parchment` an old hand-drawn map.
+ * `parchment` an old hand-drawn map, `bricks` a board built of toy bricks.
  */
 export const ArtStyleSchema = z.enum([
   'flat',
@@ -56,6 +56,7 @@ export const ArtStyleSchema = z.enum([
   'cyberpunk',
   'blueprint',
   'parchment',
+  'bricks',
 ]);
 export type ArtStyle = z.infer<typeof ArtStyleSchema>;
 
@@ -226,6 +227,24 @@ export const ParchmentStyleSchema = z.strictObject({
 });
 export type ParchmentStyleConfig = z.infer<typeof ParchmentStyleSchema>;
 
+/**
+ * The toy bricks look: a board built of studded plastic bricks on baseplates — green
+ * under the land, blue under the sea — which suits pieces that are tetrominoes already.
+ */
+export const BricksStyleSchema = z.strictObject({
+  /** Across a stud, as a fraction of the tile. */
+  studScale: z.number().positive().max(1),
+  /** How strongly the land's baseplate shows its studs. */
+  landStudAlpha: z.number().min(0).max(1),
+  /** And the sea's: faint, since a busy sea would fight the game above it. */
+  seaStudAlpha: z.number().min(0).max(1),
+  /** Sealed ground: smooth tiles laid over the studs, in the owner's colour. */
+  territoryAlpha: z.number().min(0).max(1),
+  /** The plastic's sheen along each brick's lit edge. */
+  sheenAlpha: z.number().min(0).max(1),
+});
+export type BricksStyleConfig = z.infer<typeof BricksStyleSchema>;
+
 /** One of the two looks a match is drawn in. */
 export type ArtLook = 'build' | 'combat';
 
@@ -264,6 +283,7 @@ export const STYLE_LOOKS: Record<ArtStyle, readonly ArtLook[]> = {
   cyberpunk: ['build', 'combat'],
   blueprint: ['build', 'combat'],
   parchment: ['build', 'combat'],
+  bricks: ['build', 'combat'],
 };
 
 export function styleServes(
@@ -381,6 +401,7 @@ export const ArtConfigSchema = z
     night: NightStyleSchema,
     pixel: PixelStyleSchema,
     parchment: ParchmentStyleSchema,
+    bricks: BricksStyleSchema,
     scenery: ScenerySchema,
     /** Effects both styles draw alike, because they carry information. */
     effects: z.strictObject({

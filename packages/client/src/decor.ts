@@ -501,6 +501,39 @@ export function inkedTitle(text: string, art: ArtConfig): Title {
  * Every style's title. A record over every style, so a new style cannot be added without
  * one: the menu shows the title of the look chosen last.
  */
+/**
+ * Toy bricks' title: each cell of the letters a brick with its stud, each letter in a
+ * player's bright colour, a shade along each brick's foot and a glint on each stud.
+ */
+export function brickTitle(text: string, art: ArtConfig): Title {
+  const own = artForStyle(art, 'bricks');
+  const brick = STONE * 2;
+  const cols = glyphsOf(text).length * 6 - 1;
+  const p = new Pixels(cols * brick + 2, 7 * brick + 2);
+  for (const { x, y, n } of cellsOf(glyphsOf(text))) {
+    const ramp = own.players[n % own.players.length]!;
+    const px = x * brick;
+    const py = y * brick;
+    p.rect(px + 2, py + 2, brick, brick, own.palette.shadow, 0.6);
+    p.rect(px, py, brick, brick, ramp.base);
+    p.rect(px, py + brick - 2, brick, 2, ramp.dark);
+    p.rect(px + brick - 1, py, 1, brick, ramp.dark, 0.7);
+    // The stud: a round boss, lit on its upper left.
+    p.rect(px + 2, py + 2, brick - 4, brick - 5, ramp.light);
+    p.set(px + 2, py + 2, ramp.base);
+    p.set(px + brick - 3, py + 2, ramp.base);
+    p.set(px + 3, py + 3, '#ffffff', 0.8);
+  }
+  return {
+    src: p.canvas.toDataURL(),
+    cellPx: brick,
+    padPx: 0,
+    tailPx: 2,
+    smooth: false,
+    flicker: false,
+  };
+}
+
 const TITLES: Record<ArtStyle, (text: string, art: ArtConfig) => Title> = {
   flat: blockTitle,
   pixel: stoneTitle,
@@ -508,6 +541,7 @@ const TITLES: Record<ArtStyle, (text: string, art: ArtConfig) => Title> = {
   cyberpunk: neonTitle,
   blueprint: planTitle,
   parchment: inkedTitle,
+  bricks: brickTitle,
 };
 
 export function titleFor(style: ArtStyle, art: ArtConfig): Title {

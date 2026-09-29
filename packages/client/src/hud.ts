@@ -41,6 +41,7 @@ const BANNER_CLASS: Record<ArtStyle, string> = {
   cyberpunk: 'banner-neon',
   blueprint: 'banner-plan',
   parchment: 'banner-ribbon',
+  bricks: 'banner-bricks',
 };
 
 /**
@@ -55,6 +56,7 @@ const HUD_SKIN: Record<ArtStyle, string> = {
   cyberpunk: 'hud-neon',
   blueprint: 'hud-plan',
   parchment: 'hud-ink',
+  bricks: 'hud-bricks',
 };
 
 const PHASE_LABEL: Record<Phase, string> = {

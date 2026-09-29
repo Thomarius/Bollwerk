@@ -361,13 +361,13 @@ sender's seat**, so a client cannot act for someone else.
 
 ## 7. `packages/client`
 
-Six visual styles — Minimal (`flat`), Medieval (`pixel`: named Pixel art until the other
-styles made the name mean nothing), Night, Cyberpunk, Blueprint and
-Parchment — behind one `Theme` interface: the scene owns the camera, the layer stacks,
+Seven visual styles — Minimal (`flat`), Medieval (`pixel`: named Pixel art until the other
+styles made the name mean nothing), Night, Cyberpunk, Blueprint, Parchment and Toy bricks
+(`bricks`) — behind one `Theme` interface: the scene owns the camera, the layer stacks,
 dirty tracking and input mapping; a theme owns only what things look like. Adding a style
 is a name in `ArtStyleSchema`, the looks it is made for in `STYLE_LOOKS`, a `Theme`, a
 case in `createTheme`, a menu title in `decor.ts` and a banner class in `hud.ts`; the
-types refuse a style missing any of them. One more is planned, Toy bricks (11.11 W8). All
+types refuse a style missing any of them. All
 sprites are generated at boot from `art.default.json` plus the match seed — nothing binary
 is committed except audio.
 
@@ -419,7 +419,7 @@ and a corrupt file is silent rather than noisy.
 **The HUD is dressed in the look on screen** (`HUD_SKIN` in `hud.ts`, a record over every
 style): a flat bar under a hard gold rule for Minimal, near black under a glowing cyan
 rule with the phase in magenta neon for Cyberpunk, a gridded title block ruled double for
-Blueprint, a strip of paper lettered in ink for Parchment, and the dark bar with gold for
+Blueprint, a strip of paper lettered in ink for Parchment, a blue baseplate under a yellow rule for Toy bricks, and the dark bar with gold for
 Medieval and Night. The piece box, the cannon count and the hints take it too. It is a
 set of CSS variables on `#hud`; the HUD takes the arriving look's as a banner starts,
 since the bar is at the top and above the line is always the new look. The bar is exactly
@@ -428,7 +428,8 @@ since the bar is at the top and above the line is always the new look. The bar i
 **Each banner is drawn in the look it brings** (`BANNER_CLASS` in `hud.ts`, a record
 over every style): flat gold for Minimal, a neon strip that flickers on for Cyberpunk, a
 title block of deeper blue paper ruled double for Blueprint, an inked ribbon with forked
-ends for Parchment, and the dark band with gold for Medieval and Night.
+ends for Parchment, a long yellow brick with a row of studs for Toy bricks, and the dark
+band with gold for Medieval and Night.
 
 **Two looks, swapped by the banners, as in the original** (`transition.ts`). Each player
 chooses a style for building and one for combat (`art.styles`: flat and pixel by
@@ -628,7 +629,23 @@ cracking in two when it is breached. Shots are ink dots on a dotted course and l
 stains that fade over `fx.craterRounds`. Its colours are ink dark enough to read on
 paper, `uiInk` included, which the shared helpers draw their warnings in.
 
-The three shape-drawn styles share `walls.ts`: the wall geometry (tops, faces, rim), and
+**Toy bricks** (`bricks.ts`, `art.bricks`), for either look: the board built of studded
+plastic bricks on baseplates, green under the land and blue under the sea, whose studs
+are faint so the sea stays calm behind the game. Walls are bricks in the owner's colour,
+each carrying a stud in its lighter shade, with seams between them so a shot visibly
+takes one, standing up to the pixel style's height; sealed ground is smooth tiles laid
+over the studs. Castles are a brick tower with a keep on it flying a square flag; guns
+a grey brick mount banded in the owner's colour, with a round barrel that turns and
+kicks. A piece clicks down with a flash off its studs, a hit knocks bricks loose to
+tumble and bounce, the sweep pops them off, and shots are round bricks lobbed over their
+shadows. Its scenery is built of bricks too — stacked round plates for trees, stepped
+plates for pines, round plates for bushes and one in two a red or yellow flower, a grey
+sloped brick for a boulder — its banner a long yellow brick with a row of studs, its HUD
+a blue baseplate under a yellow rule, its title the word in bricks, each letter a
+player's colour. It uses the shared player colours: bright and clean already. Named toy
+bricks and never after any maker's trademark.
+
+The four shape-drawn styles share `walls.ts`: the wall geometry (tops, faces, rim), and
 hatching laid on one lattice so neighbouring tiles hatch as one fill.
 
 **Scenery on open land** (`scenery.ts`, `art.scenery`), in every style: copses of trees and
@@ -761,7 +778,7 @@ every resolution against an independent search, not only on unit pictures.
 | M9  | Visual pass: phase themes, banner wipe, effects, lobby    | Done (ARCHIVE 11h)      |
 | M10 | Alternative visual themes: Night, Blueprint, Cyberpunk…   | Done (ARCHIVE 11h)      |
 | M11 | UI and effects polish: roster, combat aids, summary…      | Done (ARCHIVE 11h)      |
-| M12 | Second visual pass: scenery, atmosphere, Toy bricks       | **In progress** (11.11) |
+| M12 | Second visual pass: scenery, atmosphere, Toy bricks       | Done (11.11)            |
 
 ---
 
@@ -922,7 +939,7 @@ candidate, and the one way the soak would ever measure what the rule does to bal
 
 ---
 
-### 11.11 Second visual pass — agreed, in progress
+### 11.11 Second visual pass — done
 
 **Agreed with the user 2026-09-28**, to run while human testing goes on. Display only,
 like 11.8–11.10: no sim, protocol or ruleset change, so it cannot desync a match or move a
@@ -965,11 +982,7 @@ winner; the summary's filmstrip.
 **W7 — The UI in each look — done** (ARCHIVE 11s): the HUD bar, clock, piece box and hints
 dressed per style (`HUD_SKIN`); the lobby's map breathing.
 
-**W8 — Toy bricks** (M–L), a seventh style, for either look. Walls as studded plastic
-bricks, which suits pieces that are already tetrominoes; pieces click down, guns are built
-of bricks, the sea is a blue baseplate, player colours bright and clean. Last, so it is
-built against the finished interfaces: besides the palette, title and banner every style
-brings, its own scenery (W3), atmosphere (W4) and HUD skin (W7).
+**W8 — Toy bricks — done** (ARCHIVE 11u, §7): a seventh style, for either look.
 
 ### 11.12 Test-session feedback, first batch — agreed 2026-09-29
 
