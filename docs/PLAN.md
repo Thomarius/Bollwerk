@@ -84,6 +84,12 @@ exact on a square grid, so every island is pixel-identical at every player count
 - A single sealed region containing K castles counts as K castles. Separate regions stack.
   This is the central tradeoff: a wide loop earns more cannons but leaves far more
   perimeter to repair each round.
+- **A pocket — sealed ground with no castle in it — is territory for every purpose** (guns
+  stand and fire there, its tiles score) **while its player holds a sealed castle
+  somewhere**, as in the original (`enclosure.castlelessRegionsCount`). It is the island's
+  player's alone, never a teammate's by way of their castle, and it never keeps anyone in
+  the round: a player whose only sealed ground is pockets has failed, and loses the pockets
+  with their last castle.
 - **Orphaned wall is swept** between build and combat, in one pass: every block with fewer
   than two orthogonal wall neighbours is marked against the board as it stands, then the
   marked blocks go together. A run of three keeps its middle; a spur loses only its tip.
@@ -99,7 +105,8 @@ exact on a square grid, so every island is pixel-identical at every player count
 - **Indestructible.** Only walls are damaged; castles and cannons are not.
 - Reward per build phase is in `ruleset.cannons`: a fixed number for the first enclosed
   castle and more for each additional one.
-- A cannon **not inside an enclosed region** at a resolution is **inert**: it cannot fire,
+- A cannon **not inside its owner's territory** (a castle's region or a counting pocket,
+  §1.3) at a resolution is **inert**: it cannot fire,
   is not destroyed, and reactivates if re-enclosed. Breaching a leader's wall silences
   their guns. This is the game's main corrective and the source of most bot trouble.
 - Firing: click a target; the nearest ready cannon fires. A cannon is ready only when it
@@ -164,7 +171,8 @@ a sealed castle:
 - `tilePoints` × **total enclosed tiles × total enclosed castles**, across every region
   they hold. Totals, not per region: two one-castle loops of 30 tiles score 120, as one
   loop around both would. An enclosed tile is `territory === id + 1`, castle and cannon
-  footprints included, so placing a gun never costs points.
+  footprints included, so placing a gun never costs points — and pockets included
+  (§1.3), which count for area but not as castles.
 
 Failing to seal forfeits the round's points, damage included
 (`scoreDamageOnFailedRound` turns that off), and spends a life as usual — in the final
@@ -718,8 +726,8 @@ every resolution against an independent search, not only on unit pictures.
 
 **Where to start (2026-09-29).** The first compiled feedback from the test sessions is in
 **11.12**: its small fixes are done (ARCHIVE 11n), and its three agreed items come next, in
-order — **castle-less pockets as territory first, since it moves the balance and must land
-before 11.2's baseline is measured**, then pause, then an open games browser.
+order — castle-less pockets as territory (done, ARCHIVE 11o; it had to land before 11.2's
+baseline), then **pause**, then an open games browser.
 
 **Before that (2026-09-28).** The user is running human test sessions, and every match
 is recorded with its statistics (§9, ARCHIVE 11e); the user will also send compiled
@@ -863,6 +871,11 @@ aggressive, defensive, expander), how the lobby offers the pair, and whether
 `server.botDifficulty` becomes two settings. Independent of balance, so it can run beside
 11.2.
 
+**Pockets** (§1.3, ARCHIVE 11o): bots obey the rule but never wall a pocket on purpose,
+which is why turning it on moved the soak not at all. A personality that walls small gun
+pockets beside its castle loop — cheap room for guns that go silent with the castle — is a
+candidate, and the one way the soak would ever measure what the rule does to balance.
+
 ---
 
 ### 11.11 Second visual pass — agreed, in progress
@@ -928,29 +941,10 @@ brings, its own scenery (W3), atmosphere (W4) and HUD skin (W7).
 Eight items from the user's compiled feedback. Five small ones are done (ARCHIVE 11n): the
 lobby's Copy button over plain http, the lives count on the life-lost banner, reload rings
 that can be seen, a button in place of the R key at the end of a match (with M's mute
-removed too — no hidden keys), and the player's name remembered. Three remain, in order:
+removed too — no hidden keys), and the player's name remembered. Then, in order:
 
-**F1 — Walled ground without a castle is territory (M; sim, config, protocol).** The
-original's rule, which ours is not: today `computeEnclosure` makes a sealed region
-territory only if one of the island's castles is inside it. Agreed with the user:
-
-- A sealed region on a player's own island is their territory **for every purpose** —
-  cannons may stand in it and fire from it, and its tiles score (tiles × castles) — **as
-  long as that player holds at least one sealed castle** somewhere. Per player, not per
-  team: a teammate's sealed castle does not make your pocket count.
-- Holding only pockets, with no castle sealed, fails the round as now: the life rule is
-  unchanged. A player who loses their last sealed castle loses their pockets with it, and
-  guns there go inert.
-- A ruleset switch, on by default, so the old rule stays measurable. The ruleset changes
-  shape, so `PROTOCOL_VERSION` goes up, and recordings made before replay only against
-  their own commit (which the header names).
-- The client follows by construction, since it asks the sim's own `computeEnclosure` for
-  territory, the sealing preview and the HUD.
-- **Bots will not build pockets on purpose** at first: they obey the rule, and may gain
-  from it where a pocket forms by accident. Walling small gun pockets deliberately is a
-  playstyle question for 11.6.
-- **Must land before 11.2's baseline**: more ground and working guns change how often
-  walls fail, which is what 11.2 measures. Re-check the bot soak before and after.
+**F1 — Pockets count — done** (ARCHIVE 11o, §1.3): sealed ground without a castle is
+territory while its player holds a sealed castle, behind `enclosure.castlelessRegionsCount`.
 
 **F2 — Pause, for everybody (M; server, protocol, client).** For the test sessions any
 player may pause and any may resume; no cap on count or length. **Esc** pauses and

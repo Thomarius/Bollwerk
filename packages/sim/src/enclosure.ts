@@ -84,9 +84,20 @@ export function computeEnclosure(state: MatchState): EnclosureResult {
     castleEnclosed[castle.id] = enclosed;
   }
 
-  // Sealed regions become territory only if they contain one of their island's
-  // castles. Without that rule a player could wall off a bare 2x2 pocket and own
-  // a cannon that can never be silenced.
+  // Counted before the regions, since whether a pocket is territory depends on it.
+  const enclosedCastlesByPlayer = new Array<number>(state.players.length).fill(0);
+  for (const castle of state.castles) {
+    if (!castleEnclosed[castle.id]) continue;
+    const player = castle.islandId - 1;
+    enclosedCastlesByPlayer[player] = (enclosedCastlesByPlayer[player] as number) + 1;
+  }
+
+  // A sealed region holding one of an island's castles is that island's territory. One
+  // holding none — a pocket — is too, as in the original, while its island's player
+  // holds a sealed castle somewhere (`castlelessRegionsCount`): a gun there fires, its
+  // tiles score, and it all goes the moment the last castle is breached. Without a castle
+  // sealed a pocket is nothing, so it can never keep a player in the round on its own.
+  const pockets = state.ruleset.enclosure.castlelessRegionsCount;
   const region = new Int32Array(size).fill(-1);
   const regionOwner: number[] = [];
   let regionCount = 0;
@@ -100,12 +111,16 @@ export function computeEnclosure(state: MatchState): EnclosureResult {
     queue[tail++] = start;
     region[start] = id;
     let owner = 0;
+    // The island the region lies on. Only one: islands are parted by sea, which the
+    // escape flood crosses, so no sealed region spans two.
+    let island = 0;
 
     while (head < tail) {
       const i = queue[head++] as number;
       const x = i % w;
       const y = (i - x) / w;
       if (structure[i] === Structure.Castle) owner = state.islandId[i] as number;
+      if (island === 0) island = state.islandId[i] as number;
       for (const [ox, oy] of neighbours) {
         const nx = x + ox;
         const ny = y + oy;
@@ -117,6 +132,16 @@ export function computeEnclosure(state: MatchState): EnclosureResult {
         queue[tail++] = ni;
       }
     }
+    if (owner === 0 && pockets && island > 0) {
+      const player = state.players[island - 1];
+      if (
+        player !== undefined &&
+        !player.eliminated &&
+        (enclosedCastlesByPlayer[player.id] as number) > 0
+      ) {
+        owner = island;
+      }
+    }
     regionOwner[id] = owner;
   }
 
@@ -124,13 +149,6 @@ export function computeEnclosure(state: MatchState): EnclosureResult {
   for (let i = 0; i < size; i++) {
     const id = region[i] as number;
     if (id >= 0) territory[i] = (regionOwner[id] ?? 0) as number;
-  }
-
-  const enclosedCastlesByPlayer = new Array<number>(state.players.length).fill(0);
-  for (const castle of state.castles) {
-    if (!castleEnclosed[castle.id]) continue;
-    const player = castle.islandId - 1;
-    enclosedCastlesByPlayer[player] = (enclosedCastlesByPlayer[player] as number) + 1;
   }
 
   // A cannon fires only from inside its owner's sealed territory.

@@ -201,6 +201,51 @@ describe('scoring a round', () => {
     expect(state.players[1]!.wallsDestroyed).toBe(0);
   });
 
+  describe('a pocket — sealed ground with no castle', () => {
+    // Island 1: a ring round its castle (twelve tiles) and a pocket beside it (four).
+    // Island 2: a ring round its castle, so the match has somebody else in it.
+    const POCKET = [
+      `
+      .........................
+      .######.####..######.....
+      .#,,,,#.#,,#..#,,,,#.....
+      .#,@@,#.#,,#..#,@@,#.....
+      .#,@@,#.####..#,@@,#.....
+      .######.......######.....
+      .........................
+    `,
+      `
+      .........................
+      ..............222222.....
+      ..............222222.....
+      ..............222222.....
+      ..............222222.....
+      ..............222222.....
+      .........................
+    `,
+    ] as const;
+
+    it('scores its tiles with the rest, while a castle is sealed', () => {
+      const state = stateFromAscii(POCKET[0], uncapped, POCKET[1]);
+      resolve(state);
+      expect(state.players[0]!.enclosedCastles).toBe(1);
+      expect(state.players[0]!.score).toBe(defaultRuleset.scoring.tilePoints * (12 + 4) * 1);
+    });
+
+    it('does not keep a player in the round without a sealed castle', () => {
+      const ruleset = { ...uncapped, elimination: { ...uncapped.elimination, continues: 1 } };
+      const state = stateFromAscii(POCKET[0], ruleset, POCKET[1]);
+      for (const team of state.teams) {
+        team.continuesRemaining = 1;
+        team.continuesAtStart = 1;
+      }
+      breach(state, 0); // the castle's ring, not the pocket's
+      resolve(state);
+      expect(state.teams[0]!.continuesRemaining).toBe(0); // a life spent
+      expect(state.players[0]!.score).toBe(0);
+    });
+  });
+
   it('can be told to keep the damage of a failed round', () => {
     const ruleset: Ruleset = {
       ...uncapped,

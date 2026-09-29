@@ -2425,3 +2425,32 @@ PLAN 11.12, the part done at once. All client-side; no sim, protocol or ruleset 
   HUD rewrites each frame, since a button replaced between press and release never
   receives the click. R and E still turn the held piece, as a listed control.
 - **The name is remembered** in the browser, as the looks are; `?name=` still overrides.
+
+## 11o. Pockets count, as in the original (F1)
+
+PLAN 11.12 F1, reported from the test sessions: walled ground with no castle in it was
+refused as territory, which the original did not do. Now a sealed region on a player's
+island holding no castle is their territory for every purpose — guns stand and fire
+there, its tiles score — while that player holds a sealed castle anywhere. Decided with
+the user: per player (a teammate's castle does not make your pocket count), and a pocket
+never saves a round, so the life rule is untouched.
+
+- **One change in the sim**: `computeEnclosure` now counts sealed castles before it owns
+  the regions, and gives a castle-less region to its island's player when they are in and
+  hold one. Scoring, cannon placement, inert guns, the bots and every client view read
+  `territory`, so they follow with no change of their own. The old comment defending the
+  rule — a bare 2x2 "cannon that can never be silenced" — was not true: a pocket's wall
+  is shot like any other, and now its guns also fall silent with the last castle.
+- **A ruleset switch**, `enclosure.castlelessRegionsCount`, on by default. The ruleset
+  changed shape, so protocol 9; recordings made before replay against their own commit.
+- **Tested** as pictures: a pocket with a castle sealed elsewhere is territory and arms its
+  gun; breach the castle and the pocket goes with it; island 2's pocket is not made to
+  count by island 1's castle; the switch off restores the old rule; pocket tiles score
+  with the rest, and a pocket alone spends a life.
+- **Measured**, three gunners, twelve seeds, the rule on against off: sealed 1.01 / 1.02,
+  active guns 4.8 / 4.9, idle 20% / 19%, territory 51 / 51, every match to the cap either
+  way. The hashes differ, so the rule engaged, but the bots barely meet it: they never
+  wall a pocket on purpose. The balance question is how people use it, which the test
+  sessions will show; teaching bots to (PLAN 11.6) is where the soak would move.
+- The client's seal flood already started a region no castle or held ground reaches from
+  its own first tile, so a new pocket floods like any other ground.

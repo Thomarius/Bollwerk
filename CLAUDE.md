@@ -90,6 +90,9 @@ Full detail in PLAN.md §1. The parts that surprise people:
   indestructible.
 - **Cannons go inert outside sealed territory.** This is the game's main corrective and
   the source of most bot trouble.
+- **A pocket counts.** Sealed ground with no castle is territory — guns, points — while
+  its player holds a sealed castle anywhere, as in the original; it never saves a round
+  on its own (`enclosure.castlelessRegionsCount`, PLAN §1.3).
 - **Flight time _is_ the reload** — a cannon cannot fire again until its shot lands.
 - **The starting ring is 8x8 around a 6x6 interior.** A castle sits centred in it, so the
   free band is two tiles wide and a 2x2 cannon spans it: opening cannons must touch the

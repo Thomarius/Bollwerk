@@ -154,6 +154,7 @@
     "shorelineCountsAsWall": false,
     "connectivity": 8,
     "sharedRegionCountsAllCastles": true,
+    "castlelessRegionsCount": true,
     "sweepOrphanedWalls": true
   },
   "elimination": {

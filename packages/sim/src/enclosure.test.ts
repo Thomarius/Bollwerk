@@ -1,3 +1,4 @@
+import { defaultRuleset } from '@rampart/config';
 import { describe, expect, it } from 'vitest';
 
 import { computeEnclosure } from './enclosure.js';
@@ -156,10 +157,11 @@ describe('enclosure solver', () => {
     expect(computeEnclosure(state).castleEnclosed[0]).toBe(false);
   });
 
-  it('refuses territory to a sealed pocket with no castle in it', () => {
-    // Otherwise a player could wall off a bare 2x2 and own a cannon that can
-    // never be silenced, no matter what happens to their castles.
-    const state = stateFromAscii(`
+  describe('a sealed pocket with no castle in it', () => {
+    // As in the original, walled ground without a castle is territory for every purpose
+    // — guns fire from it, its tiles score — while its player holds a sealed castle
+    // somewhere. It never keeps them in the round by itself.
+    const pocket = `
       ..............
       ..######......
       ..#,@@#.####..
@@ -167,10 +169,68 @@ describe('enclosure solver', () => {
       ..#,,,#.#**#..
       ..#####.####..
       ..............
-    `);
-    const result = computeEnclosure(state);
-    expect(result.castleEnclosed[0]).toBe(true);
-    expect(result.cannonActive[0]).toBe(false);
+    `;
+    const inPocket = 3 * 14 + 9;
+
+    it('is territory, and arms its guns, while a castle is sealed elsewhere', () => {
+      const result = computeEnclosure(stateFromAscii(pocket));
+      expect(result.castleEnclosed[0]).toBe(true);
+      expect(result.territory[inPocket]).toBe(1);
+      expect(result.cannonActive[0]).toBe(true);
+    });
+
+    it('is nothing once the castle is breached, and cannot save the round', () => {
+      const state = stateFromAscii(`
+        ..............
+        ..######......
+        ..#,@@#.####..
+        ..#,@@#.#**#..
+        ..#,,,#.#**#..
+        ..##,##.####..
+        ..............
+      `);
+      const result = computeEnclosure(state);
+      expect(result.enclosedCastlesByPlayer[0]).toBe(0);
+      expect(result.territory[inPocket]).toBe(0);
+      expect(result.cannonActive[0]).toBe(false);
+    });
+
+    it('belongs to the pocket island’s player alone, not to whoever holds a castle', () => {
+      // Island 2 has a pocket but no sealed castle; island 1's sealed castle is not theirs.
+      const state = stateFromAscii(
+        `
+        ..............
+        ..######......
+        ..#,@@#.####..
+        ..#,@@#.#,,#..
+        ..#,,,#.#,,#..
+        ..#####.####..
+        ..............
+      `,
+        undefined,
+        `
+        ..............
+        ..............
+        ........2222..
+        ........2222..
+        ........2222..
+        ........2222..
+        ..............
+      `,
+      );
+      expect(computeEnclosure(state).territory[inPocket]).toBe(0);
+    });
+
+    it('is refused under the old rule, with castlelessRegionsCount off', () => {
+      const ruleset = {
+        ...defaultRuleset,
+        enclosure: { ...defaultRuleset.enclosure, castlelessRegionsCount: false },
+      };
+      const result = computeEnclosure(stateFromAscii(pocket, ruleset));
+      expect(result.castleEnclosed[0]).toBe(true);
+      expect(result.territory[inPocket]).toBe(0);
+      expect(result.cannonActive[0]).toBe(false);
+    });
   });
 
   it('activates a cannon sharing its region with a castle', () => {

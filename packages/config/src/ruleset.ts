@@ -125,6 +125,13 @@ export const RulesetSchema = z
       /** One sealed region holding K castles counts as K. */
       sharedRegionCountsAllCastles: z.boolean(),
       /**
+       * A sealed region on a player's island holding no castle — a pocket — is their
+       * territory for every purpose (guns, points) while they hold a sealed castle
+       * anywhere, as in the original. False: only regions round a castle count. Pockets
+       * never keep a player in the round: surviving still needs a sealed castle.
+       */
+      castlelessRegionsCount: z.boolean(),
+      /**
        * Between the build phase and the next barrage, clear wall that is doing no
        * work: loose ends, and anything not linked to sealed ground. Without it the
        * board silts up with stray blocks, and the space a cannon needs goes with it.
