@@ -98,7 +98,7 @@ function drawStone(p: Pixels, text: string, art: ArtConfig, accent: string, pad:
   });
 }
 
-/** Pixel art's title: the word set in the stone of the game's walls, threaded in gold. */
+/** Medieval's title: the word set in the stone of the game's walls, threaded in gold. */
 export function stoneTitle(text: string, art: ArtConfig): Title {
   const own = artForStyle(art, 'pixel');
   const cols = glyphsOf(text).length * 6 - 1;

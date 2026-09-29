@@ -290,7 +290,7 @@ function readStyles(): ArtStyles {
 /** Names for the styles, as the menu offers them, each look only those made for it. */
 const STYLE_NAMES: Record<ArtStyle, string> = {
   flat: 'Minimal',
-  pixel: 'Pixel art',
+  pixel: 'Medieval',
   night: 'Night',
   cyberpunk: 'Cyberpunk',
   blueprint: 'Blueprint',

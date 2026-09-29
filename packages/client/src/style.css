@@ -458,7 +458,7 @@ body.reduced-effects .you-are-here {
   inset: 0;
   pointer-events: none;
   /* The HUD's dress, which each look's skin overrides (HUD_SKIN in hud.ts). These are
-     Pixel art's and Night's: the dark bar with gold every style once had. */
+     Medieval's and Night's: the dark bar with gold every style once had. */
   --hud-bar: linear-gradient(#0a0a12dd, #0a0a1200);
   --hud-rule: none;
   --hud-ink: var(--ink);

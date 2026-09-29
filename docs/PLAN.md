@@ -361,7 +361,8 @@ sender's seat**, so a client cannot act for someone else.
 
 ## 7. `packages/client`
 
-Six visual styles — Minimal (`flat`), Pixel art, Night, Cyberpunk, Blueprint and
+Six visual styles — Minimal (`flat`), Medieval (`pixel`: named Pixel art until the other
+styles made the name mean nothing), Night, Cyberpunk, Blueprint and
 Parchment — behind one `Theme` interface: the scene owns the camera, the layer stacks,
 dirty tracking and input mapping; a theme owns only what things look like. Adding a style
 is a name in `ArtStyleSchema`, the looks it is made for in `STYLE_LOOKS`, a `Theme`, a
@@ -419,7 +420,7 @@ and a corrupt file is silent rather than noisy.
 style): a flat bar under a hard gold rule for Minimal, near black under a glowing cyan
 rule with the phase in magenta neon for Cyberpunk, a gridded title block ruled double for
 Blueprint, a strip of paper lettered in ink for Parchment, and the dark bar with gold for
-Pixel art and Night. The piece box, the cannon count and the hints take it too. It is a
+Medieval and Night. The piece box, the cannon count and the hints take it too. It is a
 set of CSS variables on `#hud`; the HUD takes the arriving look's as a banner starts,
 since the bar is at the top and above the line is always the new look. The bar is exactly
 `HUD_BAR_PX` tall, its rule inside, so a solid skin never overhangs the board.
@@ -427,7 +428,7 @@ since the bar is at the top and above the line is always the new look. The bar i
 **Each banner is drawn in the look it brings** (`BANNER_CLASS` in `hud.ts`, a record
 over every style): flat gold for Minimal, a neon strip that flickers on for Cyberpunk, a
 title block of deeper blue paper ruled double for Blueprint, an inked ribbon with forked
-ends for Parchment, and the dark band with gold for Pixel art and Night.
+ends for Parchment, and the dark band with gold for Medieval and Night.
 
 **Two looks, swapped by the banners, as in the original** (`transition.ts`). Each player
 chooses a style for building and one for combat (`art.styles`: flat and pixel by
@@ -449,7 +450,7 @@ pattern that works is to pull the decision out into a pure function and test tha
 
 **The menu and lobby** are dressed in the game's own art (`decor.ts`): **every style has
 a title of its own**, the same 5x7 letters in its look — stone threaded with gold for
-Pixel art, flat blocks in the players' colours for Minimal, moonlit stone with a halo
+Medieval, flat blocks in the players' colours for Minimal, moonlit stone with a halo
 and stars for Night, a neon sign that flickers on for Cyberpunk. **The menu shows both
 chosen looks at once** (`SplitTitle`): the build look's title above a banner's gold line
 and the combat look's below, the letters coinciding, since `titleLayout` sizes every
@@ -522,7 +523,7 @@ washes and outlines the ground the piece in hand would seal, by the sim's own en
 with the piece stood in as wall; it is for testers to judge, since it carries information.
 The held piece casts a soft shadow and swings as it turns (`GhostMotion`); a placed gun
 settles as a piece does; a knocked-out island's castles burn and then smoke for the rest
-of the match (`RuinSmoke`), and in Pixel art and Night fly their flags at half-mast. Wall
+of the match (`RuinSmoke`), and in Medieval and Night fly their flags at half-mast. Wall
 shot away throws chunks that bounce once and lie as rubble while the breach smoulders, and
 Blueprint smudges where the block was erased and sketches over a piece before inking it. The gap itself used to be marked too, and was removed after the
 first human play: the marks were hard to tell from the piece ghost and from laid wall, and
@@ -633,11 +634,11 @@ hatching laid on one lattice so neighbouring tiles hatch as one fill.
 **Scenery on open land** (`scenery.ts`, `art.scenery`), in every style: copses of trees and
 pines with bushes at their edges, and a few lone trees, bushes and boulders, placed from
 the seed alone so every look puts them on the same tiles — only a step in from the coast,
-and not on or beside a castle. Each style draws its own: trees in Pixel art and Night, a
+and not on or beside a castle. Each style draws its own: trees in Medieval and Night, a
 landscape plan's scalloped canopies in Blueprint, inked trees in Parchment, dim nodes in
 Cyberpunk, a faint dot in Minimal. **It must never read as wall**, nor as a gun or a
 shot: Blueprint's trees were first a circle with a cross, a gun's survey mark in small,
-and Pixel art's boulders a round grey rock, a cannonball's double. A tile once built on or
+and Medieval's boulders a round grey rock, a cannonball's double. A tile once built on or
 sealed is cleared for the rest of the match, so nothing grows back through a breach; a
 piece landing on scenery knocks it flat with a puff, told to the looks on screen only.
 The pixel style also keeps **life on the outer ocean** (`pixel/ocean.ts`): a boat under
@@ -655,7 +656,7 @@ motion; the scene maps clicks and HTML overlays through it all the same, and the
 masks sit outside it, since the banner's line is in screen space. **The last round is
 marked**: its banner is headed "Final round" with "Fire!" under it, a stamp lands across
 the board as it opens, the round counter says so, and a faint dusk holds at the screen's
-edges — in every style, beside Pixel art's own sunset — never over the board's middle,
+edges — in every style, beside Medieval's own sunset — never over the board's middle,
 so no colour moves. **The summary's filmstrip** shows the board at each resolution the
 client saw, a pixel a tile in the shared colours, beside the score chart.
 
@@ -940,16 +941,16 @@ Packages in order; W1 first and W8 last, W7 before W8, the rest independent.
 sea washed apart from its land, its compass rose moved off the big timer, Blueprint's
 inert guns in the owner's ink.
 
-**W2 — Pixel art upgrade — done** (ARCHIVE 11j): castles with towers, a keep and lit
+**W2 — Medieval upgrade — done** (ARCHIVE 11j): castles with towers, a keep and lit
 windows; guns on carriages in stone pits; beaches and a rounded coast; a sea without a
 grid, with glints and crests; cloud shadows. Night took all of it but the clouds.
 
 **W3 — Living land — done** (ARCHIVE 11k): scenery on open land in all six styles,
-cleared by building and sealing; boats, gulls and fish on the outer ocean in Pixel art
+cleared by building and sealing; boats, gulls and fish on the outer ocean in Medieval
 and Night. Fields were left out: flat patches of colour read as sealed ground.
 
 **W4 — Atmosphere — done** (ARCHIVE 11l): the day by round and weather per match in
-Pixel art; the moon's path, lighthouses and fireflies at Night; Cyberpunk's rain and
+Medieval; the moon's path, lighthouses and fireflies at Night; Cyberpunk's rain and
 colour split; bloom behind a new High Effects setting.
 
 **W5 — The board, felt — done** (ARCHIVE 11m): wall chunks, Blueprint's smudges and

@@ -31,7 +31,7 @@ import {
 /**
  * The phase banner each style draws, as a class of `.phase-call`: a record over every
  * style, so a new one must bring its own, as it must a menu title. The banner is where
- * the look changes, so it takes the look it brings — the arriving one. Pixel art and
+ * the look changes, so it takes the look it brings — the arriving one. Medieval and
  * Night keep the dark band with gold that every style once shared.
  */
 const BANNER_CLASS: Record<ArtStyle, string> = {
@@ -46,7 +46,7 @@ const BANNER_CLASS: Record<ArtStyle, string> = {
 /**
  * The HUD in each look (PLAN 11.11 W7): the bar, the clock, the piece box and the hints,
  * dressed as the banners are. A record over every style, so a new style must bring one.
- * Pixel art and Night share the dark bar with gold that every style once had.
+ * Medieval and Night share the dark bar with gold that every style once had.
  */
 const HUD_SKIN: Record<ArtStyle, string> = {
   flat: 'hud-flat',
@@ -180,7 +180,7 @@ export class Hud {
   /**
    * The last round, marked (PLAN 11.11 W6): a stamp across the board as it opens, and a
    * warm dusk at the edges of the screen until the match ends — in every style, where
-   * Pixel art's own sunset is only in its own. At the edges and faint, so no player's
+   * Medieval's own sunset is only in its own. At the edges and faint, so no player's
    * colour moves on the board.
    */
   private markFinalRound(final: boolean): void {

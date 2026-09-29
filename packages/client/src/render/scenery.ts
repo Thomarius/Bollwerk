@@ -6,7 +6,7 @@ import type { Cell } from './theme.js';
 /**
  * What stands on open land: copses of broadleaf trees and pines with bushes at their
  * edges, and here and there a lone tree, bush or boulder. Every style draws its own —
- * trees in Pixel art, plan symbols in Blueprint, inked trees in Parchment, lit nodes in
+ * trees in Medieval, plan symbols in Blueprint, inked trees in Parchment, lit nodes in
  * Cyberpunk, a faint dot in Minimal — from the one placement, so the looks agree as a
  * banner swaps them.
  *
