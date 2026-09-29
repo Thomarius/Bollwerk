@@ -40,7 +40,7 @@ describe('recording a room’s match', () => {
     const header = lines[0];
     expect(header?.kind === 'header' && header.source).toBe('server');
     expect(header?.kind === 'header' && header.code).toBe('REC123');
-    expect(header?.kind === 'header' && header.players.map((p) => p.difficulty === null)).toContain(
+    expect(header?.kind === 'header' && header.players.map((p) => p.level === null)).toContain(
       true,
     );
     const replay = replayRecording(lines);
@@ -68,7 +68,7 @@ describe('the recording store', () => {
     seed: 1,
     ruleset: defaultConfigBundle.ruleset,
     terrain: defaultConfigBundle.terrain,
-    players: [{ name: 'You', isBot: false, team: 0, difficulty: null }],
+    players: [{ name: 'You', isBot: false, team: 0, level: null, personality: null }],
   });
   const body = (...lines: RecordingLine[]): string =>
     lines.map((l) => JSON.stringify(l)).join('\n');
@@ -164,7 +164,7 @@ describe('the recording store', () => {
       record: store.writer(),
     });
     r.join(silent, 'Ada');
-    r.handle(silent, { type: 'configure', hostBot: 'gunner' });
+    r.handle(silent, { type: 'configure', hostBot: 5 });
     r.start();
     const tickMs = 1000 / defaultConfigBundle.ruleset.tickRateHz;
     for (let i = 0; i < 20000 && !r.finished; i++) r.update(tickMs);
@@ -177,13 +177,15 @@ describe('the recording store', () => {
     const rows = readFileSync(join(dir, csv as string), 'utf8')
       .trim()
       .split('\n');
-    expect(rows[0]).toMatch(/^match,seed,round,player,difficulty,/);
+    expect(rows[0]).toMatch(/^match,seed,round,player,level,personality,/);
     // A row per player per round, two players: the lobby's bounds lift the cap to its
     // minimum, so how many rounds that is is the lobby's business, not this test's.
     const body = rows.slice(1);
     expect(body.length).toBeGreaterThan(0);
     expect(body.length % 2).toBe(0);
-    expect(body.every((row) => row.includes(',gunner,'))).toBe(true);
+    // Both seats bots at Level 5, each with the personality it was dealt, in words.
+    expect(body.every((row) => row.split(',')[4] === '5')).toBe(true);
+    expect(body.every((row) => (row.split(',')[5] ?? '').includes(' · '))).toBe(true);
     // A whole bot match: about 3.5 s alone, and past the default 5 s in a full run beside
     // the soak tests on a slower machine, where it failed twice in four runs.
   }, 20_000);

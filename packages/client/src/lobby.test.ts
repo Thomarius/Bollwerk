@@ -14,7 +14,7 @@ function view(over: Partial<LobbyView> = {}): LobbyView {
     hostId: 0,
     humanPlayer: 0,
     seats: [seat(0, 'Ada')],
-    bots: ['gunner', 'gunner', 'gunner', 'gunner'],
+    bots: [5, 5, 5, 5],
     settings: { maxRounds: 10, teamSize: 1 },
     settingBounds: { maxRounds: { min: 5, max: 20 }, teamSize: { min: 1, max: 4 } },
     teams: [0, 1, 2, 3],
@@ -41,7 +41,7 @@ describe('lobby', () => {
       view({
         playerCount: 8,
         seats: [seat(0, 'Ada'), seat(3, 'Bo')],
-        bots: Array.from({ length: 8 }, () => 'marshal' as const),
+        bots: Array.from({ length: 8 }, () => 8),
       }),
     );
     expect(rows(html)).toHaveLength(8);
@@ -71,12 +71,18 @@ describe('lobby', () => {
     expect(asGuest).not.toContain('id="reroll"');
   });
 
-  it('gives each bot tier its own badge', () => {
-    const html = lobbyMarkup(view({ bots: ['gunner', 'recruit', 'marshal', 'baron'] }));
-    const badges = (row: string): number => (row.match(/<polyline/g) ?? []).length;
-    expect(badges(rows(html)[1] as string)).toBe(1);
-    expect(badges(rows(html)[2] as string)).toBe(3);
-    expect(rows(html)[3]).toContain('<polygon');
+  it('offers each bot seat Level 1 to Level 10, set to its level', () => {
+    const html = lobbyMarkup(view({ bots: [5, 2, 8, 10] }));
+    expect(rows(html)[1]).toContain('<option value="2" selected>Level 2</option>');
+    expect(rows(html)[3]).toContain('<option value="10" selected>Level 10</option>');
+    const picker = (rows(html)[1] as string).match(/<select class="bot-select"[\s\S]*?<\/select>/);
+    expect(picker?.[0].match(/<option /g)).toHaveLength(10);
+    // A guest sees the level, not a choice.
+    const guest = lobbyMarkup(
+      view({ bots: [5, 2, 8, 10], humanPlayer: 1, seats: [seat(0, 'Ada'), seat(1, 'Bo')] }),
+    );
+    expect(rows(guest)[2]).toContain('Level 8');
+    expect(rows(guest)[2]).not.toContain('<select');
   });
 
   it('puts the seats in one column per team', () => {
@@ -109,13 +115,10 @@ describe('lobby', () => {
     expect(asGuest).toContain('Waiting for the host');
   });
 
-  it('says what a tier actually does, since its name does not', () => {
-    // Seat 0 is taken by a person, so the tiers that render are seats 1 and 2.
-    const html = lobbyMarkup(view({ bots: ['gunner', 'recruit', 'marshal', 'gunner'] }));
-    expect(html).toContain('wanders its aim');
-    expect(html).toContain('rarely misses');
-    // Once each, not once per seat: two gunner seats share one line of explanation.
-    expect(html.match(/finds the weak point/g)).toHaveLength(1);
+  it('says once what a level is, and that each bot’s personality is a surprise', () => {
+    const html = lobbyMarkup(view());
+    expect(html.match(/Level 1 \(easiest\) to Level 10/g)).toHaveLength(1);
+    expect(html).toContain('revealed when the match ends');
   });
 
   it('marks your own seat, the host, and anyone who has dropped', () => {
@@ -231,15 +234,15 @@ describe('lobby', () => {
     const playing = lobbyMarkup(view());
     expect(rows(playing)[0]).toContain('id="host-bot"');
     expect(rows(playing)[0]).toContain('<option value="" selected>You play</option>');
-    const watching = lobbyMarkup(view({ hostBot: 'marshal' }));
-    expect(rows(watching)[0]).toContain('<option value="marshal" selected>Marshal</option>');
+    const watching = lobbyMarkup(view({ hostBot: 8 }));
+    expect(rows(watching)[0]).toContain('<option value="8" selected>Level 8</option>');
     expect(rows(watching)[0]).toContain('Ada watches');
     expect(watching).toContain('A bot plays your seat: you will watch.');
     // A guest sees who is playing the host's seat, and cannot change it.
     const guest = lobbyMarkup(
-      view({ hostBot: 'marshal', humanPlayer: 1, seats: [seat(0, 'Ada'), seat(1, 'Bo')] }),
+      view({ hostBot: 8, humanPlayer: 1, seats: [seat(0, 'Ada'), seat(1, 'Bo')] }),
     );
     expect(rows(guest)[0]).not.toContain('id="host-bot"');
-    expect(rows(guest)[0]).toContain('Marshal');
+    expect(rows(guest)[0]).toContain('Level 8');
   });
 });

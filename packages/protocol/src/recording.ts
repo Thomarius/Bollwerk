@@ -1,4 +1,13 @@
-import { DifficultySchema, RulesetSchema, TerrainConfigSchema } from '@rampart/config';
+import {
+  BALANCED,
+  DifficultySchema,
+  LevelSchema,
+  PersonalitySchema,
+  RulesetSchema,
+  TerrainConfigSchema,
+  tierSetup,
+  type BotSetup,
+} from '@rampart/config';
 import {
   applyAction,
   createMatch,
@@ -52,18 +61,35 @@ export const RecordingHeaderSchema = z.strictObject({
   terrain: TerrainConfigSchema,
   /**
    * By player id, as the match was created: name, team label, and who played the seat
-   * at the start — a bot's tier, or null for a person.
+   * at the start — a bot's level and the personality it was dealt, or nulls for a person.
+   * Recordings made before levels name a tier in `difficulty` instead, which still reads.
    */
   players: z.array(
     z.strictObject({
       name: z.string(),
       isBot: z.boolean(),
       team: z.number().int(),
-      difficulty: DifficultySchema.nullable(),
+      level: LevelSchema.nullable().optional(),
+      personality: PersonalitySchema.nullable().optional(),
+      difficulty: DifficultySchema.nullable().optional(),
     }),
   ),
 });
 export type RecordingHeader = z.infer<typeof RecordingHeaderSchema>;
+
+/** Who played a recorded seat at the start: a bot's setup, or null for a person. */
+export function setupOfRecorded(
+  player: RecordingHeader['players'][number] | undefined,
+): BotSetup | null {
+  if (player === undefined) return null;
+  if (player.level !== undefined && player.level !== null) {
+    return { level: player.level, personality: player.personality ?? BALANCED };
+  }
+  // Made before levels: the tier it names stands for a setup.
+  if (player.difficulty !== undefined && player.difficulty !== null)
+    return tierSetup(player.difficulty);
+  return null;
+}
 
 export const RecordingTickSchema = z.strictObject({
   kind: z.literal('tick'),

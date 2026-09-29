@@ -1,5 +1,12 @@
-import { defaultRuleset, defaultTerrainConfig, type Ruleset } from '@rampart/config';
-import { Bot, type Difficulty } from '@rampart/ai';
+import {
+  BALANCED,
+  defaultRuleset,
+  defaultTerrainConfig,
+  type BotSetup,
+  type Personality,
+  type Ruleset,
+} from '@rampart/config';
+import { Bot, dealPersonality } from '@rampart/ai';
 import { MatchRecorder, recordingId, type RecordingLine } from '@rampart/protocol';
 
 import {
@@ -19,11 +26,16 @@ import {
 export interface LocalMatchOptions {
   seed: number;
   /**
-   * One entry per seat: `null` for the person at the keyboard, otherwise the skill
-   * of the bot playing it. Every entry being a difficulty is a watching match, which
+   * One entry per seat: `null` for the person at the keyboard, otherwise the skill level
+   * of the bot playing it, 1 to 10. Every entry being a level is a watching match, which
    * is the clearest way to see how the bots actually play.
    */
-  seats: readonly (Difficulty | null)[];
+  seats: readonly (number | null)[];
+  /**
+   * One personality for every bot, for testing (`?personality=`); otherwise each is dealt
+   * from the seed exactly as a room deals it.
+   */
+  personality?: Personality;
   /** Each seat's team, by seat. Omitted, every seat is on its own. */
   teams?: readonly number[];
   ruleset?: Ruleset;
@@ -48,6 +60,8 @@ export class LocalMatch {
   private accumulator = 0;
   private events: MatchEvent[] = [];
   private recorder: MatchRecorder | null = null;
+  /** Each bot's level and personality, by player, for the reveal at the end. */
+  readonly setups: ReadonlyMap<number, BotSetup>;
   /** Everything applied on the current tick, in order, for the recording. */
   private applied: Action[] = [];
 
@@ -63,7 +77,8 @@ export class LocalMatch {
     const players = new Array<{ name: string; isBot: boolean; team: number }>(seats.length);
     seats.forEach((seat, index) => {
       players[order[index] as number] = {
-        name: seat === null ? 'You' : `${seat[0]?.toUpperCase()}${seat.slice(1)} ${index + 1}`,
+        // Numbered by seat, as the lobby and a room number them.
+        name: seat === null ? 'You' : `Bot ${index + 1}`,
         isBot: seat !== null,
         team: options.teams?.[index] ?? index,
       };
@@ -75,10 +90,19 @@ export class LocalMatch {
       players,
     });
 
+    // Each bot's level, and a personality dealt from the seed as a room deals it.
+    const setups = new Map<number, BotSetup>();
     seats.forEach((seat, index) => {
       const id = order[index] as number;
-      if (seat !== null) this.bots.set(id, new Bot(id, seat));
+      if (seat === null) return;
+      const setup = {
+        level: seat,
+        personality: options.personality ?? dealPersonality(options.seed, id),
+      };
+      setups.set(id, setup);
+      this.bots.set(id, new Bot(id, setup));
     });
+    this.setups = setups;
     this.rng = new Rng(options.seed ^ 0x5f3759df);
     this.tickMs = 1000 / ruleset.tickRateHz;
 
@@ -95,7 +119,8 @@ export class LocalMatch {
         terrain: defaultTerrainConfig,
         players: players.map((p, id) => ({
           ...p,
-          difficulty: seats[order.indexOf(id)] ?? null,
+          level: setups.get(id)?.level ?? null,
+          personality: setups.get(id)?.personality ?? null,
         })),
       });
     }
@@ -175,7 +200,7 @@ export class LocalMatch {
   private botFor(playerId: number): Bot {
     let bot = this.bots.get(playerId);
     if (!bot) {
-      bot = new Bot(playerId, 'gunner');
+      bot = new Bot(playerId, { level: 5, personality: BALANCED });
       this.bots.set(playerId, bot);
     }
     return bot;

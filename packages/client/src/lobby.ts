@@ -1,5 +1,6 @@
-import type { Difficulty } from '@rampart/ai';
 import {
+  MAX_LEVEL,
+  MIN_LEVEL,
   teamsBalanced,
   validPlayerCounts,
   type MatchSettings,
@@ -30,7 +31,8 @@ export interface LobbyView {
   humanPlayer: number;
   /** Seats people hold, by seat. The rest are played by bots. */
   seats: readonly Seat[];
-  bots: readonly Difficulty[];
+  /** Skill level of the bot in each seat, 1 to 10. */
+  bots: readonly number[];
   settings: MatchSettings;
   settingBounds: SettingBounds;
   /** Each seat's team, by seat. */
@@ -39,45 +41,16 @@ export interface LobbyView {
   playerLimits: { min: number; max: number };
   /** The map's seed, fixed while the table is set so the map can be shown. */
   seed: number;
-  /** The bot the host has put in their own seat to watch instead, or null. */
-  hostBot: Difficulty | null;
+  /** The level of the bot the host has put in their own seat to watch instead, or null. */
+  hostBot: number | null;
   /** The colour each seat will play in, as CSS, once the deal is known. */
   seatColours?: readonly string[];
   /** Seats somebody has just taken, to be marked as they arrive. */
   arrived?: readonly number[];
 }
 
-/** What each tier actually does, since "gunner" tells a new player nothing. */
-const TIER_BLURB: Record<Difficulty, string> = {
-  recruit: 'wanders its aim, holds one castle',
-  gunner: 'finds the weak point, reaches for two',
-  marshal: 'rarely misses, and rethinks constantly',
-  baron: 'reaches for the next castle the moment it holds one',
-};
-
-const TIERS: Difficulty[] = ['recruit', 'gunner', 'marshal', 'baron'];
-
-/**
- * A rank badge for a bot's tier, drawn rather than named: one chevron for a recruit, two
- * for a gunner, three for a marshal, a star for the baron, who is not a rank above the
- * marshal but a different temperament.
- */
-export function insignia(tier: Difficulty): string {
-  const chevron = (y: number): string =>
-    `<polyline points="2,${y + 4} 7,${y} 12,${y + 4}" fill="none" stroke="currentColor" stroke-width="2"/>`;
-  const body =
-    tier === 'baron'
-      ? '<polygon points="7,1 8.8,5.2 13.4,5.6 9.9,8.6 11,13 7,10.6 3,13 4.1,8.6 0.6,5.6 5.2,5.2" fill="currentColor"/>'
-      : [3, 7, 11]
-          .slice(0, tier === 'recruit' ? 1 : tier === 'gunner' ? 2 : 3)
-          .map((y) => chevron(y - 1))
-          .join('');
-  return `<svg class="insignia" viewBox="0 0 14 14" width="14" height="14" aria-hidden="true">${body}</svg>`;
-}
-
-function label(tier: string): string {
-  return tier.charAt(0).toUpperCase() + tier.slice(1);
-}
+/** The levels a seat's bot may play at, as the lobby offers them. */
+const LEVELS = Array.from({ length: MAX_LEVEL - MIN_LEVEL + 1 }, (_, i) => MIN_LEVEL + i);
 
 export function escape(text: string): string {
   return text.replace(
@@ -167,22 +140,25 @@ function seatBadge(view: LobbyView, index: number): string {
   return `<b class="num"${style}>${index + 1}</b>`;
 }
 
-/** A bot tier's controls: a select for the host, a badge and name for everyone else. */
-function tierControl(
-  tier: Difficulty,
+/**
+ * A bot's level: a choice of Level 1 to 10 for the host — as arcade games number them,
+ * where the military ranks before were hard to read — and a tag for everyone else.
+ */
+function levelControl(
+  level: number,
   isHost: boolean,
   attributes: string,
   label_: string,
   withPerson = false,
 ): string {
-  if (!isHost) return `${insignia(tier)}<em class="tag">${label(tier)}</em>`;
+  if (!isHost) return `<em class="tag level">Level ${level}</em>`;
   const person = withPerson ? '<option value="">You play</option>' : '';
-  return `${insignia(tier)}<select ${attributes} aria-label="${label_}">${person}${TIERS.map(
-    (t) => `<option value="${t}"${t === tier ? ' selected' : ''}>${label(t)}</option>`,
+  return `<select ${attributes} aria-label="${label_}">${person}${LEVELS.map(
+    (n) => `<option value="${n}"${n === level ? ' selected' : ''}>Level ${n}</option>`,
   ).join('')}</select>`;
 }
 
-function seatRow(view: LobbyView, index: number, isHost: boolean, explain: boolean): string {
+function seatRow(view: LobbyView, index: number, isHost: boolean, defaultLevel: number): string {
   const seat = view.seats.find((s) => s.playerId === index);
   const arrived = view.arrived?.includes(index) ? ' arrived' : '';
 
@@ -199,28 +175,23 @@ function seatRow(view: LobbyView, index: number, isHost: boolean, explain: boole
     let control = '';
     let blurb = '';
     if (isHostSeat && view.hostBot !== null) {
-      control = tierControl(view.hostBot, isHost, 'id="host-bot"', 'Who plays your seat', true);
-      blurb = `<small class="blurb">${escape(seat.name)} watches — ${TIER_BLURB[view.hostBot]}</small>`;
+      control = levelControl(view.hostBot, isHost, 'id="host-bot"', 'Who plays your seat', true);
+      blurb = `<small class="blurb">${escape(seat.name)} watches a bot play their seat</small>`;
     } else if (isHostSeat && isHost) {
-      control = `<select id="host-bot" aria-label="Who plays your seat"><option value="" selected>You play</option>${TIERS.map(
-        (t) => `<option value="${t}">${label(t)}</option>`,
+      control = `<select id="host-bot" aria-label="Who plays your seat"><option value="" selected>You play</option>${LEVELS.map(
+        (n) => `<option value="${n}">Level ${n}</option>`,
       ).join('')}</select>`;
     }
     return `<li class="seat${mine}${arrived}">${seatBadge(view, index)}${occupant(view, index, isHost, seat.name)}${tags}${control}${blurb}</li>`;
   }
 
-  const tier = view.bots[index] ?? 'gunner';
-  const control = tierControl(
-    tier,
+  const control = levelControl(
+    view.bots[index] ?? defaultLevel,
     isHost,
     `class="bot-select" data-seat="${index}"`,
-    `Seat ${index + 1} bot skill`,
+    `Seat ${index + 1} bot level`,
   );
-  // Explained once per tier rather than once per seat: eight bots on the same setting
-  // produced eight identical lines of explanation, which reads as noise and buries the
-  // one line that is doing the work.
-  const blurb = explain ? `<small class="blurb">${TIER_BLURB[tier]}</small>` : '';
-  return `<li class="seat bot${arrived}">${seatBadge(view, index)}${occupant(view, index, isHost, `Bot ${index + 1}`)}${control}${blurb}</li>`;
+  return `<li class="seat bot${arrived}">${seatBadge(view, index)}${occupant(view, index, isHost, `Bot ${index + 1}`)}${control}</li>`;
 }
 
 /** The map and the seed it comes from: the host may draw another or type one in. */
@@ -272,14 +243,12 @@ export function lobbyMarkup(view: LobbyView): string {
         (taken < view.playerCount ? ' — the rest are played by bots.' : '.') +
         (alone && isHost ? ' If nobody joins, the match runs on this computer.' : '')) +
     (view.hostBot !== null && alone && isHost ? ' A bot plays your seat: you will watch.' : '');
-  const explained = new Set<Difficulty>();
-  const rows = Array.from({ length: view.playerCount }, (_, i) => {
-    const seatTaken = view.seats.some((seat) => seat.playerId === i);
-    const tier = view.bots[i] ?? 'gunner';
-    const first = !seatTaken && !explained.has(tier);
-    if (first) explained.add(tier);
-    return seatRow(view, i, isHost, first);
-  });
+  const rows = Array.from({ length: view.playerCount }, (_, i) => seatRow(view, i, isHost, 5));
+  // Said once for the table: what a level is, and that how each bot plays is a surprise.
+  const botsNote =
+    view.seats.length < view.playerCount || view.hostBot !== null
+      ? '<p class="note bots-note">Bots play at Level 1 (easiest) to Level 10. Each has a personality of its own, revealed when the match ends.</p>'
+      : '';
 
   const blocked = startBlocked(view);
   const start = !isHost
@@ -305,7 +274,7 @@ export function lobbyMarkup(view: LobbyView): string {
           ${mapControls(view, isHost)}
           ${tableControls(view, isHost)}
         </div>
-        <div class="lobby-seats">${seatLists(view, rows)}</div>
+        <div class="lobby-seats">${seatLists(view, rows)}${botsNote}</div>
       </div>
       ${start}
       <button id="leave" class="quiet">Leave</button>

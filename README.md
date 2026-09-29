@@ -117,7 +117,7 @@ npm install
 npm run check                       # format, lint, typecheck, test — takes a few minutes
 npm run dev   -w @rampart/client    # play offline with live reload at http://localhost:5173
 npm start     -w @rampart/server    # the server alone, serving the last build
-npm start     -w @rampart/headless -- --matches 8 --players 3 --difficulty gunner --stats out.csv
+npm start     -w @rampart/headless -- --matches 8 --players 3 --level 5 --stats out.csv
 npm start     -w @rampart/headless -- --map --players 3 --seed 2   # print a map as ASCII
 tools/screenshots.sh /tmp/shots     # the client in fixed states, against the dev server
 ```
@@ -125,7 +125,7 @@ tools/screenshots.sh /tmp/shots     # the client in fixed states, against the de
 The dev server has no game server behind it, so its lobby is always a local table.
 The client takes query parameters for development: `?autostart=1&players=4&seed=3` skips
 the menu, `&snapshot=build&round=3` jumps to a phase, `&teams=2` seats teams of two,
-`&watch=1&bots=marshal` fills every seat with bots, `&style=flat` picks a style, and
+`&watch=1&level=8` fills every seat with Level 8 bots, `&style=flat` picks a style, and
 `&speed=10` runs the clock faster.
 
 See [`docs/PLAN.md`](docs/PLAN.md) for the design and what is still open, and

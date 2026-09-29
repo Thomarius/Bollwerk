@@ -18,7 +18,7 @@ npm run check                       # format, lint, typecheck, test — must pas
 npm run build                       # client + server bundles, both needed by the image
 npm run dev   -w @rampart/client    # play offline at http://localhost:5173
 npm start     -w @rampart/server    # serves the built client at http://localhost:8080
-npm start     -w @rampart/headless -- --matches 8 --players 3 --difficulty gunner --stats out.csv
+npm start     -w @rampart/headless -- --matches 8 --players 3 --level 5 --stats out.csv
 npm start     -w @rampart/headless -- --map --players 3 --seed 2   # print a map as ASCII
 npm start     -w @rampart/headless -- --replay recordings/ --stats human.csv   # recorded human play
 tools/screenshots.sh /tmp/shots [scene...]   # client in fixed states, against the dev server
@@ -31,7 +31,7 @@ Client dev query parameters: `?autostart=1&players=3&seed=7` (a random seed with
 `&snapshot=build` to jump to a phase (`&round=N` for one deep in a match, `&idle=1` to
 leave your seat undriven on the way, so you are soon knocked out), `&speed=10`,
 `&style=flat|pixel|night|cyberpunk|blueprint|parchment|bricks` for both looks (a one-look style sets only its own)
-(`&buildStyle=`, `&combatStyle=` for one), `&watch=1&bots=marshal` to observe a bot match,
+(`&buildStyle=`, `&combatStyle=` for one), `&watch=1&level=8` to observe a bot match (`&personality=offensive` fixes every bot's),
 `&rounds=12` for the round cap, `&teams=2` for teams of two in seat order. `?host=8` opens
 the lobby at eight seats — a room if a server answers, a local table if not —
 `?join=CODE` joins one, `&name=Bo` sets the name, `&seed=N` the map. The menu's Play and
@@ -44,7 +44,7 @@ Join reach the same lobby, which sets the map, players, teams, bots and rounds.
 | `config`         | Zod schemas, typed defaults, cross-file validation. Reads `config/*.json`. |
 | `sim`            | The deterministic game core. No DOM, no Node, no I/O.                      |
 | `protocol`       | Wire messages and validators.                                              |
-| `ai`             | Bots: min-cut sealing, 0-1 BFS attack, difficulty tiers.                   |
+| `ai`             | Bots: min-cut sealing, 0-1 BFS attack, skill levels and personalities.     |
 | `analysis`       | Per-round match statistics, for bot soaks and recorded human play alike.   |
 | `server`         | Authoritative match server, rooms, WebSocket, match recordings.            |
 | `client`         | Pixi renderer, six visual styles, controls, HUD, netcode client.           |
@@ -154,8 +154,9 @@ where to start:
 `npm start -w @rampart/headless -- --stats FILE` writes a row per player per round,
 sampled at the resolution that ends each build phase — castles sealed, cannons owned and
 active, cannon room, wall tiles, pieces placed against the pieces the tier had time for.
-A summary goes to the console. `--difficulty marshal,gunner,recruit` sets each seat
-separately, `--max-rounds N|none` overrides the cap. Rows also carry points banked and,
+A summary goes to the console. `--level 8,5,2` sets each seat
+separately (old tiers: recruit 2, gunner 5, marshal 8, baron 8 offensive),
+`--personality offensive` or `dealt` fixes or deals personalities, `--max-rounds N|none` overrides the cap. Rows also carry points banked and,
 for diagnosing failed rounds, `repairAtBuild`, `repairLeft` and `repairStuck`: what the
 tightest seal needed as the phase opened, what was still missing at its end, and how much
 of that no piece in the bag could fill. Prefer this to watching; watching is for forming

@@ -2,8 +2,8 @@ import { z } from 'zod';
 
 /**
  * The tier names seats were set by before skill and personality were split (PLAN 11.6).
- * Each now stands for a level and a personality (`tierSetup`); the lobby moves to levels
- * in the next step, and these go with it.
+ * Kept only to read recordings made before: each stands for a level and a personality
+ * (`tierSetup`).
  */
 export const DifficultySchema = z.enum(['recruit', 'gunner', 'marshal', 'baron']);
 export type DifficultyName = z.infer<typeof DifficultySchema>;
@@ -11,6 +11,7 @@ export type DifficultyName = z.infer<typeof DifficultySchema>;
 /** Skill levels, 1 to 10, as the lobby offers them. */
 export const MIN_LEVEL = 1;
 export const MAX_LEVEL = 10;
+export const LevelSchema = z.number().int().min(MIN_LEVEL).max(MAX_LEVEL);
 
 /**
  * Skill: how well a bot plays, not how — pace, aim, judgement and care, in human units.
@@ -101,6 +102,36 @@ export const PersonalitySchema = z.strictObject({
   targeting: z.enum(TargetingValues),
   cannons: z.enum(CannonValues),
 });
+
+/** Every value of each trait, so a personality can be dealt or parsed. */
+export const TRAIT_VALUES = {
+  risk: RiskValues,
+  targeting: TargetingValues,
+  cannons: CannonValues,
+} as const satisfies { [K in keyof Personality]: readonly Personality[K][] };
+
+/** A personality in words, as the summary reveals it and recordings carry it. */
+export function personalityWords(p: Personality): string {
+  return `${p.risk} · ${p.targeting} · ${p.cannons === 'balanced' ? 'balanced cannons' : p.cannons}`;
+}
+
+/**
+ * A personality from a short text — `offensive`, or `defensive-strategic-balanced` —
+ * for fixing one in tests and soaks. Each word is a value of exactly one trait; traits not
+ * named are balanced. Null if a word names nothing.
+ */
+export function parsePersonality(text: string): Personality | null {
+  const out: Personality = { ...BALANCED };
+  for (const word of text.split(/[-,\s]+/).filter((w) => w.length > 0)) {
+    if (word === 'balanced') continue;
+    const trait = (Object.keys(TRAIT_VALUES) as (keyof Personality)[]).find((k) =>
+      (TRAIT_VALUES[k] as readonly string[]).includes(word),
+    );
+    if (trait === undefined) return null;
+    (out as Record<keyof Personality, string>)[trait] = word;
+  }
+  return out;
+}
 
 /** Today's play, the baseline every trait is measured against. */
 export const BALANCED: Personality = {

@@ -1,10 +1,10 @@
-import { DifficultySchema, MatchSettingsSchema, SettingBoundsSchema } from '@rampart/config';
+import { LevelSchema, MatchSettingsSchema, SettingBoundsSchema } from '@rampart/config';
 import { z } from 'zod';
 
 import { SnapshotSchema } from './snapshot.js';
 
 /** Bumped on any breaking change to the message set; mismatched clients are rejected. */
-export const PROTOCOL_VERSION = 11;
+export const PROTOCOL_VERSION = 12;
 
 /**
  * A player's intent. The server overwrites `player` with the sender's own seat before
@@ -74,7 +74,7 @@ export const ClientMessageSchema = z.discriminatedUnion('type', [
    */
   z.strictObject({
     type: z.literal('configure'),
-    bots: z.array(DifficultySchema).optional(),
+    bots: z.array(LevelSchema).optional(),
     settings: MatchSettingsSchema.partial().optional(),
     /** Seats at the table; refused unless the team size allows it and everyone fits. */
     playerCount: z.number().int().min(2).max(8).optional(),
@@ -83,7 +83,7 @@ export const ClientMessageSchema = z.discriminatedUnion('type', [
     /** The map: every island, castle and seat's island follow from it. */
     seed: z.number().int().nonnegative().max(0xffffffff).optional(),
     /** A bot to play the host's own seat, or null for the host to play it. */
-    hostBot: DifficultySchema.nullable().optional(),
+    hostBot: LevelSchema.nullable().optional(),
     /**
      * Moves the person in seat `from` to seat `to`, swapping places with whoever is
      * there — another person, or a bot, which keeps its skill. Teams belong to seats, so
@@ -120,8 +120,8 @@ export const ServerMessageSchema = z.discriminatedUnion('type', [
     seats: z.array(SeatSchema),
     /** Total seats at the table; any beyond the joined players are filled by bots. */
     playerCount: z.number().int().min(2).max(8),
-    /** Skill of the bot in each seat, so everyone can see what they are about to face. */
-    bots: z.array(DifficultySchema),
+    /** Skill level of the bot in each seat, so everyone can see what they are about to face. */
+    bots: z.array(LevelSchema),
     /** The match settings as they stand, and what the host may set them to. */
     settings: MatchSettingsSchema,
     settingBounds: SettingBoundsSchema,
@@ -133,7 +133,7 @@ export const ServerMessageSchema = z.discriminatedUnion('type', [
      */
     seed: z.number().int().nonnegative(),
     /** The bot playing the host's seat while the host watches, or null. */
-    hostBot: DifficultySchema.nullable(),
+    hostBot: LevelSchema.nullable(),
     /** The player counts the rules allow at all, before the team size narrows them. */
     playerLimits: z.strictObject({ min: z.number().int(), max: z.number().int() }),
     hostId: z.number().int().nonnegative(),

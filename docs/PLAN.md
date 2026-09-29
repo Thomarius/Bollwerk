@@ -721,12 +721,16 @@ construction, and the soak asserts they never ask for a move the rules refuse.
 **Teammates are never targets**, and cannons face the other teams' castles. Bots build
 only on their own island, so they never help a teammate, whatever the rule allows.
 
-Four tiers: **recruit**, **gunner** and **marshal** differ in aim, target choice, ambition,
-replanning rate and pace; **baron** has marshal's skill with a different playstyle —
-reaching for the next castle the moment it holds one (`expandsWhenSealed`, `maxCastles`
-4). It is as strong as marshal, not stronger, and exists for variety. Measured 2026-09-25
-at three players, both seats: marshal beats two gunners 29 of 40, baron 28; gunner beats
-two recruits 9 of 12. Records in the archive from before 10l are historical.
+**A bot is a skill level and a personality** (11.6). **Skill, Level 1–10**, chosen per seat
+in the lobby: pace, aim, replanning, judgement, and at low levels sloppiness — a worse fit
+now and then, careless castle and gun spots. A table of anchors in `ai.default.json`,
+interpolated between (`skillAt`); Level 5 is the old gunner, 8 the marshal, 2 the recruit.
+**Personality**, dealt from the seed by player (`dealPersonality`) and hidden until the
+end: risk (defensive, balanced, offensive — offensive the old baron) so far; the other
+traits come with 11.6's later phases. `botProfile` compiles the two into what the bot
+reads. Measured 2026-09-25 under the old tiers at three players, both seats: marshal beats
+two gunners 29 of 40, baron 28; gunner beats two recruits 9 of 12. Records in the archive
+from before 10l are historical.
 
 ---
 
@@ -918,7 +922,7 @@ balanced means.
 - **Bots do not help a teammate build**, even under `crossIslandBuild: all` — teaching
   one to help without wrecking a person's plan is its own question (team mode, §1.8).
 
-### 11.6 Bots as skill and personality — agreed 2026-09-29, not started
+### 11.6 Bots as skill and personality — agreed 2026-09-29, phase 1 done
 
 **The next milestone (M13)**, ahead of 11.2's baseline, which is then measured over the
 personality mix real matches will contain. Today a tier bundles two things: **skill** —
@@ -994,7 +998,7 @@ reliably beat Level 5. Measured at three players, both seats.
 
 #### Phases
 
-1. **The split, no behaviour change (S–M).** Skill levels and personalities in
+1. **The split, no behaviour change — done** (ARCHIVE 11x). Skill levels and personalities in
    `ai.default.json` behind a strict schema; `Bot` built from a level and a personality.
    Personality "balanced · strategic · balanced", with the targeting share at 100% and
    today's formula, must reproduce today's gunner and marshal **hash for hash** in the

@@ -1,9 +1,9 @@
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 
-import { statsOfRecording, type StatRow, type Tier } from '@rampart/analysis';
-import type { ConfigBundle } from '@rampart/config';
-import { parseRecording } from '@rampart/protocol';
+import { statsOfRecording, type StatRow } from '@rampart/analysis';
+import { personalityWords, type ConfigBundle } from '@rampart/config';
+import { parseRecording, setupOfRecorded } from '@rampart/protocol';
 import type { MatchState } from '@rampart/sim';
 
 /**
@@ -55,7 +55,10 @@ export function replayAll(bundle: ConfigBundle, paths: readonly string[]): StatR
       console.log(`  ${file}: no header`);
       continue;
     }
-    const tierOf = (player: number): Tier => header.players[player]?.difficulty ?? 'human';
+    const tierOf = (player: number): string => {
+      const setup = setupOfRecorded(header.players[player]);
+      return setup === null ? 'human' : `L${setup.level} ${personalityWords(setup.personality)}`;
+    };
     const { rows: matchRows, replay: result } = statsOfRecording(bundle, lines);
     rows.push(...matchRows);
 

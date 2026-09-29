@@ -270,8 +270,8 @@ describe('bot difficulty', () => {
     const host = new TestClient('host');
     r.join(host, 'Ada');
 
-    r.handle(host, { type: 'configure', bots: ['recruit', 'marshal', 'marshal'] });
-    expect(lastRoom(host).bots).toEqual(['recruit', 'marshal', 'marshal']);
+    r.handle(host, { type: 'configure', bots: [2, 8, 8] });
+    expect(lastRoom(host).bots).toEqual([2, 8, 8]);
   });
 
   it('ignores a guest trying to set them', () => {
@@ -282,7 +282,7 @@ describe('bot difficulty', () => {
     r.join(guest, 'Bo');
     const before = lastRoom(guest).bots;
 
-    r.handle(guest, { type: 'configure', bots: ['marshal', 'marshal', 'marshal'] });
+    r.handle(guest, { type: 'configure', bots: [8, 8, 8] });
     expect(lastRoom(guest).bots).toEqual(before);
   });
 
@@ -293,7 +293,7 @@ describe('bot difficulty', () => {
     r.start();
     const before = lastRoom(host).bots;
 
-    r.handle(host, { type: 'configure', bots: ['marshal', 'marshal', 'marshal'] });
+    r.handle(host, { type: 'configure', bots: [8, 8, 8] });
     expect(lastRoom(host).bots).toEqual(before);
   });
 
@@ -345,7 +345,7 @@ describe('bot difficulty', () => {
     const r = room(3);
     const host = new TestClient('host');
     r.join(host, 'Ada');
-    r.handle(host, { type: 'configure', bots: ['recruit', 'recruit', 'recruit'] });
+    r.handle(host, { type: 'configure', bots: [2, 2, 2] });
     r.start();
     run(r, 600);
 
@@ -687,9 +687,9 @@ describe('a host who watches', () => {
     const b = new TestClient('b');
     r.join(a, 'Ada');
     r.join(b, 'Bo');
-    r.handle(a, { type: 'configure', hostBot: 'marshal' });
+    r.handle(a, { type: 'configure', hostBot: 8 });
     const roster = a.received.filter((m) => m.type === 'room').at(-1);
-    expect(roster?.type === 'room' && roster.hostBot).toBe('marshal');
+    expect(roster?.type === 'room' && roster.hostBot).toBe(8);
     r.start();
 
     const snapshot = a.received.find((m) => m.type === 'snapshot');
@@ -713,7 +713,7 @@ describe('a host who watches', () => {
     const r = room(2);
     const a = new TestClient('a');
     r.join(a, 'Ada');
-    r.handle(a, { type: 'configure', hostBot: 'gunner' });
+    r.handle(a, { type: 'configure', hostBot: 5 });
     r.start();
     const back = new TestClient('a2');
     r.join(back, 'Ada', a.token);
@@ -756,10 +756,10 @@ describe('seating, chosen by the host', () => {
     const r = room(4);
     const a = new TestClient('a');
     r.join(a, 'Ada');
-    r.handle(a, { type: 'configure', bots: ['gunner', 'gunner', 'gunner', 'marshal'] });
+    r.handle(a, { type: 'configure', bots: [5, 5, 5, 8] });
     r.handle(a, { type: 'configure', move: { from: 0, to: 3 } });
     expect(seatOf(a, 'Ada')).toBe(3);
-    expect(lastRoom(a).bots[0]).toBe('marshal');
+    expect(lastRoom(a).bots[0]).toBe(8);
     expect(lastRoom(a).hostId).toBe(3);
   });
 

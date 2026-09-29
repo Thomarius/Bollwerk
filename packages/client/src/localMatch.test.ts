@@ -9,7 +9,7 @@ describe('a local match, recorded', () => {
     const lines: RecordingLine[] = [];
     const match = new LocalMatch({
       seed: 11,
-      seats: [null, 'gunner', 'recruit'],
+      seats: [null, 5, 2],
       record: (line) => lines.push(line),
     });
     // The person picks a castle between frames, as a click does — ahead of the bots'
@@ -38,8 +38,8 @@ describe('a local match, recorded', () => {
     expect(header?.kind).toBe('header');
     if (header?.kind === 'header') {
       expect(header.source).toBe('local');
-      expect(header.players[match.humanPlayer]?.difficulty).toBeNull();
-      expect(header.players.filter((p) => p.difficulty !== null)).toHaveLength(2);
+      expect(header.players[match.humanPlayer]?.level).toBeNull();
+      expect(header.players.filter((p) => p.level !== null)).toHaveLength(2);
     }
     const replay = replayRecording(lines);
     expect(replay.refused).toBe(0);
@@ -54,7 +54,7 @@ describe('a local match, recorded', () => {
     const lines: RecordingLine[] = [];
     const match = new LocalMatch({
       seed: 3,
-      seats: [null, 'gunner'],
+      seats: [null, 5],
       record: (l) => lines.push(l),
     });
     match.fastForwardTo('build', 1);

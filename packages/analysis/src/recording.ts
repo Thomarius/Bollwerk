@@ -1,5 +1,10 @@
 import type { ConfigBundle } from '@rampart/config';
-import { replayRecording, type RecordingLine, type ReplayResult } from '@rampart/protocol';
+import {
+  replayRecording,
+  setupOfRecorded,
+  type RecordingLine,
+  type ReplayResult,
+} from '@rampart/protocol';
 
 import { RoundStats, type StatRow, type Tier } from './stats.js';
 
@@ -18,7 +23,7 @@ export function statsOfRecording(
 ): { rows: StatRow[]; replay: ReplayResult } {
   const header = lines[0];
   if (header?.kind !== 'header') throw new Error('a recording starts with its header');
-  const tierOf = (player: number): Tier => header.players[player]?.difficulty ?? 'human';
+  const tierOf = (player: number): Tier => setupOfRecorded(header.players[player]) ?? 'human';
   const sampler = new RoundStats(bundle, header.id, header.seed, tierOf);
   const replay = replayRecording(lines, (state, events) => sampler.observe(state, events));
   return { rows: sampler.rows, replay };

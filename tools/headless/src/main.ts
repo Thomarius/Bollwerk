@@ -2,9 +2,18 @@ import { writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { validateConfigBundle } from '@rampart/config';
+import {
+  BALANCED,
+  MAX_LEVEL,
+  MIN_LEVEL,
+  parsePersonality,
+  personalityWords,
+  validateConfigBundle,
+  type BotSetup,
+  type Personality,
+} from '@rampart/config';
 import { loadConfigBundle } from '@rampart/config/node';
-import { Bot, DIFFICULTIES, type Difficulty } from '@rampart/ai';
+import { Bot, dealPersonality } from '@rampart/ai';
 import {
   Rng,
   applyAction,
@@ -37,7 +46,10 @@ interface Args {
   seed: number;
   maxTicks: number;
   map: boolean;
-  difficulties: Difficulty[];
+  /** Skill level per seat, repeating if shorter than the table. */
+  levels: number[];
+  /** Personality per seat, repeating; `dealt` deals one from the seed as a match does. */
+  personalities: (Personality | 'dealt')[];
   stats: string | null;
   /** Players per team; 1 is free-for-all. Seats go into teams in order, then shuffle. */
   teams: number;
@@ -48,21 +60,31 @@ interface Args {
 }
 
 /**
- * Seat tiers.
- *
- * One name sets the whole table; a comma-separated list sets each seat in turn and
- * repeats if it is shorter than the table. A table of identical bots answers "do
- * matches end?" but cannot answer "is marshal better than gunner?", which is the
- * question the difficulty ladder in docs/PLAN.md section 8 is made of.
+ * Seat levels: one sets the whole table; a comma-separated list sets each seat in turn
+ * and repeats if it is shorter than the table. A table of identical bots answers "do
+ * matches end?" but cannot answer "does Level 8 beat Level 5?", the ladder 11.6 tunes.
  */
-function parseDifficulties(value: string | undefined): Difficulty[] | null {
+function parseLevels(value: string | undefined): number[] | null {
   if (value === undefined) return null;
-  const names = value.split(',').map((n) => n.trim());
-  if (names.length === 0) return null;
-  for (const name of names) {
-    if (!DIFFICULTIES.includes(name as Difficulty)) return null;
+  const levels = value.split(',').map((n) => Number(n.trim()));
+  if (levels.some((l) => !Number.isInteger(l) || l < MIN_LEVEL || l > MAX_LEVEL)) return null;
+  return levels;
+}
+
+/** Seat personalities, likewise: `offensive`, `defensive,balanced`, or `dealt`. */
+function parsePersonalities(value: string | undefined): (Personality | 'dealt')[] | null {
+  if (value === undefined) return null;
+  const out: (Personality | 'dealt')[] = [];
+  for (const text of value.split(',').map((t) => t.trim())) {
+    if (text === 'dealt') {
+      out.push('dealt');
+      continue;
+    }
+    const personality = parsePersonality(text);
+    if (personality === null) return null;
+    out.push(personality);
   }
-  return names as Difficulty[];
+  return out;
 }
 
 function parseArgs(argv: string[]): Args {
@@ -72,7 +94,9 @@ function parseArgs(argv: string[]): Args {
     seed: 1,
     maxTicks: 150_000,
     map: false,
-    difficulties: ['gunner'],
+    levels: [5],
+    // Balanced unless asked, so a soak measures what it says rather than a random draw.
+    personalities: [BALANCED],
     stats: null,
     maxRounds: undefined,
     teams: 1,
@@ -106,13 +130,23 @@ function parseArgs(argv: string[]): Args {
         args.maxTicks = Number(value);
         i++;
         break;
-      case '--difficulty': {
-        const tiers = parseDifficulties(value);
-        if (tiers === null) {
-          console.error(`--difficulty wants ${DIFFICULTIES.join('|')}, or a comma-separated list`);
+      case '--level': {
+        const levels = parseLevels(value);
+        if (levels === null) {
+          console.error(`--level wants ${MIN_LEVEL}-${MAX_LEVEL}, or a comma-separated list`);
           process.exit(1);
         }
-        args.difficulties = tiers;
+        args.levels = levels;
+        i++;
+        break;
+      }
+      case '--personality': {
+        const personalities = parsePersonalities(value);
+        if (personalities === null) {
+          console.error('--personality wants trait values joined by -, "dealt", or a list');
+          process.exit(1);
+        }
+        args.personalities = personalities;
         i++;
         break;
       }
@@ -133,7 +167,7 @@ function parseArgs(argv: string[]): Args {
       case '--help':
         console.log(
           'usage: npm start -w @rampart/headless -- [--matches N] [--players N] [--seed N] ' +
-            `[--max-ticks N] [--max-rounds N|none] [--teams N] [--difficulty ${DIFFICULTIES.join('|')}[,...]] [--stats FILE] [--map]\n` +
+            `[--max-ticks N] [--max-rounds N|none] [--teams N] [--level 1-10[,...]] [--personality offensive|dealt|...[,...]] [--stats FILE] [--map]\n` +
             '       npm start -w @rampart/headless -- --replay recordings/ [more files or dirs] [--stats FILE]',
         );
         process.exit(0);
@@ -282,10 +316,23 @@ if (args.map) {
   process.exit(0);
 }
 
-/** Which tier sits in each seat, repeating the list if it is shorter than the table. */
-const seatTier = (p: number): Difficulty =>
-  args.difficulties[p % args.difficulties.length] as Difficulty;
-const table = Array.from({ length: args.players }, (_, p) => seatTier(p));
+/** Who sits in each seat — a level and a personality — repeating the lists as needed. */
+function seatSetup(p: number, seed: number): BotSetup {
+  const personality = args.personalities[p % args.personalities.length] as Personality | 'dealt';
+  return {
+    level: args.levels[p % args.levels.length] as number,
+    personality: personality === 'dealt' ? dealPersonality(seed, p) : personality,
+  };
+}
+/** How a seat is named in the output: `L5`, with a fixed personality after it. */
+function seatLabel(p: number): string {
+  const personality = args.personalities[p % args.personalities.length] as Personality | 'dealt';
+  const level = `L${args.levels[p % args.levels.length]}`;
+  if (personality === 'dealt') return `${level} dealt`;
+  const words = personalityWords(personality);
+  return words === personalityWords(BALANCED) ? level : `${level} ${words}`;
+}
+const table = Array.from({ length: args.players }, (_, p) => seatLabel(p));
 
 console.log(
   // No grid size here: it is measured from the island, which varies a little with the
@@ -301,7 +348,7 @@ const ruleset =
 const layouts: TeamLayout[] = [];
 const started = Date.now();
 const outcomes = new Map<string, number>();
-const wins = new Map<Difficulty, number>();
+const wins = new Map<string, number>();
 const stats: StatRow[] = [];
 let refusedTotal = 0;
 let totalTicks = 0;
@@ -315,16 +362,16 @@ for (let i = 0; i < args.matches; i++) {
     ruleset,
     terrainConfig: bundle.terrain,
     players: teamSeating(seed, args.players, args.teams).map((team, p) => ({
-      name: `${seatTier(p)}${p}`,
+      name: `${seatLabel(p)} ${p}`,
       isBot: true,
       team,
     })),
   });
   const rng = new Rng(seed);
-  const bots = state.players.map((p) => new Bot(p.id, seatTier(p.id)));
+  const bots = state.players.map((p) => new Bot(p.id, seatSetup(p.id, seed), bundle.ai));
   let refused = 0;
 
-  const sampler = new RoundStats(bundle, `sim-${seed}`, seed, seatTier);
+  const sampler = new RoundStats(bundle, `sim-${seed}`, seed, (p) => seatSetup(p, seed));
 
   while (state.phase !== 'game_over' && state.tick < args.maxTicks) {
     for (const player of state.players) {
@@ -343,8 +390,8 @@ for (let i = 0; i < args.matches; i++) {
   outcomes.set(outcome, (outcomes.get(outcome) ?? 0) + 1);
   // A shared win counts for each player who shares it.
   for (const winner of state.phase === 'game_over' ? state.winners : []) {
-    const tier = seatTier(winner);
-    wins.set(tier, (wins.get(tier) ?? 0) + 1);
+    const label = seatLabel(winner);
+    wins.set(label, (wins.get(label) ?? 0) + 1);
   }
   totalTicks += state.tick;
   totalRounds += state.round;
@@ -369,15 +416,14 @@ for (const [outcome, count] of [...outcomes].sort((a, b) => b[1] - a[1])) {
 
 if (layouts.length > 0) summariseTeams(layouts);
 
-// Only meaningful with a mixed table; with one tier it is a seat count, which is
-// worth seeing anyway because a symmetric map is supposed to make it a flat one.
+// Only meaningful with a mixed table; with one kind of seat it is a seat count, worth
+// seeing anyway because a symmetric map is supposed to make it a flat one.
 if (new Set(table).size > 1) {
-  console.log('\nwins by tier:');
-  for (const tier of DIFFICULTIES) {
-    const seats = table.filter((t) => t === tier).length;
-    if (seats === 0) continue;
+  console.log('\nwins by seat:');
+  for (const label of new Set(table)) {
+    const seats = table.filter((t) => t === label).length;
     console.log(
-      `  ${tier.padEnd(8)} ${String(wins.get(tier) ?? 0).padStart(3)} (${seats} seat(s))`,
+      `  ${label.padEnd(12)} ${String(wins.get(label) ?? 0).padStart(3)} (${seats} seat(s))`,
     );
   }
 }

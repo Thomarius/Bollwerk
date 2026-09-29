@@ -1,4 +1,4 @@
-import { TIERS, type StatRow, type Tier } from '@rampart/analysis';
+import { rowLabel, type StatRow } from '@rampart/analysis';
 
 function mean(values: number[]): number {
   if (values.length === 0) return 0;
@@ -13,20 +13,24 @@ function mean(values: number[]): number {
  * those cannot finish a match however long it runs.
  */
 export function summariseStats(rows: StatRow[]): void {
-  const byTier = new Map<Tier, StatRow[]>();
+  const byTier = new Map<string, StatRow[]>();
   for (const row of rows) {
     if (row.eliminated) continue;
-    const list = byTier.get(row.difficulty);
-    if (list === undefined) byTier.set(row.difficulty, [row]);
+    const label = rowLabel(row);
+    const list = byTier.get(label);
+    if (list === undefined) byTier.set(label, [row]);
     else list.push(row);
   }
   if (byTier.size === 0) return;
 
   console.log('\nper surviving player-round, averaged:');
   console.log('  tier     sealed  owned  active  idle%   room  wall  pieces/budget   terr   dmg');
-  for (const tier of TIERS) {
-    const list = byTier.get(tier);
-    if (list === undefined) continue;
+  // Levels in order, a person's rows last.
+  const labels = [...byTier.keys()].sort((a, b) =>
+    a === 'human' ? 1 : b === 'human' ? -1 : a.localeCompare(b, 'en', { numeric: true }),
+  );
+  for (const tier of labels) {
+    const list = byTier.get(tier) as StatRow[];
     const owned = mean(list.map((r) => r.cannonsOwned));
     const active = mean(list.map((r) => r.cannonsActive));
     const idle = owned === 0 ? 0 : (1 - active / owned) * 100;

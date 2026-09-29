@@ -1,5 +1,11 @@
-import { skillAt, tierSetup, type ConfigBundle } from '@rampart/config';
-import { DIFFICULTIES, cannonRoom, cheapestPlanFor, type Difficulty } from '@rampart/ai';
+import {
+  personalityWords,
+  skillAt,
+  BALANCED,
+  type BotSetup,
+  type ConfigBundle,
+} from '@rampart/config';
+import { cannonRoom, cheapestPlanFor } from '@rampart/ai';
 import {
   Structure,
   Terrain,
@@ -9,9 +15,20 @@ import {
   type MatchState,
 } from '@rampart/sim';
 
-/** Who played a seat: a bot's tier, or a person, from a recording of human play. */
-export type Tier = Difficulty | 'human';
-export const TIERS: readonly Tier[] = [...DIFFICULTIES, 'human'];
+/** Who played a seat: a bot's level and personality, or a person, from a recording. */
+export type Tier = BotSetup | 'human';
+
+/**
+ * How a table names who played a row: `human`, or the level — `L5` — with the
+ * personality after it when it is not balanced, so a soak's summary groups like with like.
+ */
+export function rowLabel(row: Pick<StatRow, 'level' | 'personality'>): string {
+  if (row.level === null) return 'human';
+  const balanced = personalityWords(BALANCED);
+  return row.personality === '' || row.personality === balanced
+    ? `L${row.level}`
+    : `L${row.level} ${row.personality}`;
+}
 
 // ------------------------------------------------------------------------- stats
 
@@ -28,7 +45,10 @@ export interface StatRow {
   seed: number;
   round: number;
   player: number;
-  difficulty: Tier;
+  /** A bot's skill level, or null for a person. */
+  level: number | null;
+  /** A bot's personality in words (`personalityWords`), or empty for a person. */
+  personality: string;
   enclosedCastles: number;
   cannonsAwarded: number;
   eliminated: boolean;
@@ -63,7 +83,8 @@ const STAT_COLUMNS: (keyof StatRow)[] = [
   'seed',
   'round',
   'player',
-  'difficulty',
+  'level',
+  'personality',
   'enclosedCastles',
   'cannonsAwarded',
   'eliminated',
@@ -90,11 +111,11 @@ const STAT_COLUMNS: (keyof StatRow)[] = [
  * much of the phase a bot actually used. A bot that seals early and then stands idle
  * shows up here as a ratio well under one, with nothing else needing to be measured.
  */
-export function piecesBudget(bundle: ConfigBundle, difficulty: Tier): number | null {
+export function piecesBudget(bundle: ConfigBundle, tier: Tier): number | null {
   // A person has no pace to price a phase with; their pieces are counted, not rated. A
   // zero here once read in the table as "used none of it".
-  if (difficulty === 'human') return null;
-  const profile = skillAt(bundle.ai, tierSetup(difficulty).level);
+  if (tier === 'human') return null;
+  const profile = skillAt(bundle.ai, tier.level);
   const perPiece = profile.placementBaseMs + profile.placementPerCellMs * 3.5;
   return bundle.ruleset.phases.buildMs / perPiece;
 }
@@ -220,7 +241,8 @@ export class RoundStats {
             seed: this.seed,
             round: event.round,
             player: result.player,
-            difficulty: tier,
+            level: tier === 'human' ? null : tier.level,
+            personality: tier === 'human' ? '' : personalityWords(tier.personality),
             enclosedCastles: result.enclosedCastles,
             cannonsAwarded: result.cannonsAwarded,
             eliminated: result.eliminated,

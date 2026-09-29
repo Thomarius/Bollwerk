@@ -1,4 +1,9 @@
-import { defaultRuleset, defaultTerrainConfig } from '@rampart/config';
+import {
+  defaultRuleset,
+  defaultTerrainConfig,
+  tierSetup,
+  type DifficultyName,
+} from '@rampart/config';
 import {
   Rng,
   applyAction,
@@ -15,7 +20,11 @@ import {
 } from '@rampart/sim';
 import { describe, expect, it } from 'vitest';
 
-import { Bot, type Difficulty } from './bot.js';
+import { Bot } from './bot.js';
+
+/** The old tiers, as the level and personality each now stands for. */
+type Difficulty = DifficultyName;
+const bot = (id: number, tier: Difficulty): Bot => new Bot(id, tierSetup(tier));
 import { cannonRoom } from './tactics.js';
 
 interface Outcome {
@@ -56,7 +65,7 @@ function play(
     players: kinds.map((k, i) => ({ name: `${k}${i}`, isBot: true })),
   });
   const rng = new Rng(seed);
-  const bots = state.players.map((p) => new Bot(p.id, kinds[p.id] as Difficulty));
+  const bots = state.players.map((p) => bot(p.id, kinds[p.id] as Difficulty));
   const rejections: Rejection[] = [];
   const placementsPerPhase: number[] = [];
   const resolutions: Resolution[] = [];
@@ -141,7 +150,7 @@ describe('enclosure in real play', () => {
       });
       const rng = new Rng(seed);
       const tiers: Difficulty[] = ['marshal', 'gunner', 'recruit'];
-      const bots = state.players.map((p) => new Bot(p.id, tiers[p.id]));
+      const bots = state.players.map((p) => bot(p.id, tiers[p.id] as Difficulty));
       while (state.phase !== 'game_over' && state.tick < 20_000) {
         for (const player of state.players) {
           const action = bots[player.id]?.think(state, rng) ?? null;
@@ -196,7 +205,7 @@ describe('cannon siting', () => {
     state.players[0]!.startingCastleId = 0;
     state.players[0]!.cannonsToPlace = 1;
 
-    const action = new Bot(0, 'marshal').think(state, new Rng(1));
+    const action = bot(0, 'marshal').think(state, new Rng(1));
     expect(action?.kind).toBe('place_cannon');
     // Columns 10-11 would put the gun against the coastal east wall.
     expect((action as { x: number }).x).toBeLessThan(10);
@@ -220,7 +229,7 @@ describe('bots in teams', () => {
         })),
       });
       const rng = new Rng(seed);
-      const bots = state.players.map((p) => new Bot(p.id, 'gunner'));
+      const bots = state.players.map((p) => bot(p.id, 'gunner'));
       const rejections: string[] = [];
       let shots = 0;
       while (state.phase !== 'game_over' && state.tick < 20_000) {

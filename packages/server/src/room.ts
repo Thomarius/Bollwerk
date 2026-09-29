@@ -6,12 +6,14 @@ import {
   reshapeTable,
   teamsBalanced,
   type AiConfig,
+  type BotSetup,
   type MatchSettings,
+  type Personality,
   type Ruleset,
   type ServerConfig,
   type TerrainConfig,
 } from '@rampart/config';
-import { Bot, type Difficulty } from '@rampart/ai';
+import { Bot, dealPersonality } from '@rampart/ai';
 import {
   ActionSchema,
   MatchRecorder,
@@ -105,7 +107,7 @@ export class Room {
   private pending: { seat: Seat; action: Action }[] = [];
   private hostId = 0;
   /** Skill of the bot in each seat, which the host may change before the match starts. */
-  private readonly botDifficulties: Difficulty[];
+  private readonly botLevels: number[];
   /** Settings the host may change before the match starts, within the server's bounds. */
   private settings: MatchSettings;
   /** Seats at the table, which the host may change while the table is being set. */
@@ -119,7 +121,7 @@ export class Room {
    */
   private seed: number;
   /** A bot the host has put in their own seat, to watch rather than play. */
-  private hostBot: Difficulty | null = null;
+  private hostBot: number | null = null;
   private idle = 0;
   private recorder: MatchRecorder | null = null;
   /**
@@ -133,9 +135,7 @@ export class Room {
     this.options = options;
     this.code = options.code;
     this.rng = new Rng(options.seed ?? Math.floor(Math.random() * 0xffffffff));
-    this.botDifficulties = new Array<Difficulty>(options.playerCount).fill(
-      options.server.botDifficulty as Difficulty,
-    );
+    this.botLevels = new Array<number>(options.playerCount).fill(options.server.botLevel);
     this.settings = defaultSettings(options.ruleset, options.server.lobbySettings);
     this.playerCount = options.playerCount;
     this.teams = defaultTeams(this.playerCount, this.settings.teamSize);
@@ -261,9 +261,9 @@ export class Room {
       case 'configure': {
         // Only the host, and only while the table is still being set.
         if (seat.playerId !== this.hostId || this.state !== null) return;
-        for (let i = 0; i < this.botDifficulties.length; i++) {
+        for (let i = 0; i < this.botLevels.length; i++) {
           const wanted = message.bots?.[i];
-          if (wanted !== undefined) this.botDifficulties[i] = wanted as Difficulty;
+          if (wanted !== undefined) this.botLevels[i] = wanted;
         }
         let settings = this.settings;
         if (message.settings !== undefined) {
@@ -277,7 +277,7 @@ export class Room {
         this.configureTable(settings, message.playerCount ?? this.playerCount, message.teams);
         if (message.seed !== undefined) this.seed = message.seed;
         if (message.move !== undefined) this.moveSeat(message.move.from, message.move.to);
-        if (message.hostBot !== undefined) this.hostBot = message.hostBot as Difficulty | null;
+        if (message.hostBot !== undefined) this.hostBot = message.hostBot;
         this.broadcastRoom();
         return;
       }
@@ -336,9 +336,9 @@ export class Room {
     if (table.playerCount !== this.playerCount) {
       // Seats kept keep their bot's skill; new ones take the server's default.
       this.playerCount = table.playerCount;
-      this.botDifficulties.length = table.playerCount;
+      this.botLevels.length = table.playerCount;
       for (let i = 0; i < table.playerCount; i++) {
-        this.botDifficulties[i] ??= this.options.server.botDifficulty as Difficulty;
+        this.botLevels[i] ??= this.options.server.botLevel;
       }
       // Anybody seated beyond a shrunken table moves to the lowest free seat; there is
       // always one, since a table never shrinks below the people at it.
@@ -374,9 +374,9 @@ export class Room {
     if (other !== undefined) other.playerId = from;
     if (hostWas === from) this.hostId = to;
     else if (hostWas === to && other !== undefined) this.hostId = from;
-    const fromTier = this.botDifficulties[from] as Difficulty;
-    this.botDifficulties[from] = this.botDifficulties[to] as Difficulty;
-    this.botDifficulties[to] = fromTier;
+    const fromLevel = this.botLevels[from] as number;
+    this.botLevels[from] = this.botLevels[to] as number;
+    this.botLevels[to] = fromLevel;
     this.sendWelcome(mover);
     if (other !== undefined) this.sendWelcome(other);
   }
@@ -413,21 +413,33 @@ export class Room {
     const seed = this.seed;
     const order = seatOrder(seed, this.seats.length);
     const players = new Array<{ name: string; isBot: boolean; team: number }>(this.seats.length);
-    const difficulties = this.seats.map((_, index) => this.botDifficulties[index] ?? 'gunner');
+    const levels = this.seats.map(
+      (_, index) => this.botLevels[index] ?? this.options.server.botLevel,
+    );
     const hostSeat = this.seats.findIndex((seat) => seat.playerId === this.hostId);
     // The host chose to watch: their seat is played by the bot they picked, and they stay
     // connected to see it. With nobody else at the table, it is a match of bots alone.
     const hosting = this.seats[hostSeat];
     if (this.hostBot !== null && hosting !== undefined) {
       hosting.bot = true;
-      difficulties[hostSeat] = this.hostBot;
+      levels[hostSeat] = this.hostBot;
     }
-    // Who played each player at the start, for the recording: a bot's tier, or a person.
-    const tiers = new Array<Difficulty | null>(this.seats.length).fill(null);
+    // Each seat's bot, by player once the seats are dealt their islands: its level, and a
+    // personality dealt from the seed (PLAN 11.6) — a person's seat gets one too, for the
+    // bot that covers them if they drop. For the recording, a person is nulls.
+    const setups = new Array<BotSetup>(this.seats.length);
+    const recorded = new Array<{ level: number | null; personality: Personality | null }>(
+      this.seats.length,
+    );
     this.seats.forEach((seat, index) => {
       const player = order[index] as number;
       players[player] = { name: seat.name, isBot: seat.bot, team: this.teams[index] ?? index };
-      tiers[player] = seat.bot ? (difficulties[index] ?? null) : null;
+      const setup = {
+        level: levels[index] as number,
+        personality: dealPersonality(seed, player),
+      };
+      setups[player] = setup;
+      recorded[player] = seat.bot ? setup : { level: null, personality: null };
       seat.playerId = player;
     });
     this.hostId = this.seats[hostSeat]?.playerId ?? 0;
@@ -452,15 +464,18 @@ export class Room {
         seed,
         ruleset,
         terrain: this.options.terrain,
-        players: players.map((p, id) => ({ ...p, difficulty: tiers[id] ?? null })),
+        players: players.map((p, id) => ({
+          ...p,
+          ...(recorded[id] ?? { level: null, personality: null }),
+        })),
       });
     }
 
-    this.seats.forEach((seat, index) => {
+    for (const seat of this.seats) {
       // A seat a person holds still gets a bot, ready to cover them if they drop.
-      const difficulty = difficulties[index] as Difficulty;
-      this.bots.set(seat.playerId, new Bot(seat.playerId, difficulty, this.options.ai));
-    });
+      const setup = setups[seat.playerId] as BotSetup;
+      this.bots.set(seat.playerId, new Bot(seat.playerId, setup, this.options.ai));
+    }
 
     // Every connection learns the player it has become before the match reaches it.
     for (const seat of this.seats) this.sendWelcome(seat);
@@ -562,7 +577,7 @@ export class Room {
       code: this.code,
       seats: this.wireSeats(),
       playerCount: this.playerCount,
-      bots: [...this.botDifficulties],
+      bots: [...this.botLevels],
       settings: { ...this.settings },
       settingBounds: this.options.server.lobbySettings,
       teams: [...this.teams],

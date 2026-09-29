@@ -8,7 +8,7 @@ import { castleBreath, islandCentres, surfAt, tablePreview } from './preview.js'
 describe('the table preview', () => {
   it('shows the map the match will be played on', () => {
     const preview = tablePreview(1234, 3, [0, 1, 2], defaultArtConfig, defaultTerrainConfig);
-    const match = new LocalMatch({ seed: 1234, seats: [null, 'gunner', 'gunner'] });
+    const match = new LocalMatch({ seed: 1234, seats: [null, 5, 5] });
     expect(preview.terrain.width).toBe(match.state.width);
     expect(preview.terrain.height).toBe(match.state.height);
     expect(Array.from(preview.terrain.terrain)).toEqual(Array.from(match.state.terrain));
@@ -19,7 +19,7 @@ describe('the table preview', () => {
       const teams = [0, 1, 1, 0];
       const preview = tablePreview(seed, 4, teams, defaultArtConfig, defaultTerrainConfig);
       // The host holds seat 0; the match says which player they became.
-      const match = new LocalMatch({ seed, seats: [null, 'gunner', 'gunner', 'gunner'], teams });
+      const match = new LocalMatch({ seed, seats: [null, 5, 5, 5], teams });
       expect(preview.playerOfSeat[0]).toBe(match.humanPlayer);
       const palette = matchPalette(defaultArtConfig, match.state);
       preview.playerOfSeat.forEach((player, seat) => {

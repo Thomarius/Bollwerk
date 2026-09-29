@@ -1,6 +1,13 @@
 import { describe, expect, it } from 'vitest';
 
-import { BALANCED, botProfile, skillAt, tierSetup } from './ai.js';
+import {
+  BALANCED,
+  botProfile,
+  parsePersonality,
+  personalityWords,
+  skillAt,
+  tierSetup,
+} from './ai.js';
 import { defaultAiConfig } from './defaults.js';
 
 describe('skill levels', () => {
@@ -54,5 +61,21 @@ describe('a bot built from a level and a personality', () => {
     expect(baron.fireIntervalMs).toBe(marshal.fireIntervalMs);
     expect(baron).toMatchObject({ maxCastles: 4, expandsWhenSealed: true });
     expect(marshal).toMatchObject({ maxCastles: 2, expandsWhenSealed: false, riskMargin: 1 });
+  });
+});
+
+describe('a personality in words', () => {
+  it('reads a short form, the traits not named balanced', () => {
+    expect(parsePersonality('offensive')).toEqual({ ...BALANCED, risk: 'offensive' });
+    expect(parsePersonality('balanced')).toEqual(BALANCED);
+    expect(parsePersonality('defensive-strategic-balanced')).toEqual({
+      ...BALANCED,
+      risk: 'defensive',
+    });
+    expect(parsePersonality('reckless')).toBeNull();
+  });
+
+  it('says it back in words, for the reveal and the recording', () => {
+    expect(personalityWords(BALANCED)).toBe('balanced · strategic · balanced cannons');
   });
 });

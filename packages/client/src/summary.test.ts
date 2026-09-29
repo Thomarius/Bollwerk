@@ -76,7 +76,7 @@ describe('the match log', () => {
   it('agrees with a whole match played out, round by round and at the end', () => {
     const match = new LocalMatch({
       seed: 5,
-      seats: ['gunner', 'gunner'],
+      seats: [5, 5],
       ruleset: { ...defaultRuleset, scoring: { ...defaultRuleset.scoring, maxRounds: 3 } },
     });
     const log = new MatchLog();

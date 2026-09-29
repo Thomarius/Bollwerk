@@ -2,6 +2,7 @@
 // cannot cheat by construction. See docs/PLAN.md section 8.
 
 export * from './bot.js';
+export * from './personality.js';
 export * from './tactics.js';
 export * from './flow.js';
 export * from './stopgap.js';

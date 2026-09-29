@@ -7,16 +7,19 @@ import {
   defaultConfigBundle,
   defaultSettings,
   defaultTeams,
+  MAX_LEVEL,
+  MIN_LEVEL,
   mergeSettings,
+  parsePersonality,
   reshapeTable,
   validateConfigBundle,
   type ArtLook,
   type ArtStyle,
   type ArtStyles,
   type MatchSettings,
+  type Personality,
   type Table,
 } from '@rampart/config';
-import { DIFFICULTIES, type Difficulty } from '@rampart/ai';
 import {
   PHASES,
   computeEnclosure,
@@ -220,7 +223,8 @@ interface Session {
 
 interface Setup {
   /** One per seat: null for the person, otherwise the bot's skill. */
-  seats: (Difficulty | null)[];
+  /** One per seat: null for the person, otherwise the bot's level, 1 to 10. */
+  seats: (number | null)[];
   seed: number;
   styles: ArtStyles;
   name: string;
@@ -233,6 +237,10 @@ interface Setup {
 const SETTING_BOUNDS = defaultConfigBundle.server.lobbySettings;
 const DEFAULT_SETTINGS = defaultSettings(defaultConfigBundle.ruleset, SETTING_BOUNDS);
 
+/** `?personality=offensive` and the like: every bot of a local match plays it (PLAN 11.6). */
+const FIXED_PERSONALITY: Personality | null =
+  params.get('personality') === null ? null : parsePersonality(params.get('personality') ?? '');
+
 /**
  * An offline match on the default rules with the menu's settings over them, recorded
  * for tuning unless `record` is false — a dev shortcut into a phase is not a match
@@ -243,13 +251,16 @@ function localMatchFor(setup: Setup, record = true): LocalMatch {
   return new LocalMatch({
     seed: setup.seed,
     seats: setup.seats,
+    // ?personality= fixes every bot's, for testing; otherwise each is dealt from the seed.
+    ...(FIXED_PERSONALITY === null ? {} : { personality: FIXED_PERSONALITY }),
     ...(setup.teams === undefined ? {} : { teams: setup.teams }),
     ruleset: applySettings(defaultConfigBundle.ruleset, setup.settings),
     ...(record ? { record: new RecordingUpload().write } : {}),
   });
 }
 
-const DEFAULT_BOT: Difficulty = 'gunner';
+/** A new seat's bot, at the server's default level. */
+const DEFAULT_BOT = defaultConfigBundle.server.botLevel;
 
 /** Height of the HUD's top bar — the phase, timer and roster — kept clear of the board. */
 const HUD_BAR_PX = 64;
@@ -505,11 +516,11 @@ const SERVER_WAIT_MS = 2000;
 /** What the lobby's controls do, whichever backend is behind them. */
 interface LobbyHandlers {
   table(change: { settings?: MatchSettings; playerCount?: number; teams?: number[] }): void;
-  bot(seat: number, tier: Difficulty): void;
+  bot(seat: number, level: number): void;
   /** A new map: a seed typed in, or a fresh random one. */
   seed(seed: number): void;
   /** A bot to play the host's own seat while they watch, or null to play it. */
-  hostBot(tier: Difficulty | null): void;
+  hostBot(level: number | null): void;
   /** The person in seat `from` to seat `to`, swapping with whoever sits there. */
   move(from: number, to: number): void;
   start(): void;
@@ -551,7 +562,7 @@ function drawLobby(view: LobbyView, on: LobbyHandlers): void {
   for (const field of document.querySelectorAll<HTMLSelectElement>('.bot-select')) {
     field.addEventListener('change', () => {
       audio.play('select');
-      on.bot(Number(field.dataset.seat), field.value as Difficulty);
+      on.bot(Number(field.dataset.seat), Number(field.value));
     });
   }
   const seedField = document.querySelector<HTMLInputElement>('#seed');
@@ -566,7 +577,7 @@ function drawLobby(view: LobbyView, on: LobbyHandlers): void {
   const hostBot = document.querySelector<HTMLSelectElement>('#host-bot');
   hostBot?.addEventListener('change', () => {
     audio.play('select');
-    on.hostBot(hostBot.value === '' ? null : (hostBot.value as Difficulty));
+    on.hostBot(hostBot.value === '' ? null : Number(hostBot.value));
   });
   // Who sits where. Teams belong to seats, so this is how people choose sides.
   for (const field of document.querySelectorAll<HTMLSelectElement>('.occupant')) {
@@ -619,10 +630,10 @@ function drawLobby(view: LobbyView, on: LobbyHandlers): void {
 /** The table as the local lobby holds it, and as a room reports it. */
 interface TableState extends Table {
   seed: number;
-  hostBot: Difficulty | null;
+  hostBot: number | null;
   /** Where the host sits: they may move to any seat, and the seat decides the team. */
   hostSeat: number;
-  bots: Difficulty[];
+  bots: number[];
 }
 
 /**
@@ -1589,11 +1600,12 @@ if (params.get('autostart') === '1') {
   // ?watch=1 fills every seat with a bot, which is how a match is observed rather
   // than played.
   const watching = params.get('watch') === '1';
-  const difficulty = (DIFFICULTIES as readonly string[]).includes(params.get('bots') ?? '')
-    ? (params.get('bots') as Difficulty)
-    : DEFAULT_BOT;
+  // &level=N sets every bot's skill level, 1 to 10.
+  const asked = Number(params.get('level'));
+  const level =
+    Number.isInteger(asked) && asked >= MIN_LEVEL && asked <= MAX_LEVEL ? asked : DEFAULT_BOT;
   const setup: Setup = {
-    seats: Array.from({ length: count }, (_, i) => (i === 0 && !watching ? null : difficulty)),
+    seats: Array.from({ length: count }, (_, i) => (i === 0 && !watching ? null : level)),
     seed: chosenSeed(),
     styles: preferredStyles(),
     name: 'Player',

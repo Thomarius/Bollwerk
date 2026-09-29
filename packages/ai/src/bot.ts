@@ -1,7 +1,7 @@
 import {
+  BALANCED,
   botProfile,
   defaultAiConfig,
-  tierSetup,
   type AiConfig,
   type BotProfile,
   type BotSetup,
@@ -81,9 +81,6 @@ const ROOM_RADIUS = 3;
  */
 const CANNON_CLEARANCE = 2;
 
-export const DIFFICULTIES = ['recruit', 'gunner', 'marshal', 'baron'] as const;
-export type Difficulty = (typeof DIFFICULTIES)[number];
-
 /**
  * A bot.
  *
@@ -113,17 +110,13 @@ export class Bot {
   /** How well and how it plays: a level's skill under a personality (PLAN 11.6). */
   readonly setup: BotSetup;
 
-  /**
-   * Built from a level and a personality, or from an old tier name, which stands for
-   * one (`tierSetup`) until the lobby moves to levels.
-   */
   constructor(
     readonly playerId: number,
-    setup: BotSetup | Difficulty = 'gunner',
+    setup: BotSetup = { level: 5, personality: BALANCED },
     ai: AiConfig = defaultAiConfig,
   ) {
-    this.setup = typeof setup === 'string' ? tierSetup(setup) : setup;
-    this.profile = botProfile(ai, this.setup);
+    this.setup = setup;
+    this.profile = botProfile(ai, setup);
   }
 
   think(state: MatchState, rng: Rng): Action | null {

@@ -9,7 +9,7 @@ import { SceneryTracker, placeScenery } from './scenery.js';
 const config = defaultArtConfig.scenery;
 
 function match(seed: number, players = 3): LocalMatch {
-  return new LocalMatch({ seed, seats: [null, ...Array<'gunner'>(players - 1).fill('gunner')] });
+  return new LocalMatch({ seed, seats: [null, ...Array<number>(players - 1).fill(5)] });
 }
 
 describe('scenery on open land', () => {

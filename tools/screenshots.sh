@@ -18,7 +18,7 @@ shift || true
 BASE=${BASE:-http://localhost:5173}
 GAME="$BASE/?autostart=1&players=3&seed=7"
 # Bots in every seat, so the cannon phase ends early and the banners come on time.
-WATCH="$GAME&watch=1&bots=gunner"
+WATCH="$GAME&watch=1&level=5"
 
 # name|query appended to the base|milliseconds to wait
 SCENES=(
@@ -71,7 +71,7 @@ SCENES=(
   "opening-pull|$GAME&style=pixel|2600"
   "final-stamp|$GAME&snapshot=combat&round=10&style=pixel|900"
   "winner-push|$GAME&snapshot=game_over&style=flat|6000"
-  "filmstrip|$GAME&watch=1&bots=gunner&speed=10&rounds=5&style=flat|90000"
+  "filmstrip|$GAME&watch=1&level=5&speed=10&rounds=5&style=flat|90000"
   # The banners, mid-crossing, in the default looks (&style= sets both looks to one).
   # Waits are real time, so a slower machine may need them nudged.
   "wipe-to-build|$WATCH&snapshot=combat&round=2|20000"

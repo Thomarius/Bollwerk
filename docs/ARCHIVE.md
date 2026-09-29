@@ -2698,3 +2698,32 @@ the button beside the Sound switch; the server steps no ticks while paused.
 
 **F3 — Open games browser — done** (ARCHIVE 11q, §6): the menu lists public rooms still
 being set, with Join; a Public / Private switch beside Play decides as the table is made.
+
+## 11x. Bots as a level and a personality (11.6, phase 1)
+
+The first phase of PLAN 11.6: the split, with no change of play. Done in two steps, the
+model and then everything that shows it, each checked the same way.
+
+- **The model** (`ai.ts` in config): a level table of anchors — Levels 1, 2, 5, 8, 10 —
+  interpolated between, and risk traits; `botProfile` compiles a level and a personality
+  into the profile the bot already read, so its play code did not change. Gunner and
+  marshal differ in judgement (0.8 against 1.0), so `riskMargin` stays with skill and
+  risk scales it; balanced reproduces both, and baron is Level 8 offensive exactly.
+- **Sloppiness**, new, in skill: below Level 5 a bot sometimes takes its second-best fit
+  for a piece, and chooses its castle and gun spots carelessly as the recruit alone did.
+  The random stream is drawn only where there is sloppiness, so careful levels are
+  untouched. The recruit's other habits — one castle, a random target — were personality
+  hiding in a tier, and went: Level 2 is a weaker balanced bot.
+- **The surface**: the lobby offers Level 1–10 per seat, the ranks and their badges and
+  blurbs gone for one line under the seats; `server.botLevel` replaces `botDifficulty`;
+  the server and local matches deal each bot a personality from the seed by player
+  (`dealPersonality`), a person's seat included for the bot that covers a drop; the
+  recording header carries level and personality, and old recordings naming a tier still
+  read (`setupOfRecorded`); the statistics' `difficulty` column became `level` and
+  `personality`; `?level=` and `?personality=` for local matches, `--level` and
+  `--personality` (or `dealt`) for the harness, whose soaks stay balanced unless asked.
+  Protocol 12. Local bots are named "Bot N", as a room names them.
+- **Checked twice**: gunner, marshal and baron tables, six seeds each, hash-identical
+  before and after the model, and again through the new flags after the surface. A test
+  caught a pattern mangled on its way through the shell — the personality parser split
+  on the letter "s" — before anything used it.

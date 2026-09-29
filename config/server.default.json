@@ -31,7 +31,7 @@
     "onPhaseChange": true,
     "keepaliveIntervalMs": 15000
   },
-  "botDifficulty": "gunner",
+  "botLevel": 5,
   "recordings": {
     "enabled": true,
     "dir": "recordings",
