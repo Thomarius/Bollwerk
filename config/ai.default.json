@@ -1,52 +1,67 @@
 {
-  "profiles": {
-    "recruit": {
+  "levels": [
+    {
+      "level": 1,
+      "placementBaseMs": 750,
+      "placementPerCellMs": 500,
+      "fireIntervalMs": 420,
+      "aimJitter": 0.85,
+      "riskMargin": 0.5,
+      "replanTicks": 80,
+      "sloppiness": 0.35
+    },
+    {
+      "level": 2,
       "placementBaseMs": 600,
       "placementPerCellMs": 420,
       "fireIntervalMs": 330,
       "aimJitter": 0.7,
-      "maxCastles": 1,
       "riskMargin": 0.55,
       "replanTicks": 60,
-      "picksTarget": false,
-      "thickens": true,
-      "expandsWhenSealed": false
+      "sloppiness": 0.25
     },
-    "gunner": {
+    {
+      "level": 5,
       "placementBaseMs": 420,
       "placementPerCellMs": 360,
       "fireIntervalMs": 210,
       "aimJitter": 0.25,
-      "maxCastles": 2,
       "riskMargin": 0.8,
       "replanTicks": 30,
-      "picksTarget": true,
-      "thickens": true,
-      "expandsWhenSealed": false
+      "sloppiness": 0
     },
-    "marshal": {
+    {
+      "level": 8,
       "placementBaseMs": 360,
       "placementPerCellMs": 320,
       "fireIntervalMs": 150,
       "aimJitter": 0.05,
-      "maxCastles": 2,
       "riskMargin": 1.0,
       "replanTicks": 20,
-      "picksTarget": true,
-      "thickens": true,
-      "expandsWhenSealed": false
+      "sloppiness": 0
     },
-    "baron": {
-      "placementBaseMs": 360,
-      "placementPerCellMs": 320,
-      "fireIntervalMs": 150,
-      "aimJitter": 0.05,
-      "maxCastles": 4,
-      "riskMargin": 1.0,
-      "replanTicks": 20,
-      "picksTarget": true,
-      "thickens": true,
-      "expandsWhenSealed": true
+    {
+      "level": 10,
+      "placementBaseMs": 300,
+      "placementPerCellMs": 270,
+      "fireIntervalMs": 120,
+      "aimJitter": 0,
+      "riskMargin": 1.1,
+      "replanTicks": 15,
+      "sloppiness": 0
     }
+  ],
+  "risk": {
+    "defensive": {
+      "maxCastles": 2,
+      "riskScale": 0.7,
+      "thickens": true,
+      "expandsWhenSealed": false
+    },
+    "balanced": { "maxCastles": 2, "riskScale": 1, "thickens": true, "expandsWhenSealed": false },
+    "offensive": { "maxCastles": 4, "riskScale": 1, "thickens": true, "expandsWhenSealed": true }
+  },
+  "targeting": {
+    "strategic": { "share": 1 }
   }
 }

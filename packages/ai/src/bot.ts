@@ -1,4 +1,11 @@
-import { defaultAiConfig, type AiConfig, type BotProfile } from '@rampart/config';
+import {
+  botProfile,
+  defaultAiConfig,
+  tierSetup,
+  type AiConfig,
+  type BotProfile,
+  type BotSetup,
+} from '@rampart/config';
 import {
   NEIGHBOURS_8,
   Structure,
@@ -103,14 +110,20 @@ export class Bot {
   private breach: number[] = [];
   private breachedAt = -1;
 
+  /** How well and how it plays: a level's skill under a personality (PLAN 11.6). */
+  readonly setup: BotSetup;
+
+  /**
+   * Built from a level and a personality, or from an old tier name, which stands for
+   * one (`tierSetup`) until the lobby moves to levels.
+   */
   constructor(
     readonly playerId: number,
-    readonly difficulty: Difficulty = 'gunner',
+    setup: BotSetup | Difficulty = 'gunner',
     ai: AiConfig = defaultAiConfig,
   ) {
-    const profile = ai.profiles[difficulty];
-    if (!profile) throw new Error(`no bot profile configured for "${difficulty}"`);
-    this.profile = profile;
+    this.setup = typeof setup === 'string' ? tierSetup(setup) : setup;
+    this.profile = botProfile(ai, this.setup);
   }
 
   think(state: MatchState, rng: Rng): Action | null {
@@ -255,7 +268,6 @@ export class Bot {
   // ------------------------------------------------------------------- build
 
   private build(state: MatchState, rng: Rng): Action | null {
-    void rng;
     // Check the clock before anything else: this runs for every bot on every tick,
     // and looking the piece up first made that lookup the bot's largest single cost.
     if (state.tick < this.nextPlacementTick) return null;
@@ -298,7 +310,7 @@ export class Bot {
       );
       if (wanted.length === 0) continue;
       tried = true;
-      placement = this.fit(state, pieceId, wanted);
+      placement = this.fit(state, pieceId, wanted, rng);
       if (placement !== null) break;
       // Nothing legal reaches any of these tiles — a gap with no free neighbours
       // cannot take a piece. Rule them out so the next plan routes around them.
@@ -609,14 +621,22 @@ export class Bot {
     return cheapest?.tiles ?? [];
   }
 
-  /** The placement that covers most of what is wanted, proposed from the tiles themselves. */
+  /**
+   * The placement that covers most of what is wanted, proposed from the tiles themselves —
+   * or, now and then for a sloppy bot, the next best, as a hurried person settles for a
+   * worse fit. The random stream is drawn only when there is sloppiness, so careful
+   * levels play exactly as they did.
+   */
   private fit(
     state: MatchState,
     pieceId: number,
     wanted: readonly number[],
+    rng: Rng,
   ): { x: number; y: number; rotation: number } | null {
     let best: { x: number; y: number; rotation: number } | null = null;
     let bestScore = Number.NEGATIVE_INFINITY;
+    let second: { x: number; y: number; rotation: number } | null = null;
+    let secondScore = Number.NEGATIVE_INFINITY;
     const target = new Set(wanted);
     const islandId = state.players[this.playerId]?.islandId;
 
@@ -641,13 +661,20 @@ export class Bot {
           // wall with no guns behind it wins nothing.
           const score = covered * 4 - (cells.length - covered) - indoors * 5;
           if (score > bestScore) {
+            second = best;
+            secondScore = bestScore;
             bestScore = score;
             best = { x, y, rotation };
+          } else if (score > secondScore) {
+            secondScore = score;
+            second = { x, y, rotation };
           }
         }
       }
       if (bestScore >= pieceCells(pieceId, 0).length * 4) break;
     }
+    const slip = this.profile.sloppiness;
+    if (slip > 0 && second !== null && rng.nextFloat() < slip) return second;
     return best;
   }
 
@@ -664,7 +691,8 @@ export class Bot {
     const mine = state.castles.filter((c) => c.islandId === player.islandId);
     if (mine.length === 0) return null;
 
-    if (this.difficulty === 'recruit') {
+    // A careless bot takes whichever castle comes to hand.
+    if (this.profile.sloppiness > 0) {
       const pick = mine[rng.nextInt(mine.length)];
       return pick ? { kind: 'select_castle', player: this.playerId, castleId: pick.id } : null;
     }
@@ -742,7 +770,7 @@ export class Bot {
         for (const enemy of enemies) {
           nearest = Math.min(nearest, distanceSquared(x, y, enemy.x, enemy.y));
         }
-        const score = -nearest + (this.difficulty === 'recruit' ? rng.nextFloat() * 5000 : 0);
+        const score = -nearest + (this.profile.sloppiness > 0 ? rng.nextFloat() * 5000 : 0);
 
         const pinned = this.pinnedWalls(state, player.islandId, x, y, cw, ch);
 

@@ -1,4 +1,4 @@
-import type { ConfigBundle } from '@rampart/config';
+import { skillAt, tierSetup, type ConfigBundle } from '@rampart/config';
 import { DIFFICULTIES, cannonRoom, cheapestPlanFor, type Difficulty } from '@rampart/ai';
 import {
   Structure,
@@ -94,8 +94,7 @@ export function piecesBudget(bundle: ConfigBundle, difficulty: Tier): number | n
   // A person has no pace to price a phase with; their pieces are counted, not rated. A
   // zero here once read in the table as "used none of it".
   if (difficulty === 'human') return null;
-  const profile = bundle.ai.profiles[difficulty];
-  if (profile === undefined) return null;
+  const profile = skillAt(bundle.ai, tierSetup(difficulty).level);
   const perPiece = profile.placementBaseMs + profile.placementPerCellMs * 3.5;
   return bundle.ruleset.phases.buildMs / perPiece;
 }

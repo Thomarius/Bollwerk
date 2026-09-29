@@ -3,7 +3,7 @@ import type { Ruleset } from './ruleset.js';
 import type { TerrainConfig } from './terrain.js';
 import type { ArtConfig } from './art.js';
 import type { ServerConfig } from './server.js';
-import { DifficultySchema, type AiConfig } from './ai.js';
+import type { AiConfig } from './ai.js';
 
 export interface ConfigBundle {
   ruleset: Ruleset;
@@ -73,15 +73,6 @@ export function validateConfigBundle(bundle: ConfigBundle): string[] {
   }
 
   problems.push(...missingCues(audio));
-
-  // A bot difficulty the server can be set to but no profile describes would leave
-  // empty seats unplayable.
-  for (const name of DifficultySchema.options) {
-    if (bundle.ai.profiles[name] === undefined) problems.push(`ai: no profile for "${name}".`);
-  }
-  if (bundle.ai.profiles[bundle.server.botDifficulty] === undefined) {
-    problems.push(`server: botDifficulty "${bundle.server.botDifficulty}" has no profile.`);
-  }
 
   // Enough families for the most teams a table can hold, each with a shade for every
   // member of the largest team a host may choose.
