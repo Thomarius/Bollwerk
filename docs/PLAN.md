@@ -317,6 +317,12 @@ sender's seat**, so a client cannot act for someone else.
 - Clients run one tick behind the server's confirmed tick and apply committed actions.
 - A dropped seat is handed to a bot so the match does not stall; the player gets their seat
   back on reconnect within the grace period.
+- **Anyone at the table may pause a running match, and anyone resume it** — Esc, or the
+  button beside the Sound switch; an overlay names who paused. Every timer is in ticks, so
+  a paused room simply steps none: bots, phase clocks and reconnect grace all wait, and a
+  recording gains nothing. Moves sent while paused are dropped, not queued. A pause made
+  by somebody who then drops holds until anyone resumes. Offline, the local match is not
+  advanced.
 - Rooms are found by a short code from an alphabet chosen to avoid ambiguous characters.
 - **One lobby for online and offline.** The lobby is one screen (`lobbyMarkup`) fed by a
   room when a server answers with a welcome within two seconds, and by a table held in the
@@ -727,7 +733,7 @@ every resolution against an independent search, not only on unit pictures.
 **Where to start (2026-09-29).** The first compiled feedback from the test sessions is in
 **11.12**: its small fixes are done (ARCHIVE 11n), and its three agreed items come next, in
 order — castle-less pockets as territory (done, ARCHIVE 11o; it had to land before 11.2's
-baseline), then **pause**, then an open games browser.
+baseline), pause (done, ARCHIVE 11p), then **an open games browser**.
 
 **Before that (2026-09-28).** The user is running human test sessions, and every match
 is recorded with its statistics (§9, ARCHIVE 11e); the user will also send compiled
@@ -946,14 +952,8 @@ removed too — no hidden keys), and the player's name remembered. Then, in orde
 **F1 — Pockets count — done** (ARCHIVE 11o, §1.3): sealed ground without a castle is
 territory while its player holds a sealed castle, behind `enclosure.castlelessRegionsCount`.
 
-**F2 — Pause, for everybody (M; server, protocol, client).** For the test sessions any
-player may pause and any may resume; no cap on count or length. **Esc** pauses and
-resumes — the one keyboard shortcut the user accepts, being the usual one in games — and
-a pause button sits in a corner beside the Sound switch. An overlay says who paused, with
-a Resume button. Every timer is in ticks, so a paused match simply is not stepped: the
-server stops its loop for the room (bots included) and tells every client; offline the
-local match is not advanced. A pause adds nothing to the input log, so recordings are
-untouched. Open when building: what a dropped connection does to a pause it made.
+**F2 — Pause — done** (ARCHIVE 11p, §6): anyone may pause and anyone resume, by Esc or
+the button beside the Sound switch; the server steps no ticks while paused.
 
 **F3 — An open games browser (M; server, protocol, lobby).** The menu lists rooms that
 have not started, with a Join button each, beside joining by code. **Rooms are public by

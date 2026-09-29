@@ -4,7 +4,7 @@ import { z } from 'zod';
 import { SnapshotSchema } from './snapshot.js';
 
 /** Bumped on any breaking change to the message set; mismatched clients are rejected. */
-export const PROTOCOL_VERSION = 9;
+export const PROTOCOL_VERSION = 10;
 
 /**
  * A player's intent. The server overwrites `player` with the sender's own seat before
@@ -93,6 +93,8 @@ export const ClientMessageSchema = z.discriminatedUnion('type', [
   }),
   z.strictObject({ type: z.literal('start') }),
   z.strictObject({ type: z.literal('action'), action: ActionSchema }),
+  /** Anyone at the table may pause a running match, and anyone may resume it. */
+  z.strictObject({ type: z.literal('pause'), paused: z.boolean() }),
   z.strictObject({ type: z.literal('ping'), t: z.number() }),
 ]);
 export type ClientMessage = z.infer<typeof ClientMessageSchema>;
@@ -144,6 +146,15 @@ export const ServerMessageSchema = z.discriminatedUnion('type', [
     actions: z.array(ActionSchema),
     /** Periodic state fingerprint; a mismatch means the client has desynced. */
     hash: z.string().optional(),
+  }),
+  /**
+   * The match stopped or started again. While paused the server steps no ticks, so no
+   * commits come; `by` is the player who asked, for the overlay to name.
+   */
+  z.strictObject({
+    type: z.literal('paused'),
+    paused: z.boolean(),
+    by: z.number().int().nonnegative(),
   }),
   z.strictObject({
     type: z.literal('rejected'),

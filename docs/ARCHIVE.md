@@ -2454,3 +2454,28 @@ never saves a round, so the life rule is untouched.
   sessions will show; teaching bots to (PLAN 11.6) is where the soak would move.
 - The client's seal flood already started a region no castle or held ground reaches from
   its own first tile, so a new pocket floods like any other ground.
+
+## 11p. Pause (F2)
+
+PLAN 11.12 F2, for the test sessions: anyone at the table may pause, anyone may resume,
+with no limit on count or length. Esc does it — the one keyboard shortcut the user
+accepted, being what games use — and so does a button beside the Sound switch; an overlay
+says who paused, with a Resume button. Protocol 10: a `pause` request and a `paused`
+broadcast naming who.
+
+- **The server steps no ticks while paused.** Every timer in the match counts ticks, so
+  that one check stops everything at once — bots, phase clocks, the grace before a bot
+  takes a dropped seat — and the recording gains nothing, so a paused match replays
+  exactly. Resuming zeroes the room's accumulator, so the pause is not paid out as a
+  burst of ticks; the client does the same with its own.
+- **Moves sent while paused are dropped**, not queued to land on resuming with a plan made
+  against a frozen board. The test shows the control: the same castle choice, sent
+  unpaused, lands.
+- A player reconnecting mid-pause is told it is paused along with their snapshot. A pause
+  made by somebody who then drops holds until anyone resumes, which is the rule anyway.
+- **Offline**, not advancing the local match is the whole of it: the bots think inside
+  `advance`, and a local recording writes only stepped ticks.
+- Checked in a browser: a local match's clock held at 19.2 s through two seconds of pause,
+  and Resume, the button and Esc each toggled it; and over a real server with two people,
+  Bo's Esc paused both screens ("Bo paused the match" on Ada's, "You paused" on Bo's), the
+  clock held on both, and Ada's Resume cleared it for both.

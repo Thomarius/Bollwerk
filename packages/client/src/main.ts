@@ -41,6 +41,7 @@ import { timerSpot } from './timerSpot.js';
 import { SplitTitle, installBackdrop } from './decor.js';
 import { MatchLog } from './summary.js';
 import { applyEffects, motionReduced, saveEffects, storedEffects } from './motion.js';
+import { PauseControls } from './pause.js';
 import { saveSealPreview, sealPreviewOn } from './sealPreview.js';
 import { drawPreview, tablePreview } from './preview.js';
 import { RecordingUpload } from './recordingUpload.js';
@@ -201,6 +202,13 @@ interface Session {
   readonly finished: boolean;
   advance(elapsedMs: number): MatchEvent[];
   submit(action: Action): void;
+  /**
+   * Who paused the match — a player id, or -1 for somebody watching a local match — or
+   * null while it runs. A paused match is not stepped, so every clock in it waits.
+   */
+  readonly pausedBy: number | null;
+  /** Pauses or resumes: at once locally, and for everyone once a server agrees. */
+  setPaused(paused: boolean): void;
   /** Extra line for the HUD, such as latency. */
   status(): string;
 }
@@ -396,6 +404,9 @@ function showMenu(): void {
 }
 
 function localSession(match: LocalMatch): Session {
+  // Not advancing is the whole of a local pause: the bots think inside `advance`, and a
+  // recording gains a line only for a tick that was stepped.
+  let pausedBy: number | null = null;
   return {
     get state() {
       return match.state;
@@ -407,8 +418,16 @@ function localSession(match: LocalMatch): Session {
     get finished() {
       return match.finished;
     },
-    advance: (ms) => match.advance(ms * timeScale),
-    submit: (action) => void match.submit(action),
+    advance: (ms) => (pausedBy === null ? match.advance(ms * timeScale) : []),
+    submit: (action) => {
+      if (pausedBy === null) void match.submit(action);
+    },
+    get pausedBy() {
+      return pausedBy;
+    },
+    setPaused: (paused) => {
+      pausedBy = paused && !match.finished ? match.humanPlayer : null;
+    },
     status: () => (match.humanPlayer < 0 ? 'watching' : ''),
   };
 }
@@ -829,7 +848,14 @@ function networkSession(
       return match.finished;
     },
     advance: (ms) => match.advance(ms),
-    submit: (action) => match.submit(action),
+    submit: (action) => {
+      // The server drops a move made while paused; not sending it saves the trip.
+      if (match.pausedBy === null) match.submit(action);
+    },
+    get pausedBy() {
+      return match.pausedBy;
+    },
+    setPaused: (paused) => match.requestPause(paused),
     status: () => {
       const parts = [`${connection.latencyMs}ms`];
       if (match.behind > 10) parts.push(`${match.behind} ticks behind`);
@@ -1055,10 +1081,17 @@ async function runSession(session: Session, setup: Setup): Promise<void> {
     showMenu();
   });
 
+  // Anyone may pause, and anyone resume: Esc, or the button beside the Sound switch.
+  const pause = new PauseControls(
+    (paused) => session.setPaused(paused),
+    () => audio.play('select'),
+  );
+
   let frame = 0;
   const cleanup = (): void => {
     cancelAnimationFrame(frame);
     controls.detach();
+    pause.destroy();
     globalThis.removeEventListener('resize', fit);
     scene.app.destroy(true);
   };
@@ -1368,6 +1401,12 @@ async function runSession(session: Session, setup: Setup): Promise<void> {
     last = now;
 
     const events = session.advance(delta);
+    pause.update(
+      session.pausedBy,
+      session.humanPlayer,
+      session.state.players.map((p) => p.name),
+      session.finished,
+    );
     applyEvents(events);
     matchAudio.handle(events);
     matchAudio.frame(session.state);

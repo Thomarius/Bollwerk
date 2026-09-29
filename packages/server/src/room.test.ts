@@ -483,6 +483,92 @@ describe('disconnect and reconnect', () => {
   });
 });
 
+describe('pause', () => {
+  /** Two people in a running match, a few ticks in. */
+  function running(): { r: Room; a: TestClient; b: TestClient } {
+    const r = room(2, 7);
+    const a = new TestClient('a');
+    const b = new TestClient('b');
+    r.join(a, 'Ada');
+    r.join(b, 'Bo');
+    r.start();
+    run(r, 60);
+    return { r, a, b };
+  }
+  const pauses = (c: TestClient) => c.received.filter((m) => m.type === 'paused');
+
+  it('stops the match for everyone, and lets anyone resume it', () => {
+    const { r, a, b } = running();
+    const tick = a.state!.tick;
+    r.handle(b, { type: 'pause', paused: true });
+    expect(r.paused).toBe(true);
+    // Everyone is told, and told who.
+    expect(pauses(a).at(-1)).toEqual({ type: 'paused', paused: true, by: b.playerId });
+    run(r, 300);
+    // No ticks while paused: bots, clocks and all wait.
+    expect(a.state!.tick).toBe(tick);
+
+    r.handle(a, { type: 'pause', paused: false });
+    expect(r.paused).toBe(false);
+    expect(pauses(b).at(-1)).toEqual({ type: 'paused', paused: false, by: a.playerId });
+    run(r, 30);
+    expect(a.state!.tick).toBe(tick + 30);
+    expect(a.desyncs).toEqual([]);
+    expect(hashMatchState(a.state!)).toBe(hashMatchState(b.state!));
+  });
+
+  it('drops moves sent while paused, rather than landing them on resuming', () => {
+    const { r, a } = running();
+    for (let i = 0; i < 2000 && a.state!.phase !== 'castle_select'; i++) run(r, 1);
+    const islandId = a.state!.players[a.playerId]!.islandId;
+    const castle = a.state!.castles.find((c) => c.islandId === islandId)!;
+    const choose = (): void =>
+      r.handle(a, {
+        type: 'action',
+        action: { kind: 'select_castle', player: a.playerId, castleId: castle.id },
+      });
+    // Ada is connected, so no bot plays her seat: anything of hers is the move she sent.
+    const hers = (): unknown[] => {
+      const committed = a.received.filter((m) => m.type === 'commit').at(-1);
+      if (committed?.type !== 'commit') throw new Error('no commit');
+      return committed.actions.filter((action) => action.player === a.playerId);
+    };
+
+    r.handle(a, { type: 'pause', paused: true });
+    choose();
+    r.handle(a, { type: 'pause', paused: false });
+    run(r, 1);
+    expect(hers()).toEqual([]);
+    // The same move, not paused, lands — so the pause is what dropped it.
+    choose();
+    run(r, 1);
+    expect(hers()).toHaveLength(1);
+  });
+
+  it('ignores a pause before the start, and a second pause while paused', () => {
+    const r = room(2, 7);
+    const a = new TestClient('a');
+    r.join(a, 'Ada');
+    r.handle(a, { type: 'pause', paused: true });
+    expect(r.paused).toBe(false);
+
+    const { r: live, a: ada, b: bo } = running();
+    live.handle(ada, { type: 'pause', paused: true });
+    live.handle(bo, { type: 'pause', paused: true });
+    expect(pauses(bo)).toHaveLength(1);
+  });
+
+  it('tells a player returning mid-pause that the match is paused', () => {
+    const { r, a, b } = running();
+    const token = b.token;
+    r.leave(b);
+    r.handle(a, { type: 'pause', paused: true });
+    const returning = new TestClient('b2');
+    r.join(returning, 'Bo', token);
+    expect(pauses(returning)).toEqual([{ type: 'paused', paused: true, by: a.playerId }]);
+  });
+});
+
 describe('room manager', () => {
   it('issues codes from an unambiguous alphabet', () => {
     const manager = new RoomManager(defaultConfigBundle, 99);

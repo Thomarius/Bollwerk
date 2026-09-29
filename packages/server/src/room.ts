@@ -119,6 +119,12 @@ export class Room {
   private hostBot: Difficulty | null = null;
   private idle = 0;
   private recorder: MatchRecorder | null = null;
+  /**
+   * The player who paused the match, or null while it runs. Every timer in the match is
+   * counted in ticks, so a paused room simply steps none — bots, phase clocks and
+   * reconnect grace all wait — and adds nothing to the recording.
+   */
+  private pausedBy: number | null = null;
 
   constructor(options: RoomOptions) {
     this.options = options;
@@ -139,6 +145,10 @@ export class Room {
 
   get finished(): boolean {
     return this.state?.phase === 'game_over';
+  }
+
+  get paused(): boolean {
+    return this.pausedBy !== null;
   }
 
   get empty(): boolean {
@@ -165,6 +175,9 @@ export class Room {
         seat.graceTicks = 0;
         this.sendWelcome(seat);
         if (this.state) this.sendSnapshot(seat);
+        if (this.pausedBy !== null) {
+          connection.send({ type: 'paused', paused: true, by: this.pausedBy });
+        }
         this.broadcastRoom();
         return seat.playerId;
       }
@@ -246,9 +259,24 @@ export class Room {
         this.broadcastRoom();
         return;
       }
+      case 'pause': {
+        // Anyone at the table, watching or playing, and without limit: for the test
+        // sessions, trust the table. Only a match under way can be paused.
+        if (this.state === null || this.finished) return;
+        const wanted = message.paused ? seat.playerId : null;
+        if ((wanted === null) === (this.pausedBy === null)) return; // already so
+        this.pausedBy = wanted;
+        // Resuming starts the clock afresh rather than paying out the pause as a burst.
+        this.accumulatorMs = 0;
+        this.broadcast({ type: 'paused', paused: message.paused, by: seat.playerId });
+        return;
+      }
       case 'action': {
         // A seat its bot is playing — the host who chose to watch — acts only through it.
         if (seat.bot) return;
+        // Nothing moves while paused, and a move queued now would land on resuming,
+        // planned with the board frozen: dropped instead.
+        if (this.pausedBy !== null) return;
         // The seat decides who acted, never the message: otherwise a client could
         // move on another player's behalf simply by writing a different id.
         const action = ActionSchema.parse({ ...message.action, player: seat.playerId });
@@ -424,7 +452,7 @@ export class Room {
     else this.idle = 0;
 
     const state = this.state;
-    if (state === null || state.phase === 'game_over') return;
+    if (state === null || state.phase === 'game_over' || this.pausedBy !== null) return;
 
     const tickMs = 1000 / state.ruleset.tickRateHz;
     this.accumulatorMs += Math.min(elapsedMs, 1000);

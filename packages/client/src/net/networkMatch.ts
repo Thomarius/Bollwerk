@@ -35,6 +35,8 @@ export class NetworkMatch {
   humanPlayer = -1;
   desynced = false;
   lastRejection: Rejection | null = null;
+  /** Who paused the match, as the server last said; null while it runs. */
+  pausedBy: number | null = null;
 
   constructor(private readonly connection: ServerConnection) {}
 
@@ -90,6 +92,10 @@ export class NetworkMatch {
         this.lastRejection = message.reason as Rejection;
         return;
 
+      case 'paused':
+        this.pausedBy = message.paused ? message.by : null;
+        return;
+
       default:
         return;
     }
@@ -101,6 +107,11 @@ export class NetworkMatch {
     this.connection.send({ type: 'action', action });
   }
 
+  /** Asks the server to pause or resume; the match changes when it says so, for everyone. */
+  requestPause(paused: boolean): void {
+    this.connection.send({ type: 'pause', paused });
+  }
+
   /**
    * Advances by elapsed time, but never past what the server has confirmed. If the
    * client has fallen behind — a stalled tab, a slow frame — it catches up rather
@@ -110,7 +121,10 @@ export class NetworkMatch {
     const state = this.state;
     if (state === null) return [];
 
-    this.accumulatorMs += Math.min(elapsedMs, 250);
+    // Paused, the server sends no commits, so the client runs out of confirmed ticks on
+    // its own; what it must not do is bank the pause as time to catch up on after.
+    if (this.pausedBy !== null) this.accumulatorMs = 0;
+    else this.accumulatorMs += Math.min(elapsedMs, 250);
     let budget = this.behind > 60 ? this.behind : Math.floor(this.accumulatorMs / this.tickMs);
 
     while (budget > 0 && state.tick <= this.confirmed) {
