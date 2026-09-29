@@ -122,32 +122,32 @@ Full detail in PLAN.md §1. The parts that surprise people:
 machine; 18 of 19 sound cues supplied by the user, `wall_destroyed` still to come), M8
 team mode (ARCHIVE 10u), M9 the visual pass (a build and a combat look swapped by
 the banners, effects throughout, a lobby showing the real map), the recording of every
-match (ARCHIVE 11e, each header stamped with the server's commit), M10 six visual styles
-for either look, each with its own menu title and banner, and M11 the UI polish (a
-compact roster, reload rings and aim line, an end-of-match summary, an Effects setting).
-All display-only work since has left the sim untouched.
+match (ARCHIVE 11e, each header stamped with the server's commit), M10–M11 the styles and
+UI polish, M12 the second visual pass — seven styles for either look, Toy bricks the
+last, the HUD dressed per style, the match's moments — and the first test-session
+feedback: pockets count as territory, pause, an open games browser, the reload at the
+cursor (ARCHIVE 11n–11w).
 
-**Now**: the user is running human test sessions — the first, one person against two
-gunners, is in `recordings/` and replays exact — and sends compiled feedback. The first
-batch is PLAN §11.12: small fixes done, then castle-less pockets as territory (before any
-§11.2 measurement), pause, and an open games browser. **No hidden keyboard shortcuts**
-(the user's rule): every action has something on screen to click; Esc for pause is the
-one agreed exception, and R/E rotate the piece as listed controls.
-PLAN.md §11 opens with where to start:
+**Now**: the user runs human test sessions — every match is recorded in `recordings/`
+with its statistics — and sends compiled feedback. **No hidden keyboard shortcuts** (the
+user's rule): every action has something on screen to click; Esc for pause is the one
+agreed exception, and R/E rotate the piece as listed controls. PLAN.md §11 opens with
+where to start:
 
-1. **Elimination tuning** (§11.2), the next milestone — planned, and now able to use the
-   recorded human rounds. Target: half of 3–4 player matches end with one player left
-   before the cap. Weights stay; levers are one continue instead of two and a new
-   placement delay, measured against careful bots and an ambitious points-driven one.
-   The round cap and points scoring are done (§1.7): most matches reach the cap, so **the
-   scoring formula is the game's balance**.
-2. **Two-player balance** (§11.3), to be re-measured under the cap before anything is tried.
-3. Measurements never taken (§11.4): the full ladder, and seat bias at 6 and 8 players in
-   free-for-all (team seating is measured, and fair).
-4. Independent of balance: bots as personality × skill (§11.6). The visual work of
-   M9–M11 is done, its plans in ARCHIVE 11h.
-5. **The second visual pass** (§11.11, M12), display only, runs beside the testing: eight
-   packages W1–W8, the last a seventh style, Toy bricks.
+1. **Bots as skill and personality** (§11.6, M13), the next milestone, agreed and planned
+   in five phases: skill as Level 1–10 chosen in the lobby (Level 5 today's gunner, 8
+   today's marshal, sloppy building low down); four personality traits — risk, targeting
+   (a share of shots, not all), cannon space, castle choice as flavour — dealt from the
+   seed, hidden, revealed at game over; general tactics for every bot. Guardrail: no trait
+   lets a bot beat one three levels above it. Phase 1 must reproduce today's bots hash for
+   hash.
+2. **Elimination tuning** (§11.2), after it: half of 3–4 player matches should end with
+   one player left before the cap. Weights stay; levers are one continue instead of two
+   and a new placement delay, measured over the personality mix. Most matches reach the
+   cap, so **the scoring formula is the game's balance**.
+3. **Two-player balance** (§11.3), to be re-measured under the cap before anything is tried.
+4. Measurements never taken (§11.4): the full level ladder, and seat bias at 6 and 8
+   players in free-for-all (team seating is measured, and fair).
 
 ## Measuring the bots
 

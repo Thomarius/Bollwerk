@@ -2630,3 +2630,71 @@ again. So:
   fifths round. Getting there took some care: shots aimed near the channel land within a
   second, so the window with nothing ready is short — which is exactly when the ring is
   wanted — and clicks in one tick claim one gun.
+
+## 11w. Finished work moved out of the plan (2026-09-29)
+
+PLAN keeps only open work, so its finished sections moved here as they stood, under their
+old numbers, which commits and the entries above cite: the second visual pass (M12,
+entries 11i–11m, 11r, 11s, 11u) and the first batch of test-session feedback (11n–11q,
+11t, 11v).
+
+### Formerly PLAN 11.11 Second visual pass — done
+
+**Agreed with the user 2026-09-28**, to run while human testing goes on. Display only,
+like 11.8–11.10: no sim, protocol or ruleset change, so it cannot desync a match or move a
+balance measurement. The same discipline: anything timed is a pure function with tests,
+every package adds scenes to `tools/screenshots.sh`, tunables go in `art.default.json`,
+and anything under a second is left for a person to see. The §7 rules every style keeps
+still hold — a player keeps their hue, information stays readable, land, sea, wall and
+sealed ground tell apart. Considered and dropped by the user: a timelapse replay at game
+over (close to the deferred "shipped replays", §12) and an attract mode behind the menu —
+too much work for too little in play. Of the new styles offered (an Arcade 1990 tribute
+with a CRT filter, Winter, Terminal, High contrast, Woodblock), only Toy bricks is taken.
+
+Packages in order; W1 first and W8 last, W7 before W8, the rest independent.
+
+**W1 — Fixes and readability — done** (ARCHIVE 11i): Blueprint's stray line, Parchment's
+sea washed apart from its land, its compass rose moved off the big timer, Blueprint's
+inert guns in the owner's ink.
+
+**W2 — Medieval upgrade — done** (ARCHIVE 11j): castles with towers, a keep and lit
+windows; guns on carriages in stone pits; beaches and a rounded coast; a sea without a
+grid, with glints and crests; cloud shadows. Night took all of it but the clouds.
+
+**W3 — Living land — done** (ARCHIVE 11k): scenery on open land in all six styles,
+cleared by building and sealing; boats, gulls and fish on the outer ocean in Medieval
+and Night. Fields were left out: flat patches of colour read as sealed ground.
+
+**W4 — Atmosphere — done** (ARCHIVE 11l): the day by round and weather per match in
+Medieval; the moon's path, lighthouses and fireflies at Night; Cyberpunk's rain and
+colour split; bloom behind a new High Effects setting.
+
+**W5 — The board, felt — done** (ARCHIVE 11m): wall chunks, Blueprint's smudges and
+pencil, guns set down as pieces are, the piece's shadow and swing, knockout smoke and
+half-mast flags, and the sealing preview behind a menu setting, off by default — **for
+the testers to try** before it is ever on by default.
+
+**W6 — Moments — done** (ARCHIVE 11r): the opening on your own island, marked "You are
+here", pulled out to the map; the final round's banner, stamp and dusk; the push onto the
+winner; the summary's filmstrip.
+
+**W7 — The UI in each look — done** (ARCHIVE 11s): the HUD bar, clock, piece box and hints
+dressed per style (`HUD_SKIN`); the lobby's map breathing.
+
+**W8 — Toy bricks — done** (ARCHIVE 11u, §7): a seventh style, for either look.
+
+### Formerly PLAN 11.12 Test-session feedback, first batch — done
+
+Eight items from the user's compiled feedback. Five small ones are done (ARCHIVE 11n): the
+lobby's Copy button over plain http, the lives count on the life-lost banner, reload rings
+that can be seen, a button in place of the R key at the end of a match (with M's mute
+removed too — no hidden keys), and the player's name remembered. Then, in order:
+
+**F1 — Pockets count — done** (ARCHIVE 11o, §1.3): sealed ground without a castle is
+territory while its player holds a sealed castle, behind `enclosure.castlelessRegionsCount`.
+
+**F2 — Pause — done** (ARCHIVE 11p, §6): anyone may pause and anyone resume, by Esc or
+the button beside the Sound switch; the server steps no ticks while paused.
+
+**F3 — Open games browser — done** (ARCHIVE 11q, §6): the menu lists public rooms still
+being set, with Join; a Public / Private switch beside Play decides as the table is made.
