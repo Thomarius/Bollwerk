@@ -683,14 +683,18 @@ export class ReloadRings {
     if (humanPlayer < 0) return;
     const now = state.tick + tickFraction;
     const colour = playerColour(art, humanPlayer, 'light');
-    const width = Math.max(1.5, view.tile / 9);
+    // After the first human play: "the reload marker is not visible". A 1.5 px ring in the
+    // player's light colour, hugging the pit, vanished under the gun and its smoke and
+    // against pale ground. Thicker, a little further out, over a dark halo so it reads on
+    // any ground in any style, with a track strong enough to show how far there is to go.
+    const width = Math.max(2.5, view.tile / 5);
     const shots = new Map(state.shots.map((shot) => [shot.id, shot]));
     const loading = new Set<number>();
     for (const cannon of state.cannons) {
       if (cannon.owner !== humanPlayer) continue;
       const cx = tileX(view, cannon.x + cannon.w / 2);
       const cy = tileY(view, cannon.y + cannon.h / 2);
-      const r = (Math.min(cannon.w, cannon.h) * view.tile) / 2 + view.tile * 0.08;
+      const r = (Math.min(cannon.w, cannon.h) * view.tile) / 2 + view.tile * 0.2;
       if (cannon.shotId === null) {
         if (this.loading.has(cannon.id) && cannon.active) {
           this.flashes.push({ x: cx - view.originX, y: cy - view.originY, r, age: 0 });
@@ -703,10 +707,12 @@ export class ReloadRings {
       const span = shot.impactTick - shot.launchTick;
       const p = span <= 0 ? 1 : Math.min(1, Math.max(0, (now - shot.launchTick) / span));
       g.circle(cx, cy, r);
-      g.stroke({ width, color: colour, alpha: 0.18 });
+      g.stroke({ width: width + 2.5, color: 0x000000, alpha: 0.55 });
+      g.circle(cx, cy, r);
+      g.stroke({ width, color: colour, alpha: 0.3 });
       g.moveTo(cx, cy - r);
       g.arc(cx, cy, r, -Math.PI / 2, -Math.PI / 2 + p * Math.PI * 2);
-      g.stroke({ width, color: colour, alpha: 0.8 });
+      g.stroke({ width, color: colour, alpha: 1 });
     }
     this.loading = loading;
 

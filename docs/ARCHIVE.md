@@ -2398,3 +2398,30 @@ PLAN 11.11 W5. Display only.
   11g); pencil strokes over a piece just laid, fading as it is inked.
 - Seen: the knockout at round five, half-mast and smoke. The preview, the swing, the
   chunks' bounce and the pencil need a person, and a mouse.
+
+## 11n. The first compiled test feedback: five small fixes
+
+PLAN 11.12, the part done at once. All client-side; no sim, protocol or ruleset change.
+
+- **The lobby's Copy button did nothing** over a LAN address (reported from Linux Mint).
+  The clipboard API exists only in a secure context — https or localhost — and the call
+  was written `navigator.clipboard?.writeText(...).then(...).catch(...)`: with the API
+  absent the optional chain skipped the whole expression, fallback included, so the click
+  had no effect at all. It now checks for a secure context first, falls back to selecting
+  the code and `execCommand('copy')`, which plain http still honours, and only then leaves
+  the code selected to copy by hand.
+- **"1 team life left" beside two pips.** The `player_continued` event carries the
+  continues left in the pool; the roster's pips count those plus the life being played,
+  and the banner printed the raw number. Not a team fault — free-for-all said the same.
+  The banner now counts as the pips do; "last life" at no continues was already right.
+- **The reload ring could not be seen**, and was read as appearing only after the shot
+  landed. It always filled over the shot's flight, which is the reload; it was a 1.5 px
+  line hugging the pit, under the barrel and smoke in Pixel art. Now thicker, a little
+  further out, over a dark halo, with a stronger track. Seen firing in Pixel art,
+  Minimal, Parchment and Cyberpunk, rings part-filled on every gun in the air.
+- **No hidden keys**, the user's rule: "press R to play again" (which in fact went to the
+  menu) is a **Back to menu** button, and M's mute is gone too, the corner's Sound switch
+  doing that job. The end screen is a node of its own rather than part of the markup the
+  HUD rewrites each frame, since a button replaced between press and release never
+  receives the click. R and E still turn the held piece, as a listed control.
+- **The name is remembered** in the browser, as the looks are; `?name=` still overrides.

@@ -77,7 +77,6 @@ will be silent rather than noisy**.
 Identical cues starting within 60ms of each other are dropped: a barrage is dozens of
 shots and stacking copies of one sample sounds like distortion rather than like guns.
 
-The **Sound** switch in the bottom left corner of every screen mutes and unmutes, and `M`
-does the same during a match. The choice is remembered by the browser, which is why the
-switch always shows it. There are no keys in the menu or lobby, where they would fire
-while a name is being typed.
+The **Sound** switch in the bottom left corner of every screen mutes and unmutes; there is
+no key for it. The choice is remembered by the browser, which is why the switch always
+shows it.

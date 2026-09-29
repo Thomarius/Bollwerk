@@ -437,6 +437,27 @@ body.reduced-effects .big-timer.beat {
   color: var(--muted);
 }
 
+/* The HUD lets clicks through to the board; the end screen's button has to take them. */
+.banner .leave {
+  display: block;
+  margin: 1rem auto 0;
+  padding: 0.6rem 1.5rem;
+  border: 1px solid var(--accent);
+  background: transparent;
+  color: var(--accent);
+  font: inherit;
+  font-size: 13px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+  pointer-events: auto;
+}
+
+.banner .leave:hover {
+  background: var(--accent);
+  color: #0a0a12;
+}
+
 .crash {
   position: absolute;
   inset: 2rem;

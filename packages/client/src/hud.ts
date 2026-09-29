@@ -115,6 +115,35 @@ export class Hud {
   /** The announcement crossing the screen, if one is. */
   private phaseCall: HTMLElement | null = null;
 
+  /**
+   * The end-of-match screen, kept apart from the markup rewritten every frame: a button
+   * replaced between a press and its release never receives the click.
+   */
+  private endScreen: HTMLElement | null = null;
+  private endScreenHtml = '';
+  private leave: (() => void) | null = null;
+
+  /** What the end screen's button does: back to the menu, whether played or watched. */
+  onLeave(handler: () => void): void {
+    this.leave = handler;
+  }
+
+  private showEndScreen(html: string): void {
+    if (this.endScreen === null || !this.endScreen.isConnected) {
+      this.endScreen = document.createElement('div');
+      this.endScreen.className = 'end-screen';
+      this.endScreen.addEventListener('click', (event) => {
+        if ((event.target as HTMLElement).closest('.leave')) this.leave?.();
+      });
+      this.root.append(this.endScreen);
+      this.endScreenHtml = '';
+    }
+    if (html !== this.endScreenHtml) {
+      this.endScreen.innerHTML = html;
+      this.endScreenHtml = html;
+    }
+  }
+
   /** A team's letter over each of its islands, for the whole of a team match. */
   private teamTags = new Map<number, HTMLElement>();
 
@@ -623,9 +652,11 @@ export class Hud {
             )
             .join('');
       const table = `<table class="final">${head}${rows}</table>`;
-      const again = humanPlayer < 0 ? 'press R for the menu' : 'press R to play again';
-      banner = `<div class="banner">${text}${table}${this.chart(state, humanPlayer)}<small>${again}</small></div>`;
+      // A button, not a key: everything else in the game is the mouse, and a key that
+      // does something unannounced is the kind of surprise players dislike.
+      banner = `<div class="banner">${text}${table}${this.chart(state, humanPlayer)}<button class="leave">Back to menu</button></div>`;
     }
+    this.showEndScreen(banner);
     // Knocked out: the stamp over your island is the moment, so this is only a quiet
     // line where the controls hint was — a banner in the middle of the screen covered
     // the very match you were left to watch, for the rest of it.
@@ -654,8 +685,7 @@ export class Hud {
       queue +
       cannonCount +
       `<div class="hint">${hint}</div>` +
-      (status ? `<div class="net">${status}</div>` : '') +
-      banner;
+      (status ? `<div class="net">${status}</div>` : '');
   }
 }
 

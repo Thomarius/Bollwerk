@@ -12,6 +12,7 @@ import { isTeamMatch, teamLetter } from './scores.js';
 
 /** A life lost, as the client recorded it from a `player_continued` event. */
 export interface LifeLost {
+  /** Continues still in the pool, as the event carries them — not counting the life now being played. */
   remaining: number;
   /** The tick at which the announcement stops being news. */
   untilTick: number;
@@ -96,13 +97,16 @@ export function bannersFor(
       }
       continue;
     }
+    // Lives left include the one about to be played, as the roster's pips count them: the
+    // banner once printed the continues alone and said "1 life left" beside two pips.
+    const lives = lost.remaining + 1;
     out.push({
       player: player.id,
       kind: 'life',
       title: 'Life lost',
       detail:
         lost.remaining > 0
-          ? `${player.name} — ${lost.remaining} ${teamed ? 'team ' : ''}${lifeWord(lost.remaining)} left`
+          ? `${player.name} — ${lives} ${teamed ? 'team ' : ''}${lifeWord(lives)} left`
           : `${player.name} — last ${teamed ? 'team ' : ''}life`,
       urgent: lost.remaining === 0,
     });

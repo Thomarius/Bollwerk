@@ -23,7 +23,7 @@ describe('island banners', () => {
         player: 0,
         kind: 'life',
         title: 'Life lost',
-        detail: 'Ada — 1 life left',
+        detail: 'Ada — 2 lives left',
         urgent: false,
       },
     ]);
@@ -32,11 +32,21 @@ describe('island banners', () => {
   });
 
   it('counts remaining lives in words a player can read, and marks the last', () => {
+    // Lives as the roster's pips count them: the continues left, plus the life being
+    // played. Printing the continues alone said "1 life left" beside two pips.
     const two = new Map<number, LifeLost>([[0, { remaining: 2, untilTick: 200 }]]);
     expect(bannersFor(state(1, [alive(0, 'Ada')]), two)[0]).toMatchObject({
-      detail: 'Ada — 2 lives left',
+      detail: 'Ada — 3 lives left',
       urgent: false,
     });
+    const teamed = state(1, [
+      { ...alive(0, 'Ada'), team: 0 },
+      { ...alive(1, 'Bo'), team: 0 },
+      { ...alive(2, 'Cy'), team: 1 },
+      { ...alive(3, 'Di'), team: 1 },
+    ]);
+    const one = new Map<number, LifeLost>([[0, { remaining: 1, untilTick: 200 }]]);
+    expect(bannersFor(teamed, one)[0]).toMatchObject({ detail: 'Ada — 2 team lives left' });
     const none = new Map<number, LifeLost>([[0, { remaining: 0, untilTick: 200 }]]);
     expect(bannersFor(state(1, [alive(0, 'Ada')]), none)[0]).toMatchObject({
       detail: 'Ada — last life',

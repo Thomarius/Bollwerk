@@ -716,7 +716,12 @@ every resolution against an independent search, not only on unit pictures.
 
 ## 11. Open work
 
-**Where to start (2026-09-28).** The user is running human test sessions, and every match
+**Where to start (2026-09-29).** The first compiled feedback from the test sessions is in
+**11.12**: its small fixes are done (ARCHIVE 11n), and its three agreed items come next, in
+order — **castle-less pockets as territory first, since it moves the balance and must land
+before 11.2's baseline is measured**, then pause, then an open games browser.
+
+**Before that (2026-09-28).** The user is running human test sessions, and every match
 is recorded with its statistics (§9, ARCHIVE 11e); the user will also send compiled
 feedback. The next milestone is **11.2, elimination tuning**: its plan is ready, starts
 with a baseline measurement, and can now set the bots against rounds people actually
@@ -917,6 +922,50 @@ bricks, which suits pieces that are already tetrominoes; pieces click down, guns
 of bricks, the sea is a blue baseplate, player colours bright and clean. Last, so it is
 built against the finished interfaces: besides the palette, title and banner every style
 brings, its own scenery (W3), atmosphere (W4) and HUD skin (W7).
+
+### 11.12 Test-session feedback, first batch — agreed 2026-09-29
+
+Eight items from the user's compiled feedback. Five small ones are done (ARCHIVE 11n): the
+lobby's Copy button over plain http, the lives count on the life-lost banner, reload rings
+that can be seen, a button in place of the R key at the end of a match (with M's mute
+removed too — no hidden keys), and the player's name remembered. Three remain, in order:
+
+**F1 — Walled ground without a castle is territory (M; sim, config, protocol).** The
+original's rule, which ours is not: today `computeEnclosure` makes a sealed region
+territory only if one of the island's castles is inside it. Agreed with the user:
+
+- A sealed region on a player's own island is their territory **for every purpose** —
+  cannons may stand in it and fire from it, and its tiles score (tiles × castles) — **as
+  long as that player holds at least one sealed castle** somewhere. Per player, not per
+  team: a teammate's sealed castle does not make your pocket count.
+- Holding only pockets, with no castle sealed, fails the round as now: the life rule is
+  unchanged. A player who loses their last sealed castle loses their pockets with it, and
+  guns there go inert.
+- A ruleset switch, on by default, so the old rule stays measurable. The ruleset changes
+  shape, so `PROTOCOL_VERSION` goes up, and recordings made before replay only against
+  their own commit (which the header names).
+- The client follows by construction, since it asks the sim's own `computeEnclosure` for
+  territory, the sealing preview and the HUD.
+- **Bots will not build pockets on purpose** at first: they obey the rule, and may gain
+  from it where a pocket forms by accident. Walling small gun pockets deliberately is a
+  playstyle question for 11.6.
+- **Must land before 11.2's baseline**: more ground and working guns change how often
+  walls fail, which is what 11.2 measures. Re-check the bot soak before and after.
+
+**F2 — Pause, for everybody (M; server, protocol, client).** For the test sessions any
+player may pause and any may resume; no cap on count or length. **Esc** pauses and
+resumes — the one keyboard shortcut the user accepts, being the usual one in games — and
+a pause button sits in a corner beside the Sound switch. An overlay says who paused, with
+a Resume button. Every timer is in ticks, so a paused match simply is not stepped: the
+server stops its loop for the room (bots included) and tells every client; offline the
+local match is not advanced. A pause adds nothing to the input log, so recordings are
+untouched. Open when building: what a dropped connection does to a pause it made.
+
+**F3 — An open games browser (M; server, protocol, lobby).** The menu lists rooms that
+have not started, with a Join button each, beside joining by code. **Rooms are public by
+default**; the host may make one private when creating it, and a private room is joined
+by code alone. The server answers a list request with the open public rooms (code, host,
+seats taken of seats, round cap, teams).
 
 ## 12. Deferred (explicitly out of scope for v1)
 

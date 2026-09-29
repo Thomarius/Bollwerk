@@ -136,8 +136,6 @@ function installSoundButton(): void {
     audio.setMuted(!audio.isMuted);
     show();
   });
-  // The match's M key changes it too.
-  globalThis.addEventListener('keyup', show);
   show();
   document.body.append(button);
 }
@@ -292,11 +290,25 @@ function styleOptions(look: ArtLook): string {
     .join('');
 }
 
+/** Where the menu remembers the player's name, as it does the looks. */
+const NAME_KEY = 'rampart.name';
+
+function storedName(): string {
+  try {
+    return globalThis.localStorage?.getItem(NAME_KEY)?.trim() || 'Player';
+  } catch {
+    return 'Player';
+  }
+}
+
 function readCommon(): Common {
-  return {
-    styles: readStyles(),
-    name: document.querySelector<HTMLInputElement>('#name')?.value.trim() || 'Player',
-  };
+  const name = document.querySelector<HTMLInputElement>('#name')?.value.trim() || 'Player';
+  try {
+    globalThis.localStorage?.setItem(NAME_KEY, name);
+  } catch {
+    // Storage refused, as in some private windows: the name holds for this visit only.
+  }
+  return { styles: readStyles(), name };
 }
 
 /**
@@ -328,6 +340,9 @@ function showMenu(): void {
   // The banners either side of combat swap one look for the other as they cross the
   // board, as the original did; the same style for both switches nothing.
   const styles = preferredStyles();
+  // Set as a property rather than written into the markup, so a saved name needs no escaping.
+  const nameField = document.querySelector<HTMLInputElement>('#name');
+  if (nameField) nameField.value = storedName();
   const buildField = document.querySelector<HTMLSelectElement>('#build-style');
   if (buildField) buildField.value = styles.build;
   const combatField = document.querySelector<HTMLSelectElement>('#combat-style');
@@ -472,22 +487,36 @@ function drawLobby(view: LobbyView, on: LobbyHandlers): void {
 
   // Copying beats reading a code aloud, and the fallback matters: the clipboard API
   // is unavailable over plain http on anything but localhost, which is exactly how
-  // somebody will first try this on a home network.
+  // somebody will first try this on a home network. There `navigator.clipboard` is
+  // undefined, and an optional call on it once skipped the fallback too, so the button
+  // did nothing at all (reported from Linux Mint over a LAN address).
   const copy = document.querySelector<HTMLButtonElement>('#copy-code');
   copy?.addEventListener('click', () => {
     audio.play('select');
-    void navigator.clipboard
-      ?.writeText(view.code ?? '')
-      .then(() => {
-        copy.textContent = 'Copied';
-        setTimeout(() => (copy.textContent = 'Copy'), 1200);
-      })
-      .catch(() => {
-        // Select it instead, so it can still be copied by hand.
-        const node = document.querySelector('#room-code');
-        if (node) globalThis.getSelection()?.selectAllChildren(node);
-        copy.textContent = 'Select and copy';
-      });
+    const code = view.code ?? '';
+    const copied = (): void => {
+      copy.textContent = 'Copied';
+      setTimeout(() => (copy.textContent = 'Copy'), 1200);
+    };
+    // The old way, still honoured over plain http: select the code and copy the selection.
+    // Failing that, it is left selected so it can be copied by hand.
+    const bySelection = (): void => {
+      const node = document.querySelector('#room-code');
+      if (node) globalThis.getSelection()?.selectAllChildren(node);
+      let ok: boolean;
+      try {
+        ok = document.execCommand('copy');
+      } catch {
+        ok = false;
+      }
+      if (ok) copied();
+      else copy.textContent = 'Select and copy';
+    };
+    if (globalThis.isSecureContext && navigator.clipboard !== undefined) {
+      navigator.clipboard.writeText(code).then(copied, bySelection);
+    } else {
+      bySelection();
+    }
   });
   document.querySelector('#begin')?.addEventListener('click', () => {
     audio.play('select');
@@ -1017,24 +1046,20 @@ async function runSession(session: Session, setup: Setup): Promise<void> {
   fit();
   globalThis.addEventListener('resize', fit);
 
-  // Keys belong to the match alone, and go with it. M was once bound for the whole page,
-  // so typing a name with an "m" in it in the lobby muted the music.
-  const keys = (event: KeyboardEvent): void => {
-    if (event.key === 'm' || event.key === 'M') audio.setMuted(!audio.isMuted);
-    // R returns to the menu once a match is over, whether it was played or watched.
-    if ((event.key === 'r' || event.key === 'R') && session.finished) {
-      cleanup();
-      showMenu();
-    }
-  };
-  globalThis.addEventListener('keydown', keys);
+  // No hidden keys: the end screen has a button back to the menu, and sound its switch in
+  // the corner. R once did the first and M the second, unannounced, at the user's request
+  // removed — a stray key press should not do something nobody was told about.
+  hud.onLeave(() => {
+    audio.play('select');
+    cleanup();
+    showMenu();
+  });
 
   let frame = 0;
   const cleanup = (): void => {
     cancelAnimationFrame(frame);
     controls.detach();
     globalThis.removeEventListener('resize', fit);
-    globalThis.removeEventListener('keydown', keys);
     scene.app.destroy(true);
   };
 
@@ -1432,7 +1457,7 @@ if (params.get('autostart') === '1') {
   const joining = params.get('join');
   const common: Common = {
     styles: preferredStyles(),
-    name: params.get('name') ?? 'Player',
+    name: params.get('name') ?? storedName(),
   };
   void openLobby(common, joining, Number(params.get('host') ?? DEFAULT_PLAYERS)).catch(
     (error: unknown) => showError(joining !== null ? 'Could not join' : 'Could not host', error),

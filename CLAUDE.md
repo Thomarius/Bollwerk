@@ -125,7 +125,11 @@ compact roster, reload rings and aim line, an end-of-match summary, an Effects s
 All display-only work since has left the sim untouched.
 
 **Now**: the user is running human test sessions — the first, one person against two
-gunners, is in `recordings/` and replays exact — and will send compiled feedback.
+gunners, is in `recordings/` and replays exact — and sends compiled feedback. The first
+batch is PLAN §11.12: small fixes done, then castle-less pockets as territory (before any
+§11.2 measurement), pause, and an open games browser. **No hidden keyboard shortcuts**
+(the user's rule): every action has something on screen to click; Esc for pause is the
+one agreed exception, and R/E rotate the piece as listed controls.
 PLAN.md §11 opens with where to start:
 
 1. **Elimination tuning** (§11.2), the next milestone — planned, and now able to use the
