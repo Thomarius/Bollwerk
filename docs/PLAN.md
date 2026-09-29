@@ -922,7 +922,7 @@ balanced means.
 - **Bots do not help a teammate build**, even under `crossIslandBuild: all` — teaching
   one to help without wrecking a person's plan is its own question (team mode, §1.8).
 
-### 11.6 Bots as skill and personality — agreed 2026-09-29, phase 1 done
+### 11.6 Bots as skill and personality — agreed 2026-09-29, phases 1–2 done
 
 **The next milestone (M13)**, ahead of 11.2's baseline, which is then measured over the
 personality mix real matches will contain. Today a tier bundles two things: **skill** —
@@ -982,19 +982,17 @@ reliably beat Level 5. Measured at three players, both seats.
 
 - **Guns not against a wall with sea or wall beyond** — a shot there leaves a one-tile gap
   that is hard to fix. Done (10p, 10s): pinned spots are the last resort.
-- **Close gaps from the outside.** Partly done: fitting a piece already penalises spill
-  onto sealed ground, but while a breach is being repaired the ground inside the broken
-  ring is not sealed, so exactly that case goes unpenalised. Penalise spill inside the
-  ring being closed.
+- **Close gaps from the outside.** Done (ARCHIVE 11y): while a bot holds no sealed castle,
+  spill inside the ring its plan would seal counts against a fit.
 - **One shot per wall tile** — a second hit on a tile is wasted. Done (10m), counting every
   player's shots in the air.
-- **No unfillable holes**, new: avoid placements that leave a single-tile hole against sea
-  or wall once one-cell pieces stop being dealt — the cannon rule's principle, applied to
-  walls; `repairStuck` measures it.
-- **Thicken the side that takes fire**, new: when thickening, prefer the wall facing
-  opponents over the back wall.
-- **Guns toward the enemy**, new: among equally safe spots, the side facing opponents, for
-  shorter flights and faster reloads.
+- **No unfillable holes** — tried and dropped (ARCHIVE 11y): no measurable effect, since
+  the holes `repairStuck` counts come from shots, not from the bots' own pieces.
+- **Thicken the side that takes fire** — tried and dropped (ARCHIVE 11y): trying nearest-
+  opponent tiles first raised Level 5 forfeits. Thickening already targets the weakest
+  wall as seen from outside.
+- **Guns toward the enemy** — already done: gun spots compare never-pinned, then room,
+  then distance to the nearest enemy castle (10p).
 
 #### Phases
 
@@ -1007,7 +1005,8 @@ reliably beat Level 5. Measured at three players, both seats.
    the server and local matches deal personalities from the seed; the recording header and
    the statistics carry level and personality. `?personality=` and a headless flag fix
    them, so soaks and screenshots are not random. Protocol bump.
-2. **General tactics (S–M)**, the new ones above, each soaked before and after.
+2. **General tactics — done** (ARCHIVE 11y): closing gaps from the outside, while repairing
+   only; guns toward the enemy was already there; the other two were measured and dropped.
 3. **Risk and targeting traits (S–M)**: defensive and offensive over the existing
    switches, point-maximizing, finisher and grudge targeting, the targeting share, and
    castle choice by risk.

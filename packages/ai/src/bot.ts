@@ -614,6 +614,35 @@ export class Bot {
     return cheapest?.tiles ?? [];
   }
 
+  /** The ground the current plan would seal, kept until the plan is redrawn. */
+  private inside: { key: string; territory: Uint8Array } | null = null;
+
+  /**
+   * What counts as the inside of the wall for a piece's spill. While the bot holds no
+   * sealed castle — repairing a breach — the ground its plan would seal: inside the broken
+   * ring nothing is territory, so spill there went unpenalised in exactly the case the user
+   * named, closing the gaps to a castle, which is better done from the outside to leave
+   * the room inside for guns. The sim's own enclosure with the plan's tiles stood in as
+   * wall, so it cannot disagree with the rules. Only then: applied to every plan, an
+   * expansion's whole interior counted as inside, including the band just outside the
+   * current wall where thickening goes, and walls came out 14% thinner at Level 5 with
+   * forfeits up 2.3 points. Once something is sealed, the territory as before.
+   */
+  private insideOf(state: MatchState): Uint8Array {
+    const key = `${state.round}:${this.plannedAt}`;
+    if (this.inside?.key === key) return this.inside.territory;
+    let territory = state.territory;
+    const planned = this.plan.filter((i) => state.structure[i] === Structure.Empty);
+    const repairing = (computeEnclosure(state).enclosedCastlesByPlayer[this.playerId] ?? 0) === 0;
+    if (repairing && planned.length > 0) {
+      const structure = state.structure.slice();
+      for (const i of planned) structure[i] = Structure.Wall;
+      territory = computeEnclosure({ ...state, structure }).territory;
+    }
+    this.inside = { key, territory };
+    return territory;
+  }
+
   /**
    * The placement that covers most of what is wanted, proposed from the tiles themselves —
    * or, now and then for a sloppy bot, the next best, as a hurried person settles for a
@@ -632,6 +661,7 @@ export class Bot {
     let secondScore = Number.NEGATIVE_INFINITY;
     const target = new Set(wanted);
     const islandId = state.players[this.playerId]?.islandId;
+    const inside = this.insideOf(state);
 
     for (const tile of wanted) {
       const tx = tile % state.width;
@@ -647,11 +677,11 @@ export class Bot {
           for (const [cx, cy] of cells) {
             const i = (y + cy) * state.width + x + cx;
             if (target.has(i)) covered++;
-            else if (state.territory[i] === islandId) indoors++;
+            else if (inside[i] === islandId) indoors++;
           }
           // Spill outside is merely wasted. Spill inside is worse than wasted: it
-          // occupies sealed ground, which is the only place a cannon may go, and a
-          // wall with no guns behind it wins nothing.
+          // occupies ground the wall will seal, which is the only place a cannon may go,
+          // and a wall with no guns behind it wins nothing.
           const score = covered * 4 - (cells.length - covered) - indoors * 5;
           if (score > bestScore) {
             second = best;

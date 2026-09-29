@@ -2727,3 +2727,33 @@ model and then everything that shows it, each checked the same way.
   before and after the model, and again through the new flags after the surface. A test
   caught a pattern mangled on its way through the shell — the personality parser split
   on the letter "s" — before anything used it.
+
+## 11y. General tactics for every bot (11.6, phase 2)
+
+Four tactics from the user's play, each measured at three players over seeds 1–36 at
+Level 5 and Level 8 (the old gunner and marshal) before and after. One kept, one found
+already there, two dropped.
+
+- **Guns toward the enemy was already there**: gun spots compare never-pinned, then room,
+  then distance to the nearest enemy castle (10p). Nothing added.
+- **Close gaps from the outside — kept, while repairing.** Fitting a piece penalised
+  spill onto sealed ground, but inside a broken ring nothing is sealed, so the case the
+  user named went unpenalised. First applied to every plan, with the ground the plan
+  would seal standing in for territory: room for guns rose 24% at Level 5, but walls came
+  out 14% thinner and forfeits rose 10.4% -> 12.7%. An expansion's whole interior had
+  counted as inside, including the band outside the current wall where thickening goes.
+  Applied only while the bot holds no sealed castle: Level 5 forfeits 10.4% -> 10.4%,
+  room 2.48 -> 2.90, active guns 5.12 -> 5.24; Level 8 forfeits 13.4% -> 14.3% (within
+  noise at this size), room 4.15 -> 4.38, active guns 5.10 -> 5.49, territory points
+  97 -> 91, knockouts 1 -> 7 in 36 matches. Walls have fewer tiles (84.6 -> 80.0,
+  82.5 -> 73.6), partly by design: blocks that used to spill inside counted as wall and
+  stood where guns belong.
+- **No unfillable holes — dropped.** Penalising a fit that leaves a wanted tile with no
+  free neighbour, once one-cell pieces stop being dealt, changed nothing measurable: the
+  holes `repairStuck` counts come from shots, not from the bots' own placements.
+- **Thicken the side that takes fire — dropped.** Trying thickening and outer-layer tiles
+  nearest an opponent first raised Level 5 forfeits (10.4% -> 11.8% beside the kept
+  rule) with nothing gained. Thickening already targets the weakest wall as seen from
+  outside, which is where a breach comes through whichever way the shots fly.
+- Attributed with a temporary switch per change, not committed, and the final code
+  checked hash-identical to the variant measured.
