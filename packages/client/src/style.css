@@ -546,9 +546,35 @@ body.reduced-effects .you-are-here {
   white-space: nowrap;
 }
 
-/* Six to eight players in free-for-all: icons for words, and closer together. */
+/* Six to eight players in free-for-all: icons for words, and closer together — and made
+   to fit whatever the window: the roster may shrink, long names are cut short (the whole
+   name is on hover), the text scales down on narrow windows, and nothing is ever drawn
+   past the edge. The eighth entry once ran 300 pixels off a 1024-pixel screen. */
 .roster.compact {
-  gap: 0.7rem;
+  flex: 0 1 auto;
+  min-width: 0;
+  gap: clamp(0.3rem, 0.6vw, 0.8rem);
+  overflow: hidden;
+}
+
+.roster.compact .player {
+  min-width: 0;
+  font-size: clamp(10px, 1vw, 13px);
+}
+
+.roster.compact .player bdi {
+  max-width: 9ch;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.roster.compact .player span {
+  font-size: clamp(9px, 0.86vw, 11px);
+}
+
+.roster.compact .player i {
+  margin: 0 1px 0 1px;
 }
 
 .roster.compact .lives {

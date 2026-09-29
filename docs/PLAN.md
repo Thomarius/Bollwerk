@@ -509,8 +509,11 @@ blur filter, asked for rather than given since it costs frame rate at eight play
 **The roster** is kept across frames rather than rebuilt, so its entries can move:
 free-for-all is in standing, best first, and a change of places slides; scores count up
 as they bank, over `effects.tallyMs`, as the island banners do; a team match keeps team
-order. Past four players in free-for-all an entry is icons — ♜ castles, ⊙ guns, the
-lives pips — with the words on hover, so eight fit one line at 1280 pixels wide. The big
+order. Past four players in free-for-all an entry is compact — the score, ♜ castles, ⊙ guns
+firing and ●N lives, red on the last, with names past nine characters cut short and
+everything in words on hover — and the roster shrinks to fit: eight entries with
+sixteen-character names and four-digit scores fit at 1024 pixels wide, and nothing is
+ever drawn past the edge. The big
 timer beats on each of the last three seconds, with the clock's tick.
 
 **Feedback a player builds by.** While nothing of yours is sealed, your castles are
@@ -895,8 +898,6 @@ balanced means.
 - Audio files: 18 of 19 cues supplied. Still missing: `wall_destroyed` — the user's to
   produce; the manifest names it and every trigger is wired. A test keeps the manifest and
   the folder in step.
-- **The eight-player roster clips at 1280 pixels**: the last entry's lives run past the
-  right edge in free-for-all. Seen in the W7 screenshots, and the same before them.
 - Islands look boxy; `coastlineRoughness` and `noiseFrequency` are config.
 - Rings at 5 and 7 players make considerably larger maps than grids would. One JSON edit.
 - **Bots do not help a teammate build**, even under `crossIslandBuild: all` — teaching

@@ -611,10 +611,24 @@ export class Hud {
       const pips = '●'.repeat(left) + '○'.repeat(Math.max(0, total - left));
       return `<span class="lives${left === 1 ? ' last' : ''}" title="${left} of ${total} lives">${pips}</span>`;
     };
+    // The compact roster's lives: one pip and the count, red on the last. A pip a life ran
+    // the eighth entry off the screen (PLAN 11.5).
+    const livesCount = (team: number): string => {
+      const left = (state.teams[team]?.continuesRemaining ?? 0) + 1;
+      return `<span class="lives${left === 1 ? ' last' : ''}">●${left}</span>`;
+    };
+    const livesWords = (team: number): string => {
+      const pool = state.teams[team];
+      const left = (pool?.continuesRemaining ?? 0) + 1;
+      return `${left} of ${(pool?.continuesAtStart ?? 0) + 1} lives`;
+    };
     const teamed = isTeamMatch(state);
     const now = performance.now();
     // Past four players in free-for-all, icons rather than words, so eight entries fit
     // one line of the bar: at eight the words wrapped each onto three, under the time bar.
+    // Even so the eighth ran 44 pixels off a 1280-pixel screen and 300 off a 1024 one, so
+    // the compact entry carries only what changes — score, castles, guns firing, lives —
+    // with long names cut short, the rest on hover, and shrinks to fit (PLAN 11.5).
     const compact = !teamed && state.players.length > 4;
     const playerItem = (p: (typeof state.players)[number]): string => {
       const cannons = state.cannons.filter((c) => c.owner === p.id);
@@ -637,10 +651,12 @@ export class Hud {
           : teamed
             ? `${castles} · ${guns}`
             : compact
-              ? `<em>${score}</em> <i>♜</i>${held} <i>⊙</i>${live}/${cannons.length} ${livesOf(p.team)}`
+              ? `<em>${score}</em> <i>♜</i>${held} <i>⊙</i>${live} ${livesCount(p.team)}`
               : `${score} pts · ${castles} · ${guns} · ${livesOf(p.team)}`;
-      const title = compact && !p.eliminated ? ` title="${score} pts · ${castles} · ${guns}"` : '';
-      return `<li class="${classes}"${title}><b style="background:${playerCssColour(p.id)}"></b>${escape(p.name)}<span>${status}</span></li>`;
+      const title = compact
+        ? ` title="${escape(p.name)}${p.eliminated ? '' : ` · ${score} pts · ${castles} · ${guns} · ${livesWords(p.team)}`}"`
+        : '';
+      return `<li class="${classes}"${title}><b style="background:${playerCssColour(p.id)}"></b><bdi>${escape(p.name)}</bdi><span>${status}</span></li>`;
     };
     const { phase: phaseRoot, roster: rosterRoot, rest } = this.layout();
     rosterRoot.classList.toggle('compact', compact);

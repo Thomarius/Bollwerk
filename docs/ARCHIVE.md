@@ -2564,3 +2564,23 @@ PLAN 11.11 W7. Display only; tunables in `art.menu`.
 - Seen in every style at three players, at eight and in teams of four in Parchment, and
   the lobby's map in two frames a second apart. The eight-player roster's last entry runs
   past the right edge at 1280 pixels, as it did before this; noted in PLAN 11.5.
+
+## 11t. The eight-player roster, made to fit
+
+Seen in the W7 screenshots and older than them: at eight players in free-for-all the
+roster's last entry ran past the right edge — measured, 44 pixels at 1280 wide and 86
+with sixteen-character names and four-digit scores; 300 and 342 at 1024, a player or two
+wholly off the screen. Tightening the gaps would have fixed only the screenshot. Of three
+options offered — a compact entry that fits by construction, two rows of four, a side
+panel past four players — the user chose the first.
+
+- The compact entry (past four players, free-for-all only) carries what changes: score,
+  castles, guns firing (the total on hover) and lives as one pip and a count, red on the
+  last, where a pip a life cost the most. Names past nine characters are cut short; the
+  whole name and everything in words are on hover.
+- The roster may shrink, its gaps and text scale down on narrow windows, and it clips
+  rather than ever drawing past the edge.
+- Measured the way the fault was, the worst case written into the roster and read in the
+  same instant: nothing clipped at 1024, 1280 or 1920. Names at eight characters instead
+  of nine changed nothing — the status line is the widest — and trimming the icons'
+  margins and the gaps' scaling closed the last seven pixels at 1024.
