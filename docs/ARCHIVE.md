@@ -2502,3 +2502,38 @@ and only rooms not started with a seat free. Protocol 11: `create` carries `publ
   room and the host's lobby showed the newcomer; a room filled by code while another page
   still listed it sent that page back to the menu with the notice, and the next refresh
   no longer listed it.
+
+## 11r. The second visual pass, W6: moments
+
+PLAN 11.11 W6. Display only; tunables in `art.camera`, `art.summary` and
+`effects.finalStampMs`.
+
+- **The camera** (`camera.ts`, tested) is a container under the stage holding both looks'
+  roots, zoomed and moved together. The wipe's masks stay on the stage outside it, since
+  the banner's line is in screen space; `screenAt`, `tileAt` and `rowAt` go through it,
+  so HTML over the board and clicks stay exact. The view is kept inside the fitted
+  window, where there is board. It moves only while nothing is playable, and not at all
+  under reduced motion.
+- **The opening**: close on the viewer's island (2.4×) for the first 30% of the opening
+  intermission, then out to the whole map as the banner crosses, a pure function of the
+  sim clock so a client joining part-way is where it should be. **"You are here"** stands
+  over the island from the first frame until a castle is chosen. Its first text was the
+  player's own colour, and crimson on the dark box did not read: light text in a border
+  of that colour.
+- **Game over**: a push onto the winners over seven seconds. **First brought to the middle
+  of the screen, the winner sat behind the summary**; it now grows about where it stands,
+  the others drifting off the edges.
+- **The final round**: the banner before its combat is headed "Final round" with "Fire!"
+  under it (the small "Final round" line it replaces); a stamp lands across the board as
+  the round opens; the round counter reads "final round 10 / 10" in the accent; and a
+  faint warm dusk holds at the screen's edges until the end, in every style — Pixel art's
+  sunset was its own — and never over the board's middle, so no colour moves.
+- **The filmstrip** (`filmstrip.ts`, tested): at every resolution the client sees, the
+  board a pixel a tile — sea, land, sealed ground washed in its owner's colour, walls in
+  it, castles and guns in its dark shade, rubble grey — kept in the `MatchLog`, turned
+  into an image once, and shown under the chart, numbered by round, scaled by whole
+  pixels.
+- Seen: the opening close with the marker, mid-pull under the banner, and the castle
+  choice with the marker still up; the stamp over a final round's combat; the push at
+  game over clear of the summary; a five-round watched match's strip of five, the fourth
+  showing an island wiped by a lost life. The pull and the push themselves need a person.

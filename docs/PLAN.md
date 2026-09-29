@@ -630,6 +630,21 @@ The pixel style also keeps **life on the outer ocean** (`pixel/ocean.ts`): a boa
 sail now and then, gulls wheeling, a fish jumping — outside the box round all the land,
 where no shot ever flies, and none of it under reduced motion.
 
+**The match's moments** (`camera.ts`, `filmstrip.ts`, `art.camera`). The match opens
+close on the viewer's own island, marked **"You are here"** until they choose a castle —
+seats are shuffled onto islands, so nobody knows which is theirs until told — and pulls
+out to the whole map before the castle choice opens. At game over the camera pushes
+slowly onto the winners' islands, about where they stand, since the middle of the screen
+is the summary's. **The camera moves only while nothing is playable**, as a pure function
+of the sim clock (the opening) or of time since the end, and stands still under reduced
+motion; the scene maps clicks and HTML overlays through it all the same, and the wipe's
+masks sit outside it, since the banner's line is in screen space. **The last round is
+marked**: its banner is headed "Final round" with "Fire!" under it, a stamp lands across
+the board as it opens, the round counter says so, and a faint dusk holds at the screen's
+edges — in every style, beside Pixel art's own sunset — never over the board's middle,
+so no colour moves. **The summary's filmstrip** shows the board at each resolution the
+client saw, a pixel a tile in the shared colours, beside the score chart.
+
 **Looking at it.** `tools/screenshots.sh` captures fixed states against the dev server —
 in real time through Playwright, which renders fine where virtual time does not — using
 `&snapshot`, `&round`, `&idle` and a wait. Anything lasting under a second (debris, the
@@ -928,14 +943,9 @@ pencil, guns set down as pieces are, the piece's shadow and swing, knockout smok
 half-mast flags, and the sealing preview behind a menu setting, off by default — **for
 the testers to try** before it is ever on by default.
 
-**W6 — Moments** (M).
-
-- **"You are here"** as the match opens: a spotlight or marker on the viewer's island
-  during castle choice, since seats are shuffled onto islands.
-- A camera fly-in at the start and a slow push onto the winner at game over, only while
-  nothing is playable; input mapping must stay exact, and reduced motion keeps it still.
-- The final round marked: its own banner, a stamp, a change of light.
-- A filmstrip in the summary: the board at each round's resolution, beside the chart.
+**W6 — Moments — done** (ARCHIVE 11r): the opening on your own island, marked "You are
+here", pulled out to the map; the final round's banner, stamp and dusk; the push onto the
+winner; the summary's filmstrip.
 
 **W7 — The UI in each look** (M).
 

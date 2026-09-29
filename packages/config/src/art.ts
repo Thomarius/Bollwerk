@@ -410,6 +410,28 @@ export const ArtConfigSchema = z
       readyFlashMs: z.number().int().positive(),
       /** The dotted course from the gun a click would fire to the cursor. */
       aimLineAlpha: z.number().min(0).max(1),
+      /** The "Final round" stamp across the board as the last round opens. */
+      finalStampMs: z.number().int().positive(),
+    }),
+    /**
+     * The camera, which moves only while nothing is playable: onto the viewer's island as
+     * the match opens and out to the whole map, and slowly onto the winner at game over.
+     * Still under reduced motion.
+     */
+    camera: z.strictObject({
+      /** How close the opening starts on the viewer's island, the whole map being 1. */
+      openingZoom: z.number().min(1),
+      /** Share of the opening intermission held on the island before pulling out. */
+      openingHold: z.number().min(0).max(0.9),
+      /** How close the push onto the winner ends. */
+      winnerZoom: z.number().min(1),
+      /** How long the push onto the winner takes. */
+      winnerPushMs: z.number().int().positive(),
+    }),
+    /** The end-of-match summary. */
+    summary: z.strictObject({
+      /** Largest size of a board in the filmstrip, in pixels per tile. */
+      filmstripTilePx: z.number().int().positive(),
     }),
     /** How long the HUD holds its news. */
     hud: z.strictObject({

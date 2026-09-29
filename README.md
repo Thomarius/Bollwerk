@@ -23,8 +23,9 @@ npm install     # once: fetches everything the game needs
 npm start       # builds the game and starts it
 ```
 
-When it says `rampart server on http://0.0.0.0:8080`, open **http://localhost:8080** in
-your browser. Leave the terminal open while you play; `Ctrl+C` stops the game.
+When it says `rampart server on http://localhost:8080`, open that in your browser; the
+lines under it give this computer's network addresses, for others at the table to open.
+Leave the terminal open while you play; `Ctrl+C` stops the game.
 
 Enter a name, press **Play**, set up the table — how many players, teams, bot skill,
 rounds — and press **Start match**. If nobody else joins, the match runs on your own

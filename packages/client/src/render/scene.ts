@@ -2,6 +2,7 @@ import { defaultArtConfig, type ArtConfig, type ArtStyle } from '@rampart/config
 import type { MatchState, Shot } from '@rampart/sim';
 import { Application, Container, Graphics } from 'pixi.js';
 
+import type { CameraShot } from '../camera.js';
 import type { SealGlow } from '../seal.js';
 import type { Look } from '../transition.js';
 
@@ -126,6 +127,15 @@ export class Scene {
   };
   private shown: LookFrame = { from: 'build', to: 'build', lineY: null };
 
+  /**
+   * Both looks' roots, under the camera (`camera.ts`): scaled and moved together as it
+   * zooms. The wipe's masks stay on the stage outside it, since the banner's line is in
+   * screen space whatever the camera does.
+   */
+  private readonly cameraRoot = new Container();
+  /** The camera as applied: zoom, and the screen offset of the board under it. */
+  private camera = { zoom: 1, x: 0, y: 0 };
+
   /** The last board drawn, so a stale look can be brought up to date as it is revealed. */
   private board: {
     state: MatchState | null;
@@ -152,6 +162,7 @@ export class Scene {
     });
     this.app.ticker.autoStart = false;
     this.app.ticker.stop();
+    this.app.stage.addChild(this.cameraRoot);
 
     const build = await this.slotFor(looks.build);
     const combat = looks.combat === looks.build ? build : await this.slotFor(looks.combat);
@@ -172,8 +183,10 @@ export class Scene {
       layers.overlay,
     );
     const mask = new Graphics();
-    // Masks live beside the roots, so the shake moves them with the board.
-    this.app.stage.addChild(root, mask);
+    // Masks live on the stage, so the shake moves them with the board, but outside the
+    // camera, whose zoom must not move the banner's line.
+    this.cameraRoot.addChild(root);
+    this.app.stage.addChild(mask);
     await theme.init(layers, art);
     return { theme, art, root, backdrop, layers, mask, stale: false };
   }
@@ -289,18 +302,46 @@ export class Scene {
     this.applyVisibility();
   }
 
-  /** Screen coordinates to tile, or null when outside the grid. */
+  /**
+   * Points the camera: a shot from `camera.ts`, or null for the whole map. The focus is
+   * kept far enough in that the zoomed view never runs past the edges of the fitted
+   * window, where there is nothing drawn.
+   */
+  setCamera(state: MatchState, shot: CameraShot | null): void {
+    if (shot === null || shot.zoom <= 1) {
+      this.camera = { zoom: 1, x: 0, y: 0 };
+    } else {
+      const { tile, originX, originY, width, height } = this.view;
+      const z = shot.zoom;
+      // The focus on screen as the whole map shows it, and where it is to be put: the
+      // board's middle, or where it already stands.
+      const fx = originX + shot.focusX * tile;
+      const fy = originY + shot.focusY * tile;
+      const tx = shot.inPlace === true ? fx : originX + (tile * state.width) / 2;
+      const ty = shot.inPlace === true ? fy : originY + (tile * state.height) / 2;
+      // Offsets that keep the zoomed view inside the fitted window, where there is board.
+      const clamp = (offset: number, size: number): number =>
+        Math.min(0, Math.max(size * (1 - z), offset));
+      this.camera = { zoom: z, x: clamp(tx - fx * z, width), y: clamp(ty - fy * z, height) };
+    }
+    this.cameraRoot.scale.set(this.camera.zoom);
+    this.cameraRoot.position.set(this.camera.x, this.camera.y);
+  }
+
   /** Centre of a tile in screen pixels, for anything drawn over the board in HTML. */
   screenAt(x: number, y: number): { x: number; y: number } {
+    const { zoom, x: cx, y: cy } = this.camera;
     return {
-      x: this.view.originX + (x + 0.5) * this.view.tile,
-      y: this.view.originY + (y + 0.5) * this.view.tile,
+      x: cx + (this.view.originX + (x + 0.5) * this.view.tile) * zoom,
+      y: cy + (this.view.originY + (y + 0.5) * this.view.tile) * zoom,
     };
   }
 
+  /** Screen coordinates to tile, through the camera, or null when outside the grid. */
   tileAt(state: MatchState, screenX: number, screenY: number): { x: number; y: number } | null {
-    const x = Math.floor((screenX - this.view.originX) / this.view.tile);
-    const y = Math.floor((screenY - this.view.originY) / this.view.tile);
+    const { zoom, x: cx, y: cy } = this.camera;
+    const x = Math.floor(((screenX - cx) / zoom - this.view.originX) / this.view.tile);
+    const y = Math.floor(((screenY - cy) / zoom - this.view.originY) / this.view.tile);
     if (x < 0 || y < 0 || x >= state.width || y >= state.height) return null;
     return { x, y };
   }
@@ -388,7 +429,7 @@ export class Scene {
 
   /** Where a screen height falls on the board, in fractional tile rows. */
   rowAt(screenY: number): number {
-    return (screenY - this.view.originY) / this.view.tile;
+    return ((screenY - this.camera.y) / this.camera.zoom - this.view.originY) / this.view.tile;
   }
 
   /**

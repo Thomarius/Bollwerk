@@ -1,5 +1,7 @@
 import type { MatchEvent, MatchState } from '@rampart/sim';
 
+import type { Frame } from './filmstrip.js';
+
 /**
  * What the end of a match shows beside the final standings: for each player the wall
  * they destroyed, the most castles they held at once and the lives they spent, and every
@@ -19,6 +21,8 @@ export class MatchLog {
   readonly livesSpent = new Map<number, number>();
   /** Every player's banked score, and castles sealed, after each resolution seen. */
   readonly scores: { round: number; byPlayer: number[]; castles: number[] }[] = [];
+  /** The board at each resolution seen, for the filmstrip (`filmstrip.ts`). */
+  readonly frames: Frame[] = [];
   /** Who fired each shot in flight, since an impact names only the shot. */
   private readonly shooters = new Map<number, number>();
 

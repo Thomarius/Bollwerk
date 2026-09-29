@@ -997,7 +997,17 @@
     "fireworkEveryMs": 300,
     "choiceBurstMs": 900,
     "readyFlashMs": 280,
-    "aimLineAlpha": 0.55
+    "aimLineAlpha": 0.55,
+    "finalStampMs": 2600
+  },
+  "camera": {
+    "openingZoom": 2.4,
+    "openingHold": 0.3,
+    "winnerZoom": 1.35,
+    "winnerPushMs": 7000
+  },
+  "summary": {
+    "filmstripTilePx": 2
   },
   "hud": {
     "pointsBannerMs": 8000

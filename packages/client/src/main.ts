@@ -36,13 +36,15 @@ import { REFRESH_MS, gamesMarkup, joinRefusedNotice, parseRoomList } from './bro
 import { Hud, type IslandBanner } from './hud.js';
 import { MatchAudio } from './matchAudio.js';
 import { LocalMatch } from './localMatch.js';
-import { announcementLines, isTeamMatch, teamLetter } from './scores.js';
+import { announcementLines, announcementTitle, isTeamMatch, teamLetter } from './scores.js';
 import { buildHints, type BuildHints } from './hints.js';
 import { timerSpot } from './timerSpot.js';
 import { SplitTitle, installBackdrop } from './decor.js';
 import { MatchLog } from './summary.js';
 import { applyEffects, motionReduced, saveEffects, storedEffects } from './motion.js';
 import { PauseControls } from './pause.js';
+import { openingShot, winnerShot } from './camera.js';
+import { boardPicture, filmColours } from './filmstrip.js';
 import { saveSealPreview, sealPreviewOn } from './sealPreview.js';
 import { drawPreview, tablePreview } from './preview.js';
 import { RecordingUpload } from './recordingUpload.js';
@@ -963,6 +965,8 @@ async function runSession(session: Session, setup: Setup): Promise<void> {
   // What the end of the match summarises, kept from the events as they come.
   const matchLog = new MatchLog();
   hud.useLog(matchLog);
+  // The filmstrip's colours: the shared palette and this match's players, as the HUD's.
+  const film = filmColours(art, matchPalette(art, session.state));
   const matchAudio = new MatchAudio(audio, session.humanPlayer);
 
   /**
@@ -1194,6 +1198,7 @@ async function runSession(session: Session, setup: Setup): Promise<void> {
           announcementLines(state, resolvedSinceAnnounce),
           // Drawn in the look it brings, since it is where the look changes.
           setup.styles[after],
+          choosing ? null : announcementTitle(state),
         );
         resolvedSinceAnnounce = false;
       }
@@ -1357,6 +1362,13 @@ async function runSession(session: Session, setup: Setup): Promise<void> {
           break;
         }
         case 'round_resolved': {
+          // The board as this resolution left it, swept and scored, for the summary.
+          matchLog.frames.push({
+            round: event.round,
+            width: session.state.width,
+            height: session.state.height,
+            pixels: boardPicture(session.state, film),
+          });
           const hold = Math.ceil(
             (defaultConfigBundle.art.hud.pointsBannerMs * session.state.ruleset.tickRateHz) / 1000,
           );
@@ -1462,6 +1474,41 @@ async function runSession(session: Session, setup: Setup): Promise<void> {
     });
   }
 
+  /** When this client first saw the match over, for the push onto the winner. */
+  let overAt: number | null = null;
+
+  /**
+   * The camera, moving only while nothing is playable (PLAN 11.11 W6): onto the viewer's
+   * island as the match opens and out to the whole map, and slowly onto the winners at
+   * game over. Still under reduced motion. Before anything is drawn over the board in
+   * HTML, which is placed through it.
+   */
+  function pointCamera(now: number): void {
+    const state = session.state;
+    if (state.phase === 'game_over') overAt ??= now;
+    const art = defaultConfigBundle.art.camera;
+    const winners = state.winners.flatMap((id) => islandCentre.get(id) ?? []);
+    const shot = motionReduced()
+      ? null
+      : (openingShot(state, session.tickFraction, islandCentre.get(session.humanPlayer), art) ??
+        winnerShot(state, now - (overAt ?? now), winners, art));
+    scene.setCamera(state, shot);
+
+    // "You are here", from the start of the match until the viewer has chosen a castle:
+    // seats are shuffled onto islands, so nobody knows which is theirs until told.
+    const me = state.players[session.humanPlayer];
+    const centre = islandCentre.get(session.humanPlayer);
+    const opening =
+      state.round === 0 &&
+      (state.phase === 'castle_select' ||
+        (state.phase === 'intermission' && state.pendingPhase === 'castle_select'));
+    hud.showYouAreHere(
+      me !== undefined && centre !== undefined && opening && me.startingCastleId === null
+        ? { ...scene.screenAt(centre.x, centre.y), colour: playerCssColour(me.id) }
+        : null,
+    );
+  }
+
   let last = performance.now();
   const loop = (now: number): void => {
     const delta = now - last;
@@ -1477,6 +1524,7 @@ async function runSession(session: Session, setup: Setup): Promise<void> {
     applyEvents(events);
     matchAudio.handle(events);
     matchAudio.frame(session.state);
+    pointCamera(now);
     drawTransition();
     drawIslandBanners();
     hud.update(

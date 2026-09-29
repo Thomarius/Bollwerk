@@ -74,8 +74,142 @@ body {
 body.reduced-effects #backdrop,
 body.reduced-effects .title-layer img.flicker,
 body.reduced-effects .phase-call.banner-neon,
-body.reduced-effects .big-timer.beat {
+body.reduced-effects .big-timer.beat,
+body.reduced-effects .final-stamp,
+body.reduced-effects .you-are-here {
   animation: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .final-stamp,
+  .you-are-here {
+    animation: none;
+  }
+}
+
+/* ---------- the match's moments (PLAN 11.11 W6) ---------- */
+
+/* The final round's banner: its own headline, "Fire!" riding under it. */
+.phase-call.titled {
+  letter-spacing: 0.3em;
+}
+
+/* Stamped across the board as the last round opens, then gone (Hud.markFinalRound). */
+.final-stamp {
+  position: absolute;
+  left: 50%;
+  top: 45%;
+  padding: 0.4rem 1.4rem;
+  border: 4px solid var(--accent);
+  background: rgb(8 12 24 / 72%);
+  color: var(--accent);
+  font-size: 2.6rem;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  transform: translate(-50%, -50%) rotate(-6deg);
+  animation: final-stamp 2600ms ease-out forwards;
+  pointer-events: none;
+}
+
+@keyframes final-stamp {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) rotate(-6deg) scale(2.4);
+  }
+  12% {
+    opacity: 1;
+    transform: translate(-50%, -50%) rotate(-6deg) scale(1);
+  }
+  75% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) rotate(-6deg) scale(1);
+  }
+}
+
+/* Dusk at the edges of the screen for the whole last round: faint, and never over the
+   middle of the board, so no player's colour moves. */
+#banner.final-round::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  box-shadow: inset 0 0 18vmin rgb(255 120 40 / 22%);
+  pointer-events: none;
+}
+
+.round.final {
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+/* The end screen's filmstrip: the board at each round's resolution, wrapping rather than
+   scrolling, since the HUD takes no pointer. */
+.filmstrip {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.5rem;
+  max-width: 44rem;
+  margin: 0.9rem auto 0;
+}
+
+.filmstrip figure {
+  margin: 0;
+}
+
+.filmstrip img {
+  display: block;
+  width: auto;
+  height: 3.6rem;
+  border: 1px solid var(--edge);
+  image-rendering: pixelated;
+}
+
+.filmstrip figcaption {
+  margin-top: 0.15rem;
+  font-size: 10px;
+  letter-spacing: 0;
+  color: var(--muted);
+}
+
+/* Over the viewer's island as the match opens: seats are shuffled onto islands, so
+   nobody knows which is theirs until told. */
+.you-are-here {
+  position: absolute;
+  transform: translate(-50%, -100%);
+  padding: 0.3rem 0.8rem;
+  border: 2px solid var(--who);
+  background: rgb(8 12 24 / 82%);
+  color: var(--ink);
+  font-size: 1rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  pointer-events: none;
+  animation: you-are-here 1100ms ease-in-out infinite alternate;
+}
+
+.you-are-here::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: -0.7rem;
+  border: 0.55rem solid transparent;
+  border-top-color: var(--who);
+  transform: translateX(-50%);
+}
+
+@keyframes you-are-here {
+  from {
+    margin-top: 0;
+  }
+  to {
+    margin-top: -0.5rem;
+  }
 }
 
 /* ---------- menu ---------- */

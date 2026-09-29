@@ -1,5 +1,6 @@
 import { createReadStream, existsSync, statSync } from 'node:fs';
 import { createServer, type IncomingMessage, type ServerResponse } from 'node:http';
+import { networkInterfaces } from 'node:os';
 import { extname, join, normalize } from 'node:path';
 
 import { loadConfigBundle } from '@rampart/config/node';
@@ -12,6 +13,7 @@ import {
 } from '@rampart/protocol';
 import { WebSocketServer, type WebSocket } from 'ws';
 
+import { openableUrls } from './addresses.js';
 import { repoRoot } from './paths.js';
 import type { Connection, Room } from './room.js';
 import { openRecordingStore } from './recordings.js';
@@ -226,8 +228,10 @@ if (!Number.isInteger(port) || port < 1 || port > 65535) {
 }
 
 http.listen(port, host, () => {
+  // The addresses to open, not the one bound: a browser refuses http://0.0.0.0:8080.
+  const [first, ...others] = openableUrls(host, port, networkInterfaces());
   console.error(
-    `rampart server on http://${host}:${port} ` +
-      `(protocol ${PROTOCOL_VERSION}, ${bundle.ruleset.tickRateHz}Hz)`,
+    `rampart server on ${first} (protocol ${PROTOCOL_VERSION}, ${bundle.ruleset.tickRateHz}Hz)`,
   );
+  for (const url of others) console.error(`  on the network at ${url}`);
 });

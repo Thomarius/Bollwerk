@@ -59,6 +59,14 @@ SCENES=(
   "gains|$GAME&snapshot=build&round=3&style=pixel|21800"
   "life-lost|$GAME&snapshot=build&round=2&style=pixel|21600"
   "knocked-out|$GAME&snapshot=combat&round=5&idle=1&style=pixel|2500"
+  # W6's moments: the opening on your own island, marked, then pulled out to the map;
+  # the final round's stamp; the push onto the winner; the summary's filmstrip, which
+  # needs a match actually played (a five-round watched one, at ten times speed).
+  "opening-close|$GAME&style=pixel|700"
+  "opening-pull|$GAME&style=pixel|2600"
+  "final-stamp|$GAME&snapshot=combat&round=10&style=pixel|900"
+  "winner-push|$GAME&snapshot=game_over&style=flat|6000"
+  "filmstrip|$GAME&watch=1&bots=gunner&speed=10&rounds=5&style=flat|90000"
   # The banners, mid-crossing, in the default looks (&style= sets both looks to one).
   # Waits are real time, so a slower machine may need them nudged.
   "wipe-to-build|$WATCH&snapshot=combat&round=2|20000"

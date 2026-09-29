@@ -9,6 +9,7 @@ import { mostCastlesOf, scoreChart, type MatchLog } from './summary.js';
 import {
   countUp,
   endOfMatchText,
+  inFinalRound,
   isTeamMatch,
   roundLabel,
   standings,
@@ -123,6 +124,51 @@ export class Hud {
   private endScreenHtml = '';
   private leave: (() => void) | null = null;
 
+  private youAreHere: HTMLElement | null = null;
+
+  /** The "You are here" marker over the viewer's island, or null to take it down. */
+  showYouAreHere(at: { x: number; y: number; colour: string } | null): void {
+    if (at === null) {
+      this.youAreHere?.remove();
+      this.youAreHere = null;
+      return;
+    }
+    if (this.youAreHere === null || !this.youAreHere.isConnected) {
+      this.youAreHere = document.createElement('div');
+      this.youAreHere.className = 'you-are-here';
+      this.youAreHere.textContent = 'You are here';
+      this.bannerRoot.append(this.youAreHere);
+    }
+    // Light text in a border of the player's colour: crimson text on the dark box did
+    // not read.
+    this.youAreHere.style.setProperty('--who', at.colour);
+    this.youAreHere.style.left = `${at.x.toFixed(1)}px`;
+    this.youAreHere.style.top = `${at.y.toFixed(1)}px`;
+  }
+
+  /** Whether the final round's stamp has been shown, so it lands once, as it opens. */
+  private finalStamped = false;
+
+  /**
+   * The last round, marked (PLAN 11.11 W6): a stamp across the board as it opens, and a
+   * warm dusk at the edges of the screen until the match ends — in every style, where
+   * Pixel art's own sunset is only in its own. At the edges and faint, so no player's
+   * colour moves on the board.
+   */
+  private markFinalRound(final: boolean): void {
+    this.bannerRoot.classList.toggle('final-round', final);
+    if (!final || this.finalStamped) return;
+    this.finalStamped = true;
+    const stamp = document.createElement('div');
+    stamp.className = 'final-stamp';
+    stamp.textContent = 'Final round';
+    stamp.style.animationDuration = `${defaultArtConfig.effects.finalStampMs}ms`;
+    stamp.addEventListener('animationend', () => stamp.remove());
+    this.bannerRoot.append(stamp);
+    // Reduced motion runs no animation to end it, so it is taken down by the clock.
+    setTimeout(() => stamp.remove(), defaultArtConfig.effects.finalStampMs);
+  }
+
   /** What the end screen's button does: back to the menu, whether played or watched. */
   onLeave(handler: () => void): void {
     this.leave = handler;
@@ -233,12 +279,17 @@ export class Hud {
    * for the final round — so neither needs a pause of its own. It enters above the top
    * of the screen; `placeAnnouncement` moves it from there.
    */
-  announce(phase: Phase, lines: readonly AnnouncementLine[] = [], style: ArtStyle = 'pixel'): void {
+  announce(
+    phase: Phase,
+    lines: readonly AnnouncementLine[] = [],
+    style: ArtStyle = 'pixel',
+    title: string | null = null,
+  ): void {
     this.clearAnnouncement();
-    const text = PHASE_CALL[phase];
+    const text = title ?? PHASE_CALL[phase];
     if (text === '') return;
     const banner = document.createElement('div');
-    banner.className = `phase-call ${BANNER_CLASS[style]}`;
+    banner.className = `phase-call ${BANNER_CLASS[style]}${title === null ? '' : ' titled'}`;
     banner.textContent = text;
     for (const line of lines) {
       const small = document.createElement('small');
@@ -424,6 +475,38 @@ export class Hud {
    * Every score round by round, one line per player — per team in a team match — so the
    * end of a match shows where it was won. The viewer's own line is drawn heaviest.
    */
+  /** Each round's frame as an image, made once: the end screen's markup is compared per frame. */
+  private readonly frameImages = new Map<number, string>();
+
+  /**
+   * The filmstrip: the board at every resolution the log saw, numbered by round, scaled up
+   * by whole pixels so each tile stays a crisp square.
+   */
+  private filmstrip(): string {
+    const frames = this.log?.frames ?? [];
+    if (frames.length === 0) return '';
+    const scale = defaultArtConfig.summary.filmstripTilePx;
+    const figures = frames.map((frame) => {
+      let src = this.frameImages.get(frame.round);
+      if (src === undefined) {
+        const canvas = document.createElement('canvas');
+        canvas.width = frame.width;
+        canvas.height = frame.height;
+        const pixels = new Uint8ClampedArray(frame.pixels);
+        canvas
+          .getContext('2d')
+          ?.putImageData(new ImageData(pixels, frame.width, frame.height), 0, 0);
+        src = canvas.toDataURL();
+        this.frameImages.set(frame.round, src);
+      }
+      return (
+        `<figure><img src="${src}" width="${frame.width * scale}" height="${frame.height * scale}" alt="">` +
+        `<figcaption>${frame.round}</figcaption></figure>`
+      );
+    });
+    return `<div class="filmstrip">${figures.join('')}</div>`;
+  }
+
   private chart(state: MatchState, humanPlayer: number): string {
     const log = this.log;
     if (log === null || log.scores.length < 2) return '';
@@ -470,6 +553,7 @@ export class Hud {
   ): void {
     const waiting = state.phase === 'intermission';
     const shown = waiting ? (state.pendingPhase ?? state.phase) : state.phase;
+    this.markFinalRound(inFinalRound(state));
     const secondsLeft = Math.max(0, (state.phaseEndTick - state.tick) / state.ruleset.tickRateHz);
 
     // A bar reads at the edge of vision in a way a number does not — the player is
@@ -654,7 +738,7 @@ export class Hud {
       const table = `<table class="final">${head}${rows}</table>`;
       // A button, not a key: everything else in the game is the mouse, and a key that
       // does something unannounced is the kind of surprise players dislike.
-      banner = `<div class="banner">${text}${table}${this.chart(state, humanPlayer)}<button class="leave">Back to menu</button></div>`;
+      banner = `<div class="banner">${text}${table}${this.chart(state, humanPlayer)}${this.filmstrip()}<button class="leave">Back to menu</button></div>`;
     }
     this.showEndScreen(banner);
     // Knocked out: the stamp over your island is the moment, so this is only a quiet
@@ -679,7 +763,7 @@ export class Hud {
       (waiting || state.phase === 'game_over'
         ? `<span class="timer" style="visibility:hidden">${secondsLeft.toFixed(1)}s</span>`
         : `<span class="timer">${secondsLeft.toFixed(1)}s</span>`) +
-      `<span class="round">${roundLabel(state)}</span>`;
+      `<span class="round${inFinalRound(state) ? ' final' : ''}">${roundLabel(state)}</span>`;
     rest.innerHTML =
       timebar +
       queue +

@@ -73,7 +73,27 @@ export function teamStandings(state: MatchState): TeamStanding[] {
 
 export function roundLabel(state: MatchState): string {
   const cap = state.ruleset.scoring.maxRounds;
-  return cap === null ? `round ${state.round}` : `round ${state.round} / ${cap}`;
+  if (cap === null) return `round ${state.round}`;
+  return inFinalRound(state)
+    ? `final round ${state.round} / ${cap}`
+    : `round ${state.round} / ${cap}`;
+}
+
+/**
+ * Whether the last round is being played: from its combat to the resolution that ends
+ * the match. The round counter moves as combat begins, so its intermission is not yet it.
+ */
+export function inFinalRound(state: MatchState): boolean {
+  const cap = state.ruleset.scoring.maxRounds;
+  return cap !== null && state.round === cap && state.phase !== 'game_over';
+}
+
+/**
+ * The headline of an announcement, where it is not simply the phase's own call: the
+ * last round gets a banner of its own, with "Fire!" riding under it.
+ */
+export function announcementTitle(state: MatchState): string | null {
+  return finalRoundNext(state) ? 'Final round' : null;
 }
 
 /**
@@ -113,7 +133,8 @@ export interface AnnouncementLine {
  */
 export function announcementLines(state: MatchState, afterResolution: boolean): AnnouncementLine[] {
   const lines: AnnouncementLine[] = [];
-  if (finalRoundNext(state)) lines.push({ text: 'Final round', emphasis: true });
+  // The final round's banner is headed "Final round", so the call it replaced rides under.
+  if (finalRoundNext(state)) lines.push({ text: 'Fire!', emphasis: true });
   if (afterResolution) lines.push({ text: standingsLine(state), emphasis: false });
   return lines;
 }

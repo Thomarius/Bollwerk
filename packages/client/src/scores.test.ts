@@ -4,6 +4,8 @@ import { describe, expect, it } from 'vitest';
 import {
   countUp,
   announcementLines,
+  announcementTitle,
+  inFinalRound,
   endOfMatchText,
   finalRoundNext,
   roundLabel,
@@ -73,6 +75,22 @@ describe('the round counter', () => {
       false,
     );
     expect(finalRoundNext(state({ ...before, round: 9, maxRounds: null }))).toBe(false);
+  });
+
+  it('gives the final round a banner of its own, and says so all through it', () => {
+    const before = state({ phase: 'intermission', pendingPhase: 'combat', round: 9 });
+    expect(announcementTitle(before)).toBe('Final round');
+    expect(announcementLines(before, false)).toEqual([{ text: 'Fire!', emphasis: true }]);
+    expect(
+      announcementTitle(state({ phase: 'intermission', pendingPhase: 'combat', round: 8 })),
+    ).toBeNull();
+    // From its combat to the resolution that ends the match, and not before.
+    expect(inFinalRound(before)).toBe(false);
+    expect(inFinalRound(state({ phase: 'combat', round: 10 }))).toBe(true);
+    expect(inFinalRound(state({ phase: 'build', round: 10 }))).toBe(true);
+    expect(inFinalRound(state({ phase: 'game_over', round: 10 }))).toBe(false);
+    expect(inFinalRound(state({ phase: 'build', round: 10, maxRounds: null }))).toBe(false);
+    expect(roundLabel(state({ phase: 'build', round: 10 }))).toBe('final round 10 / 10');
   });
 
   it('carries the standings only after a resolution', () => {
