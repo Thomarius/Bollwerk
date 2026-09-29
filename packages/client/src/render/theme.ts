@@ -120,6 +120,11 @@ export interface Ghost {
   aiming: boolean;
   /** Ground the piece in hand would seal, when the sealing preview is on (`sealPreview.ts`). */
   sealing?: readonly Cell[];
+  /**
+   * While aiming with no gun ready: how far the next is from firing again, 0 to 1
+   * (`nextReload`), which the cursor fills as it comes round. Null or absent otherwise.
+   */
+  reload?: number | null;
 }
 
 /**
@@ -215,6 +220,21 @@ export function drawFireReticle(
   g.moveTo(cx - r * 0.7, cy - r * 0.7);
   g.lineTo(cx + r * 0.7, cy + r * 0.7);
   g.stroke({ width, color: grey, alpha: 0.6 });
+  // No gun ready: the next one's reload, filling round the cursor from the top — where
+  // the eye already is while aiming, which rings round each gun on the player's own
+  // island never were. At the ready ring's radius, so as it closes it becomes that ring.
+  const reload = ghost.reload;
+  if (reload === null || reload === undefined) return;
+  const ring = view.tile * 1.1;
+  const ink = playerColour(art, humanPlayer, 'light');
+  g.circle(cx, cy, ring);
+  g.stroke({ width: width + 3, color: 0x000000, alpha: 0.45 });
+  g.circle(cx, cy, ring);
+  g.stroke({ width: width + 1, color: ink, alpha: 0.25 });
+  if (reload <= 0) return;
+  g.moveTo(cx, cy - ring);
+  g.arc(cx, cy, ring, -Math.PI / 2, -Math.PI / 2 + reload * Math.PI * 2);
+  g.stroke({ width: width + 1, color: ink });
 }
 
 /**
@@ -657,75 +677,6 @@ export function mixed(a: number, b: number, amount: number): number {
     return Math.round(from + (((b >> shift) & 0xff) - from) * amount) << shift;
   };
   return channel(16) | channel(8) | channel(0);
-}
-
-/**
- * A ring round each of the player's own guns while its shot is in flight, filling as the
- * shot flies, and a flash off the gun as it lands: flight time is the reload, and
- * nothing else on the board says which guns a click can fire. Ready guns carry no ring,
- * so the board stays quiet where nothing is waiting. Shared by every style, in the
- * player's colour, like the aiming cursor.
- */
-export class ReloadRings {
-  /** Guns that had a shot in flight last frame. */
-  private loading = new Set<number>();
-  private flashes: { x: number; y: number; r: number; age: number }[] = [];
-
-  draw(
-    g: Graphics,
-    view: ViewTransform,
-    state: MatchState,
-    art: ArtConfig,
-    humanPlayer: number,
-    tickFraction: number,
-    deltaMs: number,
-  ): void {
-    if (humanPlayer < 0) return;
-    const now = state.tick + tickFraction;
-    const colour = playerColour(art, humanPlayer, 'light');
-    // After the first human play: "the reload marker is not visible". A 1.5 px ring in the
-    // player's light colour, hugging the pit, vanished under the gun and its smoke and
-    // against pale ground. Thicker, a little further out, over a dark halo so it reads on
-    // any ground in any style, with a track strong enough to show how far there is to go.
-    const width = Math.max(2.5, view.tile / 5);
-    const shots = new Map(state.shots.map((shot) => [shot.id, shot]));
-    const loading = new Set<number>();
-    for (const cannon of state.cannons) {
-      if (cannon.owner !== humanPlayer) continue;
-      const cx = tileX(view, cannon.x + cannon.w / 2);
-      const cy = tileY(view, cannon.y + cannon.h / 2);
-      const r = (Math.min(cannon.w, cannon.h) * view.tile) / 2 + view.tile * 0.2;
-      if (cannon.shotId === null) {
-        if (this.loading.has(cannon.id) && cannon.active) {
-          this.flashes.push({ x: cx - view.originX, y: cy - view.originY, r, age: 0 });
-        }
-        continue;
-      }
-      loading.add(cannon.id);
-      const shot = shots.get(cannon.shotId);
-      if (shot === undefined) continue;
-      const span = shot.impactTick - shot.launchTick;
-      const p = span <= 0 ? 1 : Math.min(1, Math.max(0, (now - shot.launchTick) / span));
-      g.circle(cx, cy, r);
-      g.stroke({ width: width + 2.5, color: 0x000000, alpha: 0.55 });
-      g.circle(cx, cy, r);
-      g.stroke({ width, color: colour, alpha: 0.3 });
-      g.moveTo(cx, cy - r);
-      g.arc(cx, cy, r, -Math.PI / 2, -Math.PI / 2 + p * Math.PI * 2);
-      g.stroke({ width, color: colour, alpha: 1 });
-    }
-    this.loading = loading;
-
-    const span = art.effects.readyFlashMs;
-    for (const flash of this.flashes) {
-      flash.age += deltaMs;
-      const t = flash.age / span;
-      if (t >= 1) continue;
-      g.circle(flash.x + view.originX, flash.y + view.originY, flash.r * (1 + 0.45 * t));
-      g.stroke({ width: width * (1.6 - t), color: colour, alpha: 1 - t });
-    }
-    this.flashes = this.flashes.filter((flash) => flash.age < span);
-  }
 }
 
 /**

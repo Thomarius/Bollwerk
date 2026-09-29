@@ -8,7 +8,6 @@ import {
   Fireworks,
   GunAims,
   Landings,
-  ReloadRings,
   RuinSmoke,
   dimEliminated,
   drawAimLine,
@@ -115,8 +114,6 @@ export class BlueprintTheme implements Theme {
   private fades: Fade[] = [];
   private readonly aims = new GunAims();
   private readonly landings = new Landings();
-  /** The player's own guns reloading; see `ReloadRings`. */
-  private readonly reloads = new ReloadRings();
   private readonly fireworks = new Fireworks();
   private readonly flags = new FlagHoist();
   private clock = 0;
@@ -499,15 +496,6 @@ export class BlueprintTheme implements Theme {
     this.drawDraftsmanship(state, view, frame.deltaMs);
     this.ruins.draw(g, view, state, hex(this.art.palette.rockMid), null, frame.deltaMs);
     drawChoices(g, view, frame.choices, this.art);
-    this.reloads.draw(
-      g,
-      view,
-      state,
-      this.art,
-      frame.humanPlayer,
-      frame.tickFraction,
-      frame.deltaMs,
-    );
     this.drawKeeps(state, view, frame);
     this.drawBarrels(state, view, frame.deltaMs);
     this.drawPennants(state, view, frame);

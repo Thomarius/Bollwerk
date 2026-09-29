@@ -2609,3 +2609,24 @@ pixel style's shown name became Medieval in the same stretch, its id unchanged.
   close look at walls, guns, a castle and sealed tiles, a wipe from Medieval, and the menu
   title split with Minimal. Scenes in `screenshots.sh`. The click, the tumbling bricks and
   the bounce need a person.
+
+## 11v. The reload at the cursor
+
+From the test sessions, after 11n had made the rings round each gun visible: they were
+still little use, since nobody aiming has time to look at their own island. What a
+player wants is to know, while aiming with every gun in the air, when a click will fire
+again. So:
+
+- **With no gun ready, a ring round the cursor fills** as the next gun reloads — the one
+  whose shot lands first (`nextReload` in `controls.ts`, tested: the soonest landing as
+  a share of its flight, nothing while a gun is ready or none could fire, only the
+  player's own active guns) — in the player's colour over a dark halo, from the top. It
+  sits at the ready crosshair's radius, so as it closes it becomes that ring; the small
+  struck-through ring inside it still says "not now". The ghost carries it, computed
+  with the frame's tick fraction so it fills smoothly rather than a tick at a time.
+- **The rings round each gun are gone**, with their flash, from all seven styles and the
+  config (`readyFlashMs`).
+- Seen in a browser: with all seven guns in the air, the cursor at "0" and its ring four
+  fifths round. Getting there took some care: shots aimed near the channel land within a
+  second, so the window with nothing ready is short — which is exactly when the ring is
+  wanted — and clicks in one tick claim one gun.

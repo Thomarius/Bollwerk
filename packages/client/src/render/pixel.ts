@@ -14,7 +14,6 @@ import {
   GhostMotion,
   Fireworks,
   Landings,
-  ReloadRings,
   RuinSmoke,
   dimEliminated,
   drawAimLine,
@@ -232,8 +231,6 @@ export class PixelTheme implements Theme {
   private cracks = new Map<number, Crack>();
   private surf: Surf[] = [];
   private readonly landings = new Landings();
-  /** The player's own guns reloading; see `ReloadRings`. */
-  private readonly reloads = new ReloadRings();
   private readonly fireworks = new Fireworks();
   private splashes: Splash[] = [];
   private smoulders: Smoulder[] = [];
@@ -891,15 +888,6 @@ export class PixelTheme implements Theme {
     );
     this.drawChunks(view, frame.deltaMs);
     drawChoices(g, view, frame.choices, this.art);
-    this.reloads.draw(
-      g,
-      view,
-      state,
-      this.art,
-      frame.humanPlayer,
-      frame.tickFraction,
-      frame.deltaMs,
-    );
     this.fireworks.draw(g, view, this.art, frame.celebrate, frame.deltaMs);
     this.drawSplashes(view, frame.deltaMs);
     this.drawSmoulders(view, frame.deltaMs);

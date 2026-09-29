@@ -427,8 +427,6 @@ export const ArtConfigSchema = z
       fireworkEveryMs: z.number().int().positive(),
       /** The rings breaking out from a castle as a player chooses it. */
       choiceBurstMs: z.number().int().positive(),
-      /** The flash off a gun as its shot lands and it is ready to fire again. */
-      readyFlashMs: z.number().int().positive(),
       /** The dotted course from the gun a click would fire to the cursor. */
       aimLineAlpha: z.number().min(0).max(1),
       /** The "Final round" stamp across the board as the last round opens. */

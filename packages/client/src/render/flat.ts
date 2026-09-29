@@ -7,7 +7,6 @@ import {
   GhostMotion,
   Fireworks,
   Landings,
-  ReloadRings,
   RuinSmoke,
   dimEliminated,
   drawAimLine,
@@ -85,8 +84,6 @@ export class FlatTheme implements Theme {
   private impacts: Impact[] = [];
   private crumbles: Crumble[] = [];
   private readonly landings = new Landings();
-  /** The player's own guns reloading; see `ReloadRings`. */
-  private readonly reloads = new ReloadRings();
   private readonly fireworks = new Fireworks();
   private readonly flags = new FlagHoist();
   /** Milliseconds of drawing, for the flags. */
@@ -252,15 +249,6 @@ export class FlatTheme implements Theme {
     this.scenery.drawPuffs(g, view, frame.deltaMs);
     this.ruins.draw(g, view, state, hex(this.art.palette.rockLight), null, frame.deltaMs);
     drawChoices(g, view, frame.choices, this.art);
-    this.reloads.draw(
-      g,
-      view,
-      state,
-      this.art,
-      frame.humanPlayer,
-      frame.tickFraction,
-      frame.deltaMs,
-    );
     this.fireworks.draw(g, view, this.art, frame.celebrate, frame.deltaMs);
     this.drawFlags(state, view, frame);
 

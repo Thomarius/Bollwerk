@@ -11,7 +11,6 @@ import {
   Fireworks,
   GunAims,
   Landings,
-  ReloadRings,
   RuinSmoke,
   dimEliminated,
   drawAimLine,
@@ -194,8 +193,6 @@ export class ParchmentTheme implements Theme {
   private fades: Fade[] = [];
   private readonly aims = new GunAims();
   private readonly landings = new Landings();
-  /** The player's own guns reloading; see `ReloadRings`. */
-  private readonly reloads = new ReloadRings();
   private readonly fireworks = new Fireworks();
   private readonly flags = new FlagHoist();
   private clock = 0;
@@ -787,15 +784,6 @@ export class ParchmentTheme implements Theme {
     this.scenery.drawPuffs(g, view, frame.deltaMs);
     this.ruins.draw(g, view, state, hex(this.art.palette.rockMid), null, frame.deltaMs);
     drawChoices(g, view, frame.choices, this.art);
-    this.reloads.draw(
-      g,
-      view,
-      state,
-      this.art,
-      frame.humanPlayer,
-      frame.tickFraction,
-      frame.deltaMs,
-    );
     this.drawRipples(view, frame.deltaMs);
     this.drawFades(view, frame.deltaMs);
     this.drawBarrels(state, view, frame.deltaMs);

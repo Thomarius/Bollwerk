@@ -492,10 +492,12 @@ stands, so the "Rebuild" banner reveals what was lost as it crosses; with one st
 both looks the switch comes as building begins. The roster's castle count holds with the
 combat look and updates as building begins.
 
-**Combat aids** (`ReloadRings`, `drawAimLine`, shared by every style). A ring round
-each of the player's own guns fills as its shot flies and flashes off the gun as it
-lands, since flight time is the reload and nothing else says which guns can fire; ready
-guns carry none. While aiming, a dotted arc runs from the gun a click would fire —
+**Combat aids** (`drawFireReticle`, `drawAimLine`, shared by every style). **The reload
+is at the cursor**, where the eye is while aiming: with no gun ready, a ring round the
+cursor fills as the next gun's shot flies — the one landing first (`nextReload`), since
+flight time is the reload — and at the ready crosshair's radius, so as it closes it
+becomes that ring. Rings round each of the player's guns came first and were dropped
+after the test sessions: nobody aiming had time to look at their own island. While aiming, a dotted arc runs from the gun a click would fire —
 chosen by `findReadyCannon`, the rule `fire` uses — to the cursor, lifted as the shot
 will be, with a ring round that gun; only where a click would fire.
 

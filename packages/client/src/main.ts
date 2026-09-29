@@ -1568,7 +1568,7 @@ async function runSession(session: Session, setup: Setup): Promise<void> {
       celebrate,
       recentChoices(now),
     );
-    const ghost = { ...controls.ghost(), ...hints };
+    const ghost = { ...controls.ghost(session.tickFraction), ...hints };
     scene.drawOverlay(session.state, ghost, session.humanPlayer);
     drawCounters(ghost);
     scene.render();

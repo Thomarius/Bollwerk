@@ -69,6 +69,28 @@ export function readyCannons(state: MatchState, playerId: number): number {
   return ready;
 }
 
+/**
+ * How far the next of a player's guns is from firing again, 0 to 1 — the share of its
+ * shot's flight gone, since flight time is the reload — for the aiming cursor to fill as
+ * it comes round. Of the gun ready soonest: the shot landing first. Null while a gun is
+ * ready already, and when none could fire at all (no active guns, or none loading).
+ */
+export function nextReload(state: MatchState, playerId: number, tickFraction = 0): number | null {
+  const now = state.tick + tickFraction;
+  let soonest: { launchTick: number; impactTick: number } | null = null;
+  for (const cannon of state.cannons) {
+    if (cannon.owner !== playerId || !cannon.active) continue;
+    if (cannon.shotId === null) return null;
+    const shot = state.shots.find((s) => s.id === cannon.shotId);
+    if (shot !== undefined && (soonest === null || shot.impactTick < soonest.impactTick)) {
+      soonest = shot;
+    }
+  }
+  if (soonest === null) return null;
+  const span = soonest.impactTick - soonest.launchTick;
+  return span <= 0 ? 1 : Math.min(1, Math.max(0, (now - soonest.launchTick) / span));
+}
+
 /** The two cues the simulation never sees, because neither changes the match. */
 type InputCue = 'piece_rotate' | 'piece_invalid';
 
@@ -216,8 +238,11 @@ export class Controls {
     return this.sealing.cells;
   }
 
-  /** What the overlay should draw this frame. */
-  ghost(): Ghost {
+  /**
+   * What the overlay should draw this frame. `tickFraction` is how far into the next tick
+   * the frame is, so the cursor's reload fills smoothly rather than a tick at a time.
+   */
+  ghost(tickFraction = 0): Ghost {
     const state = this.state;
     const player = this.humanPlayer;
     const tile = this.hover;
@@ -277,12 +302,22 @@ export class Controls {
           selectable,
           unsealed: [],
           aiming: true,
+          reload: nextReload(state, player, tickFraction),
         };
       case 'fire': {
         const valid =
           findReadyCannon(state, player, tile.x, tile.y) !== null &&
           mayTarget(state, player, tile.x, tile.y);
-        return { tile, cells: [], valid, footprint: null, selectable, unsealed: [], aiming: true };
+        return {
+          tile,
+          cells: [],
+          valid,
+          footprint: null,
+          selectable,
+          unsealed: [],
+          aiming: true,
+          reload: nextReload(state, player, tickFraction),
+        };
       }
       case 'castle': {
         return {

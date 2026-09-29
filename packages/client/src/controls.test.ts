@@ -8,12 +8,13 @@ import {
   fastRuleset,
   legalCannonPlacements,
   scriptedAction,
+  stateFromAscii,
   step,
   type MatchState,
 } from '@rampart/sim';
 import { describe, expect, it } from 'vitest';
 
-import { inputMode, mayTarget, readyCannons } from './controls.js';
+import { inputMode, mayTarget, nextReload, readyCannons } from './controls.js';
 
 /** Plays until somebody spends a life, then on to the cannon phase that follows. */
 function afterContinue(seed: number): { state: MatchState; player: number } {
@@ -123,5 +124,66 @@ describe('what a click means', () => {
     // Open water is anybody's to aim at.
     const water = state.islandId.findIndex((v) => v === 0);
     expect(mayTarget(state, 0, water % state.width, Math.floor(water / state.width))).toBe(true);
+  });
+});
+
+describe('the next gun to be ready', () => {
+  /** Two of player 0's guns, each with a shot in the air, and the clock at tick 40. */
+  function twoLoading(): MatchState {
+    const state = stateFromAscii(`
+      ........
+      .**.**..
+      .**.**..
+      ........
+    `);
+    state.tick = 40;
+    const [a, b] = state.cannons;
+    state.shots = [
+      {
+        id: 1,
+        cannonId: a!.id,
+        owner: 0,
+        fromX: 1,
+        fromY: 1,
+        toX: 7,
+        toY: 3,
+        launchTick: 0,
+        impactTick: 100,
+      },
+      {
+        id: 2,
+        cannonId: b!.id,
+        owner: 0,
+        fromX: 4,
+        fromY: 1,
+        toX: 7,
+        toY: 3,
+        launchTick: 30,
+        impactTick: 50,
+      },
+    ];
+    a!.shotId = 1;
+    b!.shotId = 2;
+    for (const cannon of state.cannons) cannon.active = true;
+    return state;
+  }
+
+  it('follows the shot that lands first, as a share of its flight', () => {
+    // The second shot lands at 50, before the first at 100: 10 of its 20 ticks are gone.
+    expect(nextReload(twoLoading(), 0)).toBe(0.5);
+    // And between ticks, so the cursor fills smoothly.
+    expect(nextReload(twoLoading(), 0, 0.5)).toBe(0.525);
+  });
+
+  it('says nothing while a gun is ready, or none could fire at all', () => {
+    const ready = twoLoading();
+    ready.cannons[0]!.shotId = null;
+    expect(nextReload(ready, 0)).toBeNull();
+    // An inert gun reloads nothing: its shot landing would not let a click fire.
+    const inert = twoLoading();
+    for (const cannon of inert.cannons) cannon.active = false;
+    expect(nextReload(inert, 0)).toBeNull();
+    // Another player's guns are not this one's.
+    expect(nextReload(twoLoading(), 1)).toBeNull();
   });
 });
