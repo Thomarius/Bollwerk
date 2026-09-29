@@ -457,6 +457,21 @@ body.reduced-effects .you-are-here {
   position: absolute;
   inset: 0;
   pointer-events: none;
+  /* The HUD's dress, which each look's skin overrides (HUD_SKIN in hud.ts). These are
+     Pixel art's and Night's: the dark bar with gold every style once had. */
+  --hud-bar: linear-gradient(#0a0a12dd, #0a0a1200);
+  --hud-rule: none;
+  --hud-ink: var(--ink);
+  --hud-muted: var(--muted);
+  --hud-accent: var(--accent);
+  --hud-glow: none;
+  --hud-font: inherit;
+  --hud-box: #0a0a12cc;
+  --hud-box-edge: 1px solid var(--edge);
+  --hud-box-shadow: none;
+  --hud-track: rgb(255 255 255 / 8%);
+  color: var(--hud-ink);
+  font-family: var(--hud-font);
 }
 
 .bar {
@@ -464,8 +479,13 @@ body.reduced-effects .you-are-here {
   gap: 1.25rem;
   align-items: flex-start;
   justify-content: space-between;
-  padding: 0.75rem 1rem;
-  background: linear-gradient(#0a0a12dd, #0a0a1200);
+  /* Exactly the height the board leaves it (HUD_BAR_PX in main.ts), its rule inside, so
+     the time bar sits just under it: grown to its content it overhung the board by a
+     fifth, which the old see-through gradient hid and a solid skin did not. */
+  height: 64px;
+  padding: 0.6rem 1rem 0;
+  background: var(--hud-bar);
+  border-bottom: var(--hud-rule);
 }
 
 /* Never wrapped: at eight players the round label once fell under the clock. */
@@ -484,7 +504,8 @@ body.reduced-effects .you-are-here {
   font-size: 1rem;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: var(--accent);
+  color: var(--hud-accent);
+  text-shadow: var(--hud-glow);
 }
 
 .timer {
@@ -494,7 +515,7 @@ body.reduced-effects .you-are-here {
 
 .round {
   margin-left: 0.75rem;
-  color: var(--muted);
+  color: var(--hud-muted);
 }
 
 .roster {
@@ -520,7 +541,7 @@ body.reduced-effects .you-are-here {
 
 .roster .player span {
   grid-column: 2;
-  color: var(--muted);
+  color: var(--hud-muted);
   font-size: 11px;
   white-space: nowrap;
 }
@@ -536,7 +557,7 @@ body.reduced-effects .you-are-here {
 
 .roster .player em {
   font-style: normal;
-  color: var(--ink);
+  color: var(--hud-ink);
 }
 
 .roster .player i {
@@ -550,11 +571,11 @@ body.reduced-effects .you-are-here {
   flex-direction: column;
   gap: 0.15rem;
   padding: 0.1rem 0.5rem;
-  border-left: 2px solid rgb(255 255 255 / 15%);
+  border-left: 2px solid color-mix(in srgb, var(--hud-muted) 40%, transparent);
 }
 
 .roster .team.mine {
-  border-left-color: var(--accent);
+  border-left-color: var(--hud-accent);
 }
 
 .roster .team ul {
@@ -567,13 +588,13 @@ body.reduced-effects .you-are-here {
 
 .roster .team-head {
   font-size: 11px;
-  color: var(--muted);
+  color: var(--hud-muted);
 }
 
 .roster .letter {
   display: inline-block;
   margin-right: 0.4rem;
-  color: var(--accent);
+  color: var(--hud-accent);
   font-weight: 700;
 }
 
@@ -595,12 +616,13 @@ body.reduced-effects .you-are-here {
   gap: 0.6rem;
   align-items: flex-end;
   padding: 0.5rem 0.9rem;
-  border: 1px solid var(--edge);
-  background: #0a0a12cc;
+  border: var(--hud-box-edge);
+  background: var(--hud-box);
+  box-shadow: var(--hud-box-shadow);
 }
 
 .queue .label {
-  color: var(--muted);
+  color: var(--hud-muted);
   font-size: 10px;
   text-transform: uppercase;
   letter-spacing: 0.1em;
@@ -620,7 +642,7 @@ body.reduced-effects .you-are-here {
   bottom: 0.75rem;
   width: 100%;
   text-align: center;
-  color: var(--muted);
+  color: var(--hud-muted);
 }
 
 .banner {
@@ -915,9 +937,11 @@ table.final tr.you td:nth-child(2) {
   left: 50%;
   transform: translateX(-50%);
   padding: 0.5rem 1.25rem;
-  border: 1px solid var(--accent);
-  background: #0a0a12cc;
-  color: var(--accent);
+  border: 1px solid var(--hud-accent);
+  background: var(--hud-box);
+  box-shadow: var(--hud-box-shadow);
+  color: var(--hud-accent);
+  text-shadow: var(--hud-glow);
   letter-spacing: 0.1em;
   text-transform: uppercase;
 }
@@ -1219,17 +1243,94 @@ table.final tr.you td:nth-child(2) {
   left: 0;
   width: 100%;
   height: 3px;
-  background: rgb(255 255 255 / 8%);
+  background: var(--hud-track);
 }
 
 .timebar i {
   display: block;
   height: 100%;
-  background: var(--accent);
+  background: var(--hud-accent);
+  box-shadow: var(--hud-glow);
 }
 
 .timebar.urgent i {
   background: #e8505a;
+}
+
+/* ---------- the HUD in each look (HUD_SKIN in hud.ts; PLAN 11.11 W7) ---------- */
+
+/* Minimal: flat colour and a hard gold rule, as its walls are flat blocks. */
+#hud.hud-flat {
+  --hud-bar: #16161f;
+  --hud-rule: 2px solid #d8b84a;
+  --hud-box: #16161f;
+  --hud-box-edge: 2px solid #d8b84a;
+}
+
+/* Cyberpunk: near black, a cyan rule that glows, the phase in magenta neon. */
+#hud.hud-neon {
+  --hud-bar: linear-gradient(#050510f0, #0c0420d0);
+  --hud-rule: 1px solid #2ee6ff;
+  --hud-ink: #e8f7ff;
+  --hud-muted: #7fb8d4;
+  --hud-accent: #ff6cf4;
+  --hud-glow: 0 0 6px #ff3df2;
+  --hud-box: #050510e8;
+  --hud-box-edge: 1px solid #ff3df2;
+  --hud-box-shadow: 0 0 12px #ff3df255, inset 0 0 10px #2ee6ff22;
+  --hud-track: #2ee6ff22;
+}
+
+#hud.hud-neon .bar {
+  box-shadow: 0 1px 12px #2ee6ff55;
+}
+
+/* Blueprint: a drawing's title block — deep blue paper with its grid, ruled double. */
+#hud.hud-plan {
+  --hud-bar: #10325f;
+  --hud-rule: 3px double #eef4ff;
+  --hud-ink: #eef4ff;
+  --hud-muted: #bcd3f2;
+  --hud-accent: #ffd966;
+  --hud-box: #10325f;
+  --hud-box-edge: 3px double #eef4ff;
+  --hud-track: #eef4ff26;
+}
+
+#hud.hud-plan .bar,
+#hud.hud-plan .queue {
+  background-image:
+    linear-gradient(#8fb4e62e 1px, transparent 1px),
+    linear-gradient(90deg, #8fb4e62e 1px, transparent 1px);
+  background-size: 16px 16px;
+}
+
+/* Parchment: the one light style — the bar a strip of paper lettered in ink, where the
+   dark monospace bar sat worst of all. */
+#hud.hud-ink {
+  --hud-bar: linear-gradient(#efe3c2, #e2d1a8);
+  --hud-rule: 2px solid #3b2a1a;
+  --hud-ink: #2e2014;
+  --hud-muted: #6a5238;
+  --hud-accent: #7a2a18;
+  --hud-font: Georgia, 'Times New Roman', serif;
+  --hud-box: linear-gradient(#efe3c2, #e2d1a8);
+  --hud-box-edge: 2px solid #3b2a1a;
+  --hud-box-shadow: 2px 3px 0 #3b2a1a40;
+  --hud-track: #3b2a1a26;
+}
+
+#hud.hud-ink .phase strong {
+  font-style: italic;
+}
+
+/* The hint sits on the board, not on paper: a pale ground under the ink so it reads. */
+#hud.hud-ink .hint {
+  width: fit-content;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 0.1rem 0.6rem;
+  background: #efe3c2cc;
 }
 
 @keyframes island-banner-in {

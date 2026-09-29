@@ -526,7 +526,17 @@ function drawLobby(view: LobbyView, on: LobbyHandlers): void {
   const look = artForStyle(art, preferredStyles().build);
   const map = tablePreview(view.seed, view.playerCount, view.teams, look, terrain);
   const canvas = document.querySelector<HTMLCanvasElement>('#map-preview');
-  if (canvas !== null) drawPreview(canvas, map, view.humanPlayer, look, 320, art);
+  if (canvas !== null) {
+    // Alive while the lobby is open (PLAN 11.11 W7): redrawn each frame until the canvas
+    // is replaced — every change to the table redraws the lobby — or the lobby goes. Still
+    // under reduced motion.
+    const frame = (now: number): void => {
+      if (!canvas.isConnected) return;
+      drawPreview(canvas, map, view.humanPlayer, look, 320, art, motionReduced() ? 0 : now);
+      if (!motionReduced()) requestAnimationFrame(frame);
+    };
+    frame(performance.now());
+  }
   const number = (id: string, apply: (n: number) => void): void => {
     const field = document.querySelector<HTMLSelectElement>(id);
     field?.addEventListener('change', () => {
@@ -1204,6 +1214,7 @@ async function runSession(session: Session, setup: Setup): Promise<void> {
       }
       lineY = hud.placeAnnouncement(progress);
     }
+    hud.useSkin(setup.styles[lineY === null ? before : after]);
     scene.showLooks(
       lineY === null
         ? { from: before, to: before, lineY: null }

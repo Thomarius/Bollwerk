@@ -43,6 +43,20 @@ const BANNER_CLASS: Record<ArtStyle, string> = {
   parchment: 'banner-ribbon',
 };
 
+/**
+ * The HUD in each look (PLAN 11.11 W7): the bar, the clock, the piece box and the hints,
+ * dressed as the banners are. A record over every style, so a new style must bring one.
+ * Pixel art and Night share the dark bar with gold that every style once had.
+ */
+const HUD_SKIN: Record<ArtStyle, string> = {
+  flat: 'hud-flat',
+  pixel: 'hud-classic',
+  night: 'hud-classic',
+  cyberpunk: 'hud-neon',
+  blueprint: 'hud-plan',
+  parchment: 'hud-ink',
+};
+
 const PHASE_LABEL: Record<Phase, string> = {
   lobby: 'Waiting',
   intermission: 'Stand by',
@@ -144,6 +158,20 @@ export class Hud {
     this.youAreHere.style.setProperty('--who', at.colour);
     this.youAreHere.style.left = `${at.x.toFixed(1)}px`;
     this.youAreHere.style.top = `${at.y.toFixed(1)}px`;
+  }
+
+  private skin: string | null = null;
+
+  /**
+   * Dresses the HUD in a look's style. The bar is at the top of the screen, and above a
+   * banner's line is always the arriving look, so the HUD takes it as the banner starts.
+   */
+  useSkin(style: ArtStyle): void {
+    const skin = HUD_SKIN[style];
+    if (skin === this.skin) return;
+    if (this.skin !== null) this.root.classList.remove(this.skin);
+    this.root.classList.add(skin);
+    this.skin = skin;
   }
 
   /** Whether the final round's stamp has been shown, so it lands once, as it opens. */

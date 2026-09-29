@@ -89,6 +89,26 @@ export function islandCentres(terrain: GeneratedTerrain): Map<number, { x: numbe
  * numbers and the ring take `ink`, the shared UI's, since a look's own ink need not
  * read on its islands — Parchment's is near black.
  */
+/**
+ * The lobby map breathing (PLAN 11.11 W7), as pure functions of time so they are tested
+ * rather than watched. Surf along a coast rises and falls, each tile a little out of step
+ * with its neighbours so the coast shimmers rather than blinks; 0 to 1.
+ */
+export function surfAt(x: number, y: number, timeMs: number, periodMs: number): number {
+  // A fixed offset per tile, from a small hash of its position.
+  const offset = ((((x * 73856093) ^ (y * 19349663)) >>> 0) % 1000) / 1000;
+  return 0.5 - 0.5 * Math.cos(2 * Math.PI * (timeMs / periodMs + offset));
+}
+
+/** The castles' breath, all together: 0 to 1. */
+export function castleBreath(timeMs: number, periodMs: number): number {
+  return 0.5 - 0.5 * Math.cos((2 * Math.PI * timeMs) / periodMs);
+}
+
+/**
+ * `timeMs` animates the surf and the castles (`surfAt`, `castleBreath`); left at 0 —
+ * under reduced motion — the map is still.
+ */
 export function drawPreview(
   canvas: HTMLCanvasElement,
   preview: TablePreview,
@@ -96,11 +116,14 @@ export function drawPreview(
   art: ArtConfig,
   maxWidthPx: number,
   ink: ArtConfig = art,
+  timeMs = 0,
 ): void {
   const { terrain } = preview;
   const scale = Math.max(2, Math.floor(maxWidthPx / terrain.width));
-  canvas.width = terrain.width * scale;
-  canvas.height = terrain.height * scale;
+  // Resized only when it changes: setting a canvas's size clears it and costs a reflow,
+  // which redrawn every frame would do sixty times a second.
+  if (canvas.width !== terrain.width * scale) canvas.width = terrain.width * scale;
+  if (canvas.height !== terrain.height * scale) canvas.height = terrain.height * scale;
   const ctx = canvas.getContext('2d');
   if (ctx === null) return;
   ctx.imageSmoothingEnabled = false;
@@ -121,9 +144,31 @@ export function drawPreview(
     ctx.fillRect(x * scale, y * scale, scale, scale);
   }
 
+  // Surf on the sea tiles beside land, breathing.
+  const land = (x: number, y: number): boolean =>
+    x >= 0 &&
+    y >= 0 &&
+    x < terrain.width &&
+    y < terrain.height &&
+    terrain.terrain[y * terrain.width + x] === Terrain.Land;
+  ctx.fillStyle = art.palette.waterFoam;
+  for (let i = 0; i < terrain.terrain.length; i++) {
+    if (terrain.terrain[i] === Terrain.Land) continue;
+    const x = i % terrain.width;
+    const y = (i - x) / terrain.width;
+    if (!land(x - 1, y) && !land(x + 1, y) && !land(x, y - 1) && !land(x, y + 1)) continue;
+    ctx.globalAlpha = 0.15 + 0.4 * surfAt(x, y, timeMs, art.menu.mapSurfMs);
+    ctx.fillRect(x * scale, y * scale, scale, scale);
+  }
+  ctx.globalAlpha = 1;
+
+  // Castles, breathing together: brightened toward white and back.
+  const breath = castleBreath(timeMs, art.menu.mapCastleMs);
   for (const castle of terrain.castles) {
     const seat = seatOfIsland.get(castle.islandId);
     ctx.fillStyle = (seat === undefined ? undefined : preview.colourOfSeat[seat]?.light) ?? '#fff';
+    ctx.fillRect(castle.x * scale, castle.y * scale, castle.w * scale, castle.h * scale);
+    ctx.fillStyle = `rgb(255 255 255 / ${(0.35 * breath).toFixed(3)})`;
     ctx.fillRect(castle.x * scale, castle.y * scale, castle.w * scale, castle.h * scale);
   }
 

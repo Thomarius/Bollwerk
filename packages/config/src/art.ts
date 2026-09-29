@@ -444,6 +444,10 @@ export const ArtConfigSchema = z
       titleSweepMs: z.number().int().positive(),
       /** Between sweeps, while the menu is open. */
       titleSweepEveryMs: z.number().int().positive(),
+      /** One breath of the surf round the lobby map's coasts, each tile a little out of step. */
+      mapSurfMs: z.number().int().positive(),
+      /** One breath of the castles on the lobby map. */
+      mapCastleMs: z.number().int().positive(),
     }),
     tileSizePx: z.number().int().positive(),
     atlasSizePx: z.number().int().positive(),

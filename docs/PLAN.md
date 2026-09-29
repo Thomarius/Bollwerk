@@ -415,6 +415,15 @@ does. **A missing file cannot be told from its HTTP status** — the static hand
 an unknown path with `index.html` and a 200 — so absence is detected by failure to decode,
 and a corrupt file is silent rather than noisy.
 
+**The HUD is dressed in the look on screen** (`HUD_SKIN` in `hud.ts`, a record over every
+style): a flat bar under a hard gold rule for Minimal, near black under a glowing cyan
+rule with the phase in magenta neon for Cyberpunk, a gridded title block ruled double for
+Blueprint, a strip of paper lettered in ink for Parchment, and the dark bar with gold for
+Pixel art and Night. The piece box, the cannon count and the hints take it too. It is a
+set of CSS variables on `#hud`; the HUD takes the arriving look's as a banner starts,
+since the bar is at the top and above the line is always the new look. The bar is exactly
+`HUD_BAR_PX` tall, its rule inside, so a solid skin never overhangs the board.
+
 **Each banner is drawn in the look it brings** (`BANNER_CLASS` in `hud.ts`, a record
 over every style): flat gold for Minimal, a neon strip that flickers on for Cyberpunk, a
 title block of deeper blue paper ruled double for Blueprint, an inked ribbon with forked
@@ -449,7 +458,9 @@ the menu opens, as either choice changes, and every `menu.titleSweepEveryMs` —
 miniature, each banner bringing the arriving look above it as on the board: down out of
 the word, a combat banner across it, a build banner back to the middle. Still under
 reduced motion; one title and no line when both looks are one style. Behind the panel the pixel
-sea drifts. The lobby shows the map the table will play (`preview.ts`) — each island in the colour its seat will play and numbered
+sea drifts. The lobby shows the map the table will play (`preview.ts`), alive — surf
+breathing along its coasts a little out of step tile to tile, the castles breathing
+together (`surfAt`, `castleBreath`, `art.menu`), still under reduced motion — — each island in the colour its seat will play and numbered
 for it, the viewer's own ringed — beside seat cards that carry the same number and
 colour, a rank badge per bot tier, and columns per team. A newcomer's card flashes as they
 sit down.
@@ -884,6 +895,8 @@ balanced means.
 - Audio files: 18 of 19 cues supplied. Still missing: `wall_destroyed` — the user's to
   produce; the manifest names it and every trigger is wired. A test keeps the manifest and
   the folder in step.
+- **The eight-player roster clips at 1280 pixels**: the last entry's lives run past the
+  right edge in free-for-all. Seen in the W7 screenshots, and the same before them.
 - Islands look boxy; `coastlineRoughness` and `noiseFrequency` are config.
 - Rings at 5 and 7 players make considerably larger maps than grids would. One JSON edit.
 - **Bots do not help a teammate build**, even under `crossIslandBuild: all` — teaching
@@ -947,12 +960,8 @@ the testers to try** before it is ever on by default.
 here", pulled out to the map; the final round's banner, stamp and dusk; the push onto the
 winner; the summary's filmstrip.
 
-**W7 — The UI in each look** (M).
-
-- The HUD bar dressed per style, as the banners are — a record over every style, so a new
-  one must bring it. The dark monospace bar sits worst over Parchment.
-- The holding / next box drawn in the current look.
-- The lobby's map alive: surf breathing, the castles breathing.
+**W7 — The UI in each look — done** (ARCHIVE 11s): the HUD bar, clock, piece box and hints
+dressed per style (`HUD_SKIN`); the lobby's map breathing.
 
 **W8 — Toy bricks** (M–L), a seventh style, for either look. Walls as studded plastic
 bricks, which suits pieces that are already tetrominoes; pieces click down, guns are built

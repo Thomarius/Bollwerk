@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 
 import { matchPalette } from './colours.js';
 import { LocalMatch } from './localMatch.js';
-import { islandCentres, tablePreview } from './preview.js';
+import { castleBreath, islandCentres, surfAt, tablePreview } from './preview.js';
 
 describe('the table preview', () => {
   it('shows the map the match will be played on', () => {
@@ -47,5 +47,27 @@ describe('the table preview', () => {
       expect(x).toBeGreaterThan(0);
       expect(y).toBeGreaterThan(0);
     }
+  });
+});
+
+describe('the lobby map breathing', () => {
+  it('breathes the surf between none and full, back where it began each period', () => {
+    for (const t of [0, 400, 1600, 2900]) {
+      const v = surfAt(4, 7, t, 3200);
+      expect(v).toBeGreaterThanOrEqual(0);
+      expect(v).toBeLessThanOrEqual(1);
+      expect(surfAt(4, 7, t + 3200, 3200)).toBeCloseTo(v);
+    }
+  });
+
+  it('keeps neighbouring coast tiles out of step, so the coast shimmers rather than blinks', () => {
+    const along = [0, 1, 2, 3, 4, 5].map((x) => surfAt(x, 7, 0, 3200));
+    expect(new Set(along.map((v) => v.toFixed(3))).size).toBeGreaterThan(3);
+  });
+
+  it('breathes the castles together, still at the start of a period', () => {
+    expect(castleBreath(0, 2200)).toBe(0);
+    expect(castleBreath(1100, 2200)).toBeCloseTo(1);
+    expect(castleBreath(2200, 2200)).toBeCloseTo(0);
   });
 });

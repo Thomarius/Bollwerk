@@ -2537,3 +2537,30 @@ PLAN 11.11 W6. Display only; tunables in `art.camera`, `art.summary` and
   choice with the marker still up; the stamp over a final round's combat; the push at
   game over clear of the summary; a five-round watched match's strip of five, the fourth
   showing an island wiped by a lost life. The pull and the push themselves need a person.
+
+## 11s. The second visual pass, W7: the UI in each look
+
+PLAN 11.11 W7. Display only; tunables in `art.menu`.
+
+- **The HUD in each look** (`HUD_SKIN` in `hud.ts`, a record over every style, as
+  `BANNER_CLASS` is): the bar, clock, round label, time bar, piece box, cannon count and
+  hints read CSS variables on `#hud`, and each skin sets them — Minimal flat under a hard
+  gold rule, Cyberpunk near black under a glowing cyan rule with its phase in magenta
+  neon, Blueprint a gridded title block ruled double, Parchment a strip of paper lettered
+  in ink, where the dark monospace bar had sat worst; Pixel art and Night keep the dark
+  bar with gold. The HUD takes the arriving look's skin as a banner starts, since the bar
+  is at the top of the screen and above the line is always the new look.
+- **The bar had overhung the board by a fifth**: grown to its content it was about 85
+  pixels where the board leaves it 64, which the old see-through gradient hid and the
+  first solid skin showed at once, its rule twenty pixels below the time bar. It is now
+  exactly 64, its rule inside.
+- Team letters and the dividers between teams take the skin's accent: the shared gold was
+  faint on Parchment's paper. Parchment's hint, which sits on the board, gets a pale
+  ground under its ink.
+- **The lobby's map breathes**: surf along every coast rises and falls a little out of
+  step tile to tile, and the castles brighten together and back (`surfAt`,
+  `castleBreath`, tested). Redrawn each frame while the lobby is open — the canvas is
+  resized only when its size changes — and still under reduced motion.
+- Seen in every style at three players, at eight and in teams of four in Parchment, and
+  the lobby's map in two frames a second apart. The eight-player roster's last entry runs
+  past the right edge at 1280 pixels, as it did before this; noted in PLAN 11.5.
