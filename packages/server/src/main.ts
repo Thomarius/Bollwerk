@@ -7,6 +7,7 @@ import {
   PROTOCOL_VERSION,
   decodeClientMessage,
   encode,
+  type RoomList,
   type ServerMessage,
 } from '@rampart/protocol';
 import { WebSocketServer, type WebSocket } from 'ws';
@@ -100,6 +101,14 @@ const http = createServer((req, res) => {
     receiveRecording(req, res, upload[1] as string);
     return;
   }
+  // The games browser: open public rooms, polled by the menu, which has no socket open.
+  // With the protocol, so a page from an older build can tell it cannot join them.
+  if (req.method === 'GET' && (req.url ?? '').split('?')[0] === '/api/rooms') {
+    const body: RoomList = { protocol: PROTOCOL_VERSION, rooms: rooms.listOpen() };
+    res.writeHead(200, { 'content-type': 'application/json', 'cache-control': 'no-store' });
+    res.end(JSON.stringify(body));
+    return;
+  }
   serveStatic(req, res);
 });
 const wss = new WebSocketServer({ server: http });
@@ -150,7 +159,7 @@ wss.on('connection', (socket: WebSocket) => {
     }
 
     if (message.type === 'create') {
-      const room = rooms.create(message.name, message.players);
+      const room = rooms.create(message.name, message.players, message.public ?? true);
       if (room === null) {
         connection.send({ type: 'error', code: 'no_capacity', message: 'server is full' });
         return;

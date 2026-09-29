@@ -1,7 +1,7 @@
 import type { ConfigBundle } from '@rampart/config';
 import { Rng } from '@rampart/sim';
 
-import type { RecordingLine } from '@rampart/protocol';
+import type { RecordingLine, RoomListing } from '@rampart/protocol';
 
 import { Room } from './room.js';
 
@@ -32,12 +32,18 @@ export class RoomManager {
     return this.rooms.get(code.toUpperCase());
   }
 
-  create(hostName: string, playerCount: number): Room | null {
+  /** Open rooms anyone may join from the games browser, oldest first. */
+  listOpen(): RoomListing[] {
+    return [...this.rooms.values()].flatMap((room) => room.listing() ?? []);
+  }
+
+  create(hostName: string, playerCount: number, isPublic = true): Room | null {
     if (this.rooms.size >= this.config.server.rooms.maxConcurrent) return null;
     const room = new Room({
       code: this.newCode(),
       hostName,
       playerCount,
+      public: isPublic,
       ruleset: this.config.ruleset,
       terrain: this.config.terrain,
       server: this.config.server,

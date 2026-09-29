@@ -19,6 +19,7 @@ import {
   captureSnapshot,
   recordingId,
   type RecordingLine,
+  type RoomListing,
   type ClientMessage,
   type Seat as WireSeat,
   type ServerMessage,
@@ -68,6 +69,8 @@ export interface RoomOptions {
   server: ServerConfig;
   ai: AiConfig;
   seed?: number;
+  /** Listed in the open games browser; false for a room joined by its code alone. */
+  public?: boolean;
   /**
    * Where the lines of this room's match recording go, if anywhere. The room builds
    * them; the process decides whether and where to keep them, so the room stays free of
@@ -149,6 +152,25 @@ export class Room {
 
   get paused(): boolean {
     return this.pausedBy !== null;
+  }
+
+  /**
+   * How the games browser lists this room, or null when it should not: private, under
+   * way, or with no seat left. Whoever has the lowest seat among the people is named as
+   * the host, as the lobby does.
+   */
+  listing(): RoomListing | null {
+    if (this.options.public === false || this.state !== null) return null;
+    if (this.seats.length === 0 || this.seats.length >= this.playerCount) return null;
+    const host = this.seats.find((s) => s.playerId === this.hostId) ?? this.seats[0]!;
+    return {
+      code: this.code,
+      host: host.name,
+      people: this.seats.length,
+      playerCount: this.playerCount,
+      teamSize: this.settings.teamSize,
+      maxRounds: this.settings.maxRounds,
+    };
   }
 
   get empty(): boolean {

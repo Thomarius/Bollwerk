@@ -4,7 +4,7 @@ import { z } from 'zod';
 import { SnapshotSchema } from './snapshot.js';
 
 /** Bumped on any breaking change to the message set; mismatched clients are rejected. */
-export const PROTOCOL_VERSION = 10;
+export const PROTOCOL_VERSION = 11;
 
 /**
  * A player's intent. The server overwrites `player` with the sender's own seat before
@@ -52,6 +52,11 @@ export const ClientMessageSchema = z.discriminatedUnion('type', [
     protocol: z.number().int(),
     name: z.string().min(1).max(24),
     players: z.number().int().min(2).max(8),
+    /**
+     * Listed in the open games browser, the default; a private room is joined by its
+     * code alone. Chosen once, as the room is made.
+     */
+    public: z.boolean().optional(),
   }),
   z.strictObject({
     type: z.literal('join'),
@@ -169,6 +174,27 @@ export const ServerMessageSchema = z.discriminatedUnion('type', [
   z.strictObject({ type: z.literal('error'), code: z.string(), message: z.string() }),
 ]);
 export type ServerMessage = z.infer<typeof ServerMessageSchema>;
+
+/**
+ * One open room as the games browser lists it: public, not started, a seat free. Served
+ * over plain HTTP at `/api/rooms`, since the menu has no socket open.
+ */
+export const RoomListingSchema = z.strictObject({
+  code: z.string(),
+  host: z.string(),
+  /** People seated; the rest of `playerCount` are bots until somebody takes them. */
+  people: z.number().int().nonnegative(),
+  playerCount: z.number().int().min(2).max(8),
+  teamSize: z.number().int().min(1),
+  maxRounds: z.number().int().positive(),
+});
+export type RoomListing = z.infer<typeof RoomListingSchema>;
+
+export const RoomListSchema = z.strictObject({
+  protocol: z.number().int(),
+  rooms: z.array(RoomListingSchema),
+});
+export type RoomList = z.infer<typeof RoomListSchema>;
 
 export function encode(message: ServerMessage | ClientMessage): string {
   return JSON.stringify(message);

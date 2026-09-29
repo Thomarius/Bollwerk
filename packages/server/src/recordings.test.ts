@@ -184,7 +184,9 @@ describe('the recording store', () => {
     expect(body.length).toBeGreaterThan(0);
     expect(body.length % 2).toBe(0);
     expect(body.every((row) => row.includes(',gunner,'))).toBe(true);
-  });
+    // A whole bot match: about 3.5 s alone, and past the default 5 s in a full run beside
+    // the soak tests on a slower machine, where it failed twice in four runs.
+  }, 20_000);
 
   it('runs on without recording when its folder cannot be made, rather than crash', () => {
     // Beneath a plain file, which no user can make a directory in — not even root, so

@@ -71,8 +71,8 @@ export class ServerConnection {
     else this.queue.push(message);
   }
 
-  createRoom(name: string, players: number): void {
-    this.send({ type: 'create', protocol: PROTOCOL_VERSION, name, players });
+  createRoom(name: string, players: number, isPublic = true): void {
+    this.send({ type: 'create', protocol: PROTOCOL_VERSION, name, players, public: isPublic });
   }
 
   joinRoom(name: string, code: string, token?: string): void {

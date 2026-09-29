@@ -31,7 +31,8 @@ import { Audio } from './audio.js';
 import { Controls, inputMode, readyCannons } from './controls.js';
 import { bannersFor, type LifeLost, type PointsGained } from './banners.js';
 import { matchPalette, playerCssColour, useMatchPalette } from './colours.js';
-import { lobbyMarkup, type LobbyView } from './lobby.js';
+import { escape, lobbyMarkup, type LobbyView } from './lobby.js';
+import { REFRESH_MS, gamesMarkup, joinRefusedNotice, parseRoomList } from './browser.js';
 import { Hud, type IslandBanner } from './hud.js';
 import { MatchAudio } from './matchAudio.js';
 import { LocalMatch } from './localMatch.js';
@@ -67,7 +68,7 @@ import {
 } from './transition.js';
 import { ServerConnection } from './net/connection.js';
 import { NetworkMatch } from './net/networkMatch.js';
-import type { ServerMessage } from '@rampart/protocol';
+import type { RoomListing, ServerMessage } from '@rampart/protocol';
 import { Scene, createTheme, type Ghost, type SceneLook } from './render/scene.js';
 import type { Choice } from './render/theme.js';
 
@@ -257,6 +258,8 @@ const DEFAULT_PLAYERS = 3;
 interface Common {
   name: string;
   styles: ArtStyles;
+  /** Whether a table this player opens is listed in the games browser. */
+  isPublic: boolean;
 }
 
 /** The menu's two style choices, saved for next time as they are read. */
@@ -316,7 +319,47 @@ function readCommon(): Common {
   } catch {
     // Storage refused, as in some private windows: the name holds for this visit only.
   }
-  return { styles: readStyles(), name };
+  const isPublic =
+    document.querySelector<HTMLButtonElement>('#visibility')?.dataset.public !== 'false';
+  return { styles: readStyles(), name, isPublic };
+}
+
+/**
+ * Keeps the menu's list of open games current while the menu is up: asks at once and
+ * every few seconds, and stops by itself once the menu has gone. Without a server, or with
+ * one this page cannot join, the section stays hidden.
+ */
+function watchOpenGames(): void {
+  const section = document.querySelector<HTMLElement>('#open-games-section');
+  const list = document.querySelector<HTMLElement>('#open-games');
+  if (!section || !list) return;
+  list.addEventListener('click', (event) => {
+    const button = (event.target as HTMLElement).closest<HTMLButtonElement>('.join-open');
+    const code = button?.dataset.code;
+    if (code === undefined) return;
+    audio.play('select');
+    void openLobby(readCommon(), code).catch((e: unknown) => showError('Could not join', e));
+  });
+  let shown = '';
+  const refresh = async (): Promise<void> => {
+    let rooms: RoomListing[] | null;
+    try {
+      const response = await fetch('/api/rooms', { cache: 'no-store' });
+      rooms = parseRoomList(await response.json());
+    } catch {
+      rooms = null;
+    }
+    if (!section.isConnected) return;
+    section.hidden = rooms === null;
+    const html = rooms === null ? '' : gamesMarkup(rooms);
+    // Only when it changed, so a Join button is not replaced under a pressed mouse.
+    if (html !== shown) list.innerHTML = shown = html;
+  };
+  void refresh();
+  const timer = setInterval(() => {
+    if (section.isConnected) void refresh();
+    else clearInterval(timer);
+  }, REFRESH_MS);
 }
 
 /**
@@ -324,7 +367,7 @@ function readCommon(): Common {
  * players, teams, bots, rounds — is set in the lobby, which is one screen whether or
  * not a server is there.
  */
-function showMenu(): void {
+function showMenu(notice: string | null = null): void {
   audio.music('music_menu');
   app!.innerHTML = `
     <div class="menu">
@@ -336,15 +379,32 @@ function showMenu(): void {
       <label>Combat look <select id="combat-style">${styleOptions('combat')}</select></label>
       <label>Effects <select id="effects"><option value="high">High</option><option value="full">Full</option><option value="reduced">Reduced</option></select></label>
       <label>Sealing preview <select id="seal-preview"><option value="off">Off</option><option value="on">On</option></select></label>
-      <button id="play">Play</button>
+      <div class="split play-row">
+        <button id="play">Play</button>
+        <button id="visibility" data-public="true" title="Public tables are listed under Open games; a private one is joined by its code alone">Public</button>
+      </div>
       <div class="split">
         <input id="code" type="text" maxlength="8" placeholder="room code" />
         <button id="join">Join</button>
       </div>
-      <p class="note">Play sets a table others can join with its code. If nobody does,
-        the match runs on this computer.</p>
+      <p class="note">Play sets a table others can join — from the list below if it is
+        public, by its code either way. If nobody does, the match runs on this computer.</p>
+      <section id="open-games-section" class="open-games-section"${notice === null ? ' hidden' : ''}>
+        <h2>Open games</h2>
+        ${notice === null ? '' : `<p class="notice">${escape(notice)}</p>`}
+        <div id="open-games"></div>
+      </section>
     </div>
   `;
+  // Public or private, chosen as the table is made: a switch beside Play.
+  const visibility = document.querySelector<HTMLButtonElement>('#visibility');
+  visibility?.addEventListener('click', () => {
+    audio.play('select');
+    const isPublic = visibility.dataset.public === 'false';
+    visibility.dataset.public = String(isPublic);
+    visibility.textContent = isPublic ? 'Public' : 'Private';
+  });
+  watchOpenGames();
   // The banners either side of combat swap one look for the other as they cross the
   // board, as the original did; the same style for both switches nothing.
   const styles = preferredStyles();
@@ -599,7 +659,7 @@ async function openLobby(
   connection.connect().catch(() => undefined);
 
   const stored = sessionStorage.getItem(TOKEN_KEY)?.split(':') ?? [];
-  if (code === null) connection.createRoom(common.name, playerCount);
+  if (code === null) connection.createRoom(common.name, playerCount, common.isPublic);
   else if (stored[0] === code.toUpperCase() && stored[1])
     connection.joinRoom(common.name, code, stored[1]);
   else connection.joinRoom(common.name, code);
@@ -613,6 +673,13 @@ async function openLobby(
     return;
   }
   connection.close();
+  // A game picked from the list may have filled or gone since it was listed: say so, and
+  // back to the menu, whose list is fresh as it opens.
+  const refused = first?.type === 'error' && code !== null ? joinRefusedNotice(first.code) : null;
+  if (refused !== null) {
+    showMenu(refused);
+    return;
+  }
   if (first?.type === 'error') {
     showError(`Server refused: ${first.code}`, first.message);
     return;
@@ -1497,6 +1564,7 @@ if (params.get('autostart') === '1') {
   const common: Common = {
     styles: preferredStyles(),
     name: params.get('name') ?? storedName(),
+    isPublic: params.get('private') !== '1',
   };
   void openLobby(common, joining, Number(params.get('host') ?? DEFAULT_PLAYERS)).catch(
     (error: unknown) => showError(joining !== null ? 'Could not join' : 'Could not host', error),

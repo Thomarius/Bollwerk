@@ -323,7 +323,14 @@ sender's seat**, so a client cannot act for someone else.
   recording gains nothing. Moves sent while paused are dropped, not queued. A pause made
   by somebody who then drops holds until anyone resumes. Offline, the local match is not
   advanced.
-- Rooms are found by a short code from an alphabet chosen to avoid ambiguous characters.
+- Rooms are found by a short code from an alphabet chosen to avoid ambiguous characters,
+  or from **the open games browser** in the menu: rooms are **public by default**, listed
+  while being set with a seat free, and a **Public / Private switch beside Play** decides as
+  the table is made — a private room is joined by its code alone, which is how to play
+  alone undisturbed. The menu polls `/api/rooms` over plain HTTP every few seconds (it has
+  no socket open), and hides the list without a server or on another protocol. A room
+  that filled or started before a Join from the list lands says so, back in the menu,
+  whose list is fresh as it opens.
 - **One lobby for online and offline.** The lobby is one screen (`lobbyMarkup`) fed by a
   room when a server answers with a welcome within two seconds, and by a table held in the
   browser when not. Both change the table through one rule, `reshapeTable` in config. A
@@ -733,7 +740,8 @@ every resolution against an independent search, not only on unit pictures.
 **Where to start (2026-09-29).** The first compiled feedback from the test sessions is in
 **11.12**: its small fixes are done (ARCHIVE 11n), and its three agreed items come next, in
 order — castle-less pockets as territory (done, ARCHIVE 11o; it had to land before 11.2's
-baseline), pause (done, ARCHIVE 11p), then **an open games browser**.
+baseline), pause (ARCHIVE 11p) and the open games browser (ARCHIVE 11q) — all done. Next is
+**11.2**, whose baseline can now be measured.
 
 **Before that (2026-09-28).** The user is running human test sessions, and every match
 is recorded with its statistics (§9, ARCHIVE 11e); the user will also send compiled
@@ -955,11 +963,8 @@ territory while its player holds a sealed castle, behind `enclosure.castlelessRe
 **F2 — Pause — done** (ARCHIVE 11p, §6): anyone may pause and anyone resume, by Esc or
 the button beside the Sound switch; the server steps no ticks while paused.
 
-**F3 — An open games browser (M; server, protocol, lobby).** The menu lists rooms that
-have not started, with a Join button each, beside joining by code. **Rooms are public by
-default**; the host may make one private when creating it, and a private room is joined
-by code alone. The server answers a list request with the open public rooms (code, host,
-seats taken of seats, round cap, teams).
+**F3 — Open games browser — done** (ARCHIVE 11q, §6): the menu lists public rooms still
+being set, with Join; a Public / Private switch beside Play decides as the table is made.
 
 ## 12. Deferred (explicitly out of scope for v1)
 

@@ -235,6 +235,81 @@ body.reduced-effects .big-timer.beat {
   font-size: 11px;
 }
 
+/* Play, and beside it the table's visibility, chosen as the table is made. */
+.menu .play-row #play {
+  flex: 3;
+}
+
+.menu .play-row #visibility {
+  flex: 1;
+  border-color: var(--edge);
+  color: var(--muted);
+}
+
+.menu .play-row #visibility[data-public='false'] {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+/* The open games browser (browser.ts). */
+.open-games-section {
+  margin-top: 1.25rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--edge);
+}
+
+.open-games-section h2 {
+  margin: 0 0 0.5rem;
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.open-games-section .notice {
+  margin: 0 0 0.6rem;
+  padding: 0.4rem 0.6rem;
+  border: 1px solid var(--accent);
+  font-size: 12px;
+  color: var(--accent);
+}
+
+.open-games-section .note {
+  margin: 0;
+}
+
+.menu .open-games {
+  max-height: 11rem;
+  overflow-y: auto;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.menu .open-games li {
+  display: flex;
+  gap: 0.6rem;
+  align-items: center;
+  padding: 0.3rem 0;
+}
+
+.menu .open-games .host {
+  color: var(--ink);
+}
+
+.menu .open-games .detail {
+  flex: 1;
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.menu .open-games button {
+  width: auto;
+  margin: 0;
+  padding: 0.25rem 0.8rem;
+  font-size: 11px;
+}
+
 /* ---------- match ---------- */
 
 #stage {

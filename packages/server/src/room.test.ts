@@ -603,6 +603,37 @@ describe('room manager', () => {
   });
 });
 
+describe('the open games browser', () => {
+  it('lists a public room being set, with who is hosting and the seats taken', () => {
+    const manager = new RoomManager(defaultConfigBundle, 3);
+    const open = manager.create('Ada', 3)!;
+    open.join(new TestClient('a'), 'Ada');
+    expect(manager.listOpen()).toEqual([
+      {
+        code: open.code,
+        host: 'Ada',
+        people: 1,
+        playerCount: 3,
+        teamSize: 1,
+        maxRounds: defaultConfigBundle.ruleset.scoring.maxRounds,
+      },
+    ]);
+  });
+
+  it('leaves out private rooms, full ones, running ones and empty ones', () => {
+    const manager = new RoomManager(defaultConfigBundle, 4);
+    manager.create('Ada', 2, false)!.join(new TestClient('a'), 'Ada'); // private
+    const full = manager.create('Bo', 2)!;
+    full.join(new TestClient('b'), 'Bo');
+    full.join(new TestClient('b2'), 'Bea');
+    const running = manager.create('Cy', 3)!;
+    running.join(new TestClient('c'), 'Cy');
+    running.start();
+    manager.create('Di', 2); // nobody in it yet
+    expect(manager.listOpen()).toEqual([]);
+  });
+});
+
 describe('the map, chosen while the table is set', () => {
   const lastRoom = (c: TestClient) => {
     const m = c.received.filter((x) => x.type === 'room').at(-1);

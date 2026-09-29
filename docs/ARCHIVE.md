@@ -2479,3 +2479,26 @@ broadcast naming who.
   and Resume, the button and Esc each toggled it; and over a real server with two people,
   Bo's Esc paused both screens ("Bo paused the match" on Ada's, "You paused" on Bo's), the
   clock held on both, and Ada's Resume cleared it for both.
+
+## 11q. The open games browser (F3)
+
+PLAN 11.12 F3, the last of the first feedback batch: why read out a code when the menu
+could list the games? Decided with the user: public by default, a Public / Private switch
+beside Play (a room is made the moment Play is pressed, so that is where the choice
+goes), solo tables listed like any other — to play alone undisturbed, make it private —
+and only rooms not started with a seat free. Protocol 11: `create` carries `public`.
+
+- **Over plain HTTP**, `GET /api/rooms`, since the menu has no socket; the reply carries
+  the protocol, and a page on another one shows no list rather than rooms it could not
+  join. Under the dev server `/api/rooms` answers with the page, which does not parse, so
+  the section stays hidden there, as the lobby falls back to a local table.
+- **Refreshed every three seconds** while the menu is up, rewritten only when it changed,
+  so a Join button is never replaced under a pressed mouse.
+- **A stale Join**: `join` is refused `room_full` for a room full or started and
+  `no_room` for one gone; either now returns to the menu with a line saying so, over a
+  list fetched afresh, instead of the error page.
+- Checked over a real server with six pages: a public table listed in another's menu
+  with host, seats and rounds, a private one not; Join from the list landed in the same
+  room and the host's lobby showed the newcomer; a room filled by code while another page
+  still listed it sent that page back to the menu with the notice, and the next refresh
+  no longer listed it.
