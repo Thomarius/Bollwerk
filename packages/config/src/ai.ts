@@ -107,9 +107,30 @@ export const TargetingTraitSchema = z.strictObject({
   share: z.number().min(0).max(1),
 });
 
-/** Cannon-space values; max cannons and secondary join in phases 3 and 4 of 11.6. */
-export const CannonValues = ['balanced'] as const;
+/** Cannon-space values: max cannons, balanced, and secondary (cannon space comes second). */
+export const CannonValues = ['max', 'balanced', 'secondary'] as const;
 export type CannonSpace = (typeof CannonValues)[number];
+
+/** What a cannon-space trait sets: how much room for guns a bot asks of its walls. */
+export const CannonTraitSchema = z.strictObject({
+  /**
+   * The band of room asked for round each castle when planning a wall, in tiles. Without
+   * it the planner returns the tightest wall that works, the one with no room for a gun.
+   * Three, re-swept for the rectangular islands of ARCHIVE 10l: it was two on the wedge
+   * map, where three bought room for fourteen cannons against a reward of three a round;
+   * at two on rectangles marshal's room for another cannon fell to 1.8, and three took it
+   * back to 7.3. Four was tried under points scoring (10s) and was badly worse — one win
+   * in twelve, rounds forfeited 26% to 43%.
+   */
+  roomRadius: z.number().int().nonnegative(),
+  /** Room asked for beyond the guns about to be earned, in guns. */
+  roomMargin: z.number().int().nonnegative(),
+  /** Whether a thin wall is thickened before room is sought. */
+  thickenFirst: z.boolean(),
+  /** Pockets — sealed ground with no castle (§1.3) — walled for guns, at most this many. */
+  maxPockets: z.number().int().nonnegative(),
+});
+export type CannonTrait = z.infer<typeof CannonTraitSchema>;
 
 /** How a bot plays, which it is dealt rather than chosen: one value of each trait. */
 export interface Personality {
@@ -134,7 +155,7 @@ export const TRAIT_VALUES = {
 /** A personality in words, as the summary reveals it and recordings carry it. */
 export function personalityWords(p: Personality): string {
   const targeting = p.targeting === 'points' ? 'point-maximizing' : p.targeting;
-  return `${p.risk} · ${targeting} · ${p.cannons === 'balanced' ? 'balanced cannons' : p.cannons}`;
+  return `${p.risk} · ${targeting} · ${p.cannons} cannons`;
 }
 
 /**
@@ -170,6 +191,11 @@ export const AiConfigSchema = z
       defensive: RiskTraitSchema,
       balanced: RiskTraitSchema,
       offensive: RiskTraitSchema,
+    }),
+    cannons: z.strictObject({
+      max: CannonTraitSchema,
+      balanced: CannonTraitSchema,
+      secondary: CannonTraitSchema,
     }),
     targeting: z.strictObject({
       points: TargetingTraitSchema,
@@ -233,6 +259,10 @@ export interface BotProfile extends Skill {
   expandsWhenSafe: boolean;
   widensWhileRepairing: boolean;
   castleChoice: RiskTrait['castleChoice'];
+  roomRadius: number;
+  roomMargin: number;
+  thickenFirst: boolean;
+  maxPockets: number;
 }
 
 export function botProfile(ai: AiConfig, setup: BotSetup): BotProfile {
@@ -250,6 +280,7 @@ export function botProfile(ai: AiConfig, setup: BotSetup): BotProfile {
     picksTarget: true,
     targeting: setup.personality.targeting,
     targetShare: ai.targeting[setup.personality.targeting].share,
+    ...ai.cannons[setup.personality.cannons],
   };
 }
 

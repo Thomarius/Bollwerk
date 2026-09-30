@@ -80,6 +80,26 @@
       "castleChoice": "central"
     }
   },
+  "cannons": {
+    "max": {
+      "roomRadius": 3,
+      "roomMargin": 2,
+      "thickenFirst": false,
+      "maxPockets": 2
+    },
+    "balanced": {
+      "roomRadius": 3,
+      "roomMargin": 2,
+      "thickenFirst": false,
+      "maxPockets": 0
+    },
+    "secondary": {
+      "roomRadius": 2,
+      "roomMargin": 0,
+      "thickenFirst": true,
+      "maxPockets": 0
+    }
+  },
   "targeting": {
     "points": {
       "share": 0.5

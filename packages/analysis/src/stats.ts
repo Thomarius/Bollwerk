@@ -5,7 +5,7 @@ import {
   type BotSetup,
   type ConfigBundle,
 } from '@rampart/config';
-import { cannonRoom, cheapestPlanFor } from '@rampart/ai';
+import { cannonRoom, cheapestPlanFor, pocketCount } from '@rampart/ai';
 import {
   Structure,
   Terrain,
@@ -55,6 +55,8 @@ export interface StatRow {
   cannonsOwned: number;
   cannonsActive: number;
   cannonRoom: number;
+  /** Pockets held — sealed ground with no castle (§1.3) — after the sweep. */
+  pockets: number;
   wallTiles: number;
   piecesPlaced: number;
   /** Null for a person, who has no pace to price a phase with. */
@@ -91,6 +93,7 @@ const STAT_COLUMNS: (keyof StatRow)[] = [
   'cannonsOwned',
   'cannonsActive',
   'cannonRoom',
+  'pockets',
   'wallTiles',
   'piecesPlaced',
   'piecesBudget',
@@ -249,6 +252,7 @@ export class RoundStats {
             cannonsOwned: owned,
             cannonsActive: active,
             cannonRoom: cannonRoom(state, result.player),
+            pockets: pocketCount(state, result.player),
             wallTiles: wallTilesOf(state, result.player),
             piecesPlaced: this.placed.get(result.player) ?? 0,
             piecesBudget: piecesBudget(this.bundle, tier),

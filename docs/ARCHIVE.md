@@ -2792,3 +2792,32 @@ dealt evenly. Cannon space stays balanced until phase 4.
   knockouts), grudge 11.9%, a dealt mix 11.8%. Balance is phase 5.
 - Strategic targeting changed from the old formula, so default bots are no longer
   hash-identical to phase 1's; that check did its work there.
+
+## 11za. Cannon space: pockets for guns (11.6, phase 4)
+
+Agreed with the user before coding: max cannons walls pockets when short of room,
+instead of widening its loop, and as spare work before thickening, only once its castle
+is sealed; pockets for one gun (2x2 inside) or two (2x4 either way), the cheapest per gun;
+at most two; cheapest first rather than facing opponents; secondary asks less room and
+thickens first. And, the user's note: a pocket is far easier against a wall already
+standing than on its own.
+
+- **`pocketPlan`** (tested): a small interior of free land outside the territory, ringed
+  — corners included, since the sea slips through a diagonal join — by the bot's own
+  wall where it stands and new blocks where it does not. Reused wall costs nothing, so
+  pockets against the standing wall win by construction, and at least two tiles of it
+  are required, so none ever stands alone. Beside a ring, a two-gun pocket down its side
+  costs ten blocks, five a gun, where one for a single gun costs eight.
+- **`pocketCount`**: sealed regions of a player's territory holding no castle — a new
+  `pockets` column in the statistics, so the trait is seen working, not inferred.
+- **Cannon-space traits** in config: room band, room margin, thicken-first and pocket
+  cap. The room band was the constant `ROOM_RADIUS`; its history now sits with the
+  setting. Balanced keeps 3 and a margin of two guns; secondary 2, no margin,
+  thickening first; max cannons as balanced with two pockets.
+- **Sanity soak**, Level 5, three players, twelve seeds, every seat one value: nothing
+  refused or unfinished. Balanced forfeits 9.4%, room 2.75, 0.84 pockets — leftover and
+  inner walls enclose small castle-less ground already. Max cannons 13.6%, room 3.71,
+  1.74 pockets, but active guns 5.71 against 5.86: the gun reward per castle is fixed, so
+  the room goes unused while the pockets' walls add to every repair. Secondary 12.5%,
+  room 2.90 — worse than balanced where it should be safer; at twelve seeds about two
+  standard errors. Both are phase 5's, starting with pockets only when room is short.

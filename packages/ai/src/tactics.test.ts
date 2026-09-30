@@ -2,6 +2,7 @@ import { defaultRuleset, defaultTerrainConfig } from '@rampart/config';
 import {
   Structure,
   applyAction,
+  applyEnclosure,
   beginMatch,
   computeEnclosure,
   createMatch,
@@ -10,7 +11,7 @@ import {
 } from '@rampart/sim';
 import { describe, expect, it } from 'vitest';
 
-import { bestSealPlan, planSeal, weakestWall } from './tactics.js';
+import { bestSealPlan, planSeal, pocketCount, pocketPlan, weakestWall } from './tactics.js';
 
 /** Builds every tile of a plan, as a bot eventually would. */
 function buildPlan(state: MatchState, tiles: readonly number[], islandId = 1): void {
@@ -186,5 +187,55 @@ describe('finding the weak point', () => {
       ........
     `);
     expect(weakestWall(state, 0)).toEqual([]);
+  });
+});
+
+describe('pockets for guns', () => {
+  // A sealed castle, and open land to the east of its ring.
+  const RING = `
+    ...............
+    .######,,,,,,..
+    .#,,,,#,,,,,,..
+    .#,@@,#,,,,,,..
+    .#,@@,#,,,,,,..
+    .#,,,,#,,,,,,..
+    .######,,,,,,..
+    ...............
+  `;
+
+  it('walls the cheapest pocket per gun against the wall already standing', () => {
+    const state = stateFromAscii(RING);
+    applyEnclosure(state);
+    const plan = pocketPlan(state, 0);
+    // Two guns' room running down the ring's east side: its wall is the pocket's west
+    // side, six blocks reused, and ten new ones close it — five a gun, where a pocket
+    // for one would cost eight.
+    expect(plan).toMatchObject({ guns: 2, cost: 10 });
+    expect(plan!.tiles.every((i) => state.structure[i] === Structure.Empty)).toBe(true);
+  });
+
+  it('is counted as a pocket once built, while the castle is sealed', () => {
+    const state = stateFromAscii(RING);
+    applyEnclosure(state);
+    expect(pocketCount(state, 0)).toBe(0);
+    for (const i of pocketPlan(state, 0)!.tiles) {
+      state.structure[i] = Structure.Wall;
+      state.owner[i] = 1;
+    }
+    applyEnclosure(state);
+    expect(pocketCount(state, 0)).toBe(1);
+  });
+
+  it('never stands a pocket alone, away from the wall', () => {
+    const state = stateFromAscii(`
+      ...........
+      .,,,,,,,,,.
+      .,,,,,,,,,.
+      .,,,,,,,,,.
+      .,,,,,,,,,.
+      .,,,,,,,,,.
+      ...........
+    `);
+    expect(pocketPlan(state, 0)).toBeNull();
   });
 });

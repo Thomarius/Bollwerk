@@ -729,7 +729,9 @@ interpolated between (`skillAt`); Level 5 is the old gunner, 8 the marshal, 2 th
 end: risk (defensive thickens until no way in takes fewer than two shots, then expands;
 offensive widens its wall while repairing a small breach and reaches for more castles,
 the old baron) and targeting (point-maximizing, strategic, finisher, grudge, each half of
-its aimed shots, the rest by the neutral rule); cannon space comes with phase 4. `botProfile` compiles the two into what the bot
+its aimed shots, the rest by the neutral rule), and cannon space (max cannons walls up to
+two pockets for guns against its own wall, `pocketPlan`; secondary asks less room and
+thickens first; balanced as before). `botProfile` compiles the two into what the bot
 reads. Measured 2026-09-25 under the old tiers at three players, both seats: marshal beats
 two gunners 29 of 40, baron 28; gunner beats two recruits 9 of 12. Records in the archive
 from before 10l are historical.
@@ -924,7 +926,7 @@ balanced means.
 - **Bots do not help a teammate build**, even under `crossIslandBuild: all` — teaching
   one to help without wrecking a person's plan is its own question (team mode, §1.8).
 
-### 11.6 Bots as skill and personality — agreed 2026-09-29, phases 1–3 done
+### 11.6 Bots as skill and personality — agreed 2026-09-29, phases 1–4 done
 
 **The next milestone (M13)**, ahead of 11.2's baseline, which is then measured over the
 personality mix real matches will contain. Today a tier bundles two things: **skill** —
@@ -1012,7 +1014,11 @@ reliably beat Level 5. Measured at three players, both seats.
 3. **Risk and targeting traits — done** (ARCHIVE 11z): all four targeting rules at a 50%
    share, defensive thickening then expanding, offensive widening while repairing, and
    castle choice by risk.
-4. **Max cannons (M–L)**: the pocket planner and placing guns in pockets.
+4. **Cannon space — done** (ARCHIVE 11za): the pocket planner, max cannons walling up to
+   two pockets against its own wall, secondary asking less room and thickening first.
+   **For phase 5**: max cannons forfeited 13.6% against balanced 9.4% with its extra room
+   unused — pockets only when room is short is the first thing to try — and secondary
+   forfeited 12.5%, to be re-measured at size.
 5. **Tuning and the reveal (M)**: the level table filled in and felt out (are ten levels
    distinct?); each trait against balanced at Level 5, both seats, 20–40 matches each; the
    guardrail checked per trait; tuning until nothing dominates. Then the reveal line in

@@ -436,3 +436,110 @@ export function weakestWall(state: MatchState, targetPlayer: number): number[] {
   }
   return path;
 }
+
+/** A pocket for guns (§1.3): the blocks still to build, and how many guns it will hold. */
+export interface PocketPlan {
+  tiles: number[];
+  cost: number;
+  guns: number;
+}
+
+/** Pocket interiors tried: room for one 2x2 gun, or two side by side either way. */
+const POCKET_SHAPES: readonly (readonly [number, number, number])[] = [
+  [2, 2, 1],
+  [4, 2, 2],
+  [2, 4, 2],
+];
+
+/**
+ * Tiles of existing wall a pocket must reuse. A pocket against the wall already standing
+ * shares a side with it and costs a few blocks; one standing alone costs a whole ring, is
+ * slow to build and is one more wall to repair — the user's point, and the reason a pocket
+ * is worth more than widening the main loop at all.
+ */
+const POCKET_MIN_REUSE = 2;
+
+/**
+ * The cheapest pocket per gun: a small interior of free land outside this player's
+ * territory, ringed — corners included, since the sea slips through a diagonal join — by
+ * its own wall where that already stands and new blocks where it does not. Reused wall
+ * costs nothing, so pockets against the standing wall win by construction. Null when no
+ * pocket reuses enough wall.
+ */
+export function pocketPlan(
+  state: MatchState,
+  playerId: number,
+  blocked: ReadonlySet<number> = new Set(),
+): PocketPlan | null {
+  const islandId = state.players[playerId]?.islandId;
+  if (islandId === undefined) return null;
+  const { width, height } = state;
+  const free = (x: number, y: number): boolean => {
+    const i = y * width + x;
+    return buildable(state, playerId, i) && state.territory[i] !== islandId && !blocked.has(i);
+  };
+  let best: PocketPlan | null = null;
+  for (let y0 = 1; y0 < height - 1; y0++) {
+    for (let x0 = 1; x0 < width - 1; x0++) {
+      if (state.islandId[y0 * width + x0] !== islandId) continue;
+      for (const [w, h, guns] of POCKET_SHAPES) {
+        if (x0 + w >= width || y0 + h >= height) continue;
+        let ok = true;
+        for (let y = y0; y < y0 + h && ok; y++) {
+          for (let x = x0; x < x0 + w && ok; x++) ok = free(x, y);
+        }
+        if (!ok) continue;
+        const tiles: number[] = [];
+        let reused = 0;
+        for (let y = y0 - 1; y <= y0 + h && ok; y++) {
+          for (let x = x0 - 1; x <= x0 + w && ok; x++) {
+            if (y >= y0 && y < y0 + h && x >= x0 && x < x0 + w) continue;
+            const i = y * width + x;
+            if (state.structure[i] === Structure.Wall && state.owner[i] === islandId) reused++;
+            else if (free(x, y)) tiles.push(i);
+            else ok = false;
+          }
+        }
+        if (!ok || reused < POCKET_MIN_REUSE || tiles.length === 0) continue;
+        const cost = tiles.length;
+        if (best === null || cost / guns < best.cost / best.guns) best = { tiles, cost, guns };
+      }
+    }
+  }
+  return best;
+}
+
+/**
+ * This player's pockets as the board stands: sealed regions of its territory holding no
+ * castle. Territory is flooded 8-connected, as the enclosure is.
+ */
+export function pocketCount(state: MatchState, playerId: number): number {
+  const islandId = state.players[playerId]?.islandId;
+  if (islandId === undefined) return 0;
+  const { width, height } = state;
+  const seen = new Uint8Array(width * height);
+  let pockets = 0;
+  for (let start = 0; start < seen.length; start++) {
+    if (seen[start] === 1 || state.territory[start] !== islandId) continue;
+    let castle = false;
+    const queue = [start];
+    seen[start] = 1;
+    while (queue.length > 0) {
+      const i = queue.pop() as number;
+      if (state.structure[i] === Structure.Castle) castle = true;
+      const x = i % width;
+      const y = (i - x) / width;
+      for (const [ox, oy] of NEIGHBOURS_8) {
+        const nx = x + ox;
+        const ny = y + oy;
+        if (nx < 0 || ny < 0 || nx >= width || ny >= height) continue;
+        const j = ny * width + nx;
+        if (seen[j] === 1 || state.territory[j] !== islandId) continue;
+        seen[j] = 1;
+        queue.push(j);
+      }
+    }
+    if (!castle) pockets++;
+  }
+  return pockets;
+}

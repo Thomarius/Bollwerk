@@ -27,9 +27,12 @@ import {
   cannonRoom,
   cheapestPlanFor,
   outerSkin,
+  pocketCount,
+  pocketPlan,
   sealOptions,
   thickenTargets,
   weakestWall,
+  type PocketPlan,
   type SealPlan,
 } from './tactics.js';
 
@@ -38,23 +41,6 @@ const IDLE_RETRY_MS = 250;
 
 /** How far from a castle a cannon is taken to belong to it. */
 const GUN_REACH = 12;
-
-/**
- * Ground the wall must take in around each castle.
- *
- * Without it the planner returns the tightest wall that works, which is the wall with
- * no room inside for a gun. Room is worth paying for; more room than the reward can
- * spend is just a longer bill, repaired every round under fire.
- *
- * Three, re-swept for the rectangular islands of ARCHIVE 10l. It was two on the wedge
- * map, where three bought room for fourteen cannons against a reward of three a round
- * and all three players were wiped out together by round three. A compact rectangle
- * makes a tight cut cheaper, so the same constant meant something different: at two,
- * marshal's room for another cannon fell to 1.8, and three took it back to 7.3. Four was
- * tried under points scoring (10s) and was badly worse — one win in twelve, rounds
- * forfeited 26% to 43%.
- */
-const ROOM_RADIUS = 3;
 
 /**
  * A breach an offensive bot may close with a roomier wall than it had (PLAN 11.6): its
@@ -531,7 +517,7 @@ export class Bot {
         onIsland,
         this.unreachable,
         true,
-        ROOM_RADIUS,
+        this.profile.roomRadius,
       );
       const tiles = next?.tiles.filter((i) => state.structure[i] === Structure.Empty) ?? [];
       if (tiles.length > 0) return tiles;
@@ -546,7 +532,7 @@ export class Bot {
       this.profile.maxCastles,
       this.unreachable,
       true,
-      ROOM_RADIUS + 2,
+      this.profile.roomRadius + 2,
     );
     return roomier?.tiles.filter((i) => state.structure[i] === Structure.Empty) ?? [];
   }
@@ -570,7 +556,7 @@ export class Bot {
     keepCannons: boolean,
     budget: number,
   ): SealPlan | null {
-    for (let radius = ROOM_RADIUS; radius >= 0; radius--) {
+    for (let radius = this.profile.roomRadius; radius >= 0; radius--) {
       const plan = cheapestPlanFor(
         state,
         this.playerId,
@@ -628,7 +614,7 @@ export class Bot {
       // rounds, and a small breach is the one case where there is time to spare.
       if (this.profile.widensWhileRepairing && tight !== null && tight.cost <= SMALL_REPAIR) {
         const pieces = this.piecesAffordable(state);
-        for (let radius = ROOM_RADIUS + 1; radius >= 1; radius--) {
+        for (let radius = this.profile.roomRadius + 1; radius >= 1; radius--) {
           const wide = cheapestPlanFor(
             state,
             this.playerId,
@@ -657,7 +643,14 @@ export class Bot {
     // matters is the reward this wall is about to earn.
     const { firstCastleReward, perAdditionalCastleReward } = state.ruleset.cannons;
     const earning = firstCastleReward + Math.max(0, sealed - 1) * perAdditionalCastleReward;
-    const needsRoom = cannonRoom(state, this.playerId) < earning + 2;
+    const needsRoom = cannonRoom(state, this.playerId) < earning + this.profile.roomMargin;
+    // Max cannons walls pockets for guns (§1.3), up to its cap: sealed ground with no
+    // castle, which counts while a castle is sealed. Always against the standing wall,
+    // which `pocketPlan` insists on — a pocket standing alone is a whole ring of work.
+    const pocket = (): PocketPlan | null =>
+      this.profile.maxPockets > pocketCount(state, this.playerId)
+        ? pocketPlan(state, this.playerId, this.unreachable)
+        : null;
 
     // Guns left outside the wall are the thing most worth fixing. When one of two
     // enclosures is breached the sweep takes that whole wall, and its cannons are
@@ -681,11 +674,24 @@ export class Bot {
         this.profile.maxCastles,
         this.unreachable,
         true,
-        ROOM_RADIUS,
+        this.profile.roomRadius,
       );
       if (recover !== null) return recover.tiles;
     }
     const wantsMore = sealed < this.profile.maxCastles;
+
+    // Short of room, a max-cannons bot takes a pocket rather than widening its loop: a
+    // few blocks against the wall it has, not a longer wall round everything.
+    if (needsRoom) {
+      const room = pocket();
+      if (room !== null) return room.tiles;
+    }
+
+    // Cannon space second: a thin wall is thickened before any room is sought.
+    if (this.profile.thickenFirst && weakestWall(state, this.playerId).length < 2) {
+      const thicken = thickenTargets(state, this.playerId).filter((i) => !this.unreachable.has(i));
+      if (thicken.length > 0) return thicken;
+    }
 
     // A defensive bot makes its castle safe first — thickened until no way in takes fewer
     // than two shots, or until no piece can thicken it further — and then reaches for the
@@ -707,7 +713,7 @@ export class Bot {
         this.profile.maxCastles,
         this.unreachable,
         true,
-        ROOM_RADIUS,
+        this.profile.roomRadius,
       );
       if (next !== null) return next.tiles;
     }
@@ -724,7 +730,7 @@ export class Bot {
         this.profile.maxCastles,
         this.unreachable,
         true,
-        ROOM_RADIUS,
+        this.profile.roomRadius,
       );
       if (next !== null) return next.tiles;
     }
@@ -737,10 +743,14 @@ export class Bot {
         this.profile.maxCastles,
         this.unreachable,
         true,
-        ROOM_RADIUS,
+        this.profile.roomRadius,
       );
       if (affordable(bigger)) return (bigger as SealPlan).tiles;
     }
+
+    // With time to spare, a max-cannons bot walls a pocket before it thickens.
+    const spare = pocket();
+    if (spare !== null) return spare.tiles;
 
     // Only thicken when there is somewhere to put the guns. Otherwise a bot spends
     // the phase making its wall stouter and its arsenal smaller, which is how a match
@@ -802,7 +812,7 @@ export class Bot {
     // than the default. Within a radius the choice is between castles, and a gun
     // recovered is worth a few extra blocks of wall.
     let cheapest: SealPlan | null = null;
-    for (let radius = ROOM_RADIUS; radius >= 0; radius--) {
+    for (let radius = this.profile.roomRadius; radius >= 0; radius--) {
       const options = sealOptions(
         state,
         this.playerId,
@@ -982,7 +992,7 @@ export class Bot {
       return fair.reduce((a, b) => (score(b.castle) > score(a.castle) ? b : a)).castle;
     };
 
-    const best = pick(ROOM_RADIUS) ?? pick(0) ?? (mine[0] as (typeof mine)[number]);
+    const best = pick(this.profile.roomRadius) ?? pick(0) ?? (mine[0] as (typeof mine)[number]);
     return { kind: 'select_castle', player: this.playerId, castleId: best.id };
   }
 

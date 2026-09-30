@@ -27,6 +27,7 @@ describe('the pieces budget', () => {
       cannonsOwned: 3,
       cannonsActive: 3,
       cannonRoom: 4,
+      pockets: 0,
       wallTiles: 50,
       piecesPlaced: 20,
       piecesBudget: null,
