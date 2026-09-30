@@ -500,6 +500,7 @@ export class Hud {
     if (built === null) return;
     entry.node.className = built.className;
     entry.node.title = built.title;
+    entry.node.style.cssText = built.style.cssText;
     entry.node.replaceChildren(...built.childNodes);
   }
 
@@ -544,13 +545,7 @@ export class Hud {
     );
   }
 
-  /** `sealed` is castles enclosed as the board stands now, which the sim's count is not. */
-  update(
-    state: MatchState,
-    humanPlayer: number,
-    status = '',
-    sealed: readonly number[] = state.players.map((p) => p.enclosedCastles),
-  ): void {
+  update(state: MatchState, humanPlayer: number, status = ''): void {
     const waiting = state.phase === 'intermission';
     const shown = waiting ? (state.pendingPhase ?? state.phase) : state.phase;
     this.markFinalRound(inFinalRound(state));
@@ -572,65 +567,37 @@ export class Hud {
         : `<div class="timebar${secondsLeft <= 3 ? ' urgent' : ''}"><i style="width:${(left * 100).toFixed(1)}%"></i></div>`;
     const human = state.players[humanPlayer];
 
-    // Lives as pips, one per life including the one being played, spent ones hollow:
-    // read at a glance across a roster, where "2 lives" had to be read word by word.
-    // They are the team's pool — in free-for-all a team of one, so the player's own.
-    const livesOf = (team: number): string => {
+    // The roster carries only what decides the match — points and lives (PLAN 11.15).
+    // Castles and guns went: the board shows both, and the room they took makes the two
+    // that matter large. One layout at every count, the name cut short to fit its card.
+    // Lives are pips, one per life including the one being played, spent ones hollow:
+    // the team's pool, in free-for-all a team of one. A pool too big for pips — a team of
+    // three or four — is one pip and the count.
+    const livesOf = (team: number, out: boolean): string => {
+      if (out) return '<span class="lives out">out</span>';
       const pool = state.teams[team];
       const total = (pool?.continuesAtStart ?? 0) + 1;
       const left = (pool?.continuesRemaining ?? 0) + 1;
-      const pips = '●'.repeat(left) + '○'.repeat(Math.max(0, total - left));
+      const pips =
+        total > 5 ? `●<small>${left}</small>` : '●'.repeat(left) + '○'.repeat(total - left);
       return `<span class="lives${left === 1 ? ' last' : ''}" title="${left} of ${total} lives">${pips}</span>`;
-    };
-    // The compact roster's lives: one pip and the count, red on the last. A pip a life ran
-    // the eighth entry off the screen (PLAN 11.5).
-    const livesCount = (team: number): string => {
-      const left = (state.teams[team]?.continuesRemaining ?? 0) + 1;
-      return `<span class="lives${left === 1 ? ' last' : ''}">●${left}</span>`;
-    };
-    const livesWords = (team: number): string => {
-      const pool = state.teams[team];
-      const left = (pool?.continuesRemaining ?? 0) + 1;
-      return `${left} of ${(pool?.continuesAtStart ?? 0) + 1} lives`;
     };
     const teamed = isTeamMatch(state);
     const now = performance.now();
-    // Past four players in free-for-all, icons rather than words, so eight entries fit
-    // one line of the bar: at eight the words wrapped each onto three, under the time bar.
-    // Even so the eighth ran 44 pixels off a 1280-pixel screen and 300 off a 1024 one, so
-    // the compact entry carries only what changes — score, castles, guns firing, lives —
-    // with long names cut short, the rest on hover, and shrinks to fit (PLAN 11.5).
-    const compact = !teamed && state.players.length > 4;
+    const card = (key: string, score: number, lives: string): string =>
+      `<span class="line"><em class="score">${this.shownScore(key, score, now)}</em>${lives}</span>`;
     const playerItem = (p: (typeof state.players)[number]): string => {
-      const cannons = state.cannons.filter((c) => c.owner === p.id);
-      const live = cannons.filter((c) => c.active).length;
       const classes = ['player', p.eliminated ? 'out' : '', p.id === humanPlayer ? 'you' : '']
         .filter(Boolean)
         .join(' ');
-      const held = sealed[p.id] ?? 0;
-      const castles = `${held} castle${held === 1 ? '' : 's'}`;
-      const guns = `${live}/${cannons.length} guns`;
-      const score = this.shownScore(`p${p.id}`, p.score, now);
-      // In a team match the score and lives belong to the team, so they head its group.
-      // Past four players a team's members get only their names: their team's score and
-      // lives head the group, their castles fly banners on the board, and the details
-      // wrapped a crowded bar onto two lines.
-      const status = p.eliminated
-        ? `${compact ? 'out' : 'eliminated'} round ${p.eliminatedRound}`
-        : teamed && state.players.length > 4
-          ? ''
-          : teamed
-            ? `${castles} · ${guns}`
-            : compact
-              ? `<em>${score}</em> <i>♜</i>${held} <i>⊙</i>${live} ${livesCount(p.team)}`
-              : `${score} pts · ${castles} · ${guns} · ${livesOf(p.team)}`;
-      const title = compact
-        ? ` title="${escape(p.name)}${p.eliminated ? '' : ` · ${score} pts · ${castles} · ${guns} · ${livesWords(p.team)}`}"`
-        : '';
-      return `<li class="${classes}"${title}><b style="background:${playerCssColour(p.id)}"></b><bdi>${escape(p.name)}</bdi><span>${status}</span></li>`;
+      const colour = playerCssColour(p.id);
+      const name = `<bdi title="${escape(p.name)}">${escape(p.name)}</bdi>`;
+      // A team's members carry only their names: the score and lives are the team's.
+      return teamed
+        ? `<li class="${classes}" style="--who:${colour}"><b></b>${name}</li>`
+        : `<li class="${classes}" style="--who:${colour}">${name}${card(`p${p.id}`, p.score, livesOf(p.team, p.eliminated))}</li>`;
     };
     const { phase: phaseRoot, roster: rosterRoot, rest } = this.layout();
-    rosterRoot.classList.toggle('compact', compact);
     // Free-for-all in standing, best first, so a change of places slides; a team match
     // groups by team in team order, which never reshuffles, each headed by its letter,
     // score and pooled lives.
@@ -641,11 +608,10 @@ export class Hud {
         const members = state.players.filter((p) => p.team === team);
         const out = members.every((p) => p.eliminated);
         const mine = members.some((p) => p.id === humanPlayer);
-        const score = this.shownScore(`t${team}`, teamScore(state, team), now);
         this.entry(
           `t${team}`,
           `<li class="team${out ? ' out' : ''}${mine ? ' mine' : ''}">` +
-            `<div class="team-head"><b class="letter">${teamLetter(team)}</b>${score} pts · ${out ? 'out' : livesOf(team)}</div>` +
+            `<div class="team-head"><b class="letter">${teamLetter(team)}</b>${card(`t${team}`, teamScore(state, team), livesOf(team, out))}</div>` +
             `<ul>${members.map(playerItem).join('')}</ul></li>`,
         );
       }

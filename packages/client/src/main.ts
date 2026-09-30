@@ -1557,12 +1557,7 @@ async function runSession(session: Session, setup: Setup): Promise<void> {
     pointCamera(now);
     drawTransition();
     drawIslandBanners();
-    hud.update(
-      session.state,
-      session.humanPlayer,
-      session.status(),
-      enclosureFor('combat').enclosedCastlesByPlayer,
-    );
+    hud.update(session.state, session.humanPlayer, session.status());
 
     crumbleRuins();
     // Once the match is over, fireworks over whoever won it.

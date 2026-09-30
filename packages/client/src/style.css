@@ -527,85 +527,92 @@ body.reduced-effects .you-are-here {
   color: var(--hud-muted);
 }
 
+/* Points and lives only (PLAN 11.15), made large: a card per player, their colour down
+   its edge, the name small over the score and the pips. One layout at every count — the
+   roster may shrink, names are cut short (the whole name on hover), the figures scale
+   down on narrow windows, and nothing is ever drawn past the edge. */
 .roster {
   display: flex;
-  gap: 1.25rem;
+  flex: 0 1 auto;
+  min-width: 0;
+  gap: clamp(0.35rem, 0.9vw, 1.1rem);
   margin: 0;
   padding: 0;
+  overflow: hidden;
   list-style: none;
 }
 
 .roster .player {
-  display: grid;
-  grid-template-columns: auto auto;
-  gap: 0 0.4rem;
-  align-items: center;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  padding-left: 0.45rem;
+  border-left: 3px solid var(--who);
 }
 
-.roster .player b {
-  width: 9px;
-  height: 9px;
-  border-radius: 1px;
-}
-
-.roster .player span {
-  grid-column: 2;
+.roster .player bdi {
+  overflow: hidden;
+  font-size: clamp(9px, 0.8vw, 11px);
+  letter-spacing: 0.04em;
   color: var(--hud-muted);
-  font-size: 11px;
-  white-space: nowrap;
-}
-
-/* Six to eight players in free-for-all: icons for words, and closer together — and made
-   to fit whatever the window: the roster may shrink, long names are cut short (the whole
-   name is on hover), the text scales down on narrow windows, and nothing is ever drawn
-   past the edge. The eighth entry once ran 300 pixels off a 1024-pixel screen. */
-.roster.compact {
-  flex: 0 1 auto;
-  min-width: 0;
-  gap: clamp(0.3rem, 0.6vw, 0.8rem);
-  overflow: hidden;
-}
-
-.roster.compact .player {
-  min-width: 0;
-  font-size: clamp(10px, 1vw, 13px);
-}
-
-.roster.compact .player bdi {
-  max-width: 9ch;
-  overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.roster.compact .player span {
-  font-size: clamp(9px, 0.86vw, 11px);
+.roster .you bdi {
+  color: var(--hud-ink);
+  text-decoration: underline;
+  text-underline-offset: 3px;
 }
 
-.roster.compact .player i {
-  margin: 0 1px 0 1px;
+.roster .line {
+  display: flex;
+  gap: 0.5rem;
+  align-items: baseline;
+  white-space: nowrap;
 }
 
-.roster.compact .lives {
-  letter-spacing: 0;
-}
-
-.roster .player em {
+.roster .score {
+  font-size: clamp(16px, 1.8vw, 26px);
   font-style: normal;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
   color: var(--hud-ink);
 }
 
-.roster .player i {
-  font-style: normal;
-  margin: 0 1px 0 3px;
-  opacity: 0.75;
+.roster .lives {
+  font-size: clamp(13px, 1.35vw, 19px);
+  letter-spacing: 0.08em;
+  color: var(--hud-ink);
+}
+
+.roster .lives small {
+  margin-left: 0.15rem;
+  font-size: 0.85em;
+}
+
+/* The last life is the loudest thing in the roster. */
+.roster .lives.last {
+  color: #ff5a62;
+  text-shadow: 0 0 6px rgb(255 90 98 / 70%);
+}
+
+.roster .lives.out {
+  font-size: clamp(9px, 0.8vw, 11px);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--hud-muted);
+}
+
+.roster .out {
+  opacity: 0.45;
 }
 
 .roster .team {
   display: flex;
   flex-direction: column;
-  gap: 0.15rem;
-  padding: 0.1rem 0.5rem;
+  min-width: 0;
+  padding: 0 0.5rem;
   border-left: 2px solid color-mix(in srgb, var(--hud-muted) 40%, transparent);
 }
 
@@ -613,33 +620,44 @@ body.reduced-effects .you-are-here {
   border-left-color: var(--hud-accent);
 }
 
+.roster .team-head {
+  display: flex;
+  align-items: baseline;
+}
+
+.roster .letter {
+  margin-right: 0.45rem;
+  font-size: clamp(13px, 1.2vw, 17px);
+  color: var(--hud-accent);
+}
+
+/* A team's members: their colour and name, small, under the team's figures. */
 .roster .team ul {
   display: flex;
-  gap: 0.9rem;
+  gap: 0.7rem;
+  min-width: 0;
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
-.roster .team-head {
-  font-size: 11px;
-  color: var(--hud-muted);
+.roster .team .player {
+  flex-direction: row;
+  gap: 0.3rem;
+  align-items: center;
+  padding-left: 0;
+  border-left: none;
 }
 
-.roster .letter {
-  display: inline-block;
-  margin-right: 0.4rem;
-  color: var(--hud-accent);
-  font-weight: 700;
+.roster .team .player b {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  background: var(--who);
 }
 
-.roster .you {
-  text-decoration: underline;
-  text-underline-offset: 3px;
-}
-
-.roster .out {
-  opacity: 0.4;
+.roster .team .out {
+  opacity: 0.5;
 }
 
 .swatch {
@@ -1194,14 +1212,6 @@ table.final tr.you td:nth-child(2) {
   }
 }
 
-.roster .lives {
-  letter-spacing: 0.12em;
-}
-
-.roster .lives.last {
-  color: #ff6a70;
-}
-
 /* A team's letter over each of its islands, above the northern shore. */
 .team-tag {
   position: absolute;
@@ -1408,6 +1418,37 @@ table.final tr.you td:nth-child(2) {
 
 #hud.hud-bricks .counter {
   border-radius: 5px;
+}
+
+/* A player's edge bar on the blue plate: the blue player's vanished into it, so each bar
+   gets a thin light rim here — the one style whose bar is a player's own colour. */
+#hud.hud-bricks .roster .player {
+  position: relative;
+  padding-left: calc(0.45rem + 5px);
+  border-left: none;
+}
+
+#hud.hud-bricks .roster .player::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 3px;
+  border: 1px solid #e8f1ff;
+  background: var(--who);
+}
+
+#hud.hud-bricks .roster .team .player {
+  padding-left: 0;
+}
+
+#hud.hud-bricks .roster .team .player::before {
+  content: none;
+}
+
+#hud.hud-bricks .roster .team .player b {
+  outline: 1px solid #e8f1ff;
 }
 
 @keyframes island-banner-in {

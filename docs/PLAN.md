@@ -504,8 +504,7 @@ through combat and the landing of its last shots: territory and everything that 
 "sealed" — flags, Cyberpunk's cores, Night's torches, Parchment's seals, Blueprint's
 keeps — stay up while the walls come down. The build look always shows the board as it
 stands, so the "Rebuild" banner reveals what was lost as it crosses; with one style for
-both looks the switch comes as building begins. The roster's castle count holds with the
-combat look and updates as building begins.
+both looks the switch comes as building begins.
 
 **Combat aids** (`drawFireReticle`, `drawAimLine`, shared by every style). **The reload
 is at the cursor**, where the eye is while aiming: with no gun ready, a ring round the
@@ -531,11 +530,13 @@ blur filter, asked for rather than given since it costs frame rate at eight play
 **The roster** is kept across frames rather than rebuilt, so its entries can move:
 free-for-all is in standing, best first, and a change of places slides; scores count up
 as they bank, over `effects.tallyMs`, as the island banners do; a team match keeps team
-order. Past four players in free-for-all an entry is compact — the score, ♜ castles, ⊙ guns
-firing and ●N lives, red on the last, with names past nine characters cut short and
-everything in words on hover — and the roster shrinks to fit: eight entries with
-sixteen-character names and four-digit scores fit at 1024 pixels wide, and nothing is
-ever drawn past the edge. **The clock's end is heard, then seen**: the countdown ticks
+order. **It shows only points and lives** (11.15): castles and guns went, since the
+board shows both, and each entry is a card — the player's colour down its edge, the name
+small over a large score and large pips, the last life red and glowing, "out" in their
+place for a player knocked out. A team heads its members' names with its letter, score
+and pooled lives, one pip and a count once the pool is too large for pips. One layout at
+every count: eight entries fit at 1024 pixels wide with room to spare, names are cut
+short to their card, and nothing is ever drawn past the edge. **The clock's end is heard, then seen**: the countdown ticks
 over the last five seconds of a phase, louder each time (`clock.ts`), and the big timer
 beats and turns red over the last three. In overtime there is no clock at all — it
 stops at 0 and goes, and the red border carries the overtime; a second countdown from 3

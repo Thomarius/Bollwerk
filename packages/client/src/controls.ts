@@ -99,7 +99,9 @@ type InputCue = 'piece_rotate' | 'piece_invalid';
  *
  * Every phase uses the same two gestures — move to aim, click to commit — so the
  * player never has to learn a new control scheme mid-match. Rotation is the only
- * extra verb, and only the build phase uses it.
+ * extra verb, and only the build phase uses it: the right button or the wheel. Mouse
+ * only — R and E turned the piece once, and went with the hint line that listed them
+ * (PLAN 11.15), since nothing in the game is meant to need the keyboard.
  */
 export class Controls {
   private hover: { x: number; y: number } | null = null;
@@ -142,12 +144,6 @@ export class Controls {
       this.rotate(event.deltaY > 0 ? 1 : -1);
       event.preventDefault();
     };
-    const key = (event: KeyboardEvent): void => {
-      if (event.key === 'r' || event.key === 'R') this.rotate(1);
-      else if (event.key === 'e' || event.key === 'E') this.rotate(-1);
-      else return;
-      event.preventDefault();
-    };
     const contextMenu = (event: Event): void => event.preventDefault();
 
     this.canvas.addEventListener('pointermove', move);
@@ -155,7 +151,6 @@ export class Controls {
     this.canvas.addEventListener('pointerdown', down);
     this.canvas.addEventListener('wheel', wheel, { passive: false });
     this.canvas.addEventListener('contextmenu', contextMenu);
-    globalThis.addEventListener('keydown', key);
 
     this.detachers = [
       () => this.canvas.removeEventListener('pointermove', move),
@@ -163,7 +158,6 @@ export class Controls {
       () => this.canvas.removeEventListener('pointerdown', down),
       () => this.canvas.removeEventListener('wheel', wheel),
       () => this.canvas.removeEventListener('contextmenu', contextMenu),
-      () => globalThis.removeEventListener('keydown', key),
     ];
   }
 

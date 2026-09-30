@@ -143,9 +143,10 @@ never taken (§11.4) and the bots' loose ends (§11.13).
 **Working with the user**: every match they play is recorded in `recordings/`; they send
 compiled feedback, which is triaged with them before anything is built, and design
 questions are asked before coding. Commits and pushes are theirs to approve, each time.
-**No hidden keyboard shortcuts** (their rule): every action has something on screen to
-click; Esc for pause is the one agreed exception, and R/E rotate the piece as listed
-controls.
+**Mouse only** (their rule): everything is played with the two mouse buttons and the
+wheel — the right button or the wheel turns the piece — and every other action has
+something on screen to click. No keyboard shortcuts; Esc for pause is the one agreed
+exception, beside its button.
 
 ## Measuring the bots
 
