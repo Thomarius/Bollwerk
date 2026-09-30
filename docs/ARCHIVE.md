@@ -2880,3 +2880,120 @@ PLAN 11.5, decided with the user on 2026-09-30.
   rounded corners and a wandering coast that still faces its neighbours.
 - The terrain settings travel in a match's snapshot, so protocol 13; the new field
   defaults to 0 — the old shape exactly — so recordings made before still replay.
+
+## 11zd. Finished work moved out of the plan (2026-09-30)
+
+As 11h and 11w: PLAN keeps only open work, so its finished sections moved here as they
+stood, under their old numbers — the small items (11zc) and the bots as skill and
+personality (11x–11zb). What the bots left open is PLAN 11.13.
+
+### Formerly PLAN 11.5 Smaller — done
+
+- Nothing open. Done or decided 2026-09-30 (ARCHIVE 11zc): the `wall_destroyed` cue
+  dropped, grids at 5 and 7, rounder islands; bots helping a teammate build will not be
+  done — too complicated for too little.
+
+### Formerly PLAN 11.6 Bots as skill and personality — done (2026-09-30)
+
+**The next milestone (M13)**, ahead of 11.2's baseline, which is then measured over the
+personality mix real matches will contain. Today a tier bundles two things: **skill** —
+pace and aim (`placement*Ms`, `fireIntervalMs`, `aimJitter`, `replanTicks`) — and
+**personality** — how it plays (`maxCastles`, `riskMargin`, `picksTarget`, `thickens`,
+`expandsWhenSealed`). They become two separate things: a skill level the host chooses, and
+a personality the bot is dealt.
+
+#### Decided with the user
+
+**Skill: Level 1 to Level 10**, chosen per seat in the lobby, replacing the ranks —
+testers found the military ranks hard to read, and levels are the arcade way. Skill is
+pure performance: placement speed, fire interval, aim, replanning, and, new, **sloppy
+building**: low levels sometimes take a worse fit for a piece, as a hurried person does —
+players like to see bots make mistakes. The config holds anchor levels and interpolates
+between them, so the table is tuned by editing numbers. **Level 5 is today's gunner and
+Level 8 today's marshal** (recruit falls about Level 2), so earlier measurements still map;
+Level 10 has headroom beyond marshal. The default seat is Level 5. Recruit, gunner,
+marshal and baron retire as names; baron's play survives as a personality.
+
+**Personality: four traits, dealt at random and hidden until the end.** Three values each,
+four for targeting — 108 combinations. Drawn per bot from the match seed
+(`streamFor(seed, …)`), so local matches and recordings reproduce them, and written into
+the recording header with the level. **Revealed at game over** in the summary, one plain
+line per bot — "Bot 3 · Level 6 · offensive · finisher · max cannons" — as a surprise.
+**Nicknames** for combinations ("the Turtle", "the Raider") are wanted as an option but
+not designed yet: plain trait names first.
+
+- **Risk.** **Defensive** secures its main castle first — sealed, thickened, room for its
+  guns — and expands to more castles only once everything else is safe and with a wide
+  margin of time: it does expand, since castles are a main way to win, just late and
+  safely. **Balanced** is today's. **Offensive** repairs just enough, then reaches for the
+  next castle at once, up to three or four, accepting tight margins — baron's play.
+- **Targeting.** **Point-maximizing** fires at the nearest opponent's walls: flight time is
+  the reload, so near targets mean more shots and more points, and any wall tile scores.
+  **Strategic** fires at the points leader's enclosures, so nobody runs away with it.
+  **Finisher** fires at the weakest player (fewest lives, weakest wall), to knock them
+  out. **Grudge** fires at whoever destroyed most of its wall last round, which makes
+  rivalries show in the summary; damage per shooter is tracked already.
+- **Cannon space.** **Max cannons** walls pockets for guns (§1.3), new: a planner for a small
+  region beside its own wall, the fewest blocks that seal it, and guns placed there.
+  **Balanced** is today's. **Secondary** puts castles and safety first, a tighter wall.
+- **Castle choice**, as flavour following risk rather than a trait of its own: an
+  offensive bot opens from a central castle with neighbours to reach for, the others from
+  the cheapest. A defensive bot opening from the sheltered corner was tried and dropped in
+  phase 5: it had half the guns and won 2 matches of 24.
+
+**Targeting is a share, not absolute.** Each targeting trait sends a configurable
+share of shots to its own choice — 50% to start, the user's call — and the rest by the
+neutral rule, breach whoever threatens most, so no bot fires everything one way.
+
+**The guardrail.** Personalities may be swingier, or somewhat weaker or stronger than
+others; that is flavour. They must not be decisive: **for every trait, a bot three levels
+higher wins most matches against one three levels lower** — no trait lets Level 2
+reliably beat Level 5. Measured at three players, both seats.
+
+**General tactics for every bot**, whatever its level and traits, from the user's play:
+
+- **Guns not against a wall with sea or wall beyond** — a shot there leaves a one-tile gap
+  that is hard to fix. Done (10p, 10s): pinned spots are the last resort.
+- **Close gaps from the outside.** Done (ARCHIVE 11y): while a bot holds no sealed castle,
+  spill inside the ring its plan would seal counts against a fit.
+- **One shot per wall tile** — a second hit on a tile is wasted. Done (10m), counting every
+  player's shots in the air.
+- **No unfillable holes** — tried and dropped (ARCHIVE 11y): no measurable effect, since
+  the holes `repairStuck` counts come from shots, not from the bots' own pieces.
+- **Thicken the side that takes fire** — tried and dropped (ARCHIVE 11y): trying nearest-
+  opponent tiles first raised Level 5 forfeits. Thickening already targets the weakest
+  wall as seen from outside.
+- **Guns toward the enemy** — already done: gun spots compare never-pinned, then room,
+  then distance to the nearest enemy castle (10p).
+
+#### Phases
+
+1. **The split, no behaviour change — done** (ARCHIVE 11x). Skill levels and personalities in
+   `ai.default.json` behind a strict schema; `Bot` built from a level and a personality.
+   Personality "balanced · strategic · balanced", with the targeting share at 100% and
+   today's formula, must reproduce today's gunner and marshal **hash for hash** in the
+   soak — the check team mode used (ARCHIVE 10u). Lobby: a Level 1–10 choice per seat
+   replaces the ranks and their badges; `server.botDifficulty` becomes a default level;
+   the server and local matches deal personalities from the seed; the recording header and
+   the statistics carry level and personality. `?personality=` and a headless flag fix
+   them, so soaks and screenshots are not random. Protocol bump.
+2. **General tactics — done** (ARCHIVE 11y): closing gaps from the outside, while repairing
+   only; guns toward the enemy was already there; the other two were measured and dropped.
+3. **Risk and targeting traits — done** (ARCHIVE 11z): all four targeting rules at a 50%
+   share, defensive thickening then expanding, offensive widening while repairing, and
+   castle choice by risk.
+4. **Cannon space — done** (ARCHIVE 11za): the pocket planner, max cannons walling up to
+   two pockets against its own wall, secondary asking less room and thickening first.
+   **For phase 5**: max cannons forfeited 13.6% against balanced 9.4% with its extra room
+   unused — pockets only when room is short is the first thing to try — and secondary
+   forfeited 12.5%, to be re-measured at size.
+5. **Tuning and the reveal — done** (ARCHIVE 11zb): the guardrail holds for every trait,
+   the ladder climbs from Level 1 to 10, no trait dominates, and defensive opens from the
+   cheapest castle — the sheltered one cost it most of its guns. The reveal is in the
+   summary. **Still open**: nicknames for combinations, if wanted; Levels 6 and 7 play
+   alike; max cannons forfeits more for room it does not use, if that ever matters more
+   than its fair share of wins; Level 8 knockouts rose with phase 2.
+
+**Carried in from before**: the pockets note (§1.3, ARCHIVE 11o) — bots obey the rule but
+never wall a pocket on purpose, which is why turning it on moved the soak not at all; max
+cannons is how the soak will finally measure what it does to balance.

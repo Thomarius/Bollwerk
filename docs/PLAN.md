@@ -267,7 +267,7 @@ snapshot, because a client on different rules would desync rather than merely lo
 | ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `ruleset.default.json` | Phase lengths, cannon rewards and footprint, shot flight and damage, the piece catalogue and its size schedule, enclosure rules, elimination and continues, scoring and the round cap |
 | `terrain.default.json` | Island size and shape, the generation box, castle placement, the starting ring, the per-player-count pattern table                                                                    |
-| `ai.default.json`      | One profile per bot tier: pace and aim in milliseconds and human units, and playstyle switches                                                                                        |
+| `ai.default.json`      | Bot skill as a table of levels (pace, aim, judgement, sloppiness) interpolated between anchors, and the personality traits: risk, targeting, cannon space                             |
 | `art.default.json`     | Palettes, per-player colour ramps and each style's own over them, sprite generator parameters                                                                                         |
 | `audio.manifest.json`  | Cue names to files; see `assets/audio/README.md` for what fires each one                                                                                                              |
 | `server.default.json`  | Ports, room limits, rate limits, reconnect grace, and the bounds of what a host may set in the lobby                                                                                  |
@@ -472,7 +472,7 @@ sea drifts. The lobby shows the map the table will play (`preview.ts`), alive �
 breathing along its coasts a little out of step tile to tile, the castles breathing
 together (`surfAt`, `castleBreath`, `art.menu`), still under reduced motion — — each island in the colour its seat will play and numbered
 for it, the viewer's own ringed — beside seat cards that carry the same number and
-colour, a rank badge per bot tier, and columns per team. A newcomer's card flashes as they
+colour, a level per bot seat, and columns per team. A newcomer's card flashes as they
 sit down.
 
 **The end of a round and of a match** (V6). Points banked at a resolution count up in the
@@ -803,19 +803,25 @@ every resolution against an independent search, not only on unit pictures.
 
 ## 11. Open work
 
-**Where to start (2026-09-30).** **11.6, bots as skill and personality, is done** (M13):
-skill as Level 1–10 in the lobby, personalities dealt at random and revealed at game over,
-general tactics for every bot. Next is **11.2, elimination tuning**, whose baseline is
-measured over the personality mix; its "ambitious" personality and finisher targeting
-exist now (offensive, finisher). The first test-session feedback and the
-second visual pass are done (ARCHIVE 11w). Every test match is recorded with its
-statistics (§9, ARCHIVE 11e), and the user sends compiled feedback. Smaller items are in
-11.5.
+**Where to start (2026-09-30).** Everything but balance is done: the game, online play,
+bots as skill levels and personalities (M13), seven styles and two visual passes, and the
+first round of test-session feedback. In order:
+
+1. **A test session on the current build.** Much has changed since the last one — pockets,
+   pause, the games browser, levels and personalities, rounder islands — and 11.2 is meant
+   to be checked against how people play. The server must be rebuilt (`npm start`) and
+   every page reloaded: the protocol is 13. Every match is recorded with its statistics
+   (§9, ARCHIVE 11e); the user sends compiled feedback, which is triaged with them first.
+2. **11.2, elimination tuning**, the next milestone. Its baseline is measured over the
+   personality mix; the "ambitious" bot it planned and finisher targeting exist now.
+3. **11.3, two-player balance**, re-measured before anything is tried; after 11.2.
+4. **11.4**, measurements never taken, and **11.13**, the bots' loose ends, as they fit.
 
 Only open work is kept here. Finished packages move to `ARCHIVE.md` under their old
 numbers — 11.1 scoring, 11.7 team mode, 11.8 the visual pass, 11.9 the themes, 11.10 the
 UI polish, all in ARCHIVE 11h; 11.11 the second visual pass and 11.12 the first
-test-session feedback, in ARCHIVE 11w — so the open sections keep theirs.
+test-session feedback, in ARCHIVE 11w; 11.5 the small items and 11.6 the bots, in ARCHIVE
+11zd — so the open sections keep theirs.
 
 ### 11.2 Elimination tuning — planned, waiting on human play
 
@@ -823,8 +829,11 @@ test-session feedback, in ARCHIVE 11w — so the open sections keep theirs.
 tuning is not fitted to the bots alone; those sessions are recorded (§9), and the user
 will send compiled feedback.
 
-**Changed since it was planned**: overtime shipped (§1.6), a little more wall per round
-for everyone; and team matches eliminate even less than free-for-all — 5 in 180 at gunner
+**Changed since it was planned**: bots are now a skill level and a personality (§8), so
+the baseline is measured over the mix they are dealt in real matches; pockets count as
+territory (§1.3); islands are rounder and five and seven players sit in grids (§1.2) —
+so every measurement from before 2026-09-30 is historical. Overtime shipped (§1.6), a
+little more wall per round for everyone; and team matches eliminate even less than free-for-all — 5 in 180 at gunner
 (ARCHIVE 10u), since a pooled life lasts a team longer. Measure 2v2 alongside three and
 four players.
 
@@ -924,116 +933,20 @@ balanced means.
 - **`resetPieceScheduleOnContinue`**, against the alternative. Only the "on" setting has
   ever run.
 
-### 11.5 Smaller
+### 11.13 Loose ends from the bots
 
-- Nothing open. Done or decided 2026-09-30 (ARCHIVE 11zc): the `wall_destroyed` cue
-  dropped, grids at 5 and 7, rounder islands; bots helping a teammate build will not be
-  done — too complicated for too little.
+Left open when 11.6 finished (ARCHIVE 11x–11zb, 11zd); none blocks anything.
 
-### 11.6 Bots as skill and personality — done (2026-09-30)
-
-**The next milestone (M13)**, ahead of 11.2's baseline, which is then measured over the
-personality mix real matches will contain. Today a tier bundles two things: **skill** —
-pace and aim (`placement*Ms`, `fireIntervalMs`, `aimJitter`, `replanTicks`) — and
-**personality** — how it plays (`maxCastles`, `riskMargin`, `picksTarget`, `thickens`,
-`expandsWhenSealed`). They become two separate things: a skill level the host chooses, and
-a personality the bot is dealt.
-
-#### Decided with the user
-
-**Skill: Level 1 to Level 10**, chosen per seat in the lobby, replacing the ranks —
-testers found the military ranks hard to read, and levels are the arcade way. Skill is
-pure performance: placement speed, fire interval, aim, replanning, and, new, **sloppy
-building**: low levels sometimes take a worse fit for a piece, as a hurried person does —
-players like to see bots make mistakes. The config holds anchor levels and interpolates
-between them, so the table is tuned by editing numbers. **Level 5 is today's gunner and
-Level 8 today's marshal** (recruit falls about Level 2), so earlier measurements still map;
-Level 10 has headroom beyond marshal. The default seat is Level 5. Recruit, gunner,
-marshal and baron retire as names; baron's play survives as a personality.
-
-**Personality: four traits, dealt at random and hidden until the end.** Three values each,
-four for targeting — 108 combinations. Drawn per bot from the match seed
-(`streamFor(seed, …)`), so local matches and recordings reproduce them, and written into
-the recording header with the level. **Revealed at game over** in the summary, one plain
-line per bot — "Bot 3 · Level 6 · offensive · finisher · max cannons" — as a surprise.
-**Nicknames** for combinations ("the Turtle", "the Raider") are wanted as an option but
-not designed yet: plain trait names first.
-
-- **Risk.** **Defensive** secures its main castle first — sealed, thickened, room for its
-  guns — and expands to more castles only once everything else is safe and with a wide
-  margin of time: it does expand, since castles are a main way to win, just late and
-  safely. **Balanced** is today's. **Offensive** repairs just enough, then reaches for the
-  next castle at once, up to three or four, accepting tight margins — baron's play.
-- **Targeting.** **Point-maximizing** fires at the nearest opponent's walls: flight time is
-  the reload, so near targets mean more shots and more points, and any wall tile scores.
-  **Strategic** fires at the points leader's enclosures, so nobody runs away with it.
-  **Finisher** fires at the weakest player (fewest lives, weakest wall), to knock them
-  out. **Grudge** fires at whoever destroyed most of its wall last round, which makes
-  rivalries show in the summary; damage per shooter is tracked already.
-- **Cannon space.** **Max cannons** walls pockets for guns (§1.3), new: a planner for a small
-  region beside its own wall, the fewest blocks that seal it, and guns placed there.
-  **Balanced** is today's. **Secondary** puts castles and safety first, a tighter wall.
-- **Castle choice**, as flavour following risk rather than a trait of its own: an
-  offensive bot opens from a central castle with neighbours to reach for, the others from
-  the cheapest. A defensive bot opening from the sheltered corner was tried and dropped in
-  phase 5: it had half the guns and won 2 matches of 24.
-
-**Targeting is a share, not absolute.** Each targeting trait sends a configurable
-share of shots to its own choice — 50% to start, the user's call — and the rest by the
-neutral rule, breach whoever threatens most, so no bot fires everything one way.
-
-**The guardrail.** Personalities may be swingier, or somewhat weaker or stronger than
-others; that is flavour. They must not be decisive: **for every trait, a bot three levels
-higher wins most matches against one three levels lower** — no trait lets Level 2
-reliably beat Level 5. Measured at three players, both seats.
-
-**General tactics for every bot**, whatever its level and traits, from the user's play:
-
-- **Guns not against a wall with sea or wall beyond** — a shot there leaves a one-tile gap
-  that is hard to fix. Done (10p, 10s): pinned spots are the last resort.
-- **Close gaps from the outside.** Done (ARCHIVE 11y): while a bot holds no sealed castle,
-  spill inside the ring its plan would seal counts against a fit.
-- **One shot per wall tile** — a second hit on a tile is wasted. Done (10m), counting every
-  player's shots in the air.
-- **No unfillable holes** — tried and dropped (ARCHIVE 11y): no measurable effect, since
-  the holes `repairStuck` counts come from shots, not from the bots' own pieces.
-- **Thicken the side that takes fire** — tried and dropped (ARCHIVE 11y): trying nearest-
-  opponent tiles first raised Level 5 forfeits. Thickening already targets the weakest
-  wall as seen from outside.
-- **Guns toward the enemy** — already done: gun spots compare never-pinned, then room,
-  then distance to the nearest enemy castle (10p).
-
-#### Phases
-
-1. **The split, no behaviour change — done** (ARCHIVE 11x). Skill levels and personalities in
-   `ai.default.json` behind a strict schema; `Bot` built from a level and a personality.
-   Personality "balanced · strategic · balanced", with the targeting share at 100% and
-   today's formula, must reproduce today's gunner and marshal **hash for hash** in the
-   soak — the check team mode used (ARCHIVE 10u). Lobby: a Level 1–10 choice per seat
-   replaces the ranks and their badges; `server.botDifficulty` becomes a default level;
-   the server and local matches deal personalities from the seed; the recording header and
-   the statistics carry level and personality. `?personality=` and a headless flag fix
-   them, so soaks and screenshots are not random. Protocol bump.
-2. **General tactics — done** (ARCHIVE 11y): closing gaps from the outside, while repairing
-   only; guns toward the enemy was already there; the other two were measured and dropped.
-3. **Risk and targeting traits — done** (ARCHIVE 11z): all four targeting rules at a 50%
-   share, defensive thickening then expanding, offensive widening while repairing, and
-   castle choice by risk.
-4. **Cannon space — done** (ARCHIVE 11za): the pocket planner, max cannons walling up to
-   two pockets against its own wall, secondary asking less room and thickening first.
-   **For phase 5**: max cannons forfeited 13.6% against balanced 9.4% with its extra room
-   unused — pockets only when room is short is the first thing to try — and secondary
-   forfeited 12.5%, to be re-measured at size.
-5. **Tuning and the reveal — done** (ARCHIVE 11zb): the guardrail holds for every trait,
-   the ladder climbs from Level 1 to 10, no trait dominates, and defensive opens from the
-   cheapest castle — the sheltered one cost it most of its guns. The reveal is in the
-   summary. **Still open**: nicknames for combinations, if wanted; Levels 6 and 7 play
-   alike; max cannons forfeits more for room it does not use, if that ever matters more
-   than its fair share of wins; Level 8 knockouts rose with phase 2.
-
-**Carried in from before**: the pockets note (§1.3, ARCHIVE 11o) — bots obey the rule but
-never wall a pocket on purpose, which is why turning it on moved the soak not at all; max
-cannons is how the soak will finally measure what it does to balance.
+- **Nicknames** for personality combinations ("the Turtle", "the Raider"), wanted by the
+  user as an option but not designed: the reveal says the traits in plain words for now.
+- **Levels 6 and 7 play alike** (5 wins of 12 each against two Level 5 bots), and Levels 1
+  and 2 are not told apart by that test, since Level 5 beats both every time. The table is
+  anchors in `ai.default.json`, interpolated.
+- **Max cannons forfeits more** (13.6% against 9.4%) for gun room its fixed reward cannot
+  fill, though it wins a fair share; pockets only when room is short is the first thing to
+  try, if it matters.
+- **Level 8 knockouts rose** after phase 2's "close gaps from the outside" (1 to 7 in 36
+  matches), forfeits within noise. Worth a look when 11.2 measures eliminations anyway.
 
 ## 12. Deferred (explicitly out of scope for v1)
 

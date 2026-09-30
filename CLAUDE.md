@@ -34,8 +34,10 @@ leave your seat undriven on the way, so you are soon knocked out), `&speed=10`,
 (`&buildStyle=`, `&combatStyle=` for one), `&watch=1&level=8` to observe a bot match (`&personality=offensive` fixes every bot's),
 `&rounds=12` for the round cap, `&teams=2` for teams of two in seat order. `?host=8` opens
 the lobby at eight seats — a room if a server answers, a local table if not —
-`?join=CODE` joins one, `&name=Bo` sets the name, `&seed=N` the map. The menu's Play and
-Join reach the same lobby, which sets the map, players, teams, bots and rounds.
+`?join=CODE` joins one, `&name=Bo` sets the name, `&seed=N` the map, `&private=1` makes
+the room private. The menu's Play (with its Public / Private switch), its list of open
+games and Join reach the same lobby, which sets the map, players, teams, bot levels and
+rounds.
 
 ## Layout
 
@@ -47,7 +49,7 @@ Join reach the same lobby, which sets the map, players, teams, bots and rounds.
 | `ai`             | Bots: min-cut sealing, 0-1 BFS attack, skill levels and personalities.     |
 | `analysis`       | Per-round match statistics, for bot soaks and recorded human play alike.   |
 | `server`         | Authoritative match server, rooms, WebSocket, match recordings.            |
-| `client`         | Pixi renderer, six visual styles, controls, HUD, netcode client.           |
+| `client`         | Pixi renderer, seven visual styles, controls, HUD, netcode client.         |
 | `tools/headless` | Bot-vs-bot soak runs and map dumps.                                        |
 
 Internal packages export TypeScript source directly, so there is no build step between
@@ -118,40 +120,40 @@ Full detail in PLAN.md §1. The parts that surprise people:
 
 ## Status
 
-**Done**: M0–M6 (deployment verified by a CI job, since there is no Docker on this
-machine; every sound cue supplied by the user, `wall_destroyed` dropped as unneeded), M8
-team mode (ARCHIVE 10u), M9 the visual pass (a build and a combat look swapped by
-the banners, effects throughout, a lobby showing the real map), the recording of every
-match (ARCHIVE 11e, each header stamped with the server's commit), M10–M11 the styles and
-UI polish, M12 the second visual pass — seven styles for either look, Toy bricks the
-last, the HUD dressed per style, the match's moments — and the first test-session
-feedback: pockets count as territory, pause, an open games browser, the reload at the
-cursor (ARCHIVE 11n–11w), and M13 bots as a skill level (1–10, chosen in the lobby) and a
-personality (risk, targeting, cannon space) dealt from the seed and revealed at game over
-(ARCHIVE 11x–11zb).
+**Done** (2026-09-30): the game and its rules, online play with rooms, a games browser and
+pause, recording of every match (ARCHIVE 11e, each header stamped with the server's
+commit), team mode (ARCHIVE 10u), bots as a skill level 1–10 chosen in the lobby and a
+personality — risk, targeting, cannon space — dealt from the seed and revealed at game over
+(M13, ARCHIVE 11x–11zb), seven visual styles for either look and two visual passes (M9–M12),
+and the first round of test-session feedback (ARCHIVE 11n–11w). Deployment is verified by a
+CI job, since there is no Docker on this machine. Every sound cue is supplied. The protocol
+is 13: a test session needs the server rebuilt and every page reloaded.
 
-**Now**: the user runs human test sessions — every match is recorded in `recordings/`
-with its statistics — and sends compiled feedback. **No hidden keyboard shortcuts** (the
-user's rule): every action has something on screen to click; Esc for pause is the one
-agreed exception, and R/E rotate the piece as listed controls. PLAN.md §11 opens with
-where to start:
+**Next**: balance, M7. PLAN.md §11 opens with where to start: a test session on the
+current build first, then **elimination tuning** (§11.2) — half of 3–4 player matches
+ending with one player left before the cap, by one continue instead of two and a new
+placement delay, measured over the personality mix; most matches reach the cap, so **the
+scoring formula is the game's balance** — then two-player balance (§11.3), measurements
+never taken (§11.4) and the bots' loose ends (§11.13).
 
-1. **Elimination tuning** (§11.2), the next milestone: half of 3–4 player matches should end with
-   one player left before the cap. Weights stay; levers are one continue instead of two
-   and a new placement delay, measured over the personality mix. Most matches reach the
-   cap, so **the scoring formula is the game's balance**.
-2. **Two-player balance** (§11.3), to be re-measured under the cap before anything is tried.
-3. Measurements never taken (§11.4): the full level ladder, and seat bias at 6 and 8
-   players in free-for-all (team seating is measured, and fair).
+**Working with the user**: every match they play is recorded in `recordings/`; they send
+compiled feedback, which is triaged with them before anything is built, and design
+questions are asked before coding. Commits and pushes are theirs to approve, each time.
+**No hidden keyboard shortcuts** (their rule): every action has something on screen to
+click; Esc for pause is the one agreed exception, and R/E rotate the piece as listed
+controls.
 
 ## Measuring the bots
 
 `npm start -w @rampart/headless -- --stats FILE` writes a row per player per round,
 sampled at the resolution that ends each build phase — castles sealed, cannons owned and
-active, cannon room, wall tiles, pieces placed against the pieces the tier had time for.
+active, cannon room, pockets, wall tiles, pieces placed against the pieces the level had
+time for; each row names the seat's `level` and `personality`.
 A summary goes to the console. `--level 8,5,2` sets each seat
 separately (old tiers: recruit 2, gunner 5, marshal 8, baron 8 offensive),
-`--personality offensive` or `dealt` fixes or deals personalities, `--max-rounds N|none` overrides the cap. Rows also carry points banked and,
+`--personality offensive` (trait values joined by `-`, one per seat by comma) fixes
+personalities and `dealt` deals them from the seed as a match does — soaks are balanced
+unless asked, so they measure what they say — and `--max-rounds N|none` overrides the cap. Rows also carry points banked and,
 for diagnosing failed rounds, `repairAtBuild`, `repairLeft` and `repairStuck`: what the
 tightest seal needed as the phase opened, what was still missing at its end, and how much
 of that no piece in the bag could fill. Prefer this to watching; watching is for forming
@@ -162,7 +164,7 @@ and every local match a page served by it plays, one `<id>.jsonl` each — heade
 actions of each tick, end (`protocol/src/recording.ts`). A dev-server page has nowhere to
 send them and records nothing, as does `&snapshot=`. When a match ends the server writes
 its statistics beside it, `<id>.stats.csv`, the same table a bot soak's `--stats` writes,
-a person's seat's tier `human`. `--replay` does the same for any recordings by hand — an
+a person's seat labelled `human`. `--replay` does the same for any recordings by hand — an
 abandoned match, or new columns over old sessions — and says whether each replay was
 exact. One switch turns all of it off: `recordings.enabled` in `config/server.default.json`.
 The statistics code is `packages/analysis`, shared by the server and the harness. A
@@ -190,6 +192,15 @@ its header but the simulation does not — so the server stamps each header with
   wins of 20 against two gunners, then 12), and dropping it while expanding eagerly did
   worse (9). Eager expansion with thickening kept looked best at 14 of 20, but at forty
   matches it tied marshal (28 against 29): the `baron` tier is that, kept for variety.
+- **Bot tactics measured and dropped** (ARCHIVE 11y): a penalty for leaving an unfillable
+  one-tile hole (no effect — those holes come from shots) and thickening the side facing
+  opponents first (raised forfeits). And "close gaps from the outside" applied to every
+  plan thinned walls 14%: it is applied only while repairing.
+- **A defensive bot opening from the castle farthest from opponents** had half the guns
+  and won 2 of 24: that castle is on the outer edge, hemmed in by sea (ARCHIVE 11zb).
+- **Rounder islands** read better but meet their neighbours at points with open sea
+  between, and flight time is the reload: corner radius 6 is the roundest that kept the
+  channels (ARCHIVE 11zc).
 - **Raising flight time further** to force exactly three salvos drops the rate below the
   original's three and makes close shots slower. The spread of ranges makes "exactly
   three for everyone" unreachable without flattening distance-scaling entirely.
@@ -240,6 +251,22 @@ its header but the simulation does not — so the server stamps each header with
   `&snapshot=` skip the announcements and could not catch it; watch a phase change.
 - Removing a rectangle's **corner** does not breach it under 4-connectivity; use a
   mid-edge tile in tests.
+- **`weakestWall` only aims at sealed castles** (`castle.enclosed`), so an ASCII test board
+  needs `applyEnclosure` first — which also sets guns outside sealed ground inert.
+- **Before-and-after soaks**: `git stash`, run, `git stash pop`, then run again — and edit
+  nothing while a background soak runs, since the stash swaps the files under it. Attribute
+  a change of several parts with a temporary switch per part, removed before committing,
+  and check the final code reproduces the measured variant's hashes.
+- **The Bash tool's heredocs mangle patch scripts**: a backslash is lost (a `\s` became
+  `s`, and a parser split words on the letter "s") and template literals with backticks
+  break the quoting. Write patch scripts with the file tool, or edit directly.
+- **Stopping a background `npm start` leaves its node child serving the port.** Find it by
+  port and check its command line before killing it; remove any recording a test match
+  left in `recordings/` — that folder is the user's tuning data.
+- **Playwright clicks on the canvas need a move, a pause, then down and up**, and clicks
+  inside one tick claim one gun between them.
+- **This checkout sets `core.autocrlf` false**: the machine's git converts to CRLF, which
+  fails every file against prettier's `endOfLine: lf`.
 
 ## Conventions
 
