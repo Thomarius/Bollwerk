@@ -841,8 +841,9 @@ first round of test-session feedback. In order:
    to be checked against how people play. The server must be rebuilt (`npm start`) and
    every page reloaded: the protocol is 14. Every match is recorded with its statistics
    (§9, ARCHIVE 11e); the user sends compiled feedback, which is triaged with them first.
-2. **11.15, the third visual pass** (X1–X6), agreed 2026-09-30, while more test games are
-   played against higher-level bots.
+2. **11.15, the third visual pass**, agreed 2026-09-30: X1–X5 done (ARCHIVE 11zf), **X6
+   next** — a shape per player, off the board only. More test games against higher-level
+   bots are being played meanwhile.
 3. **11.2, elimination tuning**, the next milestone. Its baseline is measured over the
    personality mix; the "ambitious" bot it planned and finisher targeting exist now.
 4. **11.3, two-player balance**, re-measured before anything is tried; after 11.2.
@@ -927,8 +928,9 @@ say.
 **X6 — A shape per player.** Beside colour, each player carries a shape — circle,
 triangle, square and so on — on the roster, the island banners, the lobby's seat cards and
 map, and the summary, so eight players and colour-blind players can tell islands apart.
-The cheap form of the high-contrast theme set aside in 11.9. Whether it goes on the board
-too (flags, crowns) is decided with the user when X6 starts.
+The cheap form of the high-contrast theme set aside in 11.9. **Off the board only**, the
+user's decision of 2026-09-30: no shapes on flags or crowns, which would clutter it. **The
+next thing to build**, in a fresh session; X1–X5 are done (ARCHIVE 11zf).
 
 ### 11.2 Elimination tuning — planned, waiting on human play
 

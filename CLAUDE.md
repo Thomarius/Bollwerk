@@ -129,11 +129,15 @@ pause, recording of every match (ARCHIVE 11e, each header stamped with the serve
 commit), team mode (ARCHIVE 10u), bots as a skill level 1–10 chosen in the lobby and a
 personality — risk, targeting, cannon space — dealt from the seed and revealed at game over
 (M13, ARCHIVE 11x–11zb), seven visual styles for either look and two visual passes (M9–M12),
-and two rounds of test-session feedback (ARCHIVE 11n–11w, 11ze). Deployment is verified by a
+two rounds of test-session feedback (ARCHIVE 11n–11w, 11ze), and most of a third visual
+pass (PLAN 11.15 X1–X5, ARCHIVE 11zf): mouse-only play, a roster of points and lives, the
+main castle's crown, ground lost drained away, winners' banners, snow, shadows by the time
+of day. The game is played with the mouse alone; Esc for pause is the one key. Deployment is verified by a
 CI job, since there is no Docker on this machine. Every sound cue is supplied. The protocol
 is 14: a test session needs the server rebuilt and every page reloaded.
 
-**Next**: balance, M7. PLAN.md §11 opens with where to start: a test session on the
+**Next**: finish the third visual pass with **X6, a shape per player, off the board only**
+(PLAN 11.15). Then balance, M7. PLAN.md §11 opens with where to start: a test session on the
 current build first, then **elimination tuning** (§11.2) — half of 3–4 player matches
 ending with one player left before the cap, by one continue instead of two and a new
 placement delay, measured over the personality mix; most matches reach the cap, so **the

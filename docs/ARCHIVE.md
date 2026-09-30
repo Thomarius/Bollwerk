@@ -3098,3 +3098,48 @@ invalidate.
   castle first. **Its look, simply for a first version**: a marker drawn by a shared
   helper rather than new art in all seven styles (the original gave it two towers
   instead of one).
+
+## 11zf. The third visual pass, X1–X5 (PLAN 11.15)
+
+Agreed with the user on 2026-09-30 from a list of suggestions, after the second test
+feedback, and built the same day; X6, a shape per player, is left for the next session,
+off the board only. Display only throughout, like 11.8–11.11: no sim behaviour, protocol
+or ruleset change. Each package was committed on its own.
+
+- **X1, mouse only and a roster of points and lives** (`c937203`). R and E no longer turn
+  the piece; the right button and the wheel do, and Esc for pause is the one key left. The
+  roster lost castles and guns — the board shows both — and each player became a card:
+  their colour down its edge, the name small over a large score and large pips, the last
+  life red and glowing. One layout at every count: eight cards fit at 1024 pixels wide with
+  room to spare, where a compact form had been needed. Roster entries now keep their inline
+  style when rewritten, which the colour rides on. In Toy bricks the blue player's bar
+  vanished into the blue plate; there the bar is drawn inside the card with a light rim,
+  since a rim drawn outside was clipped for the first card.
+- **X2, information on the board** (`c03aedb`). The crown is the owner's colour while the
+  main castle is sealed and stone grey with a crack once breached — the owner's dark shade
+  vanished into a castle of the same colour — by each look's own sealed castles, so the
+  combat look holds it through the barrage. Hovering a castle while choosing shows its ring,
+  from `startingRingTiles`, which the sim now exports and builds the ring with; a test
+  checks them tile for tile. Over the countdown's last five seconds an unsealed player's
+  castles flash red on every tick (`countdownBeat`). The points banner says the guns earned.
+- **X3, ground lost drained** (`c3c50b2`). The seal's flood in reverse: as the "Rebuild"
+  banner reveals the board, ground held at the start of combat and lost since is washed
+  dark red and runs out through the breach (`drainsFrom`). Started together as the banner
+  appeared, the upper islands drained before the lower were revealed, so each island's
+  waits until the banner's line reaches it (`releaseDrains`). Seen slowed to a tile a
+  second; 6 a second in play.
+- **X4, moments and atmosphere** (`6166bd7`). Winners' banners hoisted over their castles
+  with the fireworks (`WinnerBanners`); distant thunder in Medieval's rain, a faint double
+  flash over the whole board (checked firing at 0.8; 0.13 in play, for a person to judge);
+  embers up the screen's edges through the final round, in HTML beside its dusk.
+- **X5, Medieval light** (`165a8db`). Snow as a seeded weather — flakes, and white on the
+  tops of walls and castles, kept under reduced motion. Adding it moved which seed gives
+  which weather: 1 rain, 2 snow, 3 fog, 5 clear, 21 overcast. Shadows follow the day
+  (`shadowCast`): long and leaning west in the morning, the old fixed shadow at noon,
+  longest and leaning east at sunset. Walls and castles on a south coast are mirrored
+  faintly in the sea below, rippling, warm with torchlight at Night.
+- **Found along the way**: a white band across the board in screenshots of a banner's
+  crossing, recorded once before in 11g, is headless Chrome capturing a stale strip where
+  the banner had just been — the page holds nothing there. And the second test game's
+  feedback before the pass: the Holding / Next piece box and the hint line removed, the
+  crown centred on its castle, the summary opaque with lifted grey (`d4ef940`).
