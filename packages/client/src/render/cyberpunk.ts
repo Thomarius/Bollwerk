@@ -11,6 +11,7 @@ import {
   GhostMotion,
   GunAims,
   Fireworks,
+  WinnerBanners,
   Landings,
   RuinSmoke,
   dimEliminated,
@@ -238,6 +239,7 @@ export class CyberpunkTheme implements Theme {
   private readonly projected = new Map<number, number>();
   private readonly landings = new Landings();
   private readonly fireworks = new Fireworks();
+  private readonly winnerBanners = new WinnerBanners();
   private readonly flags = new FlagHoist();
   private clock = 0;
   /** Rain over the city, in tile coordinates, across the area drawn. */
@@ -869,6 +871,7 @@ export class CyberpunkTheme implements Theme {
     this.drawShorts(view, frame.deltaMs);
     this.drawFades(view, frame.deltaMs);
     this.drawSparks(view, frame.deltaMs);
+    this.winnerBanners.draw(g, view, state, this.art, frame.celebrate, frame.deltaMs);
     this.fireworks.draw(g, view, this.art, frame.celebrate, frame.deltaMs);
   }
 

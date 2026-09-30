@@ -397,7 +397,9 @@ follows the round, morning gold at the first, plain at noon, sunset at the last,
 tint on the ground and sea under the walls, so no player's colour moves. Each match has
 weather drawn from its seed: clear, overcast (more clouds, darker, a grey cast), rain
 (streaks and rings on the sea, as well) or fog (pale banks drifting where the clouds'
-shadows would). Cyberpunk has thin rain of its own, and a wall hit's flash splits into
+shadows would). In rain, distant thunder now and then flickers faintly over the whole
+board (`thunderEveryMs`, `thunderAlpha`): weather, never a flash at one spot, which is
+what an impact is. Cyberpunk has thin rain of its own, and a wall hit's flash splits into
 its colours for a moment.
 
 **Rules every style keeps**, so the looks can swap mid-match:
@@ -486,7 +488,8 @@ its castles, both over `effects.tallyMs`. A lost life takes the island's wall do
 from its middle over `effects.lifeCrumbleMs` instead of clearing it in a frame (the
 cannons, removed from the state outright, still go at once). Once the match is over,
 fireworks burst over the winners' islands in their colours for as long as the screen
-stays up, and **the summary** (`summary.ts`) comes up over them after
+stays up, a swallowtail banner in their colour is hoisted on a tall pole over each of
+their castles (`WinnerBanners`, `winnerBannerRiseMs`), and **the summary** (`summary.ts`) comes up over them after
 `summary.delayMs`, narrow and opaque (see-through, its grey figures could not be read). It gives each player —
 each team, in a team match — the wall they destroyed, the most castles held at once and
 the lives left (none once out), with every score charted round by round, the viewer's
@@ -704,7 +707,7 @@ motion; the scene maps clicks and HTML overlays through it all the same, and the
 masks sit outside it, since the banner's line is in screen space. **The last round is
 marked**: its banner is headed "Final round" with "Fire!" under it, a stamp lands across
 the board as it opens, the round counter says so, and a faint dusk holds at the screen's
-edges — in every style, beside Medieval's own sunset — never over the board's middle,
+edges, embers drifting up them (`finalEmberCount`) — in every style, beside Medieval's own sunset — never over the board's middle,
 so no colour moves. The summary's filmstrip, the board at every resolution, was removed
 after the test sessions: it did not look good and added nothing.
 
@@ -896,7 +899,7 @@ wholly washed, until the banner's line reaches it (`releaseDrains`). As the "Reb
 lost to breaches drains away from the gaps in a dark red wash — the seal flood run in
 reverse (`seal.ts`), in every style.
 
-**X4 — Moments and small atmosphere.**
+**X4 — Moments and small atmosphere — done** (§7).
 
 - **The winners' banners**: large banners in the winners' colours rise over their castles
   with the fireworks, which the camera's push lands on.

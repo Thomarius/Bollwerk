@@ -13,6 +13,7 @@ import {
   FlagHoist,
   GhostMotion,
   Fireworks,
+  WinnerBanners,
   Landings,
   RuinSmoke,
   dimEliminated,
@@ -204,6 +205,8 @@ export class PixelTheme implements Theme {
   private readonly daylightGfx = new Graphics();
   private weather: Weather = 'clear';
   private rain: { x: number; y: number; speed: number }[] = [];
+  /** Distant thunder: until the next flash, and how far into the one showing. */
+  private thunder = { untilMs: 0, ageMs: -1 };
   /** Rings where raindrops strike the sea. */
   private ripples: Glint[] = [];
   /** Night: fireflies over the land, and lighthouses on the sea off each island. */
@@ -234,6 +237,7 @@ export class PixelTheme implements Theme {
   private surf: Surf[] = [];
   private readonly landings = new Landings();
   private readonly fireworks = new Fireworks();
+  private readonly winnerBanners = new WinnerBanners();
   private splashes: Splash[] = [];
   private smoulders: Smoulder[] = [];
   private puffs: Puff[] = [];
@@ -891,6 +895,7 @@ export class PixelTheme implements Theme {
     );
     this.drawChunks(view, frame.deltaMs);
     drawChoices(g, view, frame.choices, this.art);
+    this.winnerBanners.draw(g, view, state, this.art, frame.celebrate, frame.deltaMs);
     this.fireworks.draw(g, view, this.art, frame.celebrate, frame.deltaMs);
     this.drawSplashes(view, frame.deltaMs);
     this.drawSmoulders(view, frame.deltaMs);
@@ -1149,6 +1154,7 @@ export class PixelTheme implements Theme {
     }
     const g = this.effectGfx;
     const { x0, y0, x1, y1 } = this.drawn;
+    this.drawThunder(view, deltaMs);
     const wanted = Math.round(((x1 - x0) * (y1 - y0) * this.art.pixel.rainPerThousandTiles) / 1000);
     while (this.rain.length < wanted) {
       this.rain.push({
@@ -1183,6 +1189,35 @@ export class PixelTheme implements Theme {
         });
       }
     }
+  }
+
+  /**
+   * Distant thunder in the rain (PLAN 11.15): now and then the whole sky flickers twice,
+   * faintly — over everything drawn, so it is weather and never a flash at one spot, which
+   * is what an impact is.
+   */
+  private drawThunder(view: ViewTransform, deltaMs: number): void {
+    const [soonest, latest] = this.art.pixel.thunderEveryMs;
+    const t = this.thunder;
+    if (t.ageMs < 0) {
+      if (t.untilMs <= 0) t.untilMs = soonest + Math.random() * (latest - soonest);
+      t.untilMs -= deltaMs;
+      if (t.untilMs > 0) return;
+      t.ageMs = 0;
+      t.untilMs = 0;
+    }
+    t.ageMs += deltaMs;
+    // Two flickers, the second the brighter, then gone.
+    const at = t.ageMs;
+    const flicker = (start: number, span: number): number =>
+      at < start || at > start + span ? 0 : 1 - (at - start) / span;
+    const light = Math.max(0.6 * flicker(0, 120), flicker(180, 380));
+    if (at > 600) t.ageMs = -1;
+    if (light <= 0) return;
+    const { x0, y0, x1, y1 } = this.drawn;
+    const g = this.effectGfx;
+    g.rect(tileX(view, x0), tileY(view, y0), (x1 - x0) * view.tile, (y1 - y0) * view.tile);
+    g.fill({ color: 0xe8eeff, alpha: this.art.pixel.thunderAlpha * light });
   }
 
   /**

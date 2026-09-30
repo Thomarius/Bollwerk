@@ -685,6 +685,75 @@ export class ClearingPuffs {
  * from each island and bursting in its owner's colours. Shared by both styles — the end
  * of a match deserves the same send-off in either.
  */
+/**
+ * The winners' banners (PLAN 11.15): with the fireworks, a tall pole rises from each of
+ * the winners' castles and a swallowtail banner in their colour is hoisted up it over
+ * `winnerBannerRiseMs`, then waves — something for the camera's push onto the winner to
+ * land on. Shared by every style, like the fireworks it goes with; clocked by the frames
+ * it is drawn, so it starts as the celebration does.
+ */
+export class WinnerBanners {
+  private age = 0;
+
+  draw(
+    g: Graphics,
+    view: ViewTransform,
+    state: MatchState,
+    art: ArtConfig,
+    celebrate: readonly Celebration[],
+    deltaMs: number,
+  ): void {
+    if (celebrate.length === 0) {
+      this.age = 0;
+      return;
+    }
+    this.age += deltaMs;
+    const t = Math.min(1, this.age / art.effects.winnerBannerRiseMs);
+    const hoist = 1 - (1 - t) * (1 - t);
+    const tile = view.tile;
+    const pole = tile * 2.6;
+    const clothW = tile * 1.5;
+    const clothH = tile * 0.95;
+    const rim = Math.max(1, Math.round(tile / 10));
+    const winners = new Set(celebrate.map((c) => c.owner));
+    for (const player of state.players) {
+      if (!winners.has(player.id)) continue;
+      for (const castle of state.castles) {
+        if (castle.islandId !== player.islandId) continue;
+        const x = tileX(view, castle.x + castle.w / 2);
+        const foot = tileY(view, castle.y);
+        const top = foot - pole * Math.min(1, t * 2);
+        g.moveTo(x, foot).lineTo(x, top);
+        g.stroke({ width: Math.max(2, rim + 1), color: 0x2a2018 });
+        if (t <= 0.5) continue;
+        // The cloth climbs the pole from its foot to its top, waving as it goes.
+        const up = foot - (pole - clothH) * hoist - clothH;
+        const wave = Math.sin(this.age / 180 + castle.id) * tile * 0.12;
+        const tail = clothW * 0.22;
+        g.poly([
+          x,
+          up,
+          x + clothW,
+          up + wave,
+          x + clothW - tail,
+          up + clothH / 2 + wave * 0.5,
+          x + clothW,
+          up + clothH + wave,
+          x,
+          up + clothH,
+        ]);
+        g.fill({ color: playerColour(art, player.id, 'base') });
+        g.stroke({ width: rim, color: 0x0a0a12, alpha: 0.8, join: 'round' });
+        g.moveTo(x, up + clothH * 0.5).lineTo(
+          x + clothW - tail - tile * 0.1,
+          up + clothH * 0.5 + wave * 0.5,
+        );
+        g.stroke({ width: Math.max(1, rim), color: playerColour(art, player.id, 'light') });
+      }
+    }
+  }
+}
+
 export class Fireworks {
   private rockets: { x: number; y: number; peak: number; age: number; owner: number }[] = [];
   private sparks: {

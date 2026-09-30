@@ -189,6 +189,12 @@ export const PixelStyleSchema = z.strictObject({
   }),
   /** Rain falling, as streaks on screen at once per thousand tiles of view. */
   rainPerThousandTiles: z.number().nonnegative(),
+  /**
+   * Distant thunder in the rain (11.15): a faint double flash over the whole board, at a
+   * random interval between the two, never bright enough to pass for an impact.
+   */
+  thunderEveryMs: z.tuple([z.number().int().positive(), z.number().int().positive()]),
+  thunderAlpha: z.number().min(0).max(1),
   /** Night: fireflies over the land, per hundred tiles of it. */
   firefliesPerHundredTiles: z.number().nonnegative(),
   /** Night: a lighthouse's beam, how far it reaches and one turn of it. */
@@ -430,12 +436,16 @@ export const ArtConfigSchema = z
       lifeCrumbleMs: z.number().int().positive(),
       /** Between rockets over the winners, once the match is over. */
       fireworkEveryMs: z.number().int().positive(),
+      /** How long the winners' banners take to be hoisted over their castles (11.15). */
+      winnerBannerRiseMs: z.number().int().positive(),
       /** The rings breaking out from a castle as a player chooses it. */
       choiceBurstMs: z.number().int().positive(),
       /** The dotted course from the gun a click would fire to the cursor. */
       aimLineAlpha: z.number().min(0).max(1),
       /** The "Final round" stamp across the board as the last round opens. */
       finalStampMs: z.number().int().positive(),
+      /** Embers drifting up the screen's edges through the final round (11.15). */
+      finalEmberCount: z.number().int().nonnegative(),
     }),
     /**
      * The camera, which moves only while nothing is playable: onto the viewer's island as

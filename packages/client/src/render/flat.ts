@@ -6,6 +6,7 @@ import {
   FlagHoist,
   GhostMotion,
   Fireworks,
+  WinnerBanners,
   Landings,
   RuinSmoke,
   dimEliminated,
@@ -87,6 +88,7 @@ export class FlatTheme implements Theme {
   private crumbles: Crumble[] = [];
   private readonly landings = new Landings();
   private readonly fireworks = new Fireworks();
+  private readonly winnerBanners = new WinnerBanners();
   private readonly flags = new FlagHoist();
   /** Milliseconds of drawing, for the flags. */
   private clock = 0;
@@ -252,6 +254,7 @@ export class FlatTheme implements Theme {
     this.scenery.drawPuffs(g, view, frame.deltaMs);
     this.ruins.draw(g, view, state, hex(this.art.palette.rockLight), null, frame.deltaMs);
     drawChoices(g, view, frame.choices, this.art);
+    this.winnerBanners.draw(g, view, state, this.art, frame.celebrate, frame.deltaMs);
     this.fireworks.draw(g, view, this.art, frame.celebrate, frame.deltaMs);
     this.drawFlags(state, view, frame);
 

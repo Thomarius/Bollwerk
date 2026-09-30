@@ -996,6 +996,8 @@
       "fog": 1.5
     },
     "rainPerThousandTiles": 90,
+    "thunderEveryMs": [14000, 30000],
+    "thunderAlpha": 0.13,
     "firefliesPerHundredTiles": 1.2,
     "beamTiles": 7,
     "beamTurnMs": 9000
@@ -1033,9 +1035,11 @@
     "tallyMs": 1400,
     "lifeCrumbleMs": 1600,
     "fireworkEveryMs": 300,
+    "winnerBannerRiseMs": 1800,
     "choiceBurstMs": 900,
     "aimLineAlpha": 0.55,
-    "finalStampMs": 2600
+    "finalStampMs": 2600,
+    "finalEmberCount": 18
   },
   "camera": {
     "openingZoom": 2.4,

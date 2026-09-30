@@ -6,6 +6,7 @@ import {
   FlagHoist,
   GhostMotion,
   Fireworks,
+  WinnerBanners,
   GunAims,
   Landings,
   RuinSmoke,
@@ -109,6 +110,7 @@ export class BricksTheme implements Theme {
   private readonly aims = new GunAims();
   private readonly landings = new Landings();
   private readonly fireworks = new Fireworks();
+  private readonly winnerBanners = new WinnerBanners();
   private readonly flags = new FlagHoist();
   private clock = 0;
 
@@ -485,6 +487,7 @@ export class BricksTheme implements Theme {
     this.drawShots(state, view, frame);
     this.drawSplashes(view, frame.deltaMs);
     this.drawLoose(view, frame.deltaMs);
+    this.winnerBanners.draw(g, view, state, this.art, frame.celebrate, frame.deltaMs);
     this.fireworks.draw(g, view, this.art, frame.celebrate, frame.deltaMs);
   }
 

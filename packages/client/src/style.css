@@ -140,6 +140,53 @@ body.reduced-effects .you-are-here {
   pointer-events: none;
 }
 
+/* Embers rising at the screen's edges through the final round (Hud.showEmbers). */
+.embers {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.embers i {
+  position: absolute;
+  bottom: -8px;
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: #ffc15a;
+  box-shadow: 0 0 6px 2px rgb(255 120 40 / 55%);
+  opacity: 0;
+  animation: ember-rise linear infinite;
+}
+
+@keyframes ember-rise {
+  0% {
+    opacity: 0;
+    transform: translate(0, 0);
+  }
+  12% {
+    opacity: 0.9;
+  }
+  75% {
+    opacity: 0.5;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(var(--drift), -65vh);
+  }
+}
+
+body.reduced-effects .embers {
+  display: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .embers {
+    display: none;
+  }
+}
+
 .round.final {
   color: var(--accent);
   text-transform: uppercase;

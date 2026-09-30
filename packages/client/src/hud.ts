@@ -155,8 +155,12 @@ export class Hud {
    * Medieval's own sunset is only in its own. At the edges and faint, so no player's
    * colour moves on the board.
    */
+  /** The final round's embers, kept while it lasts. */
+  private embers: HTMLElement | null = null;
+
   private markFinalRound(final: boolean): void {
     this.bannerRoot.classList.toggle('final-round', final);
+    this.showEmbers(final);
     if (!final || this.finalStamped) return;
     this.finalStamped = true;
     const stamp = document.createElement('div');
@@ -167,6 +171,35 @@ export class Hud {
     this.bannerRoot.append(stamp);
     // Reduced motion runs no animation to end it, so it is taken down by the clock.
     setTimeout(() => stamp.remove(), defaultArtConfig.effects.finalStampMs);
+  }
+
+  /**
+   * Embers drifting up the screen's edges through the final round, with its dusk (PLAN
+   * 11.15): sparks rising from the bottom corners, each on its own course and pace, and
+   * never over the middle of the board. HTML over every style, as the dusk is; the
+   * stylesheet hides them under reduced motion.
+   */
+  private showEmbers(final: boolean): void {
+    if (!final) {
+      this.embers?.remove();
+      this.embers = null;
+      return;
+    }
+    if (this.embers !== null) return;
+    this.embers = document.createElement('div');
+    this.embers.className = 'embers';
+    for (let k = 0; k < defaultArtConfig.effects.finalEmberCount; k++) {
+      const ember = document.createElement('i');
+      const left = k % 2 === 0;
+      const pace = 6 + Math.random() * 5;
+      ember.style.left = `${left ? Math.random() * 14 : 86 + Math.random() * 14}%`;
+      ember.style.animationDuration = `${pace.toFixed(2)}s`;
+      // Already under way as the round opens, rather than all setting out together.
+      ember.style.animationDelay = `${(-Math.random() * pace).toFixed(2)}s`;
+      ember.style.setProperty('--drift', `${(left ? 1 : -1) * (2 + Math.random() * 6)}vw`);
+      this.embers.append(ember);
+    }
+    this.bannerRoot.append(this.embers);
   }
 
   /** What the end screen's button does: back to the menu, whether played or watched. */

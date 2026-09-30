@@ -9,6 +9,7 @@ import {
   FlagHoist,
   GhostMotion,
   Fireworks,
+  WinnerBanners,
   GunAims,
   Landings,
   RuinSmoke,
@@ -196,6 +197,7 @@ export class ParchmentTheme implements Theme {
   private readonly aims = new GunAims();
   private readonly landings = new Landings();
   private readonly fireworks = new Fireworks();
+  private readonly winnerBanners = new WinnerBanners();
   private readonly flags = new FlagHoist();
   private clock = 0;
   private layers!: ThemeLayers;
@@ -793,6 +795,7 @@ export class ParchmentTheme implements Theme {
     this.drawSeals(state, view, frame);
     this.drawShots(state, view, frame);
     this.drawDrops(view, frame.deltaMs);
+    this.winnerBanners.draw(g, view, state, this.art, frame.celebrate, frame.deltaMs);
     this.fireworks.draw(g, view, this.art, frame.celebrate, frame.deltaMs);
   }
 
