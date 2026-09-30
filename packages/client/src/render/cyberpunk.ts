@@ -21,6 +21,7 @@ import {
   drawSelectable,
   drawFireReticle,
   drawOvertimeBorder,
+  drawDrain,
   drawSealGlow,
   drawMainCastles,
   drawShotTarget,
@@ -846,6 +847,7 @@ export class CyberpunkTheme implements Theme {
 
     this.drawPulses(view);
     this.drawRain(view, frame.deltaMs);
+    drawDrain(g, view, frame.drain, this.art);
     drawSealGlow(g, view, frame.sealGlow, this.art);
     this.landings.draw(g, view, this.art, frame.deltaMs);
     this.scenery.drawPuffs(g, view, frame.deltaMs);

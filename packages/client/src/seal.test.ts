@@ -1,7 +1,16 @@
 import { Structure, computeEnclosure, stateFromAscii, type MatchState } from '@rampart/sim';
 import { describe, expect, it } from 'vitest';
 
-import { floodFrom, floodOver, sealGlow, territoryDuring } from './seal.js';
+import {
+  drainFrom,
+  drainWash,
+  drainsFrom,
+  releaseDrains,
+  floodFrom,
+  floodOver,
+  sealGlow,
+  territoryDuring,
+} from './seal.js';
 
 // A ring around a castle with one gap in its top edge, mid-way along it.
 const breached = `
@@ -89,5 +98,53 @@ describe('the flood of newly sealed ground', () => {
     expect(glow.every((g) => g.owner === 0)).toBe(true);
     expect(floodOver(flood, 400, 10, 3)).toBe(false);
     expect(floodOver(flood, 501, 10, 3)).toBe(true);
+  });
+});
+
+describe('the drain of ground lost to a breach', () => {
+  // The same ring, sealed and then opened at the gap in its top edge.
+  const open = stateFromAscii(breached);
+  const sealed = closed(open);
+  const held = computeEnclosure(sealed).territory;
+  const now = computeEnclosure(open);
+
+  it('drains only what was lost, from the gap inward', () => {
+    const drain = drainFrom(held, now.territory, now.outside, open.width, 0);
+    expect(drain).not.toBeNull();
+    // The 4x4 interior, castle included.
+    expect(drain?.tiles.length).toBe(16);
+    const at = (x: number, y: number): number =>
+      drain?.dist[Array.from(drain.tiles).indexOf(y * open.width + x)] as number;
+    // Under the gap first; the far corner of the ring last.
+    expect(at(5, 3)).toBe(0);
+    expect(at(3, 6)).toBe(drain?.maxDist);
+    expect(at(3, 6)).toBeGreaterThan(at(4, 4));
+  });
+
+  it('is nothing when nothing was lost', () => {
+    expect(drainFrom(held, held, computeEnclosure(sealed).outside, open.width, 0)).toBeNull();
+  });
+
+  it('washes every lost tile at first, and each goes as the drain reaches it', () => {
+    const drain = drainFrom(held, now.territory, now.outside, open.width, 0)!;
+    expect(drainWash([drain], 0, open.width, 10)).toHaveLength(16);
+    // A second in at ten tiles a second, the whole interior has run out.
+    expect(drainWash([drain], 1000, open.width, 10)).toHaveLength(0);
+    // Half-way, the tiles by the gap are gone and the far ones still washed.
+    const half = drainWash([drain], ((drain.maxDist / 2) * 1000) / 10, open.width, 10);
+    expect(half.some((w) => w.x === 5 && w.y === 3)).toBe(false);
+    expect(half.find((w) => w.x === 3 && w.y === 6)?.strength).toBe(1);
+  });
+
+  it('waits wholly washed until the banner line reaches it', () => {
+    const [drain] = drainsFrom(held, now.territory, now.outside, open.width);
+    expect(drain).toBeDefined();
+    expect(drainWash([drain!], 5000, open.width, 10)).toHaveLength(16);
+    // The interior's top row is 3; a line above it releases nothing.
+    releaseDrains([drain!], 3, open.width, 5000);
+    expect(drain!.startMs).toBe(Number.POSITIVE_INFINITY);
+    releaseDrains([drain!], 4, open.width, 5000);
+    expect(drain!.startMs).toBe(5000);
+    expect(drainWash([drain!], 6000, open.width, 10)).toHaveLength(0);
   });
 });

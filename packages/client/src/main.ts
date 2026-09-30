@@ -56,6 +56,9 @@ import {
   floodFrom,
   floodOver,
   sealGlow,
+  drainWash,
+  drainsFrom,
+  releaseDrains,
   territoryDuring,
   type Flood,
   type SealGlow,
@@ -1159,7 +1162,31 @@ async function runSession(session: Session, setup: Setup): Promise<void> {
    * and drawn in both looks, since it shows exactly what was sealed.
    */
   let floods: Flood[] = [];
-  const { sealFloodTilesPerSecond, sealGlowTiles } = defaultConfigBundle.art.effects;
+  const { sealFloodTilesPerSecond, sealGlowTiles, drainTilesPerSecond } =
+    defaultConfigBundle.art.effects;
+
+  /**
+   * Ground lost to breaches draining away (`drainsFrom`), in the build look — the
+   * enclosure combat began with against the board as it stands. Each island's drain
+   * starts as the "Rebuild" banner's line reaches it (`releaseDrains`). With one style
+   * for both looks the held board stays up until building begins, so the drains wait for
+   * that: `drainDue` keeps the held enclosure until then.
+   */
+  let drains: Flood[] = [];
+  let drainDue: ReturnType<typeof computeEnclosure> | null = null;
+  function startDrain(from: ReturnType<typeof computeEnclosure>): void {
+    drains.push(...drainsFrom(from.territory, live.territory, live.outside, session.state.width));
+  }
+  function advanceDrains(now: number) {
+    if (drainDue !== null && session.state.phase === 'build') {
+      startDrain(drainDue);
+      drainDue = null;
+      releaseDrains(drains, Number.POSITIVE_INFINITY, session.state.width, now);
+    }
+    if (drains.length === 0) return [];
+    drains = drains.filter((drain) => !floodOver(drain, now, drainTilesPerSecond, 1));
+    return drainWash(drains, now, session.state.width, drainTilesPerSecond);
+  }
 
   /** Territory as each look shows it; the live board less what the floods have not reached. */
   function drawFloodedTerritory(now: number): void {
@@ -1224,6 +1251,13 @@ async function runSession(session: Session, setup: Setup): Promise<void> {
     } else {
       if (announcedAt !== state.phaseEndTick) {
         announcedAt = state.phaseEndTick;
+        // "Rebuild": the barrage is over, and what it took drains away as the banner
+        // reveals the board — at once in the build look, or as building begins when one
+        // style draws both looks and holds the old board until then.
+        if (state.pendingPhase === 'build' && held !== null) {
+          if (oneLook) drainDue = held;
+          else startDrain(held);
+        }
         // After a continue the cannon phase opens with a castle to choose, and the
         // announcement should say so rather than tell them to place guns they cannot.
         const human = state.players[session.humanPlayer];
@@ -1247,6 +1281,18 @@ async function runSession(session: Session, setup: Setup): Promise<void> {
         : { from: before, to: after, lineY },
     );
     sweepUnderBanner(lineY);
+    // Each island's lost ground drains as the line reaches it; all of it once the
+    // banner has gone.
+    if (drains.length > 0 && !oneLook) {
+      releaseDrains(
+        drains,
+        state.phase !== 'intermission' || lineY === null
+          ? Number.POSITIVE_INFINITY
+          : scene.rowAt(lineY),
+        state.width,
+        performance.now(),
+      );
+    }
   }
 
   /** Takes away each swept wall as the banner's line passes it. */
@@ -1581,6 +1627,7 @@ async function runSession(session: Session, setup: Setup): Promise<void> {
       session.humanPlayer,
       celebrate,
       recentChoices(now),
+      advanceDrains(now),
     );
     const ghost = {
       ...controls.ghost(session.tickFraction),

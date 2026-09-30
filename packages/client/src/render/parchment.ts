@@ -20,6 +20,7 @@ import {
   drawSelectable,
   drawFireReticle,
   drawOvertimeBorder,
+  drawDrain,
   drawSealGlow,
   drawMainCastles,
   drawShotTarget,
@@ -780,6 +781,7 @@ export class ParchmentTheme implements Theme {
       this.stains = this.stains.filter((s) => this.round - s.round < rounds);
     }
     this.drawStains(view);
+    drawDrain(g, view, frame.drain, this.art);
     drawSealGlow(g, view, frame.sealGlow, this.art);
     this.landings.draw(g, view, this.art, frame.deltaMs);
     this.scenery.drawPuffs(g, view, frame.deltaMs);

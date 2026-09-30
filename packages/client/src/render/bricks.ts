@@ -17,6 +17,7 @@ import {
   drawSelectable,
   drawFireReticle,
   drawOvertimeBorder,
+  drawDrain,
   drawSealGlow,
   drawMainCastles,
   drawShotTarget,
@@ -472,6 +473,7 @@ export class BricksTheme implements Theme {
     const g = this.effectGfx;
     g.clear();
     this.clock += frame.deltaMs;
+    drawDrain(g, view, frame.drain, this.art);
     drawSealGlow(g, view, frame.sealGlow, this.art);
     this.landings.draw(g, view, this.art, frame.deltaMs);
     this.drawClicks(view, frame.deltaMs);

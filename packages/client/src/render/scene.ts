@@ -3,7 +3,7 @@ import type { MatchState, Shot } from '@rampart/sim';
 import { Application, Container, Graphics } from 'pixi.js';
 
 import type { CameraShot } from '../camera.js';
-import type { SealGlow } from '../seal.js';
+import type { DrainWash, SealGlow } from '../seal.js';
 import type { Look } from '../transition.js';
 
 import { BlueprintTheme } from './blueprint.js';
@@ -389,6 +389,7 @@ export class Scene {
     humanPlayer = -1,
     celebrate: readonly Celebration[] = [],
     choices: readonly Choice[] = [],
+    drain: readonly DrainWash[] = [],
   ): void {
     this.applyShake(deltaMs);
     for (const slot of this.visible()) {
@@ -400,6 +401,7 @@ export class Scene {
         humanPlayer,
         celebrate,
         choices,
+        drain: this.lookOf(slot) === 'build' ? drain : [],
       });
     }
   }

@@ -192,3 +192,165 @@ export function sealGlow(
   }
   return glow;
 }
+
+/**
+ * Ground lost to a breach, drained away from the gap (PLAN 11.15): the seal's flood run
+ * in reverse. As the "Rebuild" banner reveals the board as it stands, the ground a
+ * player held when combat began and holds no longer is washed dark red, and the wash
+ * runs out through the breach — the tiles by the gap first, the deepest last — so the
+ * barrage's cost is seen, not merely found missing.
+ *
+ * Seeded at the gaps: lost tiles beside ground that is outside now and was not lost with
+ * them, which is where the sea came in. A lost patch no gap reaches drains from its own
+ * first tile, as the flood's stray patches do. `dist` counts steps from the gap.
+ */
+export function drainFrom(
+  before: Uint8Array,
+  after: Uint8Array,
+  outside: Uint8Array,
+  width: number,
+  startMs: number,
+): Flood | null {
+  const size = before.length;
+  const height = size / width;
+  const lost = new Uint8Array(size);
+  let count = 0;
+  for (let i = 0; i < size; i++) {
+    const owner = before[i] as number;
+    if (owner > 0 && after[i] !== owner) {
+      lost[i] = 1;
+      count++;
+    }
+  }
+  if (count === 0) return null;
+
+  const dist = new Int32Array(size).fill(-1);
+  const order: number[] = [];
+  const queue: number[] = [];
+  for (let i = 0; i < size; i++) {
+    if (lost[i] === 0) continue;
+    const x = i % width;
+    const y = (i - x) / width;
+    const atGap = STEPS.some(([dx, dy]) => {
+      const nx = x + dx;
+      const ny = y + dy;
+      if (nx < 0 || ny < 0 || nx >= width || ny >= height) return false;
+      const j = ny * width + nx;
+      return lost[j] === 0 && outside[j] === 1;
+    });
+    if (atGap) {
+      dist[i] = 0;
+      queue.push(i);
+    }
+  }
+  let head = 0;
+  const spread = (): void => {
+    while (head < queue.length) {
+      const i = queue[head++] as number;
+      order.push(i);
+      const x = i % width;
+      const y = (i - x) / width;
+      for (const [dx, dy] of STEPS) {
+        const nx = x + dx;
+        const ny = y + dy;
+        if (nx < 0 || ny < 0 || nx >= width || ny >= height) continue;
+        const j = ny * width + nx;
+        if (lost[j] === 0 || dist[j] !== -1 || before[j] !== before[i]) continue;
+        dist[j] = (dist[i] as number) + 1;
+        queue.push(j);
+      }
+    }
+  };
+  spread();
+  for (let i = 0; i < size; i++) {
+    if (lost[i] === 0 || dist[i] !== -1) continue;
+    dist[i] = 0;
+    queue.push(i);
+    spread();
+  }
+
+  const tiles = Int32Array.from(order);
+  const steps = Uint16Array.from(order, (i) => dist[i] as number);
+  const owners = Uint8Array.from(order, (i) => before[i] as number);
+  let maxDist = 0;
+  for (const d of steps) maxDist = Math.max(maxDist, d);
+  return { startMs, tiles, dist: steps, owners, maxDist };
+}
+
+/** A lost tile's wash: 1 while the drain has not reached it, fading over a step as it does. */
+export interface DrainWash {
+  x: number;
+  y: number;
+  strength: number;
+}
+
+export function drainWash(
+  drains: readonly Flood[],
+  nowMs: number,
+  width: number,
+  tilesPerSecond: number,
+): DrainWash[] {
+  const wash: DrainWash[] = [];
+  for (const drain of drains) {
+    const front = floodFront(drain, nowMs, tilesPerSecond);
+    for (let k = 0; k < drain.tiles.length; k++) {
+      const strength = Math.min(1, (drain.dist[k] as number) + 1 - front);
+      if (strength <= 0) continue;
+      const i = drain.tiles[k] as number;
+      const x = i % width;
+      wash.push({ x, y: (i - x) / width, strength });
+    }
+  }
+  return wash;
+}
+
+/**
+ * `drainFrom`, one drain per player, each waiting (`startMs` Infinity, so wholly washed)
+ * until `release` starts it: an island's drain should begin as the banner's line reaches
+ * it, not as the banner appears — begun together, the upper islands had drained before
+ * the lower ones were even revealed.
+ */
+export function drainsFrom(
+  before: Uint8Array,
+  after: Uint8Array,
+  outside: Uint8Array,
+  width: number,
+): Flood[] {
+  const all = drainFrom(before, after, outside, width, Number.POSITIVE_INFINITY);
+  if (all === null) return [];
+  const byOwner = new Map<number, number[]>();
+  for (let k = 0; k < all.tiles.length; k++) {
+    const owner = all.owners[k] as number;
+    let list = byOwner.get(owner);
+    if (list === undefined) byOwner.set(owner, (list = []));
+    list.push(k);
+  }
+  return [...byOwner.values()].map((ks) => {
+    const dist = Uint16Array.from(ks, (k) => all.dist[k] as number);
+    return {
+      startMs: Number.POSITIVE_INFINITY,
+      tiles: Int32Array.from(ks, (k) => all.tiles[k] as number),
+      dist,
+      owners: Uint8Array.from(ks, (k) => all.owners[k] as number),
+      maxDist: dist.reduce((a, b) => Math.max(a, b), 0),
+    };
+  });
+}
+
+/**
+ * Starts every waiting drain whose top row the banner's line has passed (`lineRow`,
+ * Infinity once the banner is gone), at `nowMs`.
+ */
+export function releaseDrains(
+  drains: readonly Flood[],
+  lineRow: number,
+  width: number,
+  nowMs: number,
+): void {
+  for (const drain of drains) {
+    if (drain.startMs !== Number.POSITIVE_INFINITY) continue;
+    let top = Number.POSITIVE_INFINITY;
+    for (const i of drain.tiles) top = Math.min(top, Math.floor(i / width));
+    if (top < lineRow) drain.startMs = nowMs;
+  }
+}

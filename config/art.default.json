@@ -1023,6 +1023,7 @@
   },
   "effects": {
     "sealFloodTilesPerSecond": 16,
+    "drainTilesPerSecond": 6,
     "sealGlowTiles": 3,
     "flagRaiseMs": 700,
     "flagLowerMs": 550,

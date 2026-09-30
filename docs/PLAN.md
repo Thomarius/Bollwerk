@@ -569,7 +569,11 @@ knockout stamps the island and greys it for the rest of the match.
 **The build phase, felt** (`seal.ts`, `art.effects`). Sealing is drawn as ground being
 taken: whenever the board's enclosure gains territory — a breach closed, a castle chosen,
 a loop widened — the new ground floods outward from the castle, or from the edge of what
-was already held, with a bright front running ahead of the paving. Every sealed castle
+was already held, with a bright front running ahead of the paving. **Ground lost runs out the same way in
+reverse** (`drainsFrom`): as the "Rebuild" banner reveals the board as it stands, what a
+player held when combat began and holds no longer is washed dark red, and the wash drains
+out through the breach at `drainTilesPerSecond` — each island as the banner's line
+reaches it, or as building begins when one style draws both looks. Every sealed castle
 hoists a flag, in both styles, from the foot of its pole. A placed piece settles onto its
 tiles from slightly large and bright, and in pixel style kicks up dust from its outer
 edges. In pixel style the piece in hand is drawn as the wall it would make, joined to
@@ -886,7 +890,9 @@ The ring preview asks the sim's own `startingRingTiles`, which builds the ring.
 - **Guns earned** in the island's points banner at a resolution: "+3 guns" beside the
   points, since today they show only when the cannon phase opens.
 
-**X3 — Ground lost, drained.** As the "Rebuild" banner reveals the build look, territory
+**X3 — Ground lost, drained — done** (§7). Begun together as the banner appeared, the
+upper islands had drained before the lower ones were revealed: each island's drain waits,
+wholly washed, until the banner's line reaches it (`releaseDrains`). As the "Rebuild" banner reveals the build look, territory
 lost to breaches drains away from the gaps in a dark red wash — the seal flood run in
 reverse (`seal.ts`), in every style.
 

@@ -407,6 +407,11 @@ export const ArtConfigSchema = z
     effects: z.strictObject({
       /** How fast newly sealed ground floods out from the castle. */
       sealFloodTilesPerSecond: z.number().positive(),
+      /**
+       * How fast ground lost to a breach drains away from the gap as the "Rebuild"
+       * banner reveals it (`drainFrom`, PLAN 11.15).
+       */
+      drainTilesPerSecond: z.number().positive(),
       /** How far behind the flood's front the glow trails off. */
       sealGlowTiles: z.number().positive(),
       /** A sealed castle's flag, from the foot of its pole to the head. */

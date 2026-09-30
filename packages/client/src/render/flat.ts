@@ -16,6 +16,7 @@ import {
   drawSelectable,
   drawFireReticle,
   drawOvertimeBorder,
+  drawDrain,
   drawSealGlow,
   drawMainCastles,
   drawShotTarget,
@@ -245,6 +246,7 @@ export class FlatTheme implements Theme {
     const now = state.tick + frame.tickFraction;
     this.clock += frame.deltaMs;
 
+    drawDrain(g, view, frame.drain, this.art);
     drawSealGlow(g, view, frame.sealGlow, this.art);
     this.landings.draw(g, view, this.art, frame.deltaMs);
     this.scenery.drawPuffs(g, view, frame.deltaMs);

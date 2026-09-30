@@ -23,6 +23,7 @@ import {
   drawSelectable,
   drawFireReticle,
   drawOvertimeBorder,
+  drawDrain,
   drawSealGlow,
   drawMainCastles,
   drawShotTarget,
@@ -877,6 +878,7 @@ export class PixelTheme implements Theme {
     this.drawNight(view, frame.deltaMs, still);
     this.drawWindows(state, view, frame);
 
+    drawDrain(g, view, frame.drain, this.art);
     drawSealGlow(g, view, frame.sealGlow, this.art);
     this.landings.draw(g, view, this.art, frame.deltaMs);
     this.ruins.draw(

@@ -2,7 +2,7 @@ import type { ArtConfig, ArtStyle } from '@rampart/config';
 import { findReadyCannon, type MatchState, type Shot } from '@rampart/sim';
 import type { Container, Graphics } from 'pixi.js';
 
-import type { SealGlow } from '../seal.js';
+import type { DrainWash, SealGlow } from '../seal.js';
 
 /**
  * A visual style.
@@ -77,6 +77,8 @@ export interface EffectFrame {
   castleSealed: readonly boolean[];
   /** The front of any flood of newly sealed ground; see `seal.ts`. */
   sealGlow: readonly SealGlow[];
+  /** Ground lost to a breach, draining away; the build look's alone (`drainWash`). */
+  drain: readonly DrainWash[];
   /** The player at this screen, or -1 when watching: whose wall is under threat. */
   humanPlayer: number;
   /** Castles just chosen, for the burst that marks each choice; see `drawChoices`. */
@@ -295,6 +297,28 @@ export function drawBuildHints(
  * The front of newly sealed ground, lit as it floods out from the castle. Shared by
  * both styles: it shows exactly what the last piece sealed.
  */
+/**
+ * Ground lost to a breach, washed dark red and running out through the gap as the
+ * "Rebuild" banner reveals the board (PLAN 11.15). Shared by every style, like the flood
+ * it reverses: it says what the barrage cost. Dark as well as red, so the red player's
+ * lost ground reads too, and faint enough that the island under it still shows.
+ */
+export function drawDrain(
+  g: Graphics,
+  view: ViewTransform,
+  drain: readonly DrainWash[],
+  art: ArtConfig,
+): void {
+  if (drain.length === 0) return;
+  const red = hex(art.palette.uiInvalid);
+  for (const { x, y, strength } of drain) {
+    g.rect(tileX(view, x), tileY(view, y), view.tile, view.tile);
+    g.fill({ color: 0x1a0204, alpha: 0.3 * strength });
+    g.rect(tileX(view, x), tileY(view, y), view.tile, view.tile);
+    g.fill({ color: red, alpha: 0.38 * strength });
+  }
+}
+
 export function drawSealGlow(
   g: Graphics,
   view: ViewTransform,
