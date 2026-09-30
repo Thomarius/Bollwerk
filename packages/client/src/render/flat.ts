@@ -253,7 +253,7 @@ export class FlatTheme implements Theme {
     this.fireworks.draw(g, view, this.art, frame.celebrate, frame.deltaMs);
     this.drawFlags(state, view, frame);
 
-    drawMainCastles(g, view, state, this.art);
+    drawMainCastles(g, view, state, this.art, frame.castleSealed);
     for (const shot of state.shots) {
       const span = shot.impactTick - shot.launchTick;
       const t = span <= 0 ? 1 : Math.min(1, Math.max(0, (now - shot.launchTick) / span));

@@ -5,6 +5,7 @@ import {
   findReadyCannon,
   owesCastleChoice,
   pieceCells,
+  startingRingTiles,
   sameTeam,
   type Action,
   type MatchState,
@@ -314,14 +315,24 @@ export class Controls {
         };
       }
       case 'castle': {
+        const castle = this.castleAt(tile.x, tile.y);
         return {
           tile,
           cells: [],
-          valid: this.castleAt(tile.x, tile.y) !== undefined,
+          valid: castle !== undefined,
           footprint: null,
           selectable,
           unsealed: [],
           aiming: false,
+          ...(castle === undefined
+            ? {}
+            : {
+                ring: {
+                  tiles: startingRingTiles(state, castle),
+                  width: state.width,
+                  owner: player,
+                },
+              }),
         };
       }
       default:

@@ -14,6 +14,7 @@ import {
   step,
   stepTo,
   owesCastleChoice,
+  startingRingTiles,
   ticksFor,
   type MatchOptions,
 } from './match.js';
@@ -82,6 +83,17 @@ describe('match setup', () => {
 });
 
 describe('castle selection', () => {
+  it('builds exactly the ring startingRingTiles previews', () => {
+    const state = beginMatch(createMatch(options(2)));
+    const castle = state.castles.find((c) => c.islandId === state.players[0]!.islandId)!;
+    const preview = startingRingTiles(state, castle);
+    expect(preview.length).toBeGreaterThan(0);
+    const before = Uint8Array.from(state.structure);
+    applyAction(state, { kind: 'select_castle', player: 0, castleId: castle.id });
+    const built = [...state.structure.keys()].filter((i) => state.structure[i] !== before[i]);
+    expect(built).toEqual(preview);
+  });
+
   it('grants a sealed ring and hands the player cannons to place', () => {
     const state = beginMatch(createMatch(options(2)));
     for (const player of state.players) {

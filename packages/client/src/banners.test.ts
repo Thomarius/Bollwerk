@@ -112,4 +112,18 @@ describe('island banners', () => {
     expect(at(300)).toMatchObject({ title: '+80', detail: '200 total' });
     expect(countedSoFar({ amount: 80, untilTick: 500 }, 0)).toBe(80);
   });
+
+  it('says the guns the round earned beside the total', () => {
+    const ada = { ...alive(0, 'Ada'), score: 200 };
+    const say = (guns: number) =>
+      bannersFor(
+        state(1, [ada]),
+        new Map(),
+        new Map([[0, { amount: 80, untilTick: 500, guns }]]),
+      )[0]?.detail;
+    expect(say(3)).toBe('200 total · +3 guns');
+    expect(say(1)).toBe('200 total · +1 gun');
+    // Nothing earned, nothing said: a capped arsenal.
+    expect(say(0)).toBe('200 total');
+  });
 });

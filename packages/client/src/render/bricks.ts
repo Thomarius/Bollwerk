@@ -561,7 +561,7 @@ export class BricksTheme implements Theme {
     const g = this.effectGfx;
     const t = view.tile;
     const now = state.tick + frame.tickFraction;
-    drawMainCastles(g, view, state, this.art);
+    drawMainCastles(g, view, state, this.art, frame.castleSealed);
     for (const shot of state.shots) {
       const span = shot.impactTick - shot.launchTick;
       const p = span <= 0 ? 1 : Math.min(1, Math.max(0, (now - shot.launchTick) / span));

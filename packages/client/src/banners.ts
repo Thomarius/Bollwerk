@@ -25,6 +25,11 @@ export interface PointsGained {
   /** When the count began, and over how many ticks it runs up to `amount`. */
   fromTick?: number;
   countTicks?: number;
+  /**
+   * Cannons the round earned, said beside the points (PLAN 11.15): otherwise they show
+   * only as the cannon phase opens.
+   */
+  guns?: number;
 }
 
 /**
@@ -91,7 +96,11 @@ export function bannersFor(
           kind: 'gain',
           title: `+${shown}`,
           // The total climbs with it, from what was held before this round.
-          detail: `${player.score - points.amount + shown} total`,
+          detail:
+            `${player.score - points.amount + shown} total` +
+            (points.guns !== undefined && points.guns > 0
+              ? ` · +${points.guns} gun${points.guns === 1 ? '' : 's'}`
+              : ''),
           urgent: false,
         });
       }

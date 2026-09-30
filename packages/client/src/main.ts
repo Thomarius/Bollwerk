@@ -32,7 +32,7 @@ import {
 } from '@rampart/sim';
 
 import { Audio } from './audio.js';
-import { showsClock } from './clock.js';
+import { countdownBeat, showsClock } from './clock.js';
 import { Controls, inputMode, readyCannons } from './controls.js';
 import { bannersFor, type LifeLost, type PointsGained } from './banners.js';
 import { matchPalette, playerCssColour, useMatchPalette } from './colours.js';
@@ -1411,6 +1411,7 @@ async function runSession(session: Session, setup: Setup): Promise<void> {
               // Counted up as the territory is tallied, rather than landing whole.
               fromTick: event.tick,
               countTicks: count,
+              guns: result.cannonsAwarded,
             });
             if (result.territoryPoints > 0) tallyDue.push(result.player);
           }
@@ -1581,7 +1582,11 @@ async function runSession(session: Session, setup: Setup): Promise<void> {
       celebrate,
       recentChoices(now),
     );
-    const ghost = { ...controls.ghost(session.tickFraction), ...hints };
+    const ghost = {
+      ...controls.ghost(session.tickFraction),
+      ...hints,
+      beat: countdownBeat(session.state, session.tickFraction),
+    };
     scene.drawOverlay(session.state, ghost, session.humanPlayer);
     drawCounters(ghost);
     scene.render();

@@ -196,24 +196,38 @@ export function alivePlayers(state: MatchState): PlayerState[] {
   return state.players.filter((p) => !p.eliminated);
 }
 
-/** Lays the auto-built wall ring around a player's chosen castle. */
-function buildStartingRing(state: MatchState, castle: Castle): void {
+/**
+ * The tiles the auto-built ring round a castle would wall, as the board stands: the
+ * border of the ring's square, on the map and still empty. Exported so the client's
+ * preview of a choice asks the very rule that builds the ring (PLAN 11.15).
+ */
+export function startingRingTiles(
+  state: Pick<MatchState, 'width' | 'height' | 'structure' | 'terrainConfig'>,
+  castle: Pick<Castle, 'x' | 'y' | 'w' | 'h'>,
+): number[] {
   const ring = state.terrainConfig.startingWall.ringRadiusTiles;
   const x0 = castle.x - ring;
   const y0 = castle.y - ring;
   const x1 = castle.x + castle.w - 1 + ring;
   const y1 = castle.y + castle.h - 1 + ring;
-
+  const tiles: number[] = [];
   for (let y = y0; y <= y1; y++) {
     for (let x = x0; x <= x1; x++) {
       const onBorder = x === x0 || x === x1 || y === y0 || y === y1;
       if (!onBorder) continue;
       if (x < 0 || y < 0 || x >= state.width || y >= state.height) continue;
       const i = y * state.width + x;
-      if (state.structure[i] !== Structure.Empty) continue;
-      state.structure[i] = Structure.Wall;
-      state.owner[i] = castle.islandId;
+      if (state.structure[i] === Structure.Empty) tiles.push(i);
     }
+  }
+  return tiles;
+}
+
+/** Lays the auto-built wall ring around a player's chosen castle. */
+function buildStartingRing(state: MatchState, castle: Castle): void {
+  for (const i of startingRingTiles(state, castle)) {
+    state.structure[i] = Structure.Wall;
+    state.owner[i] = castle.islandId;
   }
 }
 

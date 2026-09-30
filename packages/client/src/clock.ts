@@ -25,3 +25,21 @@ export function countdownGain(secondsLeft: number): number {
   const done = Math.min(steps, Math.max(0, COUNTDOWN_FROM - secondsLeft));
   return COUNTDOWN_QUIETEST + ((1 - COUNTDOWN_QUIETEST) * done) / steps;
 }
+
+/**
+ * Where the build phase's countdown stands within its current second: 0 as a tick
+ * sounds, rising to 1 just before the next — or null outside the countdown's last
+ * `COUNTDOWN_FROM` seconds, outside a build phase and in overtime. An unsealed castle's
+ * outline flashes red on the beat (PLAN 11.15), with the tick it is heard by.
+ * `tickFraction` is how far the frame is into the next tick, so the flash fades
+ * smoothly rather than a tick at a time.
+ */
+export function countdownBeat(
+  state: Pick<MatchState, 'phase' | 'overtime' | 'tick' | 'phaseEndTick' | 'ruleset'>,
+  tickFraction = 0,
+): number | null {
+  if (state.phase !== 'build' || !showsClock(state)) return null;
+  const secondsLeft = (state.phaseEndTick - state.tick - tickFraction) / state.ruleset.tickRateHz;
+  if (secondsLeft <= 0 || secondsLeft > COUNTDOWN_FROM) return null;
+  return Math.ceil(secondsLeft) - secondsLeft;
+}

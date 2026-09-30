@@ -114,8 +114,18 @@ export interface Ghost {
   footprint: { w: number; h: number } | null;
   /** Castles the player may choose, during castle selection. */
   selectable: readonly { x: number; y: number; w: number; h: number }[];
+  /**
+   * The ring the castle under the pointer would get if chosen — tile indices from the
+   * sim's own `startingRingTiles` — and whose colour to draw it in. Absent otherwise.
+   */
+  ring?: { tiles: readonly number[]; width: number; owner: number };
   /** The player's castles, when none of them is sealed. */
   unsealed: readonly { x: number; y: number; w: number; h: number }[];
+  /**
+   * Where the build phase's last seconds stand within the current one, 0 as a tick
+   * sounds (`countdownBeat`); null or absent outside them.
+   */
+  beat?: number | null;
   /** Whether to draw the aiming cursor: in combat, and while it is announced. */
   aiming: boolean;
   /** Ground the piece in hand would seal, when the sealing preview is on (`sealPreview.ts`). */
@@ -263,6 +273,22 @@ export function drawBuildHints(
     );
     g.stroke({ width: Math.max(3, Math.round(view.tile / 7)), color: warn, alpha: pulse });
   }
+  // Over the countdown's last seconds, a red flash on every tick, fading through the
+  // second, round the outline (PLAN 11.15): still unsealed, and heard and seen at once.
+  // Outside the ink, so the ink still reads on the red player's own island.
+  const beat = ghost.beat;
+  if (beat === undefined || beat === null) return;
+  const flash = (1 - beat) * (1 - beat);
+  const reach = Math.max(4, Math.round(view.tile / 5));
+  for (const castle of ghost.unsealed) {
+    g.rect(
+      tileX(view, castle.x) - 2 - reach,
+      tileY(view, castle.y) - 2 - reach,
+      castle.w * view.tile + 4 + reach * 2,
+      castle.h * view.tile + 4 + reach * 2,
+    );
+  }
+  g.stroke({ width: reach, color: hex(art.palette.uiInvalid), alpha: 0.25 + 0.75 * flash });
 }
 
 /**
@@ -373,14 +399,18 @@ const CROWN: readonly (readonly [number, number])[] = [
  * A crown over each player's main castle — the one they chose, worth the first castle's
  * reward (`cannonReward`) — sealed or not, since which castle counts double matters most
  * once it is breached. One shared mark rather than new art in every style (PLAN 11.14),
- * in the owner's colour with a dark rim so it reads on any ground. None over a player
- * who is out, or between a continue and the castle chosen after it.
+ * in the owner's colour with a dark rim so it reads on any ground. Bright while the
+ * castle is sealed; dimmed to stone grey with a crack across it, once breached
+ * (11.15), by the look's own `castleSealed`, so the combat look holds it through combat
+ * as it holds every other sign of sealed. None over a player who is out, or between a
+ * continue and the castle chosen after it.
  */
 export function drawMainCastles(
   g: Graphics,
   view: ViewTransform,
   state: MatchState,
   art: ArtConfig,
+  castleSealed: readonly boolean[],
 ): void {
   const width = view.tile * 1.35;
   const rim = Math.max(1, Math.round(view.tile / 10));
@@ -392,9 +422,26 @@ export function drawMainCastles(
     // sessions); the crown is 0.72 of its width tall, so its band sits that much below.
     const left = tileX(view, castle.x + castle.w / 2) - width / 2;
     const base = tileY(view, castle.y + castle.h / 2) + width * 0.36;
+    const sealed = castleSealed[castle.id] === true;
     g.poly(CROWN.flatMap(([x, y]) => [left + x * width, base + y * width]));
-    g.fill({ color: playerColour(art, player.id, 'light') });
+    // Breached, stone grey rather than the owner's dark shade, which vanished into a
+    // castle of the same colour.
+    g.fill(
+      sealed ? { color: playerColour(art, player.id, 'light') } : { color: 0x9a9aa4, alpha: 0.9 },
+    );
     g.stroke({ width: rim, color: 0x0a0a12, alpha: 0.85, join: 'round' });
+    if (!sealed) {
+      // The crack: a zigzag down through the band from the middle spike's valley.
+      const crack = [
+        [0.46, -0.52],
+        [0.56, -0.34],
+        [0.44, -0.18],
+        [0.54, 0],
+      ];
+      g.moveTo(left + crack[0]![0]! * width, base + crack[0]![1]! * width);
+      for (const [x, y] of crack.slice(1)) g.lineTo(left + x! * width, base + y! * width);
+      g.stroke({ width: rim, color: 0x0a0a12, alpha: 0.9, join: 'round' });
+    }
   }
 }
 
@@ -789,6 +836,25 @@ export function drawSelectable(
     );
   }
   g.fill({ color: accent, alpha: 0.12 * pulse });
+
+  // The ring the castle under the pointer would get, faint, in the chooser's colour:
+  // where the guns will have to fit, seen before committing to it (PLAN 11.15).
+  const ring = ghost.ring;
+  if (ring === undefined || ring.tiles.length === 0) return;
+  const inset = Math.max(1, view.tile * 0.12);
+  for (const i of ring.tiles) {
+    const x = i % ring.width;
+    const y = (i - x) / ring.width;
+    g.rect(
+      tileX(view, x) + inset,
+      tileY(view, y) + inset,
+      view.tile - inset * 2,
+      view.tile - inset * 2,
+    );
+  }
+  const colour = playerColour(art, ring.owner, 'light');
+  g.fill({ color: colour, alpha: 0.28 });
+  g.stroke({ width: Math.max(1, view.tile / 12), color: colour, alpha: 0.7 });
 }
 
 /** A castle just chosen, by whom and how long ago. */

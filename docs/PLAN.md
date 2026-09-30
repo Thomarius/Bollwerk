@@ -518,9 +518,10 @@ will be, with a ring round that gun; only where a click would fire.
 **Before the match.** The lobby's map is drawn in the chosen build look's colours, its
 seat numbers and ring in the shared ink. The castles a player may choose breathe in the
 accent (`drawSelectable`), and every choice, anyone's, sets off rings in the chooser's
-colour from the castle (`drawChoices`). From then on **a crown stands over each
-player's main castle** (`drawMainCastles`), sealed or breached, in the owner's colour
-with a dark rim: one shared mark rather than the original's second tower drawn in seven
+colour from the castle (`drawChoices`); hovering one shows faintly the ring it would
+get, from the sim's own `startingRingTiles`. From then on **a crown stands on each
+player's main castle** (`drawMainCastles`) — in the owner's colour while it is sealed,
+stone grey and cracked once breached, as the look's own sealed castles say: one shared mark rather than the original's second tower drawn in seven
 styles. The menu's **Effects** setting, high, full or
 reduced (`motion.ts`): reduced does what the system's reduced-motion setting does — no
 flicker, no beat, no slide, no title sweep, no rain — and also stops the board's shake;
@@ -543,7 +544,8 @@ stops at 0 and goes, and the red border carries the overtime; a second countdown
 read as the build phase starting over.
 
 **Feedback a player builds by.** While nothing of yours is sealed, your castles are
-outlined (`hints.ts`). The menu's **Sealing preview**, off by default (`sealPreview.ts`),
+outlined (`hints.ts`), and over the countdown's last five seconds a red frame flashes
+round them on every tick (`countdownBeat`). The menu's **Sealing preview**, off by default (`sealPreview.ts`),
 washes and outlines the ground the piece in hand would seal, by the sim's own enclosure
 with the piece stood in as wall; it is for testers to judge, since it carries information.
 The held piece casts a soft shadow and swings as it turns (`GhostMotion`); a placed gun
@@ -560,7 +562,7 @@ aiming cursor** says whether a click will fire — a bright crosshair when a gun
 a small grey ring struck through when none is — with the number ready beside it; it
 appears as "Fire!" is announced, though a click does nothing until the phase opens. When
 placing cannons the same badge counts the guns still to place. The points an island
-banked hold over it with the new total for the whole intermission
+banked hold over it with the new total and the guns the round earned for the whole intermission
 (`hud.pointsBannerMs`). A lost life lands as a banner over the island, red on the last; a
 knockout stamps the island and greys it for the rest of the match.
 
@@ -855,7 +857,9 @@ readable, land, sea, wall and sealed ground tell apart.
 Packages in order. X1 first, since X6's shapes need a place in the roster it redesigns;
 the rest are independent.
 
-**X1 — Mouse only, and a roster of points and lives.**
+**X1 — Mouse only, and a roster of points and lives — done** (§7): a card per player,
+colour down its edge, name over a large score and large pips; in Toy bricks the bar is
+rimmed, since the blue player's vanished into the blue plate.
 
 - **The keyboard controls go**: R and E no longer turn the piece; right-click and the
   wheel do, and every action is on the two mouse buttons. Esc for pause stays, the one
@@ -867,7 +871,9 @@ the rest are independent.
   The layout is agreed with the user before building, with screenshots at two, four and
   eight players, free-for-all and teams.
 
-**X2 — Information on the board.**
+**X2 — Information on the board — done** (§7). The breached crown was first the dark
+shade of the owner's colour and vanished into a castle of that colour; it is stone grey.
+The ring preview asks the sim's own `startingRingTiles`, which builds the ring.
 
 - **The crown shows the main castle's state**: bright while it is sealed, dimmed and
   cracked once it is breached, still always shown. In the combat look it follows the
