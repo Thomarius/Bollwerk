@@ -126,7 +126,9 @@ match (ARCHIVE 11e, each header stamped with the server's commit), M10–M11 the
 UI polish, M12 the second visual pass — seven styles for either look, Toy bricks the
 last, the HUD dressed per style, the match's moments — and the first test-session
 feedback: pockets count as territory, pause, an open games browser, the reload at the
-cursor (ARCHIVE 11n–11w).
+cursor (ARCHIVE 11n–11w), and M13 bots as a skill level (1–10, chosen in the lobby) and a
+personality (risk, targeting, cannon space) dealt from the seed and revealed at game over
+(ARCHIVE 11x–11zb).
 
 **Now**: the user runs human test sessions — every match is recorded in `recordings/`
 with its statistics — and sends compiled feedback. **No hidden keyboard shortcuts** (the
@@ -134,19 +136,12 @@ user's rule): every action has something on screen to click; Esc for pause is th
 agreed exception, and R/E rotate the piece as listed controls. PLAN.md §11 opens with
 where to start:
 
-1. **Bots as skill and personality** (§11.6, M13), the next milestone, agreed and planned
-   in five phases: skill as Level 1–10 chosen in the lobby (Level 5 today's gunner, 8
-   today's marshal, sloppy building low down); four personality traits — risk, targeting
-   (a share of shots, not all), cannon space, castle choice as flavour — dealt from the
-   seed, hidden, revealed at game over; general tactics for every bot. Guardrail: no trait
-   lets a bot beat one three levels above it. Phase 1 must reproduce today's bots hash for
-   hash.
-2. **Elimination tuning** (§11.2), after it: half of 3–4 player matches should end with
+1. **Elimination tuning** (§11.2), the next milestone: half of 3–4 player matches should end with
    one player left before the cap. Weights stay; levers are one continue instead of two
    and a new placement delay, measured over the personality mix. Most matches reach the
    cap, so **the scoring formula is the game's balance**.
-3. **Two-player balance** (§11.3), to be re-measured under the cap before anything is tried.
-4. Measurements never taken (§11.4): the full level ladder, and seat bias at 6 and 8
+2. **Two-player balance** (§11.3), to be re-measured under the cap before anything is tried.
+3. Measurements never taken (§11.4): the full level ladder, and seat bias at 6 and 8
    players in free-for-all (team seating is measured, and fair).
 
 ## Measuring the bots

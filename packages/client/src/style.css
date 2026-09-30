@@ -148,6 +148,45 @@ body.reduced-effects .you-are-here {
 
 /* The end screen's filmstrip: the board at each round's resolution, wrapping rather than
    scrolling, since the HUD takes no pointer. */
+/* The end screen's reveal: how each bot played, a surprise kept until now (PLAN 11.6). */
+.reveal {
+  margin: 0.9rem auto 0;
+  text-align: left;
+  width: fit-content;
+}
+
+.reveal small {
+  display: block;
+  margin: 0 0 0.3rem;
+  text-align: center;
+}
+
+.reveal ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 12px;
+  letter-spacing: 0.03em;
+  text-transform: none;
+}
+
+.reveal li {
+  display: flex;
+  gap: 0.45rem;
+  align-items: center;
+  padding: 0.1rem 0;
+}
+
+.reveal li b {
+  width: 9px;
+  height: 9px;
+  border-radius: 1px;
+}
+
+.reveal li span {
+  color: var(--muted);
+}
+
 .filmstrip {
   display: flex;
   flex-wrap: wrap;

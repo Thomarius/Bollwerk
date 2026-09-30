@@ -4,7 +4,7 @@ import { escape } from './lobby.js';
 import { defaultArtConfig, type ArtStyle } from '@rampart/config';
 
 import { motionReduced } from './motion.js';
-import { mostCastlesOf, scoreChart, type MatchLog } from './summary.js';
+import { mostCastlesOf, scoreChart, type MatchLog, type Reveal } from './summary.js';
 
 import {
   countUp,
@@ -422,6 +422,28 @@ export class Hud {
     this.log = log;
   }
 
+  /** The bots revealed at game over: their levels and the personalities they were dealt. */
+  private reveal: readonly Reveal[] = [];
+
+  useReveal(reveal: readonly Reveal[]): void {
+    this.reveal = reveal;
+  }
+
+  /**
+   * The surprise at the end (PLAN 11.6): one line per bot, its colour, name, level and
+   * personality in plain words.
+   */
+  private revealMarkup(): string {
+    if (this.reveal.length === 0) return '';
+    const lines = this.reveal
+      .map(
+        (r) =>
+          `<li><b style="background:${playerCssColour(r.player)}"></b>${escape(r.name)} <span>${escape(r.text)}</span></li>`,
+      )
+      .join('');
+    return `<div class="reveal"><small>How the bots played</small><ul>${lines}</ul></div>`;
+  }
+
   /** Scores counting up, by the same keys. */
   private readonly counts = new Map<string, { from: number; to: number; since: number }>();
 
@@ -784,7 +806,7 @@ export class Hud {
       const table = `<table class="final">${head}${rows}</table>`;
       // A button, not a key: everything else in the game is the mouse, and a key that
       // does something unannounced is the kind of surprise players dislike.
-      banner = `<div class="banner">${text}${table}${this.chart(state, humanPlayer)}${this.filmstrip()}<button class="leave">Back to menu</button></div>`;
+      banner = `<div class="banner">${text}${table}${this.chart(state, humanPlayer)}${this.filmstrip()}${this.revealMarkup()}<button class="leave">Back to menu</button></div>`;
     }
     this.showEndScreen(banner);
     // Knocked out: the stamp over your island is the moment, so this is only a quiet

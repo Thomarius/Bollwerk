@@ -59,7 +59,7 @@
       "expandsWhenSealed": false,
       "expandsWhenSafe": true,
       "widensWhileRepairing": false,
-      "castleChoice": "sheltered"
+      "castleChoice": "cheapest"
     },
     "balanced": {
       "maxCastles": 2,

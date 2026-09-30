@@ -2821,3 +2821,34 @@ standing than on its own.
   the room goes unused while the pockets' walls add to every repair. Secondary 12.5%,
   room 2.90 — worse than balanced where it should be safer; at twelve seeds about two
   standard errors. Both are phase 5's, starting with pockets only when room is short.
+
+## 11zb. Tuning the levels and personalities, and the reveal (11.6, phase 5)
+
+The last phase of 11.6. Three players throughout; a fair share of wins is a third.
+
+- **The guardrail holds for every trait**: Level 5 against two Level 2 bots with the
+  same trait won 10 to 12 of 12 for each of the ten values.
+- **The ladder climbs**: one seat at a level against two at Level 5, wins of 12 — Level
+  1 and 2 none, 3 one, 4 two, 6 five, 7 five, 8 nine, 9 ten, 10 all twelve. Levels 6 and
+  7 play alike; 1 and 2 are not told apart by Level 5, which beats both every time.
+- **Traits against balanced**, one seat with the trait against two balanced bots, all
+  Level 5, wins of 24 (fair 8, a standard error about 2.3): max cannons 10, finisher 7,
+  point-maximizing 6, offensive, grudge and secondary 5 each, defensive 2. Only
+  defensive was clearly out of line.
+- **Defensive, found**: its own rows showed half the active guns of the balanced seats
+  beside it (2.7 against 5.9) and less than half their territory points. Its risk scale
+  was not it — 1.0 instead of 0.7 changed nothing. Its castle was: "farthest from any
+  opponent" means an outer castle hemmed in by sea, with no room for guns. Opening from
+  the cheapest castle instead: 6 wins of 24, active guns 5.3, territory points 53. The
+  sheltered choice stays in the schema, unused. Offensive's central choice made no
+  difference (5 wins against 6 from the cheapest) and stays, as flavour.
+- **Offensive widening while repairing does fire**: counted with a temporary counter over
+  eight matches, of 2198 breached plans 1170 were small repairs and 1134 of those widened.
+- **Max cannons** forfeits more (13.6% in phase 4) for room its fixed gun reward cannot
+  fill, but wins a fair share and a little more; left as it is, its swinginess accepted.
+- **The reveal** (`revealLines`, `botSetupsFromSeats`, tested): one line per bot under the
+  summary — its colour, name, level and personality in plain words. No protocol change:
+  the client deals personalities from the seed and player as the server does, and takes
+  levels from the table as the host set it, kept from before the start since the room
+  renumbers its people once the shuffle has dealt them. A test checks the client's
+  setups equal what a local match dealt. Seen at the end of a watched five-round match.

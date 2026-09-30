@@ -789,17 +789,17 @@ every resolution against an independent search, not only on unit pictures.
 | M10 | Alternative visual themes: Night, Blueprint, Cyberpunk…   | Done (ARCHIVE 11h)      |
 | M11 | UI and effects polish: roster, combat aids, summary…      | Done (ARCHIVE 11h)      |
 | M12 | Second visual pass: scenery, atmosphere, Toy bricks       | Done (ARCHIVE 11w)      |
-| M13 | Bots as skill levels and personalities                    | **Next** (11.6)         |
+| M13 | Bots as skill levels and personalities                    | Done (11.6)             |
 
 ---
 
 ## 11. Open work
 
-**Where to start (2026-09-29).** **11.6, bots as skill and personality**, agreed with the
-user and planned in phases: skill as Level 1–10 in the lobby, personalities dealt at random
-and revealed at game over, and general tactics for every bot. Then **11.2, elimination
-tuning**, whose baseline is measured over the personality mix; its planned "ambitious"
-personality and finisher targeting come from 11.6. The first test-session feedback and the
+**Where to start (2026-09-30).** **11.6, bots as skill and personality, is done** (M13):
+skill as Level 1–10 in the lobby, personalities dealt at random and revealed at game over,
+general tactics for every bot. Next is **11.2, elimination tuning**, whose baseline is
+measured over the personality mix; its "ambitious" personality and finisher targeting
+exist now (offensive, finisher). The first test-session feedback and the
 second visual pass are done (ARCHIVE 11w). Every test match is recorded with its
 statistics (§9, ARCHIVE 11e), and the user sends compiled feedback. Smaller items are in
 11.5.
@@ -926,7 +926,7 @@ balanced means.
 - **Bots do not help a teammate build**, even under `crossIslandBuild: all` — teaching
   one to help without wrecking a person's plan is its own question (team mode, §1.8).
 
-### 11.6 Bots as skill and personality — agreed 2026-09-29, phases 1–4 done
+### 11.6 Bots as skill and personality — done (2026-09-30)
 
 **The next milestone (M13)**, ahead of 11.2's baseline, which is then measured over the
 personality mix real matches will contain. Today a tier bundles two things: **skill** —
@@ -970,8 +970,9 @@ not designed yet: plain trait names first.
   region beside its own wall, the fewest blocks that seal it, and guns placed there.
   **Balanced** is today's. **Secondary** puts castles and safety first, a tighter wall.
 - **Castle choice**, as flavour following risk rather than a trait of its own: an
-  offensive bot opens from a central castle with neighbours to reach for, a defensive one
-  from a sheltered corner, a balanced one as today.
+  offensive bot opens from a central castle with neighbours to reach for, the others from
+  the cheapest. A defensive bot opening from the sheltered corner was tried and dropped in
+  phase 5: it had half the guns and won 2 matches of 24.
 
 **Targeting is a share, not absolute.** Each targeting trait sends a configurable
 share of shots to its own choice — 50% to start, the user's call — and the rest by the
@@ -1019,10 +1020,12 @@ reliably beat Level 5. Measured at three players, both seats.
    **For phase 5**: max cannons forfeited 13.6% against balanced 9.4% with its extra room
    unused — pockets only when room is short is the first thing to try — and secondary
    forfeited 12.5%, to be re-measured at size.
-5. **Tuning and the reveal (M)**: the level table filled in and felt out (are ten levels
-   distinct?); each trait against balanced at Level 5, both seats, 20–40 matches each; the
-   guardrail checked per trait; tuning until nothing dominates. Then the reveal line in
-   the summary. Nicknames after, if wanted.
+5. **Tuning and the reveal — done** (ARCHIVE 11zb): the guardrail holds for every trait,
+   the ladder climbs from Level 1 to 10, no trait dominates, and defensive opens from the
+   cheapest castle — the sheltered one cost it most of its guns. The reveal is in the
+   summary. **Still open**: nicknames for combinations, if wanted; Levels 6 and 7 play
+   alike; max cannons forfeits more for room it does not use, if that ever matters more
+   than its fair share of wins; Level 8 knockouts rose with phase 2.
 
 **Carried in from before**: the pockets note (§1.3, ARCHIVE 11o) — bots obey the rule but
 never wall a pocket on purpose, which is why turning it on moved the soak not at all; max

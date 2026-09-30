@@ -16,6 +16,7 @@ import {
   type ArtLook,
   type ArtStyle,
   type ArtStyles,
+  type BotSetup,
   type MatchSettings,
   type Personality,
   type Table,
@@ -43,7 +44,7 @@ import { announcementLines, announcementTitle, isTeamMatch, teamLetter } from '.
 import { buildHints, type BuildHints } from './hints.js';
 import { timerSpot } from './timerSpot.js';
 import { SplitTitle, installBackdrop } from './decor.js';
-import { MatchLog } from './summary.js';
+import { MatchLog, botSetupsFromSeats, revealLines } from './summary.js';
 import { applyEffects, motionReduced, saveEffects, storedEffects } from './motion.js';
 import { PauseControls } from './pause.js';
 import { openingShot, winnerShot } from './camera.js';
@@ -215,6 +216,8 @@ interface Session {
   readonly pausedBy: number | null;
   /** Pauses or resumes: at once locally, and for everyone once a server agrees. */
   setPaused(paused: boolean): void;
+  /** Each bot's level and personality, by player, for the reveal at game over. */
+  readonly setups: ReadonlyMap<number, BotSetup>;
   /** Extra line for the HUD, such as latency. */
   status(): string;
 }
@@ -502,6 +505,7 @@ function localSession(match: LocalMatch): Session {
     setPaused: (paused) => {
       pausedBy = paused && !match.finished ? match.humanPlayer : null;
     },
+    setups: match.setups,
     status: () => (match.humanPlayer < 0 ? 'watching' : ''),
   };
 }
@@ -805,6 +809,8 @@ function roomLobby(
 ): void {
   const match = new NetworkMatch(connection);
   let view: LobbyView | null = null;
+  /** The table as it stood before the start, which is what the seats were dealt from. */
+  let table: LobbyView | null = null;
   let roomCode = code ?? '';
   let hostId = -1;
   let started = false;
@@ -882,7 +888,10 @@ function roomLobby(
           hostBot: message.hostBot,
           arrived,
         };
-        if (!message.started) render();
+        if (!message.started) {
+          table = view;
+          render();
+        }
         break;
       }
       case 'snapshot':
@@ -891,14 +900,18 @@ function roomLobby(
           // A host who gave their seat to a bot watches it play, whoever else is here.
           const watching =
             view !== null && view.hostBot !== null && match.humanPlayer === view.hostId;
-          const setup: Setup = {
-            ...common,
-            seed: view?.seed ?? 0,
-            seats: [],
-            settings: DEFAULT_SETTINGS,
-          };
-          void runSession(networkSession(match, connection, watching), setup).catch((e: unknown) =>
-            showError('Match failed', e),
+          // Each seat's bot level, or null for a person, in lobby order — what the room
+          // dealt the islands and personalities from — so the reveal can name every bot.
+          const seats = Array.from({ length: table?.playerCount ?? 0 }, (_, seat) => {
+            const person = table?.seats.some((s) => s.playerId === seat) ?? false;
+            if (!person) return table?.bots[seat] ?? DEFAULT_BOT;
+            return seat === table?.hostId && table.hostBot !== null ? table.hostBot : null;
+          });
+          const seed = table?.seed ?? view?.seed ?? 0;
+          const setup: Setup = { ...common, seed, seats, settings: DEFAULT_SETTINGS };
+          const setups = botSetupsFromSeats(seed, seats);
+          void runSession(networkSession(match, connection, watching, setups), setup).catch(
+            (e: unknown) => showError('Match failed', e),
           );
         }
         break;
@@ -923,8 +936,10 @@ function networkSession(
   match: NetworkMatch,
   connection: ServerConnection,
   watching = false,
+  setups: ReadonlyMap<number, BotSetup> = new Map(),
 ): Session {
   return {
+    setups,
     get state() {
       if (match.state === null) throw new Error('match has no state yet');
       return match.state;
@@ -987,6 +1002,7 @@ async function runSession(session: Session, setup: Setup): Promise<void> {
   // What the end of the match summarises, kept from the events as they come.
   const matchLog = new MatchLog();
   hud.useLog(matchLog);
+  hud.useReveal(revealLines(session.state, session.setups));
   // The filmstrip's colours: the shared palette and this match's players, as the HUD's.
   const film = filmColours(art, matchPalette(art, session.state));
   const matchAudio = new MatchAudio(audio, session.humanPlayer);

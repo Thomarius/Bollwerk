@@ -1,4 +1,6 @@
-import type { MatchEvent, MatchState } from '@rampart/sim';
+import { dealPersonality } from '@rampart/ai';
+import { personalityWords, type BotSetup } from '@rampart/config';
+import { seatOrder, type MatchEvent, type MatchState } from '@rampart/sim';
 
 import type { Frame } from './filmstrip.js';
 
@@ -102,4 +104,54 @@ export function scoreChart(
       y: Number((height - (score / top) * height).toFixed(1)),
     })),
   }));
+}
+
+/**
+ * Each bot's level and personality, by player, from the table as the host set it: the
+ * seats in lobby order, a level for each bot and null for a person. Seats are shuffled onto
+ * players by the seed and personalities dealt from it by player (PLAN 11.6), exactly as a
+ * room and a local match do, so a client needs nothing more from the server to know them.
+ */
+export function botSetupsFromSeats(
+  seed: number,
+  seats: readonly (number | null)[],
+): Map<number, BotSetup> {
+  const order = seatOrder(seed, seats.length);
+  const setups = new Map<number, BotSetup>();
+  seats.forEach((level, seat) => {
+    if (level === null) return;
+    const player = order[seat] as number;
+    setups.set(player, { level, personality: dealPersonality(seed, player) });
+  });
+  return setups;
+}
+
+/** One bot revealed at the end: who, and how it played. */
+export interface Reveal {
+  player: number;
+  name: string;
+  /** "Level 6 · offensive · finisher · max cannons". */
+  text: string;
+}
+
+/**
+ * The surprise at the end of a match (PLAN 11.6): every bot's level and the personality it
+ * was dealt, in plain words, in player order. A person is left out; so is a seat whose
+ * setup this client does not know.
+ */
+export function revealLines(
+  state: Pick<MatchState, 'players'>,
+  setups: ReadonlyMap<number, BotSetup>,
+): Reveal[] {
+  return state.players.flatMap((p) => {
+    const setup = setups.get(p.id);
+    if (!p.isBot || setup === undefined) return [];
+    return [
+      {
+        player: p.id,
+        name: p.name,
+        text: `Level ${setup.level} · ${personalityWords(setup.personality)}`,
+      },
+    ];
+  });
 }
