@@ -18,16 +18,7 @@ import {
   teamStandings,
   type AnnouncementLine,
 } from './scores.js';
-import {
-  PIECE_CATALOGUE,
-  currentPieceId,
-  owesCastleChoice,
-  pieceCells,
-  teamScore,
-  upcomingPieceIds,
-  type MatchState,
-  type Phase,
-} from '@rampart/sim';
+import { owesCastleChoice, teamScore, type MatchState, type Phase } from '@rampart/sim';
 
 /**
  * The phase banner each style draws, as a class of `.phase-call`: a record over every
@@ -46,7 +37,7 @@ const BANNER_CLASS: Record<ArtStyle, string> = {
 };
 
 /**
- * The HUD in each look (PLAN 11.11 W7): the bar, the clock, the piece box and the hints,
+ * The HUD in each look (PLAN 11.11 W7): the bar, the clock and the cannon count,
  * dressed as the banners are. A record over every style, so a new style must bring one.
  * Medieval and Night share the dark bar with gold that every style once had.
  */
@@ -70,16 +61,6 @@ const PHASE_LABEL: Record<Phase, string> = {
   game_over: 'Game over',
 };
 
-const PHASE_HINT: Record<Phase, string> = {
-  lobby: '',
-  intermission: '',
-  castle_select: 'Click a castle on your island',
-  combat: 'Click to fire the nearest ready cannon',
-  build: 'Click to place · R / wheel / right-click to rotate',
-  cannon_place: 'Click inside your own sealed territory',
-  game_over: '',
-};
-
 /** One banner over one island. */
 export interface IslandBanner {
   player: number;
@@ -93,20 +74,6 @@ export interface IslandBanner {
   /** Screen pixels, from `Scene.screenAt`. */
   x: number;
   y: number;
-}
-
-/** A piece drawn as a small grid of cells, for the preview strip. */
-function pieceSwatch(pieceId: number, colour: string, scale: number): string {
-  const cells = pieceCells(pieceId, 0);
-  const w = Math.max(...cells.map(([x]) => x)) + 1;
-  const h = Math.max(...cells.map(([, y]) => y)) + 1;
-  const boxes = cells
-    .map(
-      ([x, y]) =>
-        `<i style="left:${x * scale}px;top:${y * scale}px;width:${scale - 1}px;height:${scale - 1}px;background:${colour}"></i>`,
-    )
-    .join('');
-  return `<span class="swatch" style="width:${w * scale}px;height:${h * scale}px">${boxes}</span>`;
 }
 
 /** Short, shouted names for the sweeping phase announcement. */
@@ -604,7 +571,6 @@ export class Hud {
         ? ''
         : `<div class="timebar${secondsLeft <= 3 ? ' urgent' : ''}"><i style="width:${(left * 100).toFixed(1)}%"></i></div>`;
     const human = state.players[humanPlayer];
-    const colour = playerCssColour(humanPlayer);
 
     // Lives as pips, one per life including the one being played, spent ones hollow:
     // read at a glance across a roster, where "2 lives" had to be read word by word.
@@ -714,26 +680,6 @@ export class Hud {
           : `<div class="counter done">All cannons placed</div>`;
     }
 
-    let queue = '';
-    // In overtime there is no next piece to preview, and once the last is down nothing
-    // to hold either.
-    if (
-      state.phase === 'build' &&
-      human &&
-      !human.eliminated &&
-      !(overtime && human.overtimeSpent)
-    ) {
-      const next = overtime
-        ? []
-        : upcomingPieceIds(state, humanPlayer, state.ruleset.build.previewCount);
-      queue =
-        `<div class="queue"><span class="label">Holding</span>${pieceSwatch(currentPieceId(state, humanPlayer), colour, 11)}` +
-        (next.length > 0
-          ? `<span class="label">Next</span>${next.map((id) => pieceSwatch(id, colour, 7)).join('')}`
-          : '') +
-        `</div>`;
-    }
-
     // The labels over the islands live in the layer above this one, and at the end of a
     // match they sat on top of the summary; it says who was out, so they step aside.
     this.bannerRoot.classList.toggle('game-over', state.phase === 'game_over');
@@ -795,21 +741,6 @@ export class Hud {
       banner = `<div class="banner summary">${text}${table}${this.chart(state, humanPlayer)}${this.revealMarkup()}<button class="leave">Back to menu</button></div>`;
     }
     this.showEndScreen(banner);
-    // Knocked out: the stamp over your island is the moment, so this is only a quiet
-    // line where the controls hint was — a banner in the middle of the screen covered
-    // the very match you were left to watch, for the rest of it.
-    const hint = human?.eliminated
-      ? `Knocked out in round ${human.eliminatedRound} · watching the rest`
-      : humanPlayer < 0
-        ? ''
-        : choosing && !waiting
-          ? PHASE_HINT.castle_select
-          : overtime
-            ? human?.overtimeSpent
-              ? 'Last piece placed'
-              : 'Place the piece you are holding · no more after it'
-            : PHASE_HINT[state.phase];
-
     phaseRoot.innerHTML =
       `<strong>${waiting ? `Next: ${label}` : label}</strong>` +
       // Hidden rather than removed, so the round label does not jump sideways every
@@ -818,13 +749,9 @@ export class Hud {
         ? `<span class="timer" style="visibility:hidden">${secondsLeft.toFixed(1)}s</span>`
         : `<span class="timer">${secondsLeft.toFixed(1)}s</span>`) +
       `<span class="round${inFinalRound(state) ? ' final' : ''}">${roundLabel(state)}</span>`;
-    rest.innerHTML =
-      timebar +
-      queue +
-      cannonCount +
-      `<div class="hint">${hint}</div>` +
-      (status ? `<div class="net">${status}</div>` : '');
+    // No piece box and no line of hints at the bottom: the test sessions found nobody
+    // had time to look down there. The ghost at the cursor is the piece held, the
+    // stamp over an island says who is out, and the phase label says overtime.
+    rest.innerHTML = timebar + cannonCount + (status ? `<div class="net">${status}</div>` : '');
   }
 }
-
-export const PIECE_COUNT = PIECE_CATALOGUE.length;

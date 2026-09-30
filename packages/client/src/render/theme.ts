@@ -388,8 +388,10 @@ export function drawMainCastles(
     if (player.eliminated || player.startingCastleId === null) continue;
     const castle = state.castles.find((c) => c.id === player.startingCastleId);
     if (castle === undefined) continue;
+    // Centred on the castle's block, not over it where the flag flies (the test
+    // sessions); the crown is 0.72 of its width tall, so its band sits that much below.
     const left = tileX(view, castle.x + castle.w / 2) - width / 2;
-    const base = tileY(view, castle.y) - view.tile * 0.2;
+    const base = tileY(view, castle.y + castle.h / 2) + width * 0.36;
     g.poly(CROWN.flatMap(([x, y]) => [left + x * width, base + y * width]));
     g.fill({ color: playerColour(art, player.id, 'light') });
     g.stroke({ width: rim, color: 0x0a0a12, alpha: 0.85, join: 'round' });

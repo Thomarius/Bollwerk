@@ -503,7 +503,7 @@ body.reduced-effects .you-are-here {
   white-space: nowrap;
 }
 
-/* Timebar, queue, hint and banner, rewritten each frame beside the kept roster. */
+/* Timebar, cannon count and banner, rewritten each frame beside the kept roster. */
 .hud-rest {
   display: contents;
 }
@@ -642,27 +642,6 @@ body.reduced-effects .you-are-here {
   opacity: 0.4;
 }
 
-.queue {
-  position: absolute;
-  bottom: 2.5rem;
-  left: 50%;
-  transform: translateX(-50%);
-  display: flex;
-  gap: 0.6rem;
-  align-items: flex-end;
-  padding: 0.5rem 0.9rem;
-  border: var(--hud-box-edge);
-  background: var(--hud-box);
-  box-shadow: var(--hud-box-shadow);
-}
-
-.queue .label {
-  color: var(--hud-muted);
-  font-size: 10px;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-}
-
 .swatch {
   position: relative;
   display: inline-block;
@@ -670,14 +649,6 @@ body.reduced-effects .you-are-here {
 
 .swatch i {
   position: absolute;
-}
-
-.hint {
-  position: absolute;
-  bottom: 0.75rem;
-  width: 100%;
-  text-align: center;
-  color: var(--hud-muted);
 }
 
 .banner {
@@ -703,11 +674,13 @@ body.reduced-effects .you-are-here {
   color: var(--muted);
 }
 
-/* The end-of-match summary: narrower and see-through, so the fireworks behind it show,
-   and held back while they and the push onto the winner have the screen (Hud). */
+/* The end-of-match summary: narrower than the old end screen, and held back while the
+   fireworks and the push onto the winner have the screen (Hud). Opaque, with its grey
+   lifted well above the HUD's: see-through, the grey figures lost against the board. */
 .banner.summary {
+  --muted: #c9cedb;
   padding: 1rem 1.75rem;
-  background: rgb(10 10 18 / 62%);
+  background: #0a0a12;
   font-size: 1.2rem;
   transition:
     opacity 600ms ease-out,
@@ -1005,7 +978,7 @@ table.final tr.head td {
 }
 
 table.final tr.out {
-  opacity: 0.45;
+  opacity: 0.7;
 }
 
 table.final tr.you td:nth-child(2) {
@@ -1388,8 +1361,7 @@ table.final tr.you td:nth-child(2) {
   --hud-track: #eef4ff26;
 }
 
-#hud.hud-plan .bar,
-#hud.hud-plan .queue {
+#hud.hud-plan .bar {
   background-image:
     linear-gradient(#8fb4e62e 1px, transparent 1px),
     linear-gradient(90deg, #8fb4e62e 1px, transparent 1px);
@@ -1415,7 +1387,7 @@ table.final tr.you td:nth-child(2) {
   font-style: italic;
 }
 
-/* Toy bricks: a blue baseplate with its studs, under a yellow rule; the piece box a
+/* Toy bricks: a blue baseplate with its studs, under a yellow rule; the cannon count a
    plate with rounded plastic corners. */
 #hud.hud-bricks {
   --hud-bar: #1552b3;
@@ -1429,24 +1401,13 @@ table.final tr.you td:nth-child(2) {
   --hud-track: #ffffff26;
 }
 
-#hud.hud-bricks .bar,
-#hud.hud-bricks .queue {
+#hud.hud-bricks .bar {
   background-image: radial-gradient(circle at 50% 50%, #2f6fd0 0 4px, transparent 4.5px);
   background-size: 16px 16px;
 }
 
-#hud.hud-bricks .queue,
 #hud.hud-bricks .counter {
   border-radius: 5px;
-}
-
-/* The hint sits on the board, not on paper: a pale ground under the ink so it reads. */
-#hud.hud-ink .hint {
-  width: fit-content;
-  left: 50%;
-  transform: translateX(-50%);
-  padding: 0.1rem 0.6rem;
-  background: #efe3c2cc;
 }
 
 @keyframes island-banner-in {

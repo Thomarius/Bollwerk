@@ -431,7 +431,9 @@ and a corrupt file is silent rather than noisy.
 style): a flat bar under a hard gold rule for Minimal, near black under a glowing cyan
 rule with the phase in magenta neon for Cyberpunk, a gridded title block ruled double for
 Blueprint, a strip of paper lettered in ink for Parchment, a blue baseplate under a yellow rule for Toy bricks, and the dark bar with gold for
-Medieval and Night. The piece box, the cannon count and the hints take it too. It is a
+Medieval and Night. The cannon count takes it too; the piece box and the line of hints
+at the bottom were removed after the test sessions, since nobody had time to look down
+there, and the summary is opaque with its grey lifted, for contrast. It is a
 set of CSS variables on `#hud`; the HUD takes the arriving look's as a banner starts,
 since the bar is at the top and above the line is always the new look. The bar is exactly
 `HUD_BAR_PX` tall, its rule inside, so a solid skin never overhangs the board.
@@ -485,7 +487,7 @@ from its middle over `effects.lifeCrumbleMs` instead of clearing it in a frame (
 cannons, removed from the state outright, still go at once). Once the match is over,
 fireworks burst over the winners' islands in their colours for as long as the screen
 stays up, and **the summary** (`summary.ts`) comes up over them after
-`summary.delayMs`, narrow and see-through so they still show. It gives each player —
+`summary.delayMs`, narrow and opaque (see-through, its grey figures could not be read). It gives each player —
 each team, in a team match — the wall they destroyed, the most castles held at once and
 the lives left (none once out), with every score charted round by round, the viewer's
 line heaviest. It is kept from the
@@ -824,10 +826,12 @@ first round of test-session feedback. In order:
    to be checked against how people play. The server must be rebuilt (`npm start`) and
    every page reloaded: the protocol is 14. Every match is recorded with its statistics
    (§9, ARCHIVE 11e); the user sends compiled feedback, which is triaged with them first.
-2. **11.2, elimination tuning**, the next milestone. Its baseline is measured over the
+2. **11.15, the third visual pass** (X1–X6), agreed 2026-09-30, while more test games are
+   played against higher-level bots.
+3. **11.2, elimination tuning**, the next milestone. Its baseline is measured over the
    personality mix; the "ambitious" bot it planned and finisher targeting exist now.
-3. **11.3, two-player balance**, re-measured before anything is tried; after 11.2.
-4. **11.4**, measurements never taken, and **11.13**, the bots' loose ends, as they fit.
+4. **11.3, two-player balance**, re-measured before anything is tried; after 11.2.
+5. **11.4**, measurements never taken, and **11.13**, the bots' loose ends, as they fit.
 
 Only open work is kept here. Finished packages move to `ARCHIVE.md` under their old
 numbers — 11.1 scoring, 11.7 team mode, 11.8 the visual pass, 11.9 the themes, 11.10 the
@@ -835,6 +839,73 @@ UI polish, all in ARCHIVE 11h; 11.11 the second visual pass and 11.12 the first
 test-session feedback, in ARCHIVE 11w; 11.5 the small items and 11.6 the bots, in ARCHIVE
 11zd; 11.14 the second test-session feedback, in ARCHIVE 11ze — so the open sections keep
 theirs.
+
+### 11.15 Third visual pass — agreed 2026-09-30
+
+Agreed with the user from a list of suggestions; left out: points rising from each wall
+block your shot breaks (too messy), "Double!" callouts for sealing several castles with
+one piece, and "Just in time!" for a late seal (not needed). Display only, like 11.8–11.11:
+no sim, protocol or ruleset change, so nothing can desync or move a balance measurement.
+The same discipline: anything timed is a pure function with tests, scenes go into
+`tools/screenshots.sh`, tunables go in `art.default.json`, anything under a second is left
+for a person to see, and §7's rules hold — a player keeps their hue, information stays
+readable, land, sea, wall and sealed ground tell apart.
+
+Packages in order. X1 first, since X6's shapes need a place in the roster it redesigns;
+the rest are independent.
+
+**X1 — Mouse only, and a roster of points and lives.**
+
+- **The keyboard controls go**: R and E no longer turn the piece; right-click and the
+  wheel do, and every action is on the two mouse buttons. Esc for pause stays, the one
+  exception agreed in F2. CLAUDE.md's rule is rewritten to match.
+- **The roster shows only points and lives**, per player and per team: castles and guns
+  firing go, from the full entry, the compact one and the hover text. The room that frees
+  is spent making the score and the lives stand out — larger figures, the pips larger and
+  the last life louder — and should let eight players fit without a compact form at all.
+  The layout is agreed with the user before building, with screenshots at two, four and
+  eight players, free-for-all and teams.
+
+**X2 — Information on the board.**
+
+- **The crown shows the main castle's state**: bright while it is sealed, dimmed and
+  cracked once it is breached, still always shown. In the combat look it follows the
+  enclosure held through combat, as every other sign of "sealed" does.
+- **The ring before the choice**: hovering a castle while choosing — at the start or after
+  a continue — shows faintly, in the player's colour, the ring it would get.
+- **Unsealed at the end**: while nothing of the player's is sealed, their castles are
+  outlined already (`hints.ts`); over the countdown's last five seconds that outline pulses
+  red with each tick.
+- **Guns earned** in the island's points banner at a resolution: "+3 guns" beside the
+  points, since today they show only when the cannon phase opens.
+
+**X3 — Ground lost, drained.** As the "Rebuild" banner reveals the build look, territory
+lost to breaches drains away from the gaps in a dark red wash — the seal flood run in
+reverse (`seal.ts`), in every style.
+
+**X4 — Moments and small atmosphere.**
+
+- **The winners' banners**: large banners in the winners' colours rise over their castles
+  with the fireworks, which the camera's push lands on.
+- **Distant thunder** in Medieval's rain: a rare, faint flash across the sky, never
+  mistakable for an impact; none under reduced motion.
+- **Embers** drifting at the screen's edges through the final round, with its dusk; none
+  under reduced motion.
+
+**X5 — Medieval light.** In the pixel style, and at Night where it applies.
+
+- **Reflections**: castles and walls mirrored faintly in the sea tiles beside the coast,
+  rippling; Night's torches too.
+- **Shadows by the time of day**: short at noon, long toward the morning and sunset
+  rounds, with the daylight tint that already changes by round.
+- **Snow**, as one of Medieval's seeded weathers (`weatherOdds`): falling flakes and white
+  edges on walls and castles. Not a style of its own.
+
+**X6 — A shape per player.** Beside colour, each player carries a shape — circle,
+triangle, square and so on — on the roster, the island banners, the lobby's seat cards and
+map, and the summary, so eight players and colour-blind players can tell islands apart.
+The cheap form of the high-contrast theme set aside in 11.9. Whether it goes on the board
+too (flags, crowns) is decided with the user when X6 starts.
 
 ### 11.2 Elimination tuning — planned, waiting on human play
 
