@@ -32,6 +32,7 @@ import {
 } from '@rampart/sim';
 
 import { Audio } from './audio.js';
+import { showsClock } from './clock.js';
 import { Controls, inputMode, readyCannons } from './controls.js';
 import { bannersFor, type LifeLost, type PointsGained } from './banners.js';
 import { matchPalette, playerCssColour, useMatchPalette } from './colours.js';
@@ -48,7 +49,6 @@ import { MatchLog, botSetupsFromSeats, revealLines } from './summary.js';
 import { applyEffects, motionReduced, saveEffects, storedEffects } from './motion.js';
 import { PauseControls } from './pause.js';
 import { openingShot, winnerShot } from './camera.js';
-import { boardPicture, filmColours } from './filmstrip.js';
 import { saveSealPreview, sealPreviewOn } from './sealPreview.js';
 import { drawPreview, tablePreview } from './preview.js';
 import { RecordingUpload } from './recordingUpload.js';
@@ -1003,8 +1003,6 @@ async function runSession(session: Session, setup: Setup): Promise<void> {
   const matchLog = new MatchLog();
   hud.useLog(matchLog);
   hud.useReveal(revealLines(session.state, session.setups));
-  // The filmstrip's colours: the shared palette and this match's players, as the HUD's.
-  const film = filmColours(art, matchPalette(art, session.state));
   const matchAudio = new MatchAudio(audio, session.humanPlayer);
 
   /**
@@ -1282,7 +1280,7 @@ async function runSession(session: Session, setup: Setup): Promise<void> {
   /** The big timer, and the ready count beside the aiming cursor. */
   function drawCounters(ghost: Ghost): void {
     const state = session.state;
-    if (bigTimerAt !== null && TIMED.includes(state.phase)) {
+    if (bigTimerAt !== null && TIMED.includes(state.phase) && showsClock(state)) {
       const centre = scene.screenAt(bigTimerAt.x - 0.5, bigTimerAt.y - 0.5);
       const edge = scene.screenAt(bigTimerAt.x - 0.5 + bigTimerAt.size, bigTimerAt.y - 0.5);
       const seconds = Math.max(
@@ -1401,13 +1399,6 @@ async function runSession(session: Session, setup: Setup): Promise<void> {
           break;
         }
         case 'round_resolved': {
-          // The board as this resolution left it, swept and scored, for the summary.
-          matchLog.frames.push({
-            round: event.round,
-            width: session.state.width,
-            height: session.state.height,
-            pixels: boardPicture(session.state, film),
-          });
           const hold = Math.ceil(
             (defaultConfigBundle.art.hud.pointsBannerMs * session.state.ruleset.tickRateHz) / 1000,
           );

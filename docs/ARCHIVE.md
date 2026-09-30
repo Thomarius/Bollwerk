@@ -2997,3 +2997,104 @@ reliably beat Level 5. Measured at three players, both seats.
 **Carried in from before**: the pockets note (§1.3, ARCHIVE 11o) — bots obey the rule but
 never wall a pocket on purpose, which is why turning it on moved the soak not at all; max
 cannons is how the soak will finally measure what it does to balance.
+
+## 11ze. The second compiled test feedback (formerly PLAN 11.14)
+
+Eight items from the user's compiled feedback, triaged with them on 2026-09-30 and built
+the same day in three groups: bugs, display, then two rule changes, which land ahead of
+11.2's baseline.
+
+- **The banner wipe missed the screen's edges** on a high-density display. The masks were
+  sized as `renderer.width / renderer.resolution`, but Pixi v8's `renderer.width` is
+  already in CSS pixels, so at a device pixel ratio of 2 they covered half the window each
+  way and 2/3 at 1.5 — neither look was drawn beyond them until the wipe ended and the
+  masks came off. The camera, first suspect, was innocent. `tools/screenshots.sh` runs at
+  a ratio of 1, where the two agree, which is why no screenshot caught it: reproduced by
+  capturing a wipe at a ratio of 2 with the fix taken out, where both looks stop short of
+  the middle, and seen whole with it.
+- **"Lives lost 2" for a player who was out.** The summary counted `player_continued`,
+  and the failure that puts a player out spends no continue. The column is **lives left**,
+  read from the state — the pool plus the life being played, none once out — so it no
+  longer depends on the log having seen every event; `MatchLog.livesSpent` went.
+- **No clock in overtime** (`showsClock` in `clock.ts`): the HUD's figures and bar and the
+  big timer stop at 0 and go, and no tick sounds; a second countdown from 3 had read as
+  the build phase starting over.
+- **The countdown ticks over five seconds, louder each tick** (`countdownGain`, 35% of the
+  cue's volume up to full), while the big timer's beat and red stay at three: heard
+  before it is seen, as the user asked. `play` takes a gain for it.
+- **The filmstrip is gone** from the summary, with its config (`filmstripTilePx`); the
+  user found it did not look good and added nothing.
+- **The fireworks show**: the summary is held back for `summary.delayMs` (4 s) and fades
+  in, narrower and see-through. Timed in the HUD, not by a CSS delay, which would restart
+  whenever the markup is rewritten; traced in a browser, released about 4 s after game
+  over.
+- **Only your own shots are marked**, in all seven styles through the shared
+  `drawShotTarget` — no opponents', no teammates', and no red warning over your own wall
+  (the user's call, on both questions); the balls in flight still show, and a spectator
+  sees no marks. Bots, to match, skip only tiles their own shots are headed for: two
+  players' shots at one tile race, and the second hits nothing. Grudge targeting still
+  counts shots arriving at the bot's own walls, which a person sees come in too.
+- **The main castle**, as in the original: `cannons.firstRewardForMainCastle` gives the
+  first castle's reward only to the castle the player chose, while it is sealed — afresh
+  after a continue, which resets every castle — and every other sealed castle earns
+  `perAdditionalCastleReward`. The rule is one pure function, `cannonReward`, used by the
+  resolution and the bots' estimate alike. Defaults off in the schema so recordings from
+  before replay as played; on in the config. Protocol 14. Bots resealing weigh a plan
+  that takes the main castle back as one more gun kept; the tight repair still comes
+  first. Tested both ways: main breached and another sealed earns one cannon, two with
+  the rule off.
+- **The crown** (`drawMainCastles`): the user chose a crown badge over a second flag or a
+  ring, shown always, sealed or not, since which castle counts double matters most once
+  it is breached. One shared helper in the owner's colour with a dark rim, drawn by every
+  theme before its shots in flight; 1.1 tiles wide was a little small at three players,
+  1.35 reads. Seen in Medieval, Minimal, Cyberpunk and Parchment.
+- **Measured**, both rule changes together, three players, Level 5, dealt personalities,
+  sixteen matches before and after: forfeits 11.8% -> 9.2%, knockouts 2 -> 0, cannons
+  awarded per player-round 2.36 -> 2.22, active guns 5.53 -> 5.69, damage points 39.5 ->
+  39.4, territory points 56 -> 63, every match to the cap either way. Nothing beyond noise
+  at this size but the expected fall in cannons awarded: bots racing each other's shots
+  did not cost them damage.
+
+### Formerly PLAN 11.14 Test-session feedback, second batch — done
+
+Triaged with the user 2026-09-30. In this order; groups 1 and 2 are display only, group 3
+changes rules and bots and lands **before 11.2's baseline**, which it would otherwise
+invalidate.
+
+**Group 1, bugs.**
+
+- **The banner wipe misses the screen's edges**: during a transition neither look covers
+  the whole visible window, and the new one snaps in whole once the banner has gone. The
+  masks are meant to span the canvas, margins included; first suspect is the camera (ARCHIVE
+  11r), which the masks sit outside. Reproduce in a mid-wipe screenshot before fixing.
+- **"Lives lost 2" for a player who is out** in the summary: it counts `player_continued`,
+  and the last failure is an elimination, not a continue. The column becomes **lives
+  left** — 0 for a player who is out, the pool for a team.
+
+**Group 2, display.**
+
+- **Overtime shows no clock**: the countdown stops at 0 and disappears; overtime is
+  carried by the red border and the HUD's wording, with no ticks.
+- **The countdown ticks over the last five seconds, louder each tick.** The big timer's
+  beat and red stay at three, so it escalates in two steps: heard first, then seen.
+- **The summary's filmstrip is removed** (`filmstrip.ts`, ARCHIVE 11r): it did not look
+  good and added nothing.
+- **The fireworks show**: the summary appears only after a few seconds of fireworks and
+  the camera's push, and is narrower and translucent.
+
+**Group 3, rules and bots.**
+
+- **Only your own shots are marked** where they will land — not opponents', not
+  teammates', and not the red warning over your own wall; cannonballs in flight stay
+  visible. Bots, to match, skip only tiles their own shots are headed for: of two shots
+  at one tile the first to land takes it and the points, the second hits nothing. (10m's
+  fix, a bot putting its whole salvo into one tile, stands.)
+- **The main castle**, as in the original: the castle a player chose is worth two cannons
+  sealed, every other sealed castle one. Today the first sealed castle is worth two,
+  whichever it is, so this matters only when the main castle falls while another holds.
+  After a continue every castle is reset and the newly chosen one becomes the main
+  castle. `startingCastleId` already records it. A ruleset switch, so a protocol bump;
+  the bots' reward estimate follows, and likely a preference for resealing the main
+  castle first. **Its look, simply for a first version**: a marker drawn by a shared
+  helper rather than new art in all seven styles (the original gave it two towers
+  instead of one).

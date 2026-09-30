@@ -204,6 +204,63 @@ describe('round resolution', () => {
     );
   });
 
+  describe('the main castle', () => {
+    /**
+     * Player 0 holds a second castle behind a ring of its own while the ring round the
+     * castle they chose is breached — the one case the main-castle rule decides.
+     */
+    function mainBreachedOtherSealed(firstRewardForMainCastle: boolean) {
+      const ruleset = withoutRoundCap(withoutContinues(fastRuleset()));
+      const state = beginMatch(
+        createMatch({
+          ...options(2),
+          ruleset: {
+            ...ruleset,
+            cannons: { ...ruleset.cannons, firstRewardForMainCastle },
+          },
+        }),
+      );
+      for (const player of state.players) {
+        const castle = state.castles.find((c) => c.islandId === player.islandId)!;
+        applyAction(state, { kind: 'select_castle', player: player.id, castleId: castle.id });
+      }
+      const player = state.players[0]!;
+      const main = state.castles.find((c) => c.id === player.startingCastleId)!;
+      const other = state.castles.find((c) => c.islandId === player.islandId && c !== main)!;
+      const r = state.terrainConfig.startingWall.ringRadiusTiles;
+      for (let y = other.y - r; y < other.y + other.h + r; y++) {
+        for (let x = other.x - r; x < other.x + other.w + r; x++) {
+          const edge =
+            x === other.x - r ||
+            y === other.y - r ||
+            x === other.x + other.w - 1 + r ||
+            y === other.y + other.h - 1 + r;
+          const i = y * state.width + x;
+          if (edge && state.structure[i] === Structure.Empty) {
+            state.structure[i] = Structure.Wall;
+            state.owner[i] = player.islandId;
+          }
+        }
+      }
+      // A mid-edge block of the main castle's ring: a corner would not breach it.
+      state.structure[(main.y - r) * state.width + main.x] = Structure.Empty;
+      runToResolution(state);
+      return state;
+    }
+
+    it('earns only one cannon for another castle while the main one is breached', () => {
+      const player = mainBreachedOtherSealed(true).players[0]!;
+      expect(player.enclosedCastles).toBe(1);
+      expect(player.cannonsToPlace).toBe(defaultRuleset.cannons.perAdditionalCastleReward);
+    });
+
+    it('earns the first reward for whichever castle is sealed with the rule off', () => {
+      const player = mainBreachedOtherSealed(false).players[0]!;
+      expect(player.enclosedCastles).toBe(1);
+      expect(player.cannonsToPlace).toBe(defaultRuleset.cannons.firstCastleReward);
+    });
+  });
+
   it('eliminates a player whose walls are gone, and ends the match', () => {
     const state = startedMatch();
     // Raze every wall on player 1's island; they cannot enclose anything.

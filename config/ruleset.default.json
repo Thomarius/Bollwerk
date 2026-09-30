@@ -17,6 +17,7 @@
     "startingCount": 3,
     "firstCastleReward": 2,
     "perAdditionalCastleReward": 1,
+    "firstRewardForMainCastle": true,
     "footprint": [2, 2],
     "inertWhenNotEnclosed": true,
     "maxTotal": null

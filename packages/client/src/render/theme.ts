@@ -1,5 +1,5 @@
 import type { ArtConfig, ArtStyle } from '@rampart/config';
-import { Structure, findReadyCannon, type MatchState, type Shot } from '@rampart/sim';
+import { findReadyCannon, type MatchState, type Shot } from '@rampart/sim';
 import type { Container, Graphics } from 'pixi.js';
 
 import type { SealGlow } from '../seal.js';
@@ -358,34 +358,67 @@ export class FlagHoist {
   }
 }
 
+/** A crown's outline in units of its width, from the left end of its band, y down. */
+const CROWN: readonly (readonly [number, number])[] = [
+  [0, 0],
+  [1, 0],
+  [1, -0.62],
+  [0.76, -0.32],
+  [0.5, -0.72],
+  [0.24, -0.32],
+  [0, -0.62],
+];
+
 /**
- * Where a shot will come down, pulsing faster as it nears — and in red, thicker, when
- * it is coming down on the watching player's own wall. Shared by both styles: it is the
- * warning a player repairs by.
+ * A crown over each player's main castle — the one they chose, worth the first castle's
+ * reward (`cannonReward`) — sealed or not, since which castle counts double matters most
+ * once it is breached. One shared mark rather than new art in every style (PLAN 11.14),
+ * in the owner's colour with a dark rim so it reads on any ground. None over a player
+ * who is out, or between a continue and the castle chosen after it.
+ */
+export function drawMainCastles(
+  g: Graphics,
+  view: ViewTransform,
+  state: MatchState,
+  art: ArtConfig,
+): void {
+  const width = view.tile * 1.35;
+  const rim = Math.max(1, Math.round(view.tile / 10));
+  for (const player of state.players) {
+    if (player.eliminated || player.startingCastleId === null) continue;
+    const castle = state.castles.find((c) => c.id === player.startingCastleId);
+    if (castle === undefined) continue;
+    const left = tileX(view, castle.x + castle.w / 2) - width / 2;
+    const base = tileY(view, castle.y) - view.tile * 0.2;
+    g.poly(CROWN.flatMap(([x, y]) => [left + x * width, base + y * width]));
+    g.fill({ color: playerColour(art, player.id, 'light') });
+    g.stroke({ width: rim, color: 0x0a0a12, alpha: 0.85, join: 'round' });
+  }
+}
+
+/**
+ * Where one of the watching player's own shots will come down, pulsing faster as it
+ * nears. Only their own (PLAN 11.14): opponents' marks, and the red warning over their
+ * own wall, gave away where every shot was going; the balls in flight still show.
+ * Nothing for a spectator, who has no shots.
  */
 export function drawShotTarget(
   g: Graphics,
   view: ViewTransform,
-  state: MatchState,
   shot: Shot,
   t: number,
   art: ArtConfig,
   humanPlayer: number,
 ): void {
-  const i = shot.toY * state.width + shot.toX;
-  const mine =
-    humanPlayer >= 0 &&
-    state.islandId[i] === humanPlayer + 1 &&
-    state.structure[i] === Structure.Wall;
+  if (shot.owner !== humanPlayer) return;
   // The phase runs ever faster: three beats early in the flight, a flutter at the end.
   const beat = 0.5 + 0.5 * Math.sin(Math.PI * 2 * (2 * t + 6 * t * t));
   const r = view.tile * (0.4 + 0.12 * beat);
-  const colour = mine ? hex(art.palette.uiInvalid) : playerColour(art, shot.owner, 'light');
   g.circle(tileX(view, shot.toX + 0.5), tileY(view, shot.toY + 0.5), r);
   g.stroke({
-    width: mine ? Math.max(2, Math.round(view.tile / 8)) : 1,
-    color: colour,
-    alpha: (mine ? 0.55 : 0.3) + 0.4 * t * beat,
+    width: 1,
+    color: playerColour(art, shot.owner, 'light'),
+    alpha: 0.3 + 0.4 * t * beat,
   });
 }
 

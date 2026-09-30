@@ -18,6 +18,7 @@ import {
   drawFireReticle,
   drawOvertimeBorder,
   drawSealGlow,
+  drawMainCastles,
   drawShotTarget,
   hex,
   playerColour,
@@ -590,6 +591,7 @@ export class BlueprintTheme implements Theme {
     const g = this.effectGfx;
     const t = view.tile;
     const now = state.tick + frame.tickFraction;
+    drawMainCastles(g, view, state, this.art);
     for (const shot of state.shots) {
       const span = shot.impactTick - shot.launchTick;
       const p = span <= 0 ? 1 : Math.min(1, Math.max(0, (now - shot.launchTick) / span));
@@ -620,7 +622,7 @@ export class BlueprintTheme implements Theme {
       g.moveTo(head.x - r, head.y).lineTo(head.x + r, head.y);
       g.moveTo(head.x, head.y - r).lineTo(head.x, head.y + r);
       g.stroke({ width: 1, color: colour });
-      drawShotTarget(g, view, state, shot, p, this.art, frame.humanPlayer);
+      drawShotTarget(g, view, shot, p, this.art, frame.humanPlayer);
     }
   }
 

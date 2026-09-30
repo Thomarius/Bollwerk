@@ -17,6 +17,7 @@ import {
   drawFireReticle,
   drawOvertimeBorder,
   drawSealGlow,
+  drawMainCastles,
   drawShotTarget,
   hex,
   playerColour,
@@ -252,6 +253,7 @@ export class FlatTheme implements Theme {
     this.fireworks.draw(g, view, this.art, frame.celebrate, frame.deltaMs);
     this.drawFlags(state, view, frame);
 
+    drawMainCastles(g, view, state, this.art);
     for (const shot of state.shots) {
       const span = shot.impactTick - shot.launchTick;
       const t = span <= 0 ? 1 : Math.min(1, Math.max(0, (now - shot.launchTick) / span));
@@ -264,8 +266,8 @@ export class FlatTheme implements Theme {
       g.circle(tileX(view, x + 0.5), tileY(view, y + 0.5 - lift), Math.max(2, view.tile * 0.35));
       g.fill({ color: colour });
 
-      // Where it will come down, so the target can read the threat.
-      drawShotTarget(g, view, state, shot, t, this.art, frame.humanPlayer);
+      // Where it will come down, for the watching player's own shots only.
+      drawShotTarget(g, view, shot, t, this.art, frame.humanPlayer);
     }
 
     for (const impact of this.impacts) {

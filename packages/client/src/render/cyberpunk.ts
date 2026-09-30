@@ -22,6 +22,7 @@ import {
   drawFireReticle,
   drawOvertimeBorder,
   drawSealGlow,
+  drawMainCastles,
   drawShotTarget,
   dimmed,
   hex,
@@ -1050,6 +1051,7 @@ export class CyberpunkTheme implements Theme {
     const g = this.effectGfx;
     const glow = this.effectGlow;
     const now = state.tick + frame.tickFraction;
+    drawMainCastles(g, view, state, this.art);
     for (const shot of state.shots) {
       const span = shot.impactTick - shot.launchTick;
       const t = span <= 0 ? 1 : Math.min(1, Math.max(0, (now - shot.launchTick) / span));
@@ -1099,7 +1101,7 @@ export class CyberpunkTheme implements Theme {
       glow.circle(head.x, head.y, size);
       glow.fill({ color: hex(this.art.palette.uiInk) });
 
-      drawShotTarget(g, view, state, shot, t, this.art, frame.humanPlayer);
+      drawShotTarget(g, view, shot, t, this.art, frame.humanPlayer);
     }
   }
 

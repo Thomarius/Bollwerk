@@ -318,13 +318,37 @@ function checkGameOver(state: MatchState): boolean {
 }
 
 /**
+ * Cannons earned for `sealed` castles, `mainSealed` saying whether the player's main
+ * castle — the one they chose — is among them. Under `firstRewardForMainCastle` only
+ * the main castle earns the first castle's reward, so a player holding others with the
+ * main one breached earns one a castle; otherwise the first sealed castle earns it,
+ * whichever it is. Before any cap on the total.
+ */
+export function cannonReward(
+  cannons: Ruleset['cannons'],
+  sealed: number,
+  mainSealed: boolean,
+): number {
+  if (sealed <= 0) return 0;
+  const { firstCastleReward, perAdditionalCastleReward, firstRewardForMainCastle } = cannons;
+  if (firstRewardForMainCastle && !mainSealed) return sealed * perAdditionalCastleReward;
+  return firstCastleReward + (sealed - 1) * perAdditionalCastleReward;
+}
+
+/** Whether a player's main castle — the one they chose — is sealed as the board stands. */
+export function mainCastleSealed(state: MatchState, player: PlayerState): boolean {
+  const id = player.startingCastleId;
+  return id !== null && state.castles.some((c) => c.id === id && c.enclosed);
+}
+
+/**
  * End of a build phase: seal the map, hand out cannons, eliminate whoever failed.
  * This is the only point at which a player can lose.
  */
 function resolveRound(state: MatchState): void {
   applyEnclosure(state);
 
-  const { firstCastleReward, perAdditionalCastleReward, maxTotal } = state.ruleset.cannons;
+  const { maxTotal } = state.ruleset.cannons;
   const results: RoundResult[] = [];
   const eliminatedNow: number[] = [];
   const continued: number[] = [];
@@ -403,7 +427,7 @@ function resolveRound(state: MatchState): void {
     }
 
     const enclosed = player.enclosedCastles;
-    let award = firstCastleReward + (enclosed - 1) * perAdditionalCastleReward;
+    let award = cannonReward(state.ruleset.cannons, enclosed, mainCastleSealed(state, player));
     if (maxTotal !== null) {
       const owned = state.cannons.filter((c) => c.owner === player.id).length;
       award = Math.max(0, Math.min(award, maxTotal - owned));

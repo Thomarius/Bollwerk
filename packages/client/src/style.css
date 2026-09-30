@@ -146,8 +146,6 @@ body.reduced-effects .you-are-here {
   letter-spacing: 0.08em;
 }
 
-/* The end screen's filmstrip: the board at each round's resolution, wrapping rather than
-   scrolling, since the HUD takes no pointer. */
 /* The end screen's reveal: how each bot played, a surprise kept until now (PLAN 11.6). */
 .reveal {
   margin: 0.9rem auto 0;
@@ -184,34 +182,6 @@ body.reduced-effects .you-are-here {
 }
 
 .reveal li span {
-  color: var(--muted);
-}
-
-.filmstrip {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 0.5rem;
-  max-width: 44rem;
-  margin: 0.9rem auto 0;
-}
-
-.filmstrip figure {
-  margin: 0;
-}
-
-.filmstrip img {
-  display: block;
-  width: auto;
-  height: 3.6rem;
-  border: 1px solid var(--edge);
-  image-rendering: pixelated;
-}
-
-.filmstrip figcaption {
-  margin-top: 0.15rem;
-  font-size: 10px;
-  letter-spacing: 0;
   color: var(--muted);
 }
 
@@ -731,6 +701,32 @@ body.reduced-effects .you-are-here {
   font-size: 11px;
   letter-spacing: 0.05em;
   color: var(--muted);
+}
+
+/* The end-of-match summary: narrower and see-through, so the fireworks behind it show,
+   and held back while they and the push onto the winner have the screen (Hud). */
+.banner.summary {
+  padding: 1rem 1.75rem;
+  background: rgb(10 10 18 / 62%);
+  font-size: 1.2rem;
+  transition:
+    opacity 600ms ease-out,
+    visibility 600ms;
+}
+
+.end-screen.held .banner.summary {
+  opacity: 0;
+  visibility: hidden;
+}
+
+body.reduced-effects .banner.summary {
+  transition: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .banner.summary {
+    transition: none;
+  }
 }
 
 /* The HUD lets clicks through to the board; the end screen's button has to take them. */

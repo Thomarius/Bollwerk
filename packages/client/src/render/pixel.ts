@@ -24,6 +24,7 @@ import {
   drawFireReticle,
   drawOvertimeBorder,
   drawSealGlow,
+  drawMainCastles,
   drawShotTarget,
   hex,
   playerColour,
@@ -898,6 +899,7 @@ export class PixelTheme implements Theme {
 
     const now = state.tick + frame.tickFraction;
     const trail = this.art.generators.fx.shotTrailLengthPx / this.art.tileSizePx;
+    drawMainCastles(g, view, state, this.art);
     for (const shot of state.shots) {
       const span = shot.impactTick - shot.launchTick;
       const t = span <= 0 ? 1 : Math.min(1, Math.max(0, (now - shot.launchTick) / span));
@@ -940,7 +942,7 @@ export class PixelTheme implements Theme {
         this.airLight.fill({ color: hex(this.art.palette.emberHot), alpha: 0.35 });
       }
 
-      drawShotTarget(g, view, state, shot, t, this.art, frame.humanPlayer);
+      drawShotTarget(g, view, shot, t, this.art, frame.humanPlayer);
     }
 
     const frames = this.art.generators.fx.explosionFrames;

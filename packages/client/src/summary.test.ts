@@ -70,7 +70,6 @@ describe('the match log', () => {
     expect(mostCastlesOf(log, [1])).toBe(2);
     // A team's best is its best round together — 3 in round one — not 1 + 2 + ... apart.
     expect(mostCastlesOf(log, [0, 1])).toBe(3);
-    expect(log.livesSpent.get(0)).toBe(1);
   });
 
   it('agrees with a whole match played out, round by round and at the end', () => {
@@ -86,11 +85,6 @@ describe('the match log', () => {
     expect(match.state.phase).toBe('game_over');
     expect(log.scores.map((s) => s.round)).toEqual([1, 2, 3]);
     expect(log.scores.at(-1)?.byPlayer).toEqual(match.state.players.map((p) => p.score));
-    // Lives spent are the team pool's, in free-for-all the player's own.
-    for (const p of match.state.players) {
-      const pool = match.state.teams[p.team]!;
-      expect(log.livesSpent.get(p.id) ?? 0).toBe(pool.continuesAtStart - pool.continuesRemaining);
-    }
     expect([...log.destroyed.values()].reduce((a, b) => a + b, 0)).toBeGreaterThan(0);
   }, 60_000);
 });

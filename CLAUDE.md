@@ -90,6 +90,10 @@ Full detail in PLAN.md §1. The parts that surprise people:
 - **Only walls are destructible**, and a shot removes exactly the tile it hits — and only
   an opponent's. `fire()` refuses your own island, and an eliminated player's rubble is
   indestructible.
+- **The main castle** — the one chosen, afresh after a continue — earns the first
+  castle's reward only while it is sealed; every other castle earns one. It wears a crown.
+- **You see where only your own shots will land**, and bots know no more: they avoid
+  tiles their own shots are headed for, not anyone else's.
 - **Cannons go inert outside sealed territory.** This is the game's main corrective and
   the source of most bot trouble.
 - **A pocket counts.** Sealed ground with no castle is territory — guns, points — while
@@ -125,9 +129,9 @@ pause, recording of every match (ARCHIVE 11e, each header stamped with the serve
 commit), team mode (ARCHIVE 10u), bots as a skill level 1–10 chosen in the lobby and a
 personality — risk, targeting, cannon space — dealt from the seed and revealed at game over
 (M13, ARCHIVE 11x–11zb), seven visual styles for either look and two visual passes (M9–M12),
-and the first round of test-session feedback (ARCHIVE 11n–11w). Deployment is verified by a
+and two rounds of test-session feedback (ARCHIVE 11n–11w, 11ze). Deployment is verified by a
 CI job, since there is no Docker on this machine. Every sound cue is supplied. The protocol
-is 13: a test session needs the server rebuilt and every page reloaded.
+is 14: a test session needs the server rebuilt and every page reloaded.
 
 **Next**: balance, M7. PLAN.md §11 opens with where to start: a test session on the
 current build first, then **elimination tuning** (§11.2) — half of 3–4 player matches

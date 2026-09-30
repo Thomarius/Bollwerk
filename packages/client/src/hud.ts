@@ -3,6 +3,7 @@ import type { BannerKind } from './banners.js';
 import { escape } from './lobby.js';
 import { defaultArtConfig, type ArtStyle } from '@rampart/config';
 
+import { showsClock } from './clock.js';
 import { motionReduced } from './motion.js';
 import { mostCastlesOf, scoreChart, type MatchLog, type Reveal } from './summary.js';
 
@@ -138,6 +139,8 @@ export class Hud {
    */
   private endScreen: HTMLElement | null = null;
   private endScreenHtml = '';
+  /** When the match was first seen over, for holding the summary back (`showEndScreen`). */
+  private gameOverAt: number | null = null;
   private leave: (() => void) | null = null;
 
   private youAreHere: HTMLElement | null = null;
@@ -218,6 +221,15 @@ export class Hud {
       this.endScreen.innerHTML = html;
       this.endScreenHtml = html;
     }
+    // Held back while the fireworks and the camera's push have the screen to themselves:
+    // shown at once, the summary covered the celebration it followed. Timed here rather
+    // than by a CSS delay, which would start again whenever the markup was rewritten.
+    const now = performance.now();
+    if (html === '') this.gameOverAt = null;
+    else this.gameOverAt ??= now;
+    const held =
+      this.gameOverAt !== null && now - this.gameOverAt < defaultArtConfig.summary.delayMs;
+    this.endScreen.classList.toggle('held', held);
   }
 
   /** A team's letter over each of its islands, for the whole of a team match. */
@@ -264,7 +276,8 @@ export class Hud {
     const urgent = seconds <= 3;
     if (this.bigTimer.textContent !== text) {
       this.bigTimer.textContent = text;
-      // A beat on every second of the last three, with the clock's tick: restarted by
+      // A beat on every second of the last three, with the clock's tick — which starts at
+      // five (`COUNTDOWN_FROM`), so the end is heard before it is seen. Restarted by
       // taking the class off and putting it back once the change has been seen.
       this.bigTimer.classList.remove('beat');
       if (urgent) {
@@ -527,38 +540,6 @@ export class Hud {
    * Every score round by round, one line per player — per team in a team match — so the
    * end of a match shows where it was won. The viewer's own line is drawn heaviest.
    */
-  /** Each round's frame as an image, made once: the end screen's markup is compared per frame. */
-  private readonly frameImages = new Map<number, string>();
-
-  /**
-   * The filmstrip: the board at every resolution the log saw, numbered by round, scaled up
-   * by whole pixels so each tile stays a crisp square.
-   */
-  private filmstrip(): string {
-    const frames = this.log?.frames ?? [];
-    if (frames.length === 0) return '';
-    const scale = defaultArtConfig.summary.filmstripTilePx;
-    const figures = frames.map((frame) => {
-      let src = this.frameImages.get(frame.round);
-      if (src === undefined) {
-        const canvas = document.createElement('canvas');
-        canvas.width = frame.width;
-        canvas.height = frame.height;
-        const pixels = new Uint8ClampedArray(frame.pixels);
-        canvas
-          .getContext('2d')
-          ?.putImageData(new ImageData(pixels, frame.width, frame.height), 0, 0);
-        src = canvas.toDataURL();
-        this.frameImages.set(frame.round, src);
-      }
-      return (
-        `<figure><img src="${src}" width="${frame.width * scale}" height="${frame.height * scale}" alt="">` +
-        `<figcaption>${frame.round}</figcaption></figure>`
-      );
-    });
-    return `<div class="filmstrip">${figures.join('')}</div>`;
-  }
-
   private chart(state: MatchState, humanPlayer: number): string {
     const log = this.log;
     if (log === null || log.scores.length < 2) return '';
@@ -619,7 +600,7 @@ export class Hud {
     const span = Math.max(1, state.phaseEndTick - this.phaseStartTick);
     const left = Math.min(1, Math.max(0, (state.phaseEndTick - state.tick) / span));
     const timebar =
-      waiting || state.phase === 'game_over'
+      waiting || state.phase === 'game_over' || !showsClock(state)
         ? ''
         : `<div class="timebar${secondsLeft <= 3 ? ' urgent' : ''}"><i style="width:${(left * 100).toFixed(1)}%"></i></div>`;
     const human = state.players[humanPlayer];
@@ -765,17 +746,22 @@ export class Hud {
       const sum = (map: ReadonlyMap<number, number> | undefined, ids: readonly number[]): number =>
         ids.reduce((total, id) => total + (map?.get(id) ?? 0), 0);
       // What each row did as well as where it finished: the wall it knocked down, the
-      // most castles it held at once, the lives it spent.
-      const stats = (ids: readonly number[]): string =>
+      // most castles it held at once, and the lives it has left — counted as the roster's
+      // pips are, the pool and the life being played, none once out. Lives *lost* read
+      // wrong: the failure that puts a player out spends no continue, so a player out
+      // after three failures showed two.
+      const livesLeft = (team: number, out: boolean): number =>
+        out ? 0 : (state.teams[team]?.continuesRemaining ?? 0) + 1;
+      const stats = (ids: readonly number[], team: number, out: boolean): string =>
         log === null
           ? ''
           : `<td>${sum(log.destroyed, ids)}</td><td>${mostCastlesOf(log, ids)}</td>` +
-            `<td>${sum(log.livesSpent, ids)}</td>`;
+            `<td>${livesLeft(team, out)}</td>`;
       const head =
         log === null
           ? ''
           : '<tr class="head"><td></td><td></td><td>points</td><td>wall</td>' +
-            '<td>castles</td><td>lives lost</td><td></td></tr>';
+            '<td>castles</td><td>lives left</td><td></td></tr>';
       // A table rather than a line: with more than three players a single line of
       // names and numbers could not be read at a glance.
       const rows = teamed
@@ -791,7 +777,7 @@ export class Hud {
               return (
                 `<tr class="${s.eliminated ? 'out' : ''}${mine ? ' you' : ''}">` +
                 `<td>${rank + 1}</td><td>Team ${teamLetter(s.team)} · ${members}</td>` +
-                `<td>${s.score}</td>${stats(s.members)}<td>${s.eliminated ? 'out' : ''}</td></tr>`
+                `<td>${s.score}</td>${stats(s.members, s.team, s.eliminated)}<td>${s.eliminated ? 'out' : ''}</td></tr>`
               );
             })
             .join('')
@@ -800,13 +786,13 @@ export class Hud {
               (s, rank) =>
                 `<tr class="${s.eliminated ? 'out' : ''}${s.player === humanPlayer ? ' you' : ''}">` +
                 `<td>${rank + 1}</td><td><b style="background:${playerCssColour(s.player)}"></b>${escape(s.name)}</td>` +
-                `<td>${s.score}</td>${stats([s.player])}<td>${s.eliminated ? 'out' : ''}</td></tr>`,
+                `<td>${s.score}</td>${stats([s.player], state.players[s.player]?.team ?? s.player, s.eliminated)}<td>${s.eliminated ? 'out' : ''}</td></tr>`,
             )
             .join('');
       const table = `<table class="final">${head}${rows}</table>`;
       // A button, not a key: everything else in the game is the mouse, and a key that
       // does something unannounced is the kind of surprise players dislike.
-      banner = `<div class="banner">${text}${table}${this.chart(state, humanPlayer)}${this.filmstrip()}${this.revealMarkup()}<button class="leave">Back to menu</button></div>`;
+      banner = `<div class="banner summary">${text}${table}${this.chart(state, humanPlayer)}${this.revealMarkup()}<button class="leave">Back to menu</button></div>`;
     }
     this.showEndScreen(banner);
     // Knocked out: the stamp over your island is the moment, so this is only a quiet
@@ -828,7 +814,7 @@ export class Hud {
       `<strong>${waiting ? `Next: ${label}` : label}</strong>` +
       // Hidden rather than removed, so the round label does not jump sideways every
       // intermission; and there is no clock to show once the match is over.
-      (waiting || state.phase === 'game_over'
+      (waiting || state.phase === 'game_over' || !showsClock(state)
         ? `<span class="timer" style="visibility:hidden">${secondsLeft.toFixed(1)}s</span>`
         : `<span class="timer">${secondsLeft.toFixed(1)}s</span>`) +
       `<span class="round${inFinalRound(state) ? ' final' : ''}">${roundLabel(state)}</span>`;

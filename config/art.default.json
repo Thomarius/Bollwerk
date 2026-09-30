@@ -1043,7 +1043,7 @@
     "winnerPushMs": 7000
   },
   "summary": {
-    "filmstripTilePx": 2
+    "delayMs": 4000
   },
   "hud": {
     "pointsBannerMs": 8000

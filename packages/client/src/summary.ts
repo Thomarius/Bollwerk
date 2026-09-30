@@ -2,11 +2,9 @@ import { dealPersonality } from '@rampart/ai';
 import { personalityWords, type BotSetup } from '@rampart/config';
 import { seatOrder, type MatchEvent, type MatchState } from '@rampart/sim';
 
-import type { Frame } from './filmstrip.js';
-
 /**
  * What the end of a match shows beside the final standings: for each player the wall
- * they destroyed, the most castles they held at once and the lives they spent, and every
+ * they destroyed and the most castles they held at once, and every
  * score round by round, so the summary shows where the match was won.
  *
  * Kept from the events the client already receives, as they arrive, so it needs nothing
@@ -19,12 +17,8 @@ import type { Frame } from './filmstrip.js';
 export class MatchLog {
   /** Wall blocks each player's shots destroyed. */
   readonly destroyed = new Map<number, number>();
-  /** Lives each player spent failing to seal. */
-  readonly livesSpent = new Map<number, number>();
   /** Every player's banked score, and castles sealed, after each resolution seen. */
   readonly scores: { round: number; byPlayer: number[]; castles: number[] }[] = [];
-  /** The board at each resolution seen, for the filmstrip (`filmstrip.ts`). */
-  readonly frames: Frame[] = [];
   /** Who fired each shot in flight, since an impact names only the shot. */
   private readonly shooters = new Map<number, number>();
 
@@ -42,9 +36,6 @@ export class MatchLog {
           this.destroyed.set(shooter, (this.destroyed.get(shooter) ?? 0) + event.destroyed.length);
           break;
         }
-        case 'player_continued':
-          this.livesSpent.set(event.player, (this.livesSpent.get(event.player) ?? 0) + 1);
-          break;
         case 'round_resolved': {
           // The scores as banked by this resolution, which the state already carries.
           const castles = state.players.map(() => 0);

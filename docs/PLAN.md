@@ -111,8 +111,11 @@ exact on a square grid, so every island is pixel-identical at every player count
 - 2x2 footprint, placed inside your own enclosed territory, including the opening ones.
   The game builds your starting ring, but every cannon you own you placed yourself.
 - **Indestructible.** Only walls are damaged; castles and cannons are not.
-- Reward per build phase is in `ruleset.cannons`: a fixed number for the first enclosed
-  castle and more for each additional one.
+- Reward per build phase is in `ruleset.cannons`: a fixed number for the **main castle**
+  — the one the player chose, afresh after each continue — while it is sealed, and fewer
+  for every other sealed castle, as in the original (`firstRewardForMainCastle`,
+  `cannonReward`). A player holding other castles with the main one breached earns one
+  a castle. The main castle wears a crown in every style, sealed or not.
 - A cannon **not inside its owner's territory** (a castle's region or a counting pocket,
   §1.3) at a resolution is **inert**: it cannot fire,
   is not destroyed, and reactivates if re-enclosed. Breaching a leader's wall silences
@@ -403,8 +406,8 @@ its colours for a moment.
   banner, nobody could follow who is who. A theme may restyle a player's colour — neon,
   ink, pastel — but not change it; the eight colours and the team families must stay
   distinguishable in every theme.
-- **Information stays readable**: the flood of newly sealed ground, the red mark over
-  your own wall, the overtime border, the aiming cursor. These are shared helpers in
+- **Information stays readable**: the flood of newly sealed ground, where your own
+  shots will land, the overtime border, the aiming cursor. These are shared helpers in
   `theme.ts`; a theme restyles them only where it keeps them legible.
 - **Land, sea, wall and sealed ground tell apart at a glance**, including in a dark
   theme.
@@ -481,9 +484,11 @@ its castles, both over `effects.tallyMs`. A lost life takes the island's wall do
 from its middle over `effects.lifeCrumbleMs` instead of clearing it in a frame (the
 cannons, removed from the state outright, still go at once). Once the match is over,
 fireworks burst over the winners' islands in their colours for as long as the screen
-stays up, and **the summary** (`summary.ts`) gives each player — each team, in a team
-match — the wall they destroyed, the most castles held at once and the lives lost, with
-every score charted round by round, the viewer's line heaviest. It is kept from the
+stays up, and **the summary** (`summary.ts`) comes up over them after
+`summary.delayMs`, narrow and see-through so they still show. It gives each player —
+each team, in a team match — the wall they destroyed, the most castles held at once and
+the lives left (none once out), with every score charted round by round, the viewer's
+line heaviest. It is kept from the
 events as they arrive, so a client that joined part-way charts from where it came in,
 and one that saw no resolution shows the standings alone.
 
@@ -512,7 +517,10 @@ will be, with a ring round that gun; only where a click would fire.
 **Before the match.** The lobby's map is drawn in the chosen build look's colours, its
 seat numbers and ring in the shared ink. The castles a player may choose breathe in the
 accent (`drawSelectable`), and every choice, anyone's, sets off rings in the chooser's
-colour from the castle (`drawChoices`). The menu's **Effects** setting, high, full or
+colour from the castle (`drawChoices`). From then on **a crown stands over each
+player's main castle** (`drawMainCastles`), sealed or breached, in the owner's colour
+with a dark rim: one shared mark rather than the original's second tower drawn in seven
+styles. The menu's **Effects** setting, high, full or
 reduced (`motion.ts`): reduced does what the system's reduced-motion setting does — no
 flicker, no beat, no slide, no title sweep, no rain — and also stops the board's shake;
 either one reduces. High is full with the glow of Night and Cyberpunk bloomed by a real
@@ -525,8 +533,11 @@ order. Past four players in free-for-all an entry is compact — the score, ♜ 
 firing and ●N lives, red on the last, with names past nine characters cut short and
 everything in words on hover — and the roster shrinks to fit: eight entries with
 sixteen-character names and four-digit scores fit at 1024 pixels wide, and nothing is
-ever drawn past the edge. The big
-timer beats on each of the last three seconds, with the clock's tick.
+ever drawn past the edge. **The clock's end is heard, then seen**: the countdown ticks
+over the last five seconds of a phase, louder each time (`clock.ts`), and the big timer
+beats and turns red over the last three. In overtime there is no clock at all — it
+stops at 0 and goes, and the red border carries the overtime; a second countdown from 3
+read as the build phase starting over.
 
 **Feedback a player builds by.** While nothing of yours is sealed, your castles are
 outlined (`hints.ts`). The menu's **Sealing preview**, off by default (`sealPreview.ts`),
@@ -586,9 +597,10 @@ smoulders instead of being struck through.
 shrinks and fades; what it hits decides how it lands — a plume and rings in the sea, a
 blast and dust on open ground, a blast on a wall that leaves the breach smouldering with
 dark smoke and embers for `fx.smoulderMs` — and each gun puffs smoke from its muzzle as it
-fires. In both styles the mark where a shot will land pulses ever faster as it nears, and
-turns red and thick when it is coming down on the watching player's own wall; and a
-breached castle's flag is lowered, struck in a darker shade, rather than vanishing.
+fires. In every style the mark where one of your own shots will land pulses ever faster
+as it nears — **only your own**: nobody sees where anyone else's will come down, their
+own wall included, though every ball in flight shows (11.14); and a breached
+castle's flag is lowered, struck in a darker shade, rather than vanishing.
 
 **Cyberpunk** (`cyberpunk.ts`), for either look. The board as a circuit at night: **brightness means structure and colour ownership**. Walls are a neon line round
 the outside of each run's top in the owner's colour, over a body with each block's cell
@@ -672,7 +684,7 @@ The pixel style also keeps **life on the outer ocean** (`pixel/ocean.ts`): a boa
 sail now and then, gulls wheeling, a fish jumping — outside the box round all the land,
 where no shot ever flies, and none of it under reduced motion.
 
-**The match's moments** (`camera.ts`, `filmstrip.ts`, `art.camera`). The match opens
+**The match's moments** (`camera.ts`, `art.camera`). The match opens
 close on the viewer's own island, marked **"You are here"** until they choose a castle —
 seats are shuffled onto islands, so nobody knows which is theirs until told — and pulls
 out to the whole map before the castle choice opens. At game over the camera pushes
@@ -684,8 +696,8 @@ masks sit outside it, since the banner's line is in screen space. **The last rou
 marked**: its banner is headed "Final round" with "Fire!" under it, a stamp lands across
 the board as it opens, the round counter says so, and a faint dusk holds at the screen's
 edges — in every style, beside Medieval's own sunset — never over the board's middle,
-so no colour moves. **The summary's filmstrip** shows the board at each resolution the
-client saw, a pixel a tile in the shared colours, beside the score chart.
+so no colour moves. The summary's filmstrip, the board at every resolution, was removed
+after the test sessions: it did not look good and added nothing.
 
 **Looking at it.** `tools/screenshots.sh` captures fixed states against the dev server —
 in real time through Playwright, which renders fine where virtual time does not — using
@@ -810,7 +822,7 @@ first round of test-session feedback. In order:
 1. **A test session on the current build.** Much has changed since the last one — pockets,
    pause, the games browser, levels and personalities, rounder islands — and 11.2 is meant
    to be checked against how people play. The server must be rebuilt (`npm start`) and
-   every page reloaded: the protocol is 13. Every match is recorded with its statistics
+   every page reloaded: the protocol is 14. Every match is recorded with its statistics
    (§9, ARCHIVE 11e); the user sends compiled feedback, which is triaged with them first.
 2. **11.2, elimination tuning**, the next milestone. Its baseline is measured over the
    personality mix; the "ambitious" bot it planned and finisher targeting exist now.
@@ -821,7 +833,8 @@ Only open work is kept here. Finished packages move to `ARCHIVE.md` under their 
 numbers — 11.1 scoring, 11.7 team mode, 11.8 the visual pass, 11.9 the themes, 11.10 the
 UI polish, all in ARCHIVE 11h; 11.11 the second visual pass and 11.12 the first
 test-session feedback, in ARCHIVE 11w; 11.5 the small items and 11.6 the bots, in ARCHIVE
-11zd — so the open sections keep theirs.
+11zd; 11.14 the second test-session feedback, in ARCHIVE 11ze — so the open sections keep
+theirs.
 
 ### 11.2 Elimination tuning — planned, waiting on human play
 
@@ -831,8 +844,10 @@ will send compiled feedback.
 
 **Changed since it was planned**: bots are now a skill level and a personality (§8), so
 the baseline is measured over the mix they are dealt in real matches; pockets count as
-territory (§1.3); islands are rounder and five and seven players sit in grids (§1.2) —
-so every measurement from before 2026-09-30 is historical. Overtime shipped (§1.6), a
+territory (§1.3); islands are rounder and five and seven players sit in grids (§1.2);
+only the main castle earns the first castle's reward, and bots no longer avoid tiles
+other players' shots are headed for (ARCHIVE 11ze) — so every measurement from before
+then is historical. Overtime shipped (§1.6), a
 little more wall per round for everyone; and team matches eliminate even less than free-for-all — 5 in 180 at gunner
 (ARCHIVE 10u), since a pooled life lasts a team longer. Measure 2v2 alongside three and
 four players.

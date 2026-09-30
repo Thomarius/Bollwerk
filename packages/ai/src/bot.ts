@@ -9,6 +9,7 @@ import {
 import {
   NEIGHBOURS_8,
   Structure,
+  cannonReward,
   computeEnclosure,
   Terrain,
   canPlaceCannon,
@@ -187,17 +188,20 @@ export class Bot {
   }
 
   /**
-   * Tiles a shot is already on its way to.
+   * Tiles this bot's own shots are already on their way to.
    *
    * A shot destroys exactly the tile it hits, so a second shot at the same tile is
    * always wasted — and with a three-second flight and a gun firing every 150ms, a
-   * bot that did not track this put its whole opening salvo into one block. Every
-   * player's shots count, not just this bot's: a tile an opponent is about to remove
-   * does not need removing twice either.
+   * bot that did not track this put its whole opening salvo into one block. Only its
+   * own shots, though: a person is shown where their own shots will land and nobody
+   * else's (PLAN 11.14), so a bot must not know either. Two players' shots at one tile
+   * race — the first to land takes it and its points, the second hits nothing.
    */
   private inbound(state: MatchState): Set<number> {
     const taken = new Set<number>();
-    for (const shot of state.shots) taken.add(shot.toY * state.width + shot.toX);
+    for (const shot of state.shots) {
+      if (shot.owner === this.playerId) taken.add(shot.toY * state.width + shot.toX);
+    }
     return taken;
   }
 
@@ -585,7 +589,11 @@ export class Bot {
     // Counted afresh rather than read from `enclosedCastles`, which placements and
     // resolutions refresh but landing shots do not: as a breached build phase opens it
     // still says sealed, and the first plan of the phase was made for a wall that stood.
-    const sealed = computeEnclosure(state).enclosedCastlesByPlayer[this.playerId] ?? 0;
+    const enclosure = computeEnclosure(state);
+    const sealed = enclosure.enclosedCastlesByPlayer[this.playerId] ?? 0;
+    const mainSealed =
+      player.startingCastleId !== null &&
+      enclosure.castleEnclosed[player.startingCastleId] === true;
     const budget = this.piecesAffordable(state) * this.profile.riskMargin;
     const affordable = (plan: SealPlan | null): boolean =>
       plan !== null && plan.cost / 3.5 <= budget;
@@ -641,8 +649,7 @@ export class Bot {
     // cannonsToPlace is zero throughout a build phase — it is set at the resolution
     // that ends it — so asking whether there is room for it always said yes. What
     // matters is the reward this wall is about to earn.
-    const { firstCastleReward, perAdditionalCastleReward } = state.ruleset.cannons;
-    const earning = firstCastleReward + Math.max(0, sealed - 1) * perAdditionalCastleReward;
+    const earning = cannonReward(state.ruleset.cannons, sealed, mainSealed);
     const needsRoom = cannonRoom(state, this.playerId) < earning + this.profile.roomMargin;
     // Max cannons walls pockets for guns (§1.3), up to its cap: sealed ground with no
     // castle, which counts while a castle is sealed. Always against the standing wall,
@@ -828,7 +835,11 @@ export class Bot {
         // cheapest wall that exists — the last resort below.
         if (cheapest === null || plan.cost < cheapest.cost) cheapest = plan;
         if (plan.cost / 3.5 > budget) continue;
-        const value = gunsKept(plan) * 3 - plan.cost / 3.5;
+        // The main castle earns one cannon more than any other (`cannonReward`), so
+        // taking it back is weighed as one more gun kept.
+        const main = state.players[this.playerId]?.startingCastleId ?? null;
+        const mainBonus = main !== null && plan.castleIds.includes(main) ? 1 : 0;
+        const value = (gunsKept(plan) + mainBonus) * 3 - plan.cost / 3.5;
         if (value > bestValue) {
           bestValue = value;
           best = plan;

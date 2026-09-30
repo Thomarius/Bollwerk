@@ -233,8 +233,10 @@ export class Scene {
   private applyVisibility(): void {
     const visible = this.visible();
     const split = visible.length > 1 ? this.shown.lineY : null;
-    const width = this.app.renderer.width / this.app.renderer.resolution;
-    const height = this.app.renderer.height / this.app.renderer.resolution;
+    // In CSS pixels, as everything on the stage is. Pixi v8's `renderer.width` already is:
+    // dividing it by the resolution, as once here, left the masks covering half the window
+    // on a high-density screen, so neither look was drawn beyond them until the wipe ended.
+    const { width, height } = this.app.screen;
     for (const slot of this.all()) {
       slot.root.visible = visible.includes(slot);
       slot.mask.clear();

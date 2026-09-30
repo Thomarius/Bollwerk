@@ -41,10 +41,18 @@ export const RulesetSchema = z
 
     cannons: z.strictObject({
       startingCount: z.number().int().nonnegative(),
-      /** Cannons granted for enclosing the first castle. */
+      /** Cannons granted for enclosing the first castle — the main one, see below. */
       firstCastleReward: z.number().int().nonnegative(),
       /** Additional cannons per castle beyond the first. */
       perAdditionalCastleReward: z.number().int().nonnegative(),
+      /**
+       * The first castle's reward goes to the **main castle** — the one the player chose,
+       * afresh after each continue — and only while it is sealed; every other sealed
+       * castle earns `perAdditionalCastleReward`, as in the original. Off, the first
+       * sealed castle earns it, whichever it is. Defaults off so that recordings made
+       * before it existed replay as they were played.
+       */
+      firstRewardForMainCastle: z.boolean().default(false),
       footprint: z.tuple([z.number().int().positive(), z.number().int().positive()]),
       /** A cannon outside an enclosed region cannot fire, but survives. */
       inertWhenNotEnclosed: z.boolean(),

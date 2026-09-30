@@ -449,8 +449,11 @@ export const ArtConfigSchema = z
     }),
     /** The end-of-match summary. */
     summary: z.strictObject({
-      /** Largest size of a board in the filmstrip, in pixels per tile. */
-      filmstripTilePx: z.number().int().positive(),
+      /**
+       * How long the fireworks and the push onto the winner hold the screen before the
+       * summary comes up over them.
+       */
+      delayMs: z.number().int().nonnegative(),
     }),
     /** How long the HUD holds its news. */
     hud: z.strictObject({

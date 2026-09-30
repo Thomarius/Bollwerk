@@ -96,7 +96,7 @@ export class Audio {
     }
   }
 
-  play(cue: SfxCue): void {
+  play(cue: SfxCue, gain = 1): void {
     const entry = this.manifest.sfx[cue];
     if (!entry || this.ctx === null || this.master === null) return;
 
@@ -107,14 +107,14 @@ export class Audio {
     if (buffer === null) return;
     this.lastStarted.set(cue, now);
 
-    const gain = this.ctx.createGain();
-    gain.gain.value = entry.volume;
-    gain.connect(this.master);
+    const level = this.ctx.createGain();
+    level.gain.value = entry.volume * gain;
+    level.connect(this.master);
     const source = this.ctx.createBufferSource();
     source.buffer = buffer;
-    source.connect(gain);
+    source.connect(level);
     source.start();
-    source.addEventListener('ended', () => gain.disconnect());
+    source.addEventListener('ended', () => level.disconnect());
   }
 
   /**

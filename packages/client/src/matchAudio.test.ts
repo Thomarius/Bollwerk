@@ -7,9 +7,11 @@ import { MatchAudio, type Cues } from './matchAudio.js';
 /** Records what was asked for, in order. */
 class Recorder implements Cues {
   readonly sfx: SfxCue[] = [];
+  readonly gains: number[] = [];
   readonly tracks: (MusicCue | null)[] = [];
-  play(cue: SfxCue): void {
+  play(cue: SfxCue, gain = 1): void {
     this.sfx.push(cue);
+    this.gains.push(gain);
   }
   music(cue: MusicCue | null): void {
     this.tracks.push(cue);
@@ -34,10 +36,11 @@ function phase(next: Phase, pending: Phase | null = null): MatchEvent {
   };
 }
 
-/** Only the four fields the countdown reads. */
-function clock(current: Phase, tick: number, phaseEndTick: number): MatchState {
+/** Only the fields the countdown reads. */
+function clock(current: Phase, tick: number, phaseEndTick: number, overtime = false): MatchState {
   return {
     phase: current,
+    overtime,
     tick,
     phaseEndTick,
     ruleset: { tickRateHz: 30 },
@@ -231,9 +234,20 @@ describe('match audio', () => {
   it('ticks once per second over the last seconds of a phase', () => {
     const { audio, match } = setup();
     match.handle([phase('build')]);
-    // 30Hz, ending at tick 300: the countdown starts with three seconds to go.
-    for (let tick = 180; tick < 300; tick++) match.frame(clock('build', tick, 300));
-    expect(audio.sfx.filter((c) => c === 'countdown_tick')).toHaveLength(3);
+    // 30Hz, ending at tick 300: the countdown starts with five seconds to go.
+    for (let tick = 90; tick < 300; tick++) match.frame(clock('build', tick, 300));
+    expect(audio.sfx.filter((c) => c === 'countdown_tick')).toHaveLength(5);
+    // Louder with every tick.
+    for (let i = 1; i < audio.gains.length; i++) {
+      expect(audio.gains[i]).toBeGreaterThan(audio.gains[i - 1]!);
+    }
+  });
+
+  it('does not tick through overtime, which shows no clock', () => {
+    const { audio, match } = setup();
+    match.handle([phase('build')]);
+    for (let tick = 210; tick < 300; tick++) match.frame(clock('build', tick, 300, true));
+    expect(audio.sfx).not.toContain('countdown_tick');
   });
 
   it('does not tick through an intermission, which is not a deadline', () => {

@@ -1,6 +1,8 @@
 import type { MusicCue, SfxCue } from '@rampart/config';
 import type { MatchEvent, MatchState, Phase } from '@rampart/sim';
 
+import { COUNTDOWN_FROM, countdownGain, showsClock } from './clock.js';
+
 /**
  * The part of the audio player this needs.
  *
@@ -9,7 +11,8 @@ import type { MatchEvent, MatchState, Phase } from '@rampart/sim';
  * logic worth testing here.
  */
 export interface Cues {
-  play(cue: SfxCue): void;
+  /** `gain` scales the cue's own volume, for the countdown's rise. */
+  play(cue: SfxCue, gain?: number): void;
   music(cue: MusicCue | null): void;
 }
 
@@ -43,9 +46,6 @@ function trackFor(phase: Phase): MusicCue | null {
       return null;
   }
 }
-
-/** Seconds of a phase left when the clock starts being audible. */
-const COUNTDOWN_FROM = 3;
 
 export class MatchAudio {
   private phase: Phase | null = null;
@@ -185,11 +185,13 @@ export class MatchAudio {
     if (state.phase === 'intermission' || state.phase === 'game_over' || state.phase === 'lobby') {
       return;
     }
+    // Overtime shows no clock (`showsClock`), so it has no countdown either.
+    if (!showsClock(state)) return;
     const ticksLeft = state.phaseEndTick - state.tick;
     if (ticksLeft <= 0) return;
     const secondsLeft = Math.ceil(ticksLeft / state.ruleset.tickRateHz);
     if (secondsLeft > COUNTDOWN_FROM || secondsLeft === this.countedAt) return;
     this.countedAt = secondsLeft;
-    this.audio.play('countdown_tick');
+    this.audio.play('countdown_tick', countdownGain(secondsLeft));
   }
 }

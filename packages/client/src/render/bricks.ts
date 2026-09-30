@@ -18,6 +18,7 @@ import {
   drawFireReticle,
   drawOvertimeBorder,
   drawSealGlow,
+  drawMainCastles,
   drawShotTarget,
   hex,
   playerColour,
@@ -560,6 +561,7 @@ export class BricksTheme implements Theme {
     const g = this.effectGfx;
     const t = view.tile;
     const now = state.tick + frame.tickFraction;
+    drawMainCastles(g, view, state, this.art);
     for (const shot of state.shots) {
       const span = shot.impactTick - shot.launchTick;
       const p = span <= 0 ? 1 : Math.min(1, Math.max(0, (now - shot.launchTick) / span));
@@ -575,7 +577,7 @@ export class BricksTheme implements Theme {
       g.fill({ color: this.colour(shot.owner, 'base') });
       g.stroke({ width: 1, color: this.colour(shot.owner, 'dark') });
       this.stud(g, gx, hy - r * 0.15, r * 1.9, this.colour(shot.owner, 'light'));
-      drawShotTarget(g, view, state, shot, p, this.art, frame.humanPlayer);
+      drawShotTarget(g, view, shot, p, this.art, frame.humanPlayer);
     }
   }
 

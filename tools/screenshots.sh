@@ -58,20 +58,21 @@ SCENES=(
   "eight-night|$BASE/?autostart=1&players=8&seed=3&snapshot=combat&round=3&style=night|3000"
   "standings|$GAME&snapshot=build&round=2&style=flat|25500"
   "final-round|$GAME&snapshot=cannon_place&round=9&style=flat|27500"
-  "game-over|$GAME&snapshot=game_over&style=flat|2000"
-  "game-over-watched|$GAME&snapshot=game_over&watch=1&style=pixel|2000"
+  # The summary is held back for art.summary.delayMs while the fireworks play.
+  "game-over|$GAME&snapshot=game_over&style=flat|5500"
+  "game-over-watched|$GAME&snapshot=game_over&watch=1&style=pixel|5500"
   "combat-close|$BASE/?autostart=1&players=2&seed=5&snapshot=combat&round=3&style=pixel|4200"
   "gains|$GAME&snapshot=build&round=3&style=pixel|21800"
   "life-lost|$GAME&snapshot=build&round=2&style=pixel|21600"
   "knocked-out|$GAME&snapshot=combat&round=5&idle=1&style=pixel|2500"
   # W6's moments: the opening on your own island, marked, then pulled out to the map;
-  # the final round's stamp; the push onto the winner; the summary's filmstrip, which
-  # needs a match actually played (a five-round watched one, at ten times speed).
+  # the final round's stamp; the push onto the winner; the summary of a match actually
+  # played (five watched rounds at ten times speed), which alone fills its columns.
   "opening-close|$GAME&style=pixel|700"
   "opening-pull|$GAME&style=pixel|2600"
   "final-stamp|$GAME&snapshot=combat&round=10&style=pixel|900"
   "winner-push|$GAME&snapshot=game_over&style=flat|6000"
-  "filmstrip|$GAME&watch=1&level=5&speed=10&rounds=5&style=flat|90000"
+  "summary|$GAME&watch=1&level=5&speed=10&rounds=5&style=flat|95000"
   # The banners, mid-crossing, in the default looks (&style= sets both looks to one).
   # Waits are real time, so a slower machine may need them nudged.
   "wipe-to-build|$WATCH&snapshot=combat&round=2|20000"
