@@ -114,7 +114,11 @@ function mirrorFor(column: number, row: number): { flipX: boolean; flipY: boolea
   return { flipX: column % 2 === 1, flipY: row % 2 === 1 };
 }
 
-/** Islands in rows: tighter than a ring, at the cost of edge and middle seats differing. */
+/**
+ * Islands in rows: tighter than a ring, at the cost of edge and middle seats differing. A
+ * last row shorter than the rest — five players on three by two, seven on four by two — is
+ * centred under the row above, so the map has no empty corner of open ocean.
+ */
 function gridPlacements(
   playerCount: number,
   cols: number,
@@ -123,11 +127,18 @@ function gridPlacements(
   gap: number,
 ): { x: number; y: number; flipX: boolean; flipY: boolean }[] {
   const out = [];
+  const rows = Math.ceil(playerCount / cols);
+  const inLastRow = playerCount - (rows - 1) * cols;
   for (let i = 0; i < playerCount; i++) {
     const column = i % cols;
     const row = Math.floor(i / cols);
+    // Whole tiles, so the translation stays exact and every island stays congruent.
+    const indent =
+      row === rows - 1 && inLastRow < cols
+        ? Math.floor(((cols - inLastRow) * (boxW + gap)) / 2)
+        : 0;
     out.push({
-      x: column * (boxW + gap),
+      x: column * (boxW + gap) + indent,
       y: row * (boxH + gap),
       ...mirrorFor(column, row),
     });
@@ -270,10 +281,18 @@ function buildField(config: TerrainConfig, seed: number): Float64Array {
   const h = config.island.boxHeight;
   const field = new Float64Array(w * h);
   const roughness = config.island.coastlineRoughness * 6;
+  // Distance inside a rounded rectangle: within `radius` of a corner, measured from the
+  // corner's arc rather than from the nearer side, so the corners come out round.
+  const radius = Math.min(config.island.cornerRadiusTiles, (Math.min(w, h) - 1) / 2);
 
   for (let y = 0; y < h; y++) {
     for (let x = 0; x < w; x++) {
-      const toEdge = Math.min(x, y, w - 1 - x, h - 1 - y);
+      const dx = Math.min(x, w - 1 - x);
+      const dy = Math.min(y, h - 1 - y);
+      const toEdge =
+        dx < radius && dy < radius
+          ? radius - Math.hypot(radius - dx, radius - dy)
+          : Math.min(dx, dy);
       const raw = fbm2D(x, y, seed, {
         octaves: config.island.noiseOctaves,
         frequency: config.island.noiseFrequency,

@@ -52,7 +52,14 @@ export const TerrainConfigSchema = z
       areaTolerance: z.number().min(0).max(1),
       noiseOctaves: z.number().int().min(1).max(8),
       noiseFrequency: z.number().positive(),
-      coastlineRoughness: z.number().min(0).max(1),
+      /** How far noise moves the coast, 1 being about three tiles either way. */
+      coastlineRoughness: z.number().min(0).max(2),
+      /**
+       * The island is cut from a rounded rectangle rather than a square one: the radius of
+       * its corners, in tiles. At 0 every island kept its box's square corners and read as
+       * a rectangle with a ragged edge; the user found them boxy.
+       */
+      cornerRadiusTiles: z.number().nonnegative().default(0),
       /** Minimum water separation between any two islands. */
       minWaterGapTiles: z.number().int().positive(),
       erosionPasses: z.number().int().nonnegative().max(8),

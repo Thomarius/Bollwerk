@@ -52,9 +52,17 @@ exact on a square grid, so every island is pixel-identical at every player count
 - **The map's size is measured, not configured.** It falls out of the island and the
   pattern, so two players get a small map and eight get a large one without either being
   cramped or swimming in ocean.
-- `terrain.patterns` gives one arrangement per player count: a **grid** at 2, 4, 6 and 8,
-  a **ring** at 3, 5 and 7. A ring puts every player the same distance from the same two
+- `terrain.patterns` gives one arrangement per player count: a **grid** at 2, 4, 5, 6, 7
+  and 8, a **ring** at 3. A ring puts every player the same distance from the same two
   neighbours; a grid is tighter but gives edge and middle seats different neighbourhoods.
+  A grid's short last row — five players on three by two, seven on four by two — is centred
+  under the row above. Five and seven were rings until 2026-09-30, and made considerably
+  larger maps; on a grid five share six's footprint and seven eight's.
+- **The island is cut from a rounded rectangle** (`island.cornerRadiusTiles`), its coast
+  moved by noise (`coastlineRoughness`, `noiseFrequency`). Rounder and rougher reads less
+  boxy but turns neighbours' facing coasts into points with open sea between — at three
+  players the strip of water shared by two islands fell from about 120 tiles to under 20 —
+  which §1.2's rule on channels forbids. The setting is the roundest that kept it.
   Exact fairness is not required — the higher counts exist for team modes, which rebalance
   by how the teams are drawn — so where the two differ the tighter map wins.
 - Islands are separated by a channel of `island.minWaterGapTiles`, guaranteed by
@@ -918,13 +926,9 @@ balanced means.
 
 ### 11.5 Smaller
 
-- Audio files: 18 of 19 cues supplied. Still missing: `wall_destroyed` — the user's to
-  produce; the manifest names it and every trigger is wired. A test keeps the manifest and
-  the folder in step.
-- Islands look boxy; `coastlineRoughness` and `noiseFrequency` are config.
-- Rings at 5 and 7 players make considerably larger maps than grids would. One JSON edit.
-- **Bots do not help a teammate build**, even under `crossIslandBuild: all` — teaching
-  one to help without wrecking a person's plan is its own question (team mode, §1.8).
+- Nothing open. Done or decided 2026-09-30 (ARCHIVE 11zc): the `wall_destroyed` cue
+  dropped, grids at 5 and 7, rounder islands; bots helping a teammate build will not be
+  done — too complicated for too little.
 
 ### 11.6 Bots as skill and personality — done (2026-09-30)
 

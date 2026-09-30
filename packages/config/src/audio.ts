@@ -13,7 +13,6 @@ export const SFX_CUES = [
   'cannon_fire',
   'shot_impact',
   /** The shot hit wall rather than open ground — the shooter's fire is working. */
-  'wall_destroyed',
   /** Spoken. Opens the combat phase. */
   'voice_fire',
   /** Spoken. Closes it: no further shots can be started. */

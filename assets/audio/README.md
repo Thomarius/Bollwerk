@@ -37,10 +37,6 @@ exactly as many variants as it has: `config/src/audioFiles.test.ts` checks both,
 unregistered file is simply never played and nothing else would say so. A cue with no
 files at all is allowed — it is silent until one arrives.
 
-**Still to come**: `wall_destroyed`. The manifest already names its file
-(`sfx/wall_destroyed.ogg`, with a second variant); drop it in under that name, or change
-the name in the manifest, and it plays.
-
 These files are committed rather than ignored. The deployment image is built from a clean
 checkout, so an ignored cue is a cue the image would not have.
 
@@ -65,7 +61,6 @@ will be silent rather than noisy**.
 | `place_cannon`                   | You set a cannon down                                                                                         |
 | `cannon_fire`                    | Any cannon firing, yours or theirs                                                                            |
 | `shot_impact`                    | Any shot landing                                                                                              |
-| `wall_destroyed`                 | That shot took a wall block out, rather than hitting open ground                                              |
 | `piece_place`                    | You placed a build piece                                                                                      |
 | `piece_rotate`                   | You rotated one                                                                                               |
 | `piece_invalid`                  | You clicked somewhere the piece or cannon cannot go                                                           |

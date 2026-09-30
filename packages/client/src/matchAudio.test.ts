@@ -75,13 +75,11 @@ describe('match audio', () => {
     expect(audio.tracks).toEqual(['music_admin', 'music_admin', 'music_admin']);
   });
 
-  it('distinguishes a shot that took a block out from one that did not', () => {
+  it('plays one explosion for every impact, whether or not it took a block out', () => {
     const { audio, match } = setup();
     match.handle([{ kind: 'shot_impact', tick: 1, shotId: 1, x: 3, y: 4, destroyed: [] }]);
-    expect(audio.sfx).toEqual(['shot_impact']);
-
     match.handle([{ kind: 'shot_impact', tick: 2, shotId: 2, x: 5, y: 6, destroyed: [77] }]);
-    expect(audio.sfx).toEqual(['shot_impact', 'shot_impact', 'wall_destroyed']);
+    expect(audio.sfx).toEqual(['shot_impact', 'shot_impact']);
   });
 
   it('acknowledges only the player’s own placements', () => {

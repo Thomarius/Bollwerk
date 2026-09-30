@@ -78,10 +78,10 @@ with the sender's seat, so a client cannot act for someone else.
 
 Full detail in PLAN.md §1. The parts that surprise people:
 
-- **One island, copied into a pattern.** A rectangular-ish island is drawn in a box,
-  trimmed to its land, then stamped by translation and mirroring — both exact, so every
-  island is pixel-identical at every player count. 2–8 players; grids at 2, 4, 6, 8 and
-  rings at 3, 5, 7. **The map's size is measured from the island and the pattern, not
+- **One island, copied into a pattern.** An island is drawn in a box with rounded
+  corners, trimmed to its land, then stamped by translation and mirroring — both exact, so
+  every island is pixel-identical at every player count. 2–8 players; grids at every count
+  but 3, which is a ring (a short last row is centred). **The map's size is measured from the island and the pattern, not
   configured.**
 - **A wall must turn its corners.** The escape flood is 8-connected while the wall is
   not, so a diagonal join does not seal. The coastline is worth nothing.
@@ -119,7 +119,7 @@ Full detail in PLAN.md §1. The parts that surprise people:
 ## Status
 
 **Done**: M0–M6 (deployment verified by a CI job, since there is no Docker on this
-machine; 18 of 19 sound cues supplied by the user, `wall_destroyed` still to come), M8
+machine; every sound cue supplied by the user, `wall_destroyed` dropped as unneeded), M8
 team mode (ARCHIVE 10u), M9 the visual pass (a build and a combat look swapped by
 the banners, effects throughout, a lobby showing the real map), the recording of every
 match (ARCHIVE 11e, each header stamped with the server's commit), M10–M11 the styles and

@@ -73,10 +73,9 @@ export class MatchAudio {
           break;
 
         case 'shot_impact':
+          // One explosion whatever it hits: a separate cue for a wall was planned and
+          // dropped by the user, the impact's sound being enough.
           this.audio.play('shot_impact');
-          // A shot that took a block out is different news from one that hit sand:
-          // it tells the player their fire is landing where it needs to.
-          if (event.destroyed.length > 0) this.audio.play('wall_destroyed');
           break;
 
         // Confirmations of the player's own choices, and only theirs — a rival's

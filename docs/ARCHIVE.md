@@ -2852,3 +2852,31 @@ The last phase of 11.6. Three players throughout; a fair share of wins is a thir
   levels from the table as the host set it, kept from before the start since the room
   renumbers its people once the shuffle has dealt them. A test checks the client's
   setups equal what a local match dealt. Seen at the end of a watched five-round match.
+
+## 11zc. Small things: a sound dropped, grids at 5 and 7, rounder islands
+
+PLAN 11.5, decided with the user on 2026-09-30.
+
+- **`wall_destroyed` dropped**: the impact already has an explosion, and a second cue for
+  a wall was not wanted. Gone from the cue list, the manifest and its one trigger; the
+  audio test that keeps folder and manifest in step now sees every cue supplied.
+- **Bots helping a teammate build**: not to be done — too complicated for too little.
+- **Grids at 5 and 7 players**, rings until now: a grid lays islands row by row, so a
+  short last row now sits centred under the one above rather than leaving an empty
+  corner of ocean; whole tiles, so every island stays congruent. Five players share six's
+  footprint (77x48 at seed 1, rounder islands aside) and seven eight's.
+- **Islands less boxy**: the field an island is cut from was the distance to its box's
+  edge, square corners and all, roughened by noise of about a tile and a half — a
+  rectangle with a ragged edge. It is now the distance inside a rounded rectangle
+  (`cornerRadiusTiles`), and the noise may move the coast further (`coastlineRoughness`
+  up to 2). The roundest shapes tried read as islands, but **the terrain tests caught
+  the cost**: rounded islands meet their neighbours at points, with open sea between, and
+  at three players the water shared by two islands within three tiles fell from over 80
+  to 9 — the ocean between players §1.2 forbids, since flight time is the reload.
+  Measured over five seeds per setting, water within three tiles of two islands:
+  today's square boxes 216–256 at four players and 94–147 at three; corner radius 6,
+  roughness 1.0, noise 0.1 kept 172–256 and 90–123 on a map two tiles larger each way;
+  radius 8 dropped three players to 28 on one seed, radius 12 to 8. Radius 6 it is:
+  rounded corners and a wandering coast that still faces its neighbours.
+- The terrain settings travel in a match's snapshot, so protocol 13; the new field
+  defaults to 0 — the old shape exactly — so recordings made before still replay.

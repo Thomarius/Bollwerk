@@ -7,7 +7,6 @@
     "place_cannon": { "file": "sfx/place_cannon.mp3", "volume": 0.6, "variants": 2 },
     "cannon_fire": { "file": "sfx/cannon_fire.ogg", "volume": 0.7, "variants": 3 },
     "shot_impact": { "file": "sfx/shot_impact.wav", "volume": 0.8, "variants": 9 },
-    "wall_destroyed": { "file": "sfx/wall_destroyed.ogg", "volume": 0.6, "variants": 2 },
     "voice_fire": { "file": "sfx/voice_fire.ogg", "volume": 1.0 },
     "voice_cease_fire": { "file": "sfx/voice_cease_fire.ogg", "volume": 1.0 },
     "enclosure_success": { "file": "sfx/enclosure_success.wav", "volume": 0.9 },
