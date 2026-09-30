@@ -1,7 +1,7 @@
 import { defaultArtConfig } from '@rampart/config';
 import { describe, expect, it } from 'vitest';
 
-import { daylight, weatherFor } from './atmosphere.js';
+import { daylight, shadowCast, weatherFor } from './atmosphere.js';
 
 describe('the light of the day', () => {
   it('opens in morning gold, is plain at noon, and sets at the last round', () => {
@@ -26,11 +26,24 @@ describe('the weather', () => {
   it('is the same for a seed every time, and every kind comes up across seeds', () => {
     expect(weatherFor(7, odds)).toBe(weatherFor(7, odds));
     const seen = new Set(Array.from({ length: 200 }, (_, seed) => weatherFor(seed, odds)));
-    expect(seen).toEqual(new Set(['clear', 'overcast', 'rain', 'fog']));
+    expect(seen).toEqual(new Set(['clear', 'overcast', 'rain', 'fog', 'snow']));
   });
 
   it('is only what has odds', () => {
-    const clearOnly = { clear: 1, overcast: 0, rain: 0, fog: 0 };
+    const clearOnly = { clear: 1, overcast: 0, rain: 0, fog: 0, snow: 0 };
     for (let seed = 0; seed < 50; seed++) expect(weatherFor(seed, clearOnly)).toBe('clear');
+  });
+});
+
+describe('the shadows through the day', () => {
+  it('are long and lean west in the morning, short at noon, longest and east at sunset', () => {
+    const morning = shadowCast(1, 10);
+    const noon = shadowCast(4, 10);
+    const sunset = shadowCast(10, 10);
+    expect(morning.lean).toBeLessThan(0);
+    expect(sunset.lean).toBeGreaterThan(0);
+    expect(Math.abs(noon.lean)).toBeLessThan(0.05);
+    expect(noon.length).toBeLessThan(morning.length);
+    expect(sunset.length).toBeGreaterThan(morning.length);
   });
 });

@@ -81,10 +81,11 @@ SCENES=(
   # The clock has run out; the border pulses, so it may be caught faint.
   "overtime|$GAME&snapshot=build&round=2|21500"
   "four-players|$BASE/?autostart=1&players=4&seed=3&snapshot=combat&round=3&style=pixel|3000"
-  # The pixel style's weather is drawn from the seed: 1 rains, 2 is foggy, 7 overcast, 5
-  # clear; and its light follows the round, morning at the first to sunset at the last.
+  # The pixel style's weather is drawn from the seed: 1 rains, 2 snows, 3 is foggy, 21
+  # overcast, 5 clear; its light and shadows follow the round, morning to sunset.
   "weather-rain|$BASE/?autostart=1&players=3&seed=1&snapshot=combat&round=3&style=pixel|3000"
-  "weather-fog|$BASE/?autostart=1&players=3&seed=2&snapshot=combat&round=3&style=pixel|3000"
+  "weather-fog|$BASE/?autostart=1&players=3&seed=3&snapshot=combat&round=3&style=pixel|3000"
+  "weather-snow|$BASE/?autostart=1&players=3&seed=2&snapshot=combat&round=3&style=pixel|3000"
   "morning|$BASE/?autostart=1&players=3&seed=5&snapshot=build&style=pixel|2000"
   "sunset|$BASE/?autostart=1&players=3&seed=5&snapshot=combat&round=10&style=pixel|3000"
   # Night's sea: the moon's path, lighthouses and their beams.

@@ -394,8 +394,13 @@ land.
 
 **The pixel style's day and weather** (`pixel/atmosphere.ts`, `art.pixel`): the light
 follows the round, morning gold at the first, plain at noon, sunset at the last, as a
-tint on the ground and sea under the walls, so no player's colour moves. Each match has
-weather drawn from its seed: clear, overcast (more clouds, darker, a grey cast), rain
+tint on the ground and sea under the walls, so no player's colour moves, and the shadows
+follow it (`shadowCast`): long and leaning west in the morning, short at noon, longest
+and leaning east at sunset. Walls and castles on a south coast lie mirrored faintly in
+the sea below, rippling, a sealed castle's warm with torchlight at Night. Each match has
+weather drawn from its seed: clear, overcast (more clouds, darker, a grey cast), snow
+(overcast, with flakes drifting down and white lying on the tops of walls and castles),
+rain
 (streaks and rings on the sea, as well) or fog (pale banks drifting where the clouds'
 shadows would). In rain, distant thunder now and then flickers faintly over the whole
 board (`thunderEveryMs`, `thunderAlpha`): weather, never a flash at one spot, which is
@@ -908,7 +913,9 @@ reverse (`seal.ts`), in every style.
 - **Embers** drifting at the screen's edges through the final round, with its dusk; none
   under reduced motion.
 
-**X5 — Medieval light.** In the pixel style, and at Night where it applies.
+**X5 — Medieval light — done** (§7). Adding snow to the odds moved which seed gives
+which weather: 1 rain, 2 snow, 3 fog, 5 clear, 21 overcast, as the screenshot scenes now
+say.
 
 - **Reflections**: castles and walls mirrored faintly in the sea tiles beside the coast,
   rippling; Night's torches too.

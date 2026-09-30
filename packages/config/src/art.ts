@@ -186,6 +186,8 @@ export const PixelStyleSchema = z.strictObject({
     overcast: z.number().nonnegative(),
     rain: z.number().nonnegative(),
     fog: z.number().nonnegative(),
+    /** Falling flakes and white on the tops of walls and castles (11.15). */
+    snow: z.number().nonnegative(),
   }),
   /** Rain falling, as streaks on screen at once per thousand tiles of view. */
   rainPerThousandTiles: z.number().nonnegative(),
@@ -195,6 +197,8 @@ export const PixelStyleSchema = z.strictObject({
    */
   thunderEveryMs: z.tuple([z.number().int().positive(), z.number().int().positive()]),
   thunderAlpha: z.number().min(0).max(1),
+  /** Snow falling, as flakes on screen at once per thousand tiles of view (11.15). */
+  snowPerThousandTiles: z.number().nonnegative(),
   /** Night: fireflies over the land, per hundred tiles of it. */
   firefliesPerHundredTiles: z.number().nonnegative(),
   /** Night: a lighthouse's beam, how far it reaches and one turn of it. */

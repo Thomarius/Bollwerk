@@ -5,7 +5,7 @@ import { BlurFilter, Container, Graphics, Sprite, Texture } from 'pixi.js';
 import { bloomWanted, motionReduced } from '../motion.js';
 
 import { SEA_NE, SEA_NW, SEA_SE, SEA_SW, filletCorners } from './pixel/coast.js';
-import { daylight, weatherFor, type Weather } from './pixel/atmosphere.js';
+import { daylight, shadowCast, weatherFor, type Weather } from './pixel/atmosphere.js';
 import { OceanLife } from './pixel/ocean.js';
 import { SceneryTracker } from './scenery.js';
 import { CASTLE_WINDOWS, E, FILLET_CORNERS, KEY, N, S, W, buildAtlas } from './pixel/generators.js';
@@ -205,6 +205,8 @@ export class PixelTheme implements Theme {
   private readonly daylightGfx = new Graphics();
   private weather: Weather = 'clear';
   private rain: { x: number; y: number; speed: number }[] = [];
+  /** Snowflakes, drifting as they fall. */
+  private snow: { x: number; y: number; speed: number; phase: number }[] = [];
   /** Distant thunder: until the next flash, and how far into the one showing. */
   private thunder = { untilMs: 0, ageMs: -1 };
   /** Rings where raindrops strike the sea. */
@@ -604,22 +606,41 @@ export class PixelTheme implements Theme {
    * walls off the map. Rubble casts none; it is lying down.
    */
   private dropShadows(g: Graphics, state: MatchState, view: ViewTransform): void {
-    const depth = view.tile * 0.35;
+    // Long and leaning in the morning and at sunset, short at noon (`shadowCast`, PLAN
+    // 11.15); Night's are the torchlit board's, as they always were.
+    const cast = this.torchlit
+      ? { length: 0.35, lean: 0 }
+      : shadowCast(state.round, state.ruleset.scoring.maxRounds);
+    const depth = view.tile * cast.length;
+    const lean = view.tile * cast.lean;
+    // A strip under an edge, sheared by the lean.
+    const strip = (left: number, top: number, width: number): void => {
+      g.poly([
+        left,
+        top,
+        left + width,
+        top,
+        left + width + lean,
+        top + depth,
+        left + lean,
+        top + depth,
+      ]);
+    };
     for (let i = 0; i < state.structure.length; i++) {
       if (state.structure[i] !== Structure.Wall || state.owner[i] === 0) continue;
       const x = i % state.width;
       const y = (i - x) / state.width;
       if (y + 1 < state.height && state.structure[i + state.width] === Structure.Wall) continue;
-      g.rect(tileX(view, x), tileY(view, y + 1), view.tile, depth);
+      strip(tileX(view, x), tileY(view, y + 1), view.tile);
     }
     for (const castle of state.castles) {
-      g.rect(tileX(view, castle.x), tileY(view, castle.y + castle.h), castle.w * view.tile, depth);
+      strip(tileX(view, castle.x), tileY(view, castle.y + castle.h), castle.w * view.tile);
     }
     g.fill({ color: hex(this.art.palette.shadow), alpha: this.art.generators.wall.shadowAlpha });
     for (const cannon of state.cannons) {
       g.ellipse(
-        tileX(view, cannon.x + cannon.w / 2 + 0.12),
-        tileY(view, cannon.y + cannon.h / 2 + 0.2),
+        tileX(view, cannon.x + cannon.w / 2 + 0.12 + cast.lean * 0.5),
+        tileY(view, cannon.y + cannon.h / 2 + 0.2 + (cast.length - 0.35) * 0.5),
         (cannon.w * view.tile) / 2 - 1,
         (cannon.h * view.tile) / 2 - 2,
       );
@@ -878,6 +899,8 @@ export class PixelTheme implements Theme {
     this.drawClouds(view, frame.deltaMs, still);
     this.drawDaylight(state, view);
     this.drawRain(view, frame.deltaMs, still);
+    this.drawSnow(state, view, frame.deltaMs, still);
+    this.drawReflections(state, view, frame.castleSealed, still);
     if (this.torchlit) this.drawTorchlight(state, view, frame);
     this.drawNight(view, frame.deltaMs, still);
     this.drawWindows(state, view, frame);
@@ -1073,7 +1096,7 @@ export class PixelTheme implements Theme {
     if (spanX <= 0 || spanY <= 0) return;
     // An overcast or rainy match has more of them and darker; fog is clouds on the water,
     // pale banks drifting instead of shadows.
-    const heavy = this.weather === 'overcast' || this.weather === 'rain';
+    const heavy = this.weather === 'overcast' || this.weather === 'rain' || this.weather === 'snow';
     const fog = this.weather === 'fog';
     const wanted = Math.round(
       (spanX * spanY * style.cloudsPerThousandTiles * (heavy ? 2.5 : fog ? 1.6 : 1)) / 1000,
@@ -1136,7 +1159,7 @@ export class PixelTheme implements Theme {
       area();
       g.fill({ color: day.colour, alpha: day.alpha });
     }
-    if (this.weather === 'overcast' || this.weather === 'rain') {
+    if (this.weather === 'overcast' || this.weather === 'rain' || this.weather === 'snow') {
       area();
       g.fill({ color: hex(this.art.palette.rockDark), alpha: 0.12 });
     }
@@ -1189,6 +1212,118 @@ export class PixelTheme implements Theme {
         });
       }
     }
+  }
+
+  /**
+   * Reflections in the sea (PLAN 11.15): a wall block or castle with the sea just south
+   * of it lies mirrored faintly on the water below, as a few stripes of its owner's
+   * colour rippling side to side; at Night a sealed castle's is warm, with its torches.
+   * Still under reduced motion.
+   */
+  private drawReflections(
+    state: MatchState,
+    view: ViewTransform,
+    castleSealed: readonly boolean[],
+    still: boolean,
+  ): void {
+    if (this.terrain === null) return;
+    const g = this.effectGfx;
+    const t = still ? 0 : performance.now() / 420;
+    const water = (x: number, y: number): boolean =>
+      y < state.height && this.terrain?.[y * state.width + x] !== Terrain.Land;
+    const mirror = (x: number, y: number, w: number, colour: number): void => {
+      for (let k = 0; k < 3; k++) {
+        const shift = Math.sin(t + x * 0.7 + k * 1.3) * view.tile * 0.08;
+        g.rect(
+          tileX(view, x) + view.tile * 0.08 + shift,
+          tileY(view, y) + view.tile * (0.12 + k * 0.28),
+          w * view.tile - view.tile * 0.16,
+          Math.max(1, view.tile * 0.12),
+        );
+        g.fill({ color: colour, alpha: 0.3 - k * 0.08 });
+      }
+    };
+    for (let i = 0; i < state.structure.length; i++) {
+      if (state.structure[i] !== Structure.Wall) continue;
+      const x = i % state.width;
+      const y = (i - x) / state.width;
+      if (!water(x, y + 1)) continue;
+      const owner = state.owner[i] as number;
+      mirror(
+        x,
+        y + 1,
+        1,
+        owner === 0 ? hex(this.art.palette.rockLight) : playerColour(this.art, owner - 1, 'base'),
+      );
+    }
+    for (const castle of state.castles) {
+      const y = castle.y + castle.h;
+      for (let x = castle.x; x < castle.x + castle.w; x++) {
+        if (!water(x, y)) continue;
+        const lit = this.torchlit && castleSealed[castle.id] === true;
+        mirror(
+          x,
+          y,
+          1,
+          lit
+            ? hex(this.art.palette.emberMid)
+            : playerColour(this.art, castle.islandId - 1, 'base'),
+        );
+      }
+    }
+  }
+
+  /**
+   * Snow, as one of the match's weathers (PLAN 11.15): flakes drifting down slowly over
+   * everything, and white lying on the tops of walls and castles — the lie of it drawn
+   * even under reduced motion, which stops only the falling.
+   */
+  private drawSnow(state: MatchState, view: ViewTransform, deltaMs: number, still: boolean): void {
+    if (this.weather !== 'snow') {
+      this.snow = [];
+      return;
+    }
+    const g = this.effectGfx;
+    // White on every top edge a wall shows, and along the top of each castle.
+    const cap = Math.max(2, Math.round(view.tile * 0.2));
+    for (let i = 0; i < state.structure.length; i++) {
+      if (state.structure[i] !== Structure.Wall || state.owner[i] === 0) continue;
+      const x = i % state.width;
+      const y = (i - x) / state.width;
+      if (y > 0 && state.structure[i - state.width] === Structure.Wall) continue;
+      g.rect(tileX(view, x), tileY(view, y), view.tile, cap);
+    }
+    for (const castle of state.castles) {
+      g.rect(tileX(view, castle.x) + 1, tileY(view, castle.y), castle.w * view.tile - 2, cap);
+    }
+    g.fill({ color: 0xf4f7ff, alpha: 0.85 });
+    if (still) {
+      this.snow = [];
+      return;
+    }
+    const { x0, y0, x1, y1 } = this.drawn;
+    const wanted = Math.round(((x1 - x0) * (y1 - y0) * this.art.pixel.snowPerThousandTiles) / 1000);
+    while (this.snow.length < wanted) {
+      this.snow.push({
+        x: x0 + Math.random() * (x1 - x0),
+        y: y0 + Math.random() * (y1 - y0),
+        speed: 1.4 + Math.random() * 1.6,
+        phase: Math.random() * Math.PI * 2,
+      });
+    }
+    const dt = deltaMs / 1000;
+    const r = Math.max(1, view.tile * 0.08);
+    for (const flake of this.snow) {
+      flake.y += flake.speed * dt;
+      flake.phase += dt * 1.7;
+      flake.x += Math.sin(flake.phase) * 0.6 * dt;
+      if (flake.y > y1) {
+        flake.y = y0;
+        flake.x = x0 + Math.random() * (x1 - x0);
+      }
+      g.circle(tileX(view, flake.x), tileY(view, flake.y), r);
+    }
+    g.fill({ color: 0xffffff, alpha: 0.8 });
   }
 
   /**

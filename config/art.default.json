@@ -993,11 +993,13 @@
       "clear": 5,
       "overcast": 2,
       "rain": 1.5,
-      "fog": 1.5
+      "fog": 1.5,
+      "snow": 1.2
     },
     "rainPerThousandTiles": 90,
     "thunderEveryMs": [14000, 30000],
     "thunderAlpha": 0.13,
+    "snowPerThousandTiles": 60,
     "firefliesPerHundredTiles": 1.2,
     "beamTiles": 7,
     "beamTurnMs": 9000
