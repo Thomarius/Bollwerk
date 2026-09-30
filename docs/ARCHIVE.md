@@ -2757,3 +2757,38 @@ already there, two dropped.
   outside, which is where a breach comes through whichever way the shots fly.
 - Attributed with a temporary switch per change, not committed, and the final code
   checked hash-identical to the variant measured.
+
+## 11z. Risk and targeting traits (11.6, phase 3)
+
+Decided with the user before coding: targeting rules as proposed, but half the aimed
+shots rather than 70%, to feel out first; defensive judged safe as the phase goes rather
+than at its start, which follows a barrage; offensive allowed to widen its wall while
+repairing, not only to reach for a new castle; castle choice as proposed; every value
+dealt evenly. Cannon space stays balanced until phase 4.
+
+- **Targeting** (`traitTarget`, tested in `targeting.test.ts`): point-maximizing takes
+  the nearest opponent's wall closest to one of its own guns — shortest flights, most
+  shots — and leaves breaching to its neutral share; strategic breaches whoever earns
+  most a round (territory times castles), banked score breaking a tie; finisher the
+  weakest — fewest lives in the pool, then fewest castles, then the thinnest wall;
+  grudge whoever aimed most at its walls last round, from the shots in the air, and the
+  neutral rule when nobody did. Each decides half the aimed shots. The weakest-wall
+  search is now kept per opponent, since one bot shoots at several.
+- **Defensive**: once sealed, thickens until no way in takes fewer than two shots — the
+  user's "each enemy-facing wall", read as every wall, since shots have unlimited range
+  — or until no piece can, then reaches for the next castle whether or not the phase
+  can close it.
+- **Offensive**: with a breach its tightest repair closes in 4 blocks or fewer, it
+  repairs with the widest roomy wall that fits the pieces left this phase, widening its
+  ground in the same repair; otherwise tight first, as the 10s rule says. Then reaches
+  for up to four castles, as baron did.
+- **Castle choice**: among castles whose roomy wall costs within 20% of the cheapest,
+  offensive opens from the one nearest the other castles, defensive from the one
+  farthest from any opponent, balanced from the cheapest.
+- **Sanity soak**, Level 5, three players, twelve seeds, every seat one trait: no action
+  refused, nothing unfinished. Forfeits — balanced 9.4%, defensive 6.1% (walls 114 tiles
+  against 80, but 3.8 active guns against 5.9), offensive 17.5% (eight knockouts, four
+  matches ended by elimination), point-maximizing 9.4%, finisher 13.5% (three
+  knockouts), grudge 11.9%, a dealt mix 11.8%. Balance is phase 5.
+- Strategic targeting changed from the old formula, so default bots are no longer
+  hash-identical to phase 1's; that check did its work there.

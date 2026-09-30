@@ -36,7 +36,7 @@
       "placementPerCellMs": 320,
       "fireIntervalMs": 150,
       "aimJitter": 0.05,
-      "riskMargin": 1.0,
+      "riskMargin": 1,
       "replanTicks": 20,
       "sloppiness": 0
     },
@@ -56,12 +56,42 @@
       "maxCastles": 2,
       "riskScale": 0.7,
       "thickens": true,
-      "expandsWhenSealed": false
+      "expandsWhenSealed": false,
+      "expandsWhenSafe": true,
+      "widensWhileRepairing": false,
+      "castleChoice": "sheltered"
     },
-    "balanced": { "maxCastles": 2, "riskScale": 1, "thickens": true, "expandsWhenSealed": false },
-    "offensive": { "maxCastles": 4, "riskScale": 1, "thickens": true, "expandsWhenSealed": true }
+    "balanced": {
+      "maxCastles": 2,
+      "riskScale": 1,
+      "thickens": true,
+      "expandsWhenSealed": false,
+      "expandsWhenSafe": false,
+      "widensWhileRepairing": false,
+      "castleChoice": "cheapest"
+    },
+    "offensive": {
+      "maxCastles": 4,
+      "riskScale": 1,
+      "thickens": true,
+      "expandsWhenSealed": true,
+      "expandsWhenSafe": false,
+      "widensWhileRepairing": true,
+      "castleChoice": "central"
+    }
   },
   "targeting": {
-    "strategic": { "share": 1 }
+    "points": {
+      "share": 0.5
+    },
+    "strategic": {
+      "share": 0.5
+    },
+    "finisher": {
+      "share": 0.5
+    },
+    "grudge": {
+      "share": 0.5
+    }
   }
 }

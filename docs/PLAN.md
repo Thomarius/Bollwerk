@@ -726,8 +726,10 @@ in the lobby: pace, aim, replanning, judgement, and at low levels sloppiness —
 now and then, careless castle and gun spots. A table of anchors in `ai.default.json`,
 interpolated between (`skillAt`); Level 5 is the old gunner, 8 the marshal, 2 the recruit.
 **Personality**, dealt from the seed by player (`dealPersonality`) and hidden until the
-end: risk (defensive, balanced, offensive — offensive the old baron) so far; the other
-traits come with 11.6's later phases. `botProfile` compiles the two into what the bot
+end: risk (defensive thickens until no way in takes fewer than two shots, then expands;
+offensive widens its wall while repairing a small breach and reaches for more castles,
+the old baron) and targeting (point-maximizing, strategic, finisher, grudge, each half of
+its aimed shots, the rest by the neutral rule); cannon space comes with phase 4. `botProfile` compiles the two into what the bot
 reads. Measured 2026-09-25 under the old tiers at three players, both seats: marshal beats
 two gunners 29 of 40, baron 28; gunner beats two recruits 9 of 12. Records in the archive
 from before 10l are historical.
@@ -922,7 +924,7 @@ balanced means.
 - **Bots do not help a teammate build**, even under `crossIslandBuild: all` — teaching
   one to help without wrecking a person's plan is its own question (team mode, §1.8).
 
-### 11.6 Bots as skill and personality — agreed 2026-09-29, phases 1–2 done
+### 11.6 Bots as skill and personality — agreed 2026-09-29, phases 1–3 done
 
 **The next milestone (M13)**, ahead of 11.2's baseline, which is then measured over the
 personality mix real matches will contain. Today a tier bundles two things: **skill** —
@@ -969,9 +971,9 @@ not designed yet: plain trait names first.
   offensive bot opens from a central castle with neighbours to reach for, a defensive one
   from a sheltered corner, a balanced one as today.
 
-**Targeting is a share, not absolute.** Each targeting trait sends a configurable large
-share of shots (to start, about 70%) to its own choice and the rest by the neutral rule —
-breach whoever threatens most — so no bot fires everything one way.
+**Targeting is a share, not absolute.** Each targeting trait sends a configurable
+share of shots to its own choice — 50% to start, the user's call — and the rest by the
+neutral rule, breach whoever threatens most, so no bot fires everything one way.
 
 **The guardrail.** Personalities may be swingier, or somewhat weaker or stronger than
 others; that is flavour. They must not be decisive: **for every trait, a bot three levels
@@ -1007,8 +1009,8 @@ reliably beat Level 5. Measured at three players, both seats.
    them, so soaks and screenshots are not random. Protocol bump.
 2. **General tactics — done** (ARCHIVE 11y): closing gaps from the outside, while repairing
    only; guns toward the enemy was already there; the other two were measured and dropped.
-3. **Risk and targeting traits (S–M)**: defensive and offensive over the existing
-   switches, point-maximizing, finisher and grudge targeting, the targeting share, and
+3. **Risk and targeting traits — done** (ARCHIVE 11z): all four targeting rules at a 50%
+   share, defensive thickening then expanding, offensive widening while repairing, and
    castle choice by risk.
 4. **Max cannons (M–L)**: the pocket planner and placing guns in pockets.
 5. **Tuning and the reveal (M)**: the level table filled in and felt out (are ten levels

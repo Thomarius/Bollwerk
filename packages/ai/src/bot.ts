@@ -57,6 +57,15 @@ const GUN_REACH = 12;
 const ROOM_RADIUS = 3;
 
 /**
+ * A breach an offensive bot may close with a roomier wall than it had (PLAN 11.6): its
+ * tightest repair, in blocks, at most this. Agreed with the user as the start.
+ */
+const SMALL_REPAIR = 4;
+
+/** Castles an opening choice may weigh beyond cost: those within this of the cheapest. */
+const CASTLE_CHOICE_SLACK = 1.2;
+
+/**
  * Clearance a cannon wants between itself and the nearest wall or shore.
  *
  * A cannon jammed against its own wall is what makes a breach there unrepairable. The
@@ -104,8 +113,6 @@ export class Bot {
   private nextPlacementTick = 0;
   private nextCannonTick = 0;
   private nextShotTick = 0;
-  private breach: number[] = [];
-  private breachedAt = -1;
 
   /** How well and how it plays: a level's skill under a personality (PLAN 11.6). */
   readonly setup: BotSetup;
@@ -122,6 +129,7 @@ export class Bot {
   think(state: MatchState, rng: Rng): Action | null {
     const player = state.players[this.playerId];
     if (!player || player.eliminated) return null;
+    this.noteShots(state);
 
     switch (state.phase) {
       case 'castle_select':
@@ -211,17 +219,14 @@ export class Bot {
     const taken = this.inbound(state);
 
     if (rng.nextFloat() >= this.profile.aimJitter) {
-      if (state.tick - this.breachedAt > 20 || this.breach.length === 0) {
-        this.breach = weakestWall(state, this.chooseOpponent(state, rng));
-        this.breachedAt = state.tick;
-      }
-      // Work along the thin part of their wall rather than scattering fire — one shot
-      // per block, moving on whether or not this one has landed yet.
-      while (this.breach.length > 0) {
-        const i = this.breach.shift() as number;
-        if (state.structure[i] !== Structure.Wall || taken.has(i)) continue;
-        const x = i % state.width;
-        return { kind: 'fire', player: this.playerId, x, y: (i - x) / state.width };
+      // A share of aimed shots goes where the targeting trait says (PLAN 11.6), the rest
+      // by the neutral rule — breach whoever threatens most — so no bot fires one way only.
+      const own = rng.nextFloat() < this.profile.targetShare;
+      const tile = own ? this.traitTarget(state, taken) : null;
+      const chosen = tile ?? this.breachOf(state, this.chooseOpponent(state, rng), taken);
+      if (chosen !== null) {
+        const x = chosen % state.width;
+        return { kind: 'fire', player: this.playerId, x, y: (chosen - x) / state.width };
       }
     }
 
@@ -239,6 +244,176 @@ export class Bot {
       return { kind: 'fire', player: this.playerId, x, y };
     }
     return null;
+  }
+
+  /** The thin part of each opponent's wall, worked along a block at a time, per opponent. */
+  private breaches = new Map<number, { tiles: number[]; at: number }>();
+
+  /**
+   * The next block of an opponent's weakest wall — one shot per block, moving on whether
+   * or not this one has landed yet — or null when there is none left to shoot.
+   */
+  private breachOf(state: MatchState, opponent: number, taken: ReadonlySet<number>): number | null {
+    let breach = this.breaches.get(opponent);
+    if (breach === undefined || state.tick - breach.at > 20 || breach.tiles.length === 0) {
+      breach = { tiles: weakestWall(state, opponent), at: state.tick };
+      this.breaches.set(opponent, breach);
+    }
+    while (breach.tiles.length > 0) {
+      const i = breach.tiles.shift() as number;
+      if (state.structure[i] === Structure.Wall && !taken.has(i)) return i;
+    }
+    return null;
+  }
+
+  /** Rivals still in it: never a teammate. */
+  private rivals(state: MatchState): MatchState['players'] {
+    return state.players.filter((p) => !p.eliminated && !sameTeam(state, this.playerId, p.id));
+  }
+
+  /** Where the targeting trait sends a shot, or null to leave it to the neutral rule. */
+  private traitTarget(state: MatchState, taken: ReadonlySet<number>): number | null {
+    const rivals = this.rivals(state);
+    if (rivals.length === 0) return null;
+    switch (this.profile.targeting) {
+      case 'points':
+        return this.nearestWall(state, rivals, taken);
+      case 'strategic': {
+        // Whoever earns most a round now — territory times castles, the scoring formula —
+        // with the banked score to break a tie: the one about to run away with it.
+        const tiles = new Array<number>(state.players.length).fill(0);
+        for (let i = 0; i < state.territory.length; i++) {
+          const owner = state.territory[i] as number;
+          if (owner > 0) tiles[owner - 1] = (tiles[owner - 1] as number) + 1;
+        }
+        const rate = (p: (typeof rivals)[number]): number =>
+          (tiles[p.id] as number) * p.enclosedCastles;
+        const leader = rivals.reduce((best, p) =>
+          rate(p) > rate(best) || (rate(p) === rate(best) && p.score > best.score) ? p : best,
+        );
+        return this.breachOf(state, leader.id, taken);
+      }
+      case 'finisher': {
+        // The weakest: fewest lives left in their pool, then fewest castles sealed, then the
+        // thinnest wall — worked along to force the failed round that takes a life.
+        const lives = (p: (typeof rivals)[number]): number =>
+          state.teams[p.team]?.continuesRemaining ?? 0;
+        const thin = new Map(rivals.map((p) => [p.id, weakestWall(state, p.id).length]));
+        const weakest = rivals.reduce((best, p) => {
+          const a = [lives(p), p.enclosedCastles, thin.get(p.id) ?? 0];
+          const b = [lives(best), best.enclosedCastles, thin.get(best.id) ?? 0];
+          for (let k = 0; k < a.length; k++) {
+            if ((a[k] as number) !== (b[k] as number))
+              return (a[k] as number) < (b[k] as number) ? p : best;
+          }
+          return best;
+        });
+        return this.breachOf(state, weakest.id, taken);
+      }
+      case 'grudge': {
+        // Whoever hit it hardest last round; nobody, and the neutral rule decides.
+        let foe = -1;
+        let most = 0;
+        for (const [shooter, count] of this.grudge.last) {
+          const rival = rivals.find((p) => p.id === shooter);
+          if (rival !== undefined && count > most) {
+            most = count;
+            foe = shooter;
+          }
+        }
+        return foe < 0 ? null : this.breachOf(state, foe, taken);
+      }
+    }
+  }
+
+  /**
+   * Point-maximizing: the nearest opponent's walls, the block closest to one of its own
+   * guns first. Flight time is the reload, so the shortest shots are the most shots, and
+   * any wall tile scores alike — so it does not hunt for the weak point; breaching is left
+   * to the neutral share.
+   */
+  private nearestWall(
+    state: MatchState,
+    rivals: MatchState['players'],
+    taken: ReadonlySet<number>,
+  ): number | null {
+    const guns = state.cannons.filter((c) => c.owner === this.playerId && c.active);
+    if (guns.length === 0) return null;
+    const at = (island: number): { x: number; y: number } => this.islandCentre(state, island);
+    const me = at(state.players[this.playerId]?.islandId ?? 0);
+    const nearest = rivals.reduce((best, p) => {
+      const a = at(p.islandId);
+      const b = at(best.islandId);
+      return (a.x - me.x) ** 2 + (a.y - me.y) ** 2 < (b.x - me.x) ** 2 + (b.y - me.y) ** 2
+        ? p
+        : best;
+    });
+    let best: number | null = null;
+    let bestDistance = Number.POSITIVE_INFINITY;
+    for (let i = 0; i < state.structure.length; i++) {
+      if (state.structure[i] !== Structure.Wall || state.owner[i] !== nearest.islandId) continue;
+      if (taken.has(i)) continue;
+      const x = i % state.width;
+      const y = (i - x) / state.width;
+      for (const gun of guns) {
+        const d = (gun.x - x) ** 2 + (gun.y - y) ** 2;
+        if (d < bestDistance) {
+          bestDistance = d;
+          best = i;
+        }
+      }
+    }
+    return best;
+  }
+
+  /** Island middles, measured once each: islands never move. */
+  private readonly centres = new Map<number, { x: number; y: number }>();
+
+  private islandCentre(state: MatchState, island: number): { x: number; y: number } {
+    let centre = this.centres.get(island);
+    if (centre === undefined) {
+      let sx = 0;
+      let sy = 0;
+      let n = 0;
+      for (let i = 0; i < state.islandId.length; i++) {
+        if (state.islandId[i] !== island) continue;
+        sx += i % state.width;
+        sy += Math.floor(i / state.width);
+        n++;
+      }
+      centre = { x: sx / Math.max(1, n), y: sy / Math.max(1, n) };
+      this.centres.set(island, centre);
+    }
+    return centre;
+  }
+
+  /**
+   * Shots aimed at this bot's walls, by shooter, this round and last — for grudge. Read
+   * from the shots in the air as they appear, so it follows the state alone.
+   */
+  private grudge = {
+    round: -1,
+    seen: new Set<number>(),
+    current: new Map<number, number>(),
+    last: new Map<number, number>(),
+  };
+
+  private noteShots(state: MatchState): void {
+    const g = this.grudge;
+    if (g.round !== state.round) {
+      g.last = g.current;
+      g.current = new Map();
+      g.seen.clear();
+      g.round = state.round;
+    }
+    const island = state.players[this.playerId]?.islandId;
+    for (const shot of state.shots) {
+      if (g.seen.has(shot.id)) continue;
+      g.seen.add(shot.id);
+      const i = shot.toY * state.width + shot.toX;
+      if (state.islandId[i] !== island || state.structure[i] !== Structure.Wall) continue;
+      g.current.set(shot.owner, (g.current.get(shot.owner) ?? 0) + 1);
+    }
   }
 
   /** The opponent closest to winning, so a leader is not left to run away with it. */
@@ -446,6 +621,26 @@ export class Bot {
         true,
         0,
       );
+      // An offensive bot with only a small breach closes it with a roomier wall than it
+      // had, taking in more ground in the same repair — when that roomier wall fits the
+      // pieces it can still lay this phase, not a hopeful fraction more. Otherwise it
+      // repairs tight like everyone: the widest-first repair of 10s lost a quarter of all
+      // rounds, and a small breach is the one case where there is time to spare.
+      if (this.profile.widensWhileRepairing && tight !== null && tight.cost <= SMALL_REPAIR) {
+        const pieces = this.piecesAffordable(state);
+        for (let radius = ROOM_RADIUS + 1; radius >= 1; radius--) {
+          const wide = cheapestPlanFor(
+            state,
+            this.playerId,
+            1,
+            this.profile.maxCastles,
+            this.unreachable,
+            true,
+            radius,
+          );
+          if (wide !== null && wide.cost / 3.5 <= pieces) return wide.tiles;
+        }
+      }
       if (affordable(tight)) return (tight as SealPlan).tiles;
 
       // Reaching for two castles while unenclosed is the real gamble: it is more
@@ -491,6 +686,31 @@ export class Bot {
       if (recover !== null) return recover.tiles;
     }
     const wantsMore = sealed < this.profile.maxCastles;
+
+    // A defensive bot makes its castle safe first — thickened until no way in takes fewer
+    // than two shots, or until no piece can thicken it further — and then reaches for the
+    // next castle straight away, whether or not this phase can close it: castles are a
+    // main way to win, and a part-built extension carries into the next round. Safety is
+    // judged as the phase goes, not at its start, which follows a barrage and would
+    // almost never find the wall whole.
+    if (this.profile.expandsWhenSafe && wantsMore) {
+      if (weakestWall(state, this.playerId).length < 2) {
+        const thicken = thickenTargets(state, this.playerId).filter(
+          (i) => !this.unreachable.has(i),
+        );
+        if (thicken.length > 0) return thicken;
+      }
+      const next = cheapestPlanFor(
+        state,
+        this.playerId,
+        sealed + 1,
+        this.profile.maxCastles,
+        this.unreachable,
+        true,
+        ROOM_RADIUS,
+      );
+      if (next !== null) return next.tiles;
+    }
 
     // An expander reaches for the next castle the moment one is secured, whether or not
     // this phase can close it. Less of a gamble than it sounds: the wall it has stays
@@ -726,8 +946,7 @@ export class Bot {
     // holding. Falls back to the bare cost only if no castle has room at all, since
     // an unwallable start is worse than a cramped one.
     const pick = (roomRadius: number): (typeof mine)[number] | null => {
-      let best: (typeof mine)[number] | null = null;
-      let bestCost = Number.MAX_SAFE_INTEGER;
+      const costed: { castle: (typeof mine)[number]; cost: number }[] = [];
       for (const castle of mine) {
         const plan = cheapestPlanFor(
           { ...state, castles: [castle] } as MatchState,
@@ -738,11 +957,29 @@ export class Bot {
           false,
           roomRadius,
         );
-        if (plan === null || plan.cost >= bestCost) continue;
-        bestCost = plan.cost;
-        best = castle;
+        if (plan !== null) costed.push({ castle, cost: plan.cost });
       }
-      return best;
+      if (costed.length === 0) return null;
+      const cheapest = costed.reduce((a, b) => (b.cost < a.cost ? b : a));
+      if (this.profile.castleChoice === 'cheapest') return cheapest.castle;
+      // Risk as flavour (PLAN 11.6), among castles whose roomy wall costs little more
+      // than the cheapest, so nobody opens from a castle it cannot hold: offensive from
+      // the one with most castles near it to reach for, defensive from the one farthest
+      // from any opponent, whose shots then fly longest and come least often.
+      const fair = costed.filter((c) => c.cost <= cheapest.cost * CASTLE_CHOICE_SLACK);
+      const score =
+        this.profile.castleChoice === 'central'
+          ? (c: (typeof mine)[number]): number =>
+              -mine.reduce((sum, o) => sum + (o === c ? 0 : Math.hypot(o.x - c.x, o.y - c.y)), 0)
+          : (c: (typeof mine)[number]): number => {
+              let nearest = Number.POSITIVE_INFINITY;
+              for (const rival of this.rivals(state)) {
+                const at = this.islandCentre(state, rival.islandId);
+                nearest = Math.min(nearest, Math.hypot(at.x - c.x, at.y - c.y));
+              }
+              return nearest;
+            };
+      return fair.reduce((a, b) => (score(b.castle) > score(a.castle) ? b : a)).castle;
     };
 
     const best = pick(ROOM_RADIUS) ?? pick(0) ?? (mine[0] as (typeof mine)[number]);

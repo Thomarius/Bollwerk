@@ -74,11 +74,32 @@ export const RiskTraitSchema = z.strictObject({
    * whether or not this phase can close it — rather than only when it is affordable.
    */
   expandsWhenSealed: z.boolean(),
+  /**
+   * Defensive: once its castle is sealed, thicken first — until no way in takes fewer
+   * than two shots, or no piece can thicken it further — and then reach for the next
+   * castle straight away, whether or not this phase can close it.
+   */
+  expandsWhenSafe: z.boolean(),
+  /**
+   * Offensive: with a small breach, close it with a roomier wall than it had, widening
+   * the ground it holds in the same repair, when that fits the pieces left this phase.
+   */
+  widensWhileRepairing: z.boolean(),
+  /**
+   * Which castle to open from, among those whose roomy wall costs little more than the
+   * cheapest: the cheapest, the one with most castles near it to reach for, or the one
+   * farthest from any opponent.
+   */
+  castleChoice: z.enum(['cheapest', 'central', 'sheltered']),
 });
 export type RiskTrait = z.infer<typeof RiskTraitSchema>;
 
-/** Targeting values; point-maximizing, finisher and grudge join in phase 3 of 11.6. */
-export const TargetingValues = ['strategic'] as const;
+/**
+ * Targeting values: point-maximizing (`points`, the nearest opponent's walls, closest to
+ * its own guns first), strategic (whoever earns most points a round), finisher (the
+ * weakest opponent) and grudge (whoever hit it hardest last round).
+ */
+export const TargetingValues = ['points', 'strategic', 'finisher', 'grudge'] as const;
 export type Targeting = (typeof TargetingValues)[number];
 
 export const TargetingTraitSchema = z.strictObject({
@@ -112,7 +133,8 @@ export const TRAIT_VALUES = {
 
 /** A personality in words, as the summary reveals it and recordings carry it. */
 export function personalityWords(p: Personality): string {
-  return `${p.risk} · ${p.targeting} · ${p.cannons === 'balanced' ? 'balanced cannons' : p.cannons}`;
+  const targeting = p.targeting === 'points' ? 'point-maximizing' : p.targeting;
+  return `${p.risk} · ${targeting} · ${p.cannons === 'balanced' ? 'balanced cannons' : p.cannons}`;
 }
 
 /**
@@ -149,7 +171,12 @@ export const AiConfigSchema = z
       balanced: RiskTraitSchema,
       offensive: RiskTraitSchema,
     }),
-    targeting: z.strictObject({ strategic: TargetingTraitSchema }),
+    targeting: z.strictObject({
+      points: TargetingTraitSchema,
+      strategic: TargetingTraitSchema,
+      finisher: TargetingTraitSchema,
+      grudge: TargetingTraitSchema,
+    }),
   })
   .refine(
     (ai) =>
@@ -200,8 +227,12 @@ export interface BotProfile extends Skill {
   expandsWhenSealed: boolean;
   /** Whether it fires at the strongest opponent rather than one at random. */
   picksTarget: boolean;
-  /** Share of aimed shots its targeting trait decides. */
+  /** Its targeting trait, and the share of aimed shots that trait decides. */
+  targeting: Targeting;
   targetShare: number;
+  expandsWhenSafe: boolean;
+  widensWhileRepairing: boolean;
+  castleChoice: RiskTrait['castleChoice'];
 }
 
 export function botProfile(ai: AiConfig, setup: BotSetup): BotProfile {
@@ -213,7 +244,11 @@ export function botProfile(ai: AiConfig, setup: BotSetup): BotProfile {
     maxCastles: risk.maxCastles,
     thickens: risk.thickens,
     expandsWhenSealed: risk.expandsWhenSealed,
+    expandsWhenSafe: risk.expandsWhenSafe,
+    widensWhileRepairing: risk.widensWhileRepairing,
+    castleChoice: risk.castleChoice,
     picksTarget: true,
+    targeting: setup.personality.targeting,
     targetShare: ai.targeting[setup.personality.targeting].share,
   };
 }
