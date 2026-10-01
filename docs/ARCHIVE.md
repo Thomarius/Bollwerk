@@ -3423,3 +3423,24 @@ rests on, to be firmed up by the sessions still to come.
 **What to take from the user's play first:** whether building already feels tight at
 default speed, whether a delay would feel like a penalty or like the original's pace,
 and how often a person actually loses a castle — the number the whole bracket rests on.
+
+## 11zp. The server as something a program starts and stops (A1, PLAN 11.17)
+
+The first package of the desktop app. `main.ts` built and bound the whole server as it
+loaded, and found `config/`, the client and the recordings folder by walking up from its
+own file. All of it is now `startServer(options)` in `server.ts`, and `main.ts` a command
+line over it, so `npm start` and the image run exactly as before.
+
+- **Options** for what a packaged app keeps elsewhere: `root` (where `config/` is), the
+  client's folder, the recordings folder — a folder of the user's in the app, since it
+  cannot write inside itself, and still switched by `recordings.enabled` — the port and
+  host, the commit stamped into recordings, and where its news goes.
+- **It returns** the addresses to open and a `stop()` that closes every socket, the tick
+  loop and the listening port, resolving once the port is free; or, when it could not
+  bind, `port_in_use` or `no_permission` as an answer rather than a thrown error. The
+  command line prints that in one line and exits, where it used to die with a stack.
+- **Tested in process** (`server.test.ts`): on a free port it serves the games list and
+  welcomes a client creating a room; a second server on the same port is told it is
+  taken; after `stop()` the port refuses, and a server started on it again works. The
+  built bundle checked by hand the same way: it serves, a second copy says the port is in
+  use and exits 1, and a bad `PORT` is still refused.

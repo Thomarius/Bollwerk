@@ -1066,7 +1066,8 @@ and the Docker image stay the way the game is run day to day.
 No rule, protocol or sim change: a packaged server is the same server, and a page it serves
 plays exactly as one `npm start` serves. Packages in order:
 
-**A1 — The server as something a program can start and stop.** Today `main.ts` binds the
+**A1 — The server as something a program can start and stop — done** (ARCHIVE 11zp).
+As planned: `main.ts` bound the
 moment it loads. It becomes a thin command line over `startServer(options)`, returning the
 addresses it serves on and a `stop()` that closes every socket and room, so `npm start`
 behaves as before. The options carry what is found today by walking up from the server's
