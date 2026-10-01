@@ -1090,7 +1090,7 @@ built client, `config/` and the audio as resources; a Windows portable `.exe` an
 `.AppImage`. One script, `npm run package`, builds the file for the machine it runs on, so a
 Windows build can be made here; the version is the release's.
 
-**A4 — Release builds on demand.** A GitHub Actions workflow run by hand (`workflow_dispatch`)
+**A4 — Release builds on demand — written** (ARCHIVE 11zs; its first run is A5's). A GitHub Actions workflow run by hand (`workflow_dispatch`)
 or by pushing a version tag, building both files on their own systems and attaching them to
 a GitHub release. Never on an ordinary push: CI's existing jobs are untouched.
 

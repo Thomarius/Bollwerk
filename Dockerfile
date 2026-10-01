@@ -13,10 +13,13 @@ COPY packages/ai/package.json packages/ai/
 COPY packages/analysis/package.json packages/analysis/
 COPY packages/client/package.json packages/client/
 COPY packages/config/package.json packages/config/
+COPY packages/desktop/package.json packages/desktop/
 COPY packages/protocol/package.json packages/protocol/
 COPY packages/server/package.json packages/server/
 COPY packages/sim/package.json packages/sim/
 COPY tools/headless/package.json tools/headless/
+# The desktop app's Electron is for its own release builds, never the image.
+ENV ELECTRON_SKIP_BINARY_DOWNLOAD=1
 RUN npm ci
 
 COPY . .

@@ -1,0 +1,71 @@
+name: Release
+
+# The desktop app's portable files (PLAN 11.17 A4), built on demand for major versions —
+# never on an ordinary push. Pushing a tag `v1.2.3` builds both and publishes them as a
+# GitHub release of that version; running the workflow by hand builds them for a version
+# typed in and keeps them as the run's artifacts only, to try before tagging.
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to stamp the files with, e.g. 1.0.0'
+        required: true
+        default: '0.1.0'
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        include:
+          - os: windows-latest
+            file: packages/desktop/release/*.exe
+          - os: ubuntu-latest
+            file: packages/desktop/release/*.AppImage
+    runs-on: ${{ matrix.os }}
+    env:
+      # electron-builder fetches the Electron it packages; the one npm would install is not used.
+      ELECTRON_SKIP_BINARY_DOWNLOAD: '1'
+      RAMPART_COMMIT: ${{ github.sha }}
+      RAMPART_VERSION: ${{ github.event_name == 'push' && github.ref_name || inputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      # A tag is v1.2.3; the files want 1.2.3.
+      - name: Package
+        shell: bash
+        run: |
+          export RAMPART_VERSION="${RAMPART_VERSION#v}"
+          npm run package -w @rampart/desktop
+      - uses: actions/upload-artifact@v4
+        with:
+          name: rampart-${{ matrix.os }}
+          path: ${{ matrix.file }}
+          if-no-files-found: error
+
+  release:
+    # Only a tag publishes; a run by hand stops at the artifacts.
+    if: github.event_name == 'push'
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: files
+          merge-multiple: true
+      - name: Publish the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "${{ github.ref_name }}" files/* \
+            --repo "${{ github.repository }}" \
+            --title "Rampart ${{ github.ref_name }}" \
+            --notes "Portable builds of Rampart ${{ github.ref_name }}: the .exe for Windows 11, the .AppImage for Linux (mark it executable first). Unsigned, so Windows warns of an unknown publisher on first start."

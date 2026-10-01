@@ -156,6 +156,19 @@ wheel — the right button or the wheel turns the piece — and every other acti
 something on screen to click. No keyboard shortcuts; Esc for pause is the one agreed
 exception, beside its button.
 
+## Making a release
+
+The desktop app (PLAN 11.17) is built for major versions only, never for every change.
+`.github/workflows/release.yml` builds the Windows portable `.exe` and the Linux `.AppImage`
+on their own systems: run it by hand from the Actions tab with a version to get the two
+files as the run's artifacts, to try first; push a tag `v1.2.3` to build them and publish
+a GitHub release of that version. Locally, `npm run build` then
+`npm run package -w @rampart/desktop` makes the file for this machine. Both are unsigned:
+Windows warns of an unknown publisher on first start, and an AppImage must be marked
+executable. Electron's own binary, for `npm start -w @rampart/desktop`, is fetched by
+`node node_modules/electron/install.js` when `npm install` has not; CI and the image skip
+it (`ELECTRON_SKIP_BINARY_DOWNLOAD`).
+
 ## Measuring the bots
 
 `npm start -w @rampart/headless -- --stats FILE` writes a row per player per round,

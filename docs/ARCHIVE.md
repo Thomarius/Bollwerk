@@ -3493,3 +3493,20 @@ carries. `RAMPART_VERSION` sets the release's version, as a tag will in CI (A4).
   here showing the menu with its look pictures, Stop freeing the port; its recordings
   folder is `%APPDATA%\Rampart`. The Linux AppImage can only be made on Linux: on the user's
   Mint machine, or in CI (A4).
+
+## 11zs. Release builds on demand (A4, PLAN 11.17)
+
+`.github/workflows/release.yml`, apart from CI's own jobs, which it does not touch. Built on
+demand only: **a tag `v1.2.3`** builds the Windows portable `.exe` on Windows and the Linux
+`.AppImage` on Linux, stamped with the tag's version and the commit, and publishes both as a
+GitHub release of that version; **a run by hand** (`workflow_dispatch`) takes a version and
+keeps the files as the run's artifacts only, to try before tagging. How to cut one is in
+CLAUDE.md.
+
+- **Found on the way**: the Dockerfile copies every workspace's `package.json` before
+  `npm ci`, as its comment says it must, and `packages/desktop` was missing from the list —
+  harmless so far, CI passed, but it is there now. And Electron's install script would
+  fetch its 100 MB binary in every CI run and image build, neither of which runs it:
+  `ELECTRON_SKIP_BINARY_DOWNLOAD` skips it in both, and in the release build, whose
+  electron-builder fetches the Electron it packages itself.
+- **Not yet run**: a release is outward-facing, so the first run is the user's to start (A5).
