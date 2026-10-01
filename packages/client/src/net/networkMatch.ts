@@ -14,6 +14,13 @@ import {
 import type { ServerConnection } from './connection.js';
 
 /**
+ * Ticks a client may trail the server's confirmed tick before catching up at once: one
+ * is the commit it may always play next, the second absorbs commits arriving in pairs,
+ * so the steady state still plays at its own pace rather than in bursts.
+ */
+export const CATCH_UP_MARGIN_TICKS = 2;
+
+/**
  * A match played against an authoritative server.
  *
  * The client runs the same simulation the server does and replays the actions the
@@ -114,8 +121,8 @@ export class NetworkMatch {
 
   /**
    * Advances by elapsed time, but never past what the server has confirmed. If the
-   * client has fallen behind — a stalled tab, a slow frame — it catches up rather
-   * than drifting permanently.
+   * client has fallen behind — the board being built as the match opens, a slow frame,
+   * a stalled tab — it catches up at once rather than drifting permanently.
    */
   advance(elapsedMs: number): MatchEvent[] {
     const state = this.state;
@@ -125,7 +132,15 @@ export class NetworkMatch {
     // its own; what it must not do is bank the pause as time to catch up on after.
     if (this.pausedBy !== null) this.accumulatorMs = 0;
     else this.accumulatorMs += Math.min(elapsedMs, 250);
-    let budget = this.behind > 60 ? this.behind : Math.floor(this.accumulatorMs / this.tickMs);
+    // Anything beyond a small margin is caught up in this frame. Played only at the
+    // page's own clock, a backlog never shrank: it used to be caught up only past 60
+    // ticks, so the second or so a page spends building the board as the match opens
+    // stayed as a constant delay on every click for the whole match (the test sessions'
+    // lag, measured at 20-28 ticks behind on both pages of a room).
+    let budget = Math.max(
+      Math.floor(this.accumulatorMs / this.tickMs),
+      this.behind - CATCH_UP_MARGIN_TICKS,
+    );
 
     while (budget > 0 && state.tick <= this.confirmed) {
       const actions = this.buffered.get(state.tick);

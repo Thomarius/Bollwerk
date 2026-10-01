@@ -325,7 +325,10 @@ sender's seat**, so a client cannot act for someone else.
 
 - **Nothing derivable is transmitted.** Terrain and the piece queue are regenerated from
   the seed; the snapshot carries only what cannot be derived.
-- Clients run one tick behind the server's confirmed tick and apply committed actions.
+- Clients run one tick behind the server's confirmed tick and apply committed actions,
+  and **catch up at once on anything beyond two ticks** (`CATCH_UP_MARGIN_TICKS`): a
+  backlog played only at the page's own clock never shrinks, and the second spent
+  building the board as a match opens stayed as a delay on every click (ARCHIVE 11zg).
 - A dropped seat is handed to a bot so the match does not stall; the player gets their seat
   back on reconnect within the grace period.
 - **Anyone at the table may pause a running match, and anyone resume it** — Esc, or the

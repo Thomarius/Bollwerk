@@ -3143,3 +3143,30 @@ or ruleset change. Each package was committed on its own.
   the banner had just been — the page holds nothing there. And the second test game's
   feedback before the pass: the Holding / Next piece box and the hint line removed, the
   crown centred on its castle, the summary opaque with lifted grey (`d4ef940`).
+
+## 11zg. The online delay on every click
+
+From the third test session: two 2v2 matches over a LAN, a Linux and a Windows machine,
+the server on the Linux one, each machine hosting once. **Both times the host felt a
+constant delay under a second between a click and its effect**, the whole match long; the
+player who joined felt none, and played as offline.
+
+- **The cause was the client's pacing, not the network or the server.** `NetworkMatch`
+  plays confirmed ticks at the page's own clock and caught up on a backlog only past 60
+  ticks. A backlog under that never shrank, and a click lands on the server's tick but
+  shows only once the page has played its way to it. The backlog came from the opening:
+  between the snapshot and the first frame the page builds the board and both looks'
+  sprites, about a second during which commits arrive and are never made up. A frame over
+  250 ms, whose time is capped, adds to it in the same way.
+- **Reproduced** with a real server and two headless pages, host and guest in a 2v2 room:
+  20–28 ticks behind on both, steady for the whole run, the first game frame about a
+  second after the snapshot. The status line beside the ping said so all along, in 11 px
+  grey at the HUD's bottom right, where nobody looked.
+- **The fix**: anything beyond `CATCH_UP_MARGIN_TICKS` (2) is played in the frame it is
+  found, as anything past 60 was. Two ticks so that commits arriving in pairs still play
+  at the page's own pace. Tested by feeding a match commits faster than it plays them —
+  the old code fails both catch-up cases — and by the same two pages: no longer behind.
+- **Why only the hosts is not explained.** Nothing in the room or the client treats the
+  host differently once the match starts, and in the reproduction both pages lagged
+  alike. A backlog that once passed 60 ticks was cleared outright, so whatever spared the
+  guests, the fix removes the delay either way. To be confirmed at the next test session.
