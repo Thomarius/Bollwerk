@@ -3221,3 +3221,17 @@ islands were offered and left out.
   for so small a gain, and game speed as a lobby setting — the game is played at one
   speed. The milestone table's "one sound to come" was stale since `wall_destroyed` was
   dropped (11zc).
+
+## 11zj. The connection where it is seen, and a leaking ping
+
+- **A badge beside Pause**, online only (`NetworkBadge`, `netHealth`, tested): "Online · 45
+  ms" by a green dot; amber for a round trip of `slowPingMs` or a page `slowBehindTicks`
+  behind the server, red for `badPingMs`, `badBehindTicks` or a desync, each saying which
+  ("Slow link · 180 ms", "Behind 0.8 s", "Out of sync"). The status line it replaces was
+  11 px of grey in the HUD's far corner and said nothing until ten ticks behind; in the
+  session where the hosts lagged (11zg), nobody saw it. That line now says only
+  "watching" or the last move the server refused. Seen in a real host and guest match.
+- **The lobby's ping never stopped**: every lobby opened set an interval that pinged on
+  after its connection closed, and a closed connection queued what it could not send, so
+  a page that went back to the menu again and again grew a queue forever. The interval
+  stops with its connection, and a closed connection drops what it is given.

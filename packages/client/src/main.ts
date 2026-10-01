@@ -37,6 +37,7 @@ import { Controls, inputMode, readyCannons } from './controls.js';
 import { bannersFor, type LifeLost, type PointsGained } from './banners.js';
 import { matchPalette, playerCssColour, useMatchPalette } from './colours.js';
 import { matchShapes, playerShape, useMatchShapes } from './shapes.js';
+import { NetworkBadge, type NetworkReading } from './network.js';
 import { escape, lobbyMarkup, type LobbyView } from './lobby.js';
 import { REFRESH_MS, gamesMarkup, joinRefusedNotice, parseRoomList } from './browser.js';
 import { Hud, type IslandBanner } from './hud.js';
@@ -221,8 +222,10 @@ interface Session {
   setPaused(paused: boolean): void;
   /** Each bot's level and personality, by player, for the reveal at game over. */
   readonly setups: ReadonlyMap<number, BotSetup>;
-  /** Extra line for the HUD, such as latency. */
+  /** Extra line for the HUD: watching, or the last move the server refused. */
   status(): string;
+  /** The connection, for the badge beside Pause; null for a match on this computer. */
+  network(): NetworkReading | null;
 }
 
 // ------------------------------------------------------------------------ menu
@@ -504,6 +507,7 @@ function localSession(match: LocalMatch): Session {
     },
     setups: match.setups,
     status: () => (match.humanPlayer < 0 ? 'watching' : ''),
+    network: () => null,
   };
 }
 
@@ -930,7 +934,12 @@ function roomLobby(
   hostId = welcome.hostId;
   sessionStorage.setItem(TOKEN_KEY, `${welcome.code}:${welcome.token}`);
 
-  setInterval(() => connection.ping(), 2000);
+  // Until the connection closes — left running, every lobby opened in the page went on
+  // queueing a ping every two seconds for a socket that would never send them.
+  const pinging = setInterval(() => {
+    if (connection.state === 'closed') clearInterval(pinging);
+    else connection.ping();
+  }, 2000);
 }
 
 function networkSession(
@@ -963,13 +972,12 @@ function networkSession(
       return match.pausedBy;
     },
     setPaused: (paused) => match.requestPause(paused),
-    status: () => {
-      const parts = [`${connection.latencyMs}ms`];
-      if (match.behind > 10) parts.push(`${match.behind} ticks behind`);
-      if (match.desynced) parts.push('DESYNCED');
-      if (match.lastRejection !== null) parts.push(match.lastRejection.replace(/_/g, ' '));
-      return parts.join(' · ');
-    },
+    status: () => (match.lastRejection === null ? '' : match.lastRejection.replace(/_/g, ' ')),
+    network: () => ({
+      latencyMs: connection.latencyMs,
+      behind: match.behind,
+      desynced: match.desynced,
+    }),
   };
 }
 
@@ -1219,12 +1227,15 @@ async function runSession(session: Session, setup: Setup): Promise<void> {
     (paused) => session.setPaused(paused),
     () => audio.play('select'),
   );
+  // Beside Pause, online only: the connection, where a player will see it.
+  const badge = session.network() === null ? null : new NetworkBadge();
 
   let frame = 0;
   const cleanup = (): void => {
     cancelAnimationFrame(frame);
     controls.detach();
     pause.destroy();
+    badge?.destroy();
     globalThis.removeEventListener('resize', fit);
     scene.app.destroy(true);
   };
@@ -1608,6 +1619,8 @@ async function runSession(session: Session, setup: Setup): Promise<void> {
     drawTransition();
     drawIslandBanners();
     hud.update(session.state, session.humanPlayer, session.status());
+    const reading = session.network();
+    if (reading !== null) badge?.update(reading, session.state.ruleset.tickRateHz);
 
     crumbleRuins();
     // Once the match is over, fireworks over whoever won it.

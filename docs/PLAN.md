@@ -329,6 +329,10 @@ sender's seat**, so a client cannot act for someone else.
   and **catch up at once on anything beyond two ticks** (`CATCH_UP_MARGIN_TICKS`): a
   backlog played only at the page's own clock never shrinks, and the second spent
   building the board as a match opens stayed as a delay on every click (ARCHIVE 11zg).
+- **The connection is shown beside Pause** in an online match (`network.ts`): a dot and a
+  word, green "Online" with the round trip, amber for a slow one or a page falling behind,
+  red for a bad one or "Out of sync" (`art.hud.network`). It was 11 px of grey in the
+  HUD's far corner, and nobody saw it say the hosts were behind.
 - A dropped seat is handed to a bot so the match does not stall; the player gets their seat
   back on reconnect within the grace period.
 - **Anyone at the table may pause a running match, and anyone resume it** — Esc, or the

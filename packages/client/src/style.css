@@ -1843,3 +1843,50 @@ table.final tr.you td:nth-child(2) {
 .you-are-here .shape {
   margin-right: 0.55em;
 }
+
+/* The connection, beside Pause, online only (network.ts): a dot that turns amber, then
+   red, and says why. */
+#network {
+  position: fixed;
+  left: 10.6rem;
+  bottom: 0.6rem;
+  z-index: 5;
+  display: flex;
+  gap: 0.45rem;
+  align-items: center;
+  padding: 0.25rem 0.6rem;
+  border: 1px solid var(--edge);
+  background: rgb(10 10 18 / 70%);
+  color: var(--muted);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  pointer-events: auto;
+}
+
+#network::before {
+  content: '';
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #4cc46a;
+}
+
+#network.slow {
+  border-color: #e0a030;
+  color: #f0c060;
+}
+
+#network.slow::before {
+  background: #e0a030;
+}
+
+#network.bad {
+  border-color: #ff5a62;
+  color: #ff8a90;
+}
+
+#network.bad::before {
+  background: #ff5a62;
+  box-shadow: 0 0 6px rgb(255 90 98 / 80%);
+}

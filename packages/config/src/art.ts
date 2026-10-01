@@ -495,6 +495,17 @@ export const ArtConfigSchema = z
     hud: z.strictObject({
       /** The points an island banked, over it, after each resolution. */
       pointsBannerMs: z.number().int().positive(),
+      /**
+       * When the badge beside Pause warns about the connection, online only: amber for a
+       * slow round trip or a page falling behind the server, red for a bad one. Behind is
+       * in ticks; a page that has caught up stays within two (CATCH_UP_MARGIN_TICKS).
+       */
+      network: z.strictObject({
+        slowPingMs: z.number().int().positive(),
+        badPingMs: z.number().int().positive(),
+        slowBehindTicks: z.number().int().positive(),
+        badBehindTicks: z.number().int().positive(),
+      }),
     }),
     /** The menu's title, split between the two chosen looks at a banner's line. */
     menu: z.strictObject({

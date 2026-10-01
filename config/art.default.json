@@ -1063,7 +1063,13 @@
     "delayMs": 4000
   },
   "hud": {
-    "pointsBannerMs": 8000
+    "pointsBannerMs": 8000,
+    "network": {
+      "slowPingMs": 150,
+      "badPingMs": 400,
+      "slowBehindTicks": 4,
+      "badBehindTicks": 15
+    }
   },
   "menu": {
     "titleSweepMs": 2600,

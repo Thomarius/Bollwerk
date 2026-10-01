@@ -66,9 +66,10 @@ export class ServerConnection {
     this.listeners.push(listener);
   }
 
+  /** Sent once open, queued while connecting, and dropped once closed: nothing will send it. */
   send(message: ClientMessage): void {
     if (this.socket && this.state === 'open') this.socket.send(encode(message));
-    else this.queue.push(message);
+    else if (this.state === 'connecting') this.queue.push(message);
   }
 
   createRoom(name: string, players: number, isPublic = true): void {
