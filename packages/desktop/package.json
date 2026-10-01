@@ -55,11 +55,14 @@
       "target": [
         "AppImage"
       ],
-      "category": "Game"
+      "category": "Game",
+      "executableName": "rampart",
+      "syncDesktopName": true
     },
     "appImage": {
       "artifactName": "${productName}-${version}-linux.${ext}"
     }
   },
-  "author": "Thomas Arnold"
+  "author": "Thomas Arnold",
+  "desktopName": "rampart.desktop"
 }

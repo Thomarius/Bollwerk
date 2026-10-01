@@ -3510,3 +3510,9 @@ CLAUDE.md.
   `ELECTRON_SKIP_BINARY_DOWNLOAD` skips it in both, and in the release build, whose
   electron-builder fetches the Electron it packages itself.
 - **Not yet run**: a release is outward-facing, so the first run is the user's to start (A5).
+- **The first run by hand failed on Linux** (2026-10-01): electron-builder names a Linux
+  executable after the npm package, `@rampart/desktop`, which no file may be called;
+  Windows names it after the product, so only Linux broke, and the Windows job was
+  cancelled with it. The Linux executable is `rampart` now, with a desktop name so the
+  window is linked to its launcher. Found by running the Linux packaging on Windows, which
+  goes as far as an AppImage's symlinks before Windows refuses them.
