@@ -130,7 +130,7 @@ export interface Ghost {
   beat?: number | null;
   /** Whether to draw the aiming cursor: in combat, and while it is announced. */
   aiming: boolean;
-  /** Ground the piece in hand would seal, when the sealing preview is on (`sealPreview.ts`). */
+  /** Ground the piece in hand would seal (`sealPreview.ts`). */
   sealing?: readonly Cell[];
   /**
    * While aiming with no gun ready: how far the next is from firing again, 0 to 1

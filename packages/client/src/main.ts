@@ -50,7 +50,6 @@ import { MatchLog, botSetupsFromSeats, revealLines } from './summary.js';
 import { applyEffects, motionReduced, saveEffects, storedEffects } from './motion.js';
 import { PauseControls } from './pause.js';
 import { openingShot, winnerShot } from './camera.js';
-import { saveSealPreview, sealPreviewOn } from './sealPreview.js';
 import { drawPreview, tablePreview } from './preview.js';
 import { RecordingUpload } from './recordingUpload.js';
 import {
@@ -399,7 +398,6 @@ function showMenu(notice: string | null = null): void {
       <label>Building look <select id="build-style">${styleOptions('build')}</select></label>
       <label>Combat look <select id="combat-style">${styleOptions('combat')}</select></label>
       <label>Effects <select id="effects"><option value="high">High</option><option value="full">Full</option><option value="reduced">Reduced</option></select></label>
-      <label>Sealing preview <select id="seal-preview"><option value="off">Off</option><option value="on">On</option></select></label>
       <div class="split play-row">
         <button id="play">Play</button>
         <button id="visibility" data-public="true" title="Public tables are listed under Open games; a private one is joined by its code alone">Public</button>
@@ -436,11 +434,6 @@ function showMenu(notice: string | null = null): void {
   if (buildField) buildField.value = styles.build;
   const combatField = document.querySelector<HTMLSelectElement>('#combat-style');
   if (combatField) combatField.value = styles.combat;
-  const sealField = document.querySelector<HTMLSelectElement>('#seal-preview');
-  if (sealField) {
-    sealField.value = sealPreviewOn() ? 'on' : 'off';
-    sealField.addEventListener('change', () => saveSealPreview(sealField.value === 'on'));
-  }
   const effectsField = document.querySelector<HTMLSelectElement>('#effects');
   if (effectsField) {
     effectsField.value = storedEffects();

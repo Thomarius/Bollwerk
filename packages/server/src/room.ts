@@ -13,7 +13,7 @@ import {
   type ServerConfig,
   type TerrainConfig,
 } from '@rampart/config';
-import { Bot, dealPersonality } from '@rampart/ai';
+import { Bot, dealPersonalities } from '@rampart/ai';
 import {
   ActionSchema,
   MatchRecorder,
@@ -427,6 +427,11 @@ export class Room {
     // Each seat's bot, by player once the seats are dealt their islands: its level, and a
     // personality dealt from the seed (PLAN 11.6) — a person's seat gets one too, for the
     // bot that covers them if they drop. For the recording, a person is nulls.
+    const isBot = new Array<boolean>(this.seats.length);
+    this.seats.forEach((seat, index) => {
+      isBot[order[index] as number] = seat.bot;
+    });
+    const personalities = dealPersonalities(seed, isBot);
     const setups = new Array<BotSetup>(this.seats.length);
     const recorded = new Array<{ level: number | null; personality: Personality | null }>(
       this.seats.length,
@@ -436,7 +441,7 @@ export class Room {
       players[player] = { name: seat.name, isBot: seat.bot, team: this.teams[index] ?? index };
       const setup = {
         level: levels[index] as number,
-        personality: dealPersonality(seed, player),
+        personality: personalities[player] as Personality,
       };
       setups[player] = setup;
       recorded[player] = seat.bot ? setup : { level: null, personality: null };

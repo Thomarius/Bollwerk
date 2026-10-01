@@ -3201,3 +3201,23 @@ islands were offered and left out.
   screenshot script gains `shapes-eight` and `shapes-teams`. Fixed waits drifted too far
   in headless Chrome for the banners and the chart, so those were caught by waiting for
   the elements themselves.
+
+## 11zi. Personalities from a bag, and small items (2026-10-01)
+
+- **A table's personalities are mixed**, the user's suggestion: each trait was drawn
+  independently per player, so two bots at a table of three shared a risk one time in
+  three. `dealPersonalities` deals the whole table from one stream of the seed, each trait
+  from a bag of its values, shuffled, drawn without replacement and shuffled afresh when
+  spent — so no two bots share a value until a bag is out (three risks, four targetings,
+  three cannon spaces). **Bots draw first**, then the people's seats, whose personality
+  is only for the bot covering a drop: drawn in turn, a person between two bots could
+  empty a bag and let them repeat. The room, a local match, the client's reveal and the
+  harness's `dealt` all call it, and tests pin the room's deal and the reveal's to it.
+  Recordings carry their bots' personalities in the header, so old ones replay as played;
+  a soak with `--personality dealt` deals differently from before.
+- **The sealing preview is always on**: the test sessions found it helpful, so the menu
+  switch and its saved setting went.
+- **Dropped from the plan**: nicknames for personality combinations, not worth the work
+  for so small a gain, and game speed as a lobby setting — the game is played at one
+  speed. The milestone table's "one sound to come" was stale since `wall_destroyed` was
+  dropped (11zc).

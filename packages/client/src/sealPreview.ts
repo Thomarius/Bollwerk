@@ -3,29 +3,12 @@ import { Structure, computeEnclosure, type MatchState } from '@rampart/sim';
 import type { Cell } from './render/theme.js';
 
 /**
- * The sealing preview, a setting and off by default: while the piece in hand would seal
- * ground, that ground is outlined faintly under it. Information rather than dressing, and
- * unlike the gap marks removed after the first human play (PLAN §7) it shows what a move
- * would do rather than prescribing one — which is why it is for the testers to try
- * before it is ever on by default.
+ * The sealing preview: while the piece in hand would seal ground, that ground is
+ * outlined faintly under it. Information rather than dressing, and unlike the gap marks
+ * removed after the first human play (PLAN §7) it shows what a move would do rather than
+ * prescribing one. A menu setting, off by default, until the test sessions found it
+ * helpful: now always on, and the switch is gone.
  */
-const KEY = 'rampart.sealPreview';
-
-export function sealPreviewOn(): boolean {
-  try {
-    return globalThis.localStorage?.getItem(KEY) === 'on';
-  } catch {
-    return false;
-  }
-}
-
-export function saveSealPreview(on: boolean): void {
-  try {
-    globalThis.localStorage?.setItem(KEY, on ? 'on' : 'off');
-  } catch {
-    // Storage refused: the choice holds for this page only.
-  }
-}
 
 /**
  * The ground a piece at (`x`, `y`) with `cells` would seal that is not sealed now, by the

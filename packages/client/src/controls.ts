@@ -13,7 +13,7 @@ import {
 
 import type { Ghost, Scene } from './render/scene.js';
 import type { Cell } from './render/theme.js';
-import { sealPreviewOn, sealingCells } from './sealPreview.js';
+import { sealingCells } from './sealPreview.js';
 
 /** What a click means for this player right now. */
 export type InputMode = 'castle' | 'cannon' | 'piece' | 'fire' | 'aim' | 'none';
@@ -263,7 +263,7 @@ export class Controls {
       case 'piece': {
         const cells = pieceCells(currentPieceId(state, player), this.rotation);
         const valid = canPlacePiece(state, player, this.rotation, tile.x, tile.y) === null;
-        const sealing = valid && sealPreviewOn() ? this.sealingFor(cells, tile.x, tile.y) : [];
+        const sealing = valid ? this.sealingFor(cells, tile.x, tile.y) : [];
         return {
           tile,
           cells,

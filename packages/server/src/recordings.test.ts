@@ -2,6 +2,7 @@ import { mkdtempSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
+import { dealPersonalities } from '@rampart/ai';
 import { defaultConfigBundle } from '@rampart/config';
 import { parseRecording, replayRecording, type RecordingLine } from '@rampart/protocol';
 import { describe, expect, it } from 'vitest';
@@ -205,6 +206,35 @@ describe('the recording store', () => {
     );
     expect(store).toBeNull();
     expect(said[0]).toMatch(/^recordings disabled/);
+  });
+});
+
+describe('the personalities a room deals', () => {
+  it('are the table dealer’s, bots first, as the client’s reveal deals them', () => {
+    const lines: RecordingLine[] = [];
+    const r = new Room({
+      code: 'MIX123',
+      hostName: 'Ada',
+      playerCount: 4,
+      ruleset: defaultConfigBundle.ruleset,
+      terrain: defaultConfigBundle.terrain,
+      server: defaultConfigBundle.server,
+      ai: defaultConfigBundle.ai,
+      seed: 12,
+      record: (line) => lines.push(line),
+    });
+    r.join(silent, 'Ada');
+    r.start();
+    const header = lines[0];
+    if (header?.kind !== 'header') throw new Error('no header');
+    const isBot = header.players.map((p) => p.isBot);
+    expect(isBot.filter(Boolean)).toHaveLength(3);
+    const dealt = dealPersonalities(header.seed, isBot);
+    header.players.forEach((p, id) => {
+      expect(p.personality).toEqual(p.isBot ? dealt[id] : null);
+    });
+    // Three bots, so no two share a risk.
+    expect(new Set(dealt.filter((_, id) => isBot[id]).map((p) => p.risk)).size).toBe(3);
   });
 });
 

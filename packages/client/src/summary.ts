@@ -1,5 +1,5 @@
-import { dealPersonality } from '@rampart/ai';
-import { personalityWords, type BotSetup } from '@rampart/config';
+import { dealPersonalities } from '@rampart/ai';
+import { personalityWords, type BotSetup, type Personality } from '@rampart/config';
 import { seatOrder, type MatchEvent, type MatchState } from '@rampart/sim';
 
 /**
@@ -100,7 +100,7 @@ export function scoreChart(
 /**
  * Each bot's level and personality, by player, from the table as the host set it: the
  * seats in lobby order, a level for each bot and null for a person. Seats are shuffled onto
- * players by the seed and personalities dealt from it by player (PLAN 11.6), exactly as a
+ * players by the seed and personalities dealt from it for the table (PLAN 11.6), exactly as a
  * room and a local match do, so a client needs nothing more from the server to know them.
  */
 export function botSetupsFromSeats(
@@ -108,11 +108,16 @@ export function botSetupsFromSeats(
   seats: readonly (number | null)[],
 ): Map<number, BotSetup> {
   const order = seatOrder(seed, seats.length);
+  const isBot = new Array<boolean>(seats.length);
+  seats.forEach((level, seat) => {
+    isBot[order[seat] as number] = level !== null;
+  });
+  const dealt = dealPersonalities(seed, isBot);
   const setups = new Map<number, BotSetup>();
   seats.forEach((level, seat) => {
     if (level === null) return;
     const player = order[seat] as number;
-    setups.set(player, { level, personality: dealPersonality(seed, player) });
+    setups.set(player, { level, personality: dealt[player] as Personality });
   });
   return setups;
 }

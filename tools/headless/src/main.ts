@@ -13,7 +13,7 @@ import {
   type Personality,
 } from '@rampart/config';
 import { loadConfigBundle } from '@rampart/config/node';
-import { Bot, dealPersonality } from '@rampart/ai';
+import { Bot, dealPersonalities } from '@rampart/ai';
 import {
   Rng,
   applyAction,
@@ -321,7 +321,11 @@ function seatSetup(p: number, seed: number): BotSetup {
   const personality = args.personalities[p % args.personalities.length] as Personality | 'dealt';
   return {
     level: args.levels[p % args.levels.length] as number,
-    personality: personality === 'dealt' ? dealPersonality(seed, p) : personality,
+    // Every seat a bot's, so the table is dealt as a match of bots alone is.
+    personality:
+      personality === 'dealt'
+        ? (dealPersonalities(seed, new Array<boolean>(args.players).fill(true))[p] as Personality)
+        : personality,
   };
 }
 /** How a seat is named in the output: `L5`, with a fixed personality after it. */

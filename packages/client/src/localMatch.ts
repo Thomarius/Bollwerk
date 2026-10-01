@@ -6,7 +6,7 @@ import {
   type Personality,
   type Ruleset,
 } from '@rampart/config';
-import { Bot, dealPersonality } from '@rampart/ai';
+import { Bot, dealPersonalities } from '@rampart/ai';
 import { MatchRecorder, recordingId, type RecordingLine } from '@rampart/protocol';
 
 import {
@@ -91,13 +91,18 @@ export class LocalMatch {
     });
 
     // Each bot's level, and a personality dealt from the seed as a room deals it.
+    const isBot = new Array<boolean>(seats.length);
+    seats.forEach((seat, index) => {
+      isBot[order[index] as number] = seat !== null;
+    });
+    const dealt = dealPersonalities(options.seed, isBot);
     const setups = new Map<number, BotSetup>();
     seats.forEach((seat, index) => {
       const id = order[index] as number;
       if (seat === null) return;
       const setup = {
         level: seat,
-        personality: options.personality ?? dealPersonality(options.seed, id),
+        personality: options.personality ?? (dealt[id] as Personality),
       };
       setups.set(id, setup);
       this.bots.set(id, new Bot(id, setup));

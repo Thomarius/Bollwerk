@@ -369,7 +369,8 @@ sender's seat**, so a client cannot act for someone else.
   settings (`config/src/settings.ts`), bounded by `server.lobbySettings`, accepted only
   from the host before the start, refused whole when out of bounds, and applied over the
   server's ruleset — which is re-validated and travels in the snapshot. `maxRounds` and
-  `teamSize` exist; game speed is meant to join them.
+  `teamSize` exist. Game speed will not join them (decided 2026-10-01): the game is
+  played at one speed.
 
 ---
 
@@ -563,9 +564,10 @@ read as the build phase starting over.
 
 **Feedback a player builds by.** While nothing of yours is sealed, your castles are
 outlined (`hints.ts`), and over the countdown's last five seconds a red frame flashes
-round them on every tick (`countdownBeat`). The menu's **Sealing preview**, off by default (`sealPreview.ts`),
-washes and outlines the ground the piece in hand would seal, by the sim's own enclosure
-with the piece stood in as wall; it is for testers to judge, since it carries information.
+round them on every tick (`countdownBeat`). **The sealing preview** (`sealPreview.ts`) washes and outlines the
+ground the piece in hand would seal, by the sim's own enclosure with the piece stood in as
+wall. A menu setting, off by default, until the test sessions found it helpful: always on
+since 2026-10-01, and the switch is gone.
 The held piece casts a soft shadow and swings as it turns (`GhostMotion`); a placed gun
 settles as a piece does; a knocked-out island's castles burn and then smoke for the rest
 of the match (`RuinSmoke`), and in Medieval and Night fly their flags at half-mast. Wall
@@ -772,8 +774,8 @@ only on their own island, so they never help a teammate, whatever the rule allow
 in the lobby: pace, aim, replanning, judgement, and at low levels sloppiness — a worse fit
 now and then, careless castle and gun spots. A table of anchors in `ai.default.json`,
 interpolated between (`skillAt`); Level 5 is the old gunner, 8 the marshal, 2 the recruit.
-**Personality**, dealt from the seed by player (`dealPersonality`) and hidden until the
-end: risk (defensive thickens until no way in takes fewer than two shots, then expands;
+**Personality**, dealt from the seed for the whole table (`dealPersonalities`) and hidden
+until the end, each trait from a bag so a table is mixed (ARCHIVE 11zi): risk (defensive thickens until no way in takes fewer than two shots, then expands;
 offensive widens its wall while repairing a small breach and reaches for more castles,
 the old baron) and targeting (point-maximizing, strategic, finisher, grudge, each half of
 its aimed shots, the rest by the neutral rule), and cannon space (max cannons walls up to
@@ -821,22 +823,22 @@ every resolution against an independent search, not only on unit pictures.
 
 ## 10. Milestones
 
-| #   | Goal                                                      | State                   |
-| --- | --------------------------------------------------------- | ----------------------- |
-| M0  | Scaffold, config schemas, CI                              | Done                    |
-| M1  | Simulation core                                           | Done                    |
-| M2  | Playable locally, placeholder art                         | Done                    |
-| M3  | Style abstraction, then procedural art                    | Done                    |
-| M4  | Online multiplayer                                        | Done                    |
-| M5  | AI opponents                                              | Done                    |
-| M6  | Full scope: 2–8 players, audio, lobby, Docker, deployment | Done, one sound to come |
-| M7  | Balance pass                                              | **In progress**         |
-| M8  | Team mode, and one lobby for online and offline           | Done                    |
-| M9  | Visual pass: phase themes, banner wipe, effects, lobby    | Done (ARCHIVE 11h)      |
-| M10 | Alternative visual themes: Night, Blueprint, Cyberpunk…   | Done (ARCHIVE 11h)      |
-| M11 | UI and effects polish: roster, combat aids, summary…      | Done (ARCHIVE 11h)      |
-| M12 | Second visual pass: scenery, atmosphere, Toy bricks       | Done (ARCHIVE 11w)      |
-| M13 | Bots as skill levels and personalities                    | Done (11.6)             |
+| #   | Goal                                                      | State              |
+| --- | --------------------------------------------------------- | ------------------ |
+| M0  | Scaffold, config schemas, CI                              | Done               |
+| M1  | Simulation core                                           | Done               |
+| M2  | Playable locally, placeholder art                         | Done               |
+| M3  | Style abstraction, then procedural art                    | Done               |
+| M4  | Online multiplayer                                        | Done               |
+| M5  | AI opponents                                              | Done               |
+| M6  | Full scope: 2–8 players, audio, lobby, Docker, deployment | Done               |
+| M7  | Balance pass                                              | **In progress**    |
+| M8  | Team mode, and one lobby for online and offline           | Done               |
+| M9  | Visual pass: phase themes, banner wipe, effects, lobby    | Done (ARCHIVE 11h) |
+| M10 | Alternative visual themes: Night, Blueprint, Cyberpunk…   | Done (ARCHIVE 11h) |
+| M11 | UI and effects polish: roster, combat aids, summary…      | Done (ARCHIVE 11h) |
+| M12 | Second visual pass: scenery, atmosphere, Toy bricks       | Done (ARCHIVE 11w) |
+| M13 | Bots as skill levels and personalities                    | Done (11.6)        |
 
 ---
 
@@ -1059,8 +1061,6 @@ balanced means.
 
 Left open when 11.6 finished (ARCHIVE 11x–11zb, 11zd); none blocks anything.
 
-- **Nicknames** for personality combinations ("the Turtle", "the Raider"), wanted by the
-  user as an option but not designed: the reveal says the traits in plain words for now.
 - **Levels 6 and 7 play alike** (5 wins of 12 each against two Level 5 bots), and Levels 1
   and 2 are not told apart by that test, since Level 5 beats both every time. The table is
   anchors in `ai.default.json`, interpolated.
