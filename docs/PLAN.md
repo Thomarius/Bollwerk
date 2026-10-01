@@ -890,6 +890,8 @@ first round of test-session feedback. In order:
 3. **11.2, points decide and elimination threatens**, the goal revised on 2026-10-01: a
    measurement of how good the points matches are, not a tuning towards knockouts.
 4. **11.3, two-player balance**, re-measured before anything is tried; after 11.2.
+   **11.17, a desktop app for releases**, agreed 2026-10-01, can run alongside: it changes no
+   rule, only how the server is started.
 5. **11.4**, measurements never taken, and **11.13**, the bots' loose ends, as they fit.
 
 Only open work is kept here. Finished packages move to `ARCHIVE.md` under their old
@@ -1050,6 +1052,53 @@ on points, failing two rounds of ten. Two games; the soak is what tells it at sc
 statistics beside it once it ends — the same per-round table the bots produce — so how
 often a person loses a castle, how much of the build phase they use and what repair they
 leave undone are measured, not recalled. The user's impressions come separately.
+
+### 11.17 A desktop app for releases — agreed 2026-10-01
+
+**The goal**: the game as one portable file for Linux Mint and Windows 11, which starts and
+stops the server as `npm start` does, behind a minimal window — so a host needs no Node, no
+repository and no terminal. Decided with the user: **Electron**, accepting a file of about
+100–150 MB; **portable** files only, a single `.exe` for Windows and an `.AppImage` for
+Linux, no installers; no recordings button, since recordings are for internal analysis
+and tuning only. **Built on demand for major versions, never for every change**: `npm start`
+and the Docker image stay the way the game is run day to day.
+
+No rule, protocol or sim change: a packaged server is the same server, and a page it serves
+plays exactly as one `npm start` serves. Packages in order:
+
+**A1 — The server as something a program can start and stop.** Today `main.ts` binds the
+moment it loads. It becomes a thin command line over `startServer(options)`, returning the
+addresses it serves on and a `stop()` that closes every socket and room, so `npm start`
+behaves as before. The options carry what is found today by walking up from the server's
+own file (`paths.ts`): where `config/` and the built client are, which a packaged app keeps
+in its resources; where recordings go, which must be a writable folder of the user's
+(`%APPDATA%` on Windows, `~/.config` on Linux), since an installed app — an AppImage above
+all — cannot write inside itself; and the port. A port already taken is reported as such
+rather than thrown. Tested in process: start, a client joins, stop, start again on the same
+port.
+
+**A2 — The window** (`packages/desktop`, Electron). Start and Stop; whether it is running;
+the addresses other players open, as `npm start` prints them (`openableUrls`), each with a
+copy button; **Open in browser**; and **Play here**, the game in the app's own window for
+the host. Closing the window stops the server. A taken port says so and offers another.
+Mouse only, as everywhere (CLAUDE.md). The commit is stamped as the image stamps it
+(`RAMPART_COMMIT`), so recordings made through the app replay against the right code.
+
+**A3 — Packaging.** electron-builder, from `npm run build`'s output: the bundled server, the
+built client, `config/` and the audio as resources; a Windows portable `.exe` and a Linux
+`.AppImage`. One script, `npm run package`, builds the file for the machine it runs on, so a
+Windows build can be made here; the version is the release's.
+
+**A4 — Release builds on demand.** A GitHub Actions workflow run by hand (`workflow_dispatch`)
+or by pushing a version tag, building both files on their own systems and attaching them to
+a GitHub release. Never on an ordinary push: CI's existing jobs are untouched.
+
+**A5 — Checked on both systems.** The user on Linux Mint, this machine on Windows: start,
+another machine on the LAN joins and plays, stop, start again, a second copy finding the
+port taken. Known and accepted: Windows SmartScreen warns of an unknown publisher until the
+file is signed, which needs a paid certificate and is not planned; Windows Firewall asks
+once whether to allow the network, which LAN play needs; an AppImage must be marked
+executable. How to cut a release goes into CLAUDE.md.
 
 ### 11.3 Two-player balance
 
