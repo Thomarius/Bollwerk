@@ -18,6 +18,7 @@ import {
   teamLetter,
   teamStandings,
   type AnnouncementLine,
+  type RankEntry,
 } from './scores.js';
 import { owesCastleChoice, teamScore, type MatchState, type Phase } from '@rampart/sim';
 
@@ -87,6 +88,9 @@ const PHASE_CALL: Record<Phase, string> = {
   cannon_place: 'Place cannons',
   game_over: '',
 };
+
+/** How long a ranking's entries take to come in before their scores start counting. */
+const RANK_COUNT_DELAY_MS = 450;
 
 export class Hud {
   constructor(
@@ -329,6 +333,7 @@ export class Hud {
     lines: readonly AnnouncementLine[] = [],
     style: ArtStyle = 'pixel',
     title: string | null = null,
+    ranks: readonly RankEntry[] = [],
   ): void {
     this.clearAnnouncement();
     const text = title ?? PHASE_CALL[phase];
@@ -342,6 +347,8 @@ export class Hud {
       if (line.emphasis) small.className = 'news';
       banner.append(small);
     }
+    this.ranking = ranks.length === 0 ? null : this.rankingFor(ranks);
+    if (this.ranking !== null) banner.append(this.ranking.node);
     // Replace only the last announcement. This layer also holds everything else drawn
     // over the board — the island banners, the team tags, the big timer, the cannon
     // count at the cursor — and clearing it all left those updating nodes no longer on
@@ -361,6 +368,7 @@ export class Hud {
   placeAnnouncement(progress: number): number | null {
     const banner = this.phaseCall;
     if (banner === null) return null;
+    this.countRanking();
     const screen = this.bannerRoot.clientHeight;
     const height = banner.offsetHeight;
     const top = -height + progress * (screen + height);
@@ -371,6 +379,61 @@ export class Hud {
   clearAnnouncement(): void {
     this.phaseCall?.remove();
     this.phaseCall = null;
+    this.ranking = null;
+  }
+
+  /** The ranking riding under the banner after a resolution, and when it was shown. */
+  private ranking: {
+    node: HTMLElement;
+    since: number;
+    scores: { node: HTMLElement; from: number; to: number }[];
+  } | null = null;
+
+  /**
+   * The standings after a resolution, as a ranking (PLAN 11.16 I1): an entry a player or
+   * a team, each in its colour with its shape, sliding in one after another; the score
+   * counting up from the round before's, the round's gain beside it, and an arrow for a
+   * place won or lost. All inside the banner's crossing, so it adds no time to the match.
+   */
+  private rankingFor(ranks: readonly RankEntry[]): NonNullable<typeof this.ranking> {
+    const node = document.createElement('div');
+    node.className = 'ranking';
+    const scores: { node: HTMLElement; from: number; to: number }[] = [];
+    ranks.forEach((r, k) => {
+      const entry = document.createElement('span');
+      entry.className = `entry${r.out ? ' out' : ''}`;
+      entry.style.setProperty('--i', String(k));
+      const colour = playerCssColour(r.lead);
+      const gain = r.score - r.from;
+      const moved =
+        r.moved > 0
+          ? '<i class="moved up" title="climbed">▲</i>'
+          : r.moved < 0
+            ? '<i class="moved down" title="dropped">▼</i>'
+            : '';
+      entry.innerHTML =
+        `<b class="rank">${r.rank}</b>${shapeSvg(playerShape(r.lead), colour)}` +
+        `<span class="who">${escape(r.label)}</span><em class="score">${r.from}</em>` +
+        (gain > 0 ? `<i class="gain">+${gain}</i>` : '') +
+        moved;
+      node.append(entry);
+      scores.push({ node: entry.querySelector<HTMLElement>('.score')!, from: r.from, to: r.score });
+    });
+    return { node, since: performance.now(), scores };
+  }
+
+  /** The ranking's scores counting up, a little after their entries have come in. */
+  private countRanking(): void {
+    const ranking = this.ranking;
+    if (ranking === null) return;
+    const span = defaultArtConfig.effects.tallyMs;
+    const elapsed = motionReduced()
+      ? span
+      : performance.now() - ranking.since - RANK_COUNT_DELAY_MS;
+    for (const s of ranking.scores) {
+      const text = String(countUp(s.from, s.to, Math.max(0, elapsed), span));
+      if (s.node.textContent !== text) s.node.textContent = text;
+    }
   }
 
   /**

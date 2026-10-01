@@ -2007,3 +2007,94 @@ body.reduced-effects .menu button.quiet.fresh {
 body.reduced-effects .menu .style-preview {
   transition: none;
 }
+
+/* The ranking under the banner after a resolution (hud.ts): entries sliding in one after
+   another, their scores counting up, the round's gain and a place won or lost. */
+.phase-call .ranking {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.4rem;
+  justify-content: center;
+  margin-top: 0.7rem;
+  font-size: 1rem;
+  letter-spacing: 0.04em;
+  text-transform: none;
+}
+
+.phase-call .ranking .entry {
+  display: inline-flex;
+  gap: 0.35rem;
+  align-items: center;
+  /* The banner's own ink: each style's banner is a colour of its own, Minimal's the gold
+     the accent is, where accent-coloured figures vanished. */
+  color: inherit;
+  white-space: nowrap;
+  animation: rank-in 320ms ease-out both;
+  animation-delay: calc(var(--i) * 90ms);
+}
+
+.phase-call .ranking .entry.out {
+  opacity: 0.5;
+}
+
+.phase-call .ranking .rank {
+  min-width: 1.1em;
+  opacity: 0.7;
+  font-weight: 700;
+  text-align: right;
+}
+
+.phase-call .ranking .shape {
+  margin-right: 0;
+}
+
+.phase-call .ranking .who {
+  font-size: 0.85em;
+  opacity: 0.75;
+}
+
+.phase-call .ranking .score {
+  font-style: normal;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.phase-call .ranking .gain {
+  font-size: 0.8em;
+  font-weight: 700;
+  font-style: normal;
+  animation: rank-gain 400ms ease-out both;
+  animation-delay: calc(450ms + var(--i) * 90ms);
+}
+
+.phase-call .ranking .moved {
+  font-size: 0.75em;
+  font-style: normal;
+}
+
+.phase-call .ranking .moved.up {
+  color: #4cc46a;
+}
+
+.phase-call .ranking .moved.down {
+  color: #ff5a62;
+}
+
+@keyframes rank-in {
+  from {
+    opacity: 0;
+    transform: translateY(-0.4rem);
+  }
+}
+
+@keyframes rank-gain {
+  from {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+}
+
+body.reduced-effects .phase-call .ranking .entry,
+body.reduced-effects .phase-call .ranking .gain {
+  animation: none;
+}

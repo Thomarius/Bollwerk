@@ -45,7 +45,13 @@ import { REFRESH_MS, gamesMarkup, joinRefusedNotice, parseRoomList } from './bro
 import { Hud, type IslandBanner } from './hud.js';
 import { MatchAudio } from './matchAudio.js';
 import { LocalMatch } from './localMatch.js';
-import { announcementLines, announcementTitle, isTeamMatch, teamLetter } from './scores.js';
+import {
+  announcementLines,
+  announcementTitle,
+  isTeamMatch,
+  ranking,
+  teamLetter,
+} from './scores.js';
 import { buildHints, type BuildHints } from './hints.js';
 import { timerSpot } from './timerSpot.js';
 import { SplitTitle, installBackdrop } from './decor.js';
@@ -1311,10 +1317,12 @@ async function runSession(session: Session, setup: Setup): Promise<void> {
           state.pendingPhase === 'cannon_place' && human !== undefined && owesCastleChoice(human);
         hud.announce(
           choosing ? 'castle_select' : (state.pendingPhase ?? 'combat'),
-          announcementLines(state, resolvedSinceAnnounce),
+          announcementLines(state),
           // Drawn in the look it brings, since it is where the look changes.
           setup.styles[after],
           choosing ? null : announcementTitle(state),
+          // The standings after a resolution, counted up from the round before's.
+          resolvedSinceAnnounce ? ranking(state, matchLog.scores.at(-2)?.byPlayer ?? null) : [],
         );
         resolvedSinceAnnounce = false;
       }

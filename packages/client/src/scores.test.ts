@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   countUp,
+  ranking,
   announcementLines,
   announcementTitle,
   inFinalRound,
@@ -10,7 +11,6 @@ import {
   finalRoundNext,
   roundLabel,
   standings,
-  standingsLine,
 } from './scores.js';
 
 interface Fields {
@@ -80,7 +80,7 @@ describe('the round counter', () => {
   it('gives the final round a banner of its own, and says so all through it', () => {
     const before = state({ phase: 'intermission', pendingPhase: 'combat', round: 9 });
     expect(announcementTitle(before)).toBe('Final round');
-    expect(announcementLines(before, false)).toEqual([{ text: 'Fire!', emphasis: true }]);
+    expect(announcementLines(before)).toEqual([{ text: 'Fire!', emphasis: true }]);
     expect(
       announcementTitle(state({ phase: 'intermission', pendingPhase: 'combat', round: 8 })),
     ).toBeNull();
@@ -93,10 +93,9 @@ describe('the round counter', () => {
     expect(roundLabel(state({ phase: 'build', round: 10 }))).toBe('final round 10 / 10');
   });
 
-  it('carries the standings only after a resolution', () => {
+  it('leaves the standings to the ranking the HUD draws', () => {
     const s = state({ players: [player(0, 'Ada', 12), player(1, 'Bo', 30, true)] });
-    expect(announcementLines(s, true)).toEqual([{ text: 'Ada 12 · Bo 30 (out)', emphasis: false }]);
-    expect(announcementLines(s, false)).toEqual([]);
+    expect(announcementLines(s)).toEqual([]);
   });
 });
 
@@ -136,7 +135,10 @@ describe('in a team match', () => {
 
   it('ranks teams by the sum of their members', () => {
     const s = state({ players });
-    expect(standingsLine(s)).toBe('Team A 90 · Team B 40');
+    expect(ranking(s, null).map((e) => [e.label, e.score])).toEqual([
+      ['Team A', 90],
+      ['Team B', 40],
+    ]);
   });
 
   it('names the winning team, and says so when it is yours', () => {
@@ -157,5 +159,51 @@ describe('a score counting up', () => {
     const half = countUp(0, 100, 700, 1400);
     expect(half).toBeGreaterThan(50);
     expect(half).toBeLessThan(100);
+  });
+});
+
+describe('the ranking after a round', () => {
+  it('counts each score up from the round before, and marks who changed places', () => {
+    const s = state({
+      players: [player(0, 'Ada', 180), player(1, 'Bo', 150), player(2, 'Cy', 90)],
+    });
+    // Bo led, Ada was second: Ada climbs one, Bo drops one, Cy holds.
+    const r = ranking(s, [100, 120, 60]);
+    expect(r.map((e) => [e.label, e.rank, e.from, e.score, e.moved])).toEqual([
+      ['Ada', 1, 100, 180, 1],
+      ['Bo', 2, 120, 150, -1],
+      ['Cy', 3, 60, 90, 0],
+    ]);
+  });
+
+  it('starts the first round from nought, with nobody moving', () => {
+    const s = state({ players: [player(0, 'Ada', 40), player(1, 'Bo', 70)] });
+    expect(ranking(s, null).map((e) => [e.label, e.from, e.moved])).toEqual([
+      ['Bo', 0, 0],
+      ['Ada', 0, 0],
+    ]);
+  });
+
+  it('keeps anyone out below those still in, and a tie in seat order, before and after', () => {
+    const s = state({
+      players: [player(0, 'Ada', 50), player(1, 'Bo', 900, true), player(2, 'Cy', 50)],
+    });
+    const r = ranking(s, [50, 900, 50]);
+    expect(r.map((e) => e.label)).toEqual(['Ada', 'Cy', 'Bo']);
+    expect(r.map((e) => e.moved)).toEqual([0, 0, 0]);
+  });
+
+  it('ranks teams in a team match, shown in their first member’s colour and shape', () => {
+    const players = [
+      player(0, 'Ada', 40, false, 0),
+      player(1, 'Bo', 30, false, 1),
+      player(2, 'Cy', 50, false, 0),
+      player(3, 'Di', 70, false, 1),
+    ];
+    const r = ranking(state({ players }), [10, 20, 10, 20]);
+    expect(r.map((e) => [e.label, e.lead, e.from, e.score, e.moved])).toEqual([
+      ['Team B', 1, 40, 100, 0],
+      ['Team A', 0, 20, 90, 0],
+    ]);
   });
 });

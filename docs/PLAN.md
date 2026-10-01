@@ -477,6 +477,12 @@ loop is barely driven; headless Chrome catches a crash on load and nothing else.
 pattern that works is to pull the decision out into a pure function and test that —
 `bannersFor` in `banners.ts`, `lobbyMarkup` in `lobby.ts`, the score text in `scores.ts`.
 
+**The ranking between rounds** (`ranking` in `scores.ts`, drawn by the HUD): the banner after
+a resolution carries an entry a player — a team in a team match — with its place, shape
+and name, sliding in one after another, its score counting up from the round before's,
+the round's gain beside it, and a green or red arrow for a place won or lost; in the
+banner's own ink, inside its crossing, adding no time.
+
 **A picture of each chosen look** stands beside its choice in the menu (`stylePreview.ts`):
 one fixed island — a sealed ring with guns round the crowned main castle, a second castle
 outside it — drawn by the style's own theme through a real `Scene` on a canvas of its own,
@@ -881,7 +887,7 @@ first round of test-session feedback. In order:
    (§9, ARCHIVE 11e); the user sends compiled feedback, which is triaged with them first.
 2. **11.15, the third visual pass — done** (ARCHIVE 11zf, 11zh), X6's shapes last. The next
    test session also checks the fix for the hosts' delay on every click (ARCHIVE 11zg).
-   **11.16**, agreed 2026-10-01, runs meanwhile: O1, H1 and S1 done, then I1.
+   **11.16**, agreed 2026-10-01, runs meanwhile: all four packages done (ARCHIVE 11zk–11zn).
 3. **11.2, elimination tuning**, the next milestone. Its baseline is measured over the
    personality mix; the "ambitious" bot it planned and finisher targeting exist now.
 4. **11.3, two-player balance**, re-measured before anything is tried; after 11.2.
@@ -988,10 +994,10 @@ as few words as possible.
 
 **S1 — Style previews — done** (§7, ARCHIVE 11zm).
 
-**I1 — A livelier scoreboard between rounds.** The standings under the banner after a
-resolution become a short animated ranking, with the shapes and scores counting up —
-inside the banner's time, adding none, so the game's timing does not move. To be tried
-and judged in play.
+**I1 — A livelier scoreboard between rounds — done** (§7, ARCHIVE 11zn). To be judged in
+the next test session.
+
+**11.16 is done**: O1, H1, S1 and I1 in ARCHIVE 11zk–11zn.
 
 ### 11.2 Elimination tuning — planned, waiting on human play
 

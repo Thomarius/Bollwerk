@@ -3311,3 +3311,22 @@ beside it, drawn by the style's own theme, so it is the look itself and not a li
 - **Sixteen pixels a tile**, the pixel style's own, shown at half that: the first pictures,
   at twelve and shown smaller, were too small to read the guns and the crown.
 - Seen in every style for both looks in a browser, with no errors in the console.
+
+## 11zn. The ranking between rounds (I1, PLAN 11.16)
+
+The standings after a resolution rode under the next banner as one line of text. They
+are a ranking now, inside the same crossing, so the match's timing does not move.
+
+- **`ranking(state, before)`** (tested): the standings as the HUD ranks them — those in
+  ahead of those out, then score, then seat — with each entry's score after the round
+  before (the match log's previous resolution; nought before the first) and the places it
+  won or lost, the places before ranked by the same rule so a tie breaking differently is
+  never a move. Teams in a team match, shown in their first member's colour and shape.
+  The text line it replaced, `standingsLine`, went.
+- **Drawn** as entries sliding in one after another, each score counting up after them
+  (`countUp`, over `tallyMs`), the round's gain popping in beside it, and a green ▲ or red ▼.
+  Still under reduced motion, counted at once.
+- **From the first look**: on Minimal's gold banner the ranks and gains, in the accent,
+  vanished into it; the ranking takes each banner's own ink. Seen in Minimal and
+  Parchment, free-for-all and teams, in watched matches; the moves need a round past
+  the first and a person to watch.

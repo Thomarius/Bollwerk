@@ -110,15 +110,65 @@ export function finalRoundNext(state: MatchState): boolean {
   );
 }
 
-export function standingsLine(state: MatchState): string {
-  if (isTeamMatch(state)) {
-    return teamStandings(state)
-      .map((s) => `Team ${teamLetter(s.team)} ${s.score}${s.eliminated ? ' (out)' : ''}`)
-      .join(' · ');
-  }
-  return standings(state)
-    .map((s) => `${s.name} ${s.score}${s.eliminated ? ' (out)' : ''}`)
-    .join(' · ');
+/**
+ * One entry of the ranking a banner carries after a resolution (PLAN 11.16 I1): a player,
+ * or a team in a team match, where it stands now, where it stood after the round before,
+ * and the score it counts up from.
+ */
+export interface RankEntry {
+  key: string;
+  /** A name, or "Team A". */
+  label: string;
+  /** The player whose colour and shape it is shown in: a team's first member. */
+  lead: number;
+  score: number;
+  /** The score after the round before; nought for the first. */
+  from: number;
+  /** One for the leader. */
+  rank: number;
+  /** Places climbed since the round before: negative for places lost, nought for none. */
+  moved: number;
+  out: boolean;
+}
+
+/**
+ * The standings as the banner after a resolution shows them, given every player's score
+ * after the round before (`before`, by player; null before the first). Ranked as the
+ * standings are — those still in ahead of those out, then by score, then by seat — and
+ * the places before ranked the same way, so a move is a real change of places, not a tie
+ * breaking differently.
+ */
+export function ranking(state: MatchState, before: readonly number[] | null): RankEntry[] {
+  const was = (id: number): number => before?.[id] ?? 0;
+  const entries = isTeamMatch(state)
+    ? teamStandings(state).map((t) => ({
+        key: `t${t.team}`,
+        label: `Team ${teamLetter(t.team)}`,
+        lead: t.members[0] ?? 0,
+        score: t.score,
+        from: t.members.reduce((sum, id) => sum + was(id), 0),
+        out: t.eliminated,
+        order: t.team,
+      }))
+    : standings(state).map((p) => ({
+        key: `p${p.player}`,
+        label: p.name,
+        lead: p.player,
+        score: p.score,
+        from: was(p.player),
+        out: p.eliminated,
+        order: p.player,
+      }));
+  const placeBefore = new Map(
+    [...entries]
+      .sort((a, b) => Number(a.out) - Number(b.out) || b.from - a.from || a.order - b.order)
+      .map((e, k) => [e.key, k + 1]),
+  );
+  return entries.map(({ order: _order, ...e }, k) => ({
+    ...e,
+    rank: k + 1,
+    moved: before === null ? 0 : (placeBefore.get(e.key) ?? k + 1) - (k + 1),
+  }));
 }
 
 export interface AnnouncementLine {
@@ -128,15 +178,12 @@ export interface AnnouncementLine {
 }
 
 /**
- * The lines carried under a phase announcement. The standings follow a resolution,
- * which is the only time scores change, so the leaderboard costs no pause of its own.
+ * The lines carried under a phase announcement. The standings that follow a resolution
+ * are a ranking of their own (`ranking`), drawn by the HUD; a line of text before.
  */
-export function announcementLines(state: MatchState, afterResolution: boolean): AnnouncementLine[] {
-  const lines: AnnouncementLine[] = [];
+export function announcementLines(state: MatchState): AnnouncementLine[] {
   // The final round's banner is headed "Final round", so the call it replaced rides under.
-  if (finalRoundNext(state)) lines.push({ text: 'Fire!', emphasis: true });
-  if (afterResolution) lines.push({ text: standingsLine(state), emphasis: false });
-  return lines;
+  return finalRoundNext(state) ? [{ text: 'Fire!', emphasis: true }] : [];
 }
 
 function names(list: readonly string[]): string {
