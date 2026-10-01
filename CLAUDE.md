@@ -137,12 +137,13 @@ on the server at once (ARCHIVE 11zg), the fix for the hosts' delay on every clic
 CI job, since there is no Docker on this machine. Every sound cue is supplied. The protocol
 is 14: a test session needs the server rebuilt and every page reloaded.
 
-**Next**: balance, M7. PLAN.md §11 opens with where to start: a test session on the
-current build first, then **elimination tuning** (§11.2) — half of 3–4 player matches
-ending with one player left before the cap, by one continue instead of two and a new
-placement delay, measured over the personality mix; most matches reach the cap, so **the
-scoring formula is the game's balance** — then two-player balance (§11.3), measurements
-never taken (§11.4) and the bots' loose ends (§11.13).
+**Next**: balance, M7. **The goal** (2026-10-01, the user's): almost every match is decided
+**on points at the round cap**, so **the scoring formula is the game's balance**; elimination
+stays a real threat that punishes — a life spent for every failed seal, a knockout now and
+then — but not the way matches end. The first test game on the current build was won on
+points by 6% and read as balanced. PLAN.md §11 says where to start: §11.2 measures how good
+the points matches are (margins, changes of lead, lives spent); then two-player balance
+(§11.3), measurements never taken (§11.4) and the bots' loose ends (§11.13).
 
 **Working with the user**: every match they play is recorded in `recordings/`; they send
 compiled feedback, which is triaged with them before anything is built, and design

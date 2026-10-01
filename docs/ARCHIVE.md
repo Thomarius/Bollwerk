@@ -3330,3 +3330,96 @@ are a ranking now, inside the same crossing, so the match's timing does not move
   vanished into it; the ranking takes each banner's own ink. Seen in Minimal and
   Parchment, free-for-all and teams, in watched matches; the moves need a round past
   the first and a person to watch.
+
+## 11zo. The elimination target, retired (2026-10-01)
+
+The user's decision after a test game decided on points (PLAN 11.2): almost every match is
+to be decided on points at the cap, with elimination a real threat that punishes rather
+than the way matches end. The target it replaces — half of three- and four-player matches
+ending with one player left before the cap, by one continue instead of two and a new
+placement delay — is kept here as it stood, measurements and reasoning included.
+
+### Formerly PLAN 11.2 Elimination tuning — planned, waiting on human play
+
+**Agreed 2026-09-25, not started.** The user is playing test sessions first, so the
+tuning is not fitted to the bots alone; those sessions are recorded (§9), and the user
+will send compiled feedback.
+
+**Changed since it was planned**: bots are now a skill level and a personality (§8), so
+the baseline is measured over the mix they are dealt in real matches; pockets count as
+territory (§1.3); islands are rounder and five and seven players sit in grids (§1.2);
+only the main castle earns the first castle's reward, and bots no longer avoid tiles
+other players' shots are headed for (ARCHIVE 11ze) — so every measurement from before
+then is historical. Overtime shipped (§1.6), a
+little more wall per round for everyone; and team matches eliminate even less than free-for-all — 5 in 180 at gunner
+(ARCHIVE 10u), since a pooled life lasts a team longer. Measure 2v2 alongside three and
+four players.
+
+**Target:** at three and four players, about **half of matches end with one player left
+before the cap**, under the default rules — a 10-round cap, combat and build phases as
+they are. Demanding: it needs two or three players knocked out, each failing to seal
+one time more than their lives allow, inside ten rounds. Today's bots manage 0 of 8.
+
+**The weights stay.** They were taken from the original and are believed sound, and they
+barely decide how often somebody is knocked out: that comes from how often walls fail
+(attack against repair speed), how many lives there are, and how many rounds there are
+to fail in. The weights decide who wins at the cap, and shape eliminations only through
+how much risk players take. The formula already rewards size strongly — two castles in 60
+tiles score 120 a round against 30 for one in 30, so the bigger wall is worth trying
+unless it fails more than about 75% of the time. That the bots turtle anyway is their
+risk model (affordability, never points), not the formula.
+
+**The soak's limit.** It measures bots, and today's are careful: they forfeit about 11% of
+rounds, which makes three failures in ten rounds — two continues and the last — roughly
+a one-in-forty event per player. A person reaching for more ground fails more often.
+Human testing is not available at scale, so the bots have to bracket human play instead.
+
+Before this state, three gunners over eight matches, before and after bots learned to
+close a breach first (10s): forfeits 22% -> 11%, territory per sealed round 80 -> 41,
+castles 1.17 -> 0.92, matches won by elimination 3/8 -> 0/8. Later fixes took territory
+back to 52 and castles to 1.03; eliminations stayed at zero.
+
+**Levers agreed:** continues 2 -> 1; **a placement delay**, new; and, to be measured rather
+than assumed, bot targeting. **Not levers:** the cap length, and combat and build times.
+
+#### Steps
+
+1. **Baseline at three and four players**, current rules, after 11.6 — Level 5 and Level 8
+   tables over the personality mix, and fixed personalities to bracket it. Share ending with one player left, eliminations per match,
+   lives spent, forfeit rate, and the round each elimination happens in. Measurement only.
+2. **An ambitious personality**, delivered by 11.6 as offensive risk: bigger walls, more
+   castles, more risk — standing in for the way people play. Every lever is then measured against
+   both the careful bots and this one, and the answer should lie between them.
+3. **Placement delay, `build.placementCooldownMs`**: after placing a piece, a player
+   cannot place another until it has passed. Enforced by the sim for everyone, in ticks
+   and per player, so it stays deterministic and is hashed and snapshotted. The client
+   shows the cooldown on the piece preview. Bots wait for it, and **their budget must
+   include it** — an optimistic estimate of how many pieces fit a phase is exactly what
+   cost them a quarter of their rounds (10s). Per piece, a fixed time, to start with;
+   scaling with piece size is the variant to try if a fixed delay is too blunt. Default 0
+   until measured.
+4. **A small grid**: continues 2 or 1, delay 0 and a few values up to about a second —
+   measured at three and four players against both ends of the bracket, both seats.
+   Choose the setting nearest half on a mixed table.
+5. **Guardrails before choosing**, so the target is not bought with a worse game: hardly
+   anyone out in rounds 1–2 (an early knockout feels bad, and continues exist to prevent
+   it); the ladder still ordered; two players not noticeably worse (11.3).
+
+**Targeting, a third lever to measure in step 4.** Bots that pick targets shoot the
+strongest opponent, which spreads damage and keeps everyone alive — the opposite of what
+this target needs. Finishing off the weakest — the finisher targeting of 11.6 — may
+matter as much as either rule.
+
+**Recording it** (ARCHIVE 11e): every test match lands in `recordings/` with its
+statistics beside it once it ends — the same per-round table the bots produce — so how often a person loses a
+castle, how much of the build phase they use and what repair they leave undone are
+measured, not recalled. The user's impressions come separately, as compiled feedback.
+
+**The first human game** (2026-09-28, one person against two gunners, ten rounds, in
+`recordings/`): the person won on points, 1658 to 1245 and 1062, and failed to seal in
+two rounds of ten — 20%, about twice the bots' 11%. One game; the number the bracket
+rests on, to be firmed up by the sessions still to come.
+
+**What to take from the user's play first:** whether building already feels tight at
+default speed, whether a delay would feel like a penalty or like the original's pace,
+and how often a person actually loses a castle — the number the whole bracket rests on.

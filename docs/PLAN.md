@@ -162,7 +162,7 @@ they are holding, within `build.overtimeMs` (3 s); no further piece is dealt, an
 window closes early once everyone still in has used it. Added after human play: a piece
 being lined up as the clock hit zero was simply lost, which was frustrating out of all
 proportion to what it decided. It gives everyone slightly more wall per round, which the
-elimination baseline of 11.2 will be measured with. That is why a cannon jammed
+measurements of 11.2 will be taken with. That is why a cannon jammed
 against its own wall is a defensive problem and not merely an ugly one.
 
 ### 1.7 Scoring and the round cap
@@ -880,16 +880,15 @@ every resolution against an independent search, not only on unit pictures.
 bots as skill levels and personalities (M13), seven styles and two visual passes, and the
 first round of test-session feedback. In order:
 
-1. **A test session on the current build.** Much has changed since the last one — pockets,
-   pause, the games browser, levels and personalities, rounder islands — and 11.2 is meant
-   to be checked against how people play. The server must be rebuilt (`npm start`) and
+1. **Test sessions on the current build** — the first, one game on 2026-10-01, found
+   everything working and the balance quite good (11.2). More are recorded as they come. The server must be rebuilt (`npm start`) and
    every page reloaded: the protocol is 14. Every match is recorded with its statistics
    (§9, ARCHIVE 11e); the user sends compiled feedback, which is triaged with them first.
 2. **11.15, the third visual pass — done** (ARCHIVE 11zf, 11zh), X6's shapes last. The next
    test session also checks the fix for the hosts' delay on every click (ARCHIVE 11zg).
    **11.16**, agreed 2026-10-01, runs meanwhile: all four packages done (ARCHIVE 11zk–11zn).
-3. **11.2, elimination tuning**, the next milestone. Its baseline is measured over the
-   personality mix; the "ambitious" bot it planned and finisher targeting exist now.
+3. **11.2, points decide and elimination threatens**, the goal revised on 2026-10-01: a
+   measurement of how good the points matches are, not a tuning towards knockouts.
 4. **11.3, two-player balance**, re-measured before anything is tried; after 11.2.
 5. **11.4**, measurements never taken, and **11.13**, the bots' loose ends, as they fit.
 
@@ -999,90 +998,58 @@ the next test session.
 
 **11.16 is done**: O1, H1, S1 and I1 in ARCHIVE 11zk–11zn.
 
-### 11.2 Elimination tuning — planned, waiting on human play
+### 11.2 Points decide, elimination threatens — goal revised 2026-10-01
 
-**Agreed 2026-09-25, not started.** The user is playing test sessions first, so the
-tuning is not fitted to the bots alone; those sessions are recorded (§9), and the user
-will send compiled feedback.
+**The goal, the user's decision of 2026-10-01**: almost every match is decided **on points
+at the round cap**. Elimination stays a real threat and must stay relevant — failing to
+seal costs the round's points and a life, and a player who fails one time more than their
+lives allow is out, can no longer win, and should feel it coming — but a knockout is the
+exception that punishes, not the way matches end. It replaces the target of 2026-09-25,
+half of three- and four-player matches ending with one player left before the cap, which
+is in ARCHIVE 11zo with the levers it called for.
 
-**Changed since it was planned**: bots are now a skill level and a personality (§8), so
-the baseline is measured over the mix they are dealt in real matches; pockets count as
-territory (§1.3); islands are rounder and five and seven players sit in grids (§1.2);
-only the main castle earns the first castle's reward, and bots no longer avoid tiles
-other players' shots are headed for (ARCHIVE 11ze) — so every measurement from before
-then is historical. Overtime shipped (§1.6), a
-little more wall per round for everyone; and team matches eliminate even less than free-for-all — 5 in 180 at gunner
-(ARCHIVE 10u), since a pooled life lasts a team longer. Measure 2v2 alongside three and
-four players.
+**So the scoring formula is the game's balance** (§1.7), as it already was in practice, and
+what is measured is whether points make good matches:
 
-**Target:** at three and four players, about **half of matches end with one player left
-before the cap**, under the default rules — a 10-round cap, combat and build phases as
-they are. Demanding: it needs two or three players knocked out, each failing to seal
-one time more than their lives allow, inside ten rounds. Today's bots manage 0 of 8.
+- **Close finishes and changes of lead**: a winner's margin, and how often the lead changes
+  hands after the early rounds, so that the last rounds still matter.
+- **The threat is real**: most players fail to seal at least once in a match and spend a
+  life for it; a person's failure rate stays near what it is (about 20%); knockouts happen
+  now and then — to a player who takes too much risk or falls behind on repairs — and
+  hardly ever in rounds 1–2.
+- **The ladder holds** under points: a better level still wins most matches, and no
+  personality decides a match on its own (the 11.6 guardrail).
 
-**The weights stay.** They were taken from the original and are believed sound, and they
-barely decide how often somebody is knocked out: that comes from how often walls fail
-(attack against repair speed), how many lives there are, and how many rounds there are
-to fail in. The weights decide who wins at the cap, and shape eliminations only through
-how much risk players take. The formula already rewards size strongly — two castles in 60
-tiles score 120 a round against 30 for one in 30, so the bigger wall is worth trying
-unless it fails more than about 75% of the time. That the bots turtle anyway is their
-risk model (affordability, never points), not the formula.
+**Levers no longer wanted for it**: continues 2 -> 1 and the placement delay
+(`build.placementCooldownMs`) were planned to raise eliminations to half; neither is
+needed now, and neither is planned. Kept in mind only if elimination stops being a threat
+at all — nobody ever spending a life. **The weights stay** (§1.7).
 
-**The soak's limit.** It measures bots, and today's are careful: they forfeit about 11% of
-rounds, which makes three failures in ten rounds — two continues and the last — roughly
-a one-in-forty event per player. A person reaching for more ground fails more often.
-Human testing is not available at scale, so the bots have to bracket human play instead.
-
-Before this state, three gunners over eight matches, before and after bots learned to
-close a breach first (10s): forfeits 22% -> 11%, territory per sealed round 80 -> 41,
-castles 1.17 -> 0.92, matches won by elimination 3/8 -> 0/8. Later fixes took territory
-back to 52 and castles to 1.03; eliminations stayed at zero.
-
-**Levers agreed:** continues 2 -> 1; **a placement delay**, new; and, to be measured rather
-than assumed, bot targeting. **Not levers:** the cap length, and combat and build times.
+**Today's evidence.** The latest test game (2026-10-01, one person against three Level 5
+bots dealt from the bag — balanced, defensive and offensive risk, three different
+targetings — in `recordings/`): the person won on points, 1423 to 1335, 1039 and 819, a
+margin of 6%. Bot 4 took the lead in round 6 and lost it in round 8. Nobody was knocked
+out; seven of forty player-rounds failed to seal (17.5%), every player failed at least once
+and three of four twice — one short of being out. The person's territory points led
+(113 a round against 45–87) and their damage trailed (30 against 33–46). The user's verdict:
+close, and the balance quite good as it is. The first human game (2026-09-28) was also won
+on points, failing two rounds of ten. Two games; the soak is what tells it at scale.
 
 #### Steps
 
-1. **Baseline at three and four players**, current rules, after 11.6 — Level 5 and Level 8
-   tables over the personality mix, and fixed personalities to bracket it. Share ending with one player left, eliminations per match,
-   lives spent, forfeit rate, and the round each elimination happens in. Measurement only.
-2. **An ambitious personality**, delivered by 11.6 as offensive risk: bigger walls, more
-   castles, more risk — standing in for the way people play. Every lever is then measured against
-   both the careful bots and this one, and the answer should lie between them.
-3. **Placement delay, `build.placementCooldownMs`**: after placing a piece, a player
-   cannot place another until it has passed. Enforced by the sim for everyone, in ticks
-   and per player, so it stays deterministic and is hashed and snapshotted. The client
-   shows the cooldown on the piece preview. Bots wait for it, and **their budget must
-   include it** — an optimistic estimate of how many pieces fit a phase is exactly what
-   cost them a quarter of their rounds (10s). Per piece, a fixed time, to start with;
-   scaling with piece size is the variant to try if a fixed delay is too blunt. Default 0
-   until measured.
-4. **A small grid**: continues 2 or 1, delay 0 and a few values up to about a second —
-   measured at three and four players against both ends of the bracket, both seats.
-   Choose the setting nearest half on a mixed table.
-5. **Guardrails before choosing**, so the target is not bought with a worse game: hardly
-   anyone out in rounds 1–2 (an early knockout feels bad, and continues exist to prevent
-   it); the ladder still ordered; two players not noticeably worse (11.3).
-
-**Targeting, a third lever to measure in step 4.** Bots that pick targets shoot the
-strongest opponent, which spreads damage and keeps everyone alive — the opposite of what
-this target needs. Finishing off the weakest — the finisher targeting of 11.6 — may
-matter as much as either rule.
+1. **Measure points as the deciding thing**, current rules, at three and four players and
+   2v2, Level 5 and Level 8 tables over the dealt personality mix: winners' margins,
+   changes of lead after round 5, lives spent per player, forfeit rate, knockouts and the
+   round each happens in. Measurement only; `--stats` and `analysis` carry all of it but
+   the lead changes, which are a few lines over the per-round scores.
+2. **The same over the recorded human games**, with `--replay`, as they accumulate.
+3. **Decide with the user** whether anything wants changing. The game reads as balanced to
+   them today, so the default is to change nothing.
 
 **Recording it** (ARCHIVE 11e): every test match lands in `recordings/` with its
-statistics beside it once it ends — the same per-round table the bots produce — so how often a person loses a
-castle, how much of the build phase they use and what repair they leave undone are
-measured, not recalled. The user's impressions come separately, as compiled feedback.
-
-**The first human game** (2026-09-28, one person against two gunners, ten rounds, in
-`recordings/`): the person won on points, 1658 to 1245 and 1062, and failed to seal in
-two rounds of ten — 20%, about twice the bots' 11%. One game; the number the bracket
-rests on, to be firmed up by the sessions still to come.
-
-**What to take from the user's play first:** whether building already feels tight at
-default speed, whether a delay would feel like a penalty or like the original's pace,
-and how often a person actually loses a castle — the number the whole bracket rests on.
+statistics beside it once it ends — the same per-round table the bots produce — so how
+often a person loses a castle, how much of the build phase they use and what repair they
+leave undone are measured, not recalled. The user's impressions come separately.
 
 ### 11.3 Two-player balance
 
@@ -1095,7 +1062,7 @@ leaves no budget for room.
 Levers not yet tried: `cannons.maxTotal` (still `null`), the opening cannon count, and the
 combat-to-build ratio. **Needs re-measuring before anything is tried**: that figure predates
 the round cap and the bots of 10s. At the cap, eight two-player gunner matches all reached
-round 10, two ending by elimination. Best done after 11.2, since the weights change what
+round 10, two ending by elimination. Best done after 11.2's measurements, which say what
 balanced means.
 
 ### 11.4 Measurements never taken
@@ -1122,7 +1089,7 @@ Left open when 11.6 finished (ARCHIVE 11x–11zb, 11zd); none blocks anything.
   fill, though it wins a fair share; pockets only when room is short is the first thing to
   try, if it matters.
 - **Level 8 knockouts rose** after phase 2's "close gaps from the outside" (1 to 7 in 36
-  matches), forfeits within noise. Worth a look when 11.2 measures eliminations anyway.
+  matches), forfeits within noise. Worth a look when 11.2 measures knockouts anyway.
 
 ## 12. Deferred (explicitly out of scope for v1)
 
