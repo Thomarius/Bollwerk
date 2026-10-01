@@ -39,6 +39,7 @@ import { matchPalette, playerCssColour, useMatchPalette } from './colours.js';
 import { matchShapes, playerShape, useMatchShapes } from './shapes.js';
 import { NetworkBadge, type NetworkReading } from './network.js';
 import { howToPlaySeen, openHowToPlay } from './howToPlay.js';
+import { stylePreview } from './stylePreview.js';
 import { escape, lobbyMarkup, type LobbyView } from './lobby.js';
 import { REFRESH_MS, gamesMarkup, joinRefusedNotice, parseRoomList } from './browser.js';
 import { Hud, type IslandBanner } from './hud.js';
@@ -399,8 +400,8 @@ function showMenu(notice: string | null = null): void {
       <p>Shoot down their walls. Rebuild yours before the next barrage.
          Fail to seal a castle and you lose a life.</p>
       <label>Name <input id="name" type="text" maxlength="16" value="Player" /></label>
-      <label>Building look <select id="build-style">${styleOptions('build')}</select></label>
-      <label>Combat look <select id="combat-style">${styleOptions('combat')}</select></label>
+      <label class="look">Building look <img id="build-preview" class="style-preview" alt="" /><select id="build-style">${styleOptions('build')}</select></label>
+      <label class="look">Combat look <img id="combat-preview" class="style-preview" alt="" /><select id="combat-style">${styleOptions('combat')}</select></label>
       <label>Effects <select id="effects"><option value="high">Glowing</option><option value="full">Standard</option><option value="reduced">Reduced</option></select></label>
       <div class="split play-row">
         <button id="play">Play</button>
@@ -466,6 +467,31 @@ function showMenu(notice: string | null = null): void {
     for (const field of [buildField, combatField]) {
       field?.addEventListener('change', () => title.show(chosen()));
     }
+  }
+
+  // A picture of each chosen look beside its choice (PLAN 11.16 S1), drawn by the style's
+  // own theme. After the title's first sweep, so building the pictures cannot stutter it.
+  for (const [field, id] of [
+    [buildField, '#build-preview'],
+    [combatField, '#combat-preview'],
+  ] as const) {
+    const image = document.querySelector<HTMLImageElement>(id);
+    if (field === null || image === null) continue;
+    const show = (): void => {
+      const style = field.value as ArtStyle;
+      image.classList.remove('ready');
+      void stylePreview(style).then(
+        (url) => {
+          // Only if the choice still stands: a slow picture must not replace a newer one.
+          if (field.value !== style) return;
+          image.src = url;
+          image.classList.add('ready');
+        },
+        () => undefined,
+      );
+    };
+    field.addEventListener('change', show);
+    setTimeout(show, defaultConfigBundle.art.menu.titleSweepMs);
   }
 
   document.querySelector('#play')?.addEventListener('click', () => {

@@ -3294,3 +3294,20 @@ not on a first match — and the button marked until the pages have been opened 
 - **The user's edits before committing**: page 2 reads "Choose, place cannons, fire,
   rebuild", page 4 "Walls must include all corners"; and the Effects options became
   Glowing, Standard and Reduced.
+
+## 11zm. A picture of each look in the menu (S1, PLAN 11.16)
+
+The two look choices were picked by name and by the title alone. Each now has a picture
+beside it, drawn by the style's own theme, so it is the look itself and not a likeness.
+
+- **One fixed island** (`PREVIEW_BOARD`): a sealed ring round the crowned main castle with a
+  gun either side, a second castle outside it, sea round it all; clear weather at noon, so
+  Medieval shows no rain and no long shadows. A test holds it to that: the main castle and
+  both guns sealed, the other castle not.
+- **Rendered once per style, one at a time**: a real `Scene` on a canvas of its own, a few
+  long frames of effects so the flags are up, then `toDataURL` and the renderer destroyed —
+  each takes a WebGL context, which browsers ration. Kept per style for the page's life;
+  built after the title's first sweep, and a slow picture never replaces a newer choice.
+- **Sixteen pixels a tile**, the pixel style's own, shown at half that: the first pictures,
+  at twelve and shown smaller, were too small to read the guns and the crown.
+- Seen in every style for both looks in a browser, with no errors in the console.

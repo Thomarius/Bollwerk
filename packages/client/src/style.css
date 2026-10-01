@@ -1982,3 +1982,28 @@ body.reduced-effects .menu button.quiet.fresh {
   letter-spacing: 0.1em;
   text-transform: uppercase;
 }
+
+/* The menu's look choices, each with a picture of the look drawn by its own theme
+   (stylePreview.ts). Hidden until its picture is ready, so nothing blank shows. */
+.menu label.look {
+  align-items: center;
+}
+
+.menu .style-preview {
+  width: 112px;
+  height: 80px;
+  margin: 0 0.6rem 0 auto;
+  border: 1px solid var(--edge);
+  border-radius: 2px;
+  background: var(--panel);
+  opacity: 0;
+  transition: opacity 240ms ease;
+}
+
+.menu .style-preview.ready {
+  opacity: 1;
+}
+
+body.reduced-effects .menu .style-preview {
+  transition: none;
+}

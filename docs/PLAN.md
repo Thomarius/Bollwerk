@@ -477,6 +477,12 @@ loop is barely driven; headless Chrome catches a crash on load and nothing else.
 pattern that works is to pull the decision out into a pure function and test that —
 `bannersFor` in `banners.ts`, `lobbyMarkup` in `lobby.ts`, the score text in `scores.ts`.
 
+**A picture of each chosen look** stands beside its choice in the menu (`stylePreview.ts`):
+one fixed island — a sealed ring with guns round the crowned main castle, a second castle
+outside it — drawn by the style's own theme through a real `Scene` on a canvas of its own,
+once per style, kept as an image and the renderer thrown away. Built after the title's
+first sweep, so it cannot stutter it.
+
 **How to play** (`howToPlay.ts`), from a button under Play, marked until first opened:
 seven pages, each a looping picture and a caption of ten words or fewer — the mouse, the
 round, sealing a castle, turning corners, guns on sealed ground and the crown's two,
@@ -875,7 +881,7 @@ first round of test-session feedback. In order:
    (§9, ARCHIVE 11e); the user sends compiled feedback, which is triaged with them first.
 2. **11.15, the third visual pass — done** (ARCHIVE 11zf, 11zh), X6's shapes last. The next
    test session also checks the fix for the hosts' delay on every click (ARCHIVE 11zg).
-   **11.16**, agreed 2026-10-01, runs meanwhile: O1 and H1 done, then S1 and I1.
+   **11.16**, agreed 2026-10-01, runs meanwhile: O1, H1 and S1 done, then I1.
 3. **11.2, elimination tuning**, the next milestone. Its baseline is measured over the
    personality mix; the "ambitious" bot it planned and finisher targeting exist now.
 4. **11.3, two-player balance**, re-measured before anything is tried; after 11.2.
@@ -980,9 +986,7 @@ scenery; the sea gets its own in every style, each design chosen by the user.
 from the menu's button only — the words and pages approved by the user, whose rule was
 as few words as possible.
 
-**S1 — Style previews.** A small picture of each look beside the two look dropdowns in
-the menu, drawn by the style's own theme: one fixed miniature island, rendered once, so
-the menu stays quick.
+**S1 — Style previews — done** (§7, ARCHIVE 11zm).
 
 **I1 — A livelier scoreboard between rounds.** The standings under the banner after a
 resolution become a short animated ranking, with the shapes and scores counting up —
