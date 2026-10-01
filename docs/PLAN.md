@@ -1085,7 +1085,7 @@ the host. Closing the window stops the server. A taken port says so and offers a
 Mouse only, as everywhere (CLAUDE.md). The commit is stamped as the image stamps it
 (`RAMPART_COMMIT`), so recordings made through the app replay against the right code.
 
-**A3 — Packaging.** electron-builder, from `npm run build`'s output: the bundled server, the
+**A3 — Packaging — done** (ARCHIVE 11zr). electron-builder, from `npm run build`'s output: the bundled server, the
 built client, `config/` and the audio as resources; a Windows portable `.exe` and a Linux
 `.AppImage`. One script, `npm run package`, builds the file for the machine it runs on, so a
 Windows build can be made here; the version is the release's.

@@ -23,6 +23,7 @@ npm start     -w @rampart/headless -- --map --players 3 --seed 2   # print a map
 npm start     -w @rampart/headless -- --replay recordings/ --stats human.csv   # recorded human play
 tools/screenshots.sh /tmp/shots [scene...]   # client in fixed states, against the dev server
 npm start     -w @rampart/desktop   # the desktop app (PLAN 11.17), after npm run build
+npm run package -w @rampart/desktop # its portable file for this system, into packages/desktop/release/
 ```
 
 `npm run check` takes a few minutes, mostly bot matches. Run it in the background and

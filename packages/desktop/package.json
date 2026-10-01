@@ -1,6 +1,6 @@
 {
   "name": "@rampart/desktop",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "private": true,
   "type": "module",
   "description": "The desktop app for releases: the server behind a minimal window (PLAN 11.17)",
@@ -8,14 +8,58 @@
   "scripts": {
     "typecheck": "tsc --noEmit",
     "build": "node build.js",
-    "start": "node build.js && electron ."
-  },
-  "dependencies": {
-    "@rampart/config": "*",
-    "@rampart/protocol": "*",
-    "@rampart/server": "*"
+    "start": "node build.js && electron .",
+    "package": "node build.js && node package.js"
   },
   "devDependencies": {
-    "electron": "^44.5.1"
-  }
+    "@rampart/config": "*",
+    "@rampart/protocol": "*",
+    "@rampart/server": "*",
+    "electron": "44.5.1",
+    "electron-builder": "^26.15.3"
+  },
+  "build": {
+    "appId": "net.rampart.remake",
+    "productName": "Rampart",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "ui/**/*",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "../../config",
+        "to": "config",
+        "filter": [
+          "*.json"
+        ]
+      },
+      {
+        "from": "../client/dist",
+        "to": "client"
+      }
+    ],
+    "npmRebuild": false,
+    "win": {
+      "target": [
+        "portable"
+      ]
+    },
+    "portable": {
+      "artifactName": "${productName}-${version}-windows.${ext}"
+    },
+    "linux": {
+      "target": [
+        "AppImage"
+      ],
+      "category": "Game"
+    },
+    "appImage": {
+      "artifactName": "${productName}-${version}-linux.${ext}"
+    }
+  },
+  "author": "Thomas Arnold"
 }

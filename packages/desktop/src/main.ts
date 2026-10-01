@@ -17,6 +17,10 @@ import { ServerControl, nextPort } from './control.js';
  * Where things are differs between running from the repository and running packaged
  * (A3): packaged, the config, the client and the audio are the app's resources.
  */
+/** The commit the app was built from, put in by `build.js`; null when it could not tell. */
+declare const __RAMPART_COMMIT__: string | null;
+const BUILT_FROM = __RAMPART_COMMIT__;
+
 const here = dirname(fileURLToPath(import.meta.url));
 const root = app.isPackaged ? process.resourcesPath : resolve(here, '..', '..', '..');
 const clientDir = app.isPackaged
@@ -37,8 +41,8 @@ const control = new ServerControl(
       clientDir,
       recordingsDir: join(app.getPath('userData'), 'recordings'),
       port,
-      // Packaged, there is no repository to ask: the release is stamped as the image is.
-      ...(app.isPackaged ? { commit: process.env['RAMPART_COMMIT'] ?? null } : {}),
+      // Packaged, there is no repository to ask: the commit is baked in as it was built.
+      ...(app.isPackaged ? { commit: BUILT_FROM } : {}),
     }),
   bundle.server.port,
 );

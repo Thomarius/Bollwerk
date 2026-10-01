@@ -3471,3 +3471,25 @@ CommonJS preload, the window's own script — and run from the repository with
 - **Electron's binary** did not download in `npm install`: its install script did not run.
   `node node_modules/electron/install.js` fetches it; release builds in CI (A4) must do the
   same.
+
+## 11zr. Packaging the desktop app (A3, PLAN 11.17)
+
+`npm run package -w @rampart/desktop` bundles the app and runs electron-builder for the system
+it is on: a portable `.exe` on Windows, an `.AppImage` on Linux, into
+`packages/desktop/release/` (git-ignored). It wants `npm run build` first, for the client it
+carries. `RAMPART_VERSION` sets the release's version, as a tag will in CI (A4).
+
+- **Nothing of the workspace's `node_modules` goes in**: the bundle carries the server and
+  the whole simulation, so the package's `@rampart/*` dependencies became development ones
+  and the app holds only `dist/`, `ui/` and its `package.json`. `config/` and the built
+  client, audio included, are resources beside it, where A2's packaged paths look.
+- **The commit is baked in** at build time (`RAMPART_COMMIT` first, then git, `-dirty` with
+  changes), since a packaged app has no repository to ask; recordings it makes are stamped
+  with it.
+- **electron-builder wants an exact Electron version** and an author; Electron is pinned at
+  44.5.1. The default Electron icon is used, as no icon is set.
+- **Built and checked here**: `Rampart-0.1.0-windows.exe`, 120 MB, unsigned. The unpacked app
+  driven by Playwright served its own resources on 8080, the games list answering, Play
+  here showing the menu with its look pictures, Stop freeing the port; its recordings
+  folder is `%APPDATA%\Rampart`. The Linux AppImage can only be made on Linux: on the user's
+  Mint machine, or in CI (A4).
