@@ -36,6 +36,7 @@ import { countdownBeat, showsClock } from './clock.js';
 import { Controls, inputMode, readyCannons } from './controls.js';
 import { bannersFor, type LifeLost, type PointsGained } from './banners.js';
 import { matchPalette, playerCssColour, useMatchPalette } from './colours.js';
+import { matchShapes, playerShape, useMatchShapes } from './shapes.js';
 import { escape, lobbyMarkup, type LobbyView } from './lobby.js';
 import { REFRESH_MS, gamesMarkup, joinRefusedNotice, parseRoomList } from './browser.js';
 import { Hud, type IslandBanner } from './hud.js';
@@ -539,7 +540,11 @@ function drawLobby(view: LobbyView, on: LobbyHandlers): void {
   // since the seed is fixed while the table is set. See `preview.ts`.
   const { art, terrain } = defaultConfigBundle;
   const preview = tablePreview(view.seed, view.playerCount, view.teams, art, terrain);
-  app!.innerHTML = lobbyMarkup({ ...view, seatColours: preview.colourOfSeat.map((c) => c.base) });
+  app!.innerHTML = lobbyMarkup({
+    ...view,
+    seatColours: preview.colourOfSeat.map((c) => c.base),
+    seatShapes: preview.shapeOfSeat,
+  });
   // The map in the colours of the build look chosen in the menu, which is how the match
   // will open; the seat cards keep the shared colours, which read on the lobby's panel.
   const look = artForStyle(art, preferredStyles().build);
@@ -989,6 +994,7 @@ async function runSession(session: Session, setup: Setup): Promise<void> {
   // HUD takes the shared ramps, and each look its own style's restyling of them.
   const art = defaultConfigBundle.art;
   useMatchPalette(matchPalette(art, session.state));
+  useMatchShapes(matchShapes(art, session.state));
   const lookFor = (style: ArtStyle): SceneLook => {
     const own = artForStyle(art, style);
     return {
@@ -1581,7 +1587,11 @@ async function runSession(session: Session, setup: Setup): Promise<void> {
         (state.phase === 'intermission' && state.pendingPhase === 'castle_select'));
     hud.showYouAreHere(
       me !== undefined && centre !== undefined && opening && me.startingCastleId === null
-        ? { ...scene.screenAt(centre.x, centre.y), colour: playerCssColour(me.id) }
+        ? {
+            ...scene.screenAt(centre.x, centre.y),
+            colour: playerCssColour(me.id),
+            shape: playerShape(me.id),
+          }
         : null,
     );
   }

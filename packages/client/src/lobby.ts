@@ -4,11 +4,13 @@ import {
   teamsBalanced,
   validPlayerCounts,
   type MatchSettings,
+  type PlayerShape,
   type SettingBounds,
 } from '@rampart/config';
 import type { Seat } from '@rampart/protocol';
 
 import { teamLetter } from './scores.js';
+import { shapeSvg } from './shapes.js';
 
 /**
  * The lobby, as markup — one lobby for online and offline.
@@ -45,6 +47,8 @@ export interface LobbyView {
   hostBot: number | null;
   /** The colour each seat will play in, as CSS, once the deal is known. */
   seatColours?: readonly string[];
+  /** The shape each seat will carry, dealt as the colours are. */
+  seatShapes?: readonly PlayerShape[];
   /** Seats somebody has just taken, to be marked as they arrive. */
   arrived?: readonly number[];
 }
@@ -133,11 +137,16 @@ function occupant(view: LobbyView, index: number, isHost: boolean, name: string)
   return `<select class="occupant who" data-seat="${index}" aria-label="Who sits in seat ${index + 1}">${bot}${names}</select>`;
 }
 
-/** The seat's number, in the colour it will play in, as its island is labelled on the map. */
+/**
+ * The seat's number, in the colour it will play in, and beside it the shape it will carry,
+ * as its island is labelled on the map.
+ */
 function seatBadge(view: LobbyView, index: number): string {
   const colour = view.seatColours?.[index];
   const style = colour === undefined ? '' : ` style="background:${colour}"`;
-  return `<b class="num"${style}>${index + 1}</b>`;
+  const shape = view.seatShapes?.[index];
+  const mark = shape === undefined ? '' : shapeSvg(shape, colour ?? 'currentColor');
+  return `<b class="num"${style}>${index + 1}</b>${mark}`;
 }
 
 /**

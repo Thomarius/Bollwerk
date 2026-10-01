@@ -158,6 +158,20 @@ describe('cross-file validation', () => {
     expect(problems.some((p) => p.startsWith('art:'))).toBe(true);
   });
 
+  it('catches too few player shapes for the allowed player count', () => {
+    const problems = validateConfigBundle({
+      ...defaultConfigBundle,
+      art: { ...defaultArtConfig, playerShapes: defaultArtConfig.playerShapes.slice(0, 2) },
+    });
+    expect(problems.some((p) => p.includes('player shapes'))).toBe(true);
+  });
+
+  it('refuses a shape listed twice', () => {
+    const shapes = ['circle', 'circle', ...defaultArtConfig.playerShapes.slice(2)];
+    const result = ArtConfigSchema.safeParse({ ...defaultArtConfig, playerShapes: shapes });
+    expect(result.success).toBe(false);
+  });
+
   it('catches a starting wall ring too large for the island', () => {
     const problems = validateConfigBundle({
       ...defaultConfigBundle,

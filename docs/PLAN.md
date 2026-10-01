@@ -548,7 +548,14 @@ small over a large score and large pips, the last life red and glowing, "out" in
 place for a player knocked out. A team heads its members' names with its letter, score
 and pooled lives, one pip and a count once the pool is too large for pips. One layout at
 every count: eight entries fit at 1024 pixels wide with room to spare, names are cut
-short to their card, and nothing is ever drawn past the edge. **The clock's end is heard, then seen**: the countdown ticks
+short to their card, and nothing is ever drawn past the edge. **A shape per player** (`shapes.ts`, `art.playerShapes`), beside the colour, so eight
+players and colour-blind ones tell islands apart: circle, square, triangle, diamond, star,
+plus, hexagon, inverted triangle — by player in free-for-all, by team in a team match,
+where teammates share one as they share a hue. On the roster's figures, the island
+banners, the "You are here" marker, the lobby's seat cards and map, the summary's table
+and the ends of its chart's lines; **never on the board**, which it would clutter. Drawn
+from one set of paths as SVG and on the lobby's canvas, not from a font, whose ▲ and ★
+differ on every system. **The clock's end is heard, then seen**: the countdown ticks
 over the last five seconds of a phase, louder each time (`clock.ts`), and the big timer
 beats and turns red over the last three. In overtime there is no clock at all — it
 stops at 0 and goes, and the red border carries the overtime; a second countdown from 3
@@ -844,9 +851,8 @@ first round of test-session feedback. In order:
    to be checked against how people play. The server must be rebuilt (`npm start`) and
    every page reloaded: the protocol is 14. Every match is recorded with its statistics
    (§9, ARCHIVE 11e); the user sends compiled feedback, which is triaged with them first.
-2. **11.15, the third visual pass**, agreed 2026-09-30: X1–X5 done (ARCHIVE 11zf), **X6
-   next** — a shape per player, off the board only. More test games against higher-level
-   bots are being played meanwhile.
+2. **11.15, the third visual pass — done** (ARCHIVE 11zf, 11zh), X6's shapes last. The next
+   test session also checks the fix for the hosts' delay on every click (ARCHIVE 11zg).
 3. **11.2, elimination tuning**, the next milestone. Its baseline is measured over the
    personality mix; the "ambitious" bot it planned and finisher targeting exist now.
 4. **11.3, two-player balance**, re-measured before anything is tried; after 11.2.
@@ -928,12 +934,14 @@ say.
 - **Snow**, as one of Medieval's seeded weathers (`weatherOdds`): falling flakes and white
   edges on walls and castles. Not a style of its own.
 
-**X6 — A shape per player.** Beside colour, each player carries a shape — circle,
-triangle, square and so on — on the roster, the island banners, the lobby's seat cards and
-map, and the summary, so eight players and colour-blind players can tell islands apart.
-The cheap form of the high-contrast theme set aside in 11.9. **Off the board only**, the
-user's decision of 2026-09-30: no shapes on flags or crowns, which would clutter it. **The
-next thing to build**, in a fresh session; X1–X5 are done (ARCHIVE 11zf).
+**X6 — A shape per player — done** (§7, ARCHIVE 11zh). Beside colour, each player carries
+a shape on the roster, the island banners, the "You are here" marker, the lobby's seat
+cards and map, the summary's table and the ends of its chart's lines, so eight players
+and colour-blind players can tell islands apart. **Off the board only**, the user's
+decision of 2026-09-30. Decided 2026-10-01: plain geometric shapes, and in a team match
+one shape per team, so teams tell apart without colour.
+
+**The third visual pass is done**: X1–X5 in ARCHIVE 11zf, X6 in 11zh.
 
 ### 11.2 Elimination tuning — planned, waiting on human play
 

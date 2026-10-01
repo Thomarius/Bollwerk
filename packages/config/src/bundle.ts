@@ -54,6 +54,12 @@ export function validateConfigBundle(bundle: ConfigBundle): string[] {
         `${ruleset.players.max} players.`,
     );
   }
+  if (art.playerShapes.length < ruleset.players.max) {
+    problems.push(
+      `art: ${art.playerShapes.length} player shapes defined but ruleset allows ` +
+        `${ruleset.players.max} players.`,
+    );
+  }
 
   const [castleW, castleH] = terrain.castles.footprint;
   const ring = terrain.startingWall.ringRadiusTiles;

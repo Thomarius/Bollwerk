@@ -88,6 +88,9 @@ SCENES=(
   "weather-snow|$BASE/?autostart=1&players=3&seed=2&snapshot=combat&round=3&style=pixel|3000"
   "morning|$BASE/?autostart=1&players=3&seed=5&snapshot=build&style=pixel|2000"
   "sunset|$BASE/?autostart=1&players=3&seed=5&snapshot=combat&round=10&style=pixel|3000"
+  # A shape per player off the board (X6): by player at eight, by team in teams of two.
+  "shapes-eight|$BASE/?autostart=1&players=8&seed=3&snapshot=build&round=2&style=flat|3000"
+  "shapes-teams|$BASE/?autostart=1&players=8&teams=2&seed=3&snapshot=build&round=2&style=pixel|3000"
   # Night's sea: the moon's path, lighthouses and their beams.
   "night-sea|$BASE/?autostart=1&players=3&seed=5&snapshot=combat&round=3&style=night|3000"
 )

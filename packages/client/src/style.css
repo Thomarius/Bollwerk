@@ -1805,3 +1805,41 @@ table.final tr.you td:nth-child(2) {
   border-color: var(--accent);
   color: var(--accent);
 }
+
+/* A player's shape beside their colour (PLAN 11.15 X6), off the board only: in their
+   colour under a light rim, so a dark colour's form still reads on a dark bar. */
+.shape {
+  display: inline-block;
+  flex: none;
+  width: 1em;
+  height: 1em;
+  margin-right: 0.4em;
+  overflow: visible;
+  vertical-align: -0.14em;
+}
+
+.shape path,
+.score-chart .end {
+  stroke: rgb(255 255 255 / 75%);
+  stroke-width: 2.5px;
+  stroke-linejoin: round;
+  paint-order: stroke;
+}
+
+/* In the roster, as large as the pips: it is what tells two greens apart. */
+.roster .line .shape {
+  align-self: center;
+  width: clamp(13px, 1.35vw, 19px);
+  height: clamp(13px, 1.35vw, 19px);
+  margin-right: 0;
+}
+
+.seats .shape {
+  width: 1.15rem;
+  height: 1.15rem;
+  margin: 0 0.1rem 0 -0.2rem;
+}
+
+.you-are-here .shape {
+  margin-right: 0.55em;
+}

@@ -1,4 +1,4 @@
-import type { ArtConfig, PlayerPalette, TerrainConfig } from '@rampart/config';
+import type { ArtConfig, PlayerPalette, PlayerShape, TerrainConfig } from '@rampart/config';
 import {
   Terrain,
   denseTeams,
@@ -8,6 +8,7 @@ import {
 } from '@rampart/sim';
 
 import { matchPalette } from './colours.js';
+import { drawShape, matchShapes } from './shapes.js';
 
 /**
  * The table's map, before the match: the islands the seed will generate, which island
@@ -25,6 +26,8 @@ export interface TablePreview {
   playerOfSeat: number[];
   /** Colours by seat. */
   colourOfSeat: PlayerPalette[];
+  /** Shapes by seat, dealt by the same rule as the colours. */
+  shapeOfSeat: PlayerShape[];
 }
 
 /** Terrain is the slow part and depends on two numbers, so the last few are kept. */
@@ -59,7 +62,9 @@ export function tablePreview(
   const players = denseTeams(labels).map((team, id) => ({ id, team }));
   const byPlayer = matchPalette(art, { players });
   const colourOfSeat = playerOfSeat.map((player) => byPlayer[player] as PlayerPalette);
-  return { terrain, playerOfSeat, colourOfSeat };
+  const shapes = matchShapes(art, { players });
+  const shapeOfSeat = playerOfSeat.map((player) => shapes[player] as PlayerShape);
+  return { terrain, playerOfSeat, colourOfSeat, shapeOfSeat };
 }
 
 /** The middle of each island, by island id, for its label. */
@@ -175,7 +180,8 @@ export function drawPreview(
   const centres = islandCentres(terrain);
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.font = `700 ${Math.max(11, scale * 5)}px ui-monospace, Menlo, Consolas, monospace`;
+  const figure = Math.max(11, scale * 5);
+  ctx.font = `700 ${figure}px ui-monospace, Menlo, Consolas, monospace`;
   for (const [island, centre] of centres) {
     const seat = seatOfIsland.get(island);
     if (seat === undefined) continue;
@@ -185,6 +191,14 @@ export function drawPreview(
     ctx.fillText(String(seat + 1), cx + 1, cy + 1);
     ctx.fillStyle = ink.palette.uiInk;
     ctx.fillText(String(seat + 1), cx, cy);
+    // The seat's shape under its number, in the light shade of its colour, as the seat
+    // card carries it beside the number.
+    const shape = preview.shapeOfSeat[seat];
+    const colour = preview.colourOfSeat[seat];
+    if (shape !== undefined && colour !== undefined) {
+      const size = figure;
+      drawShape(ctx, shape, cx, cy + figure * 1.05, size, colour.light, 'rgb(10 10 18 / 70%)');
+    }
   }
 
   // The viewer's island, outlined, so "where am I" needs no looking up.

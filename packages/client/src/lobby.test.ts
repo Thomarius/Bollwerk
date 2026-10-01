@@ -2,6 +2,7 @@ import type { Seat } from '@rampart/protocol';
 import { describe, expect, it } from 'vitest';
 
 import { lobbyMarkup, type LobbyView } from './lobby.js';
+import { SHAPE_PATHS } from './shapes.js';
 
 function seat(playerId: number, name: string, connected = true): Seat {
   return { playerId, name, isBot: false, connected, ready: false };
@@ -57,6 +58,18 @@ describe('lobby', () => {
     const html = lobbyMarkup(view({ seatColours: ['#c8283c', '#2850c8', '#d8a020', '#28a050'] }));
     expect(rows(html)[0]).toContain('style="background:#c8283c">1</b>');
     expect(rows(html)[3]).toContain('style="background:#28a050">4</b>');
+  });
+
+  it('puts the shape each seat will carry beside its number, in its colour', () => {
+    const html = lobbyMarkup(
+      view({
+        seatColours: ['#c8283c', '#2850c8', '#d8a020', '#28a050'],
+        seatShapes: ['star', 'circle', 'plus', 'square'],
+      }),
+    );
+    expect(rows(html)[0]).toContain(`>1</b><svg class="shape"`);
+    expect(rows(html)[0]).toContain(`fill="#c8283c"`);
+    expect(rows(html)[2]).toContain(`d="${SHAPE_PATHS.plus}" fill="#d8a020"`);
   });
 
   it('shows the map, and lets only the host draw another', () => {

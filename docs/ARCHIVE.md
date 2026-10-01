@@ -3170,3 +3170,34 @@ player who joined felt none, and played as offline.
   host differently once the match starts, and in the reproduction both pages lagged
   alike. A backlog that once passed 60 ticks was cleared outright, so whatever spared the
   guests, the fix removes the delay either way. To be confirmed at the next test session.
+
+## 11zh. A shape per player (X6, PLAN 11.15)
+
+The last package of the third visual pass. Display only: no sim, protocol or ruleset
+change. Decided with the user before building: plain geometric shapes; **one per team in
+a team match**, so a colour-blind player can tell the teams apart, teammates still told
+apart by shade; beside the seat's number in the lobby, not around it; and, beyond the
+roster, island banners, lobby and summary already planned, on the "You are here" marker
+and at the ends of the summary chart's lines. The bots' reveal and the team tags over the
+islands were offered and left out.
+
+- **The shapes are config** (`art.playerShapes`, by player): circle, square, triangle,
+  diamond, star, plus, hexagon, inverted triangle, from an enum the schema checks, none
+  twice, and at least one per allowed player — the check the palettes have.
+- **Dealt as the colours are** (`matchShapes` beside `matchPalette`, sharing its test of
+  what makes a team match): by player id in free-for-all, by team id in a team match, so
+  Team A, the lobby's first column, has the circle. The lobby's preview deals them by the
+  same rule, and a test checks every seat's shape against the local match's.
+- **Drawn from paths, not a font** (`SHAPE_PATHS`, a 24-unit box): inline SVG in the HUD,
+  `Path2D` on the lobby's canvas. The test sessions run Linux and Windows, whose fonts draw
+  ▲ and ★ differently. Each carries a light rim, so a dark colour's form reads on the
+  dark bar.
+- **In the roster** the shape leads the figures, as large as the pips, the team's in its
+  head; in the summary it replaces the colour square, the team's before its name, while
+  members keep their squares.
+- Seen at eight players in free-for-all and in teams of two, in the lobby at eight, on the
+  marker, on a life-lost and two points banners, and on the summary of a five-round match
+  with its chart. Two lines ending on nearly the same score overlap their marks; left. The
+  screenshot script gains `shapes-eight` and `shapes-teams`. Fixed waits drifted too far
+  in headless Chrome for the banners and the chart, so those were caught by waiting for
+  the elements themselves.

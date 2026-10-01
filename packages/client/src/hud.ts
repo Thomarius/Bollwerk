@@ -1,7 +1,8 @@
 import { playerCssColour } from './colours.js';
+import { SHAPE_PATHS, playerShape, shapeSvg } from './shapes.js';
 import type { BannerKind } from './banners.js';
 import { escape } from './lobby.js';
-import { defaultArtConfig, type ArtStyle } from '@rampart/config';
+import { defaultArtConfig, type ArtStyle, type PlayerShape } from '@rampart/config';
 
 import { showsClock } from './clock.js';
 import { motionReduced } from './motion.js';
@@ -113,7 +114,7 @@ export class Hud {
   private youAreHere: HTMLElement | null = null;
 
   /** The "You are here" marker over the viewer's island, or null to take it down. */
-  showYouAreHere(at: { x: number; y: number; colour: string } | null): void {
+  showYouAreHere(at: { x: number; y: number; colour: string; shape: PlayerShape } | null): void {
     if (at === null) {
       this.youAreHere?.remove();
       this.youAreHere = null;
@@ -122,7 +123,8 @@ export class Hud {
     if (this.youAreHere === null || !this.youAreHere.isConnected) {
       this.youAreHere = document.createElement('div');
       this.youAreHere.className = 'you-are-here';
-      this.youAreHere.textContent = 'You are here';
+      // With the player's shape, so the opening is where they learn it.
+      this.youAreHere.innerHTML = `${shapeSvg(at.shape, at.colour)}You are here`;
       this.bannerRoot.append(this.youAreHere);
     }
     // Light text in a border of the player's colour: crimson text on the dark box did
@@ -399,6 +401,7 @@ export class Hud {
         node.dataset.text = text;
         const title = document.createElement('strong');
         title.textContent = banner.title;
+        title.insertAdjacentHTML('afterbegin', shapeSvg(playerShape(banner.player), banner.colour));
         node.replaceChildren(title);
         if (banner.detail !== '') {
           const detail = document.createElement('small');
@@ -563,7 +566,13 @@ export class Hud {
         const ids = groups[line.key] ?? [];
         const mine = ids.includes(humanPlayer);
         const d = line.points.map((pt, i) => `${i === 0 ? 'M' : 'L'}${pt.x} ${pt.y}`).join(' ');
-        return `<path d="${d}" stroke="${playerCssColour(ids[0] ?? 0)}" stroke-width="${mine ? 3 : 1.5}" fill="none" stroke-linejoin="round"/>`;
+        const colour = playerCssColour(ids[0] ?? 0);
+        const end = line.points.at(-1);
+        const marker =
+          end === undefined
+            ? ''
+            : `<path class="end" transform="translate(${end.x - 6} ${end.y - 6}) scale(0.5)" d="${SHAPE_PATHS[playerShape(ids[0] ?? 0)]}" fill="${colour}"/>`;
+        return `<path d="${d}" stroke="${colour}" stroke-width="${mine ? 3 : 1.5}" fill="none" stroke-linejoin="round"/>${marker}`;
       })
       .join('');
     // The lines start from nought, before the first round seen: the start of the match,
@@ -572,7 +581,7 @@ export class Hud {
     const last = log.scores.at(-1)?.round ?? first;
     const start = first === 1 ? 'start' : `round ${first - 1}`;
     return (
-      `<figure class="score-chart"><svg viewBox="-4 -4 ${width + 8} ${height + 8}" width="${width}" height="${height}">` +
+      `<figure class="score-chart"><svg viewBox="-8 -8 ${width + 16} ${height + 16}" width="${width}" height="${height}">` +
       `<line x1="0" y1="${height}" x2="${width}" y2="${height}" class="axis"/>${lines}</svg>` +
       `<figcaption><span>${start}</span><span>points by round</span><span>round ${last}</span></figcaption></figure>`
     );
@@ -617,8 +626,9 @@ export class Hud {
     };
     const teamed = isTeamMatch(state);
     const now = performance.now();
-    const card = (key: string, score: number, lives: string): string =>
-      `<span class="line"><em class="score">${this.shownScore(key, score, now)}</em>${lives}</span>`;
+    // The shape leads the figures, as large as the pips: it is what tells two greens apart.
+    const card = (key: string, score: number, lives: string, shape: string): string =>
+      `<span class="line">${shape}<em class="score">${this.shownScore(key, score, now)}</em>${lives}</span>`;
     const playerItem = (p: (typeof state.players)[number]): string => {
       const classes = ['player', p.eliminated ? 'out' : '', p.id === humanPlayer ? 'you' : '']
         .filter(Boolean)
@@ -628,7 +638,7 @@ export class Hud {
       // A team's members carry only their names: the score and lives are the team's.
       return teamed
         ? `<li class="${classes}" style="--who:${colour}"><b></b>${name}</li>`
-        : `<li class="${classes}" style="--who:${colour}">${name}${card(`p${p.id}`, p.score, livesOf(p.team, p.eliminated))}</li>`;
+        : `<li class="${classes}" style="--who:${colour}">${name}${card(`p${p.id}`, p.score, livesOf(p.team, p.eliminated), shapeSvg(playerShape(p.id), colour))}</li>`;
     };
     const { phase: phaseRoot, roster: rosterRoot, rest } = this.layout();
     // Free-for-all in standing, best first, so a change of places slides; a team match
@@ -641,10 +651,13 @@ export class Hud {
         const members = state.players.filter((p) => p.team === team);
         const out = members.every((p) => p.eliminated);
         const mine = members.some((p) => p.id === humanPlayer);
+        // Teammates share a shape, so it is the team's, shown once in the head.
+        const lead = members[0]?.id ?? 0;
+        const shape = shapeSvg(playerShape(lead), playerCssColour(lead));
         this.entry(
           `t${team}`,
           `<li class="team${out ? ' out' : ''}${mine ? ' mine' : ''}">` +
-            `<div class="team-head"><b class="letter">${teamLetter(team)}</b>${card(`t${team}`, teamScore(state, team), livesOf(team, out))}</div>` +
+            `<div class="team-head"><b class="letter">${teamLetter(team)}</b>${card(`t${team}`, teamScore(state, team), livesOf(team, out), shape)}</div>` +
             `<ul>${members.map(playerItem).join('')}</ul></li>`,
         );
       }
@@ -721,7 +734,7 @@ export class Hud {
                 .join(' ');
               return (
                 `<tr class="${s.eliminated ? 'out' : ''}${mine ? ' you' : ''}">` +
-                `<td>${rank + 1}</td><td>Team ${teamLetter(s.team)} · ${members}</td>` +
+                `<td>${rank + 1}</td><td>${shapeSvg(playerShape(s.members[0] ?? 0), playerCssColour(s.members[0] ?? 0))}Team ${teamLetter(s.team)} · ${members}</td>` +
                 `<td>${s.score}</td>${stats(s.members, s.team, s.eliminated)}<td>${s.eliminated ? 'out' : ''}</td></tr>`
               );
             })
@@ -730,7 +743,7 @@ export class Hud {
             .map(
               (s, rank) =>
                 `<tr class="${s.eliminated ? 'out' : ''}${s.player === humanPlayer ? ' you' : ''}">` +
-                `<td>${rank + 1}</td><td><b style="background:${playerCssColour(s.player)}"></b>${escape(s.name)}</td>` +
+                `<td>${rank + 1}</td><td>${shapeSvg(playerShape(s.player), playerCssColour(s.player))}${escape(s.name)}</td>` +
                 `<td>${s.score}</td>${stats([s.player], state.players[s.player]?.team ?? s.player, s.eliminated)}<td>${s.eliminated ? 'out' : ''}</td></tr>`,
             )
             .join('');

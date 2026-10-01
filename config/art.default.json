@@ -211,6 +211,16 @@
       }
     ]
   ],
+  "playerShapes": [
+    "circle",
+    "square",
+    "triangle",
+    "diamond",
+    "star",
+    "plus",
+    "hexagon",
+    "invertedTriangle"
+  ],
   "stylePalettes": {
     "night": {
       "palette": {

@@ -12,10 +12,9 @@ export function matchPalette(
   art: ArtConfig,
   state: Pick<MatchState, 'players'> | { players: readonly { id: number; team: number }[] },
 ): PlayerPalette[] {
-  const teamSizes = new Map<number, number>();
-  for (const p of state.players) teamSizes.set(p.team, (teamSizes.get(p.team) ?? 0) + 1);
-  const teamed = [...teamSizes.values()].some((size) => size > 1);
-  if (!teamed) return state.players.map((p) => art.players[p.id % art.players.length]!);
+  if (!isTeamed(state.players)) {
+    return state.players.map((p) => art.players[p.id % art.players.length]!);
+  }
 
   const rank = new Map<number, number>();
   return state.players.map((p) => {
@@ -24,6 +23,13 @@ export function matchPalette(
     const family = art.teamFamilies[p.team % art.teamFamilies.length]!;
     return family[k % family.length]!;
   });
+}
+
+/** Whether any team has more than one member, which is what makes a team match. */
+export function isTeamed(players: readonly { team: number }[]): boolean {
+  const teamSizes = new Map<number, number>();
+  for (const p of players) teamSizes.set(p.team, (teamSizes.get(p.team) ?? 0) + 1);
+  return [...teamSizes.values()].some((size) => size > 1);
 }
 
 /** The palette the HUD's colours are drawn from; the match's once one is running. */

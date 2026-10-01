@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest';
 import { matchPalette } from './colours.js';
 import { LocalMatch } from './localMatch.js';
 import { castleBreath, islandCentres, surfAt, tablePreview } from './preview.js';
+import { matchShapes } from './shapes.js';
 
 describe('the table preview', () => {
   it('shows the map the match will be played on', () => {
@@ -30,6 +31,28 @@ describe('the table preview', () => {
       teams.forEach((label, seat) => {
         expect(match.state.players[preview.playerOfSeat[seat] as number]?.team).toBe(label);
       });
+    }
+  });
+
+  it('deals each seat the shape the match will give it, a team one between them', () => {
+    for (const [teams, seed] of [
+      [[0, 1, 1, 0], 7],
+      [[0, 1, 2, 3, 4], 8],
+    ] as const) {
+      const n = teams.length;
+      const preview = tablePreview(seed, n, teams, defaultArtConfig, defaultTerrainConfig);
+      const match = new LocalMatch({ seed, seats: [null, ...Array<number>(n - 1).fill(5)], teams });
+      const shapes = matchShapes(defaultArtConfig, match.state);
+      preview.playerOfSeat.forEach((player, seat) => {
+        expect(preview.shapeOfSeat[seat]).toBe(shapes[player]);
+      });
+      // Seats on one team in the lobby carry one shape, and no two teams share one.
+      const byTeam = new Map<number, Set<string>>();
+      teams.forEach((team, seat) =>
+        byTeam.set(team, (byTeam.get(team) ?? new Set()).add(preview.shapeOfSeat[seat]!)),
+      );
+      expect([...byTeam.values()].every((set) => set.size === 1)).toBe(true);
+      expect(new Set(preview.shapeOfSeat).size).toBe(byTeam.size);
     }
   });
 

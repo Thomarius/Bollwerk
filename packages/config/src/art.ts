@@ -60,6 +60,23 @@ export const ArtStyleSchema = z.enum([
 ]);
 export type ArtStyle = z.infer<typeof ArtStyleSchema>;
 
+/**
+ * The shapes a player can carry beside their colour (PLAN 11.15 X6), so eight players,
+ * and colour-blind players, can tell islands apart. Plain filled outlines, distinct at a
+ * dozen pixels. Drawn off the board only: on the board they would clutter it.
+ */
+export const PlayerShapeSchema = z.enum([
+  'circle',
+  'square',
+  'triangle',
+  'diamond',
+  'star',
+  'plus',
+  'hexagon',
+  'invertedTriangle',
+]);
+export type PlayerShape = z.infer<typeof PlayerShapeSchema>;
+
 export const FlatStyleSchema = z.strictObject({
   /** Opacity of the island tint, which is what makes ownership readable. */
   landAlpha: z.number().min(0).max(1),
@@ -504,6 +521,14 @@ export const ArtConfigSchema = z
      * also carries a letter.
      */
     teamFamilies: z.array(z.array(PlayerPaletteSchema).min(1)).min(2),
+    /**
+     * Each player's shape, by player in free-for-all and by team in a team match, where
+     * teammates share one as they share a hue. No shape twice, or two would look alike.
+     */
+    playerShapes: z
+      .array(PlayerShapeSchema)
+      .min(2)
+      .refine((shapes) => new Set(shapes).size === shapes.length, 'a shape is listed twice'),
     /** Each style's own colours, where it has any; see `StylePaletteSchema`. */
     stylePalettes: z.partialRecord(ArtStyleSchema, StylePaletteSchema),
 
