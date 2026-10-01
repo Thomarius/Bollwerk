@@ -3265,3 +3265,32 @@ though it was offered nothing, being the look to debug against.
   restored after. They come every quarter of a minute or so in play, so no screenshot
   scene can catch them reliably; the bobbing, the coils rising and the drones' blinking
   need a person.
+
+## 11zl. How to play (H1, PLAN 11.16)
+
+For new players, at the user's word: as few words as possible, nobody reads a manual. Seven
+pages, approved with their captions before building, opened from a menu button only —
+not on a first match — and the button marked until the pages have been opened once.
+
+- **Each page a looping picture**, drawn on a canvas in Minimal's colours, and one caption
+  of ten words or fewer: the mouse (left places and fires, right or the wheel turns, Esc
+  pauses); the round as four icons lit in turn, ten times round; a block dropping into the
+  last gap of a ring and the ground flooding in from the castle; a corner joined at a
+  point letting the sea in beside one turned properly; a gun on sealed ground firing
+  beside one outside it, silenced, and the crowned castle's "+2"; a shot arcing onto an
+  opponent's wall and a block breaking out; sealed ground scoring beside an open ring
+  costing the last of three lives.
+- **The boards are real**: small ASCII boards through `stateFromAscii`, judged by the sim's
+  own `computeEnclosure` — the flood follows its territory, the silenced gun is the one
+  `cannonActive` refuses, and the leak pours in by the 8-connected escape. A test holds each
+  picture to its rule: the open ring unsealed and the closed one sealed, differing by the
+  one block; the diagonal join unsealed and the turned corner sealed, differing at the
+  corner; one gun of two silenced; the target an opponent's wall.
+- **From the first look**: the water first washed the whole island outside the leaking ring,
+  which read as the land flooding, so it shows only where the sea gets in; and the round's
+  icons nearly touched, their arrows hooks, so they are smaller with arrowheads.
+- Seen page by page in a browser at each key moment. Opened by a click, so no screenshot
+  scene reaches it; the loops themselves need a person.
+- **The user's edits before committing**: page 2 reads "Choose, place cannons, fire,
+  rebuild", page 4 "Walls must include all corners"; and the Effects options became
+  Glowing, Standard and Reduced.

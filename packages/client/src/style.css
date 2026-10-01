@@ -1890,3 +1890,95 @@ table.final tr.you td:nth-child(2) {
   background: #ff5a62;
   box-shadow: 0 0 6px rgb(255 90 98 / 80%);
 }
+
+/* How to play (howToPlay.ts): pages of pictures over the menu, a line of words each. The
+   menu's button stands out until the pages have been opened once. */
+.menu button.quiet.fresh {
+  border-color: var(--accent);
+  color: var(--accent);
+  animation: fresh-pulse 1600ms ease-in-out infinite alternate;
+}
+
+@keyframes fresh-pulse {
+  from {
+    box-shadow: 0 0 0 0 transparent;
+  }
+  to {
+    box-shadow: 0 0 10px 1px color-mix(in srgb, var(--accent) 55%, transparent);
+  }
+}
+
+body.reduced-effects .menu button.quiet.fresh {
+  animation: none;
+}
+
+.how-to-play {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: grid;
+  place-items: center;
+  background: rgb(4 6 12 / 72%);
+}
+
+.how-to-play .panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  align-items: center;
+  padding: 1.2rem 1.4rem 1rem;
+  border: 1px solid var(--accent);
+  background: var(--panel);
+}
+
+.how-to-play canvas {
+  display: block;
+  border: 1px solid var(--edge);
+}
+
+.how-to-play .caption {
+  min-height: 1.6em;
+  margin: 0.3rem 0 0;
+  color: var(--ink);
+  font-size: 1.05rem;
+  letter-spacing: 0.04em;
+  text-align: center;
+}
+
+.how-to-play .nav {
+  display: flex;
+  gap: 1.2rem;
+  align-items: center;
+  color: var(--muted);
+  font-size: 12px;
+  letter-spacing: 0.1em;
+}
+
+.how-to-play button {
+  padding: 0.35rem 1rem;
+  border: 1px solid var(--accent);
+  background: transparent;
+  color: var(--accent);
+  font: inherit;
+  font-size: 1.1rem;
+  cursor: pointer;
+}
+
+.how-to-play button:hover:not(:disabled) {
+  background: var(--accent);
+  color: #0a0a12;
+}
+
+.how-to-play button:disabled {
+  border-color: var(--edge);
+  color: var(--edge);
+  cursor: default;
+}
+
+.how-to-play button.close {
+  border-color: var(--edge);
+  color: var(--muted);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}

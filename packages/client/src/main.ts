@@ -38,6 +38,7 @@ import { bannersFor, type LifeLost, type PointsGained } from './banners.js';
 import { matchPalette, playerCssColour, useMatchPalette } from './colours.js';
 import { matchShapes, playerShape, useMatchShapes } from './shapes.js';
 import { NetworkBadge, type NetworkReading } from './network.js';
+import { howToPlaySeen, openHowToPlay } from './howToPlay.js';
 import { escape, lobbyMarkup, type LobbyView } from './lobby.js';
 import { REFRESH_MS, gamesMarkup, joinRefusedNotice, parseRoomList } from './browser.js';
 import { Hud, type IslandBanner } from './hud.js';
@@ -400,11 +401,12 @@ function showMenu(notice: string | null = null): void {
       <label>Name <input id="name" type="text" maxlength="16" value="Player" /></label>
       <label>Building look <select id="build-style">${styleOptions('build')}</select></label>
       <label>Combat look <select id="combat-style">${styleOptions('combat')}</select></label>
-      <label>Effects <select id="effects"><option value="high">Full (with glow)</option><option value="full">Standard</option><option value="reduced">Reduced</option></select></label>
+      <label>Effects <select id="effects"><option value="high">Glowing</option><option value="full">Standard</option><option value="reduced">Reduced</option></select></label>
       <div class="split play-row">
         <button id="play">Play</button>
         <button id="visibility" data-public="true" title="Public tables are listed under Open games; a private one is joined by its code alone">Public</button>
       </div>
+      <button id="how-to-play" class="quiet${howToPlaySeen() ? '' : ' fresh'}">How to play</button>
       <div class="split">
         <input id="code" type="text" maxlength="8" placeholder="room code" />
         <button id="join">Join</button>
@@ -471,6 +473,14 @@ function showMenu(notice: string | null = null): void {
     void openLobby(readCommon(), null).catch((e: unknown) =>
       showError('Could not open a table', e),
     );
+  });
+  // How to play (PLAN 11.16 H1): pages of pictures over the menu, marked until first opened.
+  const howTo = document.querySelector<HTMLButtonElement>('#how-to-play');
+  howTo?.addEventListener('click', () => {
+    audio.play('select');
+    howTo.classList.remove('fresh');
+    howTo.blur();
+    openHowToPlay(undefined, () => audio.play('select'));
   });
   document.querySelector('#join')?.addEventListener('click', () => {
     audio.play('select');

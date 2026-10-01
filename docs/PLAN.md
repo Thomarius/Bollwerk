@@ -477,6 +477,14 @@ loop is barely driven; headless Chrome catches a crash on load and nothing else.
 pattern that works is to pull the decision out into a pure function and test that —
 `bannersFor` in `banners.ts`, `lobbyMarkup` in `lobby.ts`, the score text in `scores.ts`.
 
+**How to play** (`howToPlay.ts`), from a button under Play, marked until first opened:
+seven pages, each a looping picture and a caption of ten words or fewer — the mouse, the
+round, sealing a castle, turning corners, guns on sealed ground and the crown's two,
+firing, and scoring against losing a life. Drawn in Minimal's colours; the boards of the
+sealing pages are real ones judged by `computeEnclosure`, and a test holds every picture
+to the rule it shows. Back, Next and Close; still at each page's key moment under
+reduced motion.
+
 **The menu and lobby** are dressed in the game's own art (`decor.ts`): **every style has
 a title of its own**, the same 5x7 letters in its look — stone threaded with gold for
 Medieval, flat blocks in the players' colours for Minimal, moonlit stone with a halo
@@ -538,11 +546,11 @@ colour from the castle (`drawChoices`); hovering one shows faintly the ring it w
 get, from the sim's own `startingRingTiles`. From then on **a crown stands on each
 player's main castle** (`drawMainCastles`) — in the owner's colour while it is sealed,
 stone grey and cracked once breached, as the look's own sealed castles say: one shared mark rather than the original's second tower drawn in seven
-styles. The menu's **Effects** setting, Full (with glow), Standard or
+styles. The menu's **Effects** setting, Glowing, Standard or
 Reduced (`motion.ts`; stored as high, full and reduced, the names until 2026-10-01, when
 "Full" read as more than "High"): reduced does what the system's reduced-motion setting does — no
 flicker, no beat, no slide, no title sweep, no rain — and also stops the board's shake;
-either one reduces. Full is Standard with the glow of Night and Cyberpunk bloomed by a real
+either one reduces. Glowing is Standard with the glow of Night and Cyberpunk bloomed by a real
 blur filter, asked for rather than given since it costs frame rate at eight players.
 
 **The roster** is kept across frames rather than rebuilt, so its entries can move:
@@ -867,7 +875,7 @@ first round of test-session feedback. In order:
    (§9, ARCHIVE 11e); the user sends compiled feedback, which is triaged with them first.
 2. **11.15, the third visual pass — done** (ARCHIVE 11zf, 11zh), X6's shapes last. The next
    test session also checks the fix for the hosts' delay on every click (ARCHIVE 11zg).
-   **11.16**, agreed 2026-10-01, runs meanwhile: O1 done, then H1, S1 and I1.
+   **11.16**, agreed 2026-10-01, runs meanwhile: O1 and H1 done, then S1 and I1.
 3. **11.2, elimination tuning**, the next milestone. Its baseline is measured over the
    personality mix; the "ambitious" bot it planned and finisher targeting exist now.
 4. **11.3, two-player balance**, re-measured before anything is tried; after 11.2.
@@ -968,11 +976,9 @@ of 11.15. In this order:
 **O1 — Ocean life in every style — done** (§7, ARCHIVE 11zk). The testers praised the land's
 scenery; the sea gets its own in every style, each design chosen by the user.
 
-**H1 — How to play.** A few pages opened from the menu, each with a small picture drawn by
-the game itself: the round, phase by phase; building and sealing, with walls that must
-turn their corners; castles, the main castle's crown, and guns inert outside sealed
-ground; combat; scoring and lives. Back and Next, mouse only. The texts are drafted for
-the user to edit.
+**H1 — How to play — done** (§7, ARCHIVE 11zl). Seven pages of pictures and a line each,
+from the menu's button only — the words and pages approved by the user, whose rule was
+as few words as possible.
 
 **S1 — Style previews.** A small picture of each look beside the two look dropdowns in
 the menu, drawn by the style's own theme: one fixed miniature island, rendered once, so
