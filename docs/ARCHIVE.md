@@ -3444,3 +3444,30 @@ line over it, so `npm start` and the image run exactly as before.
   taken; after `stop()` the port refuses, and a server started on it again works. The
   built bundle checked by hand the same way: it serves, a second copy says the port is in
   use and exits 1, and a bad `PORT` is still refused.
+
+## 11zq. The desktop app's window (A2, PLAN 11.17)
+
+`packages/desktop`, Electron 44, over A1's `startServer`. Bundled by esbuild as the server's
+image is — the main process with the server and the whole simulation in one file, a
+CommonJS preload, the window's own script — and run from the repository with
+`npm start -w @rampart/desktop` after `npm run build`, which it serves the client of.
+
+- **The window**: whether the server is running, the addresses other players open, each with
+  Copy; Start and Stop; Open in browser; and Play here, the game in a window of the app's
+  own. It starts the server as it opens, since that is what it is opened for, and closing
+  it stops the server before the app quits. One copy at a time: a second only brings the
+  first forward. Mouse only.
+- **A taken port** is a state, not an error: "Port 8080 is in use — another server may be
+  running", and a button to try the next. The state machine (`control.ts`) is apart from
+  Electron and tested: running, stopping and running again; a taken port and the next;
+  starts while running and stops while stopped ignored.
+- **Paths**: from the repository, its `config/` and built client; packaged (A3), the app's
+  resources. Recordings go to the user's data folder (`%APPDATA%\Rampart`, `~/.config/Rampart`),
+  never shown. Packaged, the commit comes from `RAMPART_COMMIT`, as the image's does.
+- **Seen, driven by Playwright's Electron support**: opened with 8080 free, then with a server
+  holding it — told so, moved to 8081, the games list answering there; Play here opening
+  the menu; Stop freeing the port. From the first screenshots, a disabled quiet button
+  looked enabled; it is greyed now.
+- **Electron's binary** did not download in `npm install`: its install script did not run.
+  `node node_modules/electron/install.js` fetches it; release builds in CI (A4) must do the
+  same.

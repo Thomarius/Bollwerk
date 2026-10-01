@@ -1078,7 +1078,7 @@ all — cannot write inside itself; and the port. A port already taken is report
 rather than thrown. Tested in process: start, a client joins, stop, start again on the same
 port.
 
-**A2 — The window** (`packages/desktop`, Electron). Start and Stop; whether it is running;
+**A2 — The window — done** (ARCHIVE 11zq). As planned (`packages/desktop`, Electron): Start and Stop; whether it is running;
 the addresses other players open, as `npm start` prints them (`openableUrls`), each with a
 copy button; **Open in browser**; and **Play here**, the game in the app's own window for
 the host. Closing the window stops the server. A taken port says so and offers another.

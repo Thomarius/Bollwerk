@@ -1,0 +1,144 @@
+/* The desktop app's window, in the colours of the game's menu (packages/client). */
+:root {
+  --ink: #e8e6dc;
+  --muted: #8a8a9a;
+  --accent: #e0b84a;
+  --edge: #2c2d3a;
+  --panel: #12131c;
+  color-scheme: dark;
+}
+
+body {
+  margin: 0;
+  background: var(--panel);
+  color: var(--ink);
+  font:
+    13px/1.5 ui-monospace,
+    Menlo,
+    Consolas,
+    monospace;
+  user-select: none;
+}
+
+main {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  padding: 1.4rem 1.6rem;
+}
+
+h1 {
+  margin: 0 0 0.4rem;
+  color: var(--accent);
+  font-size: 1.4rem;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+}
+
+.status {
+  display: flex;
+  gap: 0.6rem;
+  align-items: center;
+  margin: 0;
+  font-size: 1.1rem;
+  letter-spacing: 0.05em;
+}
+
+.status::before {
+  content: '';
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--muted);
+}
+
+.status.good::before {
+  background: #4cc46a;
+  box-shadow: 0 0 6px rgb(76 196 106 / 70%);
+}
+
+.status.busy::before {
+  background: #e0a030;
+}
+
+.status.bad::before {
+  background: #ff5a62;
+}
+
+.detail,
+.note {
+  margin: 0;
+  color: var(--muted);
+}
+
+.note {
+  margin-top: 0.4rem;
+  font-size: 11px;
+}
+
+ul {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+li {
+  display: flex;
+  gap: 0.6rem;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.35rem 0.6rem;
+  border: 1px solid var(--edge);
+}
+
+code {
+  user-select: text;
+}
+
+button {
+  padding: 0.6rem;
+  border: 1px solid var(--accent);
+  background: transparent;
+  color: var(--accent);
+  font: inherit;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+button:hover:not(:disabled) {
+  background: var(--accent);
+  color: #0a0a12;
+}
+
+button:disabled {
+  border-color: var(--edge);
+  color: var(--edge);
+  cursor: default;
+}
+
+button.quiet {
+  border-color: var(--edge);
+  color: var(--muted);
+}
+
+button.quiet:disabled {
+  color: var(--edge);
+}
+
+li button {
+  padding: 0.15rem 0.6rem;
+  font-size: 11px;
+}
+
+.row {
+  display: flex;
+  gap: 0.6rem;
+}
+
+.row button {
+  flex: 1;
+}

@@ -22,6 +22,7 @@ npm start     -w @rampart/headless -- --matches 8 --players 3 --level 5 --stats 
 npm start     -w @rampart/headless -- --map --players 3 --seed 2   # print a map as ASCII
 npm start     -w @rampart/headless -- --replay recordings/ --stats human.csv   # recorded human play
 tools/screenshots.sh /tmp/shots [scene...]   # client in fixed states, against the dev server
+npm start     -w @rampart/desktop   # the desktop app (PLAN 11.17), after npm run build
 ```
 
 `npm run check` takes a few minutes, mostly bot matches. Run it in the background and
@@ -41,16 +42,17 @@ rounds.
 
 ## Layout
 
-| Package          | Contents                                                                   |
-| ---------------- | -------------------------------------------------------------------------- |
-| `config`         | Zod schemas, typed defaults, cross-file validation. Reads `config/*.json`. |
-| `sim`            | The deterministic game core. No DOM, no Node, no I/O.                      |
-| `protocol`       | Wire messages and validators.                                              |
-| `ai`             | Bots: min-cut sealing, 0-1 BFS attack, skill levels and personalities.     |
-| `analysis`       | Per-round match statistics, for bot soaks and recorded human play alike.   |
-| `server`         | Authoritative match server, rooms, WebSocket, match recordings.            |
-| `client`         | Pixi renderer, seven visual styles, controls, HUD, netcode client.         |
-| `tools/headless` | Bot-vs-bot soak runs and map dumps.                                        |
+| Package          | Contents                                                                    |
+| ---------------- | --------------------------------------------------------------------------- |
+| `config`         | Zod schemas, typed defaults, cross-file validation. Reads `config/*.json`.  |
+| `sim`            | The deterministic game core. No DOM, no Node, no I/O.                       |
+| `protocol`       | Wire messages and validators.                                               |
+| `ai`             | Bots: min-cut sealing, 0-1 BFS attack, skill levels and personalities.      |
+| `analysis`       | Per-round match statistics, for bot soaks and recorded human play alike.    |
+| `server`         | Authoritative match server, rooms, WebSocket, match recordings.             |
+| `client`         | Pixi renderer, seven visual styles, controls, HUD, netcode client.          |
+| `desktop`        | Electron app for releases: the server behind a minimal window (PLAN 11.17). |
+| `tools/headless` | Bot-vs-bot soak runs and map dumps.                                         |
 
 Internal packages export TypeScript source directly, so there is no build step between
 them. The production image bundles the server with esbuild; development never does.

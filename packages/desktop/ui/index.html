@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self'" />
+    <title>Rampart server</title>
+    <link rel="stylesheet" href="window.css" />
+  </head>
+  <body>
+    <main>
+      <h1>Rampart</h1>
+      <p id="status" class="status idle">Starting…</p>
+      <p id="detail" class="detail"></p>
+      <ul id="urls"></ul>
+      <button id="toggle">Start</button>
+      <button id="next" class="quiet" hidden>Try another port</button>
+      <div class="row">
+        <button id="browser" class="quiet" disabled>Open in browser</button>
+        <button id="play" disabled>Play here</button>
+      </div>
+      <p class="note">Closing this window stops the server.</p>
+    </main>
+    <script type="module" src="../dist/window.js"></script>
+  </body>
+</html>

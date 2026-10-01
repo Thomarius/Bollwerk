@@ -1,0 +1,21 @@
+{
+  "name": "@rampart/desktop",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "The desktop app for releases: the server behind a minimal window (PLAN 11.17)",
+  "main": "dist/main.js",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "build": "node build.js",
+    "start": "node build.js && electron ."
+  },
+  "dependencies": {
+    "@rampart/config": "*",
+    "@rampart/protocol": "*",
+    "@rampart/server": "*"
+  },
+  "devDependencies": {
+    "electron": "^44.5.1"
+  }
+}
