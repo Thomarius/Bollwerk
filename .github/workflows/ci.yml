@@ -12,8 +12,8 @@ jobs:
       # The desktop app's Electron is only for release builds (release.yml); tests never run it.
       ELECTRON_SKIP_BINARY_DOWNLOAD: '1'
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
           node-version: 24
           cache: npm
@@ -26,7 +26,7 @@ jobs:
   image:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       # Builds the deployment image and nothing else. There is no Docker on the
       # development machine, so this job is where the Dockerfile is actually
       # exercised — treat a failure here as a real one.

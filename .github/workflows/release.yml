@@ -30,8 +30,8 @@ jobs:
       RAMPART_COMMIT: ${{ github.sha }}
       RAMPART_VERSION: ${{ github.event_name == 'push' && github.ref_name || inputs.version }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
           node-version: 24
           cache: npm
@@ -43,7 +43,7 @@ jobs:
         run: |
           export RAMPART_VERSION="${RAMPART_VERSION#v}"
           npm run package -w @rampart/desktop
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v5
         with:
           name: rampart-${{ matrix.os }}
           path: ${{ matrix.file }}
@@ -57,7 +57,7 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v5
         with:
           path: files
           merge-multiple: true
