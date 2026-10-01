@@ -90,6 +90,9 @@ export const FlatStyleSchema = z.strictObject({
   cannonBoreScale: z.number().min(0).max(1),
   /** How long a swept wall block takes to fade as the banner passes over it. */
   crumbleMs: z.number().int().positive(),
+  /** A plain boat crossing the outer ocean now and then (`render/ocean.ts`), one at a time. */
+  boatEveryMs: z.number().int().positive(),
+  boatTilesPerSecond: z.number().positive(),
 });
 export type FlatStyleConfig = z.infer<typeof FlatStyleSchema>;
 
@@ -125,6 +128,11 @@ export const CyberpunkStyleSchema = z.strictObject({
   powerDownMs: z.number().int().positive(),
   /** The burst of glitch where a shot comes down. */
   glitchMs: z.number().int().positive(),
+  /** Drones circling over the outer ocean, each with a searchlight on the water. */
+  drones: z.number().int().nonnegative(),
+  /** A hover-craft crossing the outer ocean now and then (`render/ocean.ts`), one at a time. */
+  hovercraftEveryMs: z.number().int().positive(),
+  hovercraftTilesPerSecond: z.number().positive(),
 });
 export type CyberpunkStyleConfig = z.infer<typeof CyberpunkStyleSchema>;
 
@@ -141,6 +149,9 @@ export const BlueprintStyleSchema = z.strictObject({
   seaHatchAlpha: z.number().min(0).max(1),
   /** Sealed ground's cross-hatching in the owner's ink. */
   territoryAlpha: z.number().min(0).max(1),
+  /** A ship's plan on its dashed course crossing the outer ocean now and then (`render/ocean.ts`), one at a time. */
+  shipEveryMs: z.number().int().positive(),
+  shipTilesPerSecond: z.number().positive(),
 });
 export type BlueprintStyleConfig = z.infer<typeof BlueprintStyleSchema>;
 
@@ -251,6 +262,12 @@ export const ParchmentStyleSchema = z.strictObject({
   washAlpha: z.number().min(0).max(1),
   /** The shadow a wall or castle casts on the paper to its south. */
   shadowAlpha: z.number().min(0).max(1),
+  /** An engraved ship crossing the outer ocean now and then (`render/ocean.ts`), one at a time. */
+  shipEveryMs: z.number().int().positive(),
+  shipTilesPerSecond: z.number().positive(),
+  /** A sea serpent's coils arching out of the water and back, now and then, for so long. */
+  serpentEveryMs: z.number().int().positive(),
+  serpentMs: z.number().int().positive(),
 });
 export type ParchmentStyleConfig = z.infer<typeof ParchmentStyleSchema>;
 
@@ -269,6 +286,15 @@ export const BricksStyleSchema = z.strictObject({
   territoryAlpha: z.number().min(0).max(1),
   /** The plastic's sheen along each brick's lit edge. */
   sheenAlpha: z.number().min(0).max(1),
+  /** A boat of bricks crossing the outer ocean now and then (`render/ocean.ts`), one at a time. */
+  boatEveryMs: z.number().int().positive(),
+  boatTilesPerSecond: z.number().positive(),
+  /** A rubber duck, bobbing crossing the outer ocean now and then (`render/ocean.ts`), one at a time. */
+  duckEveryMs: z.number().int().positive(),
+  duckTilesPerSecond: z.number().positive(),
+  /** A shark's fin circling now and then, for so long. */
+  sharkEveryMs: z.number().int().positive(),
+  sharkMs: z.number().int().positive(),
 });
 export type BricksStyleConfig = z.infer<typeof BricksStyleSchema>;
 

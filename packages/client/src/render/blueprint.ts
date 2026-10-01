@@ -35,6 +35,7 @@ import {
   type ThemeLayers,
   type ViewTransform,
 } from './theme.js';
+import { BlueprintSeaLife } from './seaLife.js';
 import type { SceneryItem } from './scenery.js';
 import { SceneryLayer } from './sceneryLayer.js';
 import { dashed, hatch, outline, trace, wallGeometry, type Segment } from './walls.js';
@@ -87,6 +88,8 @@ export class BlueprintTheme implements Theme {
   readonly id = 'blueprint' as const;
 
   private art!: ArtConfig;
+  /** Life on the outer ocean (`seaLife.ts`). */
+  private readonly seaLife = new BlueprintSeaLife();
   private style!: BlueprintStyleConfig;
 
   private readonly terrainGfx = new Graphics();
@@ -164,6 +167,7 @@ export class BlueprintTheme implements Theme {
   // ------------------------------------------------------------------ terrain
 
   drawTerrain(state: MatchState, view: ViewTransform): void {
+    this.seaLife.layout(state, view, this.art);
     this.scenery.refresh(state, view, this.art, true);
     this.terrain = state.terrain;
     this.width = state.width;
@@ -493,6 +497,7 @@ export class BlueprintTheme implements Theme {
   drawEffects(state: MatchState, view: ViewTransform, frame: EffectFrame): void {
     const g = this.effectGfx;
     g.clear();
+    this.seaLife.draw(g, view, this.art, frame.deltaMs);
     this.clock += frame.deltaMs;
     drawDrain(g, view, frame.drain, this.art);
     drawSealGlow(g, view, frame.sealGlow, this.art);

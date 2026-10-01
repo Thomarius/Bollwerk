@@ -538,10 +538,11 @@ colour from the castle (`drawChoices`); hovering one shows faintly the ring it w
 get, from the sim's own `startingRingTiles`. From then on **a crown stands on each
 player's main castle** (`drawMainCastles`) — in the owner's colour while it is sealed,
 stone grey and cracked once breached, as the look's own sealed castles say: one shared mark rather than the original's second tower drawn in seven
-styles. The menu's **Effects** setting, high, full or
-reduced (`motion.ts`): reduced does what the system's reduced-motion setting does — no
+styles. The menu's **Effects** setting, Full (with glow), Standard or
+Reduced (`motion.ts`; stored as high, full and reduced, the names until 2026-10-01, when
+"Full" read as more than "High"): reduced does what the system's reduced-motion setting does — no
 flicker, no beat, no slide, no title sweep, no rain — and also stops the board's shake;
-either one reduces. High is full with the glow of Night and Cyberpunk bloomed by a real
+either one reduces. Full is Standard with the glow of Night and Cyberpunk bloomed by a real
 blur filter, asked for rather than given since it costs frame rate at eight players.
 
 **The roster** is kept across frames rather than rebuilt, so its entries can move:
@@ -713,9 +714,16 @@ shot: Blueprint's trees were first a circle with a cross, a gun's survey mark in
 and Medieval's boulders a round grey rock, a cannonball's double. A tile once built on or
 sealed is cleared for the rest of the match, so nothing grows back through a breach; a
 piece landing on scenery knocks it flat with a puff, told to the looks on screen only.
-The pixel style also keeps **life on the outer ocean** (`pixel/ocean.ts`): a boat under
-sail now and then, gulls wheeling, a fish jumping — outside the box round all the land,
-where no shot ever flies, and none of it under reduced motion.
+**Every style keeps life on the outer ocean** — outside the box round all the land,
+where no shot ever flies, in neutral colours so nothing passing reads as a player's, and
+none of it under reduced motion. Moved by one module (`ocean.ts`: things crossing a row,
+circling, or surfacing for a while), drawn by each style (`pixel/ocean.ts`,
+`seaLife.ts`): in Medieval and Night a boat under sail, gulls wheeling and fish jumping;
+in Parchment an engraved ship and a sea serpent's coils, kept off the compass rose; in
+Blueprint a ship drawn in plan on a dashed course; in Cyberpunk drones circling with a
+searchlight on the water and a hover-craft trailing light; in Toy bricks a boat of bricks,
+a rubber duck and a shark's fin; in Minimal a plain boat's silhouette. Anything tall keeps
+to rows whose top is clear of the HUD bar.
 
 **The match's moments** (`camera.ts`, `art.camera`). The match opens
 close on the viewer's own island, marked **"You are here"** until they choose a castle —
@@ -859,6 +867,7 @@ first round of test-session feedback. In order:
    (§9, ARCHIVE 11e); the user sends compiled feedback, which is triaged with them first.
 2. **11.15, the third visual pass — done** (ARCHIVE 11zf, 11zh), X6's shapes last. The next
    test session also checks the fix for the hosts' delay on every click (ARCHIVE 11zg).
+   **11.16**, agreed 2026-10-01, runs meanwhile: O1 done, then H1, S1 and I1.
 3. **11.2, elimination tuning**, the next milestone. Its baseline is measured over the
    personality mix; the "ambitious" bot it planned and finisher targeting exist now.
 4. **11.3, two-player balance**, re-measured before anything is tried; after 11.2.
@@ -948,6 +957,31 @@ decision of 2026-09-30. Decided 2026-10-01: plain geometric shapes, and in a tea
 one shape per team, so teams tell apart without colour.
 
 **The third visual pass is done**: X1–X5 in ARCHIVE 11zf, X6 in 11zh.
+
+### 11.16 New players, the menu and the sea — agreed 2026-10-01
+
+Chosen by the user from a list of suggestions; left out for now: hovering a roster card to
+light its island, a "Preparing the board" overlay, a rematch, volume sliders, first-match
+hints and guns that glow while their shot still counts. Display only, with the discipline
+of 11.15. In this order:
+
+**O1 — Ocean life in every style — done** (§7, ARCHIVE 11zk). The testers praised the land's
+scenery; the sea gets its own in every style, each design chosen by the user.
+
+**H1 — How to play.** A few pages opened from the menu, each with a small picture drawn by
+the game itself: the round, phase by phase; building and sealing, with walls that must
+turn their corners; castles, the main castle's crown, and guns inert outside sealed
+ground; combat; scoring and lives. Back and Next, mouse only. The texts are drafted for
+the user to edit.
+
+**S1 — Style previews.** A small picture of each look beside the two look dropdowns in
+the menu, drawn by the style's own theme: one fixed miniature island, rendered once, so
+the menu stays quick.
+
+**I1 — A livelier scoreboard between rounds.** The standings under the banner after a
+resolution become a short animated ranking, with the shapes and scores counting up —
+inside the banner's time, adding none, so the game's timing does not move. To be tried
+and judged in play.
 
 ### 11.2 Elimination tuning — planned, waiting on human play
 

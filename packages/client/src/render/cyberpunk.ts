@@ -4,6 +4,7 @@ import { BlurFilter, Graphics } from 'pixi.js';
 
 import { bloomWanted, motionReduced } from '../motion.js';
 
+import { CyberpunkSeaLife } from './seaLife.js';
 import { seaDepth } from './pixel.js';
 import { trace, wallGeometry } from './walls.js';
 import {
@@ -203,6 +204,8 @@ export class CyberpunkTheme implements Theme {
   readonly id = 'cyberpunk' as const;
 
   private art!: ArtConfig;
+  /** Life on the outer ocean (`seaLife.ts`). */
+  private readonly seaLife = new CyberpunkSeaLife();
   private style!: CyberpunkStyleConfig;
   private readonly seed: number;
 
@@ -295,6 +298,7 @@ export class CyberpunkTheme implements Theme {
   // ------------------------------------------------------------------ terrain
 
   drawTerrain(state: MatchState, view: ViewTransform): void {
+    this.seaLife.layout(state, view, this.art);
     this.scenery.refresh(state, view, this.art, true);
     this.terrain = state.terrain;
     this.width = state.width;
@@ -845,6 +849,7 @@ export class CyberpunkTheme implements Theme {
     const glow = this.effectGlow;
     g.clear();
     glow.clear();
+    this.seaLife.draw(g, view, this.art, frame.deltaMs, glow);
     this.clock += frame.deltaMs;
 
     this.drawPulses(view);

@@ -400,7 +400,7 @@ function showMenu(notice: string | null = null): void {
       <label>Name <input id="name" type="text" maxlength="16" value="Player" /></label>
       <label>Building look <select id="build-style">${styleOptions('build')}</select></label>
       <label>Combat look <select id="combat-style">${styleOptions('combat')}</select></label>
-      <label>Effects <select id="effects"><option value="high">High</option><option value="full">Full</option><option value="reduced">Reduced</option></select></label>
+      <label>Effects <select id="effects"><option value="high">Full (with glow)</option><option value="full">Standard</option><option value="reduced">Reduced</option></select></label>
       <div class="split play-row">
         <button id="play">Play</button>
         <button id="visibility" data-public="true" title="Public tables are listed under Open games; a private one is joined by its code alone">Public</button>

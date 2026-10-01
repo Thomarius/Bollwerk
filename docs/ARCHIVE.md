@@ -3235,3 +3235,33 @@ islands were offered and left out.
   after its connection closed, and a closed connection queued what it could not send, so
   a page that went back to the menu again and again grew a queue forever. The interval
   stops with its connection, and a closed connection drops what it is given.
+
+## 11zk. Ocean life in every style (O1, PLAN 11.16)
+
+The testers praised the land's scenery, and only Medieval and Night had anything on the
+sea. Each style's design was chosen by the user: Parchment an engraved ship and a sea
+serpent; Blueprint a ship drawn in plan on a dashed course; Cyberpunk drones and a
+hover-craft (data packets were offered and refused, too close to the trace pulses and to
+tracer shots); Toy bricks a boat, a rubber duck and a shark's fin; Minimal a plain boat,
+though it was offered nothing, being the look to debug against.
+
+- **Moved by one module, drawn by each style.** `ocean.ts` now holds the outer ocean,
+  moved out of `pixel/ocean.ts`, and three movers: `Crossings` (one at a time along an open
+  row, off one side and out the other), `Circling` (wheeling round a spot) and
+  `Surfacings` (up for a while, then gone). Medieval's boats, gulls and fish run on them,
+  drawn as before; `seaLife.ts` draws the other five, in each theme's effects layer, which
+  is cleared every frame and holds nothing else out there. Tested as properties: one
+  crosser at a time on an open row, surfacings gone when their time is up, circlers within
+  their radius.
+- **From the first close-ups**: Parchment's ship sailed the top row with its masts under the
+  HUD bar, so a crosser may ask for headroom and keeps to rows whose top is clear of it;
+  a serpent surfaced on the compass rose, so surfacings can be kept off a spot; the toy
+  boat's cabin overhung its stern when it sailed left; and the serpent was too small to
+  read, so it is about 40% larger.
+- **Neutral colours throughout** — paper and ink, the sheet's white, the neon of the sea and
+  the embers, sand, grey and a duck's yellow — so nothing passing reads as a player's.
+  Tunables in each style's block of `art.default.json`.
+- Seen in every style at two players, with the rates raised for the screenshots and
+  restored after. They come every quarter of a minute or so in play, so no screenshot
+  scene can catch them reliably; the bobbing, the coils rising and the drones' blinking
+  need a person.

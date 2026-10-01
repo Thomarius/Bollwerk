@@ -949,7 +949,9 @@
     "outlineWidthPx": 2,
     "castleCoreScale": 0.45,
     "cannonBoreScale": 0.34,
-    "crumbleMs": 450
+    "crumbleMs": 450,
+    "boatEveryMs": 22000,
+    "boatTilesPerSecond": 0.5
   },
   "cyberpunk": {
     "rainPerThousandTiles": 70,
@@ -964,7 +966,10 @@
     "pulseTilesPerSecond": 7,
     "hologramFlickerMs": 420,
     "powerDownMs": 650,
-    "glitchMs": 280
+    "glitchMs": 280,
+    "drones": 2,
+    "hovercraftEveryMs": 15000,
+    "hovercraftTilesPerSecond": 1.6
   },
   "blueprint": {
     "lineWidthPx": 2,
@@ -972,7 +977,9 @@
     "gridAlpha": 0.14,
     "gridMajorEvery": 5,
     "seaHatchAlpha": 0.22,
-    "territoryAlpha": 0.4
+    "territoryAlpha": 0.4,
+    "shipEveryMs": 18000,
+    "shipTilesPerSecond": 0.45
   },
   "night": {
     "torchPoolTiles": 4.4,
@@ -1026,14 +1033,24 @@
     "wavesPerSeaTile": 0.04,
     "grainAlpha": 0.35,
     "washAlpha": 0.24,
-    "shadowAlpha": 0.22
+    "shadowAlpha": 0.22,
+    "shipEveryMs": 18000,
+    "shipTilesPerSecond": 0.4,
+    "serpentEveryMs": 26000,
+    "serpentMs": 5000
   },
   "bricks": {
     "studScale": 0.34,
     "landStudAlpha": 0.5,
     "seaStudAlpha": 0.16,
     "territoryAlpha": 0.8,
-    "sheenAlpha": 0.35
+    "sheenAlpha": 0.35,
+    "boatEveryMs": 16000,
+    "boatTilesPerSecond": 0.55,
+    "duckEveryMs": 20000,
+    "duckTilesPerSecond": 0.25,
+    "sharkEveryMs": 24000,
+    "sharkMs": 6000
   },
   "effects": {
     "sealFloodTilesPerSecond": 16,

@@ -35,6 +35,7 @@ import {
   type ThemeLayers,
   type ViewTransform,
 } from './theme.js';
+import { BricksSeaLife } from './seaLife.js';
 import type { SceneryItem } from './scenery.js';
 import { SceneryLayer } from './sceneryLayer.js';
 import { outline, trace, wallGeometry } from './walls.js';
@@ -87,6 +88,8 @@ export class BricksTheme implements Theme {
   readonly id = 'bricks' as const;
 
   private art!: ArtConfig;
+  /** Life on the outer ocean (`seaLife.ts`). */
+  private readonly seaLife = new BricksSeaLife();
   private style!: BricksStyleConfig;
 
   private readonly terrainGfx = new Graphics();
@@ -161,6 +164,7 @@ export class BricksTheme implements Theme {
   // ------------------------------------------------------------------ terrain
 
   drawTerrain(state: MatchState, view: ViewTransform): void {
+    this.seaLife.layout(state, view, this.art);
     this.scenery.refresh(state, view, this.art, true);
     this.terrain = state.terrain;
     this.width = state.width;
@@ -474,6 +478,7 @@ export class BricksTheme implements Theme {
   drawEffects(state: MatchState, view: ViewTransform, frame: EffectFrame): void {
     const g = this.effectGfx;
     g.clear();
+    this.seaLife.draw(g, view, this.art, frame.deltaMs);
     this.clock += frame.deltaMs;
     drawDrain(g, view, frame.drain, this.art);
     drawSealGlow(g, view, frame.sealGlow, this.art);

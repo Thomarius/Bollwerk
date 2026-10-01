@@ -4,6 +4,7 @@ import { Graphics, Sprite, Texture } from 'pixi.js';
 
 import { timerSpot, type TimerSpot } from '../timerSpot.js';
 
+import { ParchmentSeaLife } from './seaLife.js';
 import { seaDepth } from './pixel.js';
 import {
   FlagHoist,
@@ -162,6 +163,8 @@ export class ParchmentTheme implements Theme {
   readonly id = 'parchment' as const;
 
   private art!: ArtConfig;
+  /** Life on the outer ocean (`seaLife.ts`). */
+  private readonly seaLife = new ParchmentSeaLife();
   private style!: ParchmentStyleConfig;
   private readonly seed: number;
 
@@ -256,6 +259,7 @@ export class ParchmentTheme implements Theme {
   // ------------------------------------------------------------------ terrain
 
   drawTerrain(state: MatchState, view: ViewTransform): void {
+    this.seaLife.layout(state, view, this.art);
     this.scenery.refresh(state, view, this.art, true);
     this.terrain = state.terrain;
     this.width = state.width;
@@ -376,6 +380,7 @@ export class ParchmentTheme implements Theme {
     const right = Math.floor((view.width - view.originX) / view.tile) - state.width;
     const bottom = Math.floor((view.height - view.originY) / view.tile) - state.height;
     const spot = roseSpot(state, right, bottom, timerSpot(state));
+    this.seaLife.rose = spot;
     if (spot === null) return;
     const ink = hex(this.art.palette.rockDark);
     const cx = tileX(view, spot.x);
@@ -776,6 +781,7 @@ export class ParchmentTheme implements Theme {
   drawEffects(state: MatchState, view: ViewTransform, frame: EffectFrame): void {
     const g = this.effectGfx;
     g.clear();
+    this.seaLife.draw(g, view, this.art, frame.deltaMs);
     this.clock += frame.deltaMs;
     if (state.round !== this.round) {
       this.round = state.round;
