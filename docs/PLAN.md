@@ -891,6 +891,8 @@ the balance quite good. In order:
    rebuilt (`npm start`) and every page reloaded: the protocol is 14.
 2. **11.2, points decide and elimination threatens**, the goal revised on 2026-10-01: a
    measurement of how good the points matches are, not a tuning towards knockouts.
+   **The soaks for 11.2, 11.3, 11.4 and 11.13 are planned in [`SOAKS.md`](./SOAKS.md)**, to
+   run at the end of a day: measurement only.
 3. **11.3, two-player balance**, re-measured before anything is tried; after 11.2.
 4. **11.4**, measurements never taken, and **11.13**, the bots' loose ends, as they fit.
 
