@@ -916,7 +916,7 @@ rematch alone touches the protocol. Anything timed a pure function with tests, s
 their hue, information stays readable, land, sea, wall and sealed ground tell apart; mouse
 only. Packages in order, the small ones first:
 
-**Y1 — Preparing the board.** A screen over the board for the moment a match opens while
+**Y1 — Preparing the board — done** (ARCHIVE 11zu). A screen over the board for the moment a match opens while
 the looks are built, so a pause that grows with the visuals never reads as a freeze —
 today it is about a second (ARCHIVE 11zg). Taken down at the first frame drawn.
 

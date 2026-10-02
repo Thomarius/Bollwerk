@@ -1025,12 +1025,30 @@ function networkSession(
 
 // ------------------------------------------------------------------ match loop
 
+/**
+ * Resolves once what is on the page has been painted: a frame for the layout, and the one
+ * after it, by which the browser has drawn it — so work that holds the page afterwards
+ * holds it with this on screen, not the screen before.
+ */
+function shownOnScreen(): Promise<void> {
+  return new Promise((resolve) =>
+    requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+  );
+}
+
 async function runSession(session: Session, setup: Setup): Promise<void> {
-  app!.innerHTML = `<canvas id="stage"></canvas><div id="hud"></div><div id="banner"></div>`;
+  // Over the board until its first frame (PLAN 11.18 Y1): building both looks' sprites
+  // takes about a second as a match opens, and more with every look added, which read as
+  // the page freezing. Painted before that work starts, so it is on screen through it.
+  app!.innerHTML =
+    `<canvas id="stage"></canvas><div id="hud"></div><div id="banner"></div>` +
+    `<div id="preparing" class="preparing"><p>Preparing the board</p><span class="blocks"><i></i><i></i><i></i></span></div>`;
   const canvas = document.querySelector<HTMLCanvasElement>('#stage');
   const hudRoot = document.querySelector<HTMLElement>('#hud');
   const bannerRoot = document.querySelector<HTMLElement>('#banner');
+  const preparing = document.querySelector<HTMLElement>('#preparing');
   if (!canvas || !hudRoot || !bannerRoot) throw new Error('missing stage');
+  await shownOnScreen();
 
   const scene = new Scene();
   // Colours for this match: families by team in a team match, distinct otherwise. The
@@ -1648,6 +1666,8 @@ async function runSession(session: Session, setup: Setup): Promise<void> {
   const loop = (now: number): void => {
     const delta = now - last;
     last = now;
+    // The board is ready: the first frame takes the screen over it down.
+    if (preparing?.isConnected) preparing.remove();
 
     const events = session.advance(delta);
     pause.update(

@@ -3677,3 +3677,14 @@ port taken. Known and accepted: Windows SmartScreen warns of an unknown publishe
 file is signed, which needs a paid certificate and is not planned; Windows Firewall asks
 once whether to allow the network, which LAN play needs; an AppImage must be marked
 executable. How to cut a release goes into CLAUDE.md.
+
+## 11zu. The fourth visual pass (PLAN 11.18)
+
+- **Y1, preparing the board**: as a match opens, "Preparing the board" stands over the
+  screen, three wall blocks lit in turn beneath it, until the board's first frame takes it
+  down. The work it covers — building both looks' sprites, about a second today — holds
+  the page without yielding, so the screen is painted first: two animation frames after it
+  goes in, then the work. In headless Chrome the board is ready within about 300 ms, and
+  six-fold slower still too quick to photograph, since a screenshot waits for a frame and
+  the first frame is what removes it; its look was checked by placing the same markup over
+  the menu.
