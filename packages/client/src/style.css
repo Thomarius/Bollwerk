@@ -2263,3 +2263,52 @@ body.reduced-effects .preparing .blocks i {
   background: var(--accent);
   color: #0a0a12;
 }
+
+/* The volume sliders (volume.ts), in the menu under Effects and in the pause menu. */
+.volumes {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.volumes label.volume {
+  display: flex;
+  gap: 0.8rem;
+  align-items: center;
+  justify-content: space-between;
+  margin: 0;
+}
+
+.volumes input[type='range'] {
+  width: 10rem;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+.menu .volumes {
+  margin-top: 0.6rem;
+}
+
+.pause-overlay .volumes {
+  min-width: 16rem;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+/* A bot's level as ten pips beside its choice (lobby.ts). */
+.seats .pips {
+  display: inline-flex;
+  gap: 2px;
+  margin-left: auto;
+  margin-right: 0.5rem;
+}
+
+.seats .pips i {
+  width: 4px;
+  height: 10px;
+  background: var(--edge);
+}
+
+.seats .pips i.on {
+  background: var(--accent);
+}

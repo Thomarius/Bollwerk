@@ -72,6 +72,16 @@ describe('lobby', () => {
     expect(rows(html)[2]).toContain(`d="${SHAPE_PATHS.plus}" fill="#d8a020"`);
   });
 
+  it('shows each bot seat’s level as pips, filled up to it, to the host and guests alike', () => {
+    const table = view({ bots: [5, 3, 8, 10] });
+    for (const html of [lobbyMarkup(table), lobbyMarkup({ ...table, humanPlayer: 1 })]) {
+      const pips = (row: string): number => row.split('<i class="on"></i>').length - 1;
+      expect(pips(rows(html)[1] ?? '')).toBe(3);
+      expect(pips(rows(html)[2] ?? '')).toBe(8);
+      expect(rows(html)[3]).toContain('title="Level 10"');
+    }
+  });
+
   it('shows the map, and lets only the host draw another', () => {
     const asHost = lobbyMarkup(view());
     expect(asHost).toContain('id="map-preview"');

@@ -1,5 +1,6 @@
 import { escape } from './lobby.js';
 import { saveEffects, storedEffects, type EffectsLevel } from './motion.js';
+import { refreshVolumeSliders, volumeSliders, type VolumeTarget } from './volume.js';
 
 /**
  * Pausing a match: a button beside the Sound switch, Esc, and an overlay saying who
@@ -31,6 +32,8 @@ export interface PauseActions {
   setMuted(muted: boolean): void;
   /** The menu's click. */
   click(): void;
+  /** The music and sounds volumes, for the sliders. */
+  volumes: VolumeTarget;
 }
 
 /** The Effects choices as the main menu names them. */
@@ -47,6 +50,7 @@ export class PauseControls {
   private readonly sound: HTMLButtonElement;
   private readonly leaving: HTMLButtonElement;
   private readonly glowNote: HTMLElement;
+  private readonly sliders: HTMLElement;
   /** What the line says, so the DOM is touched only when it changes. */
   private shown: string | null = null;
   private paused = false;
@@ -89,6 +93,8 @@ export class PauseControls {
     this.sound = this.overlay.querySelector<HTMLButtonElement>('.sound')!;
     this.leaving = this.overlay.querySelector<HTMLButtonElement>('.leave-match')!;
     this.glowNote = this.overlay.querySelector<HTMLElement>('.glow-note')!;
+    this.sliders = volumeSliders(actions.volumes);
+    this.overlay.querySelector('.settings')?.after(this.sliders);
     const effects = this.overlay.querySelector<HTMLSelectElement>('.effects')!;
     const glowAtStart = storedEffects() === 'high';
 
@@ -144,6 +150,7 @@ export class PauseControls {
       // As the menu opens: the settings as they stand, and the leave asked for afresh.
       this.overlay.querySelector<HTMLSelectElement>('.effects')!.value = storedEffects();
       this.showSound();
+      refreshVolumeSliders(this.sliders, this.actions.volumes);
       this.leaving.classList.remove('confirm');
       this.leaving.textContent = 'Leave match';
     }

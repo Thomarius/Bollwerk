@@ -40,6 +40,7 @@ import { matchShapes, playerShape, useMatchShapes } from './shapes.js';
 import { NetworkBadge, type NetworkReading } from './network.js';
 import { howToPlaySeen, openHowToPlay } from './howToPlay.js';
 import { WatchingStrip } from './watching.js';
+import { volumeSliders } from './volume.js';
 import { stylePreview } from './stylePreview.js';
 import { escape, lobbyMarkup, type LobbyView } from './lobby.js';
 import { REFRESH_MS, gamesMarkup, joinRefusedNotice, parseRoomList } from './browser.js';
@@ -457,6 +458,8 @@ function showMenu(notice: string | null = null): void {
   const combatField = document.querySelector<HTMLSelectElement>('#combat-style');
   if (combatField) combatField.value = styles.combat;
   const effectsField = document.querySelector<HTMLSelectElement>('#effects');
+  // The two volumes, under the looks and Effects (PLAN 11.18 Y4).
+  effectsField?.closest('label')?.after(volumeSliders(audio));
   if (effectsField) {
     effectsField.value = storedEffects();
     effectsField.addEventListener('change', () =>
@@ -1306,6 +1309,7 @@ async function runSession(session: Session, setup: Setup): Promise<void> {
       audio.setMuted(muted);
       showSoundButton();
     },
+    volumes: audio,
     click: () => audio.play('select'),
   });
   // Beside Pause, online only: the connection, where a player will see it.

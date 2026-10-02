@@ -3705,3 +3705,12 @@ executable. How to cut a release goes into CLAUDE.md.
   through Y2's leave. Not for a spectator, and gone at game over, where the summary has its
   own button. Whether it shows is a pure function (`watchingText`), tested; seen in the
   `knocked-out` scene, clear of the corner's buttons and the island's own banner.
+- **Y4, volumes and levels**: two sliders, **Music** and **Sounds** — not "Effects", the
+  visual setting's name — under the looks in the menu and in the pause menu, 0 to 100,
+  each over the manifest's own levels, which stay the mix. Music and sounds each pass
+  through a bus of their own under the master, so a slider moves a whole kind at once;
+  the corner switch stays the mute, giving the volumes back as they were. Saved in the
+  browser (`parseVolume` reads them back, tested), and the pause menu shows them as they
+  stand when it opens. The sounds slider clicks at its new level when let go. In the
+  lobby a bot seat's level shows as ten pips beside its choice, to the host and guests
+  alike (tested), so a glance down the seats tells how hard a table is.

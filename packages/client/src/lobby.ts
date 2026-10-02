@@ -153,6 +153,15 @@ function seatBadge(view: LobbyView, index: number): string {
  * A bot's level: a choice of Level 1 to 10 for the host — as arcade games number them,
  * where the military ranks before were hard to read — and a tag for everyone else.
  */
+/**
+ * A bot's level as pips beside its choice (PLAN 11.18 Y4): ten, filled up to the level, so a
+ * glance down the seats tells how hard a table is without reading a number in each.
+ */
+export function levelPips(level: number): string {
+  const pips = LEVELS.map((n) => `<i${n <= level ? ' class="on"' : ''}></i>`).join('');
+  return `<span class="pips" title="Level ${level}" aria-hidden="true">${pips}</span>`;
+}
+
 function levelControl(
   level: number,
   isHost: boolean,
@@ -160,9 +169,9 @@ function levelControl(
   label_: string,
   withPerson = false,
 ): string {
-  if (!isHost) return `<em class="tag level">Level ${level}</em>`;
+  if (!isHost) return `<em class="tag level">Level ${level}</em>${levelPips(level)}`;
   const person = withPerson ? '<option value="">You play</option>' : '';
-  return `<select ${attributes} aria-label="${label_}">${person}${LEVELS.map(
+  return `${levelPips(level)}<select ${attributes} aria-label="${label_}">${person}${LEVELS.map(
     (n) => `<option value="${n}"${n === level ? ' selected' : ''}>Level ${n}</option>`,
   ).join('')}</select>`;
 }

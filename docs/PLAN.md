@@ -929,7 +929,7 @@ back to the main menu — online the seat goes to a bot after the grace, as for 
 watching" — with Back to menu, instead of only their island greying, for the rest of the
 match.
 
-**Y4 — The menu's sound, and the lobby's levels.** Two volume sliders, music and effects,
+**Y4 — The menu's sound, and the lobby's levels — done** (ARCHIVE 11zu). Two volume sliders, music and effects,
 in place of the Sound switch's single on and off (the corner switch stays, as a mute);
 saved with the looks. A bot seat's level shown as pips on its lobby card beside the
 choice, so a glance tells how hard a table is.

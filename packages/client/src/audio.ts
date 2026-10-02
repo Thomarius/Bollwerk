@@ -28,6 +28,33 @@ const CROSSFADE_MS = 600;
 const MUTE_KEY = 'rampart.muted';
 
 /**
+ * The two volumes a player sets in the menu (PLAN 11.18 Y4), music and sounds, each from
+ * 0 to 1 over the manifest's own levels, which stay the mix. Mute is apart from them: the
+ * corner switch silences everything and gives back the volumes as they were.
+ */
+export type VolumeKind = 'music' | 'sounds';
+
+const VOLUME_KEY: Record<VolumeKind, string> = {
+  music: 'rampart.volume.music',
+  sounds: 'rampart.volume.sounds',
+};
+
+/** A stored volume, read back: full when nothing is stored or what is stored is not one. */
+export function parseVolume(stored: string | null | undefined): number {
+  if (stored === null || stored === undefined || stored.trim() === '') return 1;
+  const value = Number(stored);
+  return Number.isFinite(value) ? Math.max(0, Math.min(1, value)) : 1;
+}
+
+function storedVolume(kind: VolumeKind): number {
+  try {
+    return parseVolume(globalThis.localStorage?.getItem(VOLUME_KEY[kind]));
+  } catch {
+    return 1;
+  }
+}
+
+/**
  * Shortest gap between two starts of the same cue.
  *
  * A barrage is a lot of cannons: three players with ten guns each put dozens of shots
@@ -41,6 +68,12 @@ const MIN_REPEAT_MS = 60;
 export class Audio {
   private ctx: AudioContext | null = null;
   private master: GainNode | null = null;
+  /** Music and sounds each through a bus of its own, under the master, for their volumes. */
+  private buses: Record<VolumeKind, GainNode> | null = null;
+  private readonly volumes: Record<VolumeKind, number> = {
+    music: storedVolume('music'),
+    sounds: storedVolume('sounds'),
+  };
 
   /** Decoded buffers by file path. A null entry is a file known not to be there. */
   private readonly buffers = new Map<string, AudioBuffer | null>();
@@ -61,6 +94,25 @@ export class Audio {
     return this.muted;
   }
 
+  volume(kind: VolumeKind): number {
+    return this.volumes[kind];
+  }
+
+  /** Sets a volume, 0 to 1, at once and for later visits. */
+  setVolume(kind: VolumeKind, value: number): void {
+    const level = Math.max(0, Math.min(1, value));
+    this.volumes[kind] = level;
+    try {
+      globalThis.localStorage?.setItem(VOLUME_KEY[kind], String(level));
+    } catch {
+      // Storage refused: the volume holds for this page only.
+    }
+    const bus = this.buses?.[kind];
+    if (bus !== undefined && this.ctx !== null) {
+      bus.gain.setTargetAtTime(level, this.ctx.currentTime, 0.03);
+    }
+  }
+
   /**
    * Starts the audio context, if a user gesture is in progress.
    *
@@ -76,6 +128,13 @@ export class Audio {
       this.master = this.ctx.createGain();
       this.master.gain.value = this.muted ? 0 : this.manifest.masterVolume;
       this.master.connect(this.ctx.destination);
+      const bus = (kind: VolumeKind): GainNode => {
+        const node = this.ctx!.createGain();
+        node.gain.value = this.volumes[kind];
+        node.connect(this.master!);
+        return node;
+      };
+      this.buses = { music: bus('music'), sounds: bus('sounds') };
     }
     if (this.ctx.state === 'suspended') void this.ctx.resume();
     if (!this.loaded) {
@@ -109,7 +168,7 @@ export class Audio {
 
     const level = this.ctx.createGain();
     level.gain.value = entry.volume * gain;
-    level.connect(this.master);
+    level.connect(this.buses?.sounds ?? this.master);
     const source = this.ctx.createBufferSource();
     source.buffer = buffer;
     source.connect(level);
@@ -144,7 +203,7 @@ export class Audio {
     const gain = this.ctx.createGain();
     gain.gain.value = 0;
     gain.gain.setTargetAtTime(entry.volume, this.ctx.currentTime, CROSSFADE_MS / 3000);
-    gain.connect(this.master);
+    gain.connect(this.buses?.music ?? this.master);
     const source = this.ctx.createBufferSource();
     source.buffer = buffer;
     source.loop = entry.loop;
