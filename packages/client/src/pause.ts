@@ -1,11 +1,16 @@
 import { escape } from './lobby.js';
+import { saveEffects, storedEffects, type EffectsLevel } from './motion.js';
 
 /**
  * Pausing a match: a button beside the Sound switch, Esc, and an overlay saying who
- * paused with a button to resume. For the test sessions anyone at the table may pause and
- * anyone resume, with no limit (PLAN 11.12 F2). Esc is the one keyboard shortcut the game
- * keeps beyond the listed controls, being what games use for this; everything it does
- * also has something on screen to click.
+ * paused. For the test sessions anyone at the table may pause and anyone resume, with no
+ * limit (PLAN 11.12 F2). Esc is the one keyboard shortcut the game keeps beyond the listed
+ * controls, being what games use for this; everything it does also has something on
+ * screen to click.
+ *
+ * The overlay is the match's menu (PLAN 11.18 Y2): Resume, the Effects and Sound settings
+ * as the main menu has them, and Leave match, which asks once more before it goes — one
+ * stray click should not end somebody's match.
  */
 
 /** The overlay's line: who paused, from the viewer's side. */
@@ -15,46 +20,112 @@ export function pauseText(pausedBy: number, humanPlayer: number, names: readonly
   return name === undefined ? 'The match is paused' : `${name} paused the match`;
 }
 
+/** What the pause menu does, given by the match it belongs to. */
+export interface PauseActions {
+  /** Pauses or resumes, for everyone once a server agrees. */
+  toggle(paused: boolean): void;
+  /** Leaves the match for the main menu. */
+  leave(): void;
+  /** The sound's state, shared with the corner switch. */
+  isMuted(): boolean;
+  setMuted(muted: boolean): void;
+  /** The menu's click. */
+  click(): void;
+}
+
+/** The Effects choices as the main menu names them. */
+const EFFECTS: readonly [EffectsLevel, string][] = [
+  ['high', 'Glowing'],
+  ['full', 'Standard'],
+  ['reduced', 'Reduced'],
+];
+
 export class PauseControls {
   private readonly button: HTMLButtonElement;
   private readonly overlay: HTMLDivElement;
-  /** What is on screen, so the DOM is touched only when it changes. */
+  private readonly line: HTMLParagraphElement;
+  private readonly sound: HTMLButtonElement;
+  private readonly leaving: HTMLButtonElement;
+  private readonly glowNote: HTMLElement;
+  /** What the line says, so the DOM is touched only when it changes. */
   private shown: string | null = null;
   private paused = false;
   private over = false;
   private readonly key = (event: KeyboardEvent): void => {
     if (event.key !== 'Escape' || this.over) return;
     event.preventDefault();
-    this.toggle(!this.paused);
+    this.actions.toggle(!this.paused);
   };
 
-  constructor(
-    private readonly toggle: (paused: boolean) => void,
-    private readonly click: () => void = () => {},
-  ) {
+  constructor(private readonly actions: PauseActions) {
     this.button = document.createElement('button');
     this.button.id = 'pause';
     this.button.textContent = 'Pause';
     this.button.title = 'Pause the match for everyone (Esc)';
     this.button.addEventListener('click', () => {
-      this.click();
-      this.toggle(!this.paused);
+      actions.click();
+      actions.toggle(!this.paused);
       // Off the button, so Space or Enter later cannot press it again unseen.
       this.button.blur();
     });
 
+    // Built once and kept: rewriting it while open would replace a control under the mouse.
     this.overlay = document.createElement('div');
     this.overlay.className = 'pause-overlay';
     this.overlay.hidden = true;
-    this.overlay.addEventListener('click', (event) => {
-      if ((event.target as HTMLElement).closest('.resume')) {
-        this.click();
-        this.toggle(false);
+    const options = EFFECTS.map(
+      ([value, name]) => `<option value="${value}">${escape(name)}</option>`,
+    ).join('');
+    this.overlay.innerHTML =
+      `<div class="panel"><strong>Paused</strong><p class="who"></p>` +
+      `<button class="resume">Resume</button>` +
+      `<div class="settings">` +
+      `<label>Effects <select class="effects">${options}</select></label>` +
+      `<button class="sound quiet"></button>` +
+      `</div><small class="glow-note" hidden>Glowing takes effect from the next match.</small>` +
+      `<button class="leave-match quiet">Leave match</button>` +
+      `<small>or press Esc to resume</small></div>`;
+    this.line = this.overlay.querySelector<HTMLParagraphElement>('.who')!;
+    this.sound = this.overlay.querySelector<HTMLButtonElement>('.sound')!;
+    this.leaving = this.overlay.querySelector<HTMLButtonElement>('.leave-match')!;
+    this.glowNote = this.overlay.querySelector<HTMLElement>('.glow-note')!;
+    const effects = this.overlay.querySelector<HTMLSelectElement>('.effects')!;
+    const glowAtStart = storedEffects() === 'high';
+
+    this.overlay.querySelector('.resume')?.addEventListener('click', () => {
+      actions.click();
+      actions.toggle(false);
+    });
+    // Motion takes effect at once; the glow is a filter chosen as a match's looks are made.
+    effects.addEventListener('change', () => {
+      actions.click();
+      const level = (EFFECTS.find(([value]) => value === effects.value)?.[0] ??
+        'full') as EffectsLevel;
+      saveEffects(level);
+      this.glowNote.hidden = (level === 'high') === glowAtStart;
+    });
+    this.sound.addEventListener('click', () => {
+      actions.setMuted(!actions.isMuted());
+      actions.click();
+      this.showSound();
+    });
+    this.leaving.addEventListener('click', () => {
+      actions.click();
+      if (this.leaving.classList.contains('confirm')) {
+        actions.leave();
+        return;
       }
+      this.leaving.classList.add('confirm');
+      this.leaving.textContent = 'Really leave? Click again';
     });
 
     document.body.append(this.button, this.overlay);
     globalThis.addEventListener('keydown', this.key);
+  }
+
+  private showSound(): void {
+    this.sound.textContent = this.actions.isMuted() ? 'Sound off' : 'Sound on';
+    this.sound.classList.toggle('off', this.actions.isMuted());
   }
 
   /** Called every frame with the match as it stands. */
@@ -65,13 +136,17 @@ export class PauseControls {
     this.button.textContent = this.paused ? 'Resume' : 'Pause';
     const text = pausedBy === null || over ? null : pauseText(pausedBy, humanPlayer, names);
     if (text === this.shown) return;
+    const opening = this.shown === null && text !== null;
     this.shown = text;
     this.overlay.hidden = text === null;
-    this.overlay.innerHTML =
-      text === null
-        ? ''
-        : `<div class="panel"><strong>Paused</strong><p>${escape(text)}</p>` +
-          `<button class="resume">Resume</button><small>or press Esc</small></div>`;
+    this.line.textContent = text ?? '';
+    if (opening) {
+      // As the menu opens: the settings as they stand, and the leave asked for afresh.
+      this.overlay.querySelector<HTMLSelectElement>('.effects')!.value = storedEffects();
+      this.showSound();
+      this.leaving.classList.remove('confirm');
+      this.leaving.textContent = 'Leave match';
+    }
   }
 
   destroy(): void {

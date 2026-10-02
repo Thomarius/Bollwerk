@@ -144,6 +144,9 @@ globalThis.addEventListener('keydown', unlock, { capture: true });
  * "m" was typed in the lobby — silenced every later visit with nothing on screen to say
  * so, and nothing outside a match to undo it.
  */
+/** Brings the corner switch up to date, for when the pause menu changes the sound. */
+let showSoundButton: () => void = () => undefined;
+
 function installSoundButton(): void {
   const button = document.createElement('button');
   button.id = 'sound';
@@ -157,6 +160,7 @@ function installSoundButton(): void {
     show();
   });
   show();
+  showSoundButton = show;
   document.body.append(button);
 }
 installSoundButton();
@@ -234,6 +238,11 @@ interface Session {
   status(): string;
   /** The connection, for the badge beside Pause; null for a match on this computer. */
   network(): NetworkReading | null;
+  /**
+   * Leaving for the menu: online the connection closes, so the seat goes to a bot after
+   * the grace a dropped player gets (§6), and no ping is left running behind the menu.
+   */
+  leave(): void;
 }
 
 // ------------------------------------------------------------------------ menu
@@ -550,6 +559,7 @@ function localSession(match: LocalMatch): Session {
     setups: match.setups,
     status: () => (match.humanPlayer < 0 ? 'watching' : ''),
     network: () => null,
+    leave: () => undefined,
   };
 }
 
@@ -1020,6 +1030,7 @@ function networkSession(
       behind: match.behind,
       desynced: match.desynced,
     }),
+    leave: () => connection.close(),
   };
 }
 
@@ -1276,17 +1287,26 @@ async function runSession(session: Session, setup: Setup): Promise<void> {
   // No hidden keys: the end screen has a button back to the menu, and sound its switch in
   // the corner. R once did the first and M the second, unannounced, at the user's request
   // removed — a stray key press should not do something nobody was told about.
-  hud.onLeave(() => {
+  const leaveMatch = (): void => {
     audio.play('select');
+    session.leave();
     cleanup();
     showMenu();
-  });
+  };
+  hud.onLeave(leaveMatch);
 
   // Anyone may pause, and anyone resume: Esc, or the button beside the Sound switch.
-  const pause = new PauseControls(
-    (paused) => session.setPaused(paused),
-    () => audio.play('select'),
-  );
+  // Paused, the overlay is the match's menu: the settings, and a way out (PLAN 11.18 Y2).
+  const pause = new PauseControls({
+    toggle: (paused) => session.setPaused(paused),
+    leave: leaveMatch,
+    isMuted: () => audio.isMuted,
+    setMuted: (muted) => {
+      audio.setMuted(muted);
+      showSoundButton();
+    },
+    click: () => audio.play('select'),
+  });
   // Beside Pause, online only: the connection, where a player will see it.
   const badge = session.network() === null ? null : new NetworkBadge();
 

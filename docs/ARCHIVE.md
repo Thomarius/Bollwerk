@@ -3688,3 +3688,14 @@ executable. How to cut a release goes into CLAUDE.md.
   six-fold slower still too quick to photograph, since a screenshot waits for a frame and
   the first frame is what removes it; its look was checked by placing the same markup over
   the menu.
+- **Y2, the pause menu**: the pause overlay is the match's menu — Resume; Effects, taking
+  effect at once but for the glow, a filter made with a match's looks, which says it comes
+  with the next match; Sound, kept in step with the corner switch; and **Leave match**,
+  which asks once more ("Really leave? Click again", in the warning colour) before it
+  goes, since one stray click should not end a match. The panel is built once and only
+  its line about who paused is rewritten, as a control replaced under the mouse never
+  takes the click (10v). Leaving goes through the session: online the connection now
+  closes, so the seat goes to a bot after the grace a drop gets — and the end screen's
+  Back to menu, which left the socket open with its ping behind the menu, does the same.
+  From the first screenshot: a rule giving every `small` in the overlay a display showed
+  the hidden glow note, and the hover colour beat the warning one; both fixed.

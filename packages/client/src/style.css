@@ -2152,3 +2152,74 @@ body.reduced-effects .preparing .blocks i {
   animation: none;
   opacity: 0.7;
 }
+
+/* The pause menu (pause.ts): the settings and Leave match under Resume. */
+.pause-overlay .panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+  align-items: center;
+  min-width: 20rem;
+}
+
+.pause-overlay p {
+  margin: 0.2rem 0 0.4rem;
+}
+
+.pause-overlay .settings {
+  display: flex;
+  gap: 0.8rem;
+  align-items: center;
+  margin-top: 0.4rem;
+  padding-top: 0.9rem;
+  border-top: 1px solid var(--edge);
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.pause-overlay .settings select {
+  margin-left: 0.4rem;
+  padding: 0.25rem 0.4rem;
+  border: 1px solid var(--edge);
+  background: #12131c;
+  color: var(--ink);
+  font: inherit;
+}
+
+.pause-overlay button.quiet {
+  padding: 0.35rem 0.9rem;
+  border: 1px solid var(--edge);
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.pause-overlay button.quiet:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.pause-overlay .leave-match {
+  margin-top: 0.3rem;
+}
+
+/* Asking once more, in the warning colour, before the match is left — under the mouse too. */
+.pause-overlay .leave-match.confirm,
+.pause-overlay .leave-match.confirm:hover {
+  border-color: #ff5a62;
+  color: #ff8a90;
+}
+
+.pause-overlay small {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+/* The rule above gives every small a display, which would show a hidden one. */
+.pause-overlay small[hidden] {
+  display: none;
+}

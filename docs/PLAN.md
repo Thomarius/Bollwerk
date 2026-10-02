@@ -920,7 +920,7 @@ only. Packages in order, the small ones first:
 the looks are built, so a pause that grows with the visuals never reads as a freeze —
 today it is about a second (ARCHIVE 11zg). Taken down at the first frame drawn.
 
-**Y2 — The pause menu.** The pause overlay becomes a menu: Resume; the Effects and Sound
+**Y2 — The pause menu — done** (ARCHIVE 11zu). The pause overlay becomes a menu: Resume; the Effects and Sound
 settings, as in the main menu, taking effect at once where they can; and **Leave match**,
 back to the main menu — online the seat goes to a bot after the grace, as for any drop
 (§6). The end screen's Back to menu stays.
