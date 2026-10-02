@@ -925,7 +925,7 @@ settings, as in the main menu, taking effect at once where they can; and **Leave
 back to the main menu — online the seat goes to a bot after the grace, as for any drop
 (§6). The end screen's Back to menu stays.
 
-**Y3 — Out, and watching.** A player knocked out sees a quiet strip — "You're out —
+**Y3 — Out, and watching — done** (ARCHIVE 11zu). A player knocked out sees a quiet strip — "You're out —
 watching" — with Back to menu, instead of only their island greying, for the rest of the
 match.
 

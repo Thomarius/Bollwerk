@@ -2223,3 +2223,43 @@ body.reduced-effects .preparing .blocks i {
 .pause-overlay small[hidden] {
   display: none;
 }
+
+/* Out, and watching (watching.ts): at the bottom, in the middle, clear of the corner's
+   buttons and the board's own banners. */
+.watching {
+  position: fixed;
+  left: 50%;
+  bottom: 0.9rem;
+  z-index: 5;
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  padding: 0.45rem 0.6rem 0.45rem 1.1rem;
+  border: 1px solid var(--edge);
+  background: rgb(10 10 18 / 85%);
+  color: var(--muted);
+  font-size: 13px;
+  letter-spacing: 0.08em;
+  transform: translateX(-50%);
+}
+
+.watching[hidden] {
+  display: none;
+}
+
+.watching button {
+  padding: 0.3rem 0.9rem;
+  border: 1px solid var(--accent);
+  background: transparent;
+  color: var(--accent);
+  font: inherit;
+  font-size: 12px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.watching button:hover {
+  background: var(--accent);
+  color: #0a0a12;
+}

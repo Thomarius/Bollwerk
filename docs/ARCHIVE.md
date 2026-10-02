@@ -3699,3 +3699,9 @@ executable. How to cut a release goes into CLAUDE.md.
   Back to menu, which left the socket open with its ping behind the menu, does the same.
   From the first screenshot: a rule giving every `small` in the overlay a display showed
   the hidden glow note, and the hover colour beat the warning one; both fixed.
+- **Y3, out and watching**: once a player is knocked out — their team, in a team match — a
+  strip at the bottom of the screen says "You're out — watching" ("Your team is out —
+  watching") with **Back to menu**, which leaves at once, there being nothing left to lose,
+  through Y2's leave. Not for a spectator, and gone at game over, where the summary has its
+  own button. Whether it shows is a pure function (`watchingText`), tested; seen in the
+  `knocked-out` scene, clear of the corner's buttons and the island's own banner.

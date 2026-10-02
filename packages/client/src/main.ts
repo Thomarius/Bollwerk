@@ -39,6 +39,7 @@ import { matchPalette, playerCssColour, useMatchPalette } from './colours.js';
 import { matchShapes, playerShape, useMatchShapes } from './shapes.js';
 import { NetworkBadge, type NetworkReading } from './network.js';
 import { howToPlaySeen, openHowToPlay } from './howToPlay.js';
+import { WatchingStrip } from './watching.js';
 import { stylePreview } from './stylePreview.js';
 import { escape, lobbyMarkup, type LobbyView } from './lobby.js';
 import { REFRESH_MS, gamesMarkup, joinRefusedNotice, parseRoomList } from './browser.js';
@@ -1309,6 +1310,8 @@ async function runSession(session: Session, setup: Setup): Promise<void> {
   });
   // Beside Pause, online only: the connection, where a player will see it.
   const badge = session.network() === null ? null : new NetworkBadge();
+  // Out, and watching, with the way back to the menu (PLAN 11.18 Y3).
+  const watching = new WatchingStrip(leaveMatch);
 
   let frame = 0;
   const cleanup = (): void => {
@@ -1316,6 +1319,7 @@ async function runSession(session: Session, setup: Setup): Promise<void> {
     controls.detach();
     pause.destroy();
     badge?.destroy();
+    watching.destroy();
     globalThis.removeEventListener('resize', fit);
     scene.app.destroy(true);
   };
@@ -1703,6 +1707,7 @@ async function runSession(session: Session, setup: Setup): Promise<void> {
     drawTransition();
     drawIslandBanners();
     hud.update(session.state, session.humanPlayer, session.status());
+    watching.update(session.state, session.humanPlayer);
     const reading = session.network();
     if (reading !== null) badge?.update(reading, session.state.ruleset.tickRateHz);
 
