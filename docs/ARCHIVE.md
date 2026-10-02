@@ -3516,3 +3516,164 @@ CLAUDE.md.
   cancelled with it. The Linux executable is `rampart` now, with a desktop name so the
   window is linked to its launcher. Found by running the Linux packaging on Windows, which
   goes as far as an AppImage's symlinks before Windows refuses them.
+
+## 11zt. The desktop app checked, and finished work moved out of the plan (2026-10-02)
+
+**A5, the desktop app checked on both systems**: the user ran the release workflow by hand
+for 0.1.0 and tried both files — the portable `.exe` on Windows 11 and the `.AppImage` on
+Linux Mint. Games were hosted and joined across the LAN, the next port was offered and
+taken when the first was in use, and the game ran perfectly. The same session found the
+hosts' delay on every click gone (11zg). With that, 11.17 is done, and the desktop app is
+milestone M14. How to cut a release, and to build the file locally, is in CLAUDE.md and
+the README.
+
+As 11h, 11w and 11zd: PLAN keeps only open work, so its finished sections moved here as
+they stood, under their old numbers — the third visual pass (11zf, 11zh), help for new
+players, the menu and the sea (11zk–11zn), and the desktop app (11zp–11zs).
+
+### Formerly PLAN 11.15 Third visual pass — agreed 2026-09-30
+
+Agreed with the user from a list of suggestions; left out: points rising from each wall
+block your shot breaks (too messy), "Double!" callouts for sealing several castles with
+one piece, and "Just in time!" for a late seal (not needed). Display only, like 11.8–11.11:
+no sim, protocol or ruleset change, so nothing can desync or move a balance measurement.
+The same discipline: anything timed is a pure function with tests, scenes go into
+`tools/screenshots.sh`, tunables go in `art.default.json`, anything under a second is left
+for a person to see, and §7's rules hold — a player keeps their hue, information stays
+readable, land, sea, wall and sealed ground tell apart.
+
+Packages in order. X1 first, since X6's shapes need a place in the roster it redesigns;
+the rest are independent.
+
+**X1 — Mouse only, and a roster of points and lives — done** (§7): a card per player,
+colour down its edge, name over a large score and large pips; in Toy bricks the bar is
+rimmed, since the blue player's vanished into the blue plate.
+
+- **The keyboard controls go**: R and E no longer turn the piece; right-click and the
+  wheel do, and every action is on the two mouse buttons. Esc for pause stays, the one
+  exception agreed in F2. CLAUDE.md's rule is rewritten to match.
+- **The roster shows only points and lives**, per player and per team: castles and guns
+  firing go, from the full entry, the compact one and the hover text. The room that frees
+  is spent making the score and the lives stand out — larger figures, the pips larger and
+  the last life louder — and should let eight players fit without a compact form at all.
+  The layout is agreed with the user before building, with screenshots at two, four and
+  eight players, free-for-all and teams.
+
+**X2 — Information on the board — done** (§7). The breached crown was first the dark
+shade of the owner's colour and vanished into a castle of that colour; it is stone grey.
+The ring preview asks the sim's own `startingRingTiles`, which builds the ring.
+
+- **The crown shows the main castle's state**: bright while it is sealed, dimmed and
+  cracked once it is breached, still always shown. In the combat look it follows the
+  enclosure held through combat, as every other sign of "sealed" does.
+- **The ring before the choice**: hovering a castle while choosing — at the start or after
+  a continue — shows faintly, in the player's colour, the ring it would get.
+- **Unsealed at the end**: while nothing of the player's is sealed, their castles are
+  outlined already (`hints.ts`); over the countdown's last five seconds that outline pulses
+  red with each tick.
+- **Guns earned** in the island's points banner at a resolution: "+3 guns" beside the
+  points, since today they show only when the cannon phase opens.
+
+**X3 — Ground lost, drained — done** (§7). Begun together as the banner appeared, the
+upper islands had drained before the lower ones were revealed: each island's drain waits,
+wholly washed, until the banner's line reaches it (`releaseDrains`). As the "Rebuild" banner reveals the build look, territory
+lost to breaches drains away from the gaps in a dark red wash — the seal flood run in
+reverse (`seal.ts`), in every style.
+
+**X4 — Moments and small atmosphere — done** (§7).
+
+- **The winners' banners**: large banners in the winners' colours rise over their castles
+  with the fireworks, which the camera's push lands on.
+- **Distant thunder** in Medieval's rain: a rare, faint flash across the sky, never
+  mistakable for an impact; none under reduced motion.
+- **Embers** drifting at the screen's edges through the final round, with its dusk; none
+  under reduced motion.
+
+**X5 — Medieval light — done** (§7). Adding snow to the odds moved which seed gives
+which weather: 1 rain, 2 snow, 3 fog, 5 clear, 21 overcast, as the screenshot scenes now
+say.
+
+- **Reflections**: castles and walls mirrored faintly in the sea tiles beside the coast,
+  rippling; Night's torches too.
+- **Shadows by the time of day**: short at noon, long toward the morning and sunset
+  rounds, with the daylight tint that already changes by round.
+- **Snow**, as one of Medieval's seeded weathers (`weatherOdds`): falling flakes and white
+  edges on walls and castles. Not a style of its own.
+
+**X6 — A shape per player — done** (§7, ARCHIVE 11zh). Beside colour, each player carries
+a shape on the roster, the island banners, the "You are here" marker, the lobby's seat
+cards and map, the summary's table and the ends of its chart's lines, so eight players
+and colour-blind players can tell islands apart. **Off the board only**, the user's
+decision of 2026-09-30. Decided 2026-10-01: plain geometric shapes, and in a team match
+one shape per team, so teams tell apart without colour.
+
+**The third visual pass is done**: X1–X5 in ARCHIVE 11zf, X6 in 11zh.
+
+### Formerly PLAN 11.16 New players, the menu and the sea — agreed 2026-10-01
+
+Chosen by the user from a list of suggestions; left out for now: hovering a roster card to
+light its island, a "Preparing the board" overlay, a rematch, volume sliders, first-match
+hints and guns that glow while their shot still counts. Display only, with the discipline
+of 11.15. In this order:
+
+**O1 — Ocean life in every style — done** (§7, ARCHIVE 11zk). The testers praised the land's
+scenery; the sea gets its own in every style, each design chosen by the user.
+
+**H1 — How to play — done** (§7, ARCHIVE 11zl). Seven pages of pictures and a line each,
+from the menu's button only — the words and pages approved by the user, whose rule was
+as few words as possible.
+
+**S1 — Style previews — done** (§7, ARCHIVE 11zm).
+
+**I1 — A livelier scoreboard between rounds — done** (§7, ARCHIVE 11zn). To be judged in
+the next test session.
+
+**11.16 is done**: O1, H1, S1 and I1 in ARCHIVE 11zk–11zn.
+
+### Formerly PLAN 11.17 A desktop app for releases — agreed 2026-10-01
+
+**The goal**: the game as one portable file for Linux Mint and Windows 11, which starts and
+stops the server as `npm start` does, behind a minimal window — so a host needs no Node, no
+repository and no terminal. Decided with the user: **Electron**, accepting a file of about
+100–150 MB; **portable** files only, a single `.exe` for Windows and an `.AppImage` for
+Linux, no installers; no recordings button, since recordings are for internal analysis
+and tuning only. **Built on demand for major versions, never for every change**: `npm start`
+and the Docker image stay the way the game is run day to day.
+
+No rule, protocol or sim change: a packaged server is the same server, and a page it serves
+plays exactly as one `npm start` serves. Packages in order:
+
+**A1 — The server as something a program can start and stop — done** (ARCHIVE 11zp).
+As planned: `main.ts` bound the
+moment it loads. It becomes a thin command line over `startServer(options)`, returning the
+addresses it serves on and a `stop()` that closes every socket and room, so `npm start`
+behaves as before. The options carry what is found today by walking up from the server's
+own file (`paths.ts`): where `config/` and the built client are, which a packaged app keeps
+in its resources; where recordings go, which must be a writable folder of the user's
+(`%APPDATA%` on Windows, `~/.config` on Linux), since an installed app — an AppImage above
+all — cannot write inside itself; and the port. A port already taken is reported as such
+rather than thrown. Tested in process: start, a client joins, stop, start again on the same
+port.
+
+**A2 — The window — done** (ARCHIVE 11zq). As planned (`packages/desktop`, Electron): Start and Stop; whether it is running;
+the addresses other players open, as `npm start` prints them (`openableUrls`), each with a
+copy button; **Open in browser**; and **Play here**, the game in the app's own window for
+the host. Closing the window stops the server. A taken port says so and offers another.
+Mouse only, as everywhere (CLAUDE.md). The commit is stamped as the image stamps it
+(`RAMPART_COMMIT`), so recordings made through the app replay against the right code.
+
+**A3 — Packaging — done** (ARCHIVE 11zr). electron-builder, from `npm run build`'s output: the bundled server, the
+built client, `config/` and the audio as resources; a Windows portable `.exe` and a Linux
+`.AppImage`. One script, `npm run package`, builds the file for the machine it runs on, so a
+Windows build can be made here; the version is the release's.
+
+**A4 — Release builds on demand — written** (ARCHIVE 11zs; its first run is A5's). A GitHub Actions workflow run by hand (`workflow_dispatch`)
+or by pushing a version tag, building both files on their own systems and attaching them to
+a GitHub release. Never on an ordinary push: CI's existing jobs are untouched.
+
+**A5 — Checked on both systems — done** (2026-10-02, ARCHIVE 11zt). The user on Linux Mint, this machine on Windows: start,
+another machine on the LAN joins and plays, stop, start again, a second copy finding the
+port taken. Known and accepted: Windows SmartScreen warns of an unknown publisher until the
+file is signed, which needs a paid certificate and is not planned; Windows Firewall asks
+once whether to allow the network, which LAN play needs; an AppImage must be marked
+executable. How to cut a release goes into CLAUDE.md.

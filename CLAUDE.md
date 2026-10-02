@@ -22,7 +22,7 @@ npm start     -w @rampart/headless -- --matches 8 --players 3 --level 5 --stats 
 npm start     -w @rampart/headless -- --map --players 3 --seed 2   # print a map as ASCII
 npm start     -w @rampart/headless -- --replay recordings/ --stats human.csv   # recorded human play
 tools/screenshots.sh /tmp/shots [scene...]   # client in fixed states, against the dev server
-npm start     -w @rampart/desktop   # the desktop app (PLAN 11.17), after npm run build
+npm start     -w @rampart/desktop   # the desktop app, after npm run build
 npm run package -w @rampart/desktop # its portable file for this system, into packages/desktop/release/
 ```
 
@@ -43,17 +43,17 @@ rounds.
 
 ## Layout
 
-| Package          | Contents                                                                    |
-| ---------------- | --------------------------------------------------------------------------- |
-| `config`         | Zod schemas, typed defaults, cross-file validation. Reads `config/*.json`.  |
-| `sim`            | The deterministic game core. No DOM, no Node, no I/O.                       |
-| `protocol`       | Wire messages and validators.                                               |
-| `ai`             | Bots: min-cut sealing, 0-1 BFS attack, skill levels and personalities.      |
-| `analysis`       | Per-round match statistics, for bot soaks and recorded human play alike.    |
-| `server`         | Authoritative match server, rooms, WebSocket, match recordings.             |
-| `client`         | Pixi renderer, seven visual styles, controls, HUD, netcode client.          |
-| `desktop`        | Electron app for releases: the server behind a minimal window (PLAN 11.17). |
-| `tools/headless` | Bot-vs-bot soak runs and map dumps.                                         |
+| Package          | Contents                                                                   |
+| ---------------- | -------------------------------------------------------------------------- |
+| `config`         | Zod schemas, typed defaults, cross-file validation. Reads `config/*.json`. |
+| `sim`            | The deterministic game core. No DOM, no Node, no I/O.                      |
+| `protocol`       | Wire messages and validators.                                              |
+| `ai`             | Bots: min-cut sealing, 0-1 BFS attack, skill levels and personalities.     |
+| `analysis`       | Per-round match statistics, for bot soaks and recorded human play alike.   |
+| `server`         | Authoritative match server, rooms, WebSocket, match recordings.            |
+| `client`         | Pixi renderer, seven visual styles, controls, HUD, netcode client.         |
+| `desktop`        | Electron app for releases: the server behind a minimal window (M14).       |
+| `tools/headless` | Bot-vs-bot soak runs and map dumps.                                        |
 
 Internal packages export TypeScript source directly, so there is no build step between
 them. The production image bundles the server with esbuild; development never does.
@@ -127,7 +127,7 @@ Full detail in PLAN.md §1. The parts that surprise people:
 
 ## Status
 
-**Done** (2026-09-30): the game and its rules, online play with rooms, a games browser and
+**Done** (2026-10-02): the game and its rules, online play with rooms, a games browser and
 pause, recording of every match (ARCHIVE 11e, each header stamped with the server's
 commit), team mode (ARCHIVE 10u), bots as a skill level 1–10 chosen in the lobby and a
 personality — risk, targeting, cannon space — dealt from the seed and revealed at game over
@@ -135,8 +135,11 @@ personality — risk, targeting, cannon space — dealt from the seed and reveal
 two rounds of test-session feedback (ARCHIVE 11n–11w, 11ze), and a third visual pass
 (PLAN 11.15, ARCHIVE 11zf, 11zh): mouse-only play, a roster of points and lives, the
 main castle's crown, ground lost drained away, winners' banners, snow, shadows by the time
-of day, and a shape per player beside their colour, off the board. Online clients catch up
-on the server at once (ARCHIVE 11zg), the fix for the hosts' delay on every click. The game is played with the mouse alone; Esc for pause is the one key. Deployment is verified by a
+of day, and a shape per player beside their colour, off the board; help for new players —
+How to play, a picture of each look in the menu, the ranking between rounds — and life on
+the sea in every style (PLAN 11.16, ARCHIVE 11zk–11zn); and a desktop app for releases, a
+portable file for Windows and Linux (M14, ARCHIVE 11zp–11zt). Online clients catch up on
+the server at once (ARCHIVE 11zg), which ended the hosts' delay on every click. The game is played with the mouse alone; Esc for pause is the one key. Deployment is verified by a
 CI job, since there is no Docker on this machine. Every sound cue is supplied. The protocol
 is 14: a test session needs the server rebuilt and every page reloaded.
 
@@ -158,7 +161,8 @@ exception, beside its button.
 
 ## Making a release
 
-The desktop app (PLAN 11.17) is built for major versions only, never for every change.
+The desktop app (`packages/desktop`, ARCHIVE 11zp–11zt) is built for major versions only,
+never for every change.
 `.github/workflows/release.yml` builds the Windows portable `.exe` and the Linux `.AppImage`
 on their own systems: run it by hand from the Actions tab with a version to get the two
 files as the run's artifacts, to try first; push a tag `v1.2.3` to build them and publish

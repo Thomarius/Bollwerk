@@ -5,14 +5,37 @@ opponents' castle walls, then race to rebuild your own with falling blocks befor
 next barrage. Fail to seal a castle and you lose a life; run out of lives and you are
 out. After ten rounds, the best score among those still standing wins.
 
-- 2–8 players, free-for-all or in equal teams; bots fill any empty seat
+- 2–8 players, free-for-all or in equal teams; bots of ten skill levels fill any empty seat
 - Play alone on your own computer, with friends on your home network, or over the internet
-- Two visual styles — procedural pixel art generated at runtime, and a minimal flat look
+- Seven visual styles — Medieval, Minimal, Night, Cyberpunk, Blueprint, Parchment and Toy
+  bricks — one for building and one for combat, swapped by the banners as in the original
+- Played with the mouse alone; How to play in the menu shows the rules in pictures
 - An authoritative server, with a deterministic simulation shared by client, server and bots
 
 ---
 
-## Play it in three steps
+## Play it with the app
+
+The easiest way to host a game: no Node, no terminal. Download the file for your system
+from the [Releases](https://github.com/Thomarius/RampartRemake/releases) page and run it.
+
+- **Windows 11**: `Rampart-<version>-windows.exe`, a portable file — nothing to install.
+  The file is not signed, so Windows warns of an unknown publisher the first time: choose
+  **More info**, then **Run anyway**.
+- **Linux**: `Rampart-<version>-linux.AppImage`. Mark it executable once — in the file
+  manager's _Properties → Permissions_, or `chmod +x Rampart-*.AppImage` — then open it.
+
+The app starts the game server at once and shows the addresses other players open, each
+with a **Copy** button. **Play here** opens the game in the app's own window; **Open in
+browser** in your browser. If the port is taken — another server already running — it says
+so and offers the next one. Closing the window stops the server.
+
+Everyone else at the table needs only a browser; see [Play with others](#play-with-others)
+for the firewall and the addresses.
+
+---
+
+## Play it from the source
 
 You need **Node.js 22.12 or newer** (24 recommended). Get it from
 [nodejs.org](https://nodejs.org) — the "LTS" download is fine. Then, in a terminal, in
@@ -35,11 +58,13 @@ computer against bots.
 
 ## Play with others
 
-The computer that ran `npm start` is the **host**. Everyone else only needs a browser.
+The computer running the app, or `npm start`, is the **host**. Everyone else only needs a
+browser.
 
 ### On the same network (LAN, Wi-Fi at home)
 
-1. **Find the host's address on the network.**
+1. **Find the host's address on the network.** The app lists it, and so does `npm start`.
+   Otherwise:
    - Windows: open a terminal, run `ipconfig`, and look for **IPv4 Address**, e.g.
      `192.168.1.23`.
    - macOS: _System Settings → Network → Wi-Fi (or Ethernet) → Details_, the **IP address**.
@@ -49,11 +74,12 @@ The computer that ran `npm start` is the **host**. Everyone else only needs a br
      networks.
    - macOS may ask likewise — choose **Allow**.
    - Linux with ufw: `sudo ufw allow 8080/tcp`.
-3. **The host presses Play.** The lobby shows a **room code**, e.g. `AX8ZLU`.
+3. **The host presses Play.** The lobby shows a **room code**, e.g. `AX8ZLU`. A public
+   table is also listed under **Open games** in everyone's menu.
 4. **Everyone else** opens **`http://192.168.1.23:8080`** — the host's address from step 1,
-   then `:8080` — types their name, enters the room code and presses **Join**. Or the host
-   can send them a direct link: `http://192.168.1.23:8080/?join=AX8ZLU&name=Bo` — the
-   `&name=` part sets their name, and without it they join as "Player".
+   then `:8080` — types their name and joins from **Open games**, or enters the room code
+   and presses **Join**. Or the host can send them a direct link:
+   `http://192.168.1.23:8080/?join=AX8ZLU&name=Bo` — the `&name=` part sets their name.
 5. The host sets up the table and presses **Start match**.
 
 Use `http://`, not `https://`. The address has to be the host's network address —
@@ -88,7 +114,8 @@ Good to know:
 - **To test the forward, use a phone on mobile data**, not a device on your own Wi-Fi —
   many routers do not loop connections back to their own public address.
 - To use another port, start with `PORT=3000 npm start` (on Windows PowerShell:
-  `$env:PORT=3000; npm start`) and forward that port instead.
+  `$env:PORT=3000; npm start`) and forward that port instead. The app offers the next port
+  itself when 8080 is taken.
 
 ### On a server, with Docker
 
@@ -133,19 +160,72 @@ See [`docs/PLAN.md`](docs/PLAN.md) for the design and what is still open, and
 measurements behind it, and the attempts that were reverted. `CLAUDE.md` is the short
 orientation.
 
+### The desktop app
+
+The app lives in `packages/desktop`: Electron, with the server and the whole simulation
+bundled into it. To run it from the source, build the game first, then start it:
+
+```bash
+npm run build                       # the client and server the app serves
+node node_modules/electron/install.js   # once, if npm install did not fetch Electron
+npm start -w @rampart/desktop       # opens the app's window
+```
+
+To make the portable file yourself, on the system it is for:
+
+```bash
+npm run build
+npm run package -w @rampart/desktop # → packages/desktop/release/
+```
+
+On Windows that makes `Rampart-<version>-windows.exe`, on Linux
+`Rampart-<version>-linux.AppImage`; each can only be built on its own system. The version
+is the package's own unless `RAMPART_VERSION` says otherwise — `RAMPART_VERSION=1.0.0 npm run package -w @rampart/desktop`, or in PowerShell
+`$env:RAMPART_VERSION='1.0.0'; npm run package -w @rampart/desktop`. `release/` is never
+committed.
+
+### Publishing a release
+
+Releases are made for major versions only, not for every change, by
+`.github/workflows/release.yml`, which builds both files on GitHub — Windows on Windows,
+Linux on Linux.
+
+- **To try a build first**: on GitHub, _Actions → Release → Run workflow_, type a version
+  (e.g. `1.0.0`) and run it. When it finishes, the two files are at the bottom of the
+  run's page under _Artifacts_. Nothing is published.
+- **To publish**: tag the commit with the version, starting with `v`, and push the tag:
+
+  ```bash
+  git tag v1.0.0
+  git push origin v1.0.0
+  ```
+
+  The workflow builds both files and publishes them as the release _Rampart v1.0.0_ on the
+  repository's Releases page, where anyone can download them. Use a new number each time
+  (`v1.0.1`, `v1.1.0`, `v2.0.0`); a tag is meant to be permanent.
+
+- **To withdraw one**: delete the release on the Releases page, then the tag —
+  `git push origin --delete v1.0.0` and `git tag -d v1.0.0`.
+
+Do not create the release through GitHub's _Draft a new release_ page: that makes the tag
+and the release together, and the workflow, started by the tag, then finds its release
+already there and fails. Push the tag, and let the workflow make the release.
+
 ## Layout
 
-| Path                | Contents                                             |
-| ------------------- | ---------------------------------------------------- |
-| `config/`           | Every tunable in the game, as JSON                   |
-| `packages/config`   | Schemas, typed defaults, cross-file validation       |
-| `packages/sim`      | Deterministic game core — no DOM, no Node, no I/O    |
-| `packages/protocol` | Wire message types and validators                    |
-| `packages/ai`       | Bot logic                                            |
-| `packages/server`   | Authoritative match server                           |
-| `packages/client`   | Renderer, UI, lobby, procedural asset generators     |
-| `tools/headless`    | Bot-vs-bot harness for balance tuning and soak tests |
-| `assets/audio`      | Audio cues (missing files are silent)                |
+| Path                | Contents                                                    |
+| ------------------- | ----------------------------------------------------------- |
+| `config/`           | Every tunable in the game, as JSON                          |
+| `packages/config`   | Schemas, typed defaults, cross-file validation              |
+| `packages/sim`      | Deterministic game core — no DOM, no Node, no I/O           |
+| `packages/protocol` | Wire message types and validators                           |
+| `packages/ai`       | Bot logic                                                   |
+| `packages/analysis` | Per-round match statistics, for bot soaks and recorded play |
+| `packages/server`   | Authoritative match server                                  |
+| `packages/client`   | Renderer, UI, lobby, procedural asset generators            |
+| `packages/desktop`  | The desktop app for releases: the server behind a window    |
+| `tools/headless`    | Bot-vs-bot harness for balance tuning and soak tests        |
+| `assets/audio`      | Audio cues                                                  |
 
 ## Configuration
 
@@ -156,17 +236,20 @@ ruleset to every client in the match snapshot, so all of them run one identical 
 
 ## Status
 
-| Milestone                                    | State                    |
-| -------------------------------------------- | ------------------------ |
-| M0 — scaffold, config schemas, CI            | Done                     |
-| M1 — simulation core                         | Done                     |
-| M2 — locally playable, placeholder art       | Done                     |
-| M3 — procedural art                          | Done                     |
-| M4 — online multiplayer                      | Done                     |
-| M5 — AI opponents                            | Done                     |
-| M6 — full scope, 2–8 players, deployment     | Done but for audio files |
-| M7 — balance pass                            | In progress              |
-| M8 — team mode, one lobby online and offline | Done                     |
+| Milestone                                       | State       |
+| ----------------------------------------------- | ----------- |
+| M0 — scaffold, config schemas, CI               | Done        |
+| M1 — simulation core                            | Done        |
+| M2 — locally playable, placeholder art          | Done        |
+| M3 — procedural art                             | Done        |
+| M4 — online multiplayer                         | Done        |
+| M5 — AI opponents                               | Done        |
+| M6 — full scope, 2–8 players, audio, deployment | Done        |
+| M7 — balance pass                               | In progress |
+| M8 — team mode, one lobby online and offline    | Done        |
+| M9–M12 — visual passes and seven styles         | Done        |
+| M13 — bots as skill levels and personalities    | Done        |
+| M14 — a desktop app for releases                | Done        |
 
 ## License
 

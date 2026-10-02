@@ -233,6 +233,7 @@ forfeited. `maxRounds: null` lifts the cap for tests; no host can choose it.
 | Tests      | vitest                                                          | Fast, TS-native                                                                                                 |
 | Packaging  | npm workspaces                                                  | Internal packages export TypeScript source, so there is no build step between them                              |
 | Deploy     | Docker, one process serving the static client and the WebSocket | Fly.io / Railway / self-host                                                                                    |
+| Desktop    | Electron, a portable file for Windows and Linux                 | A host needs no Node or terminal; built on demand for major versions (CLAUDE.md, Making a release)              |
 
 Authoritative server, **no rollback netcode needed**: both phases are simultaneous but not
 twitchy, and a shot's flight time absorbs RTT entirely.
@@ -252,9 +253,11 @@ RampartRemake/
 │   ├── ai/            bot logic
 │   ├── analysis/      per-round match statistics, shared by the server and the harness
 │   ├── server/        authoritative match server, and the recorder of every match
-│   └── client/        renderer, UI, procedural asset generators
+│   ├── client/        renderer, UI, procedural asset generators
+│   └── desktop/       the desktop app for releases: the server behind a window
 ├── tools/headless/    bot-vs-bot harness for balance tuning and soak tests, and replays
 ├── recordings/        recorded matches and their statistics (git-ignored; §9)
+├── .github/workflows/ CI, and release builds of the desktop app on demand
 └── Dockerfile         build the client, bundle the server, ship three directories
 ```
 
@@ -855,150 +858,49 @@ every resolution against an independent search, not only on unit pictures.
 
 ## 10. Milestones
 
-| #   | Goal                                                      | State              |
-| --- | --------------------------------------------------------- | ------------------ |
-| M0  | Scaffold, config schemas, CI                              | Done               |
-| M1  | Simulation core                                           | Done               |
-| M2  | Playable locally, placeholder art                         | Done               |
-| M3  | Style abstraction, then procedural art                    | Done               |
-| M4  | Online multiplayer                                        | Done               |
-| M5  | AI opponents                                              | Done               |
-| M6  | Full scope: 2–8 players, audio, lobby, Docker, deployment | Done               |
-| M7  | Balance pass                                              | **In progress**    |
-| M8  | Team mode, and one lobby for online and offline           | Done               |
-| M9  | Visual pass: phase themes, banner wipe, effects, lobby    | Done (ARCHIVE 11h) |
-| M10 | Alternative visual themes: Night, Blueprint, Cyberpunk…   | Done (ARCHIVE 11h) |
-| M11 | UI and effects polish: roster, combat aids, summary…      | Done (ARCHIVE 11h) |
-| M12 | Second visual pass: scenery, atmosphere, Toy bricks       | Done (ARCHIVE 11w) |
-| M13 | Bots as skill levels and personalities                    | Done (11.6)        |
+| #   | Goal                                                      | State               |
+| --- | --------------------------------------------------------- | ------------------- |
+| M0  | Scaffold, config schemas, CI                              | Done                |
+| M1  | Simulation core                                           | Done                |
+| M2  | Playable locally, placeholder art                         | Done                |
+| M3  | Style abstraction, then procedural art                    | Done                |
+| M4  | Online multiplayer                                        | Done                |
+| M5  | AI opponents                                              | Done                |
+| M6  | Full scope: 2–8 players, audio, lobby, Docker, deployment | Done                |
+| M7  | Balance pass                                              | **In progress**     |
+| M8  | Team mode, and one lobby for online and offline           | Done                |
+| M9  | Visual pass: phase themes, banner wipe, effects, lobby    | Done (ARCHIVE 11h)  |
+| M10 | Alternative visual themes: Night, Blueprint, Cyberpunk…   | Done (ARCHIVE 11h)  |
+| M11 | UI and effects polish: roster, combat aids, summary…      | Done (ARCHIVE 11h)  |
+| M12 | Second visual pass: scenery, atmosphere, Toy bricks       | Done (ARCHIVE 11w)  |
+| M13 | Bots as skill levels and personalities                    | Done (11.6)         |
+| M14 | A desktop app for releases                                | Done (ARCHIVE 11zt) |
 
 ---
 
 ## 11. Open work
 
-**Where to start (2026-09-30).** Everything but balance is done: the game, online play,
-bots as skill levels and personalities (M13), seven styles and two visual passes, and the
-first round of test-session feedback. In order:
+**Where to start (2026-10-02).** Everything but balance is done: the game, online play, bots
+as skill levels and personalities (M13), seven styles and three visual passes, two rounds of
+test-session feedback, help for new players, and the desktop app for releases (M14). The
+first test games on the current build found everything working, the hosts' delay gone and
+the balance quite good. In order:
 
-1. **Test sessions on the current build** — the first, one game on 2026-10-01, found
-   everything working and the balance quite good (11.2). More are recorded as they come. The server must be rebuilt (`npm start`) and
-   every page reloaded: the protocol is 14. Every match is recorded with its statistics
-   (§9, ARCHIVE 11e); the user sends compiled feedback, which is triaged with them first.
-2. **11.15, the third visual pass — done** (ARCHIVE 11zf, 11zh), X6's shapes last. The next
-   test session also checks the fix for the hosts' delay on every click (ARCHIVE 11zg).
-   **11.16**, agreed 2026-10-01, runs meanwhile: all four packages done (ARCHIVE 11zk–11zn).
-3. **11.2, points decide and elimination threatens**, the goal revised on 2026-10-01: a
+1. **Test sessions on the current build**, recorded with their statistics (§9, ARCHIVE 11e);
+   the user sends compiled feedback, which is triaged with them first. The server must be
+   rebuilt (`npm start`) and every page reloaded: the protocol is 14.
+2. **11.2, points decide and elimination threatens**, the goal revised on 2026-10-01: a
    measurement of how good the points matches are, not a tuning towards knockouts.
-4. **11.3, two-player balance**, re-measured before anything is tried; after 11.2.
-   **11.17, a desktop app for releases**, agreed 2026-10-01, can run alongside: it changes no
-   rule, only how the server is started.
-5. **11.4**, measurements never taken, and **11.13**, the bots' loose ends, as they fit.
+3. **11.3, two-player balance**, re-measured before anything is tried; after 11.2.
+4. **11.4**, measurements never taken, and **11.13**, the bots' loose ends, as they fit.
 
 Only open work is kept here. Finished packages move to `ARCHIVE.md` under their old
 numbers — 11.1 scoring, 11.7 team mode, 11.8 the visual pass, 11.9 the themes, 11.10 the
 UI polish, all in ARCHIVE 11h; 11.11 the second visual pass and 11.12 the first
 test-session feedback, in ARCHIVE 11w; 11.5 the small items and 11.6 the bots, in ARCHIVE
-11zd; 11.14 the second test-session feedback, in ARCHIVE 11ze — so the open sections keep
-theirs.
-
-### 11.15 Third visual pass — agreed 2026-09-30
-
-Agreed with the user from a list of suggestions; left out: points rising from each wall
-block your shot breaks (too messy), "Double!" callouts for sealing several castles with
-one piece, and "Just in time!" for a late seal (not needed). Display only, like 11.8–11.11:
-no sim, protocol or ruleset change, so nothing can desync or move a balance measurement.
-The same discipline: anything timed is a pure function with tests, scenes go into
-`tools/screenshots.sh`, tunables go in `art.default.json`, anything under a second is left
-for a person to see, and §7's rules hold — a player keeps their hue, information stays
-readable, land, sea, wall and sealed ground tell apart.
-
-Packages in order. X1 first, since X6's shapes need a place in the roster it redesigns;
-the rest are independent.
-
-**X1 — Mouse only, and a roster of points and lives — done** (§7): a card per player,
-colour down its edge, name over a large score and large pips; in Toy bricks the bar is
-rimmed, since the blue player's vanished into the blue plate.
-
-- **The keyboard controls go**: R and E no longer turn the piece; right-click and the
-  wheel do, and every action is on the two mouse buttons. Esc for pause stays, the one
-  exception agreed in F2. CLAUDE.md's rule is rewritten to match.
-- **The roster shows only points and lives**, per player and per team: castles and guns
-  firing go, from the full entry, the compact one and the hover text. The room that frees
-  is spent making the score and the lives stand out — larger figures, the pips larger and
-  the last life louder — and should let eight players fit without a compact form at all.
-  The layout is agreed with the user before building, with screenshots at two, four and
-  eight players, free-for-all and teams.
-
-**X2 — Information on the board — done** (§7). The breached crown was first the dark
-shade of the owner's colour and vanished into a castle of that colour; it is stone grey.
-The ring preview asks the sim's own `startingRingTiles`, which builds the ring.
-
-- **The crown shows the main castle's state**: bright while it is sealed, dimmed and
-  cracked once it is breached, still always shown. In the combat look it follows the
-  enclosure held through combat, as every other sign of "sealed" does.
-- **The ring before the choice**: hovering a castle while choosing — at the start or after
-  a continue — shows faintly, in the player's colour, the ring it would get.
-- **Unsealed at the end**: while nothing of the player's is sealed, their castles are
-  outlined already (`hints.ts`); over the countdown's last five seconds that outline pulses
-  red with each tick.
-- **Guns earned** in the island's points banner at a resolution: "+3 guns" beside the
-  points, since today they show only when the cannon phase opens.
-
-**X3 — Ground lost, drained — done** (§7). Begun together as the banner appeared, the
-upper islands had drained before the lower ones were revealed: each island's drain waits,
-wholly washed, until the banner's line reaches it (`releaseDrains`). As the "Rebuild" banner reveals the build look, territory
-lost to breaches drains away from the gaps in a dark red wash — the seal flood run in
-reverse (`seal.ts`), in every style.
-
-**X4 — Moments and small atmosphere — done** (§7).
-
-- **The winners' banners**: large banners in the winners' colours rise over their castles
-  with the fireworks, which the camera's push lands on.
-- **Distant thunder** in Medieval's rain: a rare, faint flash across the sky, never
-  mistakable for an impact; none under reduced motion.
-- **Embers** drifting at the screen's edges through the final round, with its dusk; none
-  under reduced motion.
-
-**X5 — Medieval light — done** (§7). Adding snow to the odds moved which seed gives
-which weather: 1 rain, 2 snow, 3 fog, 5 clear, 21 overcast, as the screenshot scenes now
-say.
-
-- **Reflections**: castles and walls mirrored faintly in the sea tiles beside the coast,
-  rippling; Night's torches too.
-- **Shadows by the time of day**: short at noon, long toward the morning and sunset
-  rounds, with the daylight tint that already changes by round.
-- **Snow**, as one of Medieval's seeded weathers (`weatherOdds`): falling flakes and white
-  edges on walls and castles. Not a style of its own.
-
-**X6 — A shape per player — done** (§7, ARCHIVE 11zh). Beside colour, each player carries
-a shape on the roster, the island banners, the "You are here" marker, the lobby's seat
-cards and map, the summary's table and the ends of its chart's lines, so eight players
-and colour-blind players can tell islands apart. **Off the board only**, the user's
-decision of 2026-09-30. Decided 2026-10-01: plain geometric shapes, and in a team match
-one shape per team, so teams tell apart without colour.
-
-**The third visual pass is done**: X1–X5 in ARCHIVE 11zf, X6 in 11zh.
-
-### 11.16 New players, the menu and the sea — agreed 2026-10-01
-
-Chosen by the user from a list of suggestions; left out for now: hovering a roster card to
-light its island, a "Preparing the board" overlay, a rematch, volume sliders, first-match
-hints and guns that glow while their shot still counts. Display only, with the discipline
-of 11.15. In this order:
-
-**O1 — Ocean life in every style — done** (§7, ARCHIVE 11zk). The testers praised the land's
-scenery; the sea gets its own in every style, each design chosen by the user.
-
-**H1 — How to play — done** (§7, ARCHIVE 11zl). Seven pages of pictures and a line each,
-from the menu's button only — the words and pages approved by the user, whose rule was
-as few words as possible.
-
-**S1 — Style previews — done** (§7, ARCHIVE 11zm).
-
-**I1 — A livelier scoreboard between rounds — done** (§7, ARCHIVE 11zn). To be judged in
-the next test session.
-
-**11.16 is done**: O1, H1, S1 and I1 in ARCHIVE 11zk–11zn.
+11zd; 11.14 the second test-session feedback, in ARCHIVE 11ze; 11.15 the third visual pass,
+11.16 help for new players, the menu and the sea, and 11.17 the desktop app, in ARCHIVE
+11zt — so the open sections keep theirs.
 
 ### 11.2 Points decide, elimination threatens — goal revised 2026-10-01
 
@@ -1052,54 +954,6 @@ on points, failing two rounds of ten. Two games; the soak is what tells it at sc
 statistics beside it once it ends — the same per-round table the bots produce — so how
 often a person loses a castle, how much of the build phase they use and what repair they
 leave undone are measured, not recalled. The user's impressions come separately.
-
-### 11.17 A desktop app for releases — agreed 2026-10-01
-
-**The goal**: the game as one portable file for Linux Mint and Windows 11, which starts and
-stops the server as `npm start` does, behind a minimal window — so a host needs no Node, no
-repository and no terminal. Decided with the user: **Electron**, accepting a file of about
-100–150 MB; **portable** files only, a single `.exe` for Windows and an `.AppImage` for
-Linux, no installers; no recordings button, since recordings are for internal analysis
-and tuning only. **Built on demand for major versions, never for every change**: `npm start`
-and the Docker image stay the way the game is run day to day.
-
-No rule, protocol or sim change: a packaged server is the same server, and a page it serves
-plays exactly as one `npm start` serves. Packages in order:
-
-**A1 — The server as something a program can start and stop — done** (ARCHIVE 11zp).
-As planned: `main.ts` bound the
-moment it loads. It becomes a thin command line over `startServer(options)`, returning the
-addresses it serves on and a `stop()` that closes every socket and room, so `npm start`
-behaves as before. The options carry what is found today by walking up from the server's
-own file (`paths.ts`): where `config/` and the built client are, which a packaged app keeps
-in its resources; where recordings go, which must be a writable folder of the user's
-(`%APPDATA%` on Windows, `~/.config` on Linux), since an installed app — an AppImage above
-all — cannot write inside itself; and the port. A port already taken is reported as such
-rather than thrown. Tested in process: start, a client joins, stop, start again on the same
-port.
-
-**A2 — The window — done** (ARCHIVE 11zq). As planned (`packages/desktop`, Electron): Start and Stop; whether it is running;
-the addresses other players open, as `npm start` prints them (`openableUrls`), each with a
-copy button; **Open in browser**; and **Play here**, the game in the app's own window for
-the host. Closing the window stops the server. A taken port says so and offers another.
-Mouse only, as everywhere (CLAUDE.md). The commit is stamped as the image stamps it
-(`RAMPART_COMMIT`), so recordings made through the app replay against the right code.
-
-**A3 — Packaging — done** (ARCHIVE 11zr). electron-builder, from `npm run build`'s output: the bundled server, the
-built client, `config/` and the audio as resources; a Windows portable `.exe` and a Linux
-`.AppImage`. One script, `npm run package`, builds the file for the machine it runs on, so a
-Windows build can be made here; the version is the release's.
-
-**A4 — Release builds on demand — written** (ARCHIVE 11zs; its first run is A5's). A GitHub Actions workflow run by hand (`workflow_dispatch`)
-or by pushing a version tag, building both files on their own systems and attaching them to
-a GitHub release. Never on an ordinary push: CI's existing jobs are untouched.
-
-**A5 — Checked on both systems.** The user on Linux Mint, this machine on Windows: start,
-another machine on the LAN joins and plays, stop, start again, a second copy finding the
-port taken. Known and accepted: Windows SmartScreen warns of an unknown publisher until the
-file is signed, which needs a paid certificate and is not planned; Windows Firewall asks
-once whether to allow the network, which LAN play needs; an AppImage must be marked
-executable. How to cut a release goes into CLAUDE.md.
 
 ### 11.3 Two-player balance
 
