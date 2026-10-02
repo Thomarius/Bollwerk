@@ -7,8 +7,10 @@ out. After ten rounds, the best score among those still standing wins.
 
 - 2–8 players, free-for-all or in equal teams; bots of ten skill levels fill any empty seat
 - Play alone on your own computer, with friends on your home network, or over the internet
-- Seven visual styles — Medieval, Minimal, Night, Cyberpunk, Blueprint, Parchment and Toy
-  bricks — one for building and one for combat, swapped by the banners as in the original
+- Eight visual styles — Medieval, Minimal, Night, Cyberpunk, Blueprint, Parchment, Toy
+  bricks and Stained glass — one for building and one for combat, swapped by the banners as
+  in the original
+- Awards at the end of every match, and a rematch in one click
 - Played with the mouse alone; How to play in the menu shows the rules in pictures
 - An authoritative server, with a deterministic simulation shared by client, server and bots
 
@@ -247,7 +249,7 @@ ruleset to every client in the match snapshot, so all of them run one identical 
 | M6 — full scope, 2–8 players, audio, deployment | Done        |
 | M7 — balance pass                               | In progress |
 | M8 — team mode, one lobby online and offline    | Done        |
-| M9–M12 — visual passes and seven styles         | Done        |
+| M9–M12 — visual passes and eight styles         | Done        |
 | M13 — bots as skill levels and personalities    | Done        |
 | M14 — a desktop app for releases                | Done        |
 

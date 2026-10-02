@@ -43,7 +43,7 @@ table whose margins, lead changes and lives are known.
 ## 1. Where the output goes
 
 Every run writes its table under **`soaks/<date>/`** at the repository root, which is
-git-ignored (to be added to `.gitignore` with step 0) — soak output is data, as recordings
+git-ignored — soak output is data, as recordings
 are, and is summarised into the plan rather than committed. One CSV per batch, named for
 it, e.g. `soaks/2026-10-02/s1-3p-L5.csv`, and the console output of each beside it as
 `.log`. The `recordings/` folder is not touched: the harness never writes there.

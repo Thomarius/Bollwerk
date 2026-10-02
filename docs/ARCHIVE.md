@@ -3742,3 +3742,83 @@ executable. How to cut a release goes into CLAUDE.md.
   over a real server with a host and a guest, both pages back in the lobby. Found by the
   first run: the HUD lets clicks through to the board and its buttons must take them back,
   as Back to menu did — Rematch did not, and a click on it reached the board.
+- **Y7, Stained glass**, an eighth style for either look (`glass.ts`, `art.glass`): everything
+  a style brings — palette, tunables, a title of leaded panes, a banner of jewel panes, a
+  HUD of lead under coloured glass, a menu name and picture, sea life (a glass ship, a
+  leaping fish), screenshot scenes. The first board cut one pane a tile and read as a
+  mosaic, its lead grid busy at eight players; land and sea are now irregular panes of a
+  few tiles (`panes.ts`, tested: one material each, a few tiles on average, the same cut
+  every time), and walls stay one leaded block a tile, since that is what a shot takes.
+  Approved by the user from screenshots, building, in combat, at eight players, in the
+  menu and across a wipe from Medieval; its motion is to be seen in play.
+
+## 11zv. Finished work moved out of the plan (2026-10-02)
+
+As 11zt: PLAN keeps only open work, so the fourth visual pass moved here as it stood. What
+it left to check in play is in PLAN §11's where to start.
+
+### Formerly PLAN 11.18 Fourth visual pass — agreed 2026-10-02
+
+Chosen by the user from a list of suggestions; left out: lighting an island while its
+roster card is hovered (nobody hovers there) and first-match hints (How to play covers
+them). Display and menus only, with the discipline of 11.15: no sim or ruleset change; the
+rematch alone touches the protocol. Anything timed a pure function with tests, scenes in
+`tools/screenshots.sh`, tunables in `art.default.json`, §7's rules kept — a player keeps
+their hue, information stays readable, land, sea, wall and sealed ground tell apart; mouse
+only. Packages in order, the small ones first:
+
+**Y1 — Preparing the board — done** (ARCHIVE 11zu). A screen over the board for the moment a match opens while
+the looks are built, so a pause that grows with the visuals never reads as a freeze —
+today it is about a second (ARCHIVE 11zg). Taken down at the first frame drawn.
+
+**Y2 — The pause menu — done** (ARCHIVE 11zu). The pause overlay becomes a menu: Resume; the Effects and Sound
+settings, as in the main menu, taking effect at once where they can; and **Leave match**,
+back to the main menu — online the seat goes to a bot after the grace, as for any drop
+(§6). The end screen's Back to menu stays.
+
+**Y3 — Out, and watching — done** (ARCHIVE 11zu). A player knocked out sees a quiet strip — "You're out —
+watching" — with Back to menu, instead of only their island greying, for the rest of the
+match.
+
+**Y4 — The menu's sound, and the lobby's levels — done** (ARCHIVE 11zu). Two volume sliders, music and effects,
+in place of the Sound switch's single on and off (the corner switch stays, as a mute);
+saved with the looks. A bot seat's level shown as pips on its lobby card beside the
+choice, so a glance tells how hard a table is.
+
+**Y5 — Awards at the end — done** (ARCHIVE 11zu). The summary names up to **three awards**, each to a different
+player where it can, from a long list of categories, of which those that apply are drawn —
+**the same draw on every screen**, from the match's seed, so a table talks about the same
+awards (decided 2026-10-02). Every value from the match log the client keeps (`MatchLog`)
+and the state, so no protocol change; a new counter or two from events the client already
+receives. The first list, to grow:
+
+| Award            | Goes to                                                    |
+| ---------------- | ---------------------------------------------------------- |
+| Wrecker          | most enemy wall shot down                                  |
+| Landlord         | most ground held in one round                              |
+| Castle collector | most castles held at once                                  |
+| Iron wall        | never failed a seal                                        |
+| Comeback         | the biggest climb in the standings from round 5 to the end |
+| Front-runner     | led after the most rounds                                  |
+| Photo finish     | the winner, by under 5%                                    |
+| Last stand       | finished the match on their last life                      |
+| Phoenix          | lost a life and still finished in the top half             |
+| Late bloomer     | the biggest single round's score, in the last three rounds |
+| Artillerist      | most guns at once                                          |
+| Steady           | scored in every round                                      |
+| Nemesis          | shot down the most of one opponent's wall ("Bo's nemesis") |
+| Mason            | most pieces placed                                         |
+
+**Y6 — Rematch — done** (ARCHIVE 11zu; protocol 15). Beside Back to menu at the end: the same table again in one click.
+Decided 2026-10-02: **online, only the host** may call it, and it brings **everyone still
+connected back to the room's lobby** with the table as it was — seats, teams, levels and
+rounds — and **a new map**; the host starts as usual, anyone may leave, and the others see
+"waiting for the host" until then. Locally it reopens the local table the same way. The
+room is reset for a new match rather than closed, which is a protocol change.
+
+**Y7 — Stained glass, an eighth style — done** (§7, ARCHIVE 11zu). The board as a church window: lead lines between
+the tiles, light through coloured glass, the sea in deep blue glass, sealed ground lit
+brighter. For both looks. Everything a style brings, as Toy bricks did (ARCHIVE 11u): a
+theme, its palette and player ramps (hues kept, §7), a title, a banner, a HUD skin, a menu
+picture (`stylePreview`), its sea life (`seaLife.ts`) and screenshot scenes. Its details
+are agreed with the user from screenshots of a first board.

@@ -383,9 +383,9 @@ sender's seat**, so a client cannot act for someone else.
 
 ## 7. `packages/client`
 
-Seven visual styles — Minimal (`flat`), Medieval (`pixel`: named Pixel art until the other
-styles made the name mean nothing), Night, Cyberpunk, Blueprint, Parchment and Toy bricks
-(`bricks`) — behind one `Theme` interface: the scene owns the camera, the layer stacks,
+Eight visual styles — Minimal (`flat`), Medieval (`pixel`: named Pixel art until the other
+styles made the name mean nothing), Night, Cyberpunk, Blueprint, Parchment, Toy bricks
+(`bricks`) and Stained glass (`glass`) — behind one `Theme` interface: the scene owns the camera, the layer stacks,
 dirty tracking and input mapping; a theme owns only what things look like. Adding a style
 is a name in `ArtStyleSchema`, the looks it is made for in `STYLE_LOOKS`, a `Theme`, a
 case in `createTheme`, a menu title in `decor.ts` and a banner class in `hud.ts`; the
@@ -491,6 +491,20 @@ one fixed island — a sealed ring with guns round the crowned main castle, a se
 outside it — drawn by the style's own theme through a real `Scene` on a canvas of its own,
 once per style, kept as an image and the renderer thrown away. Built after the title's
 first sweep, so it cannot stutter it.
+
+**Around a match** (11.18): "Preparing the board" stands over the screen while a match's
+looks are built, painted before that work starts. Paused, the overlay is the match's menu —
+Resume, Effects, Sound, the music and sounds volumes, and Leave match, which asks once
+more. A player knocked out sees "You're out — watching" with Back to menu. The menu and the
+pause menu carry two volume sliders, music and sounds, over the manifest's mix (the corner
+switch stays the mute), and a bot seat in the lobby shows its level as ten pips. At the end
+the summary names up to **three awards** (`awards.ts`) — from Wrecker, Landlord, Castle
+collector, Iron wall, Comeback, Front-runner, Photo finish, Last stand, Phoenix, Late
+bloomer, Artillerist, Steady, a named Nemesis and Mason — drawn from the match's seed so
+every screen shows the same, each to a different player while one is left without; and
+**Rematch**, the host's online (protocol 15), brings everyone still connected back to the
+lobby in their old seats with the table as it was and a new map; locally it reopens the
+table.
 
 **How to play** (`howToPlay.ts`), from a button under Play, marked until first opened:
 seven pages, each a looping picture and a caption of ten words or fewer — the mouse, the
@@ -724,7 +738,20 @@ a blue baseplate under a yellow rule, its title the word in bricks, each letter 
 player's colour. It uses the shared player colours: bright and clean already. Named toy
 bricks and never after any maker's trademark.
 
-The four shape-drawn styles share `walls.ts`: the wall geometry (tops, faces, rim), and
+**Stained glass** (`glass.ts`, `art.glass`), for either look: the board as a church window.
+Land and sea are cut into irregular panes a few tiles each (`panes.ts`: the tiles round a
+jittered grid of points, never across the coast), each its own shade, held in near-black
+lead, with a heavier came along every coast and light falling through as a sheen in each
+pane's corner; one pane a tile, tried first, read as a mosaic. Sealed ground lights the
+same panes in the owner's colour. Walls are blocks of the owner's glass leaded one by one,
+so a shot visibly takes one, standing to the pixel style's height; castles are rose
+windows, guns grey glass mounts ringed in the owner's colour, shots glowing beads; a hit
+throws shards and a piece set down catches a glint. A glass ship and a leaping fish on the
+sea, a title of leaded panes, a banner of jewel panes, a HUD of lead under a strip of
+coloured glass. Its palette is a sapphire sea, emerald land and warm gold; the player
+colours are the shared ones.
+
+The five shape-drawn styles share `walls.ts`: the wall geometry (tops, faces, rim), and
 hatching laid on one lattice so neighbouring tiles hatch as one fill.
 
 **Scenery on open land** (`scenery.ts`, `art.scenery`), in every style: copses of trees and
@@ -881,22 +908,25 @@ every resolution against an independent search, not only on unit pictures.
 ## 11. Open work
 
 **Where to start (2026-10-02).** Everything but balance is done: the game, online play, bots
-as skill levels and personalities (M13), seven styles and three visual passes, two rounds of
-test-session feedback, help for new players, and the desktop app for releases (M14). The
-first test games on the current build found everything working, the hosts' delay gone and
-the balance quite good. In order:
+as skill levels and personalities (M13), eight styles and four visual passes, two rounds of
+test-session feedback, help for new players, awards and a rematch, and the desktop app for
+releases (M14). The test games on the current build found everything working, the hosts'
+delay gone and the balance quite good. A new session starts with either:
 
-1. **Test sessions on the current build**, recorded with their statistics (§9, ARCHIVE 11e);
-   the user sends compiled feedback, which is triaged with them first. The server must be
-   rebuilt (`npm start`) and every page reloaded: the protocol is 15.
-2. **11.2, points decide and elimination threatens**, the goal revised on 2026-10-01: a
-   measurement of how good the points matches are, not a tuning towards knockouts.
-   **The soaks for 11.2, 11.3, 11.4 and 11.13 are planned in [`SOAKS.md`](./SOAKS.md)**, to
-   run at the end of a day: measurement only.
-3. **11.3, two-player balance**, re-measured before anything is tried; after 11.2.
-4. **11.4**, measurements never taken, and **11.13**, the bots' loose ends, as they fit.
-5. **11.18, the fourth visual pass**, agreed 2026-10-02, in the interactive time between:
-   awards, the pause menu, a rematch, and a new style, Stained glass.
+1. **The soaks** — [`SOAKS.md`](./SOAKS.md) for 11.2, 11.3, 11.4 and 11.13: write its summary
+   tool and runner first, interactively (step 0), then let it run at the end of a day, and
+   read the results together. Measurement only.
+2. **Another round of improvements**, from a test session or the user's own list. The
+   server must be rebuilt (`npm start`) and every page reloaded: the protocol is 15. Every
+   match is recorded with its statistics (§9, ARCHIVE 11e); the user sends compiled
+   feedback, which is triaged with them first.
+
+**To check in play**, since a still frame cannot show them: a knocked-out player's own
+roster card looked cut off at its right edge in a screenshot (2026-10-02, the user to test);
+Stained glass's shards, glints, fish and ship; the music and sounds sliders by ear.
+
+Then, as they fit: **11.3**, two-player balance, re-measured before anything is tried;
+**11.4**, measurements never taken; **11.13**, the bots' loose ends.
 
 Only open work is kept here. Finished packages move to `ARCHIVE.md` under their old
 numbers — 11.1 scoring, 11.7 team mode, 11.8 the visual pass, 11.9 the themes, 11.10 the
@@ -904,73 +934,7 @@ UI polish, all in ARCHIVE 11h; 11.11 the second visual pass and 11.12 the first
 test-session feedback, in ARCHIVE 11w; 11.5 the small items and 11.6 the bots, in ARCHIVE
 11zd; 11.14 the second test-session feedback, in ARCHIVE 11ze; 11.15 the third visual pass,
 11.16 help for new players, the menu and the sea, and 11.17 the desktop app, in ARCHIVE
-11zt — so the open sections keep theirs.
-
-### 11.18 Fourth visual pass — agreed 2026-10-02
-
-Chosen by the user from a list of suggestions; left out: lighting an island while its
-roster card is hovered (nobody hovers there) and first-match hints (How to play covers
-them). Display and menus only, with the discipline of 11.15: no sim or ruleset change; the
-rematch alone touches the protocol. Anything timed a pure function with tests, scenes in
-`tools/screenshots.sh`, tunables in `art.default.json`, §7's rules kept — a player keeps
-their hue, information stays readable, land, sea, wall and sealed ground tell apart; mouse
-only. Packages in order, the small ones first:
-
-**Y1 — Preparing the board — done** (ARCHIVE 11zu). A screen over the board for the moment a match opens while
-the looks are built, so a pause that grows with the visuals never reads as a freeze —
-today it is about a second (ARCHIVE 11zg). Taken down at the first frame drawn.
-
-**Y2 — The pause menu — done** (ARCHIVE 11zu). The pause overlay becomes a menu: Resume; the Effects and Sound
-settings, as in the main menu, taking effect at once where they can; and **Leave match**,
-back to the main menu — online the seat goes to a bot after the grace, as for any drop
-(§6). The end screen's Back to menu stays.
-
-**Y3 — Out, and watching — done** (ARCHIVE 11zu). A player knocked out sees a quiet strip — "You're out —
-watching" — with Back to menu, instead of only their island greying, for the rest of the
-match.
-
-**Y4 — The menu's sound, and the lobby's levels — done** (ARCHIVE 11zu). Two volume sliders, music and effects,
-in place of the Sound switch's single on and off (the corner switch stays, as a mute);
-saved with the looks. A bot seat's level shown as pips on its lobby card beside the
-choice, so a glance tells how hard a table is.
-
-**Y5 — Awards at the end — done** (ARCHIVE 11zu). The summary names up to **three awards**, each to a different
-player where it can, from a long list of categories, of which those that apply are drawn —
-**the same draw on every screen**, from the match's seed, so a table talks about the same
-awards (decided 2026-10-02). Every value from the match log the client keeps (`MatchLog`)
-and the state, so no protocol change; a new counter or two from events the client already
-receives. The first list, to grow:
-
-| Award            | Goes to                                                    |
-| ---------------- | ---------------------------------------------------------- |
-| Wrecker          | most enemy wall shot down                                  |
-| Landlord         | most ground held in one round                              |
-| Castle collector | most castles held at once                                  |
-| Iron wall        | never failed a seal                                        |
-| Comeback         | the biggest climb in the standings from round 5 to the end |
-| Front-runner     | led after the most rounds                                  |
-| Photo finish     | the winner, by under 5%                                    |
-| Last stand       | finished the match on their last life                      |
-| Phoenix          | lost a life and still finished in the top half             |
-| Late bloomer     | the biggest single round's score, in the last three rounds |
-| Artillerist      | most guns at once                                          |
-| Steady           | scored in every round                                      |
-| Nemesis          | shot down the most of one opponent's wall ("Bo's nemesis") |
-| Mason            | most pieces placed                                         |
-
-**Y6 — Rematch — done** (ARCHIVE 11zu; protocol 15). Beside Back to menu at the end: the same table again in one click.
-Decided 2026-10-02: **online, only the host** may call it, and it brings **everyone still
-connected back to the room's lobby** with the table as it was — seats, teams, levels and
-rounds — and **a new map**; the host starts as usual, anyone may leave, and the others see
-"waiting for the host" until then. Locally it reopens the local table the same way. The
-room is reset for a new match rather than closed, which is a protocol change.
-
-**Y7 — Stained glass, an eighth style.** The board as a church window: lead lines between
-the tiles, light through coloured glass, the sea in deep blue glass, sealed ground lit
-brighter. For both looks. Everything a style brings, as Toy bricks did (ARCHIVE 11u): a
-theme, its palette and player ramps (hues kept, §7), a title, a banner, a HUD skin, a menu
-picture (`stylePreview`), its sea life (`seaLife.ts`) and screenshot scenes. Its details
-are agreed with the user from screenshots of a first board.
+11zt; 11.18 the fourth visual pass, in ARCHIVE 11zv — so the open sections keep theirs.
 
 ### 11.2 Points decide, elimination threatens — goal revised 2026-10-01
 

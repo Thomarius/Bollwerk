@@ -32,7 +32,7 @@ wait rather than assuming it hung.
 Client dev query parameters: `?autostart=1&players=3&seed=7` (a random seed without it),
 `&snapshot=build` to jump to a phase (`&round=N` for one deep in a match, `&idle=1` to
 leave your seat undriven on the way, so you are soon knocked out), `&speed=10`,
-`&style=flat|pixel|night|cyberpunk|blueprint|parchment|bricks` for both looks (a one-look style sets only its own)
+`&style=flat|pixel|night|cyberpunk|blueprint|parchment|bricks|glass` for both looks (a one-look style sets only its own)
 (`&buildStyle=`, `&combatStyle=` for one), `&watch=1&level=8` to observe a bot match (`&personality=offensive` fixes every bot's),
 `&rounds=12` for the round cap, `&teams=2` for teams of two in seat order. `?host=8` opens
 the lobby at eight seats — a room if a server answers, a local table if not —
@@ -51,7 +51,7 @@ rounds.
 | `ai`             | Bots: min-cut sealing, 0-1 BFS attack, skill levels and personalities.     |
 | `analysis`       | Per-round match statistics, for bot soaks and recorded human play alike.   |
 | `server`         | Authoritative match server, rooms, WebSocket, match recordings.            |
-| `client`         | Pixi renderer, seven visual styles, controls, HUD, netcode client.         |
+| `client`         | Pixi renderer, eight visual styles, controls, HUD, netcode client.         |
 | `desktop`        | Electron app for releases: the server behind a minimal window (M14).       |
 | `tools/headless` | Bot-vs-bot soak runs and map dumps.                                        |
 
@@ -127,23 +127,29 @@ Full detail in PLAN.md §1. The parts that surprise people:
 
 ## Status
 
-**Done** (2026-10-02): the game and its rules, online play with rooms, a games browser and
+**Done** (2026-10-02, at `f400931` and after): the game and its rules, online play with rooms, a games browser and
 pause, recording of every match (ARCHIVE 11e, each header stamped with the server's
 commit), team mode (ARCHIVE 10u), bots as a skill level 1–10 chosen in the lobby and a
 personality — risk, targeting, cannon space — dealt from the seed and revealed at game over
-(M13, ARCHIVE 11x–11zb), seven visual styles for either look and two visual passes (M9–M12),
+(M13, ARCHIVE 11x–11zb), eight visual styles for either look and two visual passes (M9–M12),
 two rounds of test-session feedback (ARCHIVE 11n–11w, 11ze), and a third visual pass
 (PLAN 11.15, ARCHIVE 11zf, 11zh): mouse-only play, a roster of points and lives, the
 main castle's crown, ground lost drained away, winners' banners, snow, shadows by the time
 of day, and a shape per player beside their colour, off the board; help for new players —
 How to play, a picture of each look in the menu, the ranking between rounds — and life on
 the sea in every style (PLAN 11.16, ARCHIVE 11zk–11zn); and a desktop app for releases, a
-portable file for Windows and Linux (M14, ARCHIVE 11zp–11zt). Online clients catch up on
-the server at once (ARCHIVE 11zg), which ended the hosts' delay on every click. The game is played with the mouse alone; Esc for pause is the one key. Deployment is verified by a
+portable file for Windows and Linux (M14, ARCHIVE 11zp–11zt); and a fourth pass (PLAN 11.18,
+ARCHIVE 11zu–11zv): a screen while the board is prepared, a pause menu with the settings
+and Leave match, a strip for a player knocked out, music and sounds volumes, level pips,
+awards at the end, a rematch, and an eighth style, Stained glass. Online clients catch up
+on the server at once (ARCHIVE 11zg), which ended the hosts' delay on every click. The game is played with the mouse alone; Esc for pause is the one key. Deployment is verified by a
 CI job, since there is no Docker on this machine. Every sound cue is supplied. The protocol
 is 15: a test session needs the server rebuilt and every page reloaded.
 
-**Next**: balance, M7. **The goal** (2026-10-01, the user's): almost every match is decided
+**Next**: a new session starts with either **the soaks** of `docs/SOAKS.md` — its summary
+tool and runner written first, then run at the end of a day — or **another round of
+improvements**; PLAN §11 says what is still to check in play. Then balance, M7. **The goal**
+(2026-10-01, the user's): almost every match is decided
 **on points at the round cap**, so **the scoring formula is the game's balance**; elimination
 stays a real threat that punishes — a life spent for every failed seal, a knockout now and
 then — but not the way matches end. The first test game on the current build was won on
