@@ -1,4 +1,4 @@
-import { teamScore, type MatchState, type PlayerState } from '@rampart/sim';
+import { teamScore, type MatchState, type PlayerState } from '@bollwerk/sim';
 
 /**
  * What the HUD says about points: the round against the cap, the standings, and who

@@ -1,4 +1,4 @@
-import type { RunningServer, StartResult } from '@rampart/server';
+import type { RunningServer, StartResult } from '@bollwerk/server';
 
 /**
  * The server as the window shows it (PLAN 11.17 A2), kept apart from Electron so it can be

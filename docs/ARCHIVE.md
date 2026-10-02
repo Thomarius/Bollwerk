@@ -553,7 +553,7 @@ the one the unit tests run:
 
 **Measure a change against a worktree with its own `node_modules`.** The first attempt at
 that baseline pointed the worktree's `node_modules` at the main checkout's, and npm
-workspace links are relative — so `@rampart/ai` resolved back through the symlink into
+workspace links are relative — so `@bollwerk/ai` resolved back through the symlink into
 the working tree and the "before" run was the after code. It reported hashes identical to
 the new run, which read as "the change does nothing" rather than as the setup error it
 was. Identical state hashes across a code change are evidence the code did not load, not
@@ -2023,7 +2023,7 @@ read as "used none of the phase"; it is now empty, and the summary shows a dash.
 recording did not say which code made it, though it replays exactly only against that
 code: the server now stamps every header it writes — its own rooms' and browsers'
 uploads alike, overwriting any claim a page makes — with its commit, from git or from
-`RAMPART_COMMIT`, which the image is built with and CI passes. The field is optional, so
+`BOLLWERK_COMMIT`, which the image is built with and CI passes. The field is optional, so
 earlier recordings still read.
 
 **U1, the HUD readable at eight — done.** The HUD rebuilt its whole markup every frame,
@@ -3450,7 +3450,7 @@ line over it, so `npm start` and the image run exactly as before.
 `packages/desktop`, Electron 44, over A1's `startServer`. Bundled by esbuild as the server's
 image is — the main process with the server and the whole simulation in one file, a
 CommonJS preload, the window's own script — and run from the repository with
-`npm start -w @rampart/desktop` after `npm run build`, which it serves the client of.
+`npm start -w @bollwerk/desktop` after `npm run build`, which it serves the client of.
 
 - **The window**: whether the server is running, the addresses other players open, each with
   Copy; Start and Stop; Open in browser; and Play here, the game in a window of the app's
@@ -3463,7 +3463,7 @@ CommonJS preload, the window's own script — and run from the repository with
   starts while running and stops while stopped ignored.
 - **Paths**: from the repository, its `config/` and built client; packaged (A3), the app's
   resources. Recordings go to the user's data folder (`%APPDATA%\Rampart`, `~/.config/Rampart`),
-  never shown. Packaged, the commit comes from `RAMPART_COMMIT`, as the image's does.
+  never shown. Packaged, the commit comes from `BOLLWERK_COMMIT`, as the image's does.
 - **Seen, driven by Playwright's Electron support**: opened with 8080 free, then with a server
   holding it — told so, moved to 8081, the games list answering there; Play here opening
   the menu; Stop freeing the port. From the first screenshots, a disabled quiet button
@@ -3474,16 +3474,16 @@ CommonJS preload, the window's own script — and run from the repository with
 
 ## 11zr. Packaging the desktop app (A3, PLAN 11.17)
 
-`npm run package -w @rampart/desktop` bundles the app and runs electron-builder for the system
+`npm run package -w @bollwerk/desktop` bundles the app and runs electron-builder for the system
 it is on: a portable `.exe` on Windows, an `.AppImage` on Linux, into
 `packages/desktop/release/` (git-ignored). It wants `npm run build` first, for the client it
-carries. `RAMPART_VERSION` sets the release's version, as a tag will in CI (A4).
+carries. `BOLLWERK_VERSION` sets the release's version, as a tag will in CI (A4).
 
 - **Nothing of the workspace's `node_modules` goes in**: the bundle carries the server and
-  the whole simulation, so the package's `@rampart/*` dependencies became development ones
+  the whole simulation, so the package's `@bollwerk/*` dependencies became development ones
   and the app holds only `dist/`, `ui/` and its `package.json`. `config/` and the built
   client, audio included, are resources beside it, where A2's packaged paths look.
-- **The commit is baked in** at build time (`RAMPART_COMMIT` first, then git, `-dirty` with
+- **The commit is baked in** at build time (`BOLLWERK_COMMIT` first, then git, `-dirty` with
   changes), since a packaged app has no repository to ask; recordings it makes are stamped
   with it.
 - **electron-builder wants an exact Electron version** and an author; Electron is pinned at
@@ -3511,7 +3511,7 @@ CLAUDE.md.
   electron-builder fetches the Electron it packages itself.
 - **Not yet run**: a release is outward-facing, so the first run is the user's to start (A5).
 - **The first run by hand failed on Linux** (2026-10-01): electron-builder names a Linux
-  executable after the npm package, `@rampart/desktop`, which no file may be called;
+  executable after the npm package, `@bollwerk/desktop`, which no file may be called;
   Windows names it after the product, so only Linux broke, and the Windows job was
   cancelled with it. The Linux executable is `rampart` now, with a desktop name so the
   window is linked to its launcher. Found by running the Linux packaging on Windows, which
@@ -3660,7 +3660,7 @@ the addresses other players open, as `npm start` prints them (`openableUrls`), e
 copy button; **Open in browser**; and **Play here**, the game in the app's own window for
 the host. Closing the window stops the server. A taken port says so and offers another.
 Mouse only, as everywhere (CLAUDE.md). The commit is stamped as the image stamps it
-(`RAMPART_COMMIT`), so recordings made through the app replay against the right code.
+(`BOLLWERK_COMMIT`), so recordings made through the app replay against the right code.
 
 **A3 — Packaging — done** (ARCHIVE 11zr). electron-builder, from `npm run build`'s output: the bundled server, the
 built client, `config/` and the audio as resources; a Windows portable `.exe` and a Linux
@@ -3822,3 +3822,56 @@ brighter. For both looks. Everything a style brings, as Toy bricks did (ARCHIVE 
 theme, its palette and player ramps (hues kept, §7), a title, a banner, a HUD skin, a menu
 picture (`stylePreview`), its sea life (`seaLife.ts`) and screenshot scenes. Its details
 are agreed with the user from screenshots of a first board.
+
+## 11zw. Bollwerk: the game renamed, and its attribution (2026-10-02)
+
+The project was "Rampart Remake" and its title said "Rampart": the name of the original,
+published by Atari Games in 1990 and today a trademark of Warner Bros. Entertainment, which
+received Atari Games' later arcade titles with Midway's assets in 2009. A game's rules are
+free to take; its name is not — and in Germany a work's title is protected on its own, as a
+_Werktitel_ (MarkenG §5), besides any trademark. So the game was renamed before anything
+was released, with the user, on 2026-10-02.
+
+**The name.** Candidates weighed: Mortar (gun and masonry at once), Barbican, Castellan,
+Merlon, Breach & Mend, and puns (Siege the Day; Rubble Trouble and Breakwater probably
+taken; Fort Night too near Fortnite). The user wanted a German name, and first suggested
+_Schutzwall_ — set aside because to German ears it is first the _antifaschistischer
+Schutzwall_, the GDR's name for the Berlin Wall, and a game of walling off territory under
+that name reads as a joke about it (_Mauer_ and _Mauerbau_ carry the same, more faintly).
+**Bollwerk** was chosen: the exact word for a bulwark, no baggage, sayable in English, no
+umlaut for file names or the title's glyphs. Searched: no video game of that name; a board
+game _Bollwerk 178_ (2021, chess-like). _Bulwark: Falconeer Chronicles_ is another word,
+language and kind of game, and was judged no conflict. Bulwark and Bastion themselves are
+taken.
+
+**Renamed everywhere**, the user's choice, since nothing was out yet and saved settings
+could be lost: the repository (`Thomarius/Bollwerk`, renamed on GitHub by the user; the
+local folder stays `RampartRemake`), the `@bollwerk/*` packages, the `BOLLWERK_COMMIT` and
+`BOLLWERK_VERSION` variables, the browser's `bollwerk.*` keys (no migration), the desktop
+app (`io.github.thomarius.bollwerk`, a name the user controls rather than a domain they do
+not, its data folder now `Bollwerk`), the release files and title, the Docker tag and the
+page title. The menu's title has the letters B, O, L, W, E and K, drawn in its 5x7 grid;
+eight letters are 376 of the menu's 416 pixels. Nothing in the simulation, the protocol or
+the recording format carried the name, so state hashes and old recordings are unchanged.
+In this file the older entries keep "Rampart" where they meant the project; only command
+lines were updated to the new package names.
+
+**The attribution**, approved by the user: _"Bollwerk is an unofficial fan game inspired by
+Rampart (Atari Games, 1990). It is not affiliated with or endorsed by Warner Bros.
+Entertainment, which owns the Rampart trademark. It uses no code, graphics or sound from
+the original; the audio is from OpenGameArt.org under the licences listed in
+CREDITS.md."_ It is in the README, `CREDITS.md`, the menu's Credits and the release notes;
+a short form, "Inspired by Atari's Rampart (1990)", stands under the menu's title beside
+the Credits button, and in the desktop window. Both texts live once, in
+`packages/config/src/credits.ts`.
+
+**The credits are enforced.** All the audio is from OpenGameArt under open licences, some
+of which (CC-BY, OGA-BY) require the author to be named. The manifest gained `credits`, one
+per file (variants may have different authors): title, author, licence from a closed list
+of OpenGameArt's licences each with its link, source address, and what was changed. The
+bundle validator refuses a credit for a path no cue loads. `npm run credits` writes
+`CREDITS.md` from it, with Markdown escaped so prettier leaves it alone, and a test fails
+when the file is stale; the menu's Credits is made from the same list and its links open
+in the person's browser, from the desktop app too. A file without a credit is a warning
+until the user has gathered them all, and an error under `BOLLWERK_REQUIRE_CREDITS=1`,
+which the release workflow sets before it builds anything.

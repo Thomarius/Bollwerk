@@ -1,5 +1,5 @@
-import { defaultRuleset } from '@rampart/config';
-import type { MatchState } from '@rampart/sim';
+import { defaultRuleset } from '@bollwerk/config';
+import type { MatchState } from '@bollwerk/sim';
 import { describe, expect, it } from 'vitest';
 
 import { awardCandidates, drawAwards, type Award } from './awards.js';

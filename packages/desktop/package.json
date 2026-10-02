@@ -1,5 +1,5 @@
 {
-  "name": "@rampart/desktop",
+  "name": "@bollwerk/desktop",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -12,15 +12,15 @@
     "package": "node build.js && node package.js"
   },
   "devDependencies": {
-    "@rampart/config": "*",
-    "@rampart/protocol": "*",
-    "@rampart/server": "*",
+    "@bollwerk/config": "*",
+    "@bollwerk/protocol": "*",
+    "@bollwerk/server": "*",
     "electron": "44.5.1",
     "electron-builder": "^26.15.3"
   },
   "build": {
-    "appId": "net.rampart.remake",
-    "productName": "Rampart",
+    "appId": "io.github.thomarius.bollwerk",
+    "productName": "Bollwerk",
     "directories": {
       "output": "release"
     },
@@ -56,7 +56,7 @@
         "AppImage"
       ],
       "category": "Game",
-      "executableName": "rampart",
+      "executableName": "bollwerk",
       "syncDesktopName": true
     },
     "appImage": {
@@ -64,5 +64,5 @@
     }
   },
   "author": "Thomas Arnold",
-  "desktopName": "rampart.desktop"
+  "desktopName": "bollwerk.desktop"
 }

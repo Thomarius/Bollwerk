@@ -1,4 +1,4 @@
-import { defaultRuleset } from '@rampart/config';
+import { defaultRuleset } from '@bollwerk/config';
 import {
   Structure,
   renderAscii,
@@ -7,7 +7,7 @@ import {
   ticksFor,
   type MatchState,
   type Phase,
-} from '@rampart/sim';
+} from '@bollwerk/sim';
 import { describe, expect, it } from 'vitest';
 
 import {

@@ -1,5 +1,5 @@
-import { loadConfigBundle } from '@rampart/config/node';
-import { PROTOCOL_VERSION } from '@rampart/protocol';
+import { loadConfigBundle } from '@bollwerk/config/node';
+import { PROTOCOL_VERSION } from '@bollwerk/protocol';
 
 import { repoRoot } from './paths.js';
 import { startServer } from './server.js';
@@ -40,6 +40,6 @@ if (!started.ok) {
 const { server } = started;
 const [first, ...others] = server.urls;
 console.error(
-  `rampart server on ${first} (protocol ${PROTOCOL_VERSION}, ${loadConfigBundle(repoRoot).ruleset.tickRateHz}Hz)`,
+  `bollwerk server on ${first} (protocol ${PROTOCOL_VERSION}, ${loadConfigBundle(repoRoot).ruleset.tickRateHz}Hz)`,
 );
 for (const url of others) console.error(`  on the network at ${url}`);

@@ -1,4 +1,4 @@
-import { defaultRuleset, defaultTerrainConfig } from '@rampart/config';
+import { defaultRuleset, defaultTerrainConfig } from '@bollwerk/config';
 import {
   Rng,
   applyAction,
@@ -10,7 +10,7 @@ import {
   type MatchState,
   withoutContinues,
   withoutRoundCap,
-} from '@rampart/sim';
+} from '@bollwerk/sim';
 import { describe, expect, it } from 'vitest';
 
 import { stopgapAction } from './stopgap.js';

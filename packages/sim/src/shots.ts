@@ -1,4 +1,4 @@
-import type { CraterPattern } from '@rampart/config';
+import type { CraterPattern } from '@bollwerk/config';
 
 import { distanceFixed, distanceSquared } from './math.js';
 import { playerOf, type Rejection } from './placement.js';

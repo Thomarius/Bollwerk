@@ -1,5 +1,5 @@
 {
-  "name": "@rampart/sim",
+  "name": "@bollwerk/sim",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -10,6 +10,6 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@rampart/config": "*"
+    "@bollwerk/config": "*"
   }
 }

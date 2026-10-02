@@ -2,7 +2,7 @@ import { mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
-import { PROTOCOL_VERSION } from '@rampart/protocol';
+import { PROTOCOL_VERSION } from '@bollwerk/protocol';
 import { describe, expect, it } from 'vitest';
 import { WebSocket } from 'ws';
 
@@ -15,7 +15,7 @@ async function started(port = 0): Promise<RunningServer> {
     root: repoRoot,
     port,
     host: '127.0.0.1',
-    recordingsDir: mkdtempSync(join(tmpdir(), 'rampart-server-')),
+    recordingsDir: mkdtempSync(join(tmpdir(), 'bollwerk-server-')),
     commit: null,
     log: () => undefined,
   });
@@ -53,7 +53,7 @@ describe('the server as something a program starts and stops', () => {
       root: repoRoot,
       port: server.port,
       host: '127.0.0.1',
-      recordingsDir: mkdtempSync(join(tmpdir(), 'rampart-server-')),
+      recordingsDir: mkdtempSync(join(tmpdir(), 'bollwerk-server-')),
       commit: null,
       log: () => undefined,
     });

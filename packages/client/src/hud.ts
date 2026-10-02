@@ -3,7 +3,7 @@ import { SHAPE_PATHS, playerShape, shapeSvg } from './shapes.js';
 import { awardCandidates, drawAwards, type Award } from './awards.js';
 import type { BannerKind } from './banners.js';
 import { escape } from './lobby.js';
-import { defaultArtConfig, type ArtStyle, type PlayerShape } from '@rampart/config';
+import { defaultArtConfig, type ArtStyle, type PlayerShape } from '@bollwerk/config';
 
 import { showsClock } from './clock.js';
 import { motionReduced } from './motion.js';
@@ -21,7 +21,7 @@ import {
   type AnnouncementLine,
   type RankEntry,
 } from './scores.js';
-import { owesCastleChoice, teamScore, type MatchState, type Phase } from '@rampart/sim';
+import { owesCastleChoice, teamScore, type MatchState, type Phase } from '@bollwerk/sim';
 
 /**
  * The phase banner each style draws, as a class of `.phase-call`: a record over every

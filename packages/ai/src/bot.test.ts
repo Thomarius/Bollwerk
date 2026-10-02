@@ -3,7 +3,7 @@ import {
   defaultTerrainConfig,
   tierSetup,
   type DifficultyName,
-} from '@rampart/config';
+} from '@bollwerk/config';
 import {
   Rng,
   applyAction,
@@ -17,7 +17,7 @@ import {
   withoutContinues,
   type Rejection,
   withoutRoundCap,
-} from '@rampart/sim';
+} from '@bollwerk/sim';
 import { describe, expect, it } from 'vitest';
 
 import { Bot } from './bot.js';

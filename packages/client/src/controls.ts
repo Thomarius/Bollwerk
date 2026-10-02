@@ -9,7 +9,7 @@ import {
   sameTeam,
   type Action,
   type MatchState,
-} from '@rampart/sim';
+} from '@bollwerk/sim';
 
 import type { Ghost, Scene } from './render/scene.js';
 import type { Cell } from './render/theme.js';

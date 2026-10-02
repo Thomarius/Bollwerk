@@ -1,5 +1,5 @@
-import { artForStyle, defaultArtConfig, type ArtStyle } from '@rampart/config';
-import { applyEnclosure, computeEnclosure, stateFromAscii, type MatchState } from '@rampart/sim';
+import { artForStyle, defaultArtConfig, type ArtStyle } from '@bollwerk/config';
+import { applyEnclosure, computeEnclosure, stateFromAscii, type MatchState } from '@bollwerk/sim';
 
 import { createTheme, Scene } from './render/scene.js';
 

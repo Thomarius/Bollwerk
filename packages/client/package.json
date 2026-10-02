@@ -1,5 +1,5 @@
 {
-  "name": "@rampart/client",
+  "name": "@bollwerk/client",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -10,10 +10,10 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@rampart/ai": "*",
-    "@rampart/config": "*",
-    "@rampart/protocol": "*",
-    "@rampart/sim": "*",
+    "@bollwerk/ai": "*",
+    "@bollwerk/config": "*",
+    "@bollwerk/protocol": "*",
+    "@bollwerk/sim": "*",
     "pixi.js": "^8.21.0"
   }
 }

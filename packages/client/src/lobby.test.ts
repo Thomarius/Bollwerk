@@ -1,4 +1,4 @@
-import type { Seat } from '@rampart/protocol';
+import type { Seat } from '@bollwerk/protocol';
 import { describe, expect, it } from 'vitest';
 
 import { lobbyMarkup, type LobbyView } from './lobby.js';

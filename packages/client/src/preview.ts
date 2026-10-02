@@ -1,11 +1,11 @@
-import type { ArtConfig, PlayerPalette, PlayerShape, TerrainConfig } from '@rampart/config';
+import type { ArtConfig, PlayerPalette, PlayerShape, TerrainConfig } from '@bollwerk/config';
 import {
   Terrain,
   denseTeams,
   generateTerrain,
   seatOrder,
   type GeneratedTerrain,
-} from '@rampart/sim';
+} from '@bollwerk/sim';
 
 import { matchPalette } from './colours.js';
 import { drawShape, matchShapes } from './shapes.js';

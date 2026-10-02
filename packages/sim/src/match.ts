@@ -1,4 +1,4 @@
-import type { Ruleset, TerrainConfig } from '@rampart/config';
+import type { Ruleset, TerrainConfig } from '@bollwerk/config';
 
 import { applyEnclosure } from './enclosure.js';
 import { sweepOrphanedWalls } from './sweep.js';

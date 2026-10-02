@@ -1,4 +1,4 @@
-import { computeEnclosure } from '@rampart/sim';
+import { computeEnclosure } from '@bollwerk/sim';
 import { describe, expect, it } from 'vitest';
 
 import { previewState } from './stylePreview.js';

@@ -20,4 +20,4 @@ const api = {
 
 export type DesktopApi = typeof api;
 
-contextBridge.exposeInMainWorld('rampart', api);
+contextBridge.exposeInMainWorld('bollwerk', api);

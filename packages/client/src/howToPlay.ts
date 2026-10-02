@@ -1,4 +1,4 @@
-import { defaultArtConfig } from '@rampart/config';
+import { defaultArtConfig } from '@bollwerk/config';
 import {
   Structure,
   Terrain,
@@ -6,7 +6,7 @@ import {
   stateFromAscii,
   type EnclosureResult,
   type MatchState,
-} from '@rampart/sim';
+} from '@bollwerk/sim';
 
 import { motionReduced } from './motion.js';
 
@@ -788,7 +788,7 @@ export const HOW_TO_PLAY: readonly HowToPage[] = [
 
 // ----------------------------------------------------------------------- overlay
 
-const SEEN_KEY = 'rampart.howToPlaySeen';
+const SEEN_KEY = 'bollwerk.howToPlaySeen';
 
 /** Whether the pages have ever been opened here: until then the menu's button stands out. */
 export function howToPlaySeen(): boolean {

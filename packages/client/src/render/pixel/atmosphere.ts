@@ -1,5 +1,5 @@
-import type { PixelStyleConfig } from '@rampart/config';
-import { Rng } from '@rampart/sim';
+import type { PixelStyleConfig } from '@bollwerk/config';
+import { Rng } from '@bollwerk/sim';
 
 /**
  * The light of the day through a match, in the pixel style: morning gold as it opens,

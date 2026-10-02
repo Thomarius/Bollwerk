@@ -1,5 +1,5 @@
-import type { ArtConfig, FlatStyleConfig } from '@rampart/config';
-import { Structure, Terrain, type MatchState } from '@rampart/sim';
+import type { ArtConfig, FlatStyleConfig } from '@bollwerk/config';
+import { Structure, Terrain, type MatchState } from '@bollwerk/sim';
 import { Graphics } from 'pixi.js';
 
 import {

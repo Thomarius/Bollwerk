@@ -1,5 +1,5 @@
 {
-  "name": "@rampart/server",
+  "name": "@bollwerk/server",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -13,11 +13,11 @@
     "build": "node build.js"
   },
   "dependencies": {
-    "@rampart/ai": "*",
-    "@rampart/analysis": "*",
-    "@rampart/config": "*",
-    "@rampart/protocol": "*",
-    "@rampart/sim": "*",
+    "@bollwerk/ai": "*",
+    "@bollwerk/analysis": "*",
+    "@bollwerk/config": "*",
+    "@bollwerk/protocol": "*",
+    "@bollwerk/sim": "*",
     "ws": "^8.21.3"
   },
   "devDependencies": {

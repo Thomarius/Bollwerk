@@ -1,5 +1,5 @@
 import { isTeamMatch } from './scores.js';
-import type { MatchState } from '@rampart/sim';
+import type { MatchState } from '@bollwerk/sim';
 
 /**
  * Out, and watching (PLAN 11.18 Y3): a player knocked out stays to see the match finish,

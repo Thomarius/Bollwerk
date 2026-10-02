@@ -1,4 +1,4 @@
-import type { Ruleset } from '@rampart/config';
+import type { Ruleset } from '@bollwerk/config';
 
 import { Rng, mix32 } from './rng.js';
 

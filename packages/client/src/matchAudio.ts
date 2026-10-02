@@ -1,5 +1,5 @@
-import type { MusicCue, SfxCue } from '@rampart/config';
-import type { MatchEvent, MatchState, Phase } from '@rampart/sim';
+import type { MusicCue, SfxCue } from '@bollwerk/config';
+import type { MatchEvent, MatchState, Phase } from '@bollwerk/sim';
 
 import { COUNTDOWN_FROM, countdownGain, showsClock } from './clock.js';
 

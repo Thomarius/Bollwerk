@@ -1,7 +1,11 @@
-# Rampart Remake — design and open work
+# Bollwerk — design and open work
 
 A multiplayer-only recreation of the 1990 Atari arcade game _Rampart_, condensed to a
 single game mode, with online play, AI opponents, and fully procedural visual assets.
+
+It is called **Bollwerk** (renamed 2026-10-02, ARCHIVE 11zw): Rampart is a trademark of
+Warner Bros. Entertainment, and the game names it only to say what it is inspired by. In
+this file "the original" means Rampart.
 
 This file describes **the game as it is now, and what is left to do**. How each decision
 was arrived at — with the measurements, and the attempts that were reverted — is in
@@ -243,7 +247,7 @@ twitchy, and a shot's flight time absorbs RTT entirely.
 ## 3. Repository layout
 
 ```
-RampartRemake/
+Bollwerk/
 ├── config/            every tunable, as JSON behind a strict schema
 ├── assets/audio/      audio cues, committed — the image builds from a clean checkout
 ├── packages/
@@ -258,6 +262,7 @@ RampartRemake/
 ├── tools/headless/    bot-vs-bot harness for balance tuning and soak tests, and replays
 ├── recordings/        recorded matches and their statistics (git-ignored; §9)
 ├── .github/workflows/ CI, and release builds of the desktop app on demand
+├── CREDITS.md         the attribution and the audio's credits, made from the manifest
 └── Dockerfile         build the client, bundle the server, ship three directories
 ```
 
@@ -275,14 +280,14 @@ snapshot, because a client on different rules would desync rather than merely lo
 | `terrain.default.json` | Island size and shape, the generation box, castle placement, the starting ring, the per-player-count pattern table                                                                    |
 | `ai.default.json`      | Bot skill as a table of levels (pace, aim, judgement, sloppiness) interpolated between anchors, and the personality traits: risk, targeting, cannon space                             |
 | `art.default.json`     | Palettes, per-player colour ramps and each style's own over them, sprite generator parameters                                                                                         |
-| `audio.manifest.json`  | Cue names to files; see `assets/audio/README.md` for what fires each one                                                                                                              |
+| `audio.manifest.json`  | Cue names to files, and a credit for every file; see `assets/audio/README.md` for what fires each one                                                                                 |
 | `server.default.json`  | Ports, room limits, rate limits, reconnect grace, and the bounds of what a host may set in the lobby                                                                                  |
 
 `validateConfigBundle` checks what a single file cannot: that there are at least as many
 player palettes as allowed players, that every playable count has a pattern, that a cannon
 fits inside a starting ring, that the island does not fill its generation box, that the
 lobby's round bounds include the ruleset's own cap, and that every audio cue in code exists
-in the manifest.
+in the manifest, and that every credit names a file a cue loads.
 
 ---
 
@@ -444,6 +449,11 @@ did. Missing files are silent by design, which is what lets the game ship before
 does. **A missing file cannot be told from its HTTP status** — the static handler answers
 an unknown path with `index.html` and a 200 — so absence is detected by failure to decode,
 and a corrupt file is silent rather than noisy.
+
+**Every audio file is credited** in the manifest — title, author, licence, source, what was
+changed — and the menu's Credits and `CREDITS.md` are both made from it (`npm run credits`;
+a test fails when the file is stale). An uncredited file is a warning in `npm run check` and
+an error under `BOLLWERK_REQUIRE_CREDITS=1`, which the release workflow sets.
 
 **The HUD is dressed in the look on screen** (`HUD_SKIN` in `hud.ts`, a record over every
 style): a flat bar under a hard gold rule for Minimal, near black under a glowing cyan
@@ -870,7 +880,7 @@ from before 10l are historical.
   (`<id>.stats.csv`); `--replay FILES|DIRS` does the same by hand, and checks each replay
   exact. `recordings.enabled` in the server config turns it all off. Recordings replay exactly
   only against the code that made them, so **the server stamps every header with its
-  commit** (`-dirty` with uncommitted changes; `RAMPART_COMMIT` in the image, which has no
+  commit** (`-dirty` with uncommitted changes; `BOLLWERK_COMMIT` in the image, which has no
   repository), and `--replay` names it, and says to check it out when a replay diverges.
   A person's seat has no pieces budget, and its cell in the table is left empty.
 
@@ -924,6 +934,12 @@ delay gone and the balance quite good. A new session starts with either:
 **To check in play**, since a still frame cannot show them: a knocked-out player's own
 roster card looked cut off at its right edge in a screenshot (2026-10-02, the user to test);
 Stained glass's shards, glints, fish and ship; the music and sounds sliders by ear.
+
+**Audio credits** (2026-10-02, ARCHIVE 11zw): the user is gathering title, author, licence
+and source for every file in `assets/audio/` from OpenGameArt, to go into the manifest's
+`credits`, then `npm run credits`. Once every file has one, the check can be made
+unconditional — the `BOLLWERK_REQUIRE_CREDITS` switch removed — so that a sound added later
+without its credit fails `npm run check` rather than only a release.
 
 Then, as they fit: **11.3**, two-player balance, re-measured before anything is tried;
 **11.4**, measurements never taken; **11.13**, the bots' loose ends.

@@ -2,7 +2,7 @@
  * Scripted playouts: drives a match with legal-but-unthinking moves.
  *
  * Used by the determinism suite to produce input logs, and by the headless harness
- * to soak-test the phase machine. Real opponents are the bots in `@rampart/ai`.
+ * to soak-test the phase machine. Real opponents are the bots in `@bollwerk/ai`.
  */
 
 import { applyAction, createMatch, hashMatchState, step, type MatchOptions } from './match.js';

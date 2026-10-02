@@ -7,7 +7,7 @@
 # into the moment worth seeing — an announcement is on screen for four seconds, about
 # twenty after a build phase opens.
 #
-#   npm run dev -w @rampart/client            # in another terminal, or BASE=...
+#   npm run dev -w @bollwerk/client            # in another terminal, or BASE=...
 #   tools/screenshots.sh [outdir] [scene...]  # all scenes by default
 #
 # Uses the latest Playwright through npx, whose browser matches the one cached here.

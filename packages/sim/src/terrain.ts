@@ -1,4 +1,4 @@
-import type { PatternKind, TerrainConfig } from '@rampart/config';
+import type { PatternKind, TerrainConfig } from '@bollwerk/config';
 
 import { fbm2D } from './noise.js';
 import { NEIGHBOURS_4 } from './grid.js';

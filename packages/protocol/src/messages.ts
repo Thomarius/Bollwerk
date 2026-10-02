@@ -1,4 +1,4 @@
-import { LevelSchema, MatchSettingsSchema, SettingBoundsSchema } from '@rampart/config';
+import { LevelSchema, MatchSettingsSchema, SettingBoundsSchema } from '@bollwerk/config';
 import { z } from 'zod';
 
 import { SnapshotSchema } from './snapshot.js';

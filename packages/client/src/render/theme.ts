@@ -1,5 +1,5 @@
-import type { ArtConfig, ArtStyle } from '@rampart/config';
-import { findReadyCannon, type MatchState, type Shot } from '@rampart/sim';
+import type { ArtConfig, ArtStyle } from '@bollwerk/config';
+import { findReadyCannon, type MatchState, type Shot } from '@bollwerk/sim';
 import type { Container, Graphics } from 'pixi.js';
 
 import type { DrainWash, SealGlow } from '../seal.js';

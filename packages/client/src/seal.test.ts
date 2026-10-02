@@ -1,4 +1,4 @@
-import { Structure, computeEnclosure, stateFromAscii, type MatchState } from '@rampart/sim';
+import { Structure, computeEnclosure, stateFromAscii, type MatchState } from '@bollwerk/sim';
 import { describe, expect, it } from 'vitest';
 
 import {

@@ -15,11 +15,11 @@ const here = import.meta.dirname;
  */
 /**
  * The commit this build is of, baked into the app so recordings it makes replay against
- * the right code (PLAN §9): `RAMPART_COMMIT` first, as CI sets it, then git, marked
+ * the right code (PLAN §9): `BOLLWERK_COMMIT` first, as CI sets it, then git, marked
  * `-dirty` with uncommitted changes; null when neither can tell.
  */
 function commit() {
-  const given = process.env.RAMPART_COMMIT?.trim();
+  const given = process.env.BOLLWERK_COMMIT?.trim();
   if (given) return given;
   try {
     const git = (...args) =>
@@ -41,7 +41,7 @@ await build({
   ...shared,
   entryPoints: [resolve(here, 'src', 'main.ts')],
   outfile: resolve(here, 'dist', 'main.js'),
-  define: { __RAMPART_COMMIT__: JSON.stringify(commit()) },
+  define: { __BOLLWERK_COMMIT__: JSON.stringify(commit()) },
   platform: 'node',
   format: 'esm',
   external: ['electron', 'bufferutil', 'utf-8-validate'],

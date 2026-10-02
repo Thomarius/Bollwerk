@@ -18,7 +18,7 @@ export default defineConfig({
    */
   publicDir: resolve(repoRoot, 'assets'),
   server: {
-    // @rampart/config imports the JSON files in the repository-root config/ directory.
+    // @bollwerk/config imports the JSON files in the repository-root config/ directory.
     fs: { allow: [repoRoot] },
   },
   build: {

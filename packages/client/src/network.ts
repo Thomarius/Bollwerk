@@ -1,4 +1,4 @@
-import { defaultArtConfig, type ArtConfig } from '@rampart/config';
+import { defaultArtConfig, type ArtConfig } from '@bollwerk/config';
 
 /**
  * The connection, where a player can see it: a badge beside Pause in an online match.

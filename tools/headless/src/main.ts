@@ -11,9 +11,9 @@ import {
   validateConfigBundle,
   type BotSetup,
   type Personality,
-} from '@rampart/config';
-import { loadConfigBundle } from '@rampart/config/node';
-import { Bot, dealPersonalities } from '@rampart/ai';
+} from '@bollwerk/config';
+import { loadConfigBundle } from '@bollwerk/config/node';
+import { Bot, dealPersonalities } from '@bollwerk/ai';
 import {
   Rng,
   applyAction,
@@ -25,11 +25,11 @@ import {
   seatOrder,
   step,
   type MatchState,
-} from '@rampart/sim';
+} from '@bollwerk/sim';
 
 import { replayAll } from './replay.js';
 import { summariseStats } from './summary.js';
-import { RoundStats, statsCsv, type StatRow } from '@rampart/analysis';
+import { RoundStats, statsCsv, type StatRow } from '@bollwerk/analysis';
 
 /**
  * Headless harness: runs matches with no renderer.
@@ -166,9 +166,9 @@ function parseArgs(argv: string[]): Args {
         break;
       case '--help':
         console.log(
-          'usage: npm start -w @rampart/headless -- [--matches N] [--players N] [--seed N] ' +
+          'usage: npm start -w @bollwerk/headless -- [--matches N] [--players N] [--seed N] ' +
             `[--max-ticks N] [--max-rounds N|none] [--teams N] [--level 1-10[,...]] [--personality offensive|dealt|...[,...]] [--stats FILE] [--map]\n` +
-            '       npm start -w @rampart/headless -- --replay recordings/ [more files or dirs] [--stats FILE]',
+            '       npm start -w @bollwerk/headless -- --replay recordings/ [more files or dirs] [--stats FILE]',
         );
         process.exit(0);
     }

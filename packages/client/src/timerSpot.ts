@@ -1,4 +1,4 @@
-import { Terrain, type MatchState } from '@rampart/sim';
+import { Terrain, type MatchState } from '@bollwerk/sim';
 
 /** Where the big timer sits: the centre of an all-water square, in tile coordinates. */
 export interface TimerSpot {

@@ -8,7 +8,7 @@ import {
   type Action,
   type MatchState,
   type Rng,
-} from '@rampart/sim';
+} from '@bollwerk/sim';
 
 /**
  * A stopgap opponent, good enough to be worth playing against.

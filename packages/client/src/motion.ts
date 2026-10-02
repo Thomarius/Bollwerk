@@ -6,7 +6,7 @@
  */
 export type EffectsLevel = 'high' | 'full' | 'reduced';
 
-const KEY = 'rampart.effects';
+const KEY = 'bollwerk.effects';
 
 export function storedEffects(): EffectsLevel {
   try {

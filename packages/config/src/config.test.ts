@@ -120,6 +120,31 @@ describe('audio manifest', () => {
     });
     expect(problems).toContain('audio: missing sfx cue "cannon_fire".');
   });
+
+  const credit = {
+    title: 'Click',
+    author: 'Someone',
+    licence: 'CC0',
+    source: 'https://opengameart.org/content/click',
+  };
+
+  it('reports a credit for a file no cue loads', () => {
+    // shot_impact has nine variants; a tenth is a typo, and the file it meant goes uncredited.
+    const problems = validateConfigBundle({
+      ...defaultConfigBundle,
+      audio: { ...defaultAudioManifest, credits: { 'sfx/shot_impact.10.wav': credit } },
+    } as typeof defaultConfigBundle);
+    expect(problems).toContain('audio: a credit for "sfx/shot_impact.10.wav", which no cue loads.');
+  });
+
+  it('takes only the licences it can link, and a source that is an address', () => {
+    const withCredit = (c: object) =>
+      AudioManifestSchema.safeParse({ ...defaultAudioManifest, credits: { 'sfx/select.wav': c } })
+        .success;
+    expect(withCredit(credit)).toBe(true);
+    expect(withCredit({ ...credit, licence: 'free' })).toBe(false);
+    expect(withCredit({ ...credit, source: 'opengameart' })).toBe(false);
+  });
 });
 
 describe('cross-file validation', () => {

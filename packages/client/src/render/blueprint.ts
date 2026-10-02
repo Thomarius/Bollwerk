@@ -1,5 +1,5 @@
-import type { ArtConfig, BlueprintStyleConfig } from '@rampart/config';
-import { Structure, Terrain, type MatchState, type Shot } from '@rampart/sim';
+import type { ArtConfig, BlueprintStyleConfig } from '@bollwerk/config';
+import { Structure, Terrain, type MatchState, type Shot } from '@bollwerk/sim';
 import { Graphics } from 'pixi.js';
 
 import {

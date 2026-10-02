@@ -1,7 +1,7 @@
-import { ArtStyleSchema, defaultArtConfig } from '@rampart/config';
+import { ArtStyleSchema, defaultArtConfig } from '@bollwerk/config';
 import { describe, expect, it } from 'vitest';
 
-import { stateFromAscii } from '@rampart/sim';
+import { stateFromAscii } from '@bollwerk/sim';
 
 import { nextTorch, seaDepth } from './pixel.js';
 import { createTheme } from './scene.js';

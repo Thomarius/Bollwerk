@@ -1,4 +1,4 @@
-import { defaultRuleset } from '@rampart/config';
+import { defaultRuleset } from '@bollwerk/config';
 import { describe, expect, it } from 'vitest';
 
 import { computeEnclosure } from './enclosure.js';

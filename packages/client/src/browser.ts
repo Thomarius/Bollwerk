@@ -1,4 +1,4 @@
-import { PROTOCOL_VERSION, RoomListSchema, type RoomListing } from '@rampart/protocol';
+import { PROTOCOL_VERSION, RoomListSchema, type RoomListing } from '@bollwerk/protocol';
 
 import { escape } from './lobby.js';
 

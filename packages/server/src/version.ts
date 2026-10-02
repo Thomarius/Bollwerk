@@ -3,12 +3,12 @@ import { execFileSync } from 'node:child_process';
 /**
  * Which code this server is: the commit it runs, marked `-dirty` when the working tree
  * holds changes to tracked files, since a recording replays exactly only against the code
- * that made it (PLAN §9). `RAMPART_COMMIT` first, which the image is built with, since it
+ * that made it (PLAN §9). `BOLLWERK_COMMIT` first, which the image is built with, since it
  * carries no repository; otherwise asked of git; otherwise unknown, and recordings go
  * without it rather than the server without recordings.
  */
 export function codeVersion(root: string, env: NodeJS.ProcessEnv = process.env): string | null {
-  const given = env.RAMPART_COMMIT?.trim();
+  const given = env.BOLLWERK_COMMIT?.trim();
   if (given) return given;
   try {
     const git = (...args: string[]): string =>

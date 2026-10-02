@@ -1,4 +1,4 @@
-import { defaultArtConfig, type ArtConfig, type PlayerShape } from '@rampart/config';
+import { defaultArtConfig, type ArtConfig, type PlayerShape } from '@bollwerk/config';
 
 import { isTeamed } from './colours.js';
 

@@ -1,5 +1,5 @@
-import { defaultRuleset } from '@rampart/config';
-import type { MatchEvent, Shot } from '@rampart/sim';
+import { defaultRuleset } from '@bollwerk/config';
+import type { MatchEvent, Shot } from '@bollwerk/sim';
 import { describe, expect, it } from 'vitest';
 
 import { LocalMatch } from './localMatch.js';

@@ -6,8 +6,8 @@ import {
   type MatchSettings,
   type PlayerShape,
   type SettingBounds,
-} from '@rampart/config';
-import type { Seat } from '@rampart/protocol';
+} from '@bollwerk/config';
+import type { Seat } from '@bollwerk/protocol';
 
 import { teamLetter } from './scores.js';
 import { shapeSvg } from './shapes.js';

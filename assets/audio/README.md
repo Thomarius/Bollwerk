@@ -75,3 +75,12 @@ shots and stacking copies of one sample sounds like distortion rather than like 
 The **Sound** switch in the bottom left corner of every screen mutes and unmutes; there is
 no key for it. The choice is remembered by the browser, which is why the switch always
 shows it.
+
+## Credits
+
+**Every file here needs a credit** in the manifest's `credits`, keyed by its path —
+`"sfx/cannon_fire.2.ogg": { "title", "author", "licence", "source", "changes" }`, `changes`
+optional. `licence` is one of the list in `packages/config/src/audio.ts`. Then run
+`npm run credits` to remake `CREDITS.md`, which a test checks against the manifest; the
+menu's Credits reads the manifest directly. A missing credit is a warning in the tests
+and stops a release.

@@ -1,5 +1,5 @@
-import { BALANCED, defaultAiConfig, type AiConfig, type Targeting } from '@rampart/config';
-import { Rng, applyEnclosure, stateFromAscii, type MatchState } from '@rampart/sim';
+import { BALANCED, defaultAiConfig, type AiConfig, type Targeting } from '@bollwerk/config';
+import { Rng, applyEnclosure, stateFromAscii, type MatchState } from '@bollwerk/sim';
 import { describe, expect, it } from 'vitest';
 
 import { Bot } from './bot.js';

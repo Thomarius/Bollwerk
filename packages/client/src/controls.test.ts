@@ -1,4 +1,4 @@
-import { defaultTerrainConfig } from '@rampart/config';
+import { defaultTerrainConfig } from '@bollwerk/config';
 import {
   Rng,
   applyAction,
@@ -11,7 +11,7 @@ import {
   stateFromAscii,
   step,
   type MatchState,
-} from '@rampart/sim';
+} from '@bollwerk/sim';
 import { describe, expect, it } from 'vitest';
 
 import { inputMode, mayTarget, nextReload, readyCannons } from './controls.js';

@@ -1,4 +1,4 @@
-import { Terrain, type MatchState } from '@rampart/sim';
+import { Terrain, type MatchState } from '@bollwerk/sim';
 
 import type { Cell, ViewTransform } from './theme.js';
 

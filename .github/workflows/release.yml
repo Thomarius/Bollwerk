@@ -27,8 +27,8 @@ jobs:
     env:
       # electron-builder fetches the Electron it packages; the one npm would install is not used.
       ELECTRON_SKIP_BINARY_DOWNLOAD: '1'
-      RAMPART_COMMIT: ${{ github.sha }}
-      RAMPART_VERSION: ${{ github.event_name == 'push' && github.ref_name || inputs.version }}
+      BOLLWERK_COMMIT: ${{ github.sha }}
+      BOLLWERK_VERSION: ${{ github.event_name == 'push' && github.ref_name || inputs.version }}
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-node@v5
@@ -36,16 +36,20 @@ jobs:
           node-version: 24
           cache: npm
       - run: npm ci
+      # Every sound shipped must be credited, as its licence asks (CREDITS.md).
+      - run: npx vitest run packages/config/src/audioFiles.test.ts
+        env:
+          BOLLWERK_REQUIRE_CREDITS: '1'
       - run: npm run build
       # A tag is v1.2.3; the files want 1.2.3.
       - name: Package
         shell: bash
         run: |
-          export RAMPART_VERSION="${RAMPART_VERSION#v}"
-          npm run package -w @rampart/desktop
+          export BOLLWERK_VERSION="${BOLLWERK_VERSION#v}"
+          npm run package -w @bollwerk/desktop
       - uses: actions/upload-artifact@v5
         with:
-          name: rampart-${{ matrix.os }}
+          name: bollwerk-${{ matrix.os }}
           path: ${{ matrix.file }}
           if-no-files-found: error
 
@@ -67,5 +71,5 @@ jobs:
         run: |
           gh release create "${{ github.ref_name }}" files/* \
             --repo "${{ github.repository }}" \
-            --title "Rampart ${{ github.ref_name }}" \
-            --notes "Portable builds of Rampart ${{ github.ref_name }}: the .exe for Windows 11, the .AppImage for Linux (mark it executable first). Unsigned, so Windows warns of an unknown publisher on first start."
+            --title "Bollwerk ${{ github.ref_name }}" \
+            --notes "Portable builds of Bollwerk ${{ github.ref_name }}: the .exe for Windows 11, the .AppImage for Linux (mark it executable first). Unsigned, so Windows warns of an unknown publisher on first start. An unofficial fan game inspired by Rampart (Atari Games, 1990), not affiliated with or endorsed by Warner Bros. Entertainment, which owns the Rampart trademark; see CREDITS.md for the audio's authors and licences."

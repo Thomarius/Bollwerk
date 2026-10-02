@@ -1,4 +1,4 @@
-import { defaultRuleset, defaultTerrainConfig } from '@rampart/config';
+import { defaultRuleset, defaultTerrainConfig } from '@bollwerk/config';
 import {
   Structure,
   applyAction,
@@ -8,7 +8,7 @@ import {
   createMatch,
   stateFromAscii,
   type MatchState,
-} from '@rampart/sim';
+} from '@bollwerk/sim';
 import { describe, expect, it } from 'vitest';
 
 import { bestSealPlan, planSeal, pocketCount, pocketPlan, weakestWall } from './tactics.js';

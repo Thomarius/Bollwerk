@@ -1,4 +1,4 @@
-import { defaultRuleset, type Ruleset } from '@rampart/config';
+import { defaultRuleset, type Ruleset } from '@bollwerk/config';
 import { describe, expect, it } from 'vitest';
 
 import { step } from './match.js';

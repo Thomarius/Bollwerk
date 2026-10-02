@@ -1,4 +1,4 @@
-import type { Rng } from '@rampart/sim';
+import type { Rng } from '@bollwerk/sim';
 import { Rectangle, Texture } from 'pixi.js';
 
 /**
@@ -128,7 +128,7 @@ export class Atlas {
 
     const base = Texture.from(sheet.canvas);
     base.source.scaleMode = 'nearest';
-    base.source.label = 'rampart-pixel-atlas';
+    base.source.label = 'bollwerk-pixel-atlas';
 
     const textures = new Map<string, Texture>();
     for (const [key, frame] of frames) {

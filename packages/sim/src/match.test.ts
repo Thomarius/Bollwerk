@@ -1,4 +1,4 @@
-import { defaultRuleset, defaultTerrainConfig } from '@rampart/config';
+import { defaultRuleset, defaultTerrainConfig } from '@bollwerk/config';
 import { describe, expect, it } from 'vitest';
 
 import { Rng } from './rng.js';

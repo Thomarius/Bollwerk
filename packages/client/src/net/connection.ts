@@ -4,7 +4,7 @@ import {
   encode,
   type ClientMessage,
   type ServerMessage,
-} from '@rampart/protocol';
+} from '@bollwerk/protocol';
 
 export type ConnectionState = 'connecting' | 'open' | 'closed';
 

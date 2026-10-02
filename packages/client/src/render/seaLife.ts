@@ -1,5 +1,5 @@
-import type { ArtConfig } from '@rampart/config';
-import type { MatchState } from '@rampart/sim';
+import type { ArtConfig } from '@bollwerk/config';
+import type { MatchState } from '@bollwerk/sim';
 import type { Graphics } from 'pixi.js';
 
 import { motionReduced } from '../motion.js';

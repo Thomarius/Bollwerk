@@ -19,7 +19,7 @@ The harness's `--stats` table has every number needed, but its console summary d
 compute margins, changes of lead or lives spent. Written first, in an interactive session,
 committed with a test:
 
-**`tools/headless/src/summary.ts`**, run as `npm start -w @rampart/headless -- --summarise
+**`tools/headless/src/summary.ts`**, run as `npm start -w @bollwerk/headless -- --summarise
 FILE [FILE...]` (or a script beside the harness), reading one or more `--stats` CSV files —
 soak output and `recordings/*.stats.csv` alike — and printing, per file and for all of them
 together:
@@ -59,7 +59,7 @@ no two batches play the same map. The harness puts player p on island p + 1 with
 seat shuffle a real match does, so **mixed tables rotate their level lists** across three
 sub-batches, and no level sits on one island.
 
-`H` below is `npm start -w @rampart/headless --`.
+`H` below is `npm start -w @bollwerk/headless --`.
 
 ### Soak 1 — how good the points game is (PLAN 11.2)
 

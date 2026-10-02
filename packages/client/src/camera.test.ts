@@ -1,4 +1,4 @@
-import type { MatchState } from '@rampart/sim';
+import type { MatchState } from '@bollwerk/sim';
 import { describe, expect, it } from 'vitest';
 
 import { between, openingShot, winnerShot } from './camera.js';

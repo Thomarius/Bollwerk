@@ -1,5 +1,5 @@
-import type { ArtConfig } from '@rampart/config';
-import { Rng } from '@rampart/sim';
+import type { ArtConfig } from '@bollwerk/config';
+import { Rng } from '@bollwerk/sim';
 
 import type { Texture } from 'pixi.js';
 

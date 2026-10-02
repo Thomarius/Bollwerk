@@ -1,5 +1,5 @@
-import { defaultArtConfig } from '@rampart/config';
-import { Structure, Terrain } from '@rampart/sim';
+import { defaultArtConfig } from '@bollwerk/config';
+import { Structure, Terrain } from '@bollwerk/sim';
 import { describe, expect, it } from 'vitest';
 
 import { LocalMatch } from '../localMatch.js';

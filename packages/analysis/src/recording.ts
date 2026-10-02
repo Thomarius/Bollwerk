@@ -1,10 +1,10 @@
-import type { ConfigBundle } from '@rampart/config';
+import type { ConfigBundle } from '@bollwerk/config';
 import {
   replayRecording,
   setupOfRecorded,
   type RecordingLine,
   type ReplayResult,
-} from '@rampart/protocol';
+} from '@bollwerk/protocol';
 
 import { RoundStats, type StatRow, type Tier } from './stats.js';
 

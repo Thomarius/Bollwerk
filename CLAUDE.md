@@ -1,8 +1,21 @@
-# Rampart Remake
+# Bollwerk
 
 Multiplayer-only recreation of the 1990 Atari arcade game _Rampart_, in TypeScript.
 Shoot down opponents' castle walls, then race to rebuild your own before the next
 barrage. Fail to seal a castle and you spend a life; run out of lives and you are out.
+
+**The name is Bollwerk, never Rampart** (renamed 2026-10-02, ARCHIVE 11zw; the repository
+is `Thomarius/Bollwerk`, the local folder still `RampartRemake`). Rampart is a trademark
+of Warner Bros. Entertainment: the game names it only to say what it is inspired by
+(`INSPIRED_BY` and `DISCLAIMER` in `packages/config/src/credits.ts`, shown in the menu,
+the Credits, the desktop window, the README and the release notes). In the docs "the
+original" means Rampart. Nothing of the original is used — no code, graphics or sound.
+
+**Every audio file must be credited** in `config/audio.manifest.json` (`credits`, by path:
+title, author, licence, source, changes). `npm run credits` writes `CREDITS.md` from it,
+and a test fails when that file is stale. A file without a credit is a warning in
+`npm run check` and an error under `BOLLWERK_REQUIRE_CREDITS=1`, which the release
+workflow sets. Every sound is from OpenGameArt.org.
 
 **`docs/PLAN.md` is the design and the open work** — read it before changing rules,
 terrain or bots. **`docs/ARCHIVE.md`** records how each decision was reached, with the
@@ -15,15 +28,16 @@ is the orientation.
 npm install
 npm start                           # build, then serve the game at http://localhost:8080
 npm run check                       # format, lint, typecheck, test — must pass before committing
+npm run credits                     # CREDITS.md, from the audio manifest's credits
 npm run build                       # client + server bundles, both needed by the image
-npm run dev   -w @rampart/client    # play offline at http://localhost:5173
-npm start     -w @rampart/server    # serves the built client at http://localhost:8080
-npm start     -w @rampart/headless -- --matches 8 --players 3 --level 5 --stats out.csv
-npm start     -w @rampart/headless -- --map --players 3 --seed 2   # print a map as ASCII
-npm start     -w @rampart/headless -- --replay recordings/ --stats human.csv   # recorded human play
+npm run dev   -w @bollwerk/client   # play offline at http://localhost:5173
+npm start     -w @bollwerk/server   # serves the built client at http://localhost:8080
+npm start     -w @bollwerk/headless -- --matches 8 --players 3 --level 5 --stats out.csv
+npm start     -w @bollwerk/headless -- --map --players 3 --seed 2   # print a map as ASCII
+npm start     -w @bollwerk/headless -- --replay recordings/ --stats human.csv   # recorded human play
 tools/screenshots.sh /tmp/shots [scene...]   # client in fixed states, against the dev server
-npm start     -w @rampart/desktop   # the desktop app, after npm run build
-npm run package -w @rampart/desktop # its portable file for this system, into packages/desktop/release/
+npm start     -w @bollwerk/desktop  # the desktop app, after npm run build
+npm run package -w @bollwerk/desktop # its portable file for this system, into packages/desktop/release/
 ```
 
 `npm run check` takes a few minutes, mostly bot matches. Run it in the background and
@@ -173,15 +187,15 @@ never for every change.
 on their own systems: run it by hand from the Actions tab with a version to get the two
 files as the run's artifacts, to try first; push a tag `v1.2.3` to build them and publish
 a GitHub release of that version. Locally, `npm run build` then
-`npm run package -w @rampart/desktop` makes the file for this machine. Both are unsigned:
+`npm run package -w @bollwerk/desktop` makes the file for this machine. Both are unsigned:
 Windows warns of an unknown publisher on first start, and an AppImage must be marked
-executable. Electron's own binary, for `npm start -w @rampart/desktop`, is fetched by
+executable. Electron's own binary, for `npm start -w @bollwerk/desktop`, is fetched by
 `node node_modules/electron/install.js` when `npm install` has not; CI and the image skip
 it (`ELECTRON_SKIP_BINARY_DOWNLOAD`).
 
 ## Measuring the bots
 
-`npm start -w @rampart/headless -- --stats FILE` writes a row per player per round,
+`npm start -w @bollwerk/headless -- --stats FILE` writes a row per player per round,
 sampled at the resolution that ends each build phase — castles sealed, cannons owned and
 active, cannon room, pockets, wall tiles, pieces placed against the pieces the level had
 time for; each row names the seat's `level` and `personality`.
@@ -278,7 +292,7 @@ its header but the simulation does not — so the server stamps each header with
 - **The static handler answers an unknown path with `index.html` and a 200.** A missing
   asset is not a 404 — audio decides a file is absent by its failure to decode.
 - **Check nothing stale is answering.** A git worktree sharing the main checkout's
-  `node_modules` resolves `@rampart/*` back into the working tree and measures the new
+  `node_modules` resolves `@bollwerk/*` back into the working tree and measures the new
   code twice; a server left running on 8080 answers instead of the one you just built.
   Identical state hashes either side of a change mean the code did not load.
 - **The HUD's banner layer holds more than the announcement**: island banners, team tags,

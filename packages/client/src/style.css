@@ -425,6 +425,81 @@ body.reduced-effects .embers {
   font-size: 11px;
 }
 
+/* What the game owes Rampart, under the title, with the way to the Credits. */
+.menu p.inspired {
+  margin: -0.6rem 0 1rem;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+}
+
+.menu button.link {
+  width: auto;
+  margin: 0;
+  padding: 0;
+  border: none;
+  color: var(--accent);
+  font-size: inherit;
+  letter-spacing: inherit;
+  text-transform: none;
+  text-decoration: underline;
+}
+
+.menu button.link:hover {
+  background: none;
+  color: var(--ink);
+}
+
+/* The Credits, in How to play's overlay and panel (credits.ts). */
+.how-to-play.credits .panel {
+  width: min(34rem, 90vw);
+  max-height: 85vh;
+  align-items: stretch;
+}
+
+.how-to-play.credits h2 {
+  margin: 0;
+  color: var(--accent);
+  font-size: 1.1rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+
+.how-to-play.credits .disclaimer {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.how-to-play.credits .list {
+  overflow-y: auto;
+  border-top: 1px solid var(--edge);
+}
+
+.how-to-play.credits h3 {
+  margin: 0.8rem 0 0.3rem;
+  color: var(--ink);
+  font-size: 12px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.how-to-play.credits ul {
+  margin: 0;
+  padding-left: 1.1rem;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.how-to-play.credits a {
+  color: var(--accent);
+}
+
+.how-to-play.credits button.close {
+  align-self: center;
+}
+
 /* Play, and beside it the table's visibility, chosen as the table is made. */
 .menu .play-row #play {
   flex: 3;

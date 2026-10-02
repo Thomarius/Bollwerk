@@ -12,8 +12,8 @@ import {
   type Ruleset,
   type ServerConfig,
   type TerrainConfig,
-} from '@rampart/config';
-import { Bot, dealPersonalities } from '@rampart/ai';
+} from '@bollwerk/config';
+import { Bot, dealPersonalities } from '@bollwerk/ai';
 import {
   ActionSchema,
   MatchRecorder,
@@ -25,7 +25,7 @@ import {
   type ClientMessage,
   type Seat as WireSeat,
   type ServerMessage,
-} from '@rampart/protocol';
+} from '@bollwerk/protocol';
 import {
   Rng,
   applyAction,
@@ -36,7 +36,7 @@ import {
   step,
   type Action,
   type MatchState,
-} from '@rampart/sim';
+} from '@bollwerk/sim';
 
 /**
  * A client, abstracted away from WebSockets so a room can be driven directly in

@@ -23,5 +23,6 @@
     "music_battle": { "file": "music/music_battle.ogg", "volume": 0.5, "loop": true },
     "music_victory": { "file": "music/music_victory.mp3", "volume": 0.6, "loop": false },
     "music_defeat": { "file": "music/music_defeat.ogg", "volume": 0.6, "loop": false }
-  }
+  },
+  "credits": {}
 }

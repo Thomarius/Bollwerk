@@ -1,4 +1,4 @@
-import type { RecordingLine } from '@rampart/protocol';
+import type { RecordingLine } from '@bollwerk/protocol';
 
 /**
  * Sends a local match's recording to the server the page came from, a few lines at a

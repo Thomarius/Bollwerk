@@ -1,4 +1,4 @@
-import { streamFor, type MatchState } from '@rampart/sim';
+import { streamFor, type MatchState } from '@bollwerk/sim';
 
 import { standings } from './scores.js';
 import type { MatchLog } from './summary.js';

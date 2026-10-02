@@ -34,10 +34,10 @@ WORKDIR /app
 ENV NODE_ENV=production
 
 # The commit the image was built from, for the recordings it writes (packages/server/src
-# /version.ts): the image carries no repository to ask. `--build-arg RAMPART_COMMIT=...`;
+# /version.ts): the image carries no repository to ask. `--build-arg BOLLWERK_COMMIT=...`;
 # without it, recordings are written without the field.
-ARG RAMPART_COMMIT=""
-ENV RAMPART_COMMIT=${RAMPART_COMMIT}
+ARG BOLLWERK_COMMIT=""
+ENV BOLLWERK_COMMIT=${BOLLWERK_COMMIT}
 
 # Everything the server touches at runtime, and nothing else — no node_modules, no
 # TypeScript, no toolchain. `ws` and `zod` are inside the bundle; the two optional

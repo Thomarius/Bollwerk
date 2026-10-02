@@ -1,4 +1,4 @@
-import { PROTOCOL_VERSION } from '@rampart/protocol';
+import { PROTOCOL_VERSION } from '@bollwerk/protocol';
 import { describe, expect, it } from 'vitest';
 
 import { gamesMarkup, joinRefusedNotice, parseRoomList } from './browser.js';

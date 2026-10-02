@@ -1,4 +1,4 @@
-import type { EnclosureResult, MatchState } from '@rampart/sim';
+import type { EnclosureResult, MatchState } from '@bollwerk/sim';
 
 /**
  * What the board should point out to a player who is building.

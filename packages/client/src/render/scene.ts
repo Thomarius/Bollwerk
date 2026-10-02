@@ -1,5 +1,5 @@
-import { defaultArtConfig, type ArtConfig, type ArtStyle } from '@rampart/config';
-import type { MatchState, Shot } from '@rampart/sim';
+import { defaultArtConfig, type ArtConfig, type ArtStyle } from '@bollwerk/config';
+import type { MatchState, Shot } from '@bollwerk/sim';
 import { Application, Container, Graphics } from 'pixi.js';
 
 import type { CameraShot } from '../camera.js';

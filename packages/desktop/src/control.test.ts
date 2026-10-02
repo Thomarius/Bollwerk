@@ -1,4 +1,4 @@
-import type { RunningServer, StartResult } from '@rampart/server';
+import type { RunningServer, StartResult } from '@bollwerk/server';
 import { describe, expect, it } from 'vitest';
 
 import { ServerControl, nextPort, type ControlState } from './control.js';

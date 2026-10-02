@@ -1,4 +1,4 @@
-import { SFX_CUES, MUSIC_CUES, type AudioManifest } from './audio.js';
+import { SFX_CUES, MUSIC_CUES, cuePaths, type AudioManifest } from './audio.js';
 import type { Ruleset } from './ruleset.js';
 import type { TerrainConfig } from './terrain.js';
 import type { ArtConfig } from './art.js';
@@ -117,6 +117,13 @@ function missingCues(audio: AudioManifest): string[] {
   }
   for (const cue of MUSIC_CUES) {
     if (!(cue in audio.music)) problems.push(`audio: missing music cue "${cue}".`);
+  }
+  // A credit for a path no cue loads is a typo, and the file it meant is left uncredited.
+  const named = new Set(
+    [...Object.values(audio.sfx), ...Object.values(audio.music)].flatMap(cuePaths),
+  );
+  for (const path of Object.keys(audio.credits)) {
+    if (!named.has(path)) problems.push(`audio: a credit for "${path}", which no cue loads.`);
   }
   return problems;
 }

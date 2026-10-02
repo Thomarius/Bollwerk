@@ -1,5 +1,5 @@
-import { RulesetSchema, TerrainConfigSchema } from '@rampart/config';
-import { PHASES, type MatchState } from '@rampart/sim';
+import { RulesetSchema, TerrainConfigSchema } from '@bollwerk/config';
+import { PHASES, type MatchState } from '@bollwerk/sim';
 import { z } from 'zod';
 
 /**

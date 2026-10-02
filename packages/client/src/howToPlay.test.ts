@@ -1,4 +1,4 @@
-import { Structure } from '@rampart/sim';
+import { Structure } from '@bollwerk/sim';
 import { describe, expect, it } from 'vitest';
 
 import {

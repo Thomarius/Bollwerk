@@ -1,4 +1,4 @@
-import { applySnapshot, type ServerMessage } from '@rampart/protocol';
+import { applySnapshot, type ServerMessage } from '@bollwerk/protocol';
 import {
   applyAction,
   createMatch,
@@ -9,7 +9,7 @@ import {
   type MatchEvent,
   type MatchState,
   type Rejection,
-} from '@rampart/sim';
+} from '@bollwerk/sim';
 
 import type { ServerConnection } from './connection.js';
 

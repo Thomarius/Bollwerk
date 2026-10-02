@@ -1,5 +1,5 @@
-import { defaultArtConfig, type ArtConfig, type PlayerPalette } from '@rampart/config';
-import type { MatchState } from '@rampart/sim';
+import { defaultArtConfig, type ArtConfig, type PlayerPalette } from '@bollwerk/config';
+import type { MatchState } from '@bollwerk/sim';
 
 /**
  * Each player's colours for this match, by player id.

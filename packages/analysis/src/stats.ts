@@ -4,8 +4,8 @@ import {
   BALANCED,
   type BotSetup,
   type ConfigBundle,
-} from '@rampart/config';
-import { cannonRoom, cheapestPlanFor, pocketCount } from '@rampart/ai';
+} from '@bollwerk/config';
+import { cannonRoom, cheapestPlanFor, pocketCount } from '@bollwerk/ai';
 import {
   Structure,
   Terrain,
@@ -13,7 +13,7 @@ import {
   poolForRound,
   type MatchEvent,
   type MatchState,
-} from '@rampart/sim';
+} from '@bollwerk/sim';
 
 /** Who played a seat: a bot's level and personality, or a person, from a recording. */
 export type Tier = BotSetup | 'human';

@@ -1,5 +1,5 @@
 {
-  "name": "@rampart/analysis",
+  "name": "@bollwerk/analysis",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -10,9 +10,9 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@rampart/ai": "*",
-    "@rampart/config": "*",
-    "@rampart/protocol": "*",
-    "@rampart/sim": "*"
+    "@bollwerk/ai": "*",
+    "@bollwerk/config": "*",
+    "@bollwerk/protocol": "*",
+    "@bollwerk/sim": "*"
   }
 }

@@ -5,7 +5,7 @@ import {
   type AiConfig,
   type BotProfile,
   type BotSetup,
-} from '@rampart/config';
+} from '@bollwerk/config';
 import {
   NEIGHBOURS_8,
   Structure,
@@ -22,7 +22,7 @@ import {
   type Action,
   type MatchState,
   type Rng,
-} from '@rampart/sim';
+} from '@bollwerk/sim';
 
 import {
   cannonRoom,

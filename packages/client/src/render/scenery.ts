@@ -1,5 +1,5 @@
-import type { SceneryConfig } from '@rampart/config';
-import { Rng, Structure, Terrain, type MatchState } from '@rampart/sim';
+import type { SceneryConfig } from '@bollwerk/config';
+import { Rng, Structure, Terrain, type MatchState } from '@bollwerk/sim';
 
 import type { Cell } from './theme.js';
 

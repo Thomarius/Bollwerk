@@ -1,5 +1,5 @@
-import type { MusicCue, SfxCue } from '@rampart/config';
-import type { MatchEvent, MatchState, Phase } from '@rampart/sim';
+import type { MusicCue, SfxCue } from '@bollwerk/config';
+import type { MatchEvent, MatchState, Phase } from '@bollwerk/sim';
 import { describe, expect, it } from 'vitest';
 
 import { MatchAudio, type Cues } from './matchAudio.js';

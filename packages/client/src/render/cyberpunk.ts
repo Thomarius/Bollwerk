@@ -1,5 +1,5 @@
-import type { ArtConfig, CyberpunkStyleConfig } from '@rampart/config';
-import { Rng, Structure, Terrain, type MatchState, type Shot } from '@rampart/sim';
+import type { ArtConfig, CyberpunkStyleConfig } from '@bollwerk/config';
+import { Rng, Structure, Terrain, type MatchState, type Shot } from '@bollwerk/sim';
 import { BlurFilter, Graphics } from 'pixi.js';
 
 import { bloomWanted, motionReduced } from '../motion.js';

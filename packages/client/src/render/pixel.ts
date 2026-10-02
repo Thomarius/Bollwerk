@@ -1,5 +1,5 @@
-import type { ArtConfig, ArtStyle } from '@rampart/config';
-import { Structure, Terrain, type MatchState, type Shot } from '@rampart/sim';
+import type { ArtConfig, ArtStyle } from '@bollwerk/config';
+import { Structure, Terrain, type MatchState, type Shot } from '@bollwerk/sim';
 import { BlurFilter, Container, Graphics, Sprite, Texture } from 'pixi.js';
 
 import { bloomWanted, motionReduced } from '../motion.js';

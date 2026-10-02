@@ -7,11 +7,11 @@ import type { DesktopApi } from './preload.js';
  */
 declare global {
   interface Window {
-    rampart: DesktopApi;
+    bollwerk: DesktopApi;
   }
 }
 
-const api = window.rampart;
+const api = window.bollwerk;
 const $ = <T extends HTMLElement>(id: string): T => document.getElementById(id) as T;
 const status = $('status');
 const detail = $('detail');

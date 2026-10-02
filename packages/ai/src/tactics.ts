@@ -5,7 +5,7 @@ import {
   Terrain,
   type Castle,
   type MatchState,
-} from '@rampart/sim';
+} from '@bollwerk/sim';
 
 import { INFINITE_CAPACITY, MaxFlow } from './flow.js';
 

@@ -7,6 +7,7 @@ import {
   defaultConfigBundle,
   defaultSettings,
   defaultTeams,
+  INSPIRED_BY,
   MAX_LEVEL,
   MIN_LEVEL,
   mergeSettings,
@@ -20,7 +21,7 @@ import {
   type MatchSettings,
   type Personality,
   type Table,
-} from '@rampart/config';
+} from '@bollwerk/config';
 import {
   PHASES,
   computeEnclosure,
@@ -29,7 +30,7 @@ import {
   type MatchEvent,
   type MatchState,
   type Phase,
-} from '@rampart/sim';
+} from '@bollwerk/sim';
 
 import { Audio } from './audio.js';
 import { countdownBeat, showsClock } from './clock.js';
@@ -39,6 +40,7 @@ import { matchPalette, playerCssColour, useMatchPalette } from './colours.js';
 import { matchShapes, playerShape, useMatchShapes } from './shapes.js';
 import { NetworkBadge, type NetworkReading } from './network.js';
 import { howToPlaySeen, openHowToPlay } from './howToPlay.js';
+import { openCredits } from './credits.js';
 import { WatchingStrip } from './watching.js';
 import { volumeSliders } from './volume.js';
 import { stylePreview } from './stylePreview.js';
@@ -88,12 +90,12 @@ import {
 } from './transition.js';
 import { ServerConnection } from './net/connection.js';
 import { NetworkMatch } from './net/networkMatch.js';
-import type { RoomListing, ServerMessage } from '@rampart/protocol';
+import type { RoomListing, ServerMessage } from '@bollwerk/protocol';
 import { Scene, createTheme, type Ghost, type SceneLook } from './render/scene.js';
 import type { Choice } from './render/theme.js';
 
 /**
- * Rampart client.
+ * Bollwerk client.
  *
  * A match is played either locally against stopgap opponents or against an
  * authoritative server. Both drive the same renderer, controls and HUD through one
@@ -170,7 +172,7 @@ installSoundButton();
 const params = new URLSearchParams(globalThis.location.search);
 
 /** Where the menu remembers the two looks, so they survive a reload. */
-const STYLES_KEY = 'rampart.styles';
+const STYLES_KEY = 'bollwerk.styles';
 
 /** What the menu saved, unchecked: `chooseStyle` decides whether each is still usable. */
 function storedStyles(): Partial<Record<ArtLook, unknown>> {
@@ -351,7 +353,7 @@ function styleOptions(look: ArtLook): string {
 }
 
 /** Where the menu remembers the player's name, as it does the looks. */
-const NAME_KEY = 'rampart.name';
+const NAME_KEY = 'bollwerk.name';
 
 function storedName(): string {
   try {
@@ -421,6 +423,7 @@ function showMenu(notice: string | null = null): void {
   app!.innerHTML = `
     <div class="menu">
       <h1 class="title"><span class="title-split" id="title"></span></h1>
+      <p class="inspired">${escape(INSPIRED_BY)} · <button id="credits" class="link">Credits</button></p>
       <p>Shoot down their walls. Rebuild yours before the next barrage.
          Fail to seal a castle and you lose a life.</p>
       <label>Name <input id="name" type="text" maxlength="16" value="Player" /></label>
@@ -534,6 +537,10 @@ function showMenu(notice: string | null = null): void {
     howTo.blur();
     openHowToPlay(undefined, () => audio.play('select'));
   });
+  document.querySelector('#credits')?.addEventListener('click', () => {
+    audio.play('select');
+    openCredits(defaultConfigBundle.audio, () => audio.play('select'));
+  });
   document.querySelector('#join')?.addEventListener('click', () => {
     audio.play('select');
     const code = document.querySelector<HTMLInputElement>('#code')?.value.trim() ?? '';
@@ -578,7 +585,7 @@ function localSession(match: LocalMatch, rematch: (() => void) | null = null): S
 
 // ----------------------------------------------------------------------- lobby
 
-const TOKEN_KEY = 'rampart.seat';
+const TOKEN_KEY = 'bollwerk.seat';
 
 /** How long to wait for a server before setting the table locally instead. */
 const SERVER_WAIT_MS = 2000;

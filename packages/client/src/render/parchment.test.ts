@@ -1,4 +1,4 @@
-import { stateFromAscii } from '@rampart/sim';
+import { stateFromAscii } from '@bollwerk/sim';
 import { describe, expect, it } from 'vitest';
 
 import { timerSpot } from '../timerSpot.js';

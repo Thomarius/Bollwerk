@@ -1,4 +1,4 @@
-import type { MatchState, PlayerState } from '@rampart/sim';
+import type { MatchState, PlayerState } from '@bollwerk/sim';
 
 import { isTeamMatch, teamLetter } from './scores.js';
 

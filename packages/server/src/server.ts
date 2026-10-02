@@ -3,14 +3,14 @@ import { createServer, type IncomingMessage, type ServerResponse } from 'node:ht
 import { networkInterfaces } from 'node:os';
 import { extname, join, normalize } from 'node:path';
 
-import { loadConfigBundle } from '@rampart/config/node';
+import { loadConfigBundle } from '@bollwerk/config/node';
 import {
   PROTOCOL_VERSION,
   decodeClientMessage,
   encode,
   type RoomList,
   type ServerMessage,
-} from '@rampart/protocol';
+} from '@bollwerk/protocol';
 import { WebSocketServer, type WebSocket } from 'ws';
 
 import { openableUrls } from './addresses.js';
@@ -136,7 +136,7 @@ export async function startServer(options: ServerOptions): Promise<StartResult> 
 
     if (!existsSync(file)) {
       res.writeHead(503, { 'content-type': 'text/plain' });
-      res.end('client not built — run: npm run build -w @rampart/client');
+      res.end('client not built — run: npm run build -w @bollwerk/client');
       return;
     }
     res.writeHead(200, { 'content-type': MIME[extname(file)] ?? 'application/octet-stream' });

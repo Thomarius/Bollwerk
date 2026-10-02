@@ -1,5 +1,5 @@
-import { createMatch, stateFromAscii } from '@rampart/sim';
-import { defaultRuleset, defaultTerrainConfig } from '@rampart/config';
+import { createMatch, stateFromAscii } from '@bollwerk/sim';
+import { defaultRuleset, defaultTerrainConfig } from '@bollwerk/config';
 import { describe, expect, it } from 'vitest';
 
 import { timerSpot } from './timerSpot.js';

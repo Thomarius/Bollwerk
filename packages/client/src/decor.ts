@@ -1,5 +1,5 @@
-import { artForStyle, type ArtConfig, type ArtLook, type ArtStyle } from '@rampart/config';
-import { Rng } from '@rampart/sim';
+import { artForStyle, type ArtConfig, type ArtLook, type ArtStyle } from '@bollwerk/config';
+import { Rng } from '@bollwerk/sim';
 
 import { Pixels } from './render/pixel/canvas.js';
 import { water } from './render/pixel/generators.js';
@@ -17,12 +17,17 @@ import { hatch } from './render/walls.js';
  * a font, and a letter it lacks is left out rather than guessed at.
  */
 const GLYPHS: Record<string, readonly string[]> = {
+  B: ['####.', '#...#', '#...#', '####.', '#...#', '#...#', '####.'],
+  O: ['.###.', '#...#', '#...#', '#...#', '#...#', '#...#', '.###.'],
+  L: ['#....', '#....', '#....', '#....', '#....', '#....', '#####'],
+  W: ['#...#', '#...#', '#...#', '#.#.#', '#.#.#', '##.##', '#...#'],
+  E: ['#####', '#....', '#....', '####.', '#....', '#....', '#####'],
   R: ['####.', '#...#', '#...#', '####.', '#.#..', '#..#.', '#...#'],
-  A: ['.###.', '#...#', '#...#', '#####', '#...#', '#...#', '#...#'],
-  M: ['#...#', '##.##', '#.#.#', '#.#.#', '#...#', '#...#', '#...#'],
-  P: ['####.', '#...#', '#...#', '####.', '#....', '#....', '#....'],
-  T: ['#####', '..#..', '..#..', '..#..', '..#..', '..#..', '..#..'],
+  K: ['#...#', '#..#.', '#.#..', '##...', '#.#..', '#..#.', '#...#'],
 };
+
+/** The game's name, as the menu's title spells it. */
+export const GAME_TITLE = 'Bollwerk';
 
 /**
  * A title as drawn: the image, and how its letters sit in it — canvas pixels per glyph
@@ -576,11 +581,11 @@ const TITLES: Record<ArtStyle, (text: string, art: ArtConfig) => Title> = {
 };
 
 export function titleFor(style: ArtStyle, art: ArtConfig): Title {
-  return TITLES[style]('Rampart', art);
+  return TITLES[style](GAME_TITLE, art);
 }
 
 /** How wide the title's letters stand in the menu, in CSS pixels: 8 to a cell in every style. */
-export function titleWidth(text = 'Rampart'): number {
+export function titleWidth(text = GAME_TITLE): number {
   return ((glyphsOf(text).length * 6 - 1) * TITLE_LETTERS_PX) / 7;
 }
 
@@ -640,7 +645,7 @@ export class SplitTitle {
       const el = document.createElement('span');
       el.className = 'title-layer';
       const img = document.createElement('img');
-      img.alt = look === 'build' ? 'Rampart' : '';
+      img.alt = look === 'build' ? GAME_TITLE : '';
       el.append(img);
       return el;
     };

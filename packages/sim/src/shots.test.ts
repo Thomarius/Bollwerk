@@ -1,4 +1,4 @@
-import { defaultRuleset } from '@rampart/config';
+import { defaultRuleset } from '@bollwerk/config';
 import { describe, expect, it } from 'vitest';
 
 import { craterOffsets, findReadyCannon, fire, flightTicks, resolveImpacts } from './shots.js';

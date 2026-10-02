@@ -1,5 +1,5 @@
 {
-  "name": "@rampart/protocol",
+  "name": "@bollwerk/protocol",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -10,8 +10,8 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@rampart/config": "*",
-    "@rampart/sim": "*",
+    "@bollwerk/config": "*",
+    "@bollwerk/sim": "*",
     "zod": "^4.6.5"
   }
 }

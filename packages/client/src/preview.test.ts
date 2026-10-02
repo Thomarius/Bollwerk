@@ -1,4 +1,4 @@
-import { defaultArtConfig, defaultTerrainConfig } from '@rampart/config';
+import { defaultArtConfig, defaultTerrainConfig } from '@bollwerk/config';
 import { describe, expect, it } from 'vitest';
 
 import { matchPalette } from './colours.js';

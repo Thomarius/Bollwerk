@@ -7,7 +7,7 @@ import {
   TerrainConfigSchema,
   tierSetup,
   type BotSetup,
-} from '@rampart/config';
+} from '@bollwerk/config';
 import {
   applyAction,
   createMatch,
@@ -18,7 +18,7 @@ import {
   type MatchEvent,
   type MatchOptions,
   type MatchState,
-} from '@rampart/sim';
+} from '@bollwerk/sim';
 import { z } from 'zod';
 
 import { ActionSchema } from './messages.js';

@@ -1,4 +1,4 @@
-import type { AudioManifest, MusicCue, SfxCue } from '@rampart/config';
+import type { AudioManifest, MusicCue, SfxCue } from '@bollwerk/config';
 
 /**
  * Sound.
@@ -25,7 +25,7 @@ import type { AudioManifest, MusicCue, SfxCue } from '@rampart/config';
 /** How long one music track takes to give way to the next. */
 const CROSSFADE_MS = 600;
 
-const MUTE_KEY = 'rampart.muted';
+const MUTE_KEY = 'bollwerk.muted';
 
 /**
  * The two volumes a player sets in the menu (PLAN 11.18 Y4), music and sounds, each from
@@ -35,8 +35,8 @@ const MUTE_KEY = 'rampart.muted';
 export type VolumeKind = 'music' | 'sounds';
 
 const VOLUME_KEY: Record<VolumeKind, string> = {
-  music: 'rampart.volume.music',
-  sounds: 'rampart.volume.sounds',
+  music: 'bollwerk.volume.music',
+  sounds: 'bollwerk.volume.sounds',
 };
 
 /** A stored volume, read back: full when nothing is stored or what is stored is not one. */

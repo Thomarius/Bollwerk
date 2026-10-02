@@ -1,6 +1,6 @@
-import { dealPersonalities } from '@rampart/ai';
-import { personalityWords, type BotSetup, type Personality } from '@rampart/config';
-import { seatOrder, type MatchEvent, type MatchState } from '@rampart/sim';
+import { dealPersonalities } from '@bollwerk/ai';
+import { personalityWords, type BotSetup, type Personality } from '@bollwerk/config';
+import { seatOrder, type MatchEvent, type MatchState } from '@bollwerk/sim';
 
 /**
  * What the end of a match shows beside the final standings: for each player the wall

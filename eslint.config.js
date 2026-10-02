@@ -35,7 +35,7 @@ export default tseslint.config(
           object: 'Math',
           property: 'random',
           message:
-            'Use a seeded RNG stream from @rampart/sim — the simulation must be deterministic.',
+            'Use a seeded RNG stream from @bollwerk/sim — the simulation must be deterministic.',
         },
         {
           object: 'Date',

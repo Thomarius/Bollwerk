@@ -1,4 +1,4 @@
-import { TRAIT_VALUES, type Personality } from '@rampart/config';
+import { TRAIT_VALUES, type Personality } from '@bollwerk/config';
 import { describe, expect, it } from 'vitest';
 
 import { dealPersonalities } from './personality.js';

@@ -1,4 +1,4 @@
-import type { Ruleset, TerrainConfig } from '@rampart/config';
+import type { Ruleset, TerrainConfig } from '@bollwerk/config';
 
 export const Terrain = { Water: 0, Land: 1 } as const;
 export type TerrainKind = (typeof Terrain)[keyof typeof Terrain];

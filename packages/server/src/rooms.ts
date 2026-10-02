@@ -1,7 +1,7 @@
-import type { ConfigBundle } from '@rampart/config';
-import { Rng } from '@rampart/sim';
+import type { ConfigBundle } from '@bollwerk/config';
+import { Rng } from '@bollwerk/sim';
 
-import type { RecordingLine, RoomListing } from '@rampart/protocol';
+import type { RecordingLine, RoomListing } from '@bollwerk/protocol';
 
 import { Room } from './room.js';
 

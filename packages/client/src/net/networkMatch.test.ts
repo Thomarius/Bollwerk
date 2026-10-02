@@ -1,6 +1,6 @@
-import { defaultConfigBundle } from '@rampart/config';
-import { captureSnapshot } from '@rampart/protocol';
-import { createMatch, hashMatchState, step, type MatchState } from '@rampart/sim';
+import { defaultConfigBundle } from '@bollwerk/config';
+import { captureSnapshot } from '@bollwerk/protocol';
+import { createMatch, hashMatchState, step, type MatchState } from '@bollwerk/sim';
 import { describe, expect, it } from 'vitest';
 
 import type { ServerConnection } from './connection.js';

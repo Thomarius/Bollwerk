@@ -1,4 +1,4 @@
-import { defaultArtConfig } from '@rampart/config';
+import { defaultArtConfig } from '@bollwerk/config';
 import { describe, expect, it } from 'vitest';
 
 import { daylight, shadowCast, weatherFor } from './atmosphere.js';

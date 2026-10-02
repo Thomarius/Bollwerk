@@ -1,9 +1,9 @@
 import { appendFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 
-import { statsCsv, statsOfRecording } from '@rampart/analysis';
-import type { ConfigBundle } from '@rampart/config';
-import { RecordingLineSchema, parseRecording, type RecordingLine } from '@rampart/protocol';
+import { statsCsv, statsOfRecording } from '@bollwerk/analysis';
+import type { ConfigBundle } from '@bollwerk/config';
+import { RecordingLineSchema, parseRecording, type RecordingLine } from '@bollwerk/protocol';
 
 /**
  * Match recordings on disk, one file per match (`<id>.jsonl`), for tuning the rules

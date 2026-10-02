@@ -1,7 +1,7 @@
-import { BALANCED, defaultConfigBundle } from '@rampart/config';
+import { BALANCED, defaultConfigBundle } from '@bollwerk/config';
 import { describe, expect, it } from 'vitest';
 
-import { setupOfRecorded } from '@rampart/protocol';
+import { setupOfRecorded } from '@bollwerk/protocol';
 
 import { piecesBudget, rowLabel, statsCsv, type StatRow } from './stats.js';
 

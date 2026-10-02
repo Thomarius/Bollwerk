@@ -5,9 +5,9 @@ import {
   type BotSetup,
   type Personality,
   type Ruleset,
-} from '@rampart/config';
-import { Bot, dealPersonalities } from '@rampart/ai';
-import { MatchRecorder, recordingId, type RecordingLine } from '@rampart/protocol';
+} from '@bollwerk/config';
+import { Bot, dealPersonalities } from '@bollwerk/ai';
+import { MatchRecorder, recordingId, type RecordingLine } from '@bollwerk/protocol';
 
 import {
   Rng,
@@ -21,7 +21,7 @@ import {
   type MatchState,
   type Phase,
   type Rejection,
-} from '@rampart/sim';
+} from '@bollwerk/sim';
 
 export interface LocalMatchOptions {
   seed: number;
@@ -46,7 +46,7 @@ export interface LocalMatchOptions {
 /**
  * A match running entirely in the browser, with no server.
  *
- * Every seat but the person's is played by a bot from `@rampart/ai`, exactly as the
+ * Every seat but the person's is played by a bot from `@bollwerk/ai`, exactly as the
  * server would play it, and seats are shuffled onto islands the same way — so an offline
  * match is an online one with nobody else in it.
  */

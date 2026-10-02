@@ -1,9 +1,9 @@
 {
-  "name": "rampart-remake",
+  "name": "bollwerk",
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "description": "Multiplayer recreation of the 1990 arcade game Rampart",
+  "description": "Multiplayer castle siege game, an unofficial fan game inspired by Rampart (Atari Games, 1990)",
   "license": "MIT",
   "engines": {
     "node": ">=22.12.0"
@@ -13,15 +13,16 @@
     "tools/*"
   ],
   "scripts": {
-    "start": "npm run build && npm start -w @rampart/server",
+    "start": "npm run build && npm start -w @bollwerk/server",
     "typecheck": "npm run typecheck --workspaces --if-present",
-    "build": "npm run build -w @rampart/client && npm run build -w @rampart/server",
+    "build": "npm run build -w @bollwerk/client && npm run build -w @bollwerk/server",
     "test": "vitest run",
     "test:watch": "vitest",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
+    "credits": "tsx packages/config/src/writeCredits.ts",
     "check": "npm run format:check && npm run lint && npm run typecheck && npm run test"
   },
   "devDependencies": {

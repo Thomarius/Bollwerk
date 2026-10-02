@@ -1,5 +1,5 @@
-import type { ArtConfig, ParchmentStyleConfig } from '@rampart/config';
-import { Rng, Structure, Terrain, type MatchState, type Shot } from '@rampart/sim';
+import type { ArtConfig, ParchmentStyleConfig } from '@bollwerk/config';
+import { Rng, Structure, Terrain, type MatchState, type Shot } from '@bollwerk/sim';
 import { Graphics, Sprite, Texture } from 'pixi.js';
 
 import { timerSpot, type TimerSpot } from '../timerSpot.js';

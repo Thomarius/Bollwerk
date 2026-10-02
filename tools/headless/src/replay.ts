@@ -1,10 +1,10 @@
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 
-import { statsOfRecording, type StatRow } from '@rampart/analysis';
-import { personalityWords, type ConfigBundle } from '@rampart/config';
-import { parseRecording, setupOfRecorded } from '@rampart/protocol';
-import type { MatchState } from '@rampart/sim';
+import { statsOfRecording, type StatRow } from '@bollwerk/analysis';
+import { personalityWords, type ConfigBundle } from '@bollwerk/config';
+import { parseRecording, setupOfRecorded } from '@bollwerk/protocol';
+import type { MatchState } from '@bollwerk/sim';
 
 /**
  * Replays recordings of real matches (see `recording.ts` in the protocol) through the

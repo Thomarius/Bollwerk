@@ -1,4 +1,4 @@
-import { defaultTerrainConfig, TerrainConfigSchema } from '@rampart/config';
+import { defaultTerrainConfig, TerrainConfigSchema } from '@bollwerk/config';
 import { describe, expect, it } from 'vitest';
 
 import { NEIGHBOURS_4 } from './grid.js';

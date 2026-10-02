@@ -1,8 +1,8 @@
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { loadConfigBundle } from '@rampart/config/node';
-import { startServer } from '@rampart/server';
+import { loadConfigBundle } from '@bollwerk/config/node';
+import { startServer } from '@bollwerk/server';
 import { BrowserWindow, app, clipboard, ipcMain, shell } from 'electron';
 
 import { ServerControl, nextPort } from './control.js';
@@ -18,8 +18,8 @@ import { ServerControl, nextPort } from './control.js';
  * (A3): packaged, the config, the client and the audio are the app's resources.
  */
 /** The commit the app was built from, put in by `build.js`; null when it could not tell. */
-declare const __RAMPART_COMMIT__: string | null;
-const BUILT_FROM = __RAMPART_COMMIT__;
+declare const __BOLLWERK_COMMIT__: string | null;
+const BUILT_FROM = __BOLLWERK_COMMIT__;
 
 const here = dirname(fileURLToPath(import.meta.url));
 const root = app.isPackaged ? process.resourcesPath : resolve(here, '..', '..', '..');
@@ -27,8 +27,8 @@ const clientDir = app.isPackaged
   ? join(process.resourcesPath, 'client')
   : join(root, 'packages', 'client', 'dist');
 
-// Named, so its data — the recordings — sits in a folder called Rampart, not @rampart/desktop.
-app.setName('Rampart');
+// Named, so its data — the recordings — sits in a folder called Bollwerk, not @bollwerk/desktop.
+app.setName('Bollwerk');
 
 /** One copy at a time: a second would only find the first's port taken. */
 if (!app.requestSingleInstanceLock()) app.quit();
@@ -55,7 +55,7 @@ function createWindow(): void {
     width: 440,
     height: 520,
     resizable: false,
-    title: 'Rampart server',
+    title: 'Bollwerk server',
     backgroundColor: '#12131c',
     autoHideMenuBar: true,
     webPreferences: { preload: join(here, 'preload.cjs') },
@@ -87,9 +87,15 @@ ipcMain.handle('play-here', () => {
   const play = new BrowserWindow({
     width: 1400,
     height: 900,
-    title: 'Rampart',
+    title: 'Bollwerk',
     backgroundColor: '#0a0a12',
     autoHideMenuBar: true,
+  });
+  // The Credits' links lead off the game, to a licence or an author's page: the
+  // person's own browser, not another window of the app.
+  play.webContents.setWindowOpenHandler(({ url }) => {
+    if (/^https?:\/\//.test(url)) void shell.openExternal(url);
+    return { action: 'deny' };
   });
   void play.loadURL(`http://localhost:${state.port}`);
 });
