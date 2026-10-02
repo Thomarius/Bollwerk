@@ -895,6 +895,8 @@ the balance quite good. In order:
    run at the end of a day: measurement only.
 3. **11.3, two-player balance**, re-measured before anything is tried; after 11.2.
 4. **11.4**, measurements never taken, and **11.13**, the bots' loose ends, as they fit.
+5. **11.18, the fourth visual pass**, agreed 2026-10-02, in the interactive time between:
+   awards, the pause menu, a rematch, and a new style, Stained glass.
 
 Only open work is kept here. Finished packages move to `ARCHIVE.md` under their old
 numbers — 11.1 scoring, 11.7 team mode, 11.8 the visual pass, 11.9 the themes, 11.10 the
@@ -903,6 +905,72 @@ test-session feedback, in ARCHIVE 11w; 11.5 the small items and 11.6 the bots, i
 11zd; 11.14 the second test-session feedback, in ARCHIVE 11ze; 11.15 the third visual pass,
 11.16 help for new players, the menu and the sea, and 11.17 the desktop app, in ARCHIVE
 11zt — so the open sections keep theirs.
+
+### 11.18 Fourth visual pass — agreed 2026-10-02
+
+Chosen by the user from a list of suggestions; left out: lighting an island while its
+roster card is hovered (nobody hovers there) and first-match hints (How to play covers
+them). Display and menus only, with the discipline of 11.15: no sim or ruleset change; the
+rematch alone touches the protocol. Anything timed a pure function with tests, scenes in
+`tools/screenshots.sh`, tunables in `art.default.json`, §7's rules kept — a player keeps
+their hue, information stays readable, land, sea, wall and sealed ground tell apart; mouse
+only. Packages in order, the small ones first:
+
+**Y1 — Preparing the board.** A screen over the board for the moment a match opens while
+the looks are built, so a pause that grows with the visuals never reads as a freeze —
+today it is about a second (ARCHIVE 11zg). Taken down at the first frame drawn.
+
+**Y2 — The pause menu.** The pause overlay becomes a menu: Resume; the Effects and Sound
+settings, as in the main menu, taking effect at once where they can; and **Leave match**,
+back to the main menu — online the seat goes to a bot after the grace, as for any drop
+(§6). The end screen's Back to menu stays.
+
+**Y3 — Out, and watching.** A player knocked out sees a quiet strip — "You're out —
+watching" — with Back to menu, instead of only their island greying, for the rest of the
+match.
+
+**Y4 — The menu's sound, and the lobby's levels.** Two volume sliders, music and effects,
+in place of the Sound switch's single on and off (the corner switch stays, as a mute);
+saved with the looks. A bot seat's level shown as pips on its lobby card beside the
+choice, so a glance tells how hard a table is.
+
+**Y5 — Awards at the end.** The summary names up to **three awards**, each to a different
+player where it can, from a long list of categories, of which those that apply are drawn —
+**the same draw on every screen**, from the match's seed, so a table talks about the same
+awards (decided 2026-10-02). Every value from the match log the client keeps (`MatchLog`)
+and the state, so no protocol change; a new counter or two from events the client already
+receives. The first list, to grow:
+
+| Award            | Goes to                                                    |
+| ---------------- | ---------------------------------------------------------- |
+| Wrecker          | most enemy wall shot down                                  |
+| Landlord         | most ground held in one round                              |
+| Castle collector | most castles held at once                                  |
+| Iron wall        | never failed a seal                                        |
+| Comeback         | the biggest climb in the standings from round 5 to the end |
+| Front-runner     | led after the most rounds                                  |
+| Photo finish     | the winner, by under 5%                                    |
+| Last stand       | finished the match on their last life                      |
+| Phoenix          | lost a life and still finished in the top half             |
+| Late bloomer     | the biggest single round's score, in the last three rounds |
+| Artillerist      | most guns at once                                          |
+| Steady           | scored in every round                                      |
+| Nemesis          | shot down the most of one opponent's wall ("Bo's nemesis") |
+| Mason            | most pieces placed                                         |
+
+**Y6 — Rematch.** Beside Back to menu at the end: the same table again in one click.
+Decided 2026-10-02: **online, only the host** may call it, and it brings **everyone still
+connected back to the room's lobby** with the table as it was — seats, teams, levels and
+rounds — and **a new map**; the host starts as usual, anyone may leave, and the others see
+"waiting for the host" until then. Locally it reopens the local table the same way. The
+room is reset for a new match rather than closed, which is a protocol change.
+
+**Y7 — Stained glass, an eighth style.** The board as a church window: lead lines between
+the tiles, light through coloured glass, the sea in deep blue glass, sealed ground lit
+brighter. For both looks. Everything a style brings, as Toy bricks did (ARCHIVE 11u): a
+theme, its palette and player ramps (hues kept, §7), a title, a banner, a HUD skin, a menu
+picture (`stylePreview`), its sea life (`seaLife.ts`) and screenshot scenes. Its details
+are agreed with the user from screenshots of a first board.
 
 ### 11.2 Points decide, elimination threatens — goal revised 2026-10-01
 
