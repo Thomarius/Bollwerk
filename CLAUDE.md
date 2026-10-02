@@ -141,7 +141,7 @@ the sea in every style (PLAN 11.16, ARCHIVE 11zk–11zn); and a desktop app for 
 portable file for Windows and Linux (M14, ARCHIVE 11zp–11zt). Online clients catch up on
 the server at once (ARCHIVE 11zg), which ended the hosts' delay on every click. The game is played with the mouse alone; Esc for pause is the one key. Deployment is verified by a
 CI job, since there is no Docker on this machine. Every sound cue is supplied. The protocol
-is 14: a test session needs the server rebuilt and every page reloaded.
+is 15: a test session needs the server rebuilt and every page reloaded.
 
 **Next**: balance, M7. **The goal** (2026-10-01, the user's): almost every match is decided
 **on points at the round cap**, so **the scoring formula is the game's balance**; elimination

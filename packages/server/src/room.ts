@@ -130,6 +130,12 @@ export class Room {
    * reconnect grace all wait — and adds nothing to the recording.
    */
   private pausedBy: number | null = null;
+  /**
+   * Where each person sat in the lobby, by token, as the match started: the start deals
+   * seats onto islands and renumbers them, and a rematch puts everyone back.
+   */
+  private lobbySeats = new Map<string, number>();
+  private lobbyHost = 0;
 
   constructor(options: RoomOptions) {
     this.options = options;
@@ -257,6 +263,9 @@ export class Room {
         return;
       case 'start':
         if (seat.playerId === this.hostId) this.start();
+        return;
+      case 'rematch':
+        if (seat.playerId === this.hostId) this.rematch();
         return;
       case 'configure': {
         // Only the host, and only while the table is still being set.
@@ -404,6 +413,12 @@ export class Room {
       });
     }
 
+    // Where the people sit in the lobby, for a rematch to put them back.
+    this.lobbySeats = new Map(
+      this.seats.filter((s) => !s.bot).map((s) => [s.token, s.playerId] as const),
+    );
+    this.lobbyHost = this.hostId;
+
     // In seat order, so a seat's index here is its place at the table: its team, its bot's
     // skill, and what the shuffle deals it are all by seat.
     this.seats.sort((a, b) => a.playerId - b.playerId);
@@ -486,6 +501,40 @@ export class Room {
     for (const seat of this.seats) this.sendWelcome(seat);
     this.broadcastRoom();
     for (const seat of this.seats) this.sendSnapshot(seat);
+  }
+
+  /**
+   * Back to the lobby once a match is over (PLAN 11.18 Y6): everyone still connected in the
+   * seat they had before the start, the table — levels, teams, settings — as it was, the
+   * bots that filled the empty seats gone, and a new map. Each person is told their seat
+   * again, then the room, which their page reads as the lobby; the host starts as ever.
+   */
+  rematch(): void {
+    if (this.state === null || this.state.phase !== 'game_over') return;
+    this.state = null;
+    this.bots.clear();
+    this.recorder = null;
+    this.pausedBy = null;
+    this.pending = [];
+    this.accumulatorMs = 0;
+    this.seats.splice(
+      0,
+      this.seats.length,
+      ...this.seats.filter((s) => s.connection !== null && this.lobbySeats.has(s.token)),
+    );
+    for (const seat of this.seats) {
+      seat.playerId = this.lobbySeats.get(seat.token) as number;
+      seat.bot = false;
+      seat.ready = false;
+      seat.graceTicks = 0;
+    }
+    // The host came back in their own seat, or — had they left — whoever sits lowest.
+    this.hostId = this.seats.some((s) => s.playerId === this.lobbyHost)
+      ? this.lobbyHost
+      : Math.min(...this.seats.map((s) => s.playerId));
+    this.seed = this.rng.nextU32();
+    for (const seat of this.seats) this.sendWelcome(seat);
+    this.broadcastRoom();
   }
 
   /** Advances the match by elapsed real time. Called by the host loop, or by tests. */

@@ -115,6 +115,8 @@ export class Hud {
   /** When the match was first seen over, for holding the summary back (`showEndScreen`). */
   private gameOverAt: number | null = null;
   private leave: (() => void) | null = null;
+  private rematch: (() => void) | null = null;
+  private rematchBy: 'mine' | 'host' | null = null;
 
   private youAreHere: HTMLElement | null = null;
 
@@ -214,12 +216,24 @@ export class Hud {
     this.leave = handler;
   }
 
+  /** The end screen's Rematch: the player's to press, the host's to press, or not there. */
+  useRematch(by: 'mine' | 'host' | null): void {
+    this.rematchBy = by;
+  }
+
+  onRematch(handler: () => void): void {
+    this.rematch = handler;
+  }
+
   private showEndScreen(html: string): void {
     if (this.endScreen === null || !this.endScreen.isConnected) {
       this.endScreen = document.createElement('div');
       this.endScreen.className = 'end-screen';
       this.endScreen.addEventListener('click', (event) => {
-        if ((event.target as HTMLElement).closest('.leave')) this.leave?.();
+        const target = event.target as HTMLElement;
+        if (target.closest('.leave')) this.leave?.();
+        const rematch = target.closest<HTMLButtonElement>('.rematch');
+        if (rematch !== null && !rematch.disabled) this.rematch?.();
       });
       this.root.append(this.endScreen);
       this.endScreenHtml = '';
@@ -541,6 +555,15 @@ export class Hud {
     return `<ul class="awards">${cards}</ul>`;
   }
 
+  /** Rematch, for whoever may call it; for the others online, the host's to call. */
+  private rematchButton(): string {
+    if (this.rematchBy === 'mine') return '<button class="rematch">Rematch</button>';
+    if (this.rematchBy === 'host') {
+      return '<button class="rematch" disabled>Rematch — the host decides</button>';
+    }
+    return '';
+  }
+
   private revealMarkup(): string {
     if (this.reveal.length === 0) return '';
     const lines = this.reveal
@@ -842,7 +865,7 @@ export class Hud {
       const table = `<table class="final">${head}${rows}</table>`;
       // A button, not a key: everything else in the game is the mouse, and a key that
       // does something unannounced is the kind of surprise players dislike.
-      banner = `<div class="banner summary">${text}${table}${this.awardsMarkup(state, humanPlayer)}${this.chart(state, humanPlayer)}${this.revealMarkup()}<button class="leave">Back to menu</button></div>`;
+      banner = `<div class="banner summary">${text}${table}${this.awardsMarkup(state, humanPlayer)}${this.chart(state, humanPlayer)}${this.revealMarkup()}<div class="end-buttons">${this.rematchButton()}<button class="leave">Back to menu</button></div></div>`;
     }
     this.showEndScreen(banner);
     phaseRoot.innerHTML =

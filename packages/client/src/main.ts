@@ -245,6 +245,12 @@ interface Session {
    * the grace a dropped player gets (§6), and no ping is left running behind the menu.
    */
   leave(): void;
+  /**
+   * The rematch at the end (PLAN 11.18 Y6): the player's to call, the host's to call while
+   * they wait, or none — a match started from a link, with no table to go back to.
+   */
+  readonly rematch: 'mine' | 'host' | null;
+  requestRematch(): void;
 }
 
 // ------------------------------------------------------------------------ menu
@@ -535,7 +541,7 @@ function showMenu(notice: string | null = null): void {
   });
 }
 
-function localSession(match: LocalMatch): Session {
+function localSession(match: LocalMatch, rematch: (() => void) | null = null): Session {
   // Not advancing is the whole of a local pause: the bots think inside `advance`, and a
   // recording gains a line only for a tick that was stepped.
   let pausedBy: number | null = null;
@@ -564,6 +570,8 @@ function localSession(match: LocalMatch): Session {
     status: () => (match.humanPlayer < 0 ? 'watching' : ''),
     network: () => null,
     leave: () => undefined,
+    rematch: rematch === null ? null : 'mine',
+    requestRematch: () => rematch?.(),
   };
 }
 
@@ -717,7 +725,9 @@ function playLocally(common: Common, table: TableState): void {
     settings: table.settings,
     teams: table.teams,
   };
-  void runSession(localSession(localMatchFor(setup)), setup).catch((error: unknown) =>
+  // A rematch reopens this table as it was, on a new map (PLAN 11.18 Y6).
+  const rematch = (): void => localLobby(common, table.playerCount, randomSeed(), table);
+  void runSession(localSession(localMatchFor(setup), rematch), setup).catch((error: unknown) =>
     showError('Failed to start match', error),
   );
 }
@@ -781,7 +791,13 @@ async function openLobby(
 }
 
 /** The lobby with no server: the table lives here, under the same rules as a room's. */
-function localLobby(common: Common, playerCount: number, seed: number): void {
+/** `kept` is a table to open as it was, for a rematch; otherwise a fresh one. */
+function localLobby(
+  common: Common,
+  playerCount: number,
+  seed: number,
+  kept: TableState | null = null,
+): void {
   const limits = defaultConfigBundle.ruleset.players;
   const start = reshapeTable(
     { settings: DEFAULT_SETTINGS, playerCount: limits.min, teams: defaultTeams(limits.min, 1) },
@@ -789,13 +805,16 @@ function localLobby(common: Common, playerCount: number, seed: number): void {
     limits,
     1,
   );
-  let table: TableState = {
-    ...start,
-    bots: Array.from({ length: limits.max }, () => DEFAULT_BOT),
-    seed,
-    hostBot: null,
-    hostSeat: 0,
-  };
+  let table: TableState =
+    kept === null
+      ? {
+          ...start,
+          bots: Array.from({ length: limits.max }, () => DEFAULT_BOT),
+          seed,
+          hostBot: null,
+          hostSeat: 0,
+        }
+      : { ...kept, bots: [...kept.bots], teams: [...kept.teams], seed };
 
   const redraw = (): void =>
     drawLobby(
@@ -875,6 +894,8 @@ function roomLobby(
   let roomCode = code ?? '';
   let hostId = -1;
   let started = false;
+  /** Takes the match down, for a rematch bringing the room back to its lobby. */
+  let endMatch: (() => void) | null = null;
 
   const tableOf = (v: LobbyView): TableState => ({
     settings: v.settings,
@@ -950,6 +971,13 @@ function roomLobby(
           arrived,
         };
         if (!message.started) {
+          // Unstarted again after a match: the host called a rematch, and the room is its
+          // lobby once more, everyone in their old seats (PLAN 11.18 Y6).
+          if (started) {
+            endMatch?.();
+            endMatch = null;
+            started = false;
+          }
           table = view;
           render();
         }
@@ -971,7 +999,11 @@ function roomLobby(
           const seed = table?.seed ?? view?.seed ?? 0;
           const setup: Setup = { ...common, seed, seats, settings: DEFAULT_SETTINGS };
           const setups = botSetupsFromSeats(seed, seats);
-          void runSession(networkSession(match, connection, watching, setups), setup).catch(
+          void runSession(
+            networkSession(match, connection, watching, setups, () => match.humanPlayer === hostId),
+            setup,
+          ).then(
+            (end) => (endMatch = end),
             (e: unknown) => showError('Match failed', e),
           );
         }
@@ -1003,6 +1035,7 @@ function networkSession(
   connection: ServerConnection,
   watching = false,
   setups: ReadonlyMap<number, BotSetup> = new Map(),
+  isHost: () => boolean = () => false,
 ): Session {
   return {
     setups,
@@ -1035,6 +1068,10 @@ function networkSession(
       desynced: match.desynced,
     }),
     leave: () => connection.close(),
+    get rematch() {
+      return isHost() ? 'mine' : 'host';
+    },
+    requestRematch: () => connection.send({ type: 'rematch' }),
   };
 }
 
@@ -1051,7 +1088,8 @@ function shownOnScreen(): Promise<void> {
   );
 }
 
-async function runSession(session: Session, setup: Setup): Promise<void> {
+/** Plays a session; resolves with what takes it down, once it is running. */
+async function runSession(session: Session, setup: Setup): Promise<() => void> {
   // Over the board until its first frame (PLAN 11.18 Y1): building both looks' sprites
   // takes about a second as a match opens, and more with every look added, which read as
   // the page freezing. Painted before that work starts, so it is on screen through it.
@@ -1298,6 +1336,14 @@ async function runSession(session: Session, setup: Setup): Promise<void> {
     showMenu();
   };
   hud.onLeave(leaveMatch);
+  // Locally the table opens at once; online the host asks, and the room's answer brings
+  // every page back to the lobby, this one included.
+  hud.useRematch(session.rematch);
+  hud.onRematch(() => {
+    audio.play('select');
+    if (session.network() === null) cleanup();
+    session.requestRematch();
+  });
 
   // Anyone may pause, and anyone resume: Esc, or the button beside the Sound switch.
   // Paused, the overlay is the match's menu: the settings, and a way out (PLAN 11.18 Y2).
@@ -1750,6 +1796,7 @@ async function runSession(session: Session, setup: Setup): Promise<void> {
     frame = requestAnimationFrame(loop);
   };
   frame = requestAnimationFrame(loop);
+  return cleanup;
 }
 
 /** `?rounds=N`, ignored when it is outside what a host could choose. */

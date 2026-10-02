@@ -837,3 +837,46 @@ describe('seating, chosen by the host', () => {
     expect(players.filter((p) => p.isBot)).toHaveLength(2);
   });
 });
+
+describe('a rematch', () => {
+  it('brings everyone back to the lobby as it was, with a new map, at the host’s word', () => {
+    const r = room(3, 5);
+    const host = new TestClient('h');
+    const guest = new TestClient('g');
+    r.join(host, 'Ada');
+    r.join(guest, 'Bo');
+    // The host watches a bot play their seat; the guest does nothing, and is soon out.
+    r.handle(host, { type: 'configure', hostBot: 5, bots: [5, 5, 3] });
+    const seedBefore = host.received.filter((m) => m.type === 'room').at(-1);
+    r.start();
+    expect(r.started).toBe(true);
+    for (let i = 0; i < 400 && !r.finished; i++) run(r, 300);
+    expect(r.finished).toBe(true);
+
+    // Only the host may call it, and only once the match is over.
+    r.handle(guest, { type: 'rematch' });
+    expect(r.started).toBe(true);
+    r.handle(host, { type: 'rematch' });
+    expect(r.started).toBe(false);
+
+    // Both told their lobby seats again, the bots gone, the table and its levels kept.
+    expect(host.playerId).toBe(0);
+    expect(guest.playerId).toBe(1);
+    const lobby = guest.received.filter((m) => m.type === 'room').at(-1);
+    if (lobby?.type !== 'room' || seedBefore?.type !== 'room') throw new Error('no room');
+    expect(lobby.started).toBe(false);
+    expect(lobby.hostId).toBe(0);
+    expect(lobby.seats.map((s) => [s.playerId, s.name, s.isBot])).toEqual([
+      [0, 'Ada', false],
+      [1, 'Bo', false],
+    ]);
+    expect(lobby.bots).toEqual([5, 5, 3]);
+    expect(lobby.hostBot).toBe(5);
+    expect(lobby.seed).not.toBe(seedBefore.seed);
+
+    // And a new match starts from it, as the first did.
+    r.handle(host, { type: 'start' });
+    expect(r.started).toBe(true);
+    expect(guest.received.filter((m) => m.type === 'snapshot')).toHaveLength(2);
+  }, 60_000);
+});

@@ -888,7 +888,7 @@ the balance quite good. In order:
 
 1. **Test sessions on the current build**, recorded with their statistics (§9, ARCHIVE 11e);
    the user sends compiled feedback, which is triaged with them first. The server must be
-   rebuilt (`npm start`) and every page reloaded: the protocol is 14.
+   rebuilt (`npm start`) and every page reloaded: the protocol is 15.
 2. **11.2, points decide and elimination threatens**, the goal revised on 2026-10-01: a
    measurement of how good the points matches are, not a tuning towards knockouts.
    **The soaks for 11.2, 11.3, 11.4 and 11.13 are planned in [`SOAKS.md`](./SOAKS.md)**, to
@@ -958,7 +958,7 @@ receives. The first list, to grow:
 | Nemesis          | shot down the most of one opponent's wall ("Bo's nemesis") |
 | Mason            | most pieces placed                                         |
 
-**Y6 — Rematch.** Beside Back to menu at the end: the same table again in one click.
+**Y6 — Rematch — done** (ARCHIVE 11zu; protocol 15). Beside Back to menu at the end: the same table again in one click.
 Decided 2026-10-02: **online, only the host** may call it, and it brings **everyone still
 connected back to the room's lobby** with the table as it was — seats, teams, levels and
 rounds — and **a new map**; the host starts as usual, anyone may leave, and the others see

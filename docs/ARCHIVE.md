@@ -3729,3 +3729,16 @@ executable. How to cut a release goes into CLAUDE.md.
   round the table) and a whole bot match. Seen at the end of watched five-round matches at
   three and four players: Phoenix, Wrecker, Bot 3's nemesis; Steady, Artillerist, Bot 2's
   nemesis.
+- **Y6, rematch**: Rematch beside Back to menu at the end. Online it is the host's
+  (protocol 15, a `rematch` message the room takes from the host alone, once the match is
+  over): the room goes back to its lobby — everyone still connected in the seat they had
+  before the start, which the start had dealt onto islands and renumbered; the bots that
+  filled the empty seats gone; levels, teams, settings and a watching host's bot kept; a
+  new map — and tells each person their seat, then the room, which every page reads as the
+  lobby, taking its match down. Others see "Rematch — the host decides", disabled.
+  Locally it reopens the table as it was, on a new map. Tested in the room (the guest's
+  request ignored, seats and settings restored, the seed changed, a new match started
+  from it), and driven end to end: locally after a watched five-round table, and online
+  over a real server with a host and a guest, both pages back in the lobby. Found by the
+  first run: the HUD lets clicks through to the board and its buttons must take them back,
+  as Back to menu did — Rematch did not, and a click on it reached the board.

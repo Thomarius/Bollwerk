@@ -4,7 +4,7 @@ import { z } from 'zod';
 import { SnapshotSchema } from './snapshot.js';
 
 /** Bumped on any breaking change to the message set; mismatched clients are rejected. */
-export const PROTOCOL_VERSION = 14;
+export const PROTOCOL_VERSION = 15;
 
 /**
  * A player's intent. The server overwrites `player` with the sender's own seat before
@@ -97,6 +97,11 @@ export const ClientMessageSchema = z.discriminatedUnion('type', [
       .optional(),
   }),
   z.strictObject({ type: z.literal('start') }),
+  /**
+   * The host, once a match is over, brings everyone still at the table back to its lobby
+   * as it was, with a new map (PLAN 11.18 Y6).
+   */
+  z.strictObject({ type: z.literal('rematch') }),
   z.strictObject({ type: z.literal('action'), action: ActionSchema }),
   /** Anyone at the table may pause a running match, and anyone may resume it. */
   z.strictObject({ type: z.literal('pause'), paused: z.boolean() }),
