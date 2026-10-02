@@ -47,7 +47,8 @@ export type PlayerPalette = z.infer<typeof PlayerPaletteSchema>;
  * `flat` is the minimal look: solid colour, no textures, no atlas to generate. `night` is
  * the pixel style under a palette of its own (`stylePalettes`). `cyberpunk` is neon
  * outlines on a dark circuit board, `blueprint` a plan in white ink on blue paper,
- * `parchment` an old hand-drawn map, `bricks` a board built of toy bricks.
+ * `parchment` an old hand-drawn map, `bricks` a board built of toy bricks, `glass` a
+ * church window of stained glass.
  */
 export const ArtStyleSchema = z.enum([
   'flat',
@@ -57,6 +58,7 @@ export const ArtStyleSchema = z.enum([
   'blueprint',
   'parchment',
   'bricks',
+  'glass',
 ]);
 export type ArtStyle = z.infer<typeof ArtStyleSchema>;
 
@@ -298,6 +300,34 @@ export const BricksStyleSchema = z.strictObject({
 });
 export type BricksStyleConfig = z.infer<typeof BricksStyleSchema>;
 
+/**
+ * The stained glass look (PLAN 11.18 Y7): the board as a church window, every tile a pane
+ * of coloured glass held in lead, the light falling through it.
+ */
+export const GlassStyleSchema = z.strictObject({
+  /** How far apart the points stand that land and sea are cut into panes round, in tiles. */
+  paneTiles: z.number().min(1),
+  /** The lead between panes, as a fraction of the tile. */
+  leadTiles: z.number().positive().max(0.5),
+  /** The heavier came along every coast, as a multiple of the lead. */
+  coastLead: z.number().positive(),
+  /** How far a pane's shade wanders from its neighbours', 0 to 1. */
+  paneVariance: z.number().min(0).max(1),
+  /** The light through each pane, as a sheen across its upper corner. */
+  sheenAlpha: z.number().min(0).max(1),
+  /** Sealed ground's panes in the owner's colour. */
+  territoryAlpha: z.number().min(0).max(1),
+  /** Shards a block breaks into when it is shot. */
+  shardsPerBlock: z.number().int().nonnegative(),
+  /** A fish of coloured glass leaping now and then on the outer ocean, for so long. */
+  fishEveryMs: z.number().int().positive(),
+  fishMs: z.number().int().positive(),
+  /** A ship of glass crossing the outer ocean now and then, one at a time. */
+  shipEveryMs: z.number().int().positive(),
+  shipTilesPerSecond: z.number().positive(),
+});
+export type GlassStyleConfig = z.infer<typeof GlassStyleSchema>;
+
 /** One of the two looks a match is drawn in. */
 export type ArtLook = 'build' | 'combat';
 
@@ -337,6 +367,7 @@ export const STYLE_LOOKS: Record<ArtStyle, readonly ArtLook[]> = {
   blueprint: ['build', 'combat'],
   parchment: ['build', 'combat'],
   bricks: ['build', 'combat'],
+  glass: ['build', 'combat'],
 };
 
 export function styleServes(
@@ -455,6 +486,7 @@ export const ArtConfigSchema = z
     pixel: PixelStyleSchema,
     parchment: ParchmentStyleSchema,
     bricks: BricksStyleSchema,
+    glass: GlassStyleSchema,
     scenery: ScenerySchema,
     /** Effects both styles draw alike, because they carry information. */
     effects: z.strictObject({

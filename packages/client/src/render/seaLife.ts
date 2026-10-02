@@ -482,3 +482,78 @@ export class BricksSeaLife extends OceanDrawn {
     }
   }
 }
+
+/**
+ * Stained glass: now and then a fish of coloured glass leaping from the sea and back, and a
+ * ship of glass under a leaded sail crossing — every piece held in its lead, as the window is.
+ */
+export class GlassSeaLife extends OceanDrawn {
+  private readonly ships = new Crossings();
+  private readonly fish = new Surfacings();
+
+  override layout(state: MatchState, view: ViewTransform, art: ArtConfig): void {
+    super.layout(state, view, art);
+    this.ships.layout(this.ocean, art.glass.shipEveryMs);
+  }
+
+  protected frame(g: Graphics, view: ViewTransform, art: ArtConfig, deltaMs: number): void {
+    const s = art.glass;
+    const pal = art.palette;
+    const t = view.tile;
+    const lead = { width: Math.max(1, t * s.leadTiles), color: hex(pal.shadow) };
+
+    this.ships.step(this.ocean, deltaMs, s.shipEveryMs, s.shipTilesPerSecond, 1.2);
+    for (const ship of this.ships.items) {
+      const x = tileX(view, ship.x);
+      const y = tileY(view, ship.y + Math.sin(this.clock / 600 + ship.x) * 0.04);
+      g.poly([x - t * 0.7, y, x + t * 0.75, y, x + t * 0.5, y + t * 0.3, x - t * 0.5, y + t * 0.3]);
+      g.fill({ color: hex(pal.sand) });
+      g.stroke(lead);
+      const mast = x - ship.dir * t * 0.05;
+      g.poly([mast, y - t * 1.0, mast + ship.dir * t * 0.6, y - t * 0.15, mast, y - t * 0.15]);
+      g.fill({ color: hex(pal.uiInk), alpha: 0.9 });
+      g.stroke(lead);
+      g.poly([mast, y - t * 0.85, mast - ship.dir * t * 0.4, y - t * 0.15, mast, y - t * 0.15]);
+      g.fill({ color: hex(pal.emberMid), alpha: 0.9 });
+      g.stroke(lead);
+    }
+
+    this.fish.step(this.ocean, deltaMs, s.fishEveryMs, s.fishMs);
+    for (const f of this.fish.items) {
+      const k = f.ageMs / s.fishMs;
+      const x = tileX(view, f.x + f.dir * (k - 0.5) * 1.4);
+      const y = tileY(view, f.y) - Math.sin(Math.PI * k) * t * 0.9;
+      const tilt = f.dir * (k - 0.5) * 1.6;
+      const along = (d: number, side: number): [number, number] => [
+        x + Math.cos(tilt) * d * f.dir - Math.sin(tilt) * side,
+        y + Math.sin(tilt) * d * f.dir + Math.cos(tilt) * side,
+      ];
+      g.poly([
+        ...along(0.32 * t, 0),
+        ...along(0, -0.14 * t),
+        ...along(-0.22 * t, 0),
+        ...along(0, 0.14 * t),
+      ]);
+      g.fill({ color: hex(pal.emberMid) });
+      g.stroke(lead);
+      g.poly([...along(-0.22 * t, 0), ...along(-0.4 * t, -0.12 * t), ...along(-0.4 * t, 0.12 * t)]);
+      g.fill({ color: hex(pal.emberCool) });
+      g.stroke(lead);
+      // Rings on the water where it leaves and where it goes back in.
+      for (const [at, when] of [
+        [-0.7, 0],
+        [0.7, 0.85],
+      ] as const) {
+        const ring = (k - when) / 0.3;
+        if (ring <= 0 || ring >= 1) continue;
+        g.ellipse(
+          tileX(view, f.x + f.dir * at),
+          tileY(view, f.y),
+          t * 0.35 * ring + 1,
+          t * 0.14 * ring + 1,
+        );
+        g.stroke({ width: 1.5, color: hex(pal.waterFoam), alpha: 0.7 * (1 - ring) });
+      }
+    }
+  }
+}

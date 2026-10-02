@@ -341,6 +341,7 @@ const STYLE_NAMES: Record<ArtStyle, string> = {
   blueprint: 'Blueprint',
   parchment: 'Parchment',
   bricks: 'Toy bricks',
+  glass: 'Stained glass',
 };
 
 function styleOptions(look: ArtLook): string {

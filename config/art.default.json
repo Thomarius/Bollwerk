@@ -877,6 +877,31 @@
         "uiValid": "#7dffb0",
         "uiInvalid": "#ff4d5e"
       }
+    },
+    "glass": {
+      "palette": {
+        "waterDeep": "#0b1f5c",
+        "waterMid": "#13348a",
+        "waterShallow": "#2c5fc0",
+        "waterFoam": "#a9c8ff",
+        "sand": "#c9a24a",
+        "grassDark": "#14502a",
+        "grassMid": "#1f6e38",
+        "grassLight": "#4f9d4c",
+        "rockDark": "#3d414d",
+        "rockMid": "#7d8394",
+        "rockLight": "#d2d8e4",
+        "shadow": "#0c0d12",
+        "craterDark": "#15161c",
+        "craterMid": "#2e3140",
+        "emberHot": "#fff2c0",
+        "emberMid": "#ffc04a",
+        "emberCool": "#e86a2a",
+        "uiInk": "#fff6e0",
+        "uiAccent": "#ffcc4d",
+        "uiValid": "#7dffb0",
+        "uiInvalid": "#ff4d5e"
+      }
     }
   },
   "dither": {
@@ -1093,5 +1118,18 @@
     "titleSweepEveryMs": 12000,
     "mapSurfMs": 3200,
     "mapCastleMs": 2200
+  },
+  "glass": {
+    "paneTiles": 2.6,
+    "leadTiles": 0.07,
+    "coastLead": 2.2,
+    "paneVariance": 0.5,
+    "sheenAlpha": 0.14,
+    "territoryAlpha": 0.78,
+    "shardsPerBlock": 6,
+    "fishEveryMs": 9000,
+    "fishMs": 1400,
+    "shipEveryMs": 20000,
+    "shipTilesPerSecond": 0.45
   }
 }

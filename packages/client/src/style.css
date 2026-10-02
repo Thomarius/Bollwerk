@@ -2398,3 +2398,66 @@ body.reduced-effects .preparing .blocks i {
 .summary .end-buttons .leave {
   margin: 1rem 0 0;
 }
+
+/* Stained glass (PLAN 11.18 Y7): the banner a band of jewel panes in heavy lead, lettered
+   in warm light; the HUD a dark lead bar under a rule of coloured glass. */
+.phase-call.banner-glass {
+  border-top: 4px solid #0c0d12;
+  border-bottom: 4px solid #0c0d12;
+  background-color: #13348a;
+  background-image:
+    linear-gradient(90deg, #0c0d12 0 3px, transparent 3px),
+    linear-gradient(0deg, #0c0d12 0 3px, transparent 3px),
+    linear-gradient(
+      90deg,
+      #8e2440 0 16%,
+      #1f6e38 16% 33%,
+      #b8862a 33% 50%,
+      #13348a 50% 66%,
+      #6a2c8a 66% 83%,
+      #1d7a7a 83% 100%
+    );
+  background-size:
+    56px 100%,
+    100% 50%,
+    100% 100%;
+  color: #fff6e0;
+  text-shadow:
+    0 0 8px #ffcc4d,
+    0 2px 0 #0c0d12;
+}
+
+.phase-call.banner-glass small {
+  color: #fff6e0;
+  text-shadow: 0 1px 0 #0c0d12;
+}
+
+.phase-call.banner-glass small.news {
+  color: #ffcc4d;
+}
+
+#hud.hud-glass {
+  --hud-bar: #0c0d12;
+  --hud-rule: 3px solid transparent;
+  --hud-ink: #fff6e0;
+  --hud-muted: #a9b4cc;
+  --hud-accent: #ffcc4d;
+  --hud-box: #0c0d12;
+  --hud-box-edge: 2px solid #ffcc4d;
+  --hud-box-shadow: none;
+  --hud-track: #ffffff1f;
+}
+
+/* The rule under the bar as a strip of coloured panes, each in its lead. */
+#hud.hud-glass .bar {
+  border-image: linear-gradient(
+      90deg,
+      #8e2440 0 16%,
+      #1f6e38 16% 33%,
+      #b8862a 33% 50%,
+      #13348a 50% 66%,
+      #6a2c8a 66% 83%,
+      #1d7a7a 83% 100%
+    )
+    1;
+}

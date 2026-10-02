@@ -37,6 +37,7 @@ const BANNER_CLASS: Record<ArtStyle, string> = {
   blueprint: 'banner-plan',
   parchment: 'banner-ribbon',
   bricks: 'banner-bricks',
+  glass: 'banner-glass',
 };
 
 /**
@@ -52,6 +53,7 @@ const HUD_SKIN: Record<ArtStyle, string> = {
   blueprint: 'hud-plan',
   parchment: 'hud-ink',
   bricks: 'hud-bricks',
+  glass: 'hud-glass',
 };
 
 const PHASE_LABEL: Record<Phase, string> = {

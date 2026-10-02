@@ -534,6 +534,36 @@ export function brickTitle(text: string, art: ArtConfig): Title {
   };
 }
 
+/**
+ * Stained glass's title: each cell of the letters a pane in a player's colour, lit from
+ * behind, held in dark lead — a gap all round each pane — with a glint in its upper corner.
+ */
+export function glassTitle(text: string, art: ArtConfig): Title {
+  const own = artForStyle(art, 'glass');
+  const pane = STONE * 2;
+  const cols = glyphsOf(text).length * 6 - 1;
+  const p = new Pixels(cols * pane + 2, 7 * pane + 2);
+  for (const { x, y, n } of cellsOf(glyphsOf(text))) {
+    const ramp = own.players[n % own.players.length]!;
+    const px = x * pane;
+    const py = y * pane;
+    p.rect(px, py, pane + 2, pane + 2, own.palette.shadow);
+    p.rect(px + 1, py + 1, pane, pane, ramp.base);
+    p.rect(px + 2, py + 2, pane - 4, pane - 4, ramp.light, 0.55);
+    p.set(px + 2, py + 2, '#ffffff', 0.85);
+    p.set(px + 3, py + 2, '#ffffff', 0.5);
+    p.set(px + 2, py + 3, '#ffffff', 0.5);
+  }
+  return {
+    src: p.canvas.toDataURL(),
+    cellPx: pane,
+    padPx: 0,
+    tailPx: 2,
+    smooth: false,
+    flicker: false,
+  };
+}
+
 const TITLES: Record<ArtStyle, (text: string, art: ArtConfig) => Title> = {
   flat: blockTitle,
   pixel: stoneTitle,
@@ -542,6 +572,7 @@ const TITLES: Record<ArtStyle, (text: string, art: ArtConfig) => Title> = {
   blueprint: planTitle,
   parchment: inkedTitle,
   bricks: brickTitle,
+  glass: glassTitle,
 };
 
 export function titleFor(style: ArtStyle, art: ArtConfig): Title {
