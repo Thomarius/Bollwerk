@@ -934,7 +934,7 @@ in place of the Sound switch's single on and off (the corner switch stays, as a 
 saved with the looks. A bot seat's level shown as pips on its lobby card beside the
 choice, so a glance tells how hard a table is.
 
-**Y5 — Awards at the end.** The summary names up to **three awards**, each to a different
+**Y5 — Awards at the end — done** (ARCHIVE 11zu). The summary names up to **three awards**, each to a different
 player where it can, from a long list of categories, of which those that apply are drawn —
 **the same draw on every screen**, from the match's seed, so a table talks about the same
 awards (decided 2026-10-02). Every value from the match log the client keeps (`MatchLog`)

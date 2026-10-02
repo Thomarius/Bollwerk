@@ -3714,3 +3714,18 @@ executable. How to cut a release goes into CLAUDE.md.
   stand when it opens. The sounds slider clicks at its new level when let go. In the
   lobby a bot seat's level shows as ten pips beside its choice, to the host and guests
   alike (tested), so a glance down the seats tells how hard a table is.
+- **Y5, awards at the end**: the summary names up to three awards, cards between the
+  table and the chart, each in its player's colour and shape with a line saying what
+  earned it. Fourteen categories (`awards.ts`): Wrecker, Landlord, Castle collector, Iron
+  wall, Comeback, Front-runner, Photo finish, Last stand, Phoenix, Late bloomer,
+  Artillerist, Steady, a named Nemesis ("Bo's nemesis") and Mason. Those that apply are
+  drawn from a stream of the match's seed, so every screen at a table shows the same;
+  each a different award, and to a different player while any is left without one. An
+  award whose best is shared is not given. The match log gained what they need, all from
+  events the client already receives: the wall each shooter broke on each island (a wall
+  is its island's), pieces laid, lives spent, guns and territory points at each
+  resolution — no protocol change. Tested on hand-made logs (sole bests and ties, an iron
+  wall, a comeback, a nemesis, a photo finish), the draw (same seed, same awards; spread
+  round the table) and a whole bot match. Seen at the end of watched five-round matches at
+  three and four players: Phoenix, Wrecker, Bot 3's nemesis; Steady, Artillerist, Bot 2's
+  nemesis.

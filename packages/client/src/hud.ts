@@ -1,5 +1,6 @@
 import { playerCssColour } from './colours.js';
 import { SHAPE_PATHS, playerShape, shapeSvg } from './shapes.js';
+import { awardCandidates, drawAwards, type Award } from './awards.js';
 import type { BannerKind } from './banners.js';
 import { escape } from './lobby.js';
 import { defaultArtConfig, type ArtStyle, type PlayerShape } from '@rampart/config';
@@ -512,6 +513,34 @@ export class Hud {
    * The surprise at the end (PLAN 11.6): one line per bot, its colour, name, level and
    * personality in plain words.
    */
+  /** The awards drawn for this match, once it is over: drawn once, so they hold still. */
+  private awards: readonly Award[] | null = null;
+
+  /**
+   * Up to three awards (PLAN 11.18 Y5), each a card: its title, the player in their colour
+   * and shape, and what earned it. Judged from the log, so a client that heard no
+   * resolution — a jump straight to the end — shows none rather than awards it cannot know.
+   */
+  private awardsMarkup(state: MatchState, humanPlayer: number): string {
+    const log = this.log;
+    if (log === null || log.scores.length === 0) return '';
+    this.awards ??= drawAwards(awardCandidates(log, state), state.seed);
+    if (this.awards.length === 0) return '';
+    const cards = this.awards
+      .map((award) => {
+        const colour = playerCssColour(award.player);
+        const name =
+          award.player === humanPlayer ? 'You' : (state.players[award.player]?.name ?? '');
+        return (
+          `<li class="award" style="--who:${colour}"><strong>${escape(award.title)}</strong>` +
+          `<span class="who">${shapeSvg(playerShape(award.player), colour)}${escape(name)}</span>` +
+          `<small>${escape(award.detail)}</small></li>`
+        );
+      })
+      .join('');
+    return `<ul class="awards">${cards}</ul>`;
+  }
+
   private revealMarkup(): string {
     if (this.reveal.length === 0) return '';
     const lines = this.reveal
@@ -813,7 +842,7 @@ export class Hud {
       const table = `<table class="final">${head}${rows}</table>`;
       // A button, not a key: everything else in the game is the mouse, and a key that
       // does something unannounced is the kind of surprise players dislike.
-      banner = `<div class="banner summary">${text}${table}${this.chart(state, humanPlayer)}${this.revealMarkup()}<button class="leave">Back to menu</button></div>`;
+      banner = `<div class="banner summary">${text}${table}${this.awardsMarkup(state, humanPlayer)}${this.chart(state, humanPlayer)}${this.revealMarkup()}<button class="leave">Back to menu</button></div>`;
     }
     this.showEndScreen(banner);
     phaseRoot.innerHTML =

@@ -2312,3 +2312,52 @@ body.reduced-effects .preparing .blocks i {
 .seats .pips i.on {
   background: var(--accent);
 }
+
+/* The awards in the summary (awards.ts): up to three cards in a row, each in its player's
+   colour down the edge, as the roster's cards are. */
+.summary .awards {
+  display: flex;
+  gap: 0.6rem;
+  justify-content: center;
+  margin: 0.9rem 0 0.4rem;
+  padding: 0;
+  list-style: none;
+}
+
+.summary .award {
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  gap: 0.2rem;
+  max-width: 12rem;
+  padding: 0.5rem 0.7rem;
+  border: 1px solid var(--edge);
+  border-left: 3px solid var(--who);
+  background: rgb(255 255 255 / 3%);
+  text-align: left;
+}
+
+.summary .award strong {
+  color: var(--accent);
+  font-size: 0.85rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.summary .award .who {
+  color: var(--ink);
+  font-size: 0.85rem;
+}
+
+.summary .award small {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+/* The summary's capitals are for its headline and the awards' titles, not their names or
+   lines, which read better as written. */
+.summary .award .who,
+.summary .award small {
+  letter-spacing: 0.02em;
+  text-transform: none;
+}

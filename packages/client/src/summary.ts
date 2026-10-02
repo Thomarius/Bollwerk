@@ -21,9 +21,23 @@ export class MatchLog {
   readonly scores: { round: number; byPlayer: number[]; castles: number[] }[] = [];
   /** Who fired each shot in flight, since an impact names only the shot. */
   private readonly shooters = new Map<number, number>();
+  /**
+   * For the awards (PLAN 11.18 Y5): the wall each player's shots broke on each opponent's
+   * island, by shooter then owner — a wall is its island's, whoever built it; pieces each
+   * player laid; lives each spent; and every player's guns and territory points at each
+   * resolution seen, beside its scores.
+   */
+  readonly brokeOf = new Map<number, Map<number, number>>();
+  readonly pieces = new Map<number, number>();
+  readonly livesSpent = new Map<number, number>();
+  readonly guns: number[][] = [];
+  readonly territoryPoints: number[][] = [];
 
   /** `state` is the match as it stands once these events have happened. */
-  note(events: readonly MatchEvent[], state: Pick<MatchState, 'players'>): void {
+  note(
+    events: readonly MatchEvent[],
+    state: Pick<MatchState, 'players'> & Partial<Pick<MatchState, 'cannons' | 'islandId'>>,
+  ): void {
     for (const event of events) {
       switch (event.kind) {
         case 'shot_fired':
@@ -34,8 +48,20 @@ export class MatchLog {
           this.shooters.delete(event.shotId);
           if (shooter === undefined || event.destroyed.length === 0) break;
           this.destroyed.set(shooter, (this.destroyed.get(shooter) ?? 0) + event.destroyed.length);
+          const victims = this.brokeOf.get(shooter) ?? new Map<number, number>();
+          for (const tile of event.destroyed) {
+            const owner = (state.islandId?.[tile] ?? 0) - 1;
+            if (owner >= 0) victims.set(owner, (victims.get(owner) ?? 0) + 1);
+          }
+          this.brokeOf.set(shooter, victims);
           break;
         }
+        case 'piece_placed':
+          this.pieces.set(event.player, (this.pieces.get(event.player) ?? 0) + 1);
+          break;
+        case 'player_continued':
+          this.livesSpent.set(event.player, (this.livesSpent.get(event.player) ?? 0) + 1);
+          break;
         case 'round_resolved': {
           // The scores as banked by this resolution, which the state already carries.
           const castles = state.players.map(() => 0);
@@ -45,6 +71,12 @@ export class MatchLog {
             byPlayer: state.players.map((p) => p.score),
             castles,
           });
+          const territory = state.players.map(() => 0);
+          for (const result of event.results) territory[result.player] = result.territoryPoints;
+          this.territoryPoints.push(territory);
+          this.guns.push(
+            state.players.map((p) => (state.cannons ?? []).filter((c) => c.owner === p.id).length),
+          );
           break;
         }
         default:
