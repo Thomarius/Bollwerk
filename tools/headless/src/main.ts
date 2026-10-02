@@ -29,7 +29,14 @@ import {
 
 import { replayAll } from './replay.js';
 import { summariseStats } from './summary.js';
-import { RoundStats, statsCsv, type StatRow } from '@bollwerk/analysis';
+import {
+  RoundStats,
+  outcomeOf,
+  outcomesCsv,
+  statsCsv,
+  type MatchOutcome,
+  type StatRow,
+} from '@bollwerk/analysis';
 
 /**
  * Headless harness: runs matches with no renderer.
@@ -51,6 +58,8 @@ interface Args {
   /** Personality per seat, repeating; `dealt` deals one from the seed as a match does. */
   personalities: (Personality | 'dealt')[];
   stats: string | null;
+  /** One row per match: who won, how it ended, the final scores (`MatchOutcome`). */
+  outcomes: string | null;
   /** Players per team; 1 is free-for-all. Seats go into teams in order, then shuffle. */
   teams: number;
   /** Overrides `scoring.maxRounds`; undefined keeps the ruleset's, null lifts the cap. */
@@ -98,6 +107,7 @@ function parseArgs(argv: string[]): Args {
     // Balanced unless asked, so a soak measures what it says rather than a random draw.
     personalities: [BALANCED],
     stats: null,
+    outcomes: null,
     maxRounds: undefined,
     teams: 1,
     replay: [],
@@ -154,6 +164,10 @@ function parseArgs(argv: string[]): Args {
         args.stats = value ?? 'stats.csv';
         i++;
         break;
+      case '--outcomes':
+        args.outcomes = value ?? 'outcomes.csv';
+        i++;
+        break;
       case '--map':
         args.map = true;
         break;
@@ -167,7 +181,7 @@ function parseArgs(argv: string[]): Args {
       case '--help':
         console.log(
           'usage: npm start -w @bollwerk/headless -- [--matches N] [--players N] [--seed N] ' +
-            `[--max-ticks N] [--max-rounds N|none] [--teams N] [--level 1-10[,...]] [--personality offensive|dealt|...[,...]] [--stats FILE] [--map]\n` +
+            `[--max-ticks N] [--max-rounds N|none] [--teams N] [--level 1-10[,...]] [--personality offensive|dealt|...[,...]] [--stats FILE] [--outcomes FILE] [--map]\n` +
             '       npm start -w @bollwerk/headless -- --replay recordings/ [more files or dirs] [--stats FILE]',
         );
         process.exit(0);
@@ -354,6 +368,7 @@ const started = Date.now();
 const outcomes = new Map<string, number>();
 const wins = new Map<string, number>();
 const stats: StatRow[] = [];
+const matchOutcomes: MatchOutcome[] = [];
 let refusedTotal = 0;
 let totalTicks = 0;
 let totalRounds = 0;
@@ -401,9 +416,12 @@ for (let i = 0; i < args.matches; i++) {
   totalRounds += state.round;
   if (state.phase !== 'game_over') unfinished++;
 
+  const hash = hashMatchState(state);
+  matchOutcomes.push(outcomeOf(`sim-${seed}`, state, (p) => seatSetup(p, seed), hash));
+
   console.log(
     `  seed ${String(seed).padStart(5)}  ${String(state.round).padStart(3)} rounds  ` +
-      `${String(state.tick).padStart(6)} ticks  hash ${hashMatchState(state)}  ${outcome}`,
+      `${String(state.tick).padStart(6)} ticks  hash ${hash}  ${outcome}`,
   );
 }
 
@@ -437,6 +455,7 @@ if (args.stats !== null) {
   summariseStats(stats);
   console.log(`\n${stats.length} row(s) written to ${args.stats}`);
 }
+if (args.outcomes !== null) writeFileSync(args.outcomes, outcomesCsv(matchOutcomes), 'utf8');
 
 // A bot asking for something the rules refuse is a bug in the bot: everything it
 // proposes is derived from the state it was just handed.

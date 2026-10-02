@@ -13,16 +13,23 @@ bots' loose ends).
 
 ---
 
-## 0. Before the run: the summary tool
+**The weekend run (begun 2026-10-02).** The user chose packages A, B and D of a larger plan, for
+a run over a weekend on this machine with nobody watching: A, soaks 1, 4 and 5 at two to ten
+times the sizes below (960 matches for the main tables); B, the full ladder — soak 2 at 480
+a level, and every other pairing of levels, one bot at _k_ against two at _j_, 96 matches
+each; D, two players with no round cap, five and seven players, and soak 6. Package C, rule
+variants, was declined: the default rules read as solid and are not expected to change
+without a very good reason. The batch list is code, `tools/headless/src/soakPlan.ts` — 291
+batches, 22,656 matches, about 39 hours of one core and 11 hours on ten workers (matches run 2.8 times slower ten at a time: the twelve cores are six physical ones) — and it,
+not the tables below, is what runs.
 
-The harness's `--stats` table has every number needed, but its console summary does not
-compute margins, changes of lead or lives spent. Written first, in an interactive session,
-committed with a test:
+## 0. Before the run: the summary tool — done
 
-**`tools/headless/src/summary.ts`**, run as `npm start -w @bollwerk/headless -- --summarise
-FILE [FILE...]` (or a script beside the harness), reading one or more `--stats` CSV files —
-soak output and `recordings/*.stats.csv` alike — and printing, per file and for all of them
-together:
+The harness's `--stats` table has the per-round numbers; who won is the sim's verdict, so
+the harness also writes one row a match with `--outcomes FILE` (`MatchOutcome` in
+`@bollwerk/analysis`: teams, levels, personalities, how it ended, winners, final scores,
+the state hash). The summary is **`tools/headless/src/soakSummary.ts`**, tested on a
+hand-made table, reading both and writing, a line a group then a block each:
 
 | Measure                    | From the rows                                                                                                            |
 | -------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
@@ -37,19 +44,18 @@ together:
 | Wins by island             | each player id's share — in the harness player p is island p + 1 — against 1 / players                                   |
 | Ties                       | matches with a shared win                                                                                                |
 
-Team tables (2v2) score and rank by team, as the game does. Tested on a small hand-made
-table whose margins, lead changes and lives are known.
+Team tables (2v2) score and rank by team, as the game does; a shared win is split between
+its winners; a share beside a fair one is starred beyond two standard errors. The ladder and
+the pairings are laid out as one matrix: the odd seat's share of wins, a third being even.
+`npm run soak -- --summarise FILE...` summarises any stats tables, recordings' included.
 
 ## 1. Where the output goes
 
-Every run writes its table under **`soaks/<date>/`** at the repository root, which is
-git-ignored — soak output is data, as recordings
-are, and is summarised into the plan rather than committed. One CSV per batch, named for
-it, e.g. `soaks/2026-10-02/s1-3p-L5.csv`, and the console output of each beside it as
-`.log`. The `recordings/` folder is not touched: the harness never writes there.
-
-`npm start -w` runs the harness from its own directory, but resolves `--stats` paths from
-where the command was typed (`INIT_CWD`), so run everything from the repository root.
+Every run writes under **`soaks/<date>/`** at the repository root, which is git-ignored —
+soak output is data, as recordings are, and is summarised into the plan rather than
+committed. One set of files a chunk of 16 matches — `<batch>.<nnn>.csv`, `.outcomes.csv`,
+`.log` — and `run.json` (the commit), `progress.txt`, `problems.txt` if anything failed, and
+at the end **`summary.txt`**, the one file to read. The `recordings/` folder is only read.
 
 ## 2. The batches
 
@@ -132,27 +138,26 @@ tables. A few games only: read as colour, not as a sample.
 
 ## 3. Running it
 
-About **1,500 matches**. Measured on this machine (12 cores) on 2026-10-02: a three-player
-Level 5 match takes about 3.2 s; four players about 5 s, eight about 12 s (estimated).
-Serially that is roughly 1.7 hours of CPU; **six batches at a time** takes it to about
-20–30 minutes of wall time while the machine is otherwise idle. Each batch is one process
-and deterministic, so the batches run in any order and in parallel, and a batch that dies
-is simply run again.
-
-A runner, `tools/soaks.sh`, written with step 0: it holds the batch list above, runs six at
-a time in the background (`&` and `wait -n`), writes each batch's CSV and `.log` into
-`soaks/<date>/`, and at the end runs the summary over everything into
-`soaks/<date>/summary.txt`. Started from the repository root:
+The runner is **`npm run soak`** (`tools/headless/src/soak.ts`), from the repository root.
+It runs the plan's chunks, the dearest first, in a pool of harness processes at
+below-normal priority — all cores but two by default — and writes the summary at the end.
+A chunk's files are written under a temporary name and renamed when its process ends, so a
+chunk with files is complete, and **the same command after any stop carries on** where it
+was. It refuses a tree with uncommitted changes, and a folder begun at another commit.
 
 ```bash
-tools/soaks.sh            # all of it, into soaks/<today>/
-tools/soaks.sh s1 s4      # some soaks only
+npm run soak                       # all of it, into soaks/<today>/
+npm run soak -- --out soaks/<date>   # resume that folder, after a restart
+npm run soak -- --list             # the plan and its cost, running nothing
+npm run soak -- --trial            # every batch at two matches, into soaks/trial-<today>/
+npm run soak -- --only s1,s4       # batches whose names start so
+npm run soak -- --summary --out soaks/<date>   # remake summary.txt from what is there
 ```
 
 Nothing else should be built or tested on the machine while it runs, and **no code may
 change under it**: a soak reads the working tree as it runs, so a commit mid-run mixes two
-versions of the bots. Start it from a clean tree at a known commit, and note that commit in
-the summary.
+versions of the bots. The machine must not sleep, and Windows Update should be paused for
+the run; a restart costs only the chunks in flight, once the command is started again.
 
 ## 4. Reading it, and what happens next
 

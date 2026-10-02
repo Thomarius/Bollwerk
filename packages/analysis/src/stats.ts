@@ -175,6 +175,30 @@ export function statsCsv(rows: readonly StatRow[]): string {
 }
 
 /**
+ * A table `statsCsv` wrote, read back — a soak's or a recording's alike. Columns are found
+ * by name, so a file from before a column was added still reads, the new one at its
+ * zero; an empty level is a person's.
+ */
+export function parseStatsCsv(text: string): StatRow[] {
+  const [header, ...lines] = text.trim().split(/\r?\n/);
+  const names = (header ?? '').split(',');
+  if (!names.includes('match') || !names.includes('score')) throw new Error('not a stats table');
+  return lines.map((line) => {
+    const cells = line.split(',');
+    const raw = (column: keyof StatRow): string => cells[names.indexOf(column)] ?? '';
+    const num = (column: keyof StatRow): number => Number(raw(column) || 0);
+    const row = {} as Record<keyof StatRow, unknown>;
+    for (const column of STAT_COLUMNS) row[column] = num(column);
+    row.match = raw('match');
+    row.personality = raw('personality');
+    row.eliminated = raw('eliminated') === 'true';
+    row.level = raw('level') === '' ? null : num('level');
+    row.piecesBudget = raw('piecesBudget') === '' ? null : num('piecesBudget');
+    return row as unknown as StatRow;
+  });
+}
+
+/**
  * Gathers the rows for one match as it is stepped — bots in a soak, or a recording being
  * replayed — so people and bots are measured by exactly the same code.
  *

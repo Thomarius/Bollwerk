@@ -923,9 +923,11 @@ test-session feedback, help for new players, awards and a rematch, and the deskt
 releases (M14). The test games on the current build found everything working, the hosts'
 delay gone and the balance quite good. A new session starts with either:
 
-1. **The soaks** — [`SOAKS.md`](./SOAKS.md) for 11.2, 11.3, 11.4 and 11.13: write its summary
-   tool and runner first, interactively (step 0), then let it run at the end of a day, and
-   read the results together. Measurement only.
+1. **The soaks** — [`SOAKS.md`](./SOAKS.md) for 11.2, 11.3, 11.4 and 11.13. The summary tool
+   and the runner are written (`npm run soak`), and the weekend run of packages A, B and D
+   was started on the evening of 2026-10-02, into `soaks/2026-10-02/`: read its
+   `summary.txt` together with the user, then write the figures into 11.2–11.13 (SOAKS §4).
+   Measurement only.
 2. **Another round of improvements**, from a test session or the user's own list. The
    server must be rebuilt (`npm start`) and every page reloaded: the protocol is 15. Every
    match is recorded with its statistics (§9, ARCHIVE 11e); the user sends compiled

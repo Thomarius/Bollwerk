@@ -29,6 +29,7 @@ npm install
 npm start                           # build, then serve the game at http://localhost:8080
 npm run check                       # format, lint, typecheck, test — must pass before committing
 npm run credits                     # CREDITS.md, from the audio manifest's credits
+npm run soak                        # the soak of docs/SOAKS.md, resumable; --list, --trial, --summary
 npm run build                       # client + server bundles, both needed by the image
 npm run dev   -w @bollwerk/client   # play offline at http://localhost:5173
 npm start     -w @bollwerk/server   # serves the built client at http://localhost:8080
