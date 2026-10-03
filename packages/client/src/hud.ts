@@ -41,6 +41,7 @@ const BANNER_CLASS: Record<ArtStyle, string> = {
   chocolate: 'banner-chocolate',
   halloween: 'banner-halloween',
   sakura: 'banner-sakura',
+  oktoberfest: 'banner-wiesn',
 };
 
 /**
@@ -60,6 +61,7 @@ const HUD_SKIN: Record<ArtStyle, string> = {
   chocolate: 'hud-chocolate',
   halloween: 'hud-halloween',
   sakura: 'hud-sakura',
+  oktoberfest: 'hud-wiesn',
 };
 
 const PHASE_LABEL: Record<Phase, string> = {

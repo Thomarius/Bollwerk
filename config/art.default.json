@@ -977,6 +977,31 @@
         "uiValid": "#a6e8a0",
         "uiInvalid": "#ff5a5a"
       }
+    },
+    "oktoberfest": {
+      "palette": {
+        "waterDeep": "#c9821f",
+        "waterMid": "#dc9b30",
+        "waterShallow": "#efbd4e",
+        "waterFoam": "#fffaf0",
+        "sand": "#fff3dc",
+        "grassDark": "#557f35",
+        "grassMid": "#78a24a",
+        "grassLight": "#a3c56c",
+        "rockDark": "#6e6a64",
+        "rockMid": "#a8a29a",
+        "rockLight": "#ece6da",
+        "shadow": "#2a1a10",
+        "craterDark": "#7a4a14",
+        "craterMid": "#a36a24",
+        "emberHot": "#fff4cc",
+        "emberMid": "#ffb94a",
+        "emberCool": "#e0662a",
+        "uiInk": "#fffaf0",
+        "uiAccent": "#f2b632",
+        "uiValid": "#8fe08a",
+        "uiInvalid": "#ff5050"
+      }
     }
   },
   "dither": {
@@ -1257,5 +1282,18 @@
     "cranesTilesPerSecond": 1.3,
     "waveEveryMs": 26000,
     "waveTilesPerSecond": 0.55
+  },
+  "oktoberfest": {
+    "bubbleTiles": 7,
+    "territoryAlpha": 0.6,
+    "wheelTurnMs": 40000,
+    "noteEveryMs": 700,
+    "coinMs": 1200,
+    "snowCount": 110,
+    "rainCount": 140,
+    "mugEveryMs": 16000,
+    "mugTilesPerSecond": 0.45,
+    "liloEveryMs": 24000,
+    "liloTilesPerSecond": 0.3
   }
 }

@@ -47,7 +47,7 @@ wait rather than assuming it hung.
 Client dev query parameters: `?autostart=1&players=3&seed=7` (a random seed without it),
 `&snapshot=build` to jump to a phase (`&round=N` for one deep in a match, `&idle=1` to
 leave your seat undriven on the way, so you are soon knocked out), `&speed=10`,
-`&style=flat|pixel|night|cyberpunk|blueprint|parchment|bricks|glass|chocolate|halloween|sakura` for both looks (a one-look style sets only its own)
+`&style=flat|pixel|night|cyberpunk|blueprint|parchment|bricks|glass|chocolate|halloween|sakura|oktoberfest` for both looks (a one-look style sets only its own)
 (`&buildStyle=`, `&combatStyle=` for one), `&watch=1&level=8` to observe a bot match (`&personality=offensive` fixes every bot's),
 `&rounds=12` for the round cap, `&teams=2` for teams of two in seat order. `?host=8` opens
 the lobby at eight seats — a room if a server answers, a local table if not —
@@ -66,7 +66,7 @@ rounds.
 | `ai`             | Bots: min-cut sealing, 0-1 BFS attack, skill levels and personalities.     |
 | `analysis`       | Per-round match statistics, for bot soaks and recorded human play alike.   |
 | `server`         | Authoritative match server, rooms, WebSocket, match recordings.            |
-| `client`         | Pixi renderer, eleven visual styles, controls, HUD, netcode client.        |
+| `client`         | Pixi renderer, twelve visual styles, controls, HUD, netcode client.        |
 | `desktop`        | Electron app for releases: the server behind a minimal window (M14).       |
 | `tools/headless` | Bot-vs-bot soak runs and map dumps.                                        |
 
@@ -148,9 +148,9 @@ Full detail in PLAN.md §1. The parts that surprise people:
   of every match (ARCHIVE 11e, each header stamped with the server's commit); team mode
   (ARCHIVE 10u); bots as a skill level 1–10 chosen in the lobby and a personality dealt
   from the seed, revealed at game over (M13, ARCHIVE 11x–11zb).
-- **The looks**: eleven styles for either look — Minimal, Medieval, Night, Cyberpunk,
+- **The looks**: twelve styles for either look — Minimal, Medieval, Night, Cyberpunk,
   Blueprint, Parchment, Toy bricks, Stained glass, Chocolate (ARCHIVE 11zy), Halloween
-  (ARCHIVE 12a), Sakura (ARCHIVE 12d) — over four visual passes (M9–M12, PLAN 11.15–11.18); every style carried
+  (ARCHIVE 12a), Sakura (ARCHIVE 12d), Oktoberfest (ARCHIVE 12e) — over four visual passes (M9–M12, PLAN 11.15–11.18); every style carried
   to the panels, the big timer, the island banners and the finish (ARCHIVE 11zz); chosen
   from a gallery with Random, and changeable mid-match from the pause menu (ARCHIVE 12b).
 - **Around a match**: How to play, the ranking between rounds, awards, a rematch, music

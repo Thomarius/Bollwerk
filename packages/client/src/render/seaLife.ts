@@ -8,6 +8,7 @@ import { Circling, Crossings, NO_OCEAN, Surfacings, outerOcean, type OuterOcean 
 import { drawBat } from './spooky.js';
 import { hex, tileX, tileY, type ViewTransform } from './theme.js';
 import { drawCrest } from './ukiyo.js';
+import { FOAM, drawMass, drawReveller } from './wiesn.js';
 
 /**
  * Life on the outer ocean in the styles drawn from shapes (PLAN 11.16 O1), as Medieval and
@@ -899,6 +900,78 @@ export class SakuraSeaLife extends OceanDrawn {
         g.moveTo(x, y).lineTo(x + flight.dir * size * 0.6, y - size * 0.05);
         g.stroke({ width: Math.max(1, size * 0.12), color: 0xfbf8f0, cap: 'round' });
       }
+    }
+  }
+}
+
+/**
+ * Oktoberfest: a Maß floating across the beer now and then, bobbing; a reveller drifting by
+ * asleep on a lilo, his own Maß beside him; and a Weißwurst swimming round in circles —
+ * glass, foam, a striped lilo and a sausage, nothing of any player's colour.
+ */
+export class OktoberfestSeaLife extends OceanDrawn {
+  private readonly mugs = new Crossings();
+  private readonly lilos = new Crossings();
+  private readonly sausages = new Circling();
+  /** The Ferris wheel in the corner: whatever crosses its square is hidden behind it. */
+  wheel: { x: number; y: number; size: number } | null = null;
+
+  private hidden(x: number, y: number): boolean {
+    const f = this.wheel;
+    return f !== null && Math.abs(x - f.x) < f.size / 2 && Math.abs(y - f.y) < f.size / 2;
+  }
+
+  override layout(state: MatchState, view: ViewTransform, art: ArtConfig): void {
+    super.layout(state, view, art);
+    this.mugs.layout(this.ocean, art.oktoberfest.mugEveryMs);
+    this.lilos.layout(this.ocean, art.oktoberfest.liloEveryMs);
+    this.sausages.layout(this.ocean, 1, [0.8, 1.4]);
+  }
+
+  protected frame(g: Graphics, view: ViewTransform, art: ArtConfig, deltaMs: number): void {
+    const s = art.oktoberfest;
+    const t = view.tile;
+    const ink = hex(art.palette.shadow);
+
+    this.mugs.step(this.ocean, deltaMs, s.mugEveryMs, s.mugTilesPerSecond, 1);
+    for (const mug of this.mugs.items) {
+      if (this.hidden(mug.x, mug.y)) continue;
+      const bob = Math.sin(this.clock / 500 + mug.x) * 0.06;
+      g.ellipse(tileX(view, mug.x), tileY(view, mug.y + 0.3), t * 0.5, t * 0.12);
+      g.stroke({ width: 1, color: FOAM, alpha: 0.6 });
+      drawMass(g, tileX(view, mug.x), tileY(view, mug.y + 0.3 + bob), t * 0.8, 0.9, ink);
+    }
+
+    this.lilos.step(this.ocean, deltaMs, s.liloEveryMs, s.liloTilesPerSecond, 0.5);
+    for (const lilo of this.lilos.items) {
+      if (this.hidden(lilo.x, lilo.y)) continue;
+      const y = tileY(view, lilo.y + Math.sin(this.clock / 800 + lilo.x) * 0.04);
+      const x = tileX(view, lilo.x);
+      g.roundRect(x - t * 0.9, y - t * 0.35, t * 1.8, t * 0.7, t * 0.25);
+      g.fill({ color: 0xf6d65a });
+      for (let k = -2; k <= 2; k++) {
+        g.moveTo(x + k * t * 0.32, y - t * 0.3).lineTo(x + k * t * 0.32, y + t * 0.3);
+      }
+      g.stroke({ width: Math.max(1, t * 0.08), color: 0xffffff, alpha: 0.8 });
+      drawReveller(g, x, y, t * 1.4, ink);
+    }
+
+    this.sausages.step(deltaMs);
+    for (const w of this.sausages.items) {
+      const at = Circling.at(w);
+      if (this.hidden(at.x, at.y)) continue;
+      // A Weißwurst, its ends twisted, nose in the direction it swims, a wake behind it.
+      const heading = w.angle + (w.speed > 0 ? Math.PI / 2 : -Math.PI / 2);
+      const c = Math.cos(heading);
+      const sn = Math.sin(heading) * 0.6;
+      const x = tileX(view, at.x);
+      const y = tileY(view, at.y);
+      g.moveTo(x - c * t * 0.9, y - sn * t * 0.9).lineTo(x - c * t * 0.4, y - sn * t * 0.4);
+      g.stroke({ width: Math.max(1, t * 0.08), color: FOAM, alpha: 0.6, cap: 'round' });
+      g.moveTo(x - c * t * 0.35, y - sn * t * 0.35).lineTo(x + c * t * 0.35, y + sn * t * 0.35);
+      g.stroke({ width: Math.max(3, t * 0.26), color: 0xf2ece0, cap: 'round' });
+      for (const e of [-0.48, 0.48]) g.circle(x + c * t * e, y + sn * t * e, Math.max(1, t * 0.05));
+      g.fill({ color: 0xc9b48a });
     }
   }
 }

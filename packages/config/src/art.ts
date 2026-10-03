@@ -49,7 +49,8 @@ export type PlayerPalette = z.infer<typeof PlayerPaletteSchema>;
  * outlines on a dark circuit board, `blueprint` a plan in white ink on blue paper,
  * `parchment` an old hand-drawn map, `bricks` a board built of toy bricks, `glass` a
  * church window of stained glass, `chocolate` a sweet-shop land on a river of chocolate,
- * `halloween` a haunted land round a bog, `sakura` an Edo castle town as a woodblock print.
+ * `halloween` a haunted land round a bog, `sakura` an Edo castle town as a woodblock print,
+ * `oktoberfest` the beer festival on an island in a sea of beer.
  */
 export const ArtStyleSchema = z.enum([
   'flat',
@@ -63,6 +64,7 @@ export const ArtStyleSchema = z.enum([
   'chocolate',
   'halloween',
   'sakura',
+  'oktoberfest',
 ]);
 export type ArtStyle = z.infer<typeof ArtStyleSchema>;
 
@@ -433,6 +435,34 @@ export const SakuraStyleSchema = z.strictObject({
 });
 export type SakuraStyleConfig = z.infer<typeof SakuraStyleSchema>;
 
+/**
+ * The Oktoberfest look: the fair on islands in a sea of beer — walls of stacked beer crates,
+ * beer tents whose giant Maß fills while sealed, kegs firing pretzels, the Bavarian lozenges
+ * for sealed ground, and a Ferris wheel turning in the corner.
+ */
+export const OktoberfestStyleSchema = z.strictObject({
+  /** Bubbles rising in the beer, one at a time per so many tiles of it. */
+  bubbleTiles: z.number().min(1),
+  /** The owner's colour in the lozenges of sealed ground, and the white between them. */
+  territoryAlpha: z.number().min(0).max(1),
+  /** How long the Ferris wheel takes to turn once. */
+  wheelTurnMs: z.number().int().positive(),
+  /** A note rising from each sealed tent so often while the band plays. */
+  noteEveryMs: z.number().int().positive(),
+  /** How long the deposit's coin takes to flip up and fade, for a crate swept. */
+  coinMs: z.number().int().positive(),
+  /** Snowflakes and rain streaks on screen at once, in a match with that weather. */
+  snowCount: z.number().int().nonnegative(),
+  rainCount: z.number().int().nonnegative(),
+  /** A Maß floating across the outer sea now and then, one at a time. */
+  mugEveryMs: z.number().int().positive(),
+  mugTilesPerSecond: z.number().positive(),
+  /** A reveller drifting by asleep on a lilo now and then. */
+  liloEveryMs: z.number().int().positive(),
+  liloTilesPerSecond: z.number().positive(),
+});
+export type OktoberfestStyleConfig = z.infer<typeof OktoberfestStyleSchema>;
+
 /** One of the two looks a match is drawn in. */
 export type ArtLook = 'build' | 'combat';
 
@@ -476,6 +506,7 @@ export const STYLE_LOOKS: Record<ArtStyle, readonly ArtLook[]> = {
   chocolate: ['build', 'combat'],
   halloween: ['build', 'combat'],
   sakura: ['build', 'combat'],
+  oktoberfest: ['build', 'combat'],
 };
 
 export function styleServes(
@@ -598,6 +629,7 @@ export const ArtConfigSchema = z
     chocolate: ChocolateStyleSchema,
     halloween: HalloweenStyleSchema,
     sakura: SakuraStyleSchema,
+    oktoberfest: OktoberfestStyleSchema,
     scenery: ScenerySchema,
     /** Effects both styles draw alike, because they carry information. */
     effects: z.strictObject({

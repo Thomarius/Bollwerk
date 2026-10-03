@@ -2718,7 +2718,8 @@ body.hud-bricks,
 body.hud-glass,
 body.hud-chocolate,
 body.hud-halloween,
-body.hud-sakura {
+body.hud-sakura,
+body.hud-wiesn {
   --hud-panel: var(--hud-box);
 }
 
@@ -3171,6 +3172,141 @@ body.hud-sakura .final-stamp {
     0 2px 8px #0006;
   color: #fbf6ea;
   font-family: 'Hiragino Mincho ProN', 'Yu Mincho', Georgia, 'Times New Roman', serif;
+  text-shadow: none;
+}
+
+/* Oktoberfest: the banner a long gingerbread, as on the hearts at every stall, its edges
+   piped in white icing, lettered in icing with a pink outline; the HUD the dark wood of a
+   beer-tent bench over a rule in the Bavarian lozenges. */
+.phase-call.banner-wiesn {
+  border: none;
+  padding-block: 1.5rem;
+  background-color: #8a4a22;
+  background-image:
+    radial-gradient(circle at 50% 0, #fffaf0 0 4px, transparent 4.5px),
+    radial-gradient(circle at 50% 100%, #fffaf0 0 4px, transparent 4.5px),
+    linear-gradient(#0000 0 14%, #fffaf0 14% 16%, #0000 16% 84%, #fffaf0 84% 86%, #0000 86%),
+    radial-gradient(circle, #ffffff10 1px, transparent 1.5px);
+  background-size:
+    16px 10px,
+    16px 10px,
+    100% 100%,
+    7px 7px;
+  background-repeat: repeat-x, repeat-x, no-repeat, repeat;
+  background-position:
+    0 -5px,
+    0 calc(100% + 5px),
+    0 0,
+    0 0;
+  color: #fffaf0;
+  font-family: 'Arial Rounded MT Bold', 'Trebuchet MS', system-ui, sans-serif;
+  font-weight: 900;
+  text-shadow:
+    0 0 0 #fffaf0,
+    2px 2px 0 #ff5a8a,
+    -1px -1px 0 #5e3010;
+}
+
+.phase-call.banner-wiesn small {
+  color: #ffe9b0;
+  text-shadow: 1px 1px 0 #5e3010;
+}
+
+.phase-call.banner-wiesn small.news {
+  color: #ffd23f;
+}
+
+body.hud-wiesn {
+  --hud-bar: #3b2616;
+  --hud-rule: 6px solid transparent;
+  --hud-ink: #fffaf0;
+  --hud-muted: #e8d2b0;
+  --hud-accent: #f2b632;
+  --hud-box: #4a2f1a;
+  --hud-box-edge: 2px solid #f2b632;
+  --hud-box-shadow: 0 3px 0 #1e120a;
+  --hud-track: #ffffff22;
+}
+
+/* The bench's planks, and under them, where the rule would be, a band of white and blue
+   lozenges: two lattices of stripes crossing. */
+body.hud-wiesn #hud .bar {
+  background-image:
+    repeating-linear-gradient(60deg, #ffffff 0 3px, transparent 3px 7px),
+    repeating-linear-gradient(-60deg, #ffffff 0 3px, #3c8ad8 3px 7px),
+    linear-gradient(0deg, #00000033 0 1px, transparent 1px);
+  background-size:
+    100% 6px,
+    100% 6px,
+    100% 21px;
+  background-position:
+    0 100%,
+    0 100%,
+    0 0;
+  background-repeat: no-repeat, no-repeat, repeat;
+  background-origin: border-box;
+  background-clip: border-box;
+}
+
+body.hud-wiesn .big-timer {
+  color: rgb(242 182 50 / 88%);
+  font-family: system-ui, sans-serif;
+  font-weight: 900;
+  -webkit-text-stroke: 3px rgb(94 48 16 / 85%);
+  paint-order: stroke fill;
+  text-shadow:
+    0 -4px 0 rgb(255 250 240 / 90%),
+    0 4px 0 rgb(42 26 16 / 45%);
+}
+
+body.hud-wiesn .big-timer.urgent {
+  color: rgb(255 90 90 / 92%);
+}
+
+/* Island banners a gingerbread heart, edged in piped icing; the stamps a beer mat. */
+body.hud-wiesn .island-banner:not(.out),
+body.hud-wiesn .team-tag,
+body.hud-wiesn .you-are-here {
+  background: #8a4a22;
+  box-shadow:
+    inset 0 0 0 3px #8a4a22,
+    inset 0 0 0 5px #fffaf0,
+    0 3px 0 #5e3010;
+  color: #fffaf0;
+  font-family: 'Arial Rounded MT Bold', 'Trebuchet MS', system-ui, sans-serif;
+  text-shadow: 1px 1px 0 #ff5a8a;
+}
+
+body.hud-wiesn .island-banner:not(.out) {
+  padding: 0.6rem 2.2rem 1.5rem;
+  border-width: 3px;
+  clip-path: polygon(
+    50% 100%,
+    8% 62%,
+    0 38%,
+    3% 14%,
+    14% 2%,
+    28% 0,
+    41% 6%,
+    50% 18%,
+    59% 6%,
+    72% 0,
+    86% 2%,
+    97% 14%,
+    100% 38%,
+    92% 62%
+  );
+}
+
+body.hud-wiesn .island-banner.out,
+body.hud-wiesn .final-stamp {
+  border: 3px double #3c8ad8 !important;
+  border-radius: 50%;
+  padding-inline: 2rem;
+  background: radial-gradient(#fffaf0 55%, #f1e6cf);
+  box-shadow: 0 3px 8px #0006;
+  color: #1f5ea8;
+  font-family: 'Arial Rounded MT Bold', 'Trebuchet MS', system-ui, sans-serif;
   text-shadow: none;
 }
 

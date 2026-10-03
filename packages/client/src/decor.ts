@@ -777,6 +777,66 @@ export function sakuraTitle(text: string, _art: ArtConfig): Title {
   return { src: canvas.toDataURL(), ...title };
 }
 
+/**
+ * Oktoberfest's title: the word in gingerbread, as on the hearts sold at every stall —
+ * thick brown strokes, piped round in white icing, dotted with pink, green and yellow.
+ */
+export function wiesnTitle(text: string, _art: ArtConfig): Title {
+  const { canvas, ctx, cells, has } = drawnCanvas(text);
+  const title = { cellPx: DRAWN_CELL, padPx: DRAWN_PAD, tailPx: 0, smooth: true, flicker: false };
+  if (ctx === null) return { src: canvas.toDataURL(), ...title };
+  const at = (v: number): number => DRAWN_PAD + v * DRAWN_CELL;
+  const rng = new Rng(0x0c7b3f);
+  const strokes = (): void => {
+    ctx.beginPath();
+    for (const { x, y } of cells) {
+      const cx = at(x) + DRAWN_CELL / 2;
+      const cy = at(y) + DRAWN_CELL / 2;
+      ctx.moveTo(cx, cy);
+      ctx.lineTo(cx + 0.01, cy);
+      for (const [dx, dy] of [
+        [1, 0],
+        [0, 1],
+      ] as const) {
+        if (!has(x + dx, y + dy)) continue;
+        ctx.moveTo(cx, cy);
+        ctx.lineTo(cx + dx * DRAWN_CELL, cy + dy * DRAWN_CELL);
+      }
+    }
+  };
+  ctx.lineJoin = 'round';
+  ctx.lineCap = 'round';
+  // The icing round the outside, then the gingerbread, then a line of icing piped along it.
+  ctx.strokeStyle = '#fffaf0';
+  ctx.lineWidth = DRAWN_CELL * 1.45;
+  strokes();
+  ctx.stroke();
+  ctx.strokeStyle = '#5e3010';
+  ctx.lineWidth = DRAWN_CELL * 1.25;
+  strokes();
+  ctx.stroke();
+  ctx.strokeStyle = '#8a4a22';
+  ctx.lineWidth = DRAWN_CELL * 1.05;
+  strokes();
+  ctx.stroke();
+  ctx.strokeStyle = '#ffd6e4';
+  ctx.lineWidth = 1.6;
+  ctx.setLineDash([3, 2]);
+  strokes();
+  ctx.stroke();
+  ctx.setLineDash([]);
+  // Sugar dots on the turns.
+  const dots = ['#ff8fb3', '#7fd47a', '#ffd23f'];
+  for (const { x, y } of cells) {
+    if (rng.nextFloat() > 0.18) continue;
+    ctx.fillStyle = dots[Math.floor(rng.nextFloat() * dots.length)]!;
+    ctx.beginPath();
+    ctx.arc(at(x) + DRAWN_CELL / 2, at(y) + DRAWN_CELL / 2, 2.4, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  return { src: canvas.toDataURL(), ...title };
+}
+
 const TITLES: Record<ArtStyle, (text: string, art: ArtConfig) => Title> = {
   flat: blockTitle,
   pixel: stoneTitle,
@@ -789,6 +849,7 @@ const TITLES: Record<ArtStyle, (text: string, art: ArtConfig) => Title> = {
   chocolate: chocolateTitle,
   halloween: halloweenTitle,
   sakura: sakuraTitle,
+  oktoberfest: wiesnTitle,
 };
 
 export function titleFor(style: ArtStyle, art: ArtConfig): Title {

@@ -4063,3 +4063,36 @@ a snowy match whitens the caps instead; the rain's streaks were lost, since ever
 fill ended their path before it was stroked, and are drawn in one stroke first; the maple
 leaves were too small to notice; and the HUD's pattern ran under the whole bar, its fade
 laid beneath it. Anything moving is still to be seen in play (PLAN §11).
+
+## 12e. Oktoberfest, a twelfth style (2026-10-03)
+
+The user's brief, with no pitch to review this time: Oktoberfest, its stereotypes, "we are
+German — we deserve a good joke about this fair". The idea chosen is **the fair on islands
+in a sea of beer**, every rule of the game told as one of the Wiesn's clichés, the joke
+always on the festival and never on a player.
+
+What carries meaning, and the joke in each: **walls are stacked beer crates**, the student's
+furniture, a shot taking one crate; a player who is out keeps grey crates of **empties**;
+**sealed is the giant Maß on the tent's roof full**, and a breach drinks it dry — nobody
+needs telling what a breach costs (`FlagHoist`, like every style's sealed sign); **sealed
+ground is the Bavarian lozenges**; **guns are kegs and fire pretzels**, so no pretzel lies
+about in the scenery to be taken for a shot; a crate swept goes back for its **deposit**;
+in overtime and the final round **the band plays**. A Ferris wheel takes the compass rose's
+corner, and the scenery's boulders are one in three **a reveller asleep in the grass** — the
+Bierleiche, snoring, with nothing worse than that. Kept off: anything a player's colour could
+be taken from, and the Hill of Shame's less printable sights.
+
+The finish gained `pretzel`, pretzels and gingerbread hearts iced in the owner's colours,
+and `rauten`, a lozenge flag on a maypole. The pretzel, the heart, the Maß, the reveller and
+the band's notes are `wiesn.ts`, shared by the theme, its sea life and the finish. The
+banner's lettering was first Comic Sans, as the hearts' icing is bubbly, and was changed to a
+rounded face: the joke should be the beer, not the font.
+
+Seen in screenshots building, in combat, at eight players, in the final round with the band,
+in rain and snow, with a player knocked out, in the menu and at game over, and the banner,
+hearts, a team tag and both stamps placed into a running match by a Playwright script. What
+the first look changed: the beer's bands were too strong and read as orange juice, so its
+shades were drawn closer; the bubbles, the tents' Maß and the notes were enlarged; and the
+lozenge rule under the bar, drawn with a border image, showed as a single blue tab, so it is
+two lattices of stripes laid where the rule would be. Anything moving is still to be seen in
+play (PLAN §11).

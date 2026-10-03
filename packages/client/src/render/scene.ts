@@ -10,6 +10,7 @@ import { BlueprintTheme } from './blueprint.js';
 import { BricksTheme } from './bricks.js';
 import { ChocolateTheme } from './chocolate.js';
 import { HalloweenTheme } from './halloween.js';
+import { OktoberfestTheme } from './oktoberfest.js';
 import { SakuraTheme } from './sakura.js';
 import { GlassTheme } from './glass.js';
 import { CyberpunkTheme } from './cyberpunk.js';
@@ -56,6 +57,8 @@ export function createTheme(style: ArtStyle, seed = 1): Theme {
       return new HalloweenTheme(seed);
     case 'sakura':
       return new SakuraTheme(seed);
+    case 'oktoberfest':
+      return new OktoberfestTheme(seed);
   }
 }
 

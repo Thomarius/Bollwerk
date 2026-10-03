@@ -5,6 +5,7 @@ import type { Container, Graphics } from 'pixi.js';
 import type { DrainWash, SealGlow } from '../seal.js';
 
 import { PETALS, drawPetal } from './ukiyo.js';
+import { drawGingerHeart, drawPretzel } from './wiesn.js';
 
 /**
  * A visual style.
@@ -692,7 +693,8 @@ export interface FinishLook {
    * `square` Minimal's flat sparks; `streak` sparks trailing light; `neon` streaks with a
    * halo; `mark` a draughtsman's crosses; `blot` drops of ink; `brick` tumbling bricks;
    * `shard` spinning glass; `sprinkle` candy sprinkles; `spirits` bats and little ghosts
-   * flying out and up; `blossom` a chrysanthemum's drooping streaks and cherry petals.
+   * flying out and up; `blossom` a chrysanthemum's drooping streaks and cherry petals;
+   * `pretzel` pretzels and gingerbread hearts iced in the owner's colours.
    */
   spark:
     | 'square'
@@ -704,15 +706,25 @@ export interface FinishLook {
     | 'shard'
     | 'sprinkle'
     | 'spirits'
-    | 'blossom';
+    | 'blossom'
+    | 'pretzel';
   /**
    * `swallowtail` a forked banner; `hologram` a flickering projection; `pennant` a flag in
    * plan; `brick` a square flag of bricks; `leaded` a banner of glass in its lead; `candy` a
    * pennant on a candy-striped pole; `tattered` a ragged pennant on a crooked pole; `nobori`
-   * a tall war banner hung from an arm at its top.
+   * a tall war banner hung from an arm at its top; `rauten` a flag in the Bavarian lozenges
+   * on a maypole.
    */
   flag:
-    'swallowtail' | 'hologram' | 'pennant' | 'brick' | 'leaded' | 'candy' | 'tattered' | 'nobori';
+    | 'swallowtail'
+    | 'hologram'
+    | 'pennant'
+    | 'brick'
+    | 'leaded'
+    | 'candy'
+    | 'tattered'
+    | 'nobori'
+    | 'rauten';
 }
 
 export const PLAIN_FINISH: FinishLook = { spark: 'square', flag: 'swallowtail' };
@@ -801,6 +813,35 @@ export class WinnerBanners {
           g.fill({ color: light });
           continue;
         }
+        if (flag === 'rauten') {
+          // White, with the owner's colour in diamonds across it, waving.
+          const cols = 4;
+          const rows = 3;
+          g.poly([x, up, x + clothW, up + wave, x + clothW, up + clothH + wave, x, up + clothH]);
+          g.fill({ color: 0xffffff });
+          for (let r = 0; r < rows; r++) {
+            for (let c = 0; c < cols; c++) {
+              const dx = (clothW * (c + 0.5)) / cols;
+              const dy = (clothH * (r + 0.5)) / rows + (wave * (c + 0.5)) / cols;
+              const hw = clothW / cols / 2;
+              const hh = clothH / rows / 2;
+              g.poly([
+                x + dx,
+                up + dy - hh,
+                x + dx + hw,
+                up + dy,
+                x + dx,
+                up + dy + hh,
+                x + dx - hw,
+                up + dy,
+              ]);
+            }
+          }
+          g.fill({ color: base });
+          g.poly([x, up, x + clothW, up + wave, x + clothW, up + clothH + wave, x, up + clothH]);
+          g.stroke({ width: rim, color: 0x2a1a10, alpha: 0.8, join: 'round' });
+          continue;
+        }
         if (flag === 'tattered') {
           // Torn along its fly: the edge ragged, a hole in it, flapping more than the rest.
           const fly = x + clothW * 1.05;
@@ -884,6 +925,18 @@ export class WinnerBanners {
     art: ArtConfig,
   ): void {
     const width = Math.max(2, rim + 1);
+    if (flag === 'rauten') {
+      // A maypole: white, wound with a blue spiral, a green wreath near its top.
+      g.moveTo(x, foot).lineTo(x, top);
+      g.stroke({ width: width + 1, color: 0xffffff });
+      for (let y = foot; y > top + width * 3; y -= width * 4) {
+        g.moveTo(x - width, y).lineTo(x + width, Math.max(top, y - width * 2));
+      }
+      g.stroke({ width: width * 0.8, color: 0x3c8ad8 });
+      g.ellipse(x, top + (foot - top) * 0.12, width * 3, width * 1.2);
+      g.stroke({ width: width * 0.9, color: 0x2f7a2c });
+      return;
+    }
     if (flag === 'tattered') {
       // A crooked branch for a pole.
       const lean = (foot - top) * 0.06;
@@ -1038,6 +1091,9 @@ export class Fireworks {
         }
         g.moveTo(tx, ty).lineTo(x, y);
         g.stroke({ width: Math.max(1.5, size * 0.45), color: spark.colour, alpha, cap: 'round' });
+      } else if (kind === 'pretzel') {
+        if (spark.spin > 0) drawPretzel(g, x, y, size * 0.9, spark.angle, alpha);
+        else drawGingerHeart(g, x, y, size * 1.6, spark.colour, alpha);
       } else if (kind === 'blossom') {
         if (spark.spin > 0) {
           drawPetal(g, x, y, size * 0.8, spark.angle, spark.colour, alpha);
