@@ -12,10 +12,10 @@ the Credits, the desktop window, the README and the release notes). In the docs 
 original" means Rampart. Nothing of the original is used — no code, graphics or sound.
 
 **Every audio file must be credited** in `config/audio.manifest.json` (`credits`, by path:
-title, author, licence, source, changes). `npm run credits` writes `CREDITS.md` from it,
-and a test fails when that file is stale. A file without a credit is a warning in
-`npm run check` and an error under `BOLLWERK_REQUIRE_CREDITS=1`, which the release
-workflow sets. Every sound is from OpenGameArt.org.
+title where known, author, licence, source, changes), or by its folder's credit — a key
+ending in `/`, which is how the sound effects, all CC0, are one line (`sfx/`). `npm run
+credits` writes `CREDITS.md` from it, and a test fails when that file is stale or any file
+is uncredited. Every sound is from OpenGameArt.org.
 
 **`docs/PLAN.md` is the design and the open work** — read it before changing rules,
 terrain or bots. **`docs/ARCHIVE.md`** records how each decision was reached, with the

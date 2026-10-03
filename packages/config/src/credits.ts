@@ -20,9 +20,11 @@ function plain(text: string): string {
 
 function line({ path, credit }: CreditedFile): string {
   if (credit === null) return `- \`${path}\`: not yet credited`;
+  const what = path.endsWith('/') ? `Every file in \`${path}\`` : `\`${path}\``;
+  const title = credit.title === undefined ? '' : `“${plain(credit.title)}” `;
   const changes = credit.changes === undefined ? '' : ` Changes: ${plain(credit.changes)}`;
   return (
-    `- \`${path}\`: “${plain(credit.title)}” by ${plain(credit.author)}, ` +
+    `- ${what}: ${title}by ${plain(credit.author)}, ` +
     `[${credit.licence}](${AUDIO_LICENCES[credit.licence]}), from <${credit.source}>.${changes}`
   );
 }

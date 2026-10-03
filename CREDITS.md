@@ -11,41 +11,14 @@ this file.
 
 ### Music
 
-- `music/music_menu.mp3`: not yet credited
-- `music/music_admin.mp3`: not yet credited
-- `music/music_admin.2.mp3`: not yet credited
-- `music/music_admin.3.mp3`: not yet credited
-- `music/music_battle.ogg`: not yet credited
-- `music/music_victory.mp3`: not yet credited
-- `music/music_defeat.ogg`: not yet credited
+- `music/music_menu.mp3`: “Medieval: The Old Tower Inn” by RandomMind, [CC0](https://creativecommons.org/publicdomain/zero/1.0/), from <https://opengameart.org/content/medieval-the-old-tower-inn>.
+- `music/music_admin.mp3`: “Unused music (Track\_1.mp3)” by Alexandr Zhelanov, [CC-BY 3.0](https://creativecommons.org/licenses/by/3.0/), from <https://opengameart.org/content/unused-music>.
+- `music/music_admin.2.mp3`: “Unused music (demo\_track\_1.mp3)” by Alexandr Zhelanov, [CC-BY 3.0](https://creativecommons.org/licenses/by/3.0/), from <https://opengameart.org/content/unused-music>.
+- `music/music_admin.3.mp3`: “Unused music (Brirfing\_theme.mp3)” by Alexandr Zhelanov, [CC-BY 3.0](https://creativecommons.org/licenses/by/3.0/), from <https://opengameart.org/content/unused-music>.
+- `music/music_battle.ogg`: “Tiny Swords Duel” by Alexandr Zhelanov, [CC-BY 4.0](https://creativecommons.org/licenses/by/4.0/), from <https://opengameart.org/content/tiny-swords-duel>.
+- `music/music_victory.mp3`: “Lively Meadow (Victory Fanfare and Song)” by Matthew Pablo, [CC-BY 3.0](https://creativecommons.org/licenses/by/3.0/), from <https://opengameart.org/content/lively-meadow-victory-fanfare-and-song>.
+- `music/music_defeat.ogg`: “Medieval Rondo” by Marcelo Fernandez, [CC-BY 3.0](https://creativecommons.org/licenses/by/3.0/), from <https://opengameart.org/content/medieval-rondo>.
 
 ### Sound effects
 
-- `sfx/select.wav`: not yet credited
-- `sfx/place_cannon.mp3`: not yet credited
-- `sfx/place_cannon.2.mp3`: not yet credited
-- `sfx/cannon_fire.ogg`: not yet credited
-- `sfx/cannon_fire.2.ogg`: not yet credited
-- `sfx/cannon_fire.3.ogg`: not yet credited
-- `sfx/shot_impact.wav`: not yet credited
-- `sfx/shot_impact.2.wav`: not yet credited
-- `sfx/shot_impact.3.wav`: not yet credited
-- `sfx/shot_impact.4.wav`: not yet credited
-- `sfx/shot_impact.5.wav`: not yet credited
-- `sfx/shot_impact.6.wav`: not yet credited
-- `sfx/shot_impact.7.wav`: not yet credited
-- `sfx/shot_impact.8.wav`: not yet credited
-- `sfx/shot_impact.9.wav`: not yet credited
-- `sfx/voice_fire.ogg`: not yet credited
-- `sfx/voice_cease_fire.ogg`: not yet credited
-- `sfx/enclosure_success.wav`: not yet credited
-- `sfx/enclosure_failed.mp3`: not yet credited
-- `sfx/player_eliminated.mp3`: not yet credited
-- `sfx/piece_place.wav`: not yet credited
-- `sfx/piece_place.2.wav`: not yet credited
-- `sfx/piece_place.3.wav`: not yet credited
-- `sfx/piece_rotate.wav`: not yet credited
-- `sfx/piece_rotate.2.wav`: not yet credited
-- `sfx/piece_rotate.3.wav`: not yet credited
-- `sfx/piece_invalid.wav`: not yet credited
-- `sfx/countdown_tick.wav`: not yet credited
+- Every file in `sfx/`: by various authors, [CC0](https://creativecommons.org/publicdomain/zero/1.0/), from <https://opengameart.org/>.

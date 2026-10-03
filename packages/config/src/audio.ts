@@ -82,11 +82,11 @@ export type AudioLicence = keyof typeof AUDIO_LICENCES;
 
 /** Who made an audio file and on what terms: what the attribution licences ask to be shown. */
 const AudioCreditSchema = z.strictObject({
-  /** The work's title, as its author published it. */
-  title: z.string().min(1),
+  /** The work's title, as its author published it — where it is known. */
+  title: z.string().min(1).optional(),
   author: z.string().min(1),
   licence: z.enum(Object.keys(AUDIO_LICENCES) as [AudioLicence, ...AudioLicence[]]),
-  /** The page it was taken from. */
+  /** The page it was taken from, or the author's own for a work found elsewhere. */
   source: z.url(),
   /** What was done to it, if anything — trimmed, cut from a longer piece. CC-BY asks for it. */
   changes: z.string().min(1).optional(),
@@ -102,9 +102,11 @@ export const AudioManifestSchema = z.strictObject({
   sfx: z.record(z.enum(SFX_CUES), SfxEntrySchema),
   music: z.record(z.enum(MUSIC_CUES), MusicEntrySchema),
   /**
-   * One credit per file, by its path under `basePath` — variants each have their own,
-   * since they may come from different authors. The menu's Credits and `CREDITS.md` are
-   * both made from this; a file without one is shown as not yet credited.
+   * Credits by path under `basePath`: a file's own — variants each have their own, since
+   * they may come from different authors — or, for a key ending in `/`, one for every file
+   * in that folder without its own. The sound effects are all CC0, which asks for no
+   * attribution, so one line says so rather than thirty. The menu's Credits and
+   * `CREDITS.md` are both made from this.
    */
   credits: z.record(z.string().min(1), AudioCreditSchema),
 });
@@ -120,18 +122,41 @@ export function cuePaths(entry: { file: string; variants?: number | undefined })
   return paths;
 }
 
-/** One file the manifest names, with its credit if it has one yet. */
+/** A file's own credit, or else its folder's. */
+export function creditFor(audio: AudioManifest, path: string): AudioCredit | null {
+  const own = audio.credits[path];
+  if (own !== undefined) return own;
+  const folder = path.slice(0, path.lastIndexOf('/') + 1);
+  return folder === '' ? null : (audio.credits[folder] ?? null);
+}
+
+/**
+ * One line of the credits: a file with its own credit, or a folder whose credit covers
+ * every file in it without one (`path` then ends in `/`), or a file not yet credited.
+ */
 export interface CreditedFile {
   path: string;
   credit: AudioCredit | null;
 }
 
-/** Every file the manifest names, music first, in the manifest's order. */
+/**
+ * The credits' lines, music first, in the manifest's order; the files a folder's credit
+ * covers are one line, where the first of them would stand.
+ */
 export function audioCredits(audio: AudioManifest): {
   music: CreditedFile[];
   sfx: CreditedFile[];
 } {
-  const list = (entries: { file: string; variants?: number | undefined }[]): CreditedFile[] =>
-    entries.flatMap(cuePaths).map((path) => ({ path, credit: audio.credits[path] ?? null }));
+  const list = (entries: { file: string; variants?: number | undefined }[]): CreditedFile[] => {
+    const lines: CreditedFile[] = [];
+    for (const path of entries.flatMap(cuePaths)) {
+      const own = audio.credits[path];
+      const credit = creditFor(audio, path);
+      const line =
+        own === undefined && credit !== null ? path.slice(0, path.lastIndexOf('/') + 1) : path;
+      if (!lines.some((l) => l.path === line)) lines.push({ path: line, credit });
+    }
+    return lines;
+  };
   return { music: list(Object.values(audio.music)), sfx: list(Object.values(audio.sfx)) };
 }

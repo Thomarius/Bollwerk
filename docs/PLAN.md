@@ -450,10 +450,11 @@ does. **A missing file cannot be told from its HTTP status** — the static hand
 an unknown path with `index.html` and a 200 — so absence is detected by failure to decode,
 and a corrupt file is silent rather than noisy.
 
-**Every audio file is credited** in the manifest — title, author, licence, source, what was
-changed — and the menu's Credits and `CREDITS.md` are both made from it (`npm run credits`;
-a test fails when the file is stale). An uncredited file is a warning in `npm run check` and
-an error under `BOLLWERK_REQUIRE_CREDITS=1`, which the release workflow sets.
+**Every audio file is credited** in the manifest — title where known, author, licence,
+source, what was changed — by its own path or by its folder's (a key ending in `/`: the
+sound effects are all CC0, which asks for no attribution, so `sfx/` is one line rather than
+thirty). The menu's Credits and `CREDITS.md` are both made from it (`npm run credits`); a
+test fails when the file is stale, and `npm run check` fails on any file without a credit.
 
 **The HUD is dressed in the look on screen** (`HUD_SKIN` in `hud.ts`, a record over every
 style): a flat bar under a hard gold rule for Minimal, near black under a glowing cyan
@@ -936,12 +937,6 @@ delay gone and the balance quite good. A new session starts with either:
 **To check in play**, since a still frame cannot show them: a knocked-out player's own
 roster card looked cut off at its right edge in a screenshot (2026-10-02, the user to test);
 Stained glass's shards, glints, fish and ship; the music and sounds sliders by ear.
-
-**Audio credits** (2026-10-02, ARCHIVE 11zw): the user is gathering title, author, licence
-and source for every file in `assets/audio/` from OpenGameArt, to go into the manifest's
-`credits`, then `npm run credits`. Once every file has one, the check can be made
-unconditional — the `BOLLWERK_REQUIRE_CREDITS` switch removed — so that a sound added later
-without its credit fails `npm run check` rather than only a release.
 
 Then, as they fit: **11.3**, two-player balance, re-measured before anything is tried;
 **11.4**, measurements never taken; **11.13**, the bots' loose ends.

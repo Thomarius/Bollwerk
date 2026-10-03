@@ -4,6 +4,8 @@ import {
   type AudioManifest,
   ArtConfigSchema,
   AudioManifestSchema,
+  audioCredits,
+  creditFor,
   artForStyle,
   chooseStyle,
   hueOf,
@@ -135,6 +137,29 @@ describe('audio manifest', () => {
       audio: { ...defaultAudioManifest, credits: { 'sfx/shot_impact.10.wav': credit } },
     } as typeof defaultConfigBundle);
     expect(problems).toContain('audio: a credit for "sfx/shot_impact.10.wav", which no cue loads.');
+  });
+
+  it('reports a folder credit that covers no file a cue loads', () => {
+    const problems = validateConfigBundle({
+      ...defaultConfigBundle,
+      audio: { ...defaultAudioManifest, credits: { 'voices/': credit, 'sfx/': credit } },
+    } as typeof defaultConfigBundle);
+    expect(problems).toContain('audio: a credit for "voices/", which no cue loads.');
+    expect(problems).not.toContain('audio: a credit for "sfx/", which no cue loads.');
+  });
+
+  it('lets a folder credit cover its files, giving way to a file of its own', () => {
+    const own = { ...credit, title: 'Own' };
+    const audio = {
+      ...defaultAudioManifest,
+      credits: { 'sfx/': credit, 'sfx/cannon_fire.2.ogg': own },
+    } as AudioManifest;
+    expect(creditFor(audio, 'sfx/select.wav')).toBe(credit);
+    expect(creditFor(audio, 'sfx/cannon_fire.2.ogg')).toBe(own);
+    expect(creditFor(audio, 'music/music_menu.mp3')).toBeNull();
+    const { sfx } = audioCredits(audio);
+    // One line for the folder where its first file stands, and the file with its own.
+    expect(sfx.map((line) => line.path)).toEqual(['sfx/', 'sfx/cannon_fire.2.ogg']);
   });
 
   it('takes only the licences it can link, and a source that is an address', () => {

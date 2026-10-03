@@ -18,8 +18,10 @@ function item({ path, credit }: CreditedFile): string {
   const link = (href: string, text: string): string =>
     `<a href="${escape(href)}" target="_blank" rel="noopener noreferrer">${escape(text)}</a>`;
   const changes = credit.changes === undefined ? '' : ` ${escape(credit.changes)}`;
+  const what = path.endsWith('/') ? 'Every sound here: ' : '';
+  const title = credit.title === undefined ? '' : `“${escape(credit.title)}” `;
   return (
-    `<li>“${escape(credit.title)}” by ${escape(credit.author)} — ` +
+    `<li>${what}${title}by ${escape(credit.author)} — ` +
     `${link(AUDIO_LICENCES[credit.licence], credit.licence)}, ` +
     `${link(credit.source, 'source')}.${changes}</li>`
   );

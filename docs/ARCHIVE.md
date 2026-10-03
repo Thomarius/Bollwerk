@@ -3875,3 +3875,27 @@ when the file is stale; the menu's Credits is made from the same list and its li
 in the person's browser, from the desktop app too. A file without a credit is a warning
 until the user has gathered them all, and an error under `BOLLWERK_REQUIRE_CREDITS=1`,
 which the release workflow sets before it builds anything.
+
+## 11zx. The audio credited (2026-10-03)
+
+The user supplied author and licence for every music track, and said every sound effect
+is CC0. **CC0 asks for no attribution, so the sound effects are one credit, not thirty**:
+a credit's key may be a folder, ending in `/`, covering every file in it without a credit
+of its own (`creditFor`), and the Credits and `CREDITS.md` show it as one line where its
+first file would stand. A folder credit that covers no file a cue loads is refused, as a
+file credit for an unknown path is. A file with its own credit still shows it, so a sound
+added under CC-BY beside the others is credited by name.
+
+**Every track has its title and OpenGameArt page.** Two were found from their embedded
+tags — the menu's is RandomMind's _Medieval: The Old Tower Inn_ (CC0), the victory cue
+Matthew Pablo's _Lively Meadow (Victory Fanfare and Song)_ (CC-BY 3.0) — and the user found
+the rest: Alexandr Zhelanov's _Tiny Swords Duel_ (CC-BY 4.0) for combat, Marcelo
+Fernandez's _Medieval Rondo_ (CC-BY 3.0) for defeat, and the three build-phase tracks from
+Zhelanov's pack _Unused music_ (CC-BY 3.0), whose pieces have no titles and are credited by
+their file names there (`Brirfing_theme.mp3` is the pack's own spelling). Which file is
+which was settled by size: each is byte for byte the pack's download, so nothing was
+changed. A title is optional all the same, since a folder's credit has none.
+
+**The check is unconditional**: with everything credited, `BOLLWERK_REQUIRE_CREDITS` is
+gone, and a file without a credit fails `npm run check`; the release workflow still runs
+that test first, before it builds anything.

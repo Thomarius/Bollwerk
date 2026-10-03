@@ -4,7 +4,7 @@ import { join, relative } from 'node:path';
 
 import { describe, expect, it } from 'vitest';
 
-import { cuePaths } from './audio.js';
+import { creditFor, cuePaths } from './audio.js';
 import { creditsMarkdown } from './credits.js';
 import { defaultAudioManifest } from './defaults.js';
 
@@ -54,17 +54,11 @@ describe('audio files and the manifest', () => {
   });
 
   /**
-   * Every file shipped must say who made it: the attribution licences require it. Until
-   * the credits are gathered a missing one is a warning here, and an error under
-   * `BOLLWERK_REQUIRE_CREDITS=1`, which the release workflow sets — so no release can
-   * go out with a sound uncredited.
+   * Every file shipped must say who made it: the attribution licences require it, so a
+   * sound added without its credit, its own or its folder's, fails the check.
    */
   it('credits every audio file in the folder', () => {
-    const uncredited = onDisk.filter((path) => defaultAudioManifest.credits[path] === undefined);
-    if (process.env.BOLLWERK_REQUIRE_CREDITS === '1') expect(uncredited).toEqual([]);
-    else if (uncredited.length > 0) {
-      console.warn(`${uncredited.length} audio files not yet credited in the manifest`);
-    }
+    expect(onDisk.filter((path) => creditFor(defaultAudioManifest, path) === null)).toEqual([]);
   });
 
   it('has CREDITS.md made from the manifest as it stands', () => {

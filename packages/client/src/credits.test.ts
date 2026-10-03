@@ -4,11 +4,30 @@ import { describe, expect, it } from 'vitest';
 import { creditsHtml } from './credits.js';
 
 describe('the Credits', () => {
-  it('names the original and its owner, and lists every file', () => {
+  it('names the original and its owner, and credits every sound', () => {
     const html = creditsHtml(defaultAudioManifest);
     expect(html).toContain('inspired by Rampart (Atari Games, 1990)');
     expect(html).toContain('Warner Bros. Entertainment');
-    expect(html).toContain('<code>sfx/shot_impact.9.wav</code> <em>not yet credited</em>');
+    expect(html).not.toContain('not yet credited');
+    // The sound effects are one folder's credit, not a line each.
+    expect(html.match(/Every sound here/g)).toHaveLength(1);
+  });
+
+  it('leaves out a title that is not known', () => {
+    const audio: AudioManifest = {
+      ...defaultAudioManifest,
+      credits: {
+        'sfx/select.wav': {
+          author: 'Someone',
+          licence: 'CC-BY 3.0',
+          source: 'https://soundcloud.com/someone',
+        },
+      },
+    };
+    expect(creditsHtml(audio)).toContain('<li>by Someone — ');
+    expect(creditsHtml(audio)).toContain(
+      '<code>sfx/countdown_tick.wav</code> <em>not yet credited</em>',
+    );
   });
 
   it('shows a credit with its licence and source linked, and escapes what it was given', () => {

@@ -3,26 +3,139 @@
   "masterVolume": 0.8,
   "missingFilesAreSilent": true,
   "sfx": {
-    "select": { "file": "sfx/select.wav", "volume": 0.5 },
-    "place_cannon": { "file": "sfx/place_cannon.mp3", "volume": 0.6, "variants": 2 },
-    "cannon_fire": { "file": "sfx/cannon_fire.ogg", "volume": 0.7, "variants": 3 },
-    "shot_impact": { "file": "sfx/shot_impact.wav", "volume": 0.8, "variants": 9 },
-    "voice_fire": { "file": "sfx/voice_fire.ogg", "volume": 1.0 },
-    "voice_cease_fire": { "file": "sfx/voice_cease_fire.ogg", "volume": 1.0 },
-    "enclosure_success": { "file": "sfx/enclosure_success.wav", "volume": 0.9 },
-    "enclosure_failed": { "file": "sfx/enclosure_failed.mp3", "volume": 0.9 },
-    "player_eliminated": { "file": "sfx/player_eliminated.mp3", "volume": 0.9 },
-    "piece_place": { "file": "sfx/piece_place.wav", "volume": 0.45, "variants": 3 },
-    "piece_rotate": { "file": "sfx/piece_rotate.wav", "volume": 0.35, "variants": 3 },
-    "piece_invalid": { "file": "sfx/piece_invalid.wav", "volume": 0.4 },
-    "countdown_tick": { "file": "sfx/countdown_tick.wav", "volume": 0.5 }
+    "select": {
+      "file": "sfx/select.wav",
+      "volume": 0.5
+    },
+    "place_cannon": {
+      "file": "sfx/place_cannon.mp3",
+      "volume": 0.6,
+      "variants": 2
+    },
+    "cannon_fire": {
+      "file": "sfx/cannon_fire.ogg",
+      "volume": 0.7,
+      "variants": 3
+    },
+    "shot_impact": {
+      "file": "sfx/shot_impact.wav",
+      "volume": 0.8,
+      "variants": 9
+    },
+    "voice_fire": {
+      "file": "sfx/voice_fire.ogg",
+      "volume": 1.0
+    },
+    "voice_cease_fire": {
+      "file": "sfx/voice_cease_fire.ogg",
+      "volume": 1.0
+    },
+    "enclosure_success": {
+      "file": "sfx/enclosure_success.wav",
+      "volume": 0.9
+    },
+    "enclosure_failed": {
+      "file": "sfx/enclosure_failed.mp3",
+      "volume": 0.9
+    },
+    "player_eliminated": {
+      "file": "sfx/player_eliminated.mp3",
+      "volume": 0.9
+    },
+    "piece_place": {
+      "file": "sfx/piece_place.wav",
+      "volume": 0.45,
+      "variants": 3
+    },
+    "piece_rotate": {
+      "file": "sfx/piece_rotate.wav",
+      "volume": 0.35,
+      "variants": 3
+    },
+    "piece_invalid": {
+      "file": "sfx/piece_invalid.wav",
+      "volume": 0.4
+    },
+    "countdown_tick": {
+      "file": "sfx/countdown_tick.wav",
+      "volume": 0.5
+    }
   },
   "music": {
-    "music_menu": { "file": "music/music_menu.mp3", "volume": 0.5, "loop": true },
-    "music_admin": { "file": "music/music_admin.mp3", "volume": 0.5, "variants": 3, "loop": true },
-    "music_battle": { "file": "music/music_battle.ogg", "volume": 0.5, "loop": true },
-    "music_victory": { "file": "music/music_victory.mp3", "volume": 0.6, "loop": false },
-    "music_defeat": { "file": "music/music_defeat.ogg", "volume": 0.6, "loop": false }
+    "music_menu": {
+      "file": "music/music_menu.mp3",
+      "volume": 0.5,
+      "loop": true
+    },
+    "music_admin": {
+      "file": "music/music_admin.mp3",
+      "volume": 0.5,
+      "variants": 3,
+      "loop": true
+    },
+    "music_battle": {
+      "file": "music/music_battle.ogg",
+      "volume": 0.5,
+      "loop": true
+    },
+    "music_victory": {
+      "file": "music/music_victory.mp3",
+      "volume": 0.6,
+      "loop": false
+    },
+    "music_defeat": {
+      "file": "music/music_defeat.ogg",
+      "volume": 0.6,
+      "loop": false
+    }
   },
-  "credits": {}
+  "credits": {
+    "music/music_menu.mp3": {
+      "title": "Medieval: The Old Tower Inn",
+      "author": "RandomMind",
+      "licence": "CC0",
+      "source": "https://opengameart.org/content/medieval-the-old-tower-inn"
+    },
+    "music/music_admin.mp3": {
+      "title": "Unused music (Track_1.mp3)",
+      "author": "Alexandr Zhelanov",
+      "licence": "CC-BY 3.0",
+      "source": "https://opengameart.org/content/unused-music"
+    },
+    "music/music_admin.2.mp3": {
+      "title": "Unused music (demo_track_1.mp3)",
+      "author": "Alexandr Zhelanov",
+      "licence": "CC-BY 3.0",
+      "source": "https://opengameart.org/content/unused-music"
+    },
+    "music/music_admin.3.mp3": {
+      "title": "Unused music (Brirfing_theme.mp3)",
+      "author": "Alexandr Zhelanov",
+      "licence": "CC-BY 3.0",
+      "source": "https://opengameart.org/content/unused-music"
+    },
+    "music/music_battle.ogg": {
+      "title": "Tiny Swords Duel",
+      "author": "Alexandr Zhelanov",
+      "licence": "CC-BY 4.0",
+      "source": "https://opengameart.org/content/tiny-swords-duel"
+    },
+    "music/music_victory.mp3": {
+      "title": "Lively Meadow (Victory Fanfare and Song)",
+      "author": "Matthew Pablo",
+      "licence": "CC-BY 3.0",
+      "source": "https://opengameart.org/content/lively-meadow-victory-fanfare-and-song"
+    },
+    "music/music_defeat.ogg": {
+      "title": "Medieval Rondo",
+      "author": "Marcelo Fernandez",
+      "licence": "CC-BY 3.0",
+      "source": "https://opengameart.org/content/medieval-rondo"
+    },
+    "sfx/": {
+      "author": "various authors",
+      "licence": "CC0",
+      "source": "https://opengameart.org/"
+    }
+  }
 }

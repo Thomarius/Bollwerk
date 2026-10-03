@@ -79,8 +79,10 @@ shows it.
 ## Credits
 
 **Every file here needs a credit** in the manifest's `credits`, keyed by its path —
-`"sfx/cannon_fire.2.ogg": { "title", "author", "licence", "source", "changes" }`, `changes`
-optional. `licence` is one of the list in `packages/config/src/audio.ts`. Then run
-`npm run credits` to remake `CREDITS.md`, which a test checks against the manifest; the
-menu's Credits reads the manifest directly. A missing credit is a warning in the tests
-and stops a release.
+`"music/music_menu.mp3": { "title", "author", "licence", "source", "changes" }`, `title`
+and `changes` optional — or by its folder's: a key ending in `/` credits every file in
+that folder without one of its own. Every sound effect is CC0, so `sfx/` is one credit; a
+sound added there under an attribution licence needs its own. `licence` is one of the list
+in `packages/config/src/audio.ts`. Then run `npm run credits` to remake `CREDITS.md`,
+which a test checks against the manifest; the menu's Credits reads the manifest directly.
+A file without a credit fails the tests.
