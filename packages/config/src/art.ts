@@ -49,7 +49,7 @@ export type PlayerPalette = z.infer<typeof PlayerPaletteSchema>;
  * outlines on a dark circuit board, `blueprint` a plan in white ink on blue paper,
  * `parchment` an old hand-drawn map, `bricks` a board built of toy bricks, `glass` a
  * church window of stained glass, `chocolate` a sweet-shop land on a river of chocolate,
- * `halloween` a haunted land round a bog.
+ * `halloween` a haunted land round a bog, `sakura` an Edo castle town as a woodblock print.
  */
 export const ArtStyleSchema = z.enum([
   'flat',
@@ -62,6 +62,7 @@ export const ArtStyleSchema = z.enum([
   'glass',
   'chocolate',
   'halloween',
+  'sakura',
 ]);
 export type ArtStyle = z.infer<typeof ArtStyleSchema>;
 
@@ -397,6 +398,41 @@ export const HalloweenStyleSchema = z.strictObject({
 });
 export type HalloweenStyleConfig = z.infer<typeof HalloweenStyleSchema>;
 
+/**
+ * The Sakura look: an Edo castle town by the sea as a woodblock print — plastered walls
+ * under tiled caps, keeps flying a carp streamer while sealed, raked gravel for sealed
+ * ground, curling wave crests on an indigo sea, and cherry petals drifting over it all.
+ */
+export const SakuraStyleSchema = z.strictObject({
+  /** Petals drifting over the board at once, and how fast they fall. */
+  petalCount: z.number().int().nonnegative(),
+  petalTilesPerSecond: z.number().positive(),
+  /** Sealed ground's raked gravel, how strongly it covers the land, and its lines a tile. */
+  territoryAlpha: z.number().min(0).max(1),
+  rakeLines: z.number().int().min(1).max(4),
+  /** Wave crests curling on the open sea, one at a time per so many tiles of it. */
+  crestTiles: z.number().min(1),
+  crestMs: z.number().int().positive(),
+  /** How long the cloud a wall hit throws up takes to rise and fade. */
+  puffMs: z.number().int().positive(),
+  /** Bands of mist drifting across a foggy match, and how strongly they veil it. */
+  mistBands: z.number().int().nonnegative(),
+  mistAlpha: z.number().min(0).max(1),
+  /** Snowflakes and rain streaks on screen at once, in a match with that weather. */
+  snowCount: z.number().int().nonnegative(),
+  rainCount: z.number().int().nonnegative(),
+  /** A boat under a square sail crossing the outer sea now and then, one at a time. */
+  boatEveryMs: z.number().int().positive(),
+  boatTilesPerSecond: z.number().positive(),
+  /** A line of cranes flying over it now and then. */
+  cranesEveryMs: z.number().int().positive(),
+  cranesTilesPerSecond: z.number().positive(),
+  /** A great wave rolling across it now and then. */
+  waveEveryMs: z.number().int().positive(),
+  waveTilesPerSecond: z.number().positive(),
+});
+export type SakuraStyleConfig = z.infer<typeof SakuraStyleSchema>;
+
 /** One of the two looks a match is drawn in. */
 export type ArtLook = 'build' | 'combat';
 
@@ -439,6 +475,7 @@ export const STYLE_LOOKS: Record<ArtStyle, readonly ArtLook[]> = {
   glass: ['build', 'combat'],
   chocolate: ['build', 'combat'],
   halloween: ['build', 'combat'],
+  sakura: ['build', 'combat'],
 };
 
 export function styleServes(
@@ -560,6 +597,7 @@ export const ArtConfigSchema = z
     glass: GlassStyleSchema,
     chocolate: ChocolateStyleSchema,
     halloween: HalloweenStyleSchema,
+    sakura: SakuraStyleSchema,
     scenery: ScenerySchema,
     /** Effects both styles draw alike, because they carry information. */
     effects: z.strictObject({

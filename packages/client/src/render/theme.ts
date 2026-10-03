@@ -4,6 +4,8 @@ import type { Container, Graphics } from 'pixi.js';
 
 import type { DrainWash, SealGlow } from '../seal.js';
 
+import { PETALS, drawPetal } from './ukiyo.js';
+
 /**
  * A visual style.
  *
@@ -690,16 +692,27 @@ export interface FinishLook {
    * `square` Minimal's flat sparks; `streak` sparks trailing light; `neon` streaks with a
    * halo; `mark` a draughtsman's crosses; `blot` drops of ink; `brick` tumbling bricks;
    * `shard` spinning glass; `sprinkle` candy sprinkles; `spirits` bats and little ghosts
-   * flying out and up.
+   * flying out and up; `blossom` a chrysanthemum's drooping streaks and cherry petals.
    */
   spark:
-    'square' | 'streak' | 'neon' | 'mark' | 'blot' | 'brick' | 'shard' | 'sprinkle' | 'spirits';
+    | 'square'
+    | 'streak'
+    | 'neon'
+    | 'mark'
+    | 'blot'
+    | 'brick'
+    | 'shard'
+    | 'sprinkle'
+    | 'spirits'
+    | 'blossom';
   /**
    * `swallowtail` a forked banner; `hologram` a flickering projection; `pennant` a flag in
    * plan; `brick` a square flag of bricks; `leaded` a banner of glass in its lead; `candy` a
-   * pennant on a candy-striped pole; `tattered` a ragged pennant on a crooked pole.
+   * pennant on a candy-striped pole; `tattered` a ragged pennant on a crooked pole; `nobori`
+   * a tall war banner hung from an arm at its top.
    */
-  flag: 'swallowtail' | 'hologram' | 'pennant' | 'brick' | 'leaded' | 'candy' | 'tattered';
+  flag:
+    'swallowtail' | 'hologram' | 'pennant' | 'brick' | 'leaded' | 'candy' | 'tattered' | 'nobori';
 }
 
 export const PLAIN_FINISH: FinishLook = { spark: 'square', flag: 'swallowtail' };
@@ -768,6 +781,26 @@ export class WinnerBanners {
           x,
           up + clothH,
         ];
+        if (flag === 'nobori') {
+          // A tall narrow banner hung from an arm at its top, tied to the pole by loops of
+          // white, a crest in a circle near its head; its free edge stirring.
+          const H = clothH * 1.9;
+          const W = clothW * 0.5;
+          const head = foot - (pole - H) * hoist - H;
+          g.poly([x, head, x + W, head, x + W + wave * 0.8, head + H, x, head + H]);
+          g.fill({ color: base });
+          g.stroke({ width: rim, color: 0x1c1a24, alpha: 0.85, join: 'round' });
+          g.moveTo(x, head).lineTo(x + W * 1.1, head);
+          g.stroke({ width: Math.max(2, rim + 1), color: 0x2a2018, cap: 'round' });
+          for (let k = 0; k < 4; k++)
+            g.rect(x - tile * 0.06, head + H * (0.12 + k * 0.25), tile * 0.12, tile * 0.1);
+          g.fill({ color: 0xf6f1e3 });
+          g.circle(x + W / 2 + wave * 0.15, head + H * 0.24, W * 0.3);
+          g.fill({ color: 0xf6f1e3 });
+          g.circle(x + W / 2 + wave * 0.15, head + H * 0.24, W * 0.16);
+          g.fill({ color: light });
+          continue;
+        }
         if (flag === 'tattered') {
           // Torn along its fly: the edge ragged, a hole in it, flapping more than the rest.
           const fly = x + clothW * 1.05;
@@ -959,18 +992,27 @@ export class Fireworks {
           vx: Math.cos(angle) * speed,
           vy: Math.sin(angle) * speed,
           age: 0,
-          colour: colours[k % colours.length] as number,
+          colour:
+            kind === 'blossom' && k % 2 === 0
+              ? PETALS[(k / 2) % PETALS.length]!
+              : (colours[k % colours.length] as number),
           angle: Math.random() * Math.PI * 2,
-          spin: (Math.random() - 0.5) * 12,
+          // A blossom's petals are the sparks that spin; its streaks, the ones that do not.
+          spin:
+            kind === 'blossom'
+              ? k % 2 === 0
+                ? 2 + Math.random() * 4
+                : 0
+              : (Math.random() - 0.5) * 12,
         });
       }
     }
     this.rockets = this.rockets.filter((rocket) => rocket.age < rise);
 
-    // Ink lingers, bricks fall heavier and spirits float up; the rest burst and fade as
-    // sparks do.
-    const life = kind === 'blot' || kind === 'spirits' ? 1900 : 1200;
-    const fall = kind === 'brick' ? 6 : kind === 'spirits' ? -1.4 : 2.2;
+    // Ink lingers, bricks fall heavier, spirits float up and a blossom's petals drift down
+    // slowly; the rest burst and fade as sparks do.
+    const life = kind === 'blot' || kind === 'spirits' ? 1900 : kind === 'blossom' ? 1700 : 1200;
+    const fall = kind === 'brick' ? 6 : kind === 'spirits' ? -1.4 : kind === 'blossom' ? 1.4 : 2.2;
     const t0 = view.tile;
     for (const spark of this.sparks) {
       spark.age += deltaMs;
@@ -996,6 +1038,19 @@ export class Fireworks {
         }
         g.moveTo(tx, ty).lineTo(x, y);
         g.stroke({ width: Math.max(1.5, size * 0.45), color: spark.colour, alpha, cap: 'round' });
+      } else if (kind === 'blossom') {
+        if (spark.spin > 0) {
+          drawPetal(g, x, y, size * 0.8, spark.angle, spark.colour, alpha);
+        } else {
+          // A chrysanthemum's streak, its tail bowed as gravity takes it.
+          const tail = 0.14;
+          const tx = tileX(view, spark.x - spark.vx * tail);
+          const ty = tileY(view, spark.y - spark.vy * tail);
+          g.moveTo(tx, ty).quadraticCurveTo(tileX(view, spark.x - spark.vx * tail * 0.4), y, x, y);
+          g.stroke({ width: Math.max(1.5, size * 0.4), color: spark.colour, alpha, cap: 'round' });
+          g.circle(x, y, Math.max(1, size * 0.3));
+          g.fill({ color: 0xffffff, alpha });
+        }
       } else if (kind === 'spirits') {
         const s = size * 1.3;
         if (spark.spin > 0) {

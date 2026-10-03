@@ -35,6 +35,7 @@ export const STYLE_NAMES: Record<ArtStyle, string> = {
   glass: 'Stained glass',
   chocolate: 'Chocolate',
   halloween: 'Halloween',
+  sakura: 'Sakura',
 };
 
 export function lookName(choice: LookChoice): string {

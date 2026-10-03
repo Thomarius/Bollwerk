@@ -7,6 +7,7 @@ import { motionReduced } from '../motion.js';
 import { Circling, Crossings, NO_OCEAN, Surfacings, outerOcean, type OuterOcean } from './ocean.js';
 import { drawBat } from './spooky.js';
 import { hex, tileX, tileY, type ViewTransform } from './theme.js';
+import { drawCrest } from './ukiyo.js';
 
 /**
  * Life on the outer ocean in the styles drawn from shapes (PLAN 11.16 O1), as Medieval and
@@ -783,6 +784,121 @@ export class HalloweenSeaLife extends OceanDrawn {
       g.fill({ color: 0xa6f0a8, alpha: 0.18 });
       g.circle(x, y, t * 0.13);
       g.fill({ color: 0xeaffea, alpha: 0.9 });
+    }
+  }
+}
+
+/**
+ * Sakura: a boat under a square sail crossing now and then, a line of cranes flying over,
+ * wings beating, and now and then a great wave rolling across, curling and breaking in
+ * claws of foam as the prints draw it — wood, sailcloth, white birds and the sea's own
+ * blues, nothing of any player's colour.
+ */
+export class SakuraSeaLife extends OceanDrawn {
+  private readonly boats = new Crossings();
+  private readonly cranes = new Crossings();
+  private readonly waves = new Crossings();
+  /** Mount Fuji in the corner: whatever crosses its square is hidden, as if behind it. */
+  fuji: { x: number; y: number; size: number } | null = null;
+
+  private hidden(x: number, y: number): boolean {
+    const f = this.fuji;
+    return f !== null && Math.abs(x - f.x) < f.size / 2 && Math.abs(y - f.y) < f.size / 2;
+  }
+
+  override layout(state: MatchState, view: ViewTransform, art: ArtConfig): void {
+    super.layout(state, view, art);
+    this.boats.layout(this.ocean, art.sakura.boatEveryMs);
+    this.cranes.layout(this.ocean, art.sakura.cranesEveryMs);
+    this.waves.layout(this.ocean, art.sakura.waveEveryMs);
+  }
+
+  protected frame(g: Graphics, view: ViewTransform, art: ArtConfig, deltaMs: number): void {
+    const s = art.sakura;
+    const t = view.tile;
+    const ink = hex(art.palette.shadow);
+
+    this.waves.step(this.ocean, deltaMs, s.waveEveryMs, s.waveTilesPerSecond, 1.5);
+    for (const wave of this.waves.items) {
+      if (this.hidden(wave.x, wave.y)) continue;
+      // It rises and breaks over and over as it rolls on.
+      const rise = 0.65 + 0.35 * Math.sin(this.clock / 900 + wave.x);
+      drawCrest(
+        g,
+        tileX(view, wave.x),
+        tileY(view, wave.y + 0.4),
+        t * 2.6,
+        wave.dir,
+        rise,
+        hex(art.palette.waterMid),
+        hex(art.palette.waterFoam),
+        ink,
+      );
+    }
+
+    this.boats.step(this.ocean, deltaMs, s.boatEveryMs, s.boatTilesPerSecond, 1.3);
+    for (const boat of this.boats.items) {
+      if (this.hidden(boat.x, boat.y)) continue;
+      const y = boat.y + Math.sin(this.clock / 700 + boat.x) * 0.05;
+      g.poly(
+        shape(view, boat.x, y, boat.dir, [
+          [-0.8, -0.05],
+          [0.9, -0.15],
+          [0.6, 0.25],
+          [-0.6, 0.25],
+        ]),
+      );
+      g.fill({ color: 0x6b4a2a });
+      g.stroke({ width: 1, color: ink, alpha: 0.8 });
+      g.moveTo(tileX(view, boat.x), tileY(view, y - 0.05));
+      g.lineTo(tileX(view, boat.x), tileY(view, y - 1.15));
+      g.stroke({ width: Math.max(1, t * 0.06), color: 0x3a2c22 });
+      // The square sail, its battens across it.
+      g.poly(
+        shape(view, boat.x, y, boat.dir, [
+          [-0.38, -1.05],
+          [0.38, -1.05],
+          [0.42, -0.25],
+          [-0.34, -0.25],
+        ]),
+      );
+      g.fill({ color: 0xf1e7cf });
+      g.stroke({ width: 1, color: ink, alpha: 0.7 });
+      for (const f of [-0.85, -0.65, -0.45]) {
+        g.moveTo(tileX(view, boat.x - 0.37 * boat.dir), tileY(view, y + f));
+        g.lineTo(tileX(view, boat.x + 0.4 * boat.dir), tileY(view, y + f));
+      }
+      g.stroke({ width: 1, color: ink, alpha: 0.4 });
+    }
+
+    this.cranes.step(this.ocean, deltaMs, s.cranesEveryMs, s.cranesTilesPerSecond, 1);
+    for (const flight of this.cranes.items) {
+      for (let k = 0; k < 5; k++) {
+        if (this.hidden(flight.x - flight.dir * k * 0.7, flight.y - 0.5 + k * 0.28)) continue;
+        const x = tileX(view, flight.x - flight.dir * k * 0.7);
+        const y = tileY(view, flight.y - 0.5 + k * 0.28);
+        const size = t * 0.34;
+        const flap = Math.sin(this.clock / 160 + k * 0.9) * size * 0.5;
+        for (const side of [-1, 1]) {
+          g.poly([
+            x,
+            y,
+            x + side * size * 0.5,
+            y - flap * 0.6 - size * 0.1,
+            x + side * size,
+            y - flap,
+            x + side * size * 0.45,
+            y + size * 0.12,
+          ]);
+        }
+        g.fill({ color: 0xfbf8f0 });
+        for (const side of [-1, 1]) {
+          g.moveTo(x + side * size * 0.75, y - flap * 0.85).lineTo(x + side * size, y - flap);
+        }
+        g.stroke({ width: Math.max(1, size * 0.18), color: ink, cap: 'round' });
+        g.moveTo(x, y).lineTo(x + flight.dir * size * 0.6, y - size * 0.05);
+        g.stroke({ width: Math.max(1, size * 0.12), color: 0xfbf8f0, cap: 'round' });
+      }
     }
   }
 }

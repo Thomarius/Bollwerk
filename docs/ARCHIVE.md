@@ -4029,3 +4029,37 @@ Larger, they met the big timer at the map's centre and, in the top row and at th
 edge, ran under the bar and off the screen: each now takes the top corner of its island
 farther from the timer and is kept on screen and below the bar. Seen at three, eight and
 eight in teams at 1400 pixels, eight at 1024, and four and six in teams.
+
+## 12d. Sakura, an eleventh style (2026-10-03)
+
+The user's idea: a Japanese style, a clear reference without being called Japan. Pitched
+before any code and agreed: every style has one idea of its own, and this one's is **the
+board as an ukiyo-e woodblock print** — flat colour in bold outline, colour fading across an
+area as a printer wipes the block, and the prints' motifs: the curling wave with claws of
+foam, bands of mist, swirled clouds. Kept clear of Parchment, which is light, sepia and a
+map, and of Medieval, whose castles are European. Decided with the user: the name Sakura;
+the carp streamer as the sealed sign, over paper lanterns lit, which would be near Night's
+torches and Halloween's lit house; the season turning in the final round; Mount Fuji in the
+corner as the reference, rather than the flag.
+
+What carries meaning: **sealed is the carp flying** (`FlagHoist`), and a breach brings it
+down limp; **sealed ground is a raked gravel garden**, raked round the keeps as round
+stones (`rakeLines`, tested on pictures: rings that close, inward corners carried past
+rather than cut); **a hit throws roof tiles and a curled cloud**, the style's mark of a hit
+as the bite is Chocolate's and the freed ghost Halloween's; the piece in hand is a brush
+stroke that breaks up dry where it does not fit, not red. No torii, lanterns or vermilion on
+the board, which would read as the crimson player. The finish gained `blossom`, a
+chrysanthemum's bowed streaks among cherry petals, and `nobori`, a tall war banner hung from
+an arm. The wave, the cloud, the petal and the maple leaf are `ukiyo.ts`, shared by the
+theme, its sea life and the finish, so none imports another.
+
+Seen in screenshots building, in combat, at eight players, in the final round, in rain, fog
+and snow, with a player knocked out, in the menu and at game over; the banner, the island
+plaques, a team tag and both stamps placed into a running match by a Playwright script. What
+the first look changed: Mount Fuji's snow ended in a comb of teeth and its mist in two hard
+bars, its foot outlined under them — fewer, longer streaks, staggered bands and flanks
+inked without the foot; snow lying on each block's cap read as candy stripes along a run, so
+a snowy match whitens the caps instead; the rain's streaks were lost, since every petal's
+fill ended their path before it was stroked, and are drawn in one stroke first; the maple
+leaves were too small to notice; and the HUD's pattern ran under the whole bar, its fade
+laid beneath it. Anything moving is still to be seen in play (PLAN §11).

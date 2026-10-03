@@ -2717,7 +2717,8 @@ body.hud-ink,
 body.hud-bricks,
 body.hud-glass,
 body.hud-chocolate,
-body.hud-halloween {
+body.hud-halloween,
+body.hud-sakura {
   --hud-panel: var(--hud-box);
 }
 
@@ -3072,6 +3073,105 @@ body.hud-halloween .final-stamp {
   box-shadow: 0 0 18px #ff7b0088;
   color: #ffb347;
   text-shadow: 0 0 8px #ff7b00;
+}
+
+/* Sakura: the banner a scroll of paper hung between two wooden rods, lettered in ink, its
+   news in vermilion; the HUD black lacquer under a gold rule, a hemp-leaf pattern in its
+   corner. */
+.phase-call.banner-sakura {
+  border-top: 7px solid #4a3328;
+  border-bottom: 7px solid #4a3328;
+  background-color: #f3ead6;
+  background-image:
+    linear-gradient(#00000014, transparent 18%, transparent 82%, #00000014),
+    repeating-linear-gradient(90deg, #c9b48a22 0 1px, transparent 1px 7px);
+  box-shadow:
+    0 -2px 0 #d9b24a,
+    0 2px 0 #d9b24a,
+    0 6px 14px #0006;
+  color: #1c1a24;
+  font-family: 'Hiragino Mincho ProN', 'Yu Mincho', Georgia, 'Times New Roman', serif;
+  font-weight: 700;
+  text-shadow: 0 1px 0 #f3ead6;
+}
+
+.phase-call.banner-sakura small {
+  color: #3d3a44;
+  text-shadow: none;
+}
+
+.phase-call.banner-sakura small.news {
+  color: #c8321e;
+}
+
+body.hud-sakura {
+  --hud-bar: #17131a;
+  --hud-rule: 3px solid #d9b24a;
+  --hud-ink: #fbf6ea;
+  --hud-muted: #cfc4b0;
+  --hud-accent: #e8b84a;
+  --hud-box: #1d1a1f;
+  --hud-box-edge: 2px solid #d9b24a;
+  --hud-box-shadow: 0 3px 0 #000a;
+  --hud-track: #ffffff22;
+}
+
+/* The hemp-leaf pattern (asanoha), in gold, fading out of the bar's right-hand corner. */
+body.hud-sakura #hud .bar {
+  background-image:
+    linear-gradient(90deg, #17131a 40%, #17131a00),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='42'%3E%3Cg fill='none' stroke='%23d9b24a' stroke-opacity='0.3' stroke-width='1'%3E%3Cpath d='M12 0V42M0 7L24 35M24 7L0 35M0 7V35M24 7V35M12 0L0 7M12 0L24 7M12 42L0 35M12 42L24 35M12 21L0 7M12 21L24 7M12 21L0 35M12 21L24 35'/%3E%3C/g%3E%3C/svg%3E");
+  background-size:
+    100% 100%,
+    24px 42px;
+  background-position:
+    0 0,
+    right top;
+  background-repeat: no-repeat, repeat;
+}
+
+body.hud-sakura .big-timer {
+  color: rgb(251 246 234 / 82%);
+  font-family: 'Hiragino Mincho ProN', 'Yu Mincho', Georgia, 'Times New Roman', serif;
+  font-weight: 900;
+  -webkit-text-stroke: 3px rgb(28 26 36 / 85%);
+  paint-order: stroke fill;
+  text-shadow: 0 3px 0 rgb(28 26 36 / 45%);
+}
+
+body.hud-sakura .big-timer.urgent {
+  color: rgb(232 74 52 / 92%);
+}
+
+/* Island banners a wooden votive plaque (ema), its top a gable, lettered in ink; the
+   knocked-out and final stamps a vermilion seal. */
+body.hud-sakura .island-banner:not(.out),
+body.hud-sakura .team-tag,
+body.hud-sakura .you-are-here {
+  background: linear-gradient(#e3c48f, #cfa86c);
+  box-shadow: 0 3px 0 #4a3328;
+  color: #1c1a24;
+  font-family: 'Hiragino Mincho ProN', 'Yu Mincho', Georgia, 'Times New Roman', serif;
+  text-shadow: none;
+}
+
+body.hud-sakura .island-banner:not(.out) {
+  padding-top: 0.55rem;
+  border-width: 3px;
+  clip-path: polygon(0 28%, 50% 0, 100% 28%, 100% 100%, 0 100%);
+}
+
+body.hud-sakura .island-banner.out,
+body.hud-sakura .final-stamp {
+  border-color: #f3ead6;
+  border-radius: 4px;
+  background: #c8321eee;
+  box-shadow:
+    inset 0 0 0 2px #f3ead6aa,
+    0 2px 8px #0006;
+  color: #fbf6ea;
+  font-family: 'Hiragino Mincho ProN', 'Yu Mincho', Georgia, 'Times New Roman', serif;
+  text-shadow: none;
 }
 
 /* ---------- the gallery of looks (ARCHIVE 12b) ---------- */

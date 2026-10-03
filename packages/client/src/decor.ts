@@ -684,6 +684,99 @@ export function halloweenTitle(text: string, _art: ArtConfig): Title {
   return { src: canvas.toDataURL(), ...title };
 }
 
+/**
+ * Sakura's title: the word brushed in ink on a scroll of paper between two wooden rollers,
+ * each stroke rounded and dry at its edges, and a red seal stamped in the corner, as an
+ * artist signs a print.
+ */
+export function sakuraTitle(text: string, _art: ArtConfig): Title {
+  const { canvas, ctx, cells, has } = drawnCanvas(text);
+  const title = { cellPx: DRAWN_CELL, padPx: DRAWN_PAD, tailPx: 0, smooth: true, flicker: false };
+  if (ctx === null) return { src: canvas.toDataURL(), ...title };
+  const at = (v: number): number => DRAWN_PAD + v * DRAWN_CELL;
+  const w = canvas.width;
+  const h = canvas.height;
+  const rng = new Rng(0x5a6c0a);
+  // The paper, then a roller at either end.
+  const top = DRAWN_PAD * 0.35;
+  ctx.fillStyle = '#f3ead6';
+  ctx.fillRect(6, top, w - 12, h - top * 2);
+  ctx.strokeStyle = '#c9b48a';
+  ctx.lineWidth = 1;
+  ctx.strokeRect(6.5, top + 0.5, w - 13, h - top * 2 - 1);
+  for (const x of [0, w - 8]) {
+    ctx.fillStyle = '#4a3328';
+    ctx.fillRect(x, 2, 8, h - 4);
+    ctx.fillStyle = '#d9b24a';
+    ctx.fillRect(x, 0, 8, 4);
+    ctx.fillRect(x, h - 4, 8, 4);
+  }
+  // The strokes, from cell to cell, in ink.
+  const strokes = (): void => {
+    ctx.beginPath();
+    for (const { x, y } of cells) {
+      const cx = at(x) + DRAWN_CELL / 2;
+      const cy = at(y) + DRAWN_CELL / 2;
+      ctx.moveTo(cx, cy);
+      ctx.lineTo(cx + 0.01, cy);
+      for (const [dx, dy] of [
+        [1, 0],
+        [0, 1],
+      ] as const) {
+        if (!has(x + dx, y + dy)) continue;
+        ctx.moveTo(cx, cy);
+        ctx.lineTo(cx + dx * DRAWN_CELL, cy + dy * DRAWN_CELL);
+      }
+    }
+  };
+  ctx.lineJoin = 'round';
+  ctx.lineCap = 'round';
+  ctx.strokeStyle = '#1c1a24';
+  ctx.lineWidth = DRAWN_CELL * 1.15;
+  strokes();
+  ctx.stroke();
+  // Dry brush: paper showing through in fine streaks here and there along the strokes.
+  ctx.strokeStyle = '#f3ead6';
+  ctx.globalAlpha = 0.55;
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  for (const { x, y } of cells) {
+    if (rng.nextFloat() > 0.3) continue;
+    const across = has(x + 1, y) || has(x - 1, y);
+    const cx = at(x) + DRAWN_CELL / 2;
+    const cy = at(y) + DRAWN_CELL / 2;
+    const off = (rng.nextFloat() - 0.5) * DRAWN_CELL * 0.8;
+    if (across) {
+      ctx.moveTo(cx - DRAWN_CELL * 0.5, cy + off);
+      ctx.lineTo(cx + DRAWN_CELL * 0.4, cy + off);
+    } else {
+      ctx.moveTo(cx + off, cy - DRAWN_CELL * 0.5);
+      ctx.lineTo(cx + off, cy + DRAWN_CELL * 0.4);
+    }
+  }
+  ctx.stroke();
+  ctx.globalAlpha = 1;
+  // The seal, in the paper's lower right corner: vermilion, a character cut into it.
+  const size = 12;
+  const sx = w - 8 - size - 3;
+  const sy = h - top - size - 1;
+  ctx.fillStyle = '#c8321e';
+  ctx.fillRect(sx, sy, size, size);
+  ctx.strokeStyle = '#f3ead6';
+  ctx.lineWidth = 1.2;
+  ctx.lineCap = 'butt';
+  ctx.beginPath();
+  ctx.strokeRect(sx + 1.5, sy + 1.5, size - 3, size - 3);
+  ctx.moveTo(sx + 3.5, sy + 4.5);
+  ctx.lineTo(sx + size - 3.5, sy + 4.5);
+  ctx.moveTo(sx + size / 2, sy + 3);
+  ctx.lineTo(sx + size / 2, sy + size - 3);
+  ctx.moveTo(sx + 3.5, sy + size - 4.5);
+  ctx.lineTo(sx + size - 3.5, sy + size - 4.5);
+  ctx.stroke();
+  return { src: canvas.toDataURL(), ...title };
+}
+
 const TITLES: Record<ArtStyle, (text: string, art: ArtConfig) => Title> = {
   flat: blockTitle,
   pixel: stoneTitle,
@@ -695,6 +788,7 @@ const TITLES: Record<ArtStyle, (text: string, art: ArtConfig) => Title> = {
   glass: glassTitle,
   chocolate: chocolateTitle,
   halloween: halloweenTitle,
+  sakura: sakuraTitle,
 };
 
 export function titleFor(style: ArtStyle, art: ArtConfig): Title {
