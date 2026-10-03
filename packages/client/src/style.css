@@ -2719,7 +2719,8 @@ body.hud-glass,
 body.hud-chocolate,
 body.hud-halloween,
 body.hud-sakura,
-body.hud-wiesn {
+body.hud-wiesn,
+body.hud-opera {
   --hud-panel: var(--hud-box);
 }
 
@@ -3307,6 +3308,134 @@ body.hud-wiesn .final-stamp {
   box-shadow: 0 3px 8px #0006;
   color: #1f5ea8;
   font-family: 'Arial Rounded MT Bold', 'Trebuchet MS', system-ui, sans-serif;
+  text-shadow: none;
+}
+
+/* Opera: the banner the stage curtain, red velvet in deep folds with a gold fringe, lettered
+   in gold; the HUD a black lacquered piano lid with a keyboard for its rule. */
+.phase-call.banner-opera {
+  border-top: 4px solid #c9a24a;
+  border-bottom: none;
+  padding-bottom: 1.8rem;
+  background-color: #7a1424;
+  background-image:
+    repeating-linear-gradient(
+      90deg,
+      #00000055 0,
+      #0000 18px,
+      #ffffff14 30px,
+      #0000 42px,
+      #00000055 60px
+    ),
+    repeating-linear-gradient(90deg, #e8c25a 0 3px, #c9a24a 3px 5px, transparent 5px 8px);
+  background-size:
+    100% 100%,
+    100% 14px;
+  background-position:
+    0 0,
+    0 100%;
+  background-repeat: repeat, repeat-x;
+  color: #f1d27a;
+  font-family: Didot, 'Bodoni 72', 'Playfair Display', Georgia, 'Times New Roman', serif;
+  font-style: italic;
+  font-weight: 700;
+  text-shadow:
+    0 2px 0 #3a0610,
+    0 0 12px #e8c25a66;
+}
+
+.phase-call.banner-opera small {
+  color: #f6e6c0;
+  font-style: normal;
+  text-shadow: 0 1px 0 #3a0610;
+}
+
+.phase-call.banner-opera small.news {
+  color: #f1d27a;
+}
+
+body.hud-opera {
+  --hud-bar: #0d0b0e;
+  --hud-rule: 9px solid transparent;
+  --hud-ink: #fbf3e0;
+  --hud-muted: #cfc6b0;
+  --hud-accent: #e8c25a;
+  --hud-box: #15121a;
+  --hud-box-edge: 2px solid #c9a24a;
+  --hud-box-shadow: 0 3px 0 #000a;
+  --hud-track: #ffffff22;
+}
+
+/* The lid's gloss, and along its foot a keyboard: white keys, and the black keys in the
+   pattern of an octave, two and three. */
+body.hud-opera #hud .bar {
+  background-image:
+    linear-gradient(
+      90deg,
+      transparent 0 8px,
+      #111 8px 16px,
+      transparent 16px 20px,
+      #111 20px 28px,
+      transparent 28px 44px,
+      #111 44px 52px,
+      transparent 52px 56px,
+      #111 56px 64px,
+      transparent 64px 68px,
+      #111 68px 76px,
+      transparent 76px 84px
+    ),
+    repeating-linear-gradient(90deg, #f3eee2 0 11px, #6a6458 11px 12px),
+    linear-gradient(#ffffff10, transparent 45%);
+  background-size:
+    84px 5px,
+    100% 9px,
+    100% 100%;
+  background-position:
+    0 calc(100% - 4px),
+    0 100%,
+    0 0;
+  background-repeat: repeat-x, no-repeat, no-repeat;
+  background-origin: border-box;
+  background-clip: border-box;
+}
+
+body.hud-opera .big-timer {
+  color: rgb(241 210 122 / 85%);
+  font-family: Didot, 'Bodoni 72', 'Playfair Display', Georgia, 'Times New Roman', serif;
+  font-style: italic;
+  font-weight: 700;
+  -webkit-text-stroke: 3px rgb(18 12 16 / 80%);
+  paint-order: stroke fill;
+  text-shadow: 0 0 14px rgb(232 194 90 / 45%);
+}
+
+body.hud-opera .big-timer.urgent {
+  color: rgb(255 120 130 / 92%);
+}
+
+/* Island banners a gilded cartouche, as on an opera box; the stamps a ticket, torn and
+   stamped across. */
+body.hud-opera .island-banner:not(.out),
+body.hud-opera .team-tag,
+body.hud-opera .you-are-here {
+  border-radius: 14px;
+  background: #15121aee;
+  box-shadow:
+    inset 0 0 0 2px #15121a,
+    inset 0 0 0 3px #e8c25a,
+    0 0 10px #e8c25a44;
+  color: #fbf3e0;
+  font-family: Didot, 'Bodoni 72', 'Playfair Display', Georgia, 'Times New Roman', serif;
+}
+
+body.hud-opera .island-banner.out,
+body.hud-opera .final-stamp {
+  border: 2px dashed #7a1424 !important;
+  border-radius: 2px;
+  background: #f3e3c0;
+  box-shadow: 0 3px 8px #0006;
+  color: #7a1424;
+  font-family: Didot, 'Bodoni 72', 'Playfair Display', Georgia, 'Times New Roman', serif;
   text-shadow: none;
 }
 

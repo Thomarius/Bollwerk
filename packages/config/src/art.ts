@@ -50,7 +50,8 @@ export type PlayerPalette = z.infer<typeof PlayerPaletteSchema>;
  * `parchment` an old hand-drawn map, `bricks` a board built of toy bricks, `glass` a
  * church window of stained glass, `chocolate` a sweet-shop land on a river of chocolate,
  * `halloween` a haunted land round a bog, `sakura` an Edo castle town as a woodblock print,
- * `oktoberfest` the beer festival on an island in a sea of beer.
+ * `oktoberfest` the beer festival on an island in a sea of beer, `opera` a night at the opera
+ * on a sea whose waves are staves.
  */
 export const ArtStyleSchema = z.enum([
   'flat',
@@ -65,6 +66,7 @@ export const ArtStyleSchema = z.enum([
   'halloween',
   'sakura',
   'oktoberfest',
+  'opera',
 ]);
 export type ArtStyle = z.infer<typeof ArtStyleSchema>;
 
@@ -463,6 +465,40 @@ export const OktoberfestStyleSchema = z.strictObject({
 });
 export type OktoberfestStyleConfig = z.infer<typeof OktoberfestStyleSchema>;
 
+/**
+ * The Opera look: a night at the opera — the sea's waves are staves with notes riding them,
+ * walls are piano keys, castles opera houses that play while sealed, sealed ground a page of
+ * the score, guns brass horns muted when silenced, and a conductor beating time in the corner.
+ */
+export const OperaStyleSchema = z.strictObject({
+  /** The staves on the sea: tiles from one to the next, how high they swell, how long a wave. */
+  staveEveryTiles: z.number().min(2),
+  staveAmplitudeTiles: z.number().nonnegative(),
+  staveWavelengthTiles: z.number().positive(),
+  /** How fast the melody runs along them, and one note riding them per so many tiles of sea. */
+  staveTilesPerSecond: z.number().positive(),
+  noteTiles: z.number().min(1),
+  /** Sealed ground's score paper, how strongly it covers the stage. */
+  territoryAlpha: z.number().min(0).max(1),
+  /** A note rising from each house so often while it plays. */
+  risingNoteEveryMs: z.number().int().positive(),
+  /** The conductor's beat, a crotchet: as a phase opens, and in its last seconds. */
+  beatMs: z.number().int().positive(),
+  hurriedBeatMs: z.number().int().positive(),
+  /** The finale's spotlights, and how bright they are. */
+  spotlights: z.number().int().nonnegative(),
+  spotlightAlpha: z.number().min(0).max(1),
+  /** Swans circling on the outer sea. */
+  swans: z.number().int().nonnegative(),
+  /** A gondola crossing it now and then, its gondolier singing. */
+  gondolaEveryMs: z.number().int().positive(),
+  gondolaTilesPerSecond: z.number().positive(),
+  /** The Flying Dutchman's ship, now and then. */
+  shipEveryMs: z.number().int().positive(),
+  shipTilesPerSecond: z.number().positive(),
+});
+export type OperaStyleConfig = z.infer<typeof OperaStyleSchema>;
+
 /** One of the two looks a match is drawn in. */
 export type ArtLook = 'build' | 'combat';
 
@@ -507,6 +543,7 @@ export const STYLE_LOOKS: Record<ArtStyle, readonly ArtLook[]> = {
   halloween: ['build', 'combat'],
   sakura: ['build', 'combat'],
   oktoberfest: ['build', 'combat'],
+  opera: ['build', 'combat'],
 };
 
 export function styleServes(
@@ -630,6 +667,7 @@ export const ArtConfigSchema = z
     halloween: HalloweenStyleSchema,
     sakura: SakuraStyleSchema,
     oktoberfest: OktoberfestStyleSchema,
+    opera: OperaStyleSchema,
     scenery: ScenerySchema,
     /** Effects both styles draw alike, because they carry information. */
     effects: z.strictObject({

@@ -388,9 +388,9 @@ sender's seat**, so a client cannot act for someone else.
 
 ## 7. `packages/client`
 
-Twelve visual styles — Minimal (`flat`), Medieval (`pixel`: named Pixel art until the other
+Thirteen visual styles — Minimal (`flat`), Medieval (`pixel`: named Pixel art until the other
 styles made the name mean nothing), Night, Cyberpunk, Blueprint, Parchment, Toy bricks
-(`bricks`), Stained glass (`glass`), Chocolate (`chocolate`), Halloween (`halloween`), Sakura (`sakura`) and Oktoberfest (`oktoberfest`) — behind one `Theme` interface: the scene owns the camera, the layer stacks,
+(`bricks`), Stained glass (`glass`), Chocolate (`chocolate`), Halloween (`halloween`), Sakura (`sakura`), Oktoberfest (`oktoberfest`) and Opera (`opera`) — behind one `Theme` interface: the scene owns the camera, the layer stacks,
 dirty tracking and input mapping; a theme owns only what things look like. Adding a style
 is a name in `ArtStyleSchema`, the looks it is made for in `STYLE_LOOKS`, a `Theme`, a
 case in `createTheme`, a menu title in `decor.ts` and a banner class in `hud.ts`; the
@@ -481,12 +481,13 @@ island banner's border. **The finish** is each style's own (`FinishLook` in `the
 the rockets and the hoist are shared, so the timing is one, but the bursts are streaks in
 Medieval and Night, neon in Cyberpunk, a draughtsman's crosses in Blueprint, ink blots in
 Parchment, tumbling bricks, glass shards, candy sprinkles, in Halloween bats and little
-ghosts flying up, in Sakura a chrysanthemum's bowed streaks among cherry petals and in
-Oktoberfest pretzels and gingerbread hearts, and the
+ghosts flying up, in Sakura a chrysanthemum's bowed streaks among cherry petals, in
+Oktoberfest pretzels and gingerbread hearts and in Opera roses and flowers thrown at a
+curtain call, and the
 winners' flag a swallowtail, a flickering hologram on a light-beam, a pennant in plan, a
 square flag of bricks, a leaded banner, a pennant on a candy-cane pole, a tattered pennant
-on a crooked branch, a tall war banner (_nobori_) hung from an arm, or the Bavarian
-lozenges on a maypole. Minimal keeps the plain ones.
+on a crooked branch, a tall war banner (_nobori_) hung from an arm, the Bavarian lozenges
+on a maypole, or a pennant bearing a golden lyre. Minimal keeps the plain ones.
 
 **Each banner is drawn in the look it brings** (`BANNER_CLASS` in `hud.ts`, a record
 over every style): flat gold for Minimal, a neon strip that flickers on for Cyberpunk, a
@@ -919,7 +920,39 @@ a head of foam, its island banners gingerbread hearts and its stamps a beer mat;
 the word in gingerbread, piped and dotted with sugar. The player colours are the shared
 ones.
 
-The nine shape-drawn styles share `walls.ts`: the wall geometry (tops, faces, rim), and
+**Opera** (`opera.ts`, `art.opera`, `music.ts`), for either look: a night at the opera,
+built of music itself — every other style is built of a material, this one of the score.
+The sea is midnight blue, and **its waves are staves**: five gold lines swelling across the
+water, broken off short of every coast, notes riding them as the melody runs on. Every
+coast is the gilded edge of a stage with **its footlights lit**, the land a polished stage
+floor. **Walls are piano keys** in the owner's colour, the black keys across the seams in a
+keyboard's true pattern — none between E and F, or B and C — along a row at the keys' back
+and down a column at their left, so a wall reads as a keyboard whichever way it runs.
+Castles are opera houses — steps, a colonnade, a gilded cornice, a dome in the owner's
+colour with a golden lyre on top — and **sealed is the house playing** (`FlagHoist`): its
+windows lit and notes rising from its dome; a breach stops the music, and a rest hangs
+where the notes were as the light goes down. **Sealed ground is a page of the score**,
+ruled in staves of the owner's colour on one lattice, bar lines across them and a melody
+written in from the seed. Guns are **brass horns** coiled on a stand in the owner's colour,
+the bell turned to the target and notes bursting from it as they fire; a silenced horn is
+**muted**, a mute stuffed in its bell. Shots are notes in the owner's colour, rocking as
+they fly. A hit on a wall knocks a key out with **a sour note**, crooked and cracked; a shot
+at sea spreads rings of sound, on land an ink blot; the sweep runs off in **a glissando**; a
+piece set down lands as **a chord**; the piece in hand is sketched in pencil and crossed out
+where it does not fit. **A conductor** stands on his podium in the corner Parchment gives
+its compass rose, his baton beating time in four, quicker over a phase's last seconds and
+in overtime. In **the finale** — overtime and the final round — the staves swell and
+quicken and **two spotlights** sweep the board. Scenery is golden harps, music stands with
+their chairs — a copse of them a section of the orchestra — singers of the choir in black
+robes, mouths open, metronomes, and one boulder in three a grand piano with its lid up; on
+the outer sea swans glide in circles, a gondolier sings his way across, and now and then
+the Flying Dutchman's dark ship passes. Its banner is **the stage curtain**, red velvet in
+deep folds with a gold fringe, lettered in gold italic; its HUD a black lacquered piano lid
+with a keyboard for its rule; its timer gold italic figures; its island banners gilded
+cartouches and its stamps a torn ticket; its title the word in noteheads on a five-line
+staff behind a treble clef. The player colours are the shared ones.
+
+The ten shape-drawn styles share `walls.ts`: the wall geometry (tops, faces, rim), and
 hatching laid on one lattice so neighbouring tiles hatch as one fill.
 
 **Scenery on open land** (`scenery.ts`, `art.scenery`), in every style: copses of trees and
@@ -930,7 +963,8 @@ landscape plan's scalloped canopies in Blueprint, inked trees in Parchment, dim 
 Cyberpunk, lollipops, meringue, candy floss and cookies in Chocolate, dead trees, pumpkins,
 toadstools and headstones in Halloween, cherry trees, pines, bamboo, garden rocks and stone
 lanterns in Sakura, chestnut trees, beer-garden tables, gingerbread hearts, dropped Maß
-mugs and sleeping revellers in Oktoberfest, a faint dot in Minimal. **It must never read as wall**, nor as a gun or a
+mugs and sleeping revellers in Oktoberfest, harps, music stands, choir singers, metronomes
+and grand pianos in Opera, a faint dot in Minimal. **It must never read as wall**, nor as a gun or a
 shot: Blueprint's trees were first a circle with a cross, a gun's survey mark in small,
 and Medieval's boulders a round grey rock, a cannonball's double. A tile once built on or
 sealed is cleared for the rest of the match, so nothing grows back through a breach; a
@@ -947,7 +981,8 @@ a rubber duck and a shark's fin; in Chocolate a paddle-boat, marshmallows and a 
 under a glass pipe, kept off the chocolate fall; in Halloween a ghost ship, a flock of bats
 and a will-o'-wisp; in Sakura a boat under a square sail, a line of cranes and a great wave,
 hidden behind Mount Fuji as they pass it; in Oktoberfest a floating Maß, a reveller asleep
-on a lilo and a Weißwurst swimming circles, hidden behind the Ferris wheel; in Minimal a plain boat's silhouette. Anything tall keeps
+on a lilo and a Weißwurst swimming circles, hidden behind the Ferris wheel; in Opera swans, a singing gondolier and the Flying
+Dutchman, hidden behind the conductor; in Minimal a plain boat's silhouette. Anything tall keeps
 to rows whose top is clear of the HUD bar.
 
 **The match's moments** (`camera.ts`, `art.camera`). The match opens
@@ -1085,9 +1120,9 @@ every resolution against an independent search, not only on unit pictures.
 ## 11. Open work
 
 **Where to start (2026-10-03).** Everything but balance is done: the game, online play, bots
-as skill levels and personalities (M13), twelve styles and four visual passes, a gallery for
+as skill levels and personalities (M13), thirteen styles and four visual passes, a gallery for
 choosing the looks, two rounds of test-session feedback, help for new players, awards and a
-rematch, and the desktop app for releases (M14, v0.5.1 the latest). A new session starts
+rematch, and the desktop app for releases (M14, v0.5.2 the latest). A new session starts
 with one of:
 
 1. **The soaks** — [`SOAKS.md`](./SOAKS.md) for 11.2, 11.3, 11.4 and 11.13. The weekend run
@@ -1114,7 +1149,9 @@ curling and breaking, the petals and the turn to maple leaves, the carp swimming
 limp, the clouds a hit throws up, the rain's streaks, and the frame rate at eight players;
 Oktoberfest in motion (ARCHIVE 12e) — the bubbles, the Ferris wheel, the Maß filling and
 being drunk dry, pretzels spinning, bottles flying, the deposit's coin, the band's notes,
-the Weißwurst; whether one gallery for both looks reads
+the Weißwurst; Opera in motion (ARCHIVE 12f) — the staves swelling and their notes riding,
+the conductor's beat and its hurry, the houses playing and falling silent, the horns, the
+sour notes, chords and glissandos, the finale's spotlights; whether one gallery for both looks reads
 clearly, or two would (ARCHIVE 12b); and the larger roster figures and team tags in a
 real team match (ARCHIVE 12c).
 

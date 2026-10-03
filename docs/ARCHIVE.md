@@ -4096,3 +4096,33 @@ shades were drawn closer; the bubbles, the tents' Maß and the notes were enlarg
 lozenge rule under the bar, drawn with a border image, showed as a single blue tab, so it is
 two lattices of stripes laid where the rule would be. Anything moving is still to be seen in
 play (PLAN §11).
+
+## 12f. Opera, a thirteenth style, and v0.5.2 (2026-10-03)
+
+The user's idea: music — classical, with choir and orchestra, conductors, sheet music and a
+fabulous opera house. Pitched and agreed: every other style is built of a material, and this
+one is built of **music itself** — the waves are staves, the walls a keyboard, sealed ground
+a page of the score, the guns an orchestra's brass. Decided with the user: the name Opera;
+**piano keys** for the walls over organ pipes, which are grander but read less as a block a
+shot takes; **the house playing** as the sealed sign, over a conductor before every house,
+who would be tiny at eight players — so one conductor beats time in the corner instead;
+**brass horns, muted when silenced**, over the 1812 Overture's cannons.
+
+What carries meaning: **sealed is the house playing** (`FlagHoist`), windows lit and notes
+rising, and a breach brings a rest as the light goes down; **sealed ground is the score**,
+ruled in the owner's colour; **a silenced gun is muted** — _con sordino_; **a hit knocks a
+key out with a sour note**, the style's mark of a hit; the black keys stand in a keyboard's
+true pattern, two and three, so a wall reads as a keyboard. The finish gained `roses`, roses
+and flowers thrown at a curtain call, and `lyre`, a pennant with a golden lyre. The notes,
+rest, lyre, rose and swan are `music.ts`, shared by the theme, its sea life and the finish.
+
+Seen in screenshots building, in combat, at eight players, in the finale with its
+spotlights, with a player knocked out, in the menu and at game over, and the curtain banner,
+cartouches, a team tag and both ticket stamps placed into a running match by a Playwright
+script. What the first look changed: the black keys, drawn wide and blunt, read as holes in
+the walls, and became narrower, shorter, rounded and glossed; the notes riding the staves
+crowded the islands, and are fewer and smaller. Anything moving is still to be seen in play
+(PLAN §11).
+
+**Released as v0.5.2**, the user's call, to try the three new styles — Sakura, Oktoberfest
+and Opera since v0.5.1 — on the desktop app.

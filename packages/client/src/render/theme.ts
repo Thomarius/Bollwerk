@@ -5,6 +5,7 @@ import type { Container, Graphics } from 'pixi.js';
 import type { DrainWash, SealGlow } from '../seal.js';
 
 import { PETALS, drawPetal } from './ukiyo.js';
+import { drawLyre, drawRose } from './music.js';
 import { drawGingerHeart, drawPretzel } from './wiesn.js';
 
 /**
@@ -694,7 +695,8 @@ export interface FinishLook {
    * halo; `mark` a draughtsman's crosses; `blot` drops of ink; `brick` tumbling bricks;
    * `shard` spinning glass; `sprinkle` candy sprinkles; `spirits` bats and little ghosts
    * flying out and up; `blossom` a chrysanthemum's drooping streaks and cherry petals;
-   * `pretzel` pretzels and gingerbread hearts iced in the owner's colours.
+   * `pretzel` pretzels and gingerbread hearts iced in the owner's colours; `roses` roses and
+   * flowers in the owner's colours thrown at a curtain call.
    */
   spark:
     | 'square'
@@ -707,13 +709,14 @@ export interface FinishLook {
     | 'sprinkle'
     | 'spirits'
     | 'blossom'
-    | 'pretzel';
+    | 'pretzel'
+    | 'roses';
   /**
    * `swallowtail` a forked banner; `hologram` a flickering projection; `pennant` a flag in
    * plan; `brick` a square flag of bricks; `leaded` a banner of glass in its lead; `candy` a
    * pennant on a candy-striped pole; `tattered` a ragged pennant on a crooked pole; `nobori`
    * a tall war banner hung from an arm at its top; `rauten` a flag in the Bavarian lozenges
-   * on a maypole.
+   * on a maypole; `lyre` a pennant bearing a golden lyre on a gilded pole.
    */
   flag:
     | 'swallowtail'
@@ -724,7 +727,8 @@ export interface FinishLook {
     | 'candy'
     | 'tattered'
     | 'nobori'
-    | 'rauten';
+    | 'rauten'
+    | 'lyre';
 }
 
 export const PLAIN_FINISH: FinishLook = { spark: 'square', flag: 'swallowtail' };
@@ -811,6 +815,14 @@ export class WinnerBanners {
           g.fill({ color: 0xf6f1e3 });
           g.circle(x + W / 2 + wave * 0.15, head + H * 0.24, W * 0.16);
           g.fill({ color: light });
+          continue;
+        }
+        if (flag === 'lyre') {
+          // A pennant in the owner's colour, edged in gold, a golden lyre on it.
+          g.poly([x, up, x + clothW * 1.15, up + clothH / 2 + wave, x, up + clothH]);
+          g.fill({ color: base });
+          g.stroke({ width: rim, color: 0xe8c25a, join: 'round' });
+          drawLyre(g, x + clothW * 0.38, up + clothH / 2 + wave * 0.3, clothH * 0.6);
           continue;
         }
         if (flag === 'rauten') {
@@ -925,6 +937,13 @@ export class WinnerBanners {
     art: ArtConfig,
   ): void {
     const width = Math.max(2, rim + 1);
+    if (flag === 'lyre') {
+      g.moveTo(x, foot).lineTo(x, top);
+      g.stroke({ width: width + 1, color: 0xe8c25a });
+      g.circle(x, top, width + 1);
+      g.fill({ color: 0xe8c25a });
+      return;
+    }
     if (flag === 'rauten') {
       // A maypole: white, wound with a blue spiral, a green wreath near its top.
       g.moveTo(x, foot).lineTo(x, top);
@@ -1091,6 +1110,19 @@ export class Fireworks {
         }
         g.moveTo(tx, ty).lineTo(x, y);
         g.stroke({ width: Math.max(1.5, size * 0.45), color: spark.colour, alpha, cap: 'round' });
+      } else if (kind === 'roses') {
+        if (spark.spin > 0) {
+          drawRose(g, x, y, size * 0.7, spark.angle, alpha);
+        } else {
+          // A flower in the owner's colour: five petals round a gold heart.
+          for (let k = 0; k < 5; k++) {
+            const a = spark.angle + (k / 5) * Math.PI * 2;
+            g.circle(x + Math.cos(a) * size * 0.4, y + Math.sin(a) * size * 0.4, size * 0.32);
+          }
+          g.fill({ color: spark.colour, alpha });
+          g.circle(x, y, size * 0.22);
+          g.fill({ color: 0xe8c25a, alpha });
+        }
       } else if (kind === 'pretzel') {
         if (spark.spin > 0) drawPretzel(g, x, y, size * 0.9, spark.angle, alpha);
         else drawGingerHeart(g, x, y, size * 1.6, spark.colour, alpha);

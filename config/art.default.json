@@ -1002,6 +1002,31 @@
         "uiValid": "#8fe08a",
         "uiInvalid": "#ff5050"
       }
+    },
+    "opera": {
+      "palette": {
+        "waterDeep": "#0d1534",
+        "waterMid": "#152046",
+        "waterShallow": "#22335f",
+        "waterFoam": "#f1d27a",
+        "sand": "#c9a24a",
+        "grassDark": "#5e3b1f",
+        "grassMid": "#875a33",
+        "grassLight": "#a8743f",
+        "rockDark": "#3a3a44",
+        "rockMid": "#8a8a96",
+        "rockLight": "#f3eee2",
+        "shadow": "#120c10",
+        "craterDark": "#1a1420",
+        "craterMid": "#2c2430",
+        "emberHot": "#fff4d0",
+        "emberMid": "#ffd27a",
+        "emberCool": "#e08a3a",
+        "uiInk": "#fbf3e0",
+        "uiAccent": "#e8c25a",
+        "uiValid": "#9de6a0",
+        "uiInvalid": "#ff5a6a"
+      }
     }
   },
   "dither": {
@@ -1295,5 +1320,23 @@
     "mugTilesPerSecond": 0.45,
     "liloEveryMs": 24000,
     "liloTilesPerSecond": 0.3
+  },
+  "opera": {
+    "staveEveryTiles": 5,
+    "staveAmplitudeTiles": 0.6,
+    "staveWavelengthTiles": 14,
+    "staveTilesPerSecond": 0.8,
+    "noteTiles": 32,
+    "territoryAlpha": 0.92,
+    "risingNoteEveryMs": 650,
+    "beatMs": 900,
+    "hurriedBeatMs": 450,
+    "spotlights": 2,
+    "spotlightAlpha": 0.1,
+    "swans": 2,
+    "gondolaEveryMs": 20000,
+    "gondolaTilesPerSecond": 0.45,
+    "shipEveryMs": 34000,
+    "shipTilesPerSecond": 0.5
   }
 }

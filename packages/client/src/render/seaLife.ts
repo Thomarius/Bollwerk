@@ -8,6 +8,7 @@ import { Circling, Crossings, NO_OCEAN, Surfacings, outerOcean, type OuterOcean 
 import { drawBat } from './spooky.js';
 import { hex, tileX, tileY, type ViewTransform } from './theme.js';
 import { drawCrest } from './ukiyo.js';
+import { GOLD, drawQuaver, drawSwan } from './music.js';
 import { FOAM, drawMass, drawReveller } from './wiesn.js';
 
 /**
@@ -972,6 +973,125 @@ export class OktoberfestSeaLife extends OceanDrawn {
       g.stroke({ width: Math.max(3, t * 0.26), color: 0xf2ece0, cap: 'round' });
       for (const e of [-0.48, 0.48]) g.circle(x + c * t * e, y + sn * t * e, Math.max(1, t * 0.05));
       g.fill({ color: 0xc9b48a });
+    }
+  }
+}
+
+/**
+ * Opera: swans gliding in slow circles, as on the lake of the ballet; a gondola crossing now
+ * and then, its gondolier singing a serenade, notes trailing behind him; and now and then the
+ * Flying Dutchman's ship, dark, riding high — white birds, black lacquer and gold, nothing of
+ * any player's colour.
+ */
+export class OperaSeaLife extends OceanDrawn {
+  private readonly swans = new Circling();
+  private readonly gondolas = new Crossings();
+  private readonly ships = new Crossings();
+  /** The conductor in the corner: whatever crosses his square is hidden behind him. */
+  conductor: { x: number; y: number; size: number } | null = null;
+
+  private hidden(x: number, y: number): boolean {
+    const f = this.conductor;
+    return f !== null && Math.abs(x - f.x) < f.size / 2 && Math.abs(y - f.y) < f.size / 2;
+  }
+
+  override layout(state: MatchState, view: ViewTransform, art: ArtConfig): void {
+    super.layout(state, view, art);
+    this.swans.layout(this.ocean, art.opera.swans, [1, 2]);
+    this.gondolas.layout(this.ocean, art.opera.gondolaEveryMs);
+    this.ships.layout(this.ocean, art.opera.shipEveryMs);
+  }
+
+  protected frame(g: Graphics, view: ViewTransform, art: ArtConfig, deltaMs: number): void {
+    const s = art.opera;
+    const t = view.tile;
+
+    this.swans.step(deltaMs);
+    for (const w of this.swans.items) {
+      const at = Circling.at(w);
+      if (this.hidden(at.x, at.y)) continue;
+      const dir = Math.cos(w.angle) * Math.sign(w.speed) < 0 ? 1 : -1;
+      drawSwan(g, tileX(view, at.x), tileY(view, at.y), t * 0.7, dir);
+    }
+
+    this.gondolas.step(this.ocean, deltaMs, s.gondolaEveryMs, s.gondolaTilesPerSecond, 1.2);
+    for (const gondola of this.gondolas.items) {
+      if (this.hidden(gondola.x, gondola.y)) continue;
+      const y = gondola.y + Math.sin(this.clock / 700 + gondola.x) * 0.04;
+      // The long black hull, its prow curling up.
+      g.poly(
+        shape(view, gondola.x, y, gondola.dir, [
+          [-1, -0.05],
+          [-0.7, 0.18],
+          [0.7, 0.18],
+          [1.05, -0.25],
+          [1.1, -0.35],
+          [0.85, -0.05],
+        ]),
+      );
+      g.fill({ color: 0x111018 });
+      // The gondolier at the stern: striped shirt, straw hat, his oar.
+      const gx = tileX(view, gondola.x - gondola.dir * 0.6);
+      const gy = tileY(view, y - 0.1);
+      g.moveTo(gx, gy).lineTo(gx + gondola.dir * t * 0.5, gy + t * 0.5);
+      g.stroke({ width: Math.max(1, t * 0.05), color: 0x6a4a2a });
+      g.rect(gx - t * 0.09, gy - t * 0.45, t * 0.18, t * 0.35);
+      g.fill({ color: 0xffffff });
+      for (const f of [0.12, 0.24])
+        g.rect(gx - t * 0.09, gy - t * 0.45 + t * f, t * 0.18, t * 0.05);
+      g.fill({ color: 0x1f3a6a });
+      g.circle(gx, gy - t * 0.55, t * 0.09);
+      g.fill({ color: 0xf2d0b0 });
+      g.ellipse(gx, gy - t * 0.62, t * 0.16, t * 0.04);
+      g.fill({ color: 0xe8cf7a });
+      // His serenade, trailing behind.
+      for (let k = 0; k < 2; k++) {
+        const p = (((this.clock / 1600 + k * 0.5) % 1) + 1) % 1;
+        drawQuaver(
+          g,
+          gx - gondola.dir * t * (0.3 + p * 1.2),
+          gy - t * (0.7 + p * 0.6),
+          t * 0.4,
+          GOLD,
+          1 - p,
+          k,
+        );
+      }
+    }
+
+    this.ships.step(this.ocean, deltaMs, s.shipEveryMs, s.shipTilesPerSecond, 1.6);
+    for (const ship of this.ships.items) {
+      if (this.hidden(ship.x, ship.y)) continue;
+      const y = ship.y + Math.sin(this.clock / 500 + ship.x) * 0.1;
+      g.poly(
+        shape(view, ship.x, y, ship.dir, [
+          [-1, -0.15],
+          [1.1, -0.25],
+          [0.8, 0.3],
+          [-0.8, 0.3],
+        ]),
+      );
+      g.fill({ color: 0x1c1418 });
+      g.stroke({ width: 1, color: 0x5a4a52 });
+      for (const [mx, h] of [
+        [-0.35, 1.2],
+        [0.35, 1.45],
+      ] as const) {
+        g.moveTo(tileX(view, ship.x + ship.dir * mx), tileY(view, y - 0.15));
+        g.lineTo(tileX(view, ship.x + ship.dir * mx), tileY(view, y - h - 0.1));
+        g.stroke({ width: 1, color: 0x3a2a30 });
+        g.poly(
+          shape(view, ship.x, y, ship.dir, [
+            [mx - 0.28, -h],
+            [mx + 0.3, -h + 0.05],
+            [mx + 0.34, -0.4],
+            [mx - 0.25, -0.35],
+          ]),
+        );
+        g.fill({ color: 0x3e2e34, alpha: 0.9 });
+      }
+      g.circle(tileX(view, ship.x - ship.dir * 0.9), tileY(view, y - 0.3), t * 0.08);
+      g.fill({ color: 0xfff0b0 });
     }
   }
 }

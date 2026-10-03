@@ -837,6 +837,62 @@ export function wiesnTitle(text: string, _art: ArtConfig): Title {
   return { src: canvas.toDataURL(), ...title };
 }
 
+/**
+ * Opera's title: the word written in noteheads on a five-line staff — every cell of the
+ * letters a note, ledger lines above and below for the rows off the staff — with a treble
+ * clef at its head, in gold on the night.
+ */
+export function operaTitle(text: string, _art: ArtConfig): Title {
+  const { canvas, ctx, cells, cols } = drawnCanvas(text);
+  const title = { cellPx: DRAWN_CELL, padPx: DRAWN_PAD, tailPx: 0, smooth: true, flicker: false };
+  if (ctx === null) return { src: canvas.toDataURL(), ...title };
+  const at = (v: number): number => DRAWN_PAD + v * DRAWN_CELL;
+  const mid = (v: number): number => at(v) + DRAWN_CELL / 2;
+  // The staff, through the middle five rows of the letters.
+  ctx.strokeStyle = '#c9a24a';
+  ctx.globalAlpha = 0.7;
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  for (let row = 1; row <= 5; row++) {
+    ctx.moveTo(2, mid(row) + 0.5);
+    ctx.lineTo(at(cols) + 6, mid(row) + 0.5);
+  }
+  // Ledger lines for the notes off it, above and below.
+  for (const { x, y } of cells) {
+    if (y !== 0 && y !== 6) continue;
+    ctx.moveTo(at(x) - 1, mid(y) + 0.5);
+    ctx.lineTo(at(x + 1) + 1, mid(y) + 0.5);
+  }
+  ctx.stroke();
+  ctx.globalAlpha = 1;
+  // The treble clef, at the staff's head: the stroke up, its loop over the top, and the
+  // spiral wound round the second line.
+  ctx.strokeStyle = '#f1d27a';
+  ctx.lineWidth = 2;
+  ctx.lineCap = 'round';
+  ctx.beginPath();
+  ctx.moveTo(6, mid(6) + 2);
+  ctx.quadraticCurveTo(4, mid(6) + 6, 8, mid(6) + 5);
+  ctx.lineTo(9, mid(0) - 4);
+  ctx.quadraticCurveTo(13, mid(0) + 4, 6, mid(2.5));
+  ctx.quadraticCurveTo(0, mid(3.5), 3, mid(4.5));
+  ctx.quadraticCurveTo(8, mid(5.2), 12, mid(4.3));
+  ctx.quadraticCurveTo(13, mid(3.2), 8, mid(3.4));
+  ctx.quadraticCurveTo(5, mid(3.8), 7, mid(4.2));
+  ctx.stroke();
+  // The notes: a tilted head on every cell of the letters.
+  for (const { x, y } of cells) {
+    ctx.beginPath();
+    ctx.ellipse(mid(x), mid(y), DRAWN_CELL * 0.58, DRAWN_CELL * 0.4, -0.35, 0, Math.PI * 2);
+    ctx.fillStyle = '#f1d27a';
+    ctx.fill();
+    ctx.strokeStyle = '#6a5018';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+  }
+  return { src: canvas.toDataURL(), ...title };
+}
+
 const TITLES: Record<ArtStyle, (text: string, art: ArtConfig) => Title> = {
   flat: blockTitle,
   pixel: stoneTitle,
@@ -850,6 +906,7 @@ const TITLES: Record<ArtStyle, (text: string, art: ArtConfig) => Title> = {
   halloween: halloweenTitle,
   sakura: sakuraTitle,
   oktoberfest: wiesnTitle,
+  opera: operaTitle,
 };
 
 export function titleFor(style: ArtStyle, art: ArtConfig): Title {
