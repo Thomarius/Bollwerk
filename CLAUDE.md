@@ -142,38 +142,44 @@ Full detail in PLAN.md §1. The parts that surprise people:
 
 ## Status
 
-**Done** (2026-10-02, at `f400931` and after): the game and its rules, online play with rooms, a games browser and
-pause, recording of every match (ARCHIVE 11e, each header stamped with the server's
-commit), team mode (ARCHIVE 10u), bots as a skill level 1–10 chosen in the lobby and a
-personality — risk, targeting, cannon space — dealt from the seed and revealed at game over
-(M13, ARCHIVE 11x–11zb), eight visual styles for either look and two visual passes (M9–M12),
-two rounds of test-session feedback (ARCHIVE 11n–11w, 11ze), and a third visual pass
-(PLAN 11.15, ARCHIVE 11zf, 11zh): mouse-only play, a roster of points and lives, the
-main castle's crown, ground lost drained away, winners' banners, snow, shadows by the time
-of day, and a shape per player beside their colour, off the board; help for new players —
-How to play, a picture of each look in the menu, the ranking between rounds — and life on
-the sea in every style (PLAN 11.16, ARCHIVE 11zk–11zn); and a desktop app for releases, a
-portable file for Windows and Linux (M14, ARCHIVE 11zp–11zt); and a fourth pass (PLAN 11.18,
-ARCHIVE 11zu–11zv): a screen while the board is prepared, a pause menu with the settings
-and Leave match, a strip for a player knocked out, music and sounds volumes, level pips,
-awards at the end, a rematch, and an eighth style, Stained glass; a ninth, Chocolate
-(ARCHIVE 11zy), and a tenth, Halloween (ARCHIVE 12a); the looks chosen from a gallery, with
-Random, and changed mid-match from the pause menu (ARCHIVE 12b); and every style carried to the panels, the big timer, the island banners and
-the finish (ARCHIVE 11zz). Online clients catch up
-on the server at once (ARCHIVE 11zg), which ended the hosts' delay on every click. The game is played with the mouse alone; Esc for pause is the one key. Deployment is verified by a
-CI job, since there is no Docker on this machine. Every sound cue is supplied. The protocol
-is 15: a test session needs the server rebuilt and every page reloaded.
+**Done** (2026-10-03, at `fa66add`; released as **v0.5.1**):
 
-**Next**: a new session starts with either **the soaks** of `docs/SOAKS.md` — its summary
-tool and runner written first, then run at the end of a day — or **another round of
-improvements**; PLAN §11 says what is still to check in play. Then balance, M7. **The goal**
-(2026-10-01, the user's): almost every match is decided
-**on points at the round cap**, so **the scoring formula is the game's balance**; elimination
-stays a real threat that punishes — a life spent for every failed seal, a knockout now and
-then — but not the way matches end. The first test game on the current build was won on
-points by 6% and read as balanced. PLAN.md §11 says where to start: §11.2 measures how good
-the points matches are (margins, changes of lead, lives spent); then two-player balance
-(§11.3), measurements never taken (§11.4) and the bots' loose ends (§11.13).
+- **The game**: its rules, online play with rooms, a games browser, pause, and recording
+  of every match (ARCHIVE 11e, each header stamped with the server's commit); team mode
+  (ARCHIVE 10u); bots as a skill level 1–10 chosen in the lobby and a personality dealt
+  from the seed, revealed at game over (M13, ARCHIVE 11x–11zb).
+- **The looks**: ten styles for either look — Minimal, Medieval, Night, Cyberpunk,
+  Blueprint, Parchment, Toy bricks, Stained glass, Chocolate (ARCHIVE 11zy), Halloween
+  (ARCHIVE 12a) — over four visual passes (M9–M12, PLAN 11.15–11.18); every style carried
+  to the panels, the big timer, the island banners and the finish (ARCHIVE 11zz); chosen
+  from a gallery with Random, and changeable mid-match from the pause menu (ARCHIVE 12b).
+- **Around a match**: How to play, the ranking between rounds, awards, a rematch, music
+  and sounds volumes, a pause menu with Leave match; two rounds of test-session feedback
+  (ARCHIVE 11n–11w, 11ze) and a trim of the menu's and lobby's texts with larger roster
+  figures and team tags (ARCHIVE 12c). Mouse only; Esc for pause is the one key.
+- **Releases**: the desktop app, a portable file for Windows and Linux (M14, ARCHIVE
+  11zp–11zt); every audio file credited (ARCHIVE 11zx). Online clients catch up on the
+  server at once (ARCHIVE 11zg). Deployment is verified by a CI job, since there is no
+  Docker on this machine. The protocol is 15: a test session needs the server rebuilt and
+  every page reloaded.
+
+**Next** — PLAN §11 says where to start, in this order of readiness:
+
+1. **The soaks** (`docs/SOAKS.md`): the weekend run was started on 2026-10-02 **on the
+   user's other machine**; read its `summary.txt` together with them and write the figures
+   into PLAN 11.2–11.13. Measurement only.
+2. **More languages** (PLAN 11.20, planned in detail): every text in external files,
+   English, German, then French; three questions to settle with the user first.
+3. **UPnP** (PLAN 11.21): open the host's port where the router allows it, and say so.
+4. Then **balance** (M7). **The goal** (2026-10-01, the user's): almost every match is
+   decided **on points at the round cap**, so **the scoring formula is the game's balance**;
+   elimination stays a real threat — a life spent for every failed seal, a knockout now and
+   then — but not the way matches end. The test games read as balanced; the soaks say how
+   good the points matches are (11.2), then two players (11.3), measurements never taken
+   (11.4) and the bots' loose ends (11.13).
+
+**Declined for budget** (PLAN §12): macOS builds (Apple's paid signing) and a hosted public
+server. This is a fan project with no budget: propose nothing that costs money to run.
 
 **Working with the user**: every match they play is recorded in `recordings/`; they send
 compiled feedback, which is triaged with them before anything is built, and design

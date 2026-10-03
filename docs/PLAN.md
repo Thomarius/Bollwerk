@@ -1010,23 +1010,26 @@ every resolution against an independent search, not only on unit pictures.
 | M12 | Second visual pass: scenery, atmosphere, Toy bricks       | Done (ARCHIVE 11w)  |
 | M13 | Bots as skill levels and personalities                    | Done (11.6)         |
 | M14 | A desktop app for releases                                | Done (ARCHIVE 11zt) |
+| M15 | More languages: German, then French                       | Planned (11.20)     |
+| M16 | UPnP for hosting without touching the router              | Planned (11.21)     |
 
 ---
 
 ## 11. Open work
 
-**Where to start (2026-10-02).** Everything but balance is done: the game, online play, bots
-as skill levels and personalities (M13), ten styles and four visual passes, two rounds of
-test-session feedback, help for new players, awards and a rematch, and the desktop app for
-releases (M14). The test games on the current build found everything working, the hosts'
-delay gone and the balance quite good. A new session starts with either:
+**Where to start (2026-10-03).** Everything but balance is done: the game, online play, bots
+as skill levels and personalities (M13), ten styles and four visual passes, a gallery for
+choosing the looks, two rounds of test-session feedback, help for new players, awards and a
+rematch, and the desktop app for releases (M14, v0.5.1 the latest). A new session starts
+with one of:
 
-1. **The soaks** — [`SOAKS.md`](./SOAKS.md) for 11.2, 11.3, 11.4 and 11.13. The summary tool
-   and the runner are written (`npm run soak`), and the weekend run of packages A, B and D
-   was started on the evening of 2026-10-02, into `soaks/2026-10-02/`: read its
-   `summary.txt` together with the user, then write the figures into 11.2–11.13 (SOAKS §4).
-   Measurement only.
-2. **Another round of improvements**, from a test session or the user's own list. The
+1. **The soaks** — [`SOAKS.md`](./SOAKS.md) for 11.2, 11.3, 11.4 and 11.13. The weekend run
+   of packages A, B and D was started on 2026-10-02 **on the user's other machine**, into
+   its `soaks/2026-10-02/`: read its `summary.txt` together with the user, then write the
+   figures into 11.2–11.13 (SOAKS §4). Measurement only.
+2. **11.20, more languages** — planned below in detail, agreed as one of the next packages.
+3. **11.21, UPnP** — opening the host's port without touching the router, where it works.
+4. **Another round of improvements**, from a test session or the user's own list. The
    server must be rebuilt (`npm start`) and every page reloaded: the protocol is 15. Every
    match is recorded with its statistics (§9, ARCHIVE 11e); the user sends compiled
    feedback, which is triaged with them first.
@@ -1039,7 +1042,9 @@ walls, the fountains starting and stopping, a square snapping off, the sweep's m
 mould poured and wobbling, and whether the swirls cost frame rate at eight players; and
 Halloween in motion (ARCHIVE 12a) — the fog, the bubbles, the freed ghosts, the lanterns
 lit and put out, the candles, the cauldrons, the witching hour's eyes, and the frame rate
-at eight players with the fog over everything.
+at eight players with the fog over everything; whether one gallery for both looks reads
+clearly, or two would (ARCHIVE 12b); and the larger roster figures and team tags in a
+real team match (ARCHIVE 12c).
 
 Then, as they fit: **11.3**, two-player balance, re-measured before anything is tried;
 **11.4**, measurements never taken; **11.13**, the bots' loose ends.
@@ -1146,7 +1151,115 @@ Left open when 11.6 finished (ARCHIVE 11x–11zb, 11zd); none blocks anything.
 - **Level 8 knockouts rose** after phase 2's "close gaps from the outside" (1 to 7 in 36
   matches), forfeits within noise. Worth a look when 11.2 measures knockouts anyway.
 
+### 11.20 More languages — agreed 2026-10-03, not started
+
+**The goal**: the game in English, German and French to begin with, every text a player
+reads in external files that a translator edits without touching code. Adding a language
+is adding a file. English stays the reference and the default.
+
+**What is translated** — everything a player reads, all of it in the client:
+
+- the menu and the looks gallery (`main.ts`, `looks.ts` — the style names too), the lobby
+  (`lobby.ts`), the open games list (`browser.ts`), How to play's captions (`howToPlay.ts`),
+  the Credits panel's headings (`credits.ts`);
+- in a match: the HUD's phase names and lines (`hud.ts`), the announcements and the winner's
+  line (`banners.ts`, `scores.ts`), the island banners and team tags ("Team A"), the
+  connection badge (`network.ts`), the pause menu (`pause.ts`), the "You're out" strip
+  (`watching.ts`), the end screen and its awards (`summary.ts`, `awards.ts`), the
+  personality reveal, "Bot 3";
+- the server's refusals, which arrive as `{ code, message }` (`protocol/messages.ts`): the
+  client translates by `code` and shows the English `message` for a code it does not know,
+  so an older client still says something;
+- the desktop app's two window titles and its server window.
+
+**Not translated**: player names; the title's letters, which spell Bollwerk in every
+language; the disclaimer's legal names (Rampart, Atari Games, Warner Bros.); `CREDITS.md`,
+the README and the docs; log lines, recordings and the soak's tables.
+
+**The files**: `config/locale/en.json`, `de.json`, `fr.json` — flat keys grouped by screen
+(`"menu.play"`, `"lobby.start"`, `"hud.phase.build"`, `"award.wrecker.title"`), values with
+named placeholders (`"{name} wins on points"`). Whole sentences, never assembled from
+pieces, since word order differs between languages; plurals as an object of the forms the
+language needs (`{ "one": "{n} life", "other": "{n} lives" }`), chosen by the browser's
+`Intl.PluralRules`. Read through `packages/config` like every other file, behind a schema:
+**every language must have exactly English's keys and the same placeholders in each**, an
+unknown key is an error, and a test fails on any gap — as the credits' test does — so a
+text added to the game cannot be forgotten in a language. A key missing at runtime shows
+the English text, never the key.
+
+**The mechanism**: `packages/client/src/i18n.ts` — `t(key, params?)`, the language in use,
+and the plural helper. The pure functions that make markup and lines today (`lobbyMarkup`,
+`bannersFor`, the awards, the summary) call `t()` instead of holding English, so their tests
+keep running in English unchanged; one more test renders the main screens in German and
+fails if any key or `{placeholder}` shows through.
+
+**Choosing the language**: in the menu, beside Effects; saved in the browser like the other
+settings (`bollwerk.language`). The first time, the browser's own language if the game has
+it, otherwise English. A change redraws the menu at once; a match takes it at the next
+frame, since the HUD is redrawn every frame anyway. It is the page's own choice: players at
+one table may each play in their own language, since nothing translated travels.
+
+**Layout**: German runs about a third longer than English, and the tight places are known —
+the HUD bar and the roster, the phase banner, the island banners, the buttons, How to play's
+captions of ten words or fewer. A screenshot pass per language at 1024 and 1400 pixels wide,
+by `tools/screenshots.sh` with a `&lang=` parameter, and the Playwright script that places
+banners into a running match (ARCHIVE 12a) for what the clock cannot reach. CSS
+`text-transform: uppercase` turns ß into SS, which is correct; the fonts carry ä, ö, ü, é,
+è, ç.
+
+**Steps**:
+
+1. The mechanism and the English file: every text moved out, nothing on screen changes,
+   every test still passes. The largest step — a few hundred texts, most of them already in
+   the well-separated places listed above.
+2. The language choice in the menu, and `&lang=` for screenshots.
+3. **German**: drafted by the agent, read and corrected by the user, then the layout pass.
+4. **French** the same way, when a reader for it is found.
+
+About one to two sessions for steps 1–3. **To decide with the user before starting**: the
+choice as a dropdown or as buttons with the languages' own names; whether the disclaimer is
+translated (its meaning, keeping the names) or stays in English; who reads the French.
+
+### 11.21 Opening the host's port by UPnP — agreed 2026-10-03, not started
+
+**The goal**: a person hosting from the desktop app or `npm start` is reachable from the
+internet without forwarding port 8080 by hand — **where the router allows it**, which is
+not everywhere, and saying plainly when it did not work. A hosted public server would solve
+it for everyone but costs money every month, which a fan project without a budget does not
+spend (decided 2026-10-03, §12).
+
+**How**: as the server starts, ask the router for a mapping of the game's port — UPnP IGD,
+and NAT-PMP / PCP for routers that speak those instead — with a lease of about an hour,
+renewed while running and removed as the server stops; a lease that expires on its own
+covers a crash. A small pure-JavaScript library rather than a native one, so it works in
+Electron and Node alike; to be evaluated first (`@achingbrain/nat-port-mapper` is a
+candidate). Only the one port, only while the server runs.
+
+**Saying what happened**, in the server window and the console where the addresses are
+printed today (`addresses.ts`): "Reachable from the internet at 203.0.113.7:8080"; or "The
+router did not open the port (UPnP is off, or not supported) — forward 8080 by hand"; or
+**"This connection has no public address"** when the address the router reports is itself
+private or carrier-grade (100.64.0.0/10) — common in Germany on cable (DS-Lite) and some
+fibre and mobile lines, where no router setting can help. A public IPv6 address, where
+there is one, is listed too: guests with IPv6 can reach it directly.
+
+**Configuration**: `server.upnp.enabled` in `config/server.default.json` — on for the
+desktop app and `npm start`, off in the Docker image, which is deployed behind its own
+networking.
+
+**Testing**: the mapping logic against a fake gateway in unit tests; the real thing only on
+the user's router, which this machine cannot reach. About one session.
+
+**Not part of it**: relays, tunnels or a public lobby server, which need a machine on the
+internet (§12).
+
 ## 12. Deferred (explicitly out of scope for v1)
 
 Quick-match and matchmaking, accounts and persistence, ranking, mobile
 and touch input, spectator mode, shipped replays, naval units, singleplayer campaign.
+
+**Declined for budget** (2026-10-03, the user's: a fan project without one): **macOS builds**,
+since an unsigned app is refused by Gatekeeper and signing needs the paid Apple Developer
+Program — Mac players can still join a hosted game in the browser; and **a hosted public
+server or relay**, which would make online play work without any router setting but costs
+money every month (11.21 is the free part of that).

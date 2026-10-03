@@ -14,7 +14,7 @@ bots' loose ends).
 ---
 
 **The weekend run (begun 2026-10-02).** The user chose packages A, B and D of a larger plan, for
-a run over a weekend on this machine with nobody watching: A, soaks 1, 4 and 5 at two to ten
+a run over a weekend on the user's other machine with nobody watching: A, soaks 1, 4 and 5 at two to ten
 times the sizes below (960 matches for the main tables); B, the full ladder — soak 2 at 480
 a level, and every other pairing of levels, one bot at _k_ against two at _j_, 96 matches
 each; D, two players with no round cap, five and seven players, and soak 6. Package C, rule
