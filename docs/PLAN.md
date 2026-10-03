@@ -633,7 +633,12 @@ small over a large score and large pips, the last life red and glowing, "out" in
 place for a player knocked out. A team heads its members' names with its letter, score
 and pooled lives, one pip and a count once the pool is too large for pips. One layout at
 every count: eight entries fit at 1024 pixels wide with room to spare, names are cut
-short to their card, and nothing is ever drawn past the edge. **A shape per player** (`shapes.ts`, `art.playerShapes`), beside the colour, so eight
+short to their card, and nothing is ever drawn past the edge. **The figures are as large as
+the bar allows** (2026-10-03, testers found them small): sized by the width each entry
+gets (`--entries`), up to what the 64-pixel bar holds, a name over a score — large at three
+players, as large as fits at eight. **The team tags** over the islands ("Team A") are large
+for the same reason, on the top corner of each island farther from the big timer, kept on
+screen and below the bar. **A shape per player** (`shapes.ts`, `art.playerShapes`), beside the colour, so eight
 players and colour-blind ones tell islands apart: circle, square, triangle, diamond, star,
 plus, hexagon, inverted triangle — by player in free-for-all, by team in a team match,
 where teammates share one as they share a hue. On the roster's figures, the island

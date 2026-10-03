@@ -251,22 +251,7 @@ export function startBlocked(view: LobbyView): string | null {
 
 export function lobbyMarkup(view: LobbyView): string {
   const isHost = view.humanPlayer === view.hostId;
-  const taken = view.seats.length;
-  const alone = taken <= 1;
-  // One string, not a wrapped template: the sentence is read, and matched, as a whole.
-  const note =
-    (view.code === null
-      ? 'No server to reach, so this table is on this computer only.'
-      : `Share this code. ${taken} of ${view.playerCount} seat${view.playerCount === 1 ? '' : 's'} taken` +
-        (taken < view.playerCount ? ' — the rest are played by bots.' : '.') +
-        (alone && isHost ? ' If nobody joins, the match runs on this computer.' : '')) +
-    (view.hostBot !== null && alone && isHost ? ' A bot plays your seat: you will watch.' : '');
   const rows = Array.from({ length: view.playerCount }, (_, i) => seatRow(view, i, isHost, 5));
-  // Said once for the table: what a level is, and that how each bot plays is a surprise.
-  const botsNote =
-    view.seats.length < view.playerCount || view.hostBot !== null
-      ? '<p class="note bots-note">Bots play at Level 1 (easiest) to Level 10. Each has a personality of its own, revealed when the match ends.</p>'
-      : '';
 
   const blocked = startBlocked(view);
   const start = !isHost
@@ -286,13 +271,12 @@ export function lobbyMarkup(view: LobbyView): string {
     <div class="menu lobby">
       <h1>${view.code === null ? 'Table' : 'Room'}</h1>
       ${code}
-      <p class="note">${note}</p>
       <div class="lobby-body">
         <div class="lobby-side">
           ${mapControls(view, isHost)}
           ${tableControls(view, isHost)}
         </div>
-        <div class="lobby-seats">${seatLists(view, rows)}${botsNote}</div>
+        <div class="lobby-seats">${seatLists(view, rows)}</div>
       </div>
       ${start}
       <button id="leave" class="quiet">Leave</button>

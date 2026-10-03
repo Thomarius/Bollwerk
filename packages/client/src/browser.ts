@@ -25,7 +25,7 @@ export function parseRoomList(body: unknown): RoomListing[] | null {
 /** The list's markup: a row per room, or a line saying there are none yet. */
 export function gamesMarkup(rooms: readonly RoomListing[]): string {
   if (rooms.length === 0) {
-    return '<p class="note">No open games right now. Play sets one others can join.</p>';
+    return '<p class="note">No open games</p>';
   }
   const rows = rooms.map((room) => {
     const teams = room.teamSize > 1 ? ` · teams of ${room.teamSize}` : '';

@@ -46,7 +46,6 @@ describe('lobby', () => {
       }),
     );
     expect(rows(html)).toHaveLength(8);
-    expect(html).toContain('2 of 8 seats taken');
     // And the two people are in their own seats, not shuffled to the front.
     expect(rows(html)[0]).toContain('Ada');
     expect(rows(html)[3]).toContain('Bo');
@@ -136,12 +135,6 @@ describe('lobby', () => {
     expect(asGuest).not.toContain('bot-select');
     expect(asGuest).not.toContain('id="begin"');
     expect(asGuest).toContain('Waiting for the host');
-  });
-
-  it('says once what a level is, and that each bot’s personality is a surprise', () => {
-    const html = lobbyMarkup(view());
-    expect(html.match(/Level 1 \(easiest\) to Level 10/g)).toHaveLength(1);
-    expect(html).toContain('revealed when the match ends');
   });
 
   it('marks your own seat, the host, and anyone who has dropped', () => {
@@ -240,15 +233,13 @@ describe('lobby', () => {
     expect(html).toContain('Teams must be the same size');
   });
 
-  it('works without a server: no code, and says the table is local', () => {
+  it('works without a server: no code to share', () => {
     const html = lobbyMarkup(view({ code: null }));
     expect(html).not.toContain('room-code');
-    expect(html).toContain('on this computer only');
   });
 
-  it('tells a host alone that the match will run locally', () => {
+  it('has no separate button for watching', () => {
     const html = lobbyMarkup(view());
-    expect(html).toContain('If nobody joins, the match runs on this computer');
     // Watching is no separate button any more: it is a bot in the host's own seat.
     expect(html).not.toContain('id="watch"');
   });
@@ -260,7 +251,6 @@ describe('lobby', () => {
     const watching = lobbyMarkup(view({ hostBot: 8 }));
     expect(rows(watching)[0]).toContain('<option value="8" selected>Level 8</option>');
     expect(rows(watching)[0]).toContain('Ada watches');
-    expect(watching).toContain('A bot plays your seat: you will watch.');
     // A guest sees who is playing the host's seat, and cannot change it.
     const guest = lobbyMarkup(
       view({ hostBot: 8, humanPlayer: 1, seats: [seat(0, 'Ada'), seat(1, 'Bo')] }),

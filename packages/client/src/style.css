@@ -658,7 +658,12 @@ body {
    its edge, the name small over the score and the pips. One layout at every count — the
    roster may shrink, names are cut short (the whole name on hover), the figures scale
    down on narrow windows, and nothing is ever drawn past the edge. */
+/* The figures are as large as the bar allows: by the width each entry gets — the window
+   less the phase on the left, shared among them (`--entries`, set by the HUD) — and never
+   taller than the 64-pixel bar holds, a name over a score. Three players get large
+   figures; eight on a narrow window as large as still fits. */
 .roster {
+  --slot: calc((100vw - 300px) / var(--entries, 4));
   display: flex;
   flex: 0 1 auto;
   min-width: 0;
@@ -679,9 +684,10 @@ body {
 
 .roster .player bdi {
   overflow: hidden;
-  font-size: clamp(9px, 0.8vw, 11px);
+  font-size: clamp(10px, calc(var(--slot) * 0.085), 14px);
+  line-height: 1.15;
   letter-spacing: 0.04em;
-  color: var(--hud-muted);
+  color: color-mix(in srgb, var(--hud-muted) 50%, var(--hud-ink));
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -696,11 +702,12 @@ body {
   display: flex;
   gap: 0.5rem;
   align-items: baseline;
+  line-height: 1.05;
   white-space: nowrap;
 }
 
 .roster .score {
-  font-size: clamp(16px, 1.8vw, 26px);
+  font-size: clamp(16px, calc(var(--slot) * 0.19), 30px);
   font-style: normal;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
@@ -708,7 +715,7 @@ body {
 }
 
 .roster .lives {
-  font-size: clamp(13px, 1.35vw, 19px);
+  font-size: clamp(13px, calc(var(--slot) * 0.135), 21px);
   letter-spacing: 0.08em;
   color: var(--hud-ink);
 }
@@ -725,7 +732,7 @@ body {
 }
 
 .roster .lives.out {
-  font-size: clamp(9px, 0.8vw, 11px);
+  font-size: clamp(10px, calc(var(--slot) * 0.085), 14px);
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--hud-muted);
@@ -754,7 +761,7 @@ body {
 
 .roster .letter {
   margin-right: 0.45rem;
-  font-size: clamp(13px, 1.2vw, 17px);
+  font-size: clamp(14px, calc(var(--slot) * 0.12), 21px);
   color: var(--hud-accent);
 }
 
@@ -778,8 +785,8 @@ body {
 
 .roster .team .player b {
   flex: none;
-  width: 8px;
-  height: 8px;
+  width: 10px;
+  height: 10px;
   background: var(--who);
 }
 
@@ -1340,17 +1347,21 @@ table.final tr.you td:nth-child(2) {
 }
 
 /* A team's letter over each of its islands, above the northern shore. */
+/* A team's name over each of its islands: large, since testers found the small one easy
+   to miss — the team is what decides who may be shot. */
 .team-tag {
   position: absolute;
   transform: translate(-50%, -100%);
-  padding: 0.05rem 0.5rem;
-  border: 2px solid #fff;
-  border-radius: 3px;
-  background: rgb(8 12 24 / 75%);
+  padding: 0.15rem 0.8rem;
+  border: 3px solid #fff;
+  border-radius: 4px;
+  background: rgb(8 12 24 / 80%);
+  box-shadow: 0 2px 8px rgb(0 0 0 / 45%);
   color: #f4f6ff;
-  font-size: 0.8rem;
-  font-weight: 700;
-  letter-spacing: 0.12em;
+  font-size: 1.2rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  white-space: nowrap;
   pointer-events: none;
 }
 
@@ -1909,8 +1920,8 @@ body.hud-bricks #hud .roster .team .player b {
 /* In the roster, as large as the pips: it is what tells two greens apart. */
 .roster .line .shape {
   align-self: center;
-  width: clamp(13px, 1.35vw, 19px);
-  height: clamp(13px, 1.35vw, 19px);
+  width: clamp(13px, calc(var(--slot) * 0.135), 21px);
+  height: clamp(13px, calc(var(--slot) * 0.135), 21px);
   margin-right: 0;
 }
 

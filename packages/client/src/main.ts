@@ -419,8 +419,6 @@ function showMenu(notice: string | null = null): void {
     <div class="menu">
       <h1 class="title"><span class="title-split" id="title"></span></h1>
       <p class="inspired">${escape(INSPIRED_BY)} · <button id="credits" class="link">Credits</button></p>
-      <p>Shoot down their walls. Rebuild yours before the next barrage.
-         Fail to seal a castle and you lose a life.</p>
       <label>Name <input id="name" type="text" maxlength="16" value="Player" /></label>
       <div class="look" data-look="build">Building look ${lookPicker('build')}</div>
       <div class="look" data-look="combat">Combat look ${lookPicker('combat')}</div>
@@ -434,8 +432,6 @@ function showMenu(notice: string | null = null): void {
         <input id="code" type="text" maxlength="8" placeholder="room code" />
         <button id="join">Join</button>
       </div>
-      <p class="note">Play sets a table others can join — from the list below if it is
-        public, by its code either way. If nobody does, the match runs on this computer.</p>
       <section id="open-games-section" class="open-games-section"${notice === null ? ' hidden' : ''}>
         <h2>Open games</h2>
         ${notice === null ? '' : `<p class="notice">${escape(notice)}</p>`}
@@ -1196,9 +1192,11 @@ async function runSession(session: Session, setup: Setup): Promise<() => void> {
   /** What the board points out to a player building; see `hints.ts`. */
   let hints: BuildHints = { unsealed: [] };
 
-  // The top left of each island, for its team's letter; terrain never changes. Not the
-  // top middle, which is where the big timer sits on the islands in the middle column.
+  // A top corner of each island, for its team's name; terrain never changes. Not the top
+  // middle, where the big timer sits on the islands in the middle column, and of the two
+  // corners the one farther from the timer: the larger tags met it at the map's centre.
   const islandTops = new Map<number, { x: number; y: number }>();
+  const timerAt = timerSpot(session.state);
   if (isTeamMatch(session.state)) {
     const { width, islandId } = session.state;
     for (const player of session.state.players) {
@@ -1212,7 +1210,18 @@ async function runSession(session: Session, setup: Setup): Promise<() => void> {
         left = Math.min(left, x);
         right = Math.max(right, x);
       }
-      if (right >= 0) islandTops.set(player.id, { x: left + 3, y: top });
+      if (right < 0) continue;
+      const corners = [left + 3, right - 3];
+      const x =
+        timerAt === null
+          ? corners[0]!
+          : corners.reduce((a, b) =>
+              Math.hypot(b - timerAt.x, top - timerAt.y) >
+              Math.hypot(a - timerAt.x, top - timerAt.y)
+                ? b
+                : a,
+            );
+      islandTops.set(player.id, { x, y: top });
     }
   }
 

@@ -4015,3 +4015,17 @@ the batcher. The pictures are now destroyed without releasing the shared resourc
 
 The order, the user's choice after seeing it: the styles alphabetically by name — Minimal
 lands in the middle, which is fine — and Random last.
+
+## 12c. Less text, larger figures (2026-10-03)
+
+The user's list. The menu lost its summary of the rules (How to play has them) and the
+note under Join; the open games list says "No open games" when there are none. The lobby
+lost the line under the room code (seats taken, the table local) and the one under the
+seats (what a level is). In a match, the roster's names and figures are sized by the width
+each entry gets, as large as the 64-pixel bar holds — at three players the names went
+from 11 to 14 pixels and the scores from 25 to 30, and team members' names grew alike —
+and the team tags over the islands, which testers found easy to miss, from 0.8 to 1.2 rem.
+Larger, they met the big timer at the map's centre and, in the top row and at the window's
+edge, ran under the bar and off the screen: each now takes the top corner of its island
+farther from the timer and is kept on screen and below the bar. Seen at three, eight and
+eight in teams at 1400 pixels, eight at 1024, and four and six in teams.

@@ -279,9 +279,27 @@ export class Hud {
         this.teamTags.set(tag.player, node);
       }
       node.style.borderColor = tag.colour;
-      node.style.left = `${tag.x}px`;
-      node.style.top = `${tag.y}px`;
+      // Kept on screen and below the bar: the tags grew (testers missed the small ones),
+      // and over an island at the window's edge or in the top row they ran off it or
+      // under the roster. Hung from their bottom middle, as the stylesheet places them.
+      const margin = 4;
+      const half = node.offsetWidth / 2;
+      const below = this.barBottom() + node.offsetHeight + margin;
+      const x = Math.min(
+        Math.max(tag.x, half + margin),
+        this.bannerRoot.clientWidth - half - margin,
+      );
+      node.style.left = `${x}px`;
+      node.style.top = `${Math.max(tag.y, below)}px`;
     }
+  }
+
+  /** Where the HUD's bar ends, in the banner layer's pixels. */
+  private barBottom(): number {
+    const bar = this.root.querySelector<HTMLElement>('.bar');
+    return bar === null
+      ? 0
+      : bar.getBoundingClientRect().bottom - this.bannerRoot.getBoundingClientRect().top;
   }
 
   /** Kept across frames, like the island banners, rather than rebuilt from markup. */
@@ -792,6 +810,8 @@ export class Hud {
       order = standings(state).map((s) => `p${s.player}`);
     }
     this.placeEntries(rosterRoot, order);
+    // The stylesheet sizes the figures by the width each entry has (`--entries`).
+    rosterRoot.style.setProperty('--entries', String(order.length));
 
     // A player who has just spent a continue chooses a castle in the cannon phase
     // before any guns, so for them this phase is a castle choice first.
