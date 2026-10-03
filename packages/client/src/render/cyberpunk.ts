@@ -41,6 +41,7 @@ import {
   type Theme,
   type ThemeLayers,
   type ViewTransform,
+  type FinishLook,
 } from './theme.js';
 import type { SceneryItem } from './scenery.js';
 import { SceneryLayer } from './sceneryLayer.js';
@@ -187,6 +188,9 @@ interface Fade {
 /** How long a recoil takes to come home. */
 const RECOIL_MS = 160;
 
+/** How this style sends off the winners (PLAN 11.19 Z4). */
+const FINISH: FinishLook = { spark: 'neon', flag: 'hologram' };
+
 /**
  * The cyberpunk look: the board as a circuit at night, for building and for combat.
  *
@@ -241,8 +245,8 @@ export class CyberpunkTheme implements Theme {
   /** When each castle's hologram came on, for its flicker. */
   private readonly projected = new Map<number, number>();
   private readonly landings = new Landings();
-  private readonly fireworks = new Fireworks();
-  private readonly winnerBanners = new WinnerBanners();
+  private readonly fireworks = new Fireworks(FINISH);
+  private readonly winnerBanners = new WinnerBanners(FINISH);
   private readonly flags = new FlagHoist();
   private clock = 0;
   /** Rain over the city, in tile coordinates, across the area drawn. */

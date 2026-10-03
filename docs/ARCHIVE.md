@@ -3929,3 +3929,35 @@ the overtime drips vanished against the milk river and are dark chocolate; and a
 drizzle over the title read as a row of V marks and went. Every style shows a full-width
 white band in a headless screenshot taken mid-wipe — Stained glass too — so it is the
 capture, not the style. Anything moving is still to be seen in play (PLAN §11).
+
+## 11zz. Every style to the edges (PLAN 11.19, 2026-10-03)
+
+Asked which parts of the screen no style reached yet: the board, the phase banner, the top
+bar and the title were each style's, but the HTML over the board and the match's finish
+were shared. The user chose the four packages proposed: the skin beyond the bar, the big
+timer, the island banners and stamps, and the finish. Kept shared on purpose, and agreed:
+the crown (11.14), the aids that carry information (§7's rule), the menu and lobby, which
+show two looks at once, and the small effects.
+
+**Z1, the skin beyond the bar.** The skin's class moved from `#hud` to the page, its
+variables with it, so they reach the banner layer and the overlays; it is taken off as a
+match is left. The panels redefine the page's own colours from the skin's, so the rules
+written for them work unchanged. Medieval's and Night's box is see-through, which the
+summary had been made opaque to escape (its grey figures were unreadable over the board),
+so the panels take an opaque `--hud-panel` where a skin's box is not solid, and the
+summary's grey is lifted toward the ink in every skin. Text on the accent is dark on every
+bright accent and light on Parchment's ink red (`--hud-on-accent`).
+
+**Z2, the big timer**: CSS alone per skin — Medieval and Night share theirs, as they share
+a skin. Seen side by side in all eight.
+
+**Z3, the island banners and stamps**: the same, by skin; Parchment's knocked-out stamp
+and final stamp are in red ink rather than the owner's colour, as a stamp on a map is.
+**Headless Chrome could not reach them by the clock** — a resolution is over forty seconds
+of wall time away and virtual time crawls — so they were checked by a Playwright script
+that puts each kind into a running match's banner layer under each skin and photographs it.
+
+**Z4, the finish**: `Fireworks` and `WinnerBanners` take a `FinishLook` — a spark shape and
+a flag — from each theme, the physics and the hoist shared so the send-off keeps one
+timing. Bricks fall heavier and ink lingers longer; nothing else differs in timing. Seen at
+game over in all eight.

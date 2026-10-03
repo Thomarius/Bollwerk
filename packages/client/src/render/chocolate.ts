@@ -37,6 +37,7 @@ import {
   type Theme,
   type ThemeLayers,
   type ViewTransform,
+  type FinishLook,
 } from './theme.js';
 import { weatherFor } from './pixel/atmosphere.js';
 import { roseSpot } from './parchment.js';
@@ -173,6 +174,9 @@ interface Cake {
   bowlR: number;
 }
 
+/** How this style sends off the winners (PLAN 11.19 Z4). */
+const FINISH: FinishLook = { spark: 'sprinkle', flag: 'candy' };
+
 /**
  * The chocolate look: a sweet-shop land on a river of milk chocolate, for either look. The
  * river flows — swirls ride its current across the whole map, and pour over a chocolate
@@ -227,8 +231,8 @@ export class ChocolateTheme implements Theme {
   private wobbles: Wobble[] = [];
   private sprinkles: Sprinkle[] = [];
   private readonly aims = new GunAims();
-  private readonly fireworks = new Fireworks();
-  private readonly winnerBanners = new WinnerBanners();
+  private readonly fireworks = new Fireworks(FINISH);
+  private readonly winnerBanners = new WinnerBanners(FINISH);
   /** The fountains run as a flag flies: started by sealing, stopped by a breach. */
   private readonly fountains = new FlagHoist();
   /** Snow, drawn from the seed as Medieval's weather is, falls here as sprinkles. */

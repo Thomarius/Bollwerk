@@ -34,6 +34,7 @@ import {
   type Theme,
   type ThemeLayers,
   type ViewTransform,
+  type FinishLook,
 } from './theme.js';
 import { BricksSeaLife } from './seaLife.js';
 import type { SceneryItem } from './scenery.js';
@@ -75,6 +76,9 @@ const SPLASH_MS = 520;
 /** How long the flash off a piece's studs lasts as it clicks down. */
 const CLICK_MS = 260;
 
+/** How this style sends off the winners (PLAN 11.19 Z4). */
+const FINISH: FinishLook = { spark: 'brick', flag: 'brick' };
+
 /**
  * The toy bricks look (PLAN 11.11 W8): the board built of studded plastic bricks on
  * baseplates — green under the land, blue under the sea, whose studs are faint so the sea
@@ -112,8 +116,8 @@ export class BricksTheme implements Theme {
   private clicks: Click[] = [];
   private readonly aims = new GunAims();
   private readonly landings = new Landings();
-  private readonly fireworks = new Fireworks();
-  private readonly winnerBanners = new WinnerBanners();
+  private readonly fireworks = new Fireworks(FINISH);
+  private readonly winnerBanners = new WinnerBanners(FINISH);
   private readonly flags = new FlagHoist();
   private clock = 0;
 

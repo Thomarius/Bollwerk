@@ -39,6 +39,7 @@ import {
   type Theme,
   type ThemeLayers,
   type ViewTransform,
+  type FinishLook,
 } from './theme.js';
 import type { SceneryItem } from './scenery.js';
 import { SceneryLayer } from './sceneryLayer.js';
@@ -145,6 +146,9 @@ function jitter(x: number, y: number, salt: number): number {
   return v - Math.floor(v);
 }
 
+/** How this style sends off the winners (PLAN 11.19 Z4). */
+const FINISH: FinishLook = { spark: 'blot', flag: 'swallowtail' };
+
 /**
  * The parchment look: an old hand-drawn map, in ink and watercolour on sepia paper.
  *
@@ -199,8 +203,8 @@ export class ParchmentTheme implements Theme {
   private fades: Fade[] = [];
   private readonly aims = new GunAims();
   private readonly landings = new Landings();
-  private readonly fireworks = new Fireworks();
-  private readonly winnerBanners = new WinnerBanners();
+  private readonly fireworks = new Fireworks(FINISH);
+  private readonly winnerBanners = new WinnerBanners(FINISH);
   private readonly flags = new FlagHoist();
   private clock = 0;
   private layers!: ThemeLayers;

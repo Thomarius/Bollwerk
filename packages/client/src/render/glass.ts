@@ -34,6 +34,7 @@ import {
   type Theme,
   type ThemeLayers,
   type ViewTransform,
+  type FinishLook,
 } from './theme.js';
 import { GlassSeaLife } from './seaLife.js';
 import type { SceneryItem } from './scenery.js';
@@ -78,6 +79,9 @@ function mix(a: number, b: number, t: number): number {
   return m(16) | m(8) | m(0);
 }
 
+/** How this style sends off the winners (PLAN 11.19 Z4). */
+const FINISH: FinishLook = { spark: 'shard', flag: 'leaded' };
+
 /**
  * The stained glass look (PLAN 11.18 Y7): the board as a church window. Land and sea cut
  * into irregular panes of a few tiles each (`panes.ts`) — one a tile read as a mosaic —
@@ -116,8 +120,8 @@ export class GlassTheme implements Theme {
   private glints: Glint[] = [];
   private readonly aims = new GunAims();
   private readonly landings = new Landings();
-  private readonly fireworks = new Fireworks();
-  private readonly winnerBanners = new WinnerBanners();
+  private readonly fireworks = new Fireworks(FINISH);
+  private readonly winnerBanners = new WinnerBanners(FINISH);
   private readonly flags = new FlagHoist();
   private clock = 0;
 

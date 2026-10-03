@@ -34,6 +34,7 @@ import {
   type Theme,
   type ThemeLayers,
   type ViewTransform,
+  type FinishLook,
 } from './theme.js';
 import { BlueprintSeaLife } from './seaLife.js';
 import type { SceneryItem } from './scenery.js';
@@ -72,6 +73,9 @@ interface Fade {
 const RECOIL_MS = 160;
 /** How long an impact's rings spread. */
 const RING_MS = 420;
+
+/** How this style sends off the winners (PLAN 11.19 Z4). */
+const FINISH: FinishLook = { spark: 'mark', flag: 'pennant' };
 
 /**
  * The blueprint look: the board as an architect's plan, drawn in ink on blue paper.
@@ -120,8 +124,8 @@ export class BlueprintTheme implements Theme {
   private fades: Fade[] = [];
   private readonly aims = new GunAims();
   private readonly landings = new Landings();
-  private readonly fireworks = new Fireworks();
-  private readonly winnerBanners = new WinnerBanners();
+  private readonly fireworks = new Fireworks(FINISH);
+  private readonly winnerBanners = new WinnerBanners(FINISH);
   private readonly flags = new FlagHoist();
   private clock = 0;
 

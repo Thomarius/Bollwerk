@@ -467,6 +467,23 @@ set of CSS variables on `#hud`; the HUD takes the arriving look's as a banner st
 since the bar is at the top and above the line is always the new look. The bar is exactly
 `HUD_BAR_PX` tall, its rule inside, so a solid skin never overhangs the board.
 
+**The skin reaches past the bar** (11.19, ARCHIVE 11zz): it is set on the page, so the
+banner layer and the overlays take the look on screen too. The ready count at the cursor,
+the end screen, the pause menu and the "You're out" strip are in the skin's box, edge, ink
+and lettering, kept opaque where Medieval's and Night's box is see-through. **The big
+timer** is drawn as each style draws — carved stone for Medieval and Night, flat for
+Minimal, a neon outline, a draughtsman's outline, sepia italic, a yellow brick, gold glass
+in its lead, piped icing — and **the island banners, team letters, "You are here" and the
+stamps** are dressed alike: Parchment's banners a forked ribbon and its stamps pressed in
+red ink, Toy bricks a studded plate, Stained glass a pane in its lead, Chocolate a bonbon
+in gold foil, Cyberpunk glowing, Blueprint ruled double. The owner's colour stays on every
+island banner's border. **The finish** is each style's own (`FinishLook` in `theme.ts`):
+the rockets and the hoist are shared, so the timing is one, but the bursts are streaks in
+Medieval and Night, neon in Cyberpunk, a draughtsman's crosses in Blueprint, ink blots in
+Parchment, tumbling bricks, glass shards and candy sprinkles, and the winners' flag a
+swallowtail, a flickering hologram on a light-beam, a pennant in plan, a square flag of
+bricks, a leaded banner, or a pennant on a candy-cane pole. Minimal keeps the plain ones.
+
 **Each banner is drawn in the look it brings** (`BANNER_CLASS` in `hud.ts`, a record
 over every style): flat gold for Minimal, a neon strip that flickers on for Cyberpunk, a
 title block of deeper blue paper ruled double for Blueprint, an inked ribbon with forked
@@ -982,7 +999,8 @@ UI polish, all in ARCHIVE 11h; 11.11 the second visual pass and 11.12 the first
 test-session feedback, in ARCHIVE 11w; 11.5 the small items and 11.6 the bots, in ARCHIVE
 11zd; 11.14 the second test-session feedback, in ARCHIVE 11ze; 11.15 the third visual pass,
 11.16 help for new players, the menu and the sea, and 11.17 the desktop app, in ARCHIVE
-11zt; 11.18 the fourth visual pass, in ARCHIVE 11zv — so the open sections keep theirs.
+11zt; 11.18 the fourth visual pass, in ARCHIVE 11zv; 11.19 every style to the edges, in
+ARCHIVE 11zz — so the open sections keep theirs.
 
 ### 11.2 Points decide, elimination threatens — goal revised 2026-10-01
 

@@ -681,19 +681,41 @@ export class ClearingPuffs {
 }
 
 /**
- * Fireworks over the winning islands for as long as the match is over: rockets rising
- * from each island and bursting in its owner's colours. Shared by both styles — the end
- * of a match deserves the same send-off in either.
+ * How a style sends off the winners (PLAN 11.19 Z4): the shape its fireworks burst into,
+ * and the flag hoisted over the winners' castles. The rockets, the bursts and the hoist
+ * are shared, so every style's finish keeps the same timing; only the look is the style's.
  */
+export interface FinishLook {
+  /**
+   * `square` Minimal's flat sparks; `streak` sparks trailing light; `neon` streaks with a
+   * halo; `mark` a draughtsman's crosses; `blot` drops of ink; `brick` tumbling bricks;
+   * `shard` spinning glass; `sprinkle` candy sprinkles.
+   */
+  spark: 'square' | 'streak' | 'neon' | 'mark' | 'blot' | 'brick' | 'shard' | 'sprinkle';
+  /**
+   * `swallowtail` a forked banner; `hologram` a flickering projection; `pennant` a flag in
+   * plan; `brick` a square flag of bricks; `leaded` a banner of glass in its lead; `candy` a
+   * pennant on a candy-striped pole.
+   */
+  flag: 'swallowtail' | 'hologram' | 'pennant' | 'brick' | 'leaded' | 'candy';
+}
+
+export const PLAIN_FINISH: FinishLook = { spark: 'square', flag: 'swallowtail' };
+
+/** Candy for the sprinkles, as Chocolate's falling ones are. */
+const SPRINKLE_COLOURS = [0xfffaf0, 0xffb3cf, 0xa8e6ff, 0xfff07a, 0xc9a7ff] as const;
+
 /**
  * The winners' banners (PLAN 11.15): with the fireworks, a tall pole rises from each of
- * the winners' castles and a swallowtail banner in their colour is hoisted up it over
+ * the winners' castles and a banner in their colour is hoisted up it over
  * `winnerBannerRiseMs`, then waves — something for the camera's push onto the winner to
- * land on. Shared by every style, like the fireworks it goes with; clocked by the frames
- * it is drawn, so it starts as the celebration does.
+ * land on. Clocked by the frames it is drawn, so it starts as the celebration does; each
+ * style says what flies (`FinishLook`).
  */
 export class WinnerBanners {
   private age = 0;
+
+  constructor(private readonly look: FinishLook = PLAIN_FINISH) {}
 
   draw(
     g: Graphics,
@@ -715,22 +737,24 @@ export class WinnerBanners {
     const clothW = tile * 1.5;
     const clothH = tile * 0.95;
     const rim = Math.max(1, Math.round(tile / 10));
+    const flag = this.look.flag;
     const winners = new Set(celebrate.map((c) => c.owner));
     for (const player of state.players) {
       if (!winners.has(player.id)) continue;
+      const base = playerColour(art, player.id, 'base');
+      const light = playerColour(art, player.id, 'light');
       for (const castle of state.castles) {
         if (castle.islandId !== player.islandId) continue;
         const x = tileX(view, castle.x + castle.w / 2);
         const foot = tileY(view, castle.y);
         const top = foot - pole * Math.min(1, t * 2);
-        g.moveTo(x, foot).lineTo(x, top);
-        g.stroke({ width: Math.max(2, rim + 1), color: 0x2a2018 });
+        this.drawPole(g, x, foot, top, rim, flag, base, art);
         if (t <= 0.5) continue;
         // The cloth climbs the pole from its foot to its top, waving as it goes.
         const up = foot - (pole - clothH) * hoist - clothH;
         const wave = Math.sin(this.age / 180 + castle.id) * tile * 0.12;
         const tail = clothW * 0.22;
-        g.poly([
+        const swallowtail = [
           x,
           up,
           x + clothW,
@@ -741,30 +765,127 @@ export class WinnerBanners {
           up + clothH + wave,
           x,
           up + clothH,
-        ]);
-        g.fill({ color: playerColour(art, player.id, 'base') });
-        g.stroke({ width: rim, color: 0x0a0a12, alpha: 0.8, join: 'round' });
-        g.moveTo(x, up + clothH * 0.5).lineTo(
-          x + clothW - tail - tile * 0.1,
-          up + clothH * 0.5 + wave * 0.5,
-        );
-        g.stroke({ width: Math.max(1, rim), color: playerColour(art, player.id, 'light') });
+        ];
+        if (flag === 'pennant' || flag === 'candy') {
+          g.poly([x, up, x + clothW * 1.1, up + clothH / 2 + wave, x, up + clothH]);
+          if (flag === 'pennant') {
+            g.fill({ color: light, alpha: 0.3 });
+            g.stroke({ width: rim, color: light });
+          } else {
+            g.fill({ color: base });
+            g.stroke({ width: rim, color: 0x3d2314, alpha: 0.8, join: 'round' });
+          }
+        } else if (flag === 'brick') {
+          // A square flag of bricks: rows with a seam between them, a stud on each.
+          const w = clothW * 0.9;
+          for (let row = 0; row < 2; row++) {
+            const y = up + (clothH / 2) * row + wave * (row + 0.5) * 0.4;
+            g.rect(x, y, w, clothH / 2 - 1);
+          }
+          g.fill({ color: base });
+          g.stroke({ width: rim, color: 0x0c2a5c, alpha: 0.7 });
+          for (let k = 0; k < 3; k++)
+            g.circle(x + w * (0.2 + 0.3 * k), up + clothH * 0.25, tile * 0.1);
+          g.fill({ color: light });
+        } else {
+          const ghost = flag === 'hologram';
+          const flicker = ghost
+            ? 0.55 + 0.25 * Math.sin(this.age / 47) * Math.sin(this.age / 131)
+            : 1;
+          g.poly(swallowtail);
+          g.fill({ color: base, alpha: flicker });
+          if (flag === 'leaded') {
+            g.stroke({ width: rim * 2.2, color: 0x0c0d12, join: 'round' });
+            g.poly([
+              x + tile * 0.12,
+              up + tile * 0.12,
+              x + clothW * 0.55,
+              up + tile * 0.12,
+              x + tile * 0.12,
+              up + clothH * 0.6,
+            ]);
+            g.fill({ color: 0xffffff, alpha: 0.25 });
+          } else if (ghost) {
+            g.stroke({ width: rim, color: light, alpha: flicker });
+            for (let k = 1; k < 4; k++) {
+              const y = up + (clothH * k) / 4;
+              g.moveTo(x, y).lineTo(x + clothW - tail, y + wave * 0.5);
+            }
+            g.stroke({ width: 1, color: 0xffffff, alpha: 0.35 * flicker });
+            continue;
+          } else {
+            g.stroke({ width: rim, color: 0x0a0a12, alpha: 0.8, join: 'round' });
+          }
+          g.moveTo(x, up + clothH * 0.5).lineTo(
+            x + clothW - tail - tile * 0.1,
+            up + clothH * 0.5 + wave * 0.5,
+          );
+          g.stroke({ width: Math.max(1, rim), color: light });
+        }
       }
+    }
+  }
+
+  private drawPole(
+    g: Graphics,
+    x: number,
+    foot: number,
+    top: number,
+    rim: number,
+    flag: FinishLook['flag'],
+    base: number,
+    art: ArtConfig,
+  ): void {
+    const width = Math.max(2, rim + 1);
+    g.moveTo(x, foot).lineTo(x, top);
+    if (flag === 'hologram') {
+      g.stroke({ width: width + 4, color: 0x2ee6ff, alpha: 0.25 });
+      g.moveTo(x, foot).lineTo(x, top);
+      g.stroke({ width, color: 0x2ee6ff });
+    } else if (flag === 'pennant') {
+      g.stroke({ width: Math.max(1, rim), color: hex(art.palette.uiInk) });
+    } else if (flag === 'brick') {
+      g.stroke({ width: width + 1, color: 0x9aa3ad });
+      g.circle(x, top, width + 1);
+      g.fill({ color: 0xffd23c });
+    } else if (flag === 'candy') {
+      // A candy cane for a pole: white, striped in the owner's colour, a gold knob.
+      g.stroke({ width: width + 1, color: 0xffffff });
+      for (let y = foot; y > top; y -= width * 4) {
+        g.moveTo(x, y).lineTo(x, Math.max(top, y - width * 2));
+      }
+      g.stroke({ width: width + 1, color: base });
+      g.circle(x, top, width + 1);
+      g.fill({ color: 0xf5c542 });
+    } else {
+      g.stroke({ width, color: flag === 'leaded' ? 0x0c0d12 : 0x2a2018 });
     }
   }
 }
 
+/** A spark of a burst, in tiles; `spin` turns the shapes that tumble. */
+interface Spark {
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
+  age: number;
+  colour: number;
+  angle: number;
+  spin: number;
+}
+
+/**
+ * Fireworks over the winning islands for as long as the match is over: rockets rising
+ * from each island and bursting in its owner's colours — into whatever the style bursts
+ * into (`FinishLook`). The send-off keeps one timing in every style.
+ */
 export class Fireworks {
   private rockets: { x: number; y: number; peak: number; age: number; owner: number }[] = [];
-  private sparks: {
-    x: number;
-    y: number;
-    vx: number;
-    vy: number;
-    age: number;
-    colour: number;
-  }[] = [];
+  private sparks: Spark[] = [];
   private sinceLaunch = 0;
+
+  constructor(private readonly look: FinishLook = PLAIN_FINISH) {}
 
   draw(
     g: Graphics,
@@ -774,6 +895,7 @@ export class Fireworks {
     deltaMs: number,
   ): void {
     const dt = deltaMs / 1000;
+    const kind = this.look.spark;
     this.sinceLaunch += deltaMs;
     if (celebrate.length > 0 && this.sinceLaunch >= art.effects.fireworkEveryMs) {
       this.sinceLaunch = 0;
@@ -798,13 +920,17 @@ export class Fireworks {
       g.circle(tileX(view, rocket.x), tileY(view, y + 0.35), Math.max(1, view.tile * 0.08));
       g.fill({ color: hex(art.palette.emberMid), alpha: 0.6 });
       if (t < 1) continue;
-      const colours = [
-        playerColour(art, rocket.owner, 'light'),
-        playerColour(art, rocket.owner, 'base'),
-        hex(art.palette.uiInk),
-      ];
-      for (let k = 0; k < 40; k++) {
-        const angle = (k / 40) * Math.PI * 2 + Math.random() * 0.2;
+      const colours =
+        kind === 'sprinkle'
+          ? [playerColour(art, rocket.owner, 'base'), ...SPRINKLE_COLOURS]
+          : [
+              playerColour(art, rocket.owner, 'light'),
+              playerColour(art, rocket.owner, 'base'),
+              hex(art.palette.uiInk),
+            ];
+      const count = kind === 'brick' || kind === 'blot' ? 22 : 40;
+      for (let k = 0; k < count; k++) {
+        const angle = (k / count) * Math.PI * 2 + Math.random() * 0.2;
         const speed = 3.5 + Math.random() * 3.5;
         this.sparks.push({
           x: rocket.x,
@@ -813,24 +939,78 @@ export class Fireworks {
           vy: Math.sin(angle) * speed,
           age: 0,
           colour: colours[k % colours.length] as number,
+          angle: Math.random() * Math.PI * 2,
+          spin: (Math.random() - 0.5) * 12,
         });
       }
     }
     this.rockets = this.rockets.filter((rocket) => rocket.age < rise);
 
-    const life = 1200;
+    // Ink lingers and bricks fall heavier; the rest burst and fade as sparks do.
+    const life = kind === 'blot' ? 1800 : 1200;
+    const fall = kind === 'brick' ? 6 : 2.2;
+    const t0 = view.tile;
     for (const spark of this.sparks) {
       spark.age += deltaMs;
       const drag = Math.exp(-1.8 * dt);
       spark.vx *= drag;
-      spark.vy = spark.vy * drag + 2.2 * dt;
+      spark.vy = spark.vy * drag + fall * dt;
       spark.x += spark.vx * dt;
       spark.y += spark.vy * dt;
+      spark.angle += spark.spin * dt;
       const t = spark.age / life;
       if (t >= 1) continue;
-      const size = Math.max(2, view.tile * 0.24 * (1 - t * 0.5));
-      g.rect(tileX(view, spark.x) - size / 2, tileY(view, spark.y) - size / 2, size, size);
-      g.fill({ color: spark.colour, alpha: 1 - t * t });
+      const alpha = 1 - t * t;
+      const x = tileX(view, spark.x);
+      const y = tileY(view, spark.y);
+      const size = Math.max(2, t0 * 0.24 * (1 - t * 0.5));
+      if (kind === 'streak' || kind === 'neon') {
+        const tail = 0.09;
+        const tx = tileX(view, spark.x - spark.vx * tail);
+        const ty = tileY(view, spark.y - spark.vy * tail);
+        if (kind === 'neon') {
+          g.moveTo(tx, ty).lineTo(x, y);
+          g.stroke({ width: size * 1.6, color: spark.colour, alpha: 0.25 * alpha, cap: 'round' });
+        }
+        g.moveTo(tx, ty).lineTo(x, y);
+        g.stroke({ width: Math.max(1.5, size * 0.45), color: spark.colour, alpha, cap: 'round' });
+      } else if (kind === 'mark') {
+        const r = size * 0.6;
+        g.moveTo(x - r, y).lineTo(x + r, y);
+        g.moveTo(x, y - r).lineTo(x, y + r);
+        g.stroke({ width: Math.max(1, size * 0.2), color: spark.colour, alpha });
+      } else if (kind === 'blot') {
+        g.circle(x, y, size * (0.5 + 0.3 * t));
+        g.circle(x + size * 0.55, y + size * 0.3, size * 0.18);
+        g.fill({ color: spark.colour, alpha: alpha * 0.85 });
+      } else if (kind === 'brick' || kind === 'shard' || kind === 'sprinkle') {
+        const along = (u: number, v: number): [number, number] => [
+          x + Math.cos(spark.angle) * u - Math.sin(spark.angle) * v,
+          y + Math.sin(spark.angle) * u + Math.cos(spark.angle) * v,
+        ];
+        if (kind === 'brick') {
+          const w = size * 1.1;
+          const h = size * 0.6;
+          g.poly([...along(-w, -h), ...along(w, -h), ...along(w, h), ...along(-w, h)]);
+          g.fill({ color: spark.colour, alpha });
+          g.circle(...along(0, -h * 0.1), h * 0.55);
+          g.fill({ color: 0xffffff, alpha: 0.35 * alpha });
+        } else if (kind === 'shard') {
+          g.poly([
+            ...along(size, 0),
+            ...along(-size * 0.5, size * 0.55),
+            ...along(-size * 0.7, -size * 0.4),
+          ]);
+          g.fill({ color: spark.colour, alpha: alpha * 0.9 });
+          g.stroke({ width: 1, color: 0xffffff, alpha: alpha * 0.6 });
+        } else {
+          g.moveTo(...along(-size * 0.7, 0)).lineTo(...along(size * 0.7, 0));
+          g.stroke({ width: Math.max(1.5, size * 0.4), color: spark.colour, alpha, cap: 'round' });
+        }
+      } else {
+        g.rect(x - size / 2, y - size / 2, size, size);
+        g.fill({ color: spark.colour, alpha });
+      }
     }
     this.sparks = this.sparks.filter((spark) => spark.age < life);
   }

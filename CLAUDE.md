@@ -157,7 +157,8 @@ portable file for Windows and Linux (M14, ARCHIVE 11zp–11zt); and a fourth pas
 ARCHIVE 11zu–11zv): a screen while the board is prepared, a pause menu with the settings
 and Leave match, a strip for a player knocked out, music and sounds volumes, level pips,
 awards at the end, a rematch, and an eighth style, Stained glass; and a ninth, Chocolate
-(ARCHIVE 11zy). Online clients catch up
+(ARCHIVE 11zy), and every style carried to the panels, the big timer, the island banners and
+the finish (ARCHIVE 11zz). Online clients catch up
 on the server at once (ARCHIVE 11zg), which ended the hosts' delay on every click. The game is played with the mouse alone; Esc for pause is the one key. Deployment is verified by a
 CI job, since there is no Docker on this machine. Every sound cue is supplied. The protocol
 is 15: a test session needs the server rebuilt and every page reloaded.

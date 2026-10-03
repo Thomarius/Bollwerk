@@ -150,12 +150,16 @@ export class Hud {
   /**
    * Dresses the HUD in a look's style. The bar is at the top of the screen, and above a
    * banner's line is always the arriving look, so the HUD takes it as the banner starts.
+   * Set on the page, not the bar alone, so the banner layer and the overlays — the ready
+   * count, the end screen, the pause menu — take it too (PLAN 11.19 Z1); `null` takes it
+   * off, as the match is left.
    */
-  useSkin(style: ArtStyle): void {
-    const skin = HUD_SKIN[style];
+  useSkin(style: ArtStyle | null): void {
+    const skin = style === null ? null : HUD_SKIN[style];
     if (skin === this.skin) return;
-    if (this.skin !== null) this.root.classList.remove(this.skin);
-    this.root.classList.add(skin);
+    const page = this.root.ownerDocument.body;
+    if (this.skin !== null) page.classList.remove(this.skin);
+    if (skin !== null) page.classList.add(skin);
     this.skin = skin;
   }
 

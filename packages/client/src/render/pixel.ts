@@ -40,6 +40,7 @@ import {
   type ThemeLayers,
   type ViewTransform,
   shotLift,
+  type FinishLook,
 } from './theme.js';
 
 interface Blast {
@@ -147,6 +148,9 @@ function washed(colour: number, amount: number): number {
   return (mix(r) << 16) | (mix(g) << 8) | mix(b);
 }
 
+/** How this style sends off the winners (PLAN 11.19 Z4). */
+const FINISH: FinishLook = { spark: 'streak', flag: 'swallowtail' };
+
 /**
  * The procedural pixel style.
  *
@@ -238,8 +242,8 @@ export class PixelTheme implements Theme {
   private cracks = new Map<number, Crack>();
   private surf: Surf[] = [];
   private readonly landings = new Landings();
-  private readonly fireworks = new Fireworks();
-  private readonly winnerBanners = new WinnerBanners();
+  private readonly fireworks = new Fireworks(FINISH);
+  private readonly winnerBanners = new WinnerBanners(FINISH);
   private splashes: Splash[] = [];
   private smoulders: Smoulder[] = [];
   private puffs: Puff[] = [];

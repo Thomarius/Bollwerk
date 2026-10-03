@@ -1379,6 +1379,7 @@ async function runSession(session: Session, setup: Setup): Promise<() => void> {
     pause.destroy();
     badge?.destroy();
     watching.destroy();
+    hud.useSkin(null);
     globalThis.removeEventListener('resize', fit);
     scene.app.destroy(true);
   };
