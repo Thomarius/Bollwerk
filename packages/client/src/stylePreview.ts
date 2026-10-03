@@ -84,6 +84,9 @@ async function render(style: ArtStyle): Promise<string> {
     scene.render();
     return scene.app.canvas.toDataURL('image/png');
   } finally {
-    scene.app.destroy(true);
+    // Not `destroy(true)`, which also releases what every renderer on the page shares: a
+    // picture made for the gallery over a running match (ARCHIVE 12b) took the match's
+    // pooled batches with it, and its next frame failed.
+    scene.app.destroy({ removeView: true });
   }
 }

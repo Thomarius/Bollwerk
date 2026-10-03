@@ -34,6 +34,8 @@ export interface PauseActions {
   click(): void;
   /** The music and sounds volumes, for the sliders. */
   volumes: VolumeTarget;
+  /** Opens the gallery of looks, to change them mid-match (ARCHIVE 12b). */
+  looks?(): void;
 }
 
 /** The Effects choices as the main menu names them. */
@@ -86,6 +88,7 @@ export class PauseControls {
       `<div class="settings">` +
       `<label>Effects <select class="effects">${options}</select></label>` +
       `<button class="sound quiet"></button>` +
+      (actions.looks === undefined ? '' : `<button class="looks quiet">Looks</button>`) +
       `</div><small class="glow-note" hidden>Glowing takes effect from the next match.</small>` +
       `<button class="leave-match quiet">Leave match</button>` +
       `<small>or press Esc to resume</small></div>`;
@@ -109,6 +112,10 @@ export class PauseControls {
         'full') as EffectsLevel;
       saveEffects(level);
       this.glowNote.hidden = (level === 'high') === glowAtStart;
+    });
+    this.overlay.querySelector('.looks')?.addEventListener('click', () => {
+      actions.click();
+      actions.looks?.();
     });
     this.sound.addEventListener('click', () => {
       actions.setMuted(!actions.isMuted());

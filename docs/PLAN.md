@@ -515,6 +515,19 @@ and name, sliding in one after another, its score counting up from the round bef
 the round's gain beside it, and a green or red arrow for a place won or lost; in the
 banner's own ink, inside its crossing, adding no time.
 
+**Choosing the looks** (`looks.ts`, ARCHIVE 12b) scales to many styles: in the menu each
+look is its picture and name between two arrows, which step through the styles in place,
+and the picture opens **the gallery** — every style's picture as a card, a switch at the
+top saying whether a click chooses the building or the combat look, each card badged with
+the look it is chosen for. The styles are in alphabetical order by name, so a new one finds
+its place, and **Random** comes last, a die for its picture: drawn afresh from
+every style as each match starts, never the other look's style while another is left. The
+pause menu has **Looks**, the same gallery without Random, which changes the looks
+mid-match (`Scene.replaceLooks`) and saves the choice as the menu's. A picture made for the
+gallery over a running match must not release what every renderer shares
+(`destroy(true)`): it took the match's pooled batches with it. One gallery for both looks
+is the first try; two separate ones if players find it confusing (decided with the user).
+
 **A picture of each chosen look** stands beside its choice in the menu (`stylePreview.ts`):
 one fixed island — a sealed ring with guns round the crowned main castle, a second castle
 outside it — drawn by the style's own theme through a real `Scene` on a canvas of its own,

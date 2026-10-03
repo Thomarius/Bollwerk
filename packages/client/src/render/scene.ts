@@ -182,6 +182,30 @@ export class Scene {
     this.applyVisibility();
   }
 
+  /**
+   * Changes the looks mid-match, from the pause menu (ARCHIVE 12b): the old themes are
+   * thrown away and the new ones drawn from the board as it last stood, so nothing is lost
+   * but what was in flight in the old ones' effects.
+   */
+  async replaceLooks(looks: Record<Look, SceneLook>): Promise<void> {
+    // The new looks are made before the old go, since frames go on being drawn while
+    // they are.
+    const old = this.all();
+    const build = await this.slotFor(looks.build);
+    const combat = looks.combat === looks.build ? build : await this.slotFor(looks.combat);
+    this.slots = { build, combat };
+    for (const slot of old) {
+      slot.theme.destroy();
+      slot.root.destroy({ children: true });
+      slot.mask.destroy();
+    }
+    for (const slot of this.all()) {
+      this.paintBackdrop(slot);
+      this.refresh(slot);
+    }
+    this.applyVisibility();
+  }
+
   private async slotFor({ theme, art }: SceneLook): Promise<Slot> {
     const layers = newLayers();
     const root = new Container();
@@ -306,14 +330,21 @@ export class Scene {
       height,
       top: topInset,
     };
-    for (const slot of this.all()) {
-      // Past the edges by the shake's reach, so it never shows the canvas beneath.
-      const margin = this.art.generators.fx.shakePx;
-      slot.backdrop.clear();
-      slot.backdrop.rect(-margin, -margin, width + 2 * margin, height + 2 * margin);
-      slot.backdrop.fill({ color: hex(slot.art.palette.waterMid) });
-    }
+    for (const slot of this.all()) this.paintBackdrop(slot);
     this.applyVisibility();
+  }
+
+  /** A look's own sea behind the board, past the edges by the shake's reach. */
+  private paintBackdrop(slot: Slot): void {
+    const margin = this.art.generators.fx.shakePx;
+    slot.backdrop.clear();
+    slot.backdrop.rect(
+      -margin,
+      -margin,
+      this.view.width + 2 * margin,
+      this.view.height + 2 * margin,
+    );
+    slot.backdrop.fill({ color: hex(slot.art.palette.waterMid) });
   }
 
   /**

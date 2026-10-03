@@ -1,8 +1,6 @@
 import {
   applySettings,
   artForStyle,
-  chooseStyle,
-  stylesFor,
   defaultArtConfig,
   defaultConfigBundle,
   defaultSettings,
@@ -16,7 +14,6 @@ import {
   validateConfigBundle,
   type ArtLook,
   type ArtStyle,
-  type ArtStyles,
   type BotSetup,
   type MatchSettings,
   type Personality,
@@ -43,7 +40,15 @@ import { howToPlaySeen, openHowToPlay } from './howToPlay.js';
 import { openCredits } from './credits.js';
 import { WatchingStrip } from './watching.js';
 import { volumeSliders } from './volume.js';
-import { stylePreview } from './stylePreview.js';
+import {
+  chooseLook,
+  lookName,
+  lookPicture,
+  openLookGallery,
+  resolveLooks,
+  stepLook,
+  type LookChoices,
+} from './looks.js';
 import { escape, lobbyMarkup, type LobbyView } from './lobby.js';
 import { REFRESH_MS, gamesMarkup, joinRefusedNotice, parseRoomList } from './browser.js';
 import { Hud, type IslandBanner } from './hud.js';
@@ -174,7 +179,7 @@ const params = new URLSearchParams(globalThis.location.search);
 /** Where the menu remembers the two looks, so they survive a reload. */
 const STYLES_KEY = 'bollwerk.styles';
 
-/** What the menu saved, unchecked: `chooseStyle` decides whether each is still usable. */
+/** What the menu saved, unchecked: `chooseLook` decides whether each is still usable. */
 function storedStyles(): Partial<Record<ArtLook, unknown>> {
   try {
     const raw: unknown = JSON.parse(globalThis.localStorage?.getItem(STYLES_KEY) ?? '{}');
@@ -191,18 +196,23 @@ function storedStyles(): Partial<Record<ArtLook, unknown>> {
  * if it is a style made for that look, so `?style=` naming a combat-only style changes
  * combat and leaves building alone.
  */
-function preferredStyles(): ArtStyles {
+function preferredStyles(): LookChoices {
   const stored = storedStyles();
   const fallback = defaultArtConfig.styles;
   const both = params.get('style');
   return {
-    build: chooseStyle('build', [params.get('buildStyle'), both, stored.build], fallback.build),
-    combat: chooseStyle(
-      'combat',
-      [params.get('combatStyle'), both, stored.combat],
-      fallback.combat,
-    ),
+    build: chooseLook('build', [params.get('buildStyle'), both, stored.build], fallback.build),
+    combat: chooseLook('combat', [params.get('combatStyle'), both, stored.combat], fallback.combat),
   };
+}
+
+/** Saves the two looks for next time, as they are chosen. */
+function saveStyles(choices: LookChoices): void {
+  try {
+    globalThis.localStorage?.setItem(STYLES_KEY, JSON.stringify(choices));
+  } catch {
+    // Storage refused, as in some private windows: the choice holds for this page only.
+  }
 }
 const timeScale = Math.max(1, Number(params.get('speed') ?? 1));
 
@@ -262,7 +272,7 @@ interface Setup {
   /** One per seat: null for the person, otherwise the bot's level, 1 to 10. */
   seats: (number | null)[];
   seed: number;
-  styles: ArtStyles;
+  styles: LookChoices;
   name: string;
   /** The host's choices, offline as online, so a round limit can be felt out alone. */
   settings: MatchSettings;
@@ -306,52 +316,35 @@ const DEFAULT_PLAYERS = 3;
 /** What the menu gathers before a table is set: who you are and how it looks. */
 interface Common {
   name: string;
-  styles: ArtStyles;
+  styles: LookChoices;
   /** Whether a table this player opens is listed in the games browser. */
   isPublic: boolean;
 }
 
-/** The menu's two style choices, saved for next time as they are read. */
-function readStyles(): ArtStyles {
-  const fallback = preferredStyles();
-  const styles: ArtStyles = {
-    build: chooseStyle(
-      'build',
-      [document.querySelector<HTMLSelectElement>('#build-style')?.value],
-      fallback.build,
-    ),
-    combat: chooseStyle(
-      'combat',
-      [document.querySelector<HTMLSelectElement>('#combat-style')?.value],
-      fallback.combat,
-    ),
-  };
-  try {
-    globalThis.localStorage?.setItem(STYLES_KEY, JSON.stringify(styles));
-  } catch {
-    // Storage refused, as in some private windows: the choice holds for this match only.
-  }
+/** The menu's two looks as they stand, or null with no menu shown. */
+let menuChoices: LookChoices | null = null;
+
+/** The menu's two look choices, saved for next time as they are read. */
+function readStyles(): LookChoices {
+  const styles = menuChoices ?? preferredStyles();
+  saveStyles(styles);
   return styles;
 }
 
-/** Names for the styles, as the menu offers them, each look only those made for it. */
-const STYLE_NAMES: Record<ArtStyle, string> = {
-  flat: 'Minimal',
-  pixel: 'Medieval',
-  night: 'Night',
-  cyberpunk: 'Cyberpunk',
-  blueprint: 'Blueprint',
-  parchment: 'Parchment',
-  bricks: 'Toy bricks',
-  glass: 'Stained glass',
-  chocolate: 'Chocolate',
-  halloween: 'Halloween',
-};
-
-function styleOptions(look: ArtLook): string {
-  return stylesFor(look)
-    .map((style) => `<option value="${style}">${STYLE_NAMES[style]}</option>`)
-    .join('');
+/**
+ * A look's picker in the menu: its picture and name, which open the gallery, between
+ * arrows that step to the previous and next style in place.
+ */
+function lookPicker(look: ArtLook): string {
+  const name = look === 'build' ? 'building' : 'combat';
+  return (
+    `<span class="look-picker">` +
+    `<button class="step prev" title="The previous ${name} look" aria-label="Previous">&#9664;</button>` +
+    `<button class="look-picture" title="Choose the ${name} look from all of them">` +
+    `<img class="style-preview" alt="" /><span class="look-name"></span></button>` +
+    `<button class="step next" title="The next ${name} look" aria-label="Next">&#9654;</button>` +
+    `</span>`
+  );
 }
 
 /** Where the menu remembers the player's name, as it does the looks. */
@@ -429,8 +422,8 @@ function showMenu(notice: string | null = null): void {
       <p>Shoot down their walls. Rebuild yours before the next barrage.
          Fail to seal a castle and you lose a life.</p>
       <label>Name <input id="name" type="text" maxlength="16" value="Player" /></label>
-      <label class="look">Building look <img id="build-preview" class="style-preview" alt="" /><select id="build-style">${styleOptions('build')}</select></label>
-      <label class="look">Combat look <img id="combat-preview" class="style-preview" alt="" /><select id="combat-style">${styleOptions('combat')}</select></label>
+      <div class="look" data-look="build">Building look ${lookPicker('build')}</div>
+      <div class="look" data-look="combat">Combat look ${lookPicker('combat')}</div>
       <label>Effects <select id="effects"><option value="high">Glowing</option><option value="full">Standard</option><option value="reduced">Reduced</option></select></label>
       <div class="split play-row">
         <button id="play">Play</button>
@@ -465,10 +458,7 @@ function showMenu(notice: string | null = null): void {
   // Set as a property rather than written into the markup, so a saved name needs no escaping.
   const nameField = document.querySelector<HTMLInputElement>('#name');
   if (nameField) nameField.value = storedName();
-  const buildField = document.querySelector<HTMLSelectElement>('#build-style');
-  if (buildField) buildField.value = styles.build;
-  const combatField = document.querySelector<HTMLSelectElement>('#combat-style');
-  if (combatField) combatField.value = styles.combat;
+  menuChoices = { ...styles };
   const effectsField = document.querySelector<HTMLSelectElement>('#effects');
   // The two volumes, under the looks and Effects (PLAN 11.18 Y4).
   effectsField?.closest('label')?.after(volumeSliders(audio));
@@ -484,46 +474,75 @@ function showMenu(notice: string | null = null): void {
   }
 
   // The title in both chosen looks at once, split by a banner's line that sweeps across
-  // as either choice changes — what the two choices mean, shown rather than said.
+  // as either choice changes — what the two choices mean, shown rather than said. Random
+  // shows a style drawn for the moment, as a match would draw one.
   const titleRoot = document.querySelector<HTMLElement>('#title');
-  if (titleRoot) {
-    const title = new SplitTitle(titleRoot, defaultConfigBundle.art);
-    const chosen = (): Record<ArtLook, ArtStyle> => ({
-      build: chooseStyle('build', [buildField?.value], styles.build),
-      combat: chooseStyle('combat', [combatField?.value], styles.combat),
-    });
-    title.show(chosen());
+  const title = titleRoot ? new SplitTitle(titleRoot, defaultConfigBundle.art) : null;
+  if (title) {
+    title.show(resolveLooks(styles));
     title.sweep();
     title.repeat();
-    for (const field of [buildField, combatField]) {
-      field?.addEventListener('change', () => title.show(chosen()));
-    }
   }
 
-  // A picture of each chosen look beside its choice (PLAN 11.16 S1), drawn by the style's
-  // own theme. After the title's first sweep, so building the pictures cannot stutter it.
-  for (const [field, id] of [
-    [buildField, '#build-preview'],
-    [combatField, '#combat-preview'],
-  ] as const) {
-    const image = document.querySelector<HTMLImageElement>(id);
-    if (field === null || image === null) continue;
-    const show = (): void => {
-      const style = field.value as ArtStyle;
-      image.classList.remove('ready');
-      void stylePreview(style).then(
-        (url) => {
-          // Only if the choice still stands: a slow picture must not replace a newer one.
-          if (field.value !== style) return;
-          image.src = url;
-          image.classList.add('ready');
-        },
-        () => undefined,
-      );
-    };
-    field.addEventListener('change', show);
-    setTimeout(show, defaultConfigBundle.art.menu.titleSweepMs);
+  // A picture of each chosen look with its name, arrows either side to step through the
+  // styles in place, and the gallery of them all behind a click on the picture (ARCHIVE
+  // 12b). The pictures wait for the title's first sweep, so building them cannot stutter it.
+  let picturesShown = false;
+  const showPicture = (look: ArtLook): void => {
+    const choice = menuChoices?.[look];
+    const row = document.querySelector<HTMLElement>(`.look[data-look="${look}"]`);
+    if (choice === undefined || row === null) return;
+    const name = row.querySelector<HTMLElement>('.look-name');
+    if (name) name.textContent = lookName(choice);
+    const image = row.querySelector<HTMLImageElement>('img');
+    if (image === null || !picturesShown) return;
+    image.classList.remove('ready');
+    void lookPicture(choice).then(
+      (url) => {
+        // Only if the choice still stands: a slow picture must not replace a newer one.
+        if (menuChoices?.[look] !== choice) return;
+        image.src = url;
+        image.classList.add('ready');
+      },
+      () => undefined,
+    );
+  };
+  const choose = (next: LookChoices): void => {
+    const changed = (['build', 'combat'] as const).filter(
+      (look) => next[look] !== menuChoices?.[look],
+    );
+    menuChoices = { ...next };
+    saveStyles(next);
+    for (const look of changed) showPicture(look);
+    if (changed.length > 0) title?.show(resolveLooks(next));
+  };
+  for (const look of ['build', 'combat'] as const) {
+    const row = document.querySelector<HTMLElement>(`.look[data-look="${look}"]`);
+    showPicture(look);
+    row?.querySelector('.prev')?.addEventListener('click', () => {
+      audio.play('select');
+      if (menuChoices) choose({ ...menuChoices, [look]: stepLook(look, menuChoices[look], -1) });
+    });
+    row?.querySelector('.next')?.addEventListener('click', () => {
+      audio.play('select');
+      if (menuChoices) choose({ ...menuChoices, [look]: stepLook(look, menuChoices[look], 1) });
+    });
+    row?.querySelector('.look-picture')?.addEventListener('click', () => {
+      audio.play('select');
+      if (!menuChoices) return;
+      openLookGallery({
+        choices: menuChoices,
+        active: look,
+        onChange: choose,
+        click: () => audio.play('select'),
+      });
+    });
   }
+  setTimeout(() => {
+    picturesShown = true;
+    showPicture('build');
+    showPicture('combat');
+  }, defaultConfigBundle.art.menu.titleSweepMs);
 
   document.querySelector('#play')?.addEventListener('click', () => {
     audio.play('select');
@@ -617,8 +636,10 @@ function drawLobby(view: LobbyView, on: LobbyHandlers): void {
     seatShapes: preview.shapeOfSeat,
   });
   // The map in the colours of the build look chosen in the menu, which is how the match
-  // will open; the seat cards keep the shared colours, which read on the lobby's panel.
-  const look = artForStyle(art, preferredStyles().build);
+  // will open — the default's, when it is drawn at random as the match starts;
+  // the seat cards keep the shared colours, which read on the lobby's panel.
+  const chosen = preferredStyles().build;
+  const look = artForStyle(art, chosen === 'random' ? defaultArtConfig.styles.build : chosen);
   const map = tablePreview(view.seed, view.playerCount, view.teams, look, terrain);
   const canvas = document.querySelector<HTMLCanvasElement>('#map-preview');
   if (canvas !== null) {
@@ -1119,6 +1140,8 @@ async function runSession(session: Session, setup: Setup): Promise<() => void> {
   const art = defaultConfigBundle.art;
   useMatchPalette(matchPalette(art, session.state));
   useMatchShapes(matchShapes(art, session.state));
+  // Random looks are drawn here, afresh for every match; the pause menu may change them.
+  let styles = resolveLooks(setup.styles);
   const lookFor = (style: ArtStyle): SceneLook => {
     const own = artForStyle(art, style);
     return {
@@ -1127,9 +1150,11 @@ async function runSession(session: Session, setup: Setup): Promise<() => void> {
     };
   };
   // One theme when both looks are the same style, so the wipe has nothing to change.
-  const build = lookFor(setup.styles.build);
-  const combat = setup.styles.combat === setup.styles.build ? build : lookFor(setup.styles.combat);
-  await scene.init(canvas, { build, combat }, art);
+  const looksFor = (chosen: typeof styles): Record<Look, SceneLook> => {
+    const build = lookFor(chosen.build);
+    return { build, combat: chosen.combat === chosen.build ? build : lookFor(chosen.combat) };
+  };
+  await scene.init(canvas, looksFor(styles), art);
 
   const hud = new Hud(hudRoot, bannerRoot);
   // What the end of the match summarises, kept from the events as they come.
@@ -1281,10 +1306,10 @@ async function runSession(session: Session, setup: Setup): Promise<() => void> {
    */
   let held: ReturnType<typeof computeEnclosure> | null = null;
   /** One style for both looks: one set of layers, which shows the held board in combat. */
-  const oneLook = setup.styles.build === setup.styles.combat;
+  const oneLook = (): boolean => styles.build === styles.combat;
   /** The enclosure a look shows. */
   const enclosureFor = (look: Look): ReturnType<typeof computeEnclosure> =>
-    held !== null && (look === 'combat' || oneLook) ? held : live;
+    held !== null && (look === 'combat' || oneLook()) ? held : live;
 
   /**
    * Newly sealed ground flooding out from its castle; see `seal.ts`. Started whenever
@@ -1367,6 +1392,23 @@ async function runSession(session: Session, setup: Setup): Promise<() => void> {
     },
     volumes: audio,
     click: () => audio.play('select'),
+    // The gallery over the pause menu, the looks on screen chosen; a change is drawn at
+    // once and saved as the menu's choice. No random here: the match is already drawn.
+    looks: () =>
+      openLookGallery({
+        choices: { ...styles },
+        active: 'build',
+        random: false,
+        click: () => audio.play('select'),
+        onChange: () => undefined,
+        onClose: (chosen) => {
+          const next = resolveLooks(chosen);
+          if (next.build === styles.build && next.combat === styles.combat) return;
+          styles = next;
+          saveStyles(chosen);
+          void scene.replaceLooks(looksFor(next));
+        },
+      }),
   });
   // Beside Pause, online only: the connection, where a player will see it.
   const badge = session.network() === null ? null : new NetworkBadge();
@@ -1410,7 +1452,7 @@ async function runSession(session: Session, setup: Setup): Promise<() => void> {
         // reveals the board — at once in the build look, or as building begins when one
         // style draws both looks and holds the old board until then.
         if (state.pendingPhase === 'build' && held !== null) {
-          if (oneLook) drainDue = held;
+          if (oneLook()) drainDue = held;
           else startDrain(held);
         }
         // After a continue the cannon phase opens with a castle to choose, and the
@@ -1422,7 +1464,7 @@ async function runSession(session: Session, setup: Setup): Promise<() => void> {
           choosing ? 'castle_select' : (state.pendingPhase ?? 'combat'),
           announcementLines(state),
           // Drawn in the look it brings, since it is where the look changes.
-          setup.styles[after],
+          styles[after],
           choosing ? null : announcementTitle(state),
           // The standings after a resolution, counted up from the round before's.
           resolvedSinceAnnounce ? ranking(state, matchLog.scores.at(-2)?.byPlayer ?? null) : [],
@@ -1431,7 +1473,7 @@ async function runSession(session: Session, setup: Setup): Promise<() => void> {
       }
       lineY = hud.placeAnnouncement(progress);
     }
-    hud.useSkin(setup.styles[lineY === null ? before : after]);
+    hud.useSkin(styles[lineY === null ? before : after]);
     scene.showLooks(
       lineY === null
         ? { from: before, to: before, lineY: null }
@@ -1440,7 +1482,7 @@ async function runSession(session: Session, setup: Setup): Promise<() => void> {
     sweepUnderBanner(lineY);
     // Each island's lost ground drains as the line reaches it; all of it once the
     // banner has gone.
-    if (drains.length > 0 && !oneLook) {
+    if (drains.length > 0 && !oneLook()) {
       releaseDrains(
         drains,
         state.phase !== 'intermission' || lineY === null

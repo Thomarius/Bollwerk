@@ -3986,3 +3986,32 @@ hour, foggy and snowy matches, across a wipe, in the menu, at game over, and wit
 island banners, stamps and pause menu placed into a running match by a Playwright script.
 The first look changed only sizes: the freed ghosts and the witching hour's eyes were too
 small to notice and were enlarged. Anything moving is still to be seen in play (PLAN §11).
+
+## 12b. A gallery for choosing the looks (2026-10-03)
+
+With ten styles and more planned (Christmas, Sports, Fantasy), the two dropdowns were not
+going to scale. Proposed and agreed: **a gallery** of every style's picture behind a click
+on the menu's picture, one gallery for both looks with a Building / Combat switch at its
+top — two separate galleries are the fallback if one confuses players — **arrows** either
+side of each picture to step through the styles in place, and **Random**, drawn from every
+style as each match starts, as most games offer. **Looks** in the pause menu opens the
+same gallery mid-match. Groups, filters, favourites and a seasonal strip were declined for
+now; they are the next step once there are more than about fifteen styles.
+
+The choice is `LookChoice`, a style or `random`, saved as the menu's was; a match resolves
+it once with `resolveLooks` — two randoms never draw the same style, which would make the
+banners change nothing — and the lobby's map shows the default build look's colours when
+building is random. Mid-match, `Scene.replaceLooks` makes the new themes, swaps them in and
+redraws them from the board as it last stood; nothing of the sim, the server or the
+recordings sees the looks. The pure parts — choosing, stepping, resolving, the gallery's
+markup — are tested (`looks.test.ts`); the rest was driven in Chromium by a Playwright
+script: the arrows, the gallery and its switch and badges, Random, and a mid-match change.
+
+**A Pixi trap, found that way**: the style pictures are rendered by a throwaway renderer,
+destroyed with `destroy(true)` — which also releases Pixi's resources shared by every
+renderer on the page, among them a pool of batches the match's renderer had checked out.
+Harmless in the menu, where no other renderer runs; over a match, its next frame failed in
+the batcher. The pictures are now destroyed without releasing the shared resources.
+
+The order, the user's choice after seeing it: the styles alphabetically by name — Minimal
+lands in the middle, which is fine — and Random last.

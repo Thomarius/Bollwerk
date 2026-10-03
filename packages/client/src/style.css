@@ -2065,8 +2065,65 @@ body.reduced-effects .menu button.quiet.fresh {
 
 /* The menu's look choices, each with a picture of the look drawn by its own theme
    (stylePreview.ts). Hidden until its picture is ready, so nothing blank shows. */
-.menu label.look {
+/* A look's row (ARCHIVE 12b): its name on the left, and on the right its picture and the
+   style's name between arrows — the picture opens the gallery, the arrows step in place. */
+.menu .look {
+  display: flex;
+  gap: 1rem;
   align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.75rem;
+}
+
+.menu .look-picker {
+  display: flex;
+  gap: 0.35rem;
+  align-items: center;
+}
+
+.menu .look-picker button {
+  width: auto;
+  margin: 0;
+}
+
+.menu .look-picker .step {
+  padding: 0.5rem 0.45rem;
+  border-color: var(--edge);
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.menu .look-picker .step:hover {
+  border-color: var(--accent);
+  background: transparent;
+  color: var(--accent);
+}
+
+.menu .look-picture {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  align-items: center;
+  width: 9rem !important;
+  padding: 0.35rem;
+  border-color: var(--edge);
+  color: var(--ink);
+  letter-spacing: 0.06em;
+  text-transform: none;
+}
+
+.menu .look-picture:hover {
+  border-color: var(--accent);
+  background: transparent;
+  color: var(--accent);
+}
+
+.menu .look-picture .style-preview {
+  margin: 0;
+}
+
+.menu .look-name {
+  font-size: 12px;
 }
 
 .menu .style-preview {
@@ -3004,4 +3061,159 @@ body.hud-halloween .final-stamp {
   box-shadow: 0 0 18px #ff7b0088;
   color: #ffb347;
   text-shadow: 0 0 8px #ff7b00;
+}
+
+/* ---------- the gallery of looks (ARCHIVE 12b) ---------- */
+
+/* Every style's picture as a card, over the menu or the pause menu: a switch at the top for
+   which look a click chooses, each card badged with the look it is chosen for. In the
+   look's skin when over a match, as the pause menu is. */
+.look-gallery {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  display: grid;
+  place-items: center;
+  background: rgb(5 5 10 / 70%);
+}
+
+.look-gallery .panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  width: min(56rem, 94vw);
+  max-height: 90vh;
+  padding: 1.2rem 1.4rem;
+  border: var(--hud-box-edge, 1px solid var(--accent));
+  background: var(--hud-panel, #0a0a12);
+  box-shadow: var(--hud-box-shadow, none);
+  color: var(--hud-ink, var(--ink));
+  font-family: var(--hud-font, inherit);
+}
+
+.look-gallery h2 {
+  margin: 0;
+  font-size: 1.2rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--hud-accent, var(--accent));
+}
+
+.look-gallery button {
+  font: inherit;
+  cursor: pointer;
+}
+
+.look-gallery .tabs {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.look-gallery .tab {
+  flex: 1;
+  padding: 0.55rem 0.8rem;
+  border: 1px solid color-mix(in srgb, var(--hud-muted, var(--muted)) 50%, transparent);
+  background: transparent;
+  color: var(--hud-muted, var(--muted));
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.look-gallery .tab b {
+  margin-left: 0.4rem;
+  color: var(--hud-ink, var(--ink));
+  text-transform: none;
+}
+
+.look-gallery .tab.active {
+  border-color: var(--hud-accent, var(--accent));
+  color: var(--hud-accent, var(--accent));
+}
+
+.look-gallery .cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(9.5rem, 1fr));
+  gap: 0.7rem;
+  overflow-y: auto;
+  padding: 0.2rem;
+}
+
+.look-gallery .card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  align-items: center;
+  padding: 0.45rem;
+  border: 1px solid color-mix(in srgb, var(--hud-muted, var(--muted)) 40%, transparent);
+  background: transparent;
+  color: var(--hud-ink, var(--ink));
+}
+
+.look-gallery .card:hover {
+  border-color: var(--hud-accent, var(--accent));
+}
+
+.look-gallery .card.chosen {
+  border: 2px solid var(--hud-accent, var(--accent));
+  box-shadow: 0 0 10px color-mix(in srgb, var(--hud-accent, var(--accent)) 45%, transparent);
+}
+
+.look-gallery .card img {
+  width: 100%;
+  aspect-ratio: 224 / 160;
+  background: #1c1d2b;
+  opacity: 0;
+  transition: opacity 240ms ease;
+}
+
+.look-gallery .card img.ready {
+  opacity: 1;
+}
+
+.look-gallery .card .name {
+  font-size: 12px;
+  letter-spacing: 0.05em;
+}
+
+/* Which look a card is chosen for: corner badges, building's above combat's. */
+.look-gallery .badge {
+  position: absolute;
+  right: 0.35rem;
+  padding: 0.05rem 0.35rem;
+  font-size: 10px;
+  font-style: normal;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #0a0a12;
+}
+
+.look-gallery .badge.build {
+  top: 0.35rem;
+  background: #ffd23f;
+}
+
+.look-gallery .badge.combat {
+  top: 1.45rem;
+  background: #ff6a70;
+}
+
+.look-gallery .done {
+  align-self: center;
+  padding: 0.55rem 2.4rem;
+  border: 1px solid var(--hud-accent, var(--accent));
+  background: transparent;
+  color: var(--hud-accent, var(--accent));
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.look-gallery .done:hover {
+  background: var(--hud-accent, var(--accent));
+  color: var(--hud-on-accent, #0a0a12);
+}
+
+body.reduced-effects .look-gallery .card img {
+  transition: none;
 }

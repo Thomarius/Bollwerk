@@ -157,7 +157,8 @@ portable file for Windows and Linux (M14, ARCHIVE 11zp–11zt); and a fourth pas
 ARCHIVE 11zu–11zv): a screen while the board is prepared, a pause menu with the settings
 and Leave match, a strip for a player knocked out, music and sounds volumes, level pips,
 awards at the end, a rematch, and an eighth style, Stained glass; a ninth, Chocolate
-(ARCHIVE 11zy), and a tenth, Halloween (ARCHIVE 12a); and every style carried to the panels, the big timer, the island banners and
+(ARCHIVE 11zy), and a tenth, Halloween (ARCHIVE 12a); the looks chosen from a gallery, with
+Random, and changed mid-match from the pause menu (ARCHIVE 12b); and every style carried to the panels, the big timer, the island banners and
 the finish (ARCHIVE 11zz). Online clients catch up
 on the server at once (ARCHIVE 11zg), which ended the hosts' delay on every click. The game is played with the mouse alone; Esc for pause is the one key. Deployment is verified by a
 CI job, since there is no Docker on this machine. Every sound cue is supplied. The protocol
@@ -316,6 +317,9 @@ its header but the simulation does not — so the server stamps each header with
 - **Stopping a background `npm start` leaves its node child serving the port.** Find it by
   port and check its command line before killing it; remove any recording a test match
   left in `recordings/` — that folder is the user's tuning data.
+- **Never `app.destroy(true)` while another Pixi renderer runs**: `true` releases what every
+  renderer on the page shares, including pooled batches the other is using, and its next
+  frame fails in the batcher. The style pictures destroy theirs without it (ARCHIVE 12b).
 - **Playwright clicks on the canvas need a move, a pause, then down and up**, and clicks
   inside one tick claim one gun between them.
 - **Line endings are LF everywhere, by `.gitattributes`**: a git that converts to CRLF —
