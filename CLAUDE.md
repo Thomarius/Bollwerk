@@ -316,8 +316,10 @@ its header but the simulation does not — so the server stamps each header with
   left in `recordings/` — that folder is the user's tuning data.
 - **Playwright clicks on the canvas need a move, a pause, then down and up**, and clicks
   inside one tick claim one gun between them.
-- **This checkout sets `core.autocrlf` false**: the machine's git converts to CRLF, which
-  fails every file against prettier's `endOfLine: lf`.
+- **Line endings are LF everywhere, by `.gitattributes`**: a git that converts to CRLF —
+  this machine's, a Windows runner's — fails every file against prettier's `endOfLine: lf`
+  and `CREDITS.md` against its staleness test, which is what stopped the first v0.5.0
+  Windows build.
 
 ## Conventions
 
