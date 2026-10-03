@@ -388,9 +388,9 @@ sender's seat**, so a client cannot act for someone else.
 
 ## 7. `packages/client`
 
-Eight visual styles — Minimal (`flat`), Medieval (`pixel`: named Pixel art until the other
+Nine visual styles — Minimal (`flat`), Medieval (`pixel`: named Pixel art until the other
 styles made the name mean nothing), Night, Cyberpunk, Blueprint, Parchment, Toy bricks
-(`bricks`) and Stained glass (`glass`) — behind one `Theme` interface: the scene owns the camera, the layer stacks,
+(`bricks`), Stained glass (`glass`) and Chocolate (`chocolate`) — behind one `Theme` interface: the scene owns the camera, the layer stacks,
 dirty tracking and input mapping; a theme owns only what things look like. Adding a style
 is a name in `ArtStyleSchema`, the looks it is made for in `STYLE_LOOKS`, a `Theme`, a
 case in `createTheme`, a menu title in `decor.ts` and a banner class in `hud.ts`; the
@@ -762,7 +762,38 @@ sea, a title of leaded panes, a banner of jewel panes, a HUD of lead under a str
 coloured glass. Its palette is a sapphire sea, emerald land and warm gold; the player
 colours are the shared ones.
 
-The five shape-drawn styles share `walls.ts`: the wall geometry (tops, faces, rim), and
+**Chocolate** (`chocolate.ts`, `art.chocolate`), for either look, the one whose material
+moves: a sweet-shop land on a river of milk chocolate, kept light so it is never near Night
+or Cyberpunk. The river flows — swirls ride one current east across the whole map, redrawn
+each frame in the terrain layer, its shallows rounded round the coast — and pours over a
+chocolate fall between banks of meringue in the corner Parchment gives its compass rose.
+Land is mint sugar grass with tufts and glints of sugar, edged in biscuit crumb. Walls are a
+bar of chocolate: each block a scored square under a glossy coating in the owner's colour,
+standing to the pixel style's height, its face the bar cut through — coating, a layer of
+filling, chocolate — and here and there a drip of coating down it; a shine slides across a
+player's walls now and then, each on their own beat. Castles are a two-tier cake iced in the
+owner's colour with a fountain's gold basin on top, and **sealed is the chocolate flowing**:
+it fills the basin and glazes the cake, dripping over both tiers, started by sealing and
+stopped by a breach as a flag is hoisted and lowered (`FlagHoist`); a breached cake shows
+bare icing and an empty bowl. Guns are cupcakes in a pleated case of the owner's colour
+with a candy-cane barrel, puffing cocoa as they fire, the frosting slumped and the cane
+drooping when silenced. Shots are bonbons in foil of the owner's colour, their twisted ends
+spinning. A hit snaps the square off, flipping, with crumbs, and leaves bite marks on its
+neighbours for the rest of the round; in the river a slow crown of drops and a lazy ring; on
+open ground a splat that fades over `fx.craterRounds`. The sweep melts its blocks into a
+puddle; a player who is out has their wall turn grey-white with sugar bloom. Sealed ground is
+iced in a pastel of the owner's colour, edged with piped dollops and sprinkled. The piece in
+hand is an empty mould, cracked where it does not fit; a piece set down is poured from above
+and wobbles as it sets. In a snowy match (the pixel style's weather from the seed) sprinkles
+fall and lie on the wall tops; in overtime and the final round dark chocolate melts down
+from the top of the board. Scenery is lollipops, soft meringue swirls, candy floss and
+cookies; on the outer river a paddle-boat, marshmallows bobbing on the current and a
+whirlpool under a glass pipe's mouth. Its banner is a bar opened out of gold foil, its HUD a
+bar of milk chocolate scored into squares under a gold rule, its title the word piped in
+chocolate with drips. The player colours are the shared ones. Named after the material,
+never the film it was inspired by.
+
+The six shape-drawn styles share `walls.ts`: the wall geometry (tops, faces, rim), and
 hatching laid on one lattice so neighbouring tiles hatch as one fill.
 
 **Scenery on open land** (`scenery.ts`, `art.scenery`), in every style: copses of trees and
@@ -770,7 +801,7 @@ pines with bushes at their edges, and a few lone trees, bushes and boulders, pla
 the seed alone so every look puts them on the same tiles — only a step in from the coast,
 and not on or beside a castle. Each style draws its own: trees in Medieval and Night, a
 landscape plan's scalloped canopies in Blueprint, inked trees in Parchment, dim nodes in
-Cyberpunk, a faint dot in Minimal. **It must never read as wall**, nor as a gun or a
+Cyberpunk, lollipops, meringue, candy floss and cookies in Chocolate, a faint dot in Minimal. **It must never read as wall**, nor as a gun or a
 shot: Blueprint's trees were first a circle with a cross, a gun's survey mark in small,
 and Medieval's boulders a round grey rock, a cannonball's double. A tile once built on or
 sealed is cleared for the rest of the match, so nothing grows back through a breach; a
@@ -783,7 +814,8 @@ circling, or surfacing for a while), drawn by each style (`pixel/ocean.ts`,
 in Parchment an engraved ship and a sea serpent's coils, kept off the compass rose; in
 Blueprint a ship drawn in plan on a dashed course; in Cyberpunk drones circling with a
 searchlight on the water and a hover-craft trailing light; in Toy bricks a boat of bricks,
-a rubber duck and a shark's fin; in Minimal a plain boat's silhouette. Anything tall keeps
+a rubber duck and a shark's fin; in Chocolate a paddle-boat, marshmallows and a whirlpool
+under a glass pipe, kept off the chocolate fall; in Minimal a plain boat's silhouette. Anything tall keeps
 to rows whose top is clear of the HUD bar.
 
 **The match's moments** (`camera.ts`, `art.camera`). The match opens
@@ -919,7 +951,7 @@ every resolution against an independent search, not only on unit pictures.
 ## 11. Open work
 
 **Where to start (2026-10-02).** Everything but balance is done: the game, online play, bots
-as skill levels and personalities (M13), eight styles and four visual passes, two rounds of
+as skill levels and personalities (M13), nine styles and four visual passes, two rounds of
 test-session feedback, help for new players, awards and a rematch, and the desktop app for
 releases (M14). The test games on the current build found everything working, the hosts'
 delay gone and the balance quite good. A new session starts with either:
@@ -936,7 +968,10 @@ delay gone and the balance quite good. A new session starts with either:
 
 **To check in play**, since a still frame cannot show them: a knocked-out player's own
 roster card looked cut off at its right edge in a screenshot (2026-10-02, the user to test);
-Stained glass's shards, glints, fish and ship; the music and sounds sliders by ear.
+Stained glass's shards, glints, fish and ship; the music and sounds sliders by ear; and
+Chocolate in motion (ARCHIVE 11zy) — the river's current and the fall, the shine on the
+walls, the fountains starting and stopping, a square snapping off, the sweep's melting, the
+mould poured and wobbling, and whether the swirls cost frame rate at eight players.
 
 Then, as they fit: **11.3**, two-player balance, re-measured before anything is tried;
 **11.4**, measurements never taken; **11.13**, the bots' loose ends.

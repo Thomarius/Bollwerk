@@ -569,6 +569,66 @@ export function glassTitle(text: string, art: ArtConfig): Title {
   };
 }
 
+/**
+ * Chocolate's title: the word piped in milk chocolate, glossy, each stroke rounded, with
+ * drips running off the foot of the letters.
+ */
+export function chocolateTitle(text: string, art: ArtConfig): Title {
+  const { craterMid, craterDark, shadow, waterShallow } = artForStyle(art, 'chocolate').palette;
+  const { canvas, ctx, cells, has } = drawnCanvas(text);
+  const title = { cellPx: DRAWN_CELL, padPx: DRAWN_PAD, tailPx: 0, smooth: true, flicker: false };
+  if (ctx === null) return { src: canvas.toDataURL(), ...title };
+  const at = (v: number): number => DRAWN_PAD + v * DRAWN_CELL;
+  const rng = new Rng(0xc0c0a);
+  // The drips first, under the letters, from the foot of a stroke with nothing below it.
+  ctx.fillStyle = craterMid;
+  for (const { x, y } of cells) {
+    if (has(x, y + 1) || rng.nextFloat() > 0.45) continue;
+    const cx = at(x) + DRAWN_CELL * (0.3 + 0.4 * rng.nextFloat());
+    const length = 3 + rng.nextFloat() * (DRAWN_PAD - 6);
+    ctx.fillRect(cx - 2, at(y + 1) - 2, 4, length);
+    ctx.beginPath();
+    ctx.arc(cx, at(y + 1) - 2 + length, 2.6, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  // The letters: a dark edge, the chocolate, then a lighter crown on each stroke.
+  ctx.lineJoin = 'round';
+  ctx.lineCap = 'round';
+  const stroke = (width: number, colour: string, dy = 0): void => {
+    ctx.strokeStyle = colour;
+    ctx.lineWidth = width;
+    ctx.beginPath();
+    for (const { x, y } of cells) {
+      const cx = at(x) + DRAWN_CELL / 2;
+      const cy = at(y) + DRAWN_CELL / 2 + dy;
+      ctx.moveTo(cx, cy);
+      ctx.lineTo(cx + 0.01, cy);
+      for (const [dx, dy2] of [
+        [1, 0],
+        [0, 1],
+      ] as const) {
+        if (!has(x + dx, y + dy2)) continue;
+        ctx.moveTo(cx, cy);
+        ctx.lineTo(cx + dx * DRAWN_CELL, cy + dy2 * DRAWN_CELL);
+      }
+    }
+    ctx.stroke();
+  };
+  stroke(DRAWN_CELL * 1.25, shadow, 1.5);
+  stroke(DRAWN_CELL * 1.1, craterDark);
+  stroke(DRAWN_CELL * 0.85, craterMid);
+  stroke(DRAWN_CELL * 0.35, waterShallow, -2);
+  // The gloss: a short white streak on the upper left of each stroke's corner.
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+  for (const { x, y } of cells) {
+    if (has(x - 1, y) || has(x, y - 1)) continue;
+    ctx.beginPath();
+    ctx.arc(at(x) + DRAWN_CELL * 0.35, at(y) + DRAWN_CELL * 0.35, 1.6, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  return { src: canvas.toDataURL(), ...title };
+}
+
 const TITLES: Record<ArtStyle, (text: string, art: ArtConfig) => Title> = {
   flat: blockTitle,
   pixel: stoneTitle,
@@ -578,6 +638,7 @@ const TITLES: Record<ArtStyle, (text: string, art: ArtConfig) => Title> = {
   parchment: inkedTitle,
   bricks: brickTitle,
   glass: glassTitle,
+  chocolate: chocolateTitle,
 };
 
 export function titleFor(style: ArtStyle, art: ArtConfig): Title {

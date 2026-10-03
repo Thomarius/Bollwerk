@@ -902,6 +902,31 @@
         "uiValid": "#7dffb0",
         "uiInvalid": "#ff4d5e"
       }
+    },
+    "chocolate": {
+      "palette": {
+        "waterDeep": "#7a4728",
+        "waterMid": "#8c5632",
+        "waterShallow": "#a46a3e",
+        "waterFoam": "#f6e2c4",
+        "sand": "#e3b46e",
+        "grassDark": "#5cbf8a",
+        "grassMid": "#86d6a6",
+        "grassLight": "#b5ecca",
+        "rockDark": "#bba493",
+        "rockMid": "#e8dccf",
+        "rockLight": "#fff8ee",
+        "shadow": "#3d2314",
+        "craterDark": "#4f2c18",
+        "craterMid": "#6b3e22",
+        "emberHot": "#fff4d6",
+        "emberMid": "#ffcf6b",
+        "emberCool": "#e8743a",
+        "uiInk": "#fffaf0",
+        "uiAccent": "#ffd23f",
+        "uiValid": "#7dffb0",
+        "uiInvalid": "#ff4d6d"
+      }
     }
   },
   "dither": {
@@ -1131,5 +1156,22 @@
     "fishMs": 1400,
     "shipEveryMs": 20000,
     "shipTilesPerSecond": 0.45
+  },
+  "chocolate": {
+    "swirlTiles": 7,
+    "currentTilesPerSecond": 0.35,
+    "swirlMs": 7000,
+    "territoryAlpha": 0.88,
+    "icingWhite": 0.35,
+    "shineEveryMs": 9000,
+    "shineMs": 1300,
+    "dripShare": 0.22,
+    "crumbsPerBlock": 7,
+    "splashDrops": 9,
+    "sprinkleCount": 90,
+    "boatEveryMs": 18000,
+    "boatTilesPerSecond": 0.5,
+    "marshmallowEveryMs": 5000,
+    "marshmallowMs": 7000
   }
 }

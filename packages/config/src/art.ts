@@ -48,7 +48,7 @@ export type PlayerPalette = z.infer<typeof PlayerPaletteSchema>;
  * the pixel style under a palette of its own (`stylePalettes`). `cyberpunk` is neon
  * outlines on a dark circuit board, `blueprint` a plan in white ink on blue paper,
  * `parchment` an old hand-drawn map, `bricks` a board built of toy bricks, `glass` a
- * church window of stained glass.
+ * church window of stained glass, `chocolate` a sweet-shop land on a river of chocolate.
  */
 export const ArtStyleSchema = z.enum([
   'flat',
@@ -59,6 +59,7 @@ export const ArtStyleSchema = z.enum([
   'parchment',
   'bricks',
   'glass',
+  'chocolate',
 ]);
 export type ArtStyle = z.infer<typeof ArtStyleSchema>;
 
@@ -328,6 +329,41 @@ export const GlassStyleSchema = z.strictObject({
 });
 export type GlassStyleConfig = z.infer<typeof GlassStyleSchema>;
 
+/**
+ * The chocolate look: candy meadows on a flowing river of milk chocolate, walls a bar of
+ * chocolate under a coating in the owner's colour, castles chocolate fountains on a cake.
+ */
+export const ChocolateStyleSchema = z.strictObject({
+  /** Swirls drifting with the river's current, one per so many tiles of sea. */
+  swirlTiles: z.number().min(1),
+  /** How fast the current carries them, in tiles a second. */
+  currentTilesPerSecond: z.number().positive(),
+  /** How long a swirl lasts before it melts back into the river. */
+  swirlMs: z.number().int().positive(),
+  /** Sealed ground's icing, over the meadow. */
+  territoryAlpha: z.number().min(0).max(1),
+  /** How far the icing is lightened from the owner's colour toward white, 0 to 1. */
+  icingWhite: z.number().min(0).max(1),
+  /** A band of gloss slides across each player's walls now and then, for so long. */
+  shineEveryMs: z.number().int().positive(),
+  shineMs: z.number().int().positive(),
+  /** The share of wall blocks with a drip of coating running down their face. */
+  dripShare: z.number().min(0).max(1),
+  /** Crumbs a square throws as it is snapped off by a shot. */
+  crumbsPerBlock: z.number().int().nonnegative(),
+  /** Drops a shot throws up from the river. */
+  splashDrops: z.number().int().nonnegative(),
+  /** Sprinkles falling on a match whose weather is snow, on screen at once. */
+  sprinkleCount: z.number().int().nonnegative(),
+  /** A paddle-boat crossing the outer river now and then, one at a time. */
+  boatEveryMs: z.number().int().positive(),
+  boatTilesPerSecond: z.number().positive(),
+  /** Marshmallows bobbing up on the outer river now and then, for so long. */
+  marshmallowEveryMs: z.number().int().positive(),
+  marshmallowMs: z.number().int().positive(),
+});
+export type ChocolateStyleConfig = z.infer<typeof ChocolateStyleSchema>;
+
 /** One of the two looks a match is drawn in. */
 export type ArtLook = 'build' | 'combat';
 
@@ -368,6 +404,7 @@ export const STYLE_LOOKS: Record<ArtStyle, readonly ArtLook[]> = {
   parchment: ['build', 'combat'],
   bricks: ['build', 'combat'],
   glass: ['build', 'combat'],
+  chocolate: ['build', 'combat'],
 };
 
 export function styleServes(
@@ -487,6 +524,7 @@ export const ArtConfigSchema = z
     parchment: ParchmentStyleSchema,
     bricks: BricksStyleSchema,
     glass: GlassStyleSchema,
+    chocolate: ChocolateStyleSchema,
     scenery: ScenerySchema,
     /** Effects both styles draw alike, because they carry information. */
     effects: z.strictObject({

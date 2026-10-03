@@ -2536,3 +2536,76 @@ body.reduced-effects .preparing .blocks i {
     )
     1;
 }
+
+/* Chocolate: the banner a bar opened out of its gold foil — crinkled foil along the top
+   and bottom, the scored chocolate showing between, lettered in cream; the HUD a bar of
+   milk chocolate, scored into squares, under a rule of gold foil. */
+.phase-call.banner-chocolate {
+  border-top: 3px solid #4f2c18;
+  border-bottom: 3px solid #4f2c18;
+  background-color: #7a4728;
+  background-image:
+    repeating-linear-gradient(115deg, #fff3b0 0 2px, transparent 2px 9px),
+    repeating-linear-gradient(65deg, #b8860b55 0 3px, transparent 3px 11px),
+    linear-gradient(
+      #f5c542 0 18%,
+      #4f2c18 18% 20%,
+      transparent 20% 80%,
+      #4f2c18 80% 82%,
+      #f5c542 82% 100%
+    ),
+    linear-gradient(90deg, #5e3519 0 2px, transparent 2px),
+    linear-gradient(0deg, #9a603a 0 2px, transparent 2px);
+  background-size:
+    100% 18%,
+    100% 18%,
+    100% 100%,
+    44px 100%,
+    100% 50%;
+  background-repeat: repeat-x, repeat-x, no-repeat, repeat, repeat;
+  background-position:
+    0 0,
+    0 100%,
+    0 0,
+    0 0,
+    0 0;
+  color: #fff3dc;
+  text-shadow:
+    0 2px 0 #3d2314,
+    0 0 10px #ffd23f88;
+}
+
+.phase-call.banner-chocolate small {
+  color: #ffe9c4;
+  text-shadow: 0 1px 0 #3d2314;
+}
+
+.phase-call.banner-chocolate small.news {
+  color: #ffd23f;
+}
+
+#hud.hud-chocolate {
+  --hud-bar: #7a4728;
+  --hud-rule: 3px solid #f5c542;
+  --hud-ink: #fff3dc;
+  --hud-muted: #f0d2b0;
+  --hud-accent: #ffd23f;
+  --hud-box: #6b3e22;
+  --hud-box-edge: 2px solid #f5c542;
+  --hud-box-shadow: 0 3px 0 #3d2314;
+  --hud-track: #ffffff26;
+}
+
+/* The bar's squares: a groove every few centimetres, lit along one side. */
+#hud.hud-chocolate .bar {
+  background-image:
+    linear-gradient(90deg, #5e3519 0 2px, #9a603a 2px 3px, transparent 3px),
+    linear-gradient(0deg, #5e3519 0 2px, transparent 2px);
+  background-size:
+    56px 100%,
+    100% 50%;
+}
+
+#hud.hud-chocolate .counter {
+  border-radius: 6px;
+}

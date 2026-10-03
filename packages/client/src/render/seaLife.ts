@@ -557,3 +557,141 @@ export class GlassSeaLife extends OceanDrawn {
     }
   }
 }
+
+/**
+ * Chocolate: a paddle-boat of cream and biscuit crossing now and then, its wheel turning;
+ * marshmallows bobbing up and drifting on the current before they sink; and a whirlpool
+ * turning under the mouth of a glass pipe that drinks from the river — all in the sweet
+ * shop's neutral creams, and none of it on the chocolate fall.
+ */
+export class ChocolateSeaLife extends OceanDrawn {
+  private readonly boats = new Crossings();
+  private readonly marshmallows = new Surfacings();
+  private whirl: { x: number; y: number } | null = null;
+  /** The chocolate fall, which nothing floats over. */
+  fall: { x: number; y: number; size: number } | null = null;
+
+  private clear(cell: { x: number; y: number }): boolean {
+    const f = this.fall;
+    if (f === null) return true;
+    const half = f.size / 2 + 1;
+    return Math.abs(cell.x + 0.5 - f.x) > half || Math.abs(cell.y + 0.5 - f.y) > half;
+  }
+
+  override layout(state: MatchState, view: ViewTransform, art: ArtConfig): void {
+    super.layout(state, view, art);
+    this.boats.layout(this.ocean, art.chocolate.boatEveryMs);
+    const open = this.ocean.cells.filter((c) => this.clear(c));
+    const at = open[Math.floor(Math.random() * open.length)];
+    this.whirl = at === undefined ? null : { x: at.x + 0.5, y: at.y + 0.5 };
+  }
+
+  protected frame(g: Graphics, view: ViewTransform, art: ArtConfig, deltaMs: number): void {
+    const s = art.chocolate;
+    const pal = art.palette;
+    const t = view.tile;
+    const cream = hex(pal.rockLight);
+    const ink = { width: Math.max(1, t * 0.06), color: hex(pal.shadow), alpha: 0.6 };
+
+    if (this.whirl !== null) {
+      const cx = tileX(view, this.whirl.x);
+      const cy = tileY(view, this.whirl.y);
+      for (let arm = 0; arm < 3; arm++) {
+        const a0 = this.clock / 700 + (arm * Math.PI * 2) / 3;
+        g.moveTo(cx + Math.cos(a0) * t * 0.9, cy + Math.sin(a0) * t * 0.55);
+        for (let k = 1; k <= 12; k++) {
+          const f = k / 12;
+          const a = a0 + f * Math.PI * 1.5;
+          g.lineTo(cx + Math.cos(a) * t * 0.9 * (1 - f), cy + Math.sin(a) * t * 0.55 * (1 - f));
+        }
+      }
+      g.stroke({ width: Math.max(1, t * 0.08), color: hex(pal.waterFoam), alpha: 0.5 });
+      // The pipe's mouth over it, glass: a ring with the chocolate rising inside it.
+      g.ellipse(cx, cy - t * 0.1, t * 0.34, t * 0.22);
+      g.fill({ color: hex(pal.waterShallow), alpha: 0.6 });
+      g.ellipse(cx, cy - t * 0.1, t * 0.34, t * 0.22);
+      g.stroke({ width: Math.max(1.5, t * 0.1), color: 0xffffff, alpha: 0.55 });
+      g.moveTo(cx - t * 0.2, cy - t * 0.22).lineTo(cx - t * 0.05, cy - t * 0.27);
+      g.stroke({ width: Math.max(1, t * 0.06), color: 0xffffff, alpha: 0.9, cap: 'round' });
+    }
+
+    this.marshmallows.step(this.ocean, deltaMs, s.marshmallowEveryMs, s.marshmallowMs, (c) =>
+      this.clear(c),
+    );
+    for (const m of this.marshmallows.items) {
+      const k = m.ageMs / s.marshmallowMs;
+      // Bobbing up, drifting with the current, and sinking again at the end.
+      const up = Math.min(1, k * 6, (1 - k) * 6);
+      const x = tileX(
+        view,
+        m.x + k * 1.2 * s.currentTilesPerSecond * (s.marshmallowMs / 1000) * 0.3,
+      );
+      const y = tileY(view, m.y) + Math.sin(this.clock / 500 + m.x) * t * 0.04;
+      const r = t * 0.22;
+      const h = t * 0.2 * up;
+      g.rect(x - r, y - h, r * 2, h);
+      g.fill({ color: hex(pal.rockMid) });
+      g.ellipse(x, y, r, r * 0.45);
+      g.fill({ color: hex(pal.rockMid) });
+      g.ellipse(x, y - h, r, r * 0.45);
+      g.fill({ color: cream });
+      g.stroke(ink);
+      g.ellipse(x, y + t * 0.02, r * 1.4, r * 0.6);
+      g.stroke({ width: 1, color: hex(pal.waterFoam), alpha: 0.4 * up });
+    }
+
+    this.boats.step(this.ocean, deltaMs, s.boatEveryMs, s.boatTilesPerSecond, 1);
+    for (const b of this.boats.items) {
+      const y = b.y + Math.sin(this.clock / 650 + b.x) * 0.04;
+      // The hull, cream over a biscuit keel.
+      g.poly(
+        shape(view, b.x, y, b.dir, [
+          [-0.75, -0.05],
+          [0.85, -0.05],
+          [0.6, 0.28],
+          [-0.6, 0.28],
+        ]),
+      );
+      g.fill({ color: cream });
+      g.stroke(ink);
+      g.poly(
+        shape(view, b.x, y, b.dir, [
+          [-0.66, 0.16],
+          [0.7, 0.16],
+          [0.6, 0.28],
+          [-0.6, 0.28],
+        ]),
+      );
+      g.fill({ color: hex(pal.sand) });
+      // A striped awning on posts.
+      for (let k = 0; k < 4; k++) {
+        g.poly(
+          shape(view, b.x, y, b.dir, [
+            [-0.45 + k * 0.25, -0.5],
+            [-0.2 + k * 0.25, -0.5],
+            [-0.2 + k * 0.25, -0.38],
+            [-0.45 + k * 0.25, -0.38],
+          ]),
+        );
+        g.fill({ color: k % 2 === 0 ? cream : hex(pal.craterMid) });
+      }
+      for (const px of [-0.4, 0.5]) {
+        g.moveTo(tileX(view, b.x + b.dir * px), tileY(view, y - 0.38));
+        g.lineTo(tileX(view, b.x + b.dir * px), tileY(view, y - 0.05));
+      }
+      g.stroke(ink);
+      // The paddle-wheel at the stern, turning.
+      const wx = tileX(view, b.x - b.dir * 0.8);
+      const wy = tileY(view, y + 0.08);
+      const wr = t * 0.24;
+      g.circle(wx, wy, wr);
+      g.fill({ color: hex(pal.craterMid) });
+      for (let k = 0; k < 4; k++) {
+        const a = (this.clock / 300) * b.dir + (k * Math.PI) / 4;
+        g.moveTo(wx - Math.cos(a) * wr, wy - Math.sin(a) * wr);
+        g.lineTo(wx + Math.cos(a) * wr, wy + Math.sin(a) * wr);
+      }
+      g.stroke({ width: Math.max(1, t * 0.06), color: cream });
+    }
+  }
+}

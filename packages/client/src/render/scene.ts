@@ -8,6 +8,7 @@ import type { Look } from '../transition.js';
 
 import { BlueprintTheme } from './blueprint.js';
 import { BricksTheme } from './bricks.js';
+import { ChocolateTheme } from './chocolate.js';
 import { GlassTheme } from './glass.js';
 import { CyberpunkTheme } from './cyberpunk.js';
 import { FlatTheme } from './flat.js';
@@ -47,6 +48,8 @@ export function createTheme(style: ArtStyle, seed = 1): Theme {
       return new BricksTheme();
     case 'glass':
       return new GlassTheme();
+    case 'chocolate':
+      return new ChocolateTheme(seed);
   }
 }
 

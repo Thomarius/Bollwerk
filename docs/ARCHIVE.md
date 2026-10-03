@@ -3899,3 +3899,33 @@ changed. A title is optional all the same, since a folder's credit has none.
 **The check is unconditional**: with everything credited, `BOLLWERK_REQUIRE_CREDITS` is
 gone, and a file without a credit fails `npm run check`; the release workflow still runs
 that test first, before it builds anything.
+
+## 11zy. Chocolate, a ninth style (2026-10-03)
+
+The user's idea: "Chocolate", after _Willy Wonka and the Chocolate Factory_ — and the
+brief was that it look fun and bring ideas the other styles do not. Proposed and agreed
+before any code: **the first style whose material moves** — every other is built of
+something solid (stone, ink, neon, bricks, glass) and this one flows, melts, drips and
+shines. Decided with the user: the name Chocolate; a milk-chocolate river, never dark, so it
+stays clear of Night and Cyberpunk; more chocolate and sweets and less factory, so the only
+machinery is a glass pipe at sea. Named after the material, never the film, as Toy bricks is
+never named after a maker.
+
+What carries meaning, and how: **a shot takes one square of a chocolate bar**, which is what
+a bar is for, so the rule and the look agree; **sealed is the chocolate flowing** over the
+castle's cake, started and stopped by `FlagHoist` as the other styles' flags are; a breach
+leaves **bite marks** on the blocks either side of it for the round; a player who is out
+turns grey-white with **sugar bloom**, what old chocolate does, rather than smoking. The
+piece in hand is an empty mould — cracked, not red, where it does not fit, since red is a
+player's colour.
+
+Seen in screenshots building, in combat, at eight players, in the final round, in a snowy
+match, with a player knocked out, across a wipe and in the menu. What the first look
+changed: the river's depth bands stepped in tiles, so they are drawn as overlapping rounds;
+the meadow's lighter patches made a checkerboard, so they are round too; the fall read as a
+crate and became one sheet between banks of meringue into a round pool; the fountain's
+streams, thin lines over the cake, read as a cage, so the flow is a glaze over the tiers;
+the overtime drips vanished against the milk river and are dark chocolate; and an icing
+drizzle over the title read as a row of V marks and went. Every style shows a full-width
+white band in a headless screenshot taken mid-wipe — Stained glass too — so it is the
+capture, not the style. Anything moving is still to be seen in play (PLAN §11).
