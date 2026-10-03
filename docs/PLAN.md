@@ -388,9 +388,9 @@ sender's seat**, so a client cannot act for someone else.
 
 ## 7. `packages/client`
 
-Nine visual styles — Minimal (`flat`), Medieval (`pixel`: named Pixel art until the other
+Ten visual styles — Minimal (`flat`), Medieval (`pixel`: named Pixel art until the other
 styles made the name mean nothing), Night, Cyberpunk, Blueprint, Parchment, Toy bricks
-(`bricks`), Stained glass (`glass`) and Chocolate (`chocolate`) — behind one `Theme` interface: the scene owns the camera, the layer stacks,
+(`bricks`), Stained glass (`glass`), Chocolate (`chocolate`) and Halloween (`halloween`) — behind one `Theme` interface: the scene owns the camera, the layer stacks,
 dirty tracking and input mapping; a theme owns only what things look like. Adding a style
 is a name in `ArtStyleSchema`, the looks it is made for in `STYLE_LOOKS`, a `Theme`, a
 case in `createTheme`, a menu title in `decor.ts` and a banner class in `hud.ts`; the
@@ -480,9 +480,10 @@ in gold foil, Cyberpunk glowing, Blueprint ruled double. The owner's colour stay
 island banner's border. **The finish** is each style's own (`FinishLook` in `theme.ts`):
 the rockets and the hoist are shared, so the timing is one, but the bursts are streaks in
 Medieval and Night, neon in Cyberpunk, a draughtsman's crosses in Blueprint, ink blots in
-Parchment, tumbling bricks, glass shards and candy sprinkles, and the winners' flag a
-swallowtail, a flickering hologram on a light-beam, a pennant in plan, a square flag of
-bricks, a leaded banner, or a pennant on a candy-cane pole. Minimal keeps the plain ones.
+Parchment, tumbling bricks, glass shards, candy sprinkles and, in Halloween, bats and little
+ghosts flying up, and the winners' flag a swallowtail, a flickering hologram on a
+light-beam, a pennant in plan, a square flag of bricks, a leaded banner, a pennant on a
+candy-cane pole, or a tattered pennant on a crooked branch. Minimal keeps the plain ones.
 
 **Each banner is drawn in the look it brings** (`BANNER_CLASS` in `hud.ts`, a record
 over every style): flat gold for Minimal, a neon strip that flickers on for Cyberpunk, a
@@ -810,7 +811,34 @@ bar of milk chocolate scored into squares under a gold rule, its title the word 
 chocolate with drips. The player colours are the shared ones. Named after the material,
 never the film it was inspired by.
 
-The six shape-drawn styles share `walls.ts`: the wall geometry (tops, faces, rim), and
+**Halloween** (`halloween.ts`, `art.halloween`), for either look: a haunted land round a
+bog, cute-spooky — more ghosts and pumpkins than bones, no gore (the user's brief). Night
+is dark and torchlit; Halloween is purple dusk, murky green and pumpkin orange, and its
+idea is a board **haunted**: things appear, drift and vanish. The sea is a bog, lighter
+near the shore, bubbles rising and popping in it; the land dusky purple dead grass strewn
+with autumn leaves, edged in mud and roots; ground fog drifts over everything in soft
+banks, and a full moon hangs in the corner Parchment gives its compass rose, bats wheeling
+across it. Walls are crypt stone with a cast of the owner's colour, **the mortar glowing
+with spirit-light** in the owner's light, a crack or a cobweb here and there, standing to
+the shared height. Castles are crooked haunted houses with the roof in the owner's colour,
+and **sealed is the house lit up**: the porch jack-o'-lantern grinning, the windows
+glowing, smoke from the chimney — lit and put out by `FlagHoist`. Guns are cauldrons of the
+owner's potion, aimed by a ladle, bubbling while live, cold when silenced; shots are
+spectral fireballs trailing wisps. **A hit on a wall sets a little ghost free**, rising and
+fading; the bog splashes slime; open ground keeps a scorch with embers. The sweep sinks its
+blocks into the ground like graves; a player who is out has grey stone thick with webs.
+Sealed ground is tinted and warded by candles along its edge, flickering. The piece in hand
+is a spectral wall, its outline wavering, cracked where it does not fit; set down, it
+materialises out of mist. In the witching hour — overtime and the final round — pairs of
+eyes open in the dark at the screen's edges and blink. Weather from the seed: fog doubles
+the fog, snow falls as autumn leaves. Scenery is dead trees, pumpkins (never lit: only a
+sealed house's grins), toadstools, headstones and now and then a small skull; on the outer
+sea a ghost ship, a flock of bats and a will-o'-wisp. Its banner is a tattered purple
+cloth lettered in glowing orange, its HUD dark purple under a glowing orange rule with a
+cobweb in the corner, its timer pumpkin-glow figures, its island banners coffin plaques,
+its title the word carved in lit pumpkin. The player colours are the shared ones.
+
+The seven shape-drawn styles share `walls.ts`: the wall geometry (tops, faces, rim), and
 hatching laid on one lattice so neighbouring tiles hatch as one fill.
 
 **Scenery on open land** (`scenery.ts`, `art.scenery`), in every style: copses of trees and
@@ -818,7 +846,8 @@ pines with bushes at their edges, and a few lone trees, bushes and boulders, pla
 the seed alone so every look puts them on the same tiles — only a step in from the coast,
 and not on or beside a castle. Each style draws its own: trees in Medieval and Night, a
 landscape plan's scalloped canopies in Blueprint, inked trees in Parchment, dim nodes in
-Cyberpunk, lollipops, meringue, candy floss and cookies in Chocolate, a faint dot in Minimal. **It must never read as wall**, nor as a gun or a
+Cyberpunk, lollipops, meringue, candy floss and cookies in Chocolate, dead trees, pumpkins,
+toadstools and headstones in Halloween, a faint dot in Minimal. **It must never read as wall**, nor as a gun or a
 shot: Blueprint's trees were first a circle with a cross, a gun's survey mark in small,
 and Medieval's boulders a round grey rock, a cannonball's double. A tile once built on or
 sealed is cleared for the rest of the match, so nothing grows back through a breach; a
@@ -832,7 +861,8 @@ in Parchment an engraved ship and a sea serpent's coils, kept off the compass ro
 Blueprint a ship drawn in plan on a dashed course; in Cyberpunk drones circling with a
 searchlight on the water and a hover-craft trailing light; in Toy bricks a boat of bricks,
 a rubber duck and a shark's fin; in Chocolate a paddle-boat, marshmallows and a whirlpool
-under a glass pipe, kept off the chocolate fall; in Minimal a plain boat's silhouette. Anything tall keeps
+under a glass pipe, kept off the chocolate fall; in Halloween a ghost ship, a flock of bats
+and a will-o'-wisp; in Minimal a plain boat's silhouette. Anything tall keeps
 to rows whose top is clear of the HUD bar.
 
 **The match's moments** (`camera.ts`, `art.camera`). The match opens
@@ -968,7 +998,7 @@ every resolution against an independent search, not only on unit pictures.
 ## 11. Open work
 
 **Where to start (2026-10-02).** Everything but balance is done: the game, online play, bots
-as skill levels and personalities (M13), nine styles and four visual passes, two rounds of
+as skill levels and personalities (M13), ten styles and four visual passes, two rounds of
 test-session feedback, help for new players, awards and a rematch, and the desktop app for
 releases (M14). The test games on the current build found everything working, the hosts'
 delay gone and the balance quite good. A new session starts with either:
@@ -988,7 +1018,10 @@ roster card looked cut off at its right edge in a screenshot (2026-10-02, the us
 Stained glass's shards, glints, fish and ship; the music and sounds sliders by ear; and
 Chocolate in motion (ARCHIVE 11zy) — the river's current and the fall, the shine on the
 walls, the fountains starting and stopping, a square snapping off, the sweep's melting, the
-mould poured and wobbling, and whether the swirls cost frame rate at eight players.
+mould poured and wobbling, and whether the swirls cost frame rate at eight players; and
+Halloween in motion (ARCHIVE 12a) — the fog, the bubbles, the freed ghosts, the lanterns
+lit and put out, the candles, the cauldrons, the witching hour's eyes, and the frame rate
+at eight players with the fog over everything.
 
 Then, as they fit: **11.3**, two-player balance, re-measured before anything is tried;
 **11.4**, measurements never taken; **11.13**, the bots' loose ends.

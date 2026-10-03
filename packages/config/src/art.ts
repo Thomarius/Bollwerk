@@ -48,7 +48,8 @@ export type PlayerPalette = z.infer<typeof PlayerPaletteSchema>;
  * the pixel style under a palette of its own (`stylePalettes`). `cyberpunk` is neon
  * outlines on a dark circuit board, `blueprint` a plan in white ink on blue paper,
  * `parchment` an old hand-drawn map, `bricks` a board built of toy bricks, `glass` a
- * church window of stained glass, `chocolate` a sweet-shop land on a river of chocolate.
+ * church window of stained glass, `chocolate` a sweet-shop land on a river of chocolate,
+ * `halloween` a haunted land round a bog.
  */
 export const ArtStyleSchema = z.enum([
   'flat',
@@ -60,6 +61,7 @@ export const ArtStyleSchema = z.enum([
   'bricks',
   'glass',
   'chocolate',
+  'halloween',
 ]);
 export type ArtStyle = z.infer<typeof ArtStyleSchema>;
 
@@ -364,6 +366,37 @@ export const ChocolateStyleSchema = z.strictObject({
 });
 export type ChocolateStyleConfig = z.infer<typeof ChocolateStyleSchema>;
 
+/**
+ * The Halloween look: a haunted land round a bog — crypt-stone walls with spirit-light in
+ * their mortar, haunted houses whose jack-o'-lantern is lit while sealed, cauldrons for
+ * guns, spectral fireballs, and ghosts, fog and bats drifting over it all.
+ */
+export const HalloweenStyleSchema = z.strictObject({
+  /** Fog banks drifting across the board, and how strongly they veil it. */
+  fogBanks: z.number().int().nonnegative(),
+  fogTilesPerSecond: z.number().positive(),
+  fogAlpha: z.number().min(0).max(1),
+  /** Bubbles rising in the bog, one at a time per so many tiles of it. */
+  bubbleTiles: z.number().min(1),
+  /** Sealed ground's tint in the owner's colour. */
+  territoryAlpha: z.number().min(0).max(1),
+  /** How long the ghost a shot frees from a wall takes to rise and fade. */
+  ghostMs: z.number().int().positive(),
+  /** The share of wall blocks with a cobweb in a corner. */
+  cobwebShare: z.number().min(0).max(1),
+  /** Pairs of eyes blinking at the screen's edges in the witching hour. */
+  eyePairs: z.number().int().nonnegative(),
+  /** Leaves falling on a match whose weather is snow, on screen at once. */
+  leafCount: z.number().int().nonnegative(),
+  /** A ghost ship drifting across the outer sea now and then, one at a time. */
+  shipEveryMs: z.number().int().positive(),
+  shipTilesPerSecond: z.number().positive(),
+  /** A flock of bats crossing it now and then. */
+  batsEveryMs: z.number().int().positive(),
+  batsTilesPerSecond: z.number().positive(),
+});
+export type HalloweenStyleConfig = z.infer<typeof HalloweenStyleSchema>;
+
 /** One of the two looks a match is drawn in. */
 export type ArtLook = 'build' | 'combat';
 
@@ -405,6 +438,7 @@ export const STYLE_LOOKS: Record<ArtStyle, readonly ArtLook[]> = {
   bricks: ['build', 'combat'],
   glass: ['build', 'combat'],
   chocolate: ['build', 'combat'],
+  halloween: ['build', 'combat'],
 };
 
 export function styleServes(
@@ -525,6 +559,7 @@ export const ArtConfigSchema = z
     bricks: BricksStyleSchema,
     glass: GlassStyleSchema,
     chocolate: ChocolateStyleSchema,
+    halloween: HalloweenStyleSchema,
     scenery: ScenerySchema,
     /** Effects both styles draw alike, because they carry information. */
     effects: z.strictObject({

@@ -927,6 +927,31 @@
         "uiValid": "#7dffb0",
         "uiInvalid": "#ff4d6d"
       }
+    },
+    "halloween": {
+      "palette": {
+        "waterDeep": "#1d4640",
+        "waterMid": "#275a50",
+        "waterShallow": "#3a7562",
+        "waterFoam": "#a6f0a8",
+        "sand": "#6e5a47",
+        "grassDark": "#463b58",
+        "grassMid": "#5a4d72",
+        "grassLight": "#7b6b96",
+        "rockDark": "#4b4a58",
+        "rockMid": "#83829a",
+        "rockLight": "#cfcde0",
+        "shadow": "#120d1a",
+        "craterDark": "#24161e",
+        "craterMid": "#3d2a33",
+        "emberHot": "#fff2b0",
+        "emberMid": "#ff9a1f",
+        "emberCool": "#c2410c",
+        "uiInk": "#fff4e0",
+        "uiAccent": "#ff9a1f",
+        "uiValid": "#9dffb0",
+        "uiInvalid": "#ff4d6d"
+      }
     }
   },
   "dither": {
@@ -1173,5 +1198,20 @@
     "boatTilesPerSecond": 0.5,
     "marshmallowEveryMs": 5000,
     "marshmallowMs": 7000
+  },
+  "halloween": {
+    "fogBanks": 14,
+    "fogTilesPerSecond": 0.25,
+    "fogAlpha": 0.1,
+    "bubbleTiles": 9,
+    "territoryAlpha": 0.42,
+    "ghostMs": 1500,
+    "cobwebShare": 0.08,
+    "eyePairs": 10,
+    "leafCount": 70,
+    "shipEveryMs": 22000,
+    "shipTilesPerSecond": 0.35,
+    "batsEveryMs": 14000,
+    "batsTilesPerSecond": 1.6
   }
 }

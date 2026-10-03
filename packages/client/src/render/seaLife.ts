@@ -5,6 +5,7 @@ import type { Graphics } from 'pixi.js';
 import { motionReduced } from '../motion.js';
 
 import { Circling, Crossings, NO_OCEAN, Surfacings, outerOcean, type OuterOcean } from './ocean.js';
+import { drawBat } from './spooky.js';
 import { hex, tileX, tileY, type ViewTransform } from './theme.js';
 
 /**
@@ -692,6 +693,96 @@ export class ChocolateSeaLife extends OceanDrawn {
         g.lineTo(wx + Math.cos(a) * wr, wy + Math.sin(a) * wr);
       }
       g.stroke({ width: Math.max(1, t * 0.06), color: cream });
+    }
+  }
+}
+
+/**
+ * Halloween: a ghost ship drifting across now and then, pale and see-through, its sails in
+ * tatters; a flock of bats crossing, wings beating; and a will-o'-wisp wheeling over the
+ * water — neutral greens and greys, nothing of any player's colour.
+ */
+export class HalloweenSeaLife extends OceanDrawn {
+  private readonly ships = new Crossings();
+  private readonly bats = new Crossings();
+  private readonly wisps = new Circling();
+  /** The moon over the sea, which the wisp keeps off. */
+  moon: { x: number; y: number; size: number } | null = null;
+
+  override layout(state: MatchState, view: ViewTransform, art: ArtConfig): void {
+    super.layout(state, view, art);
+    this.ships.layout(this.ocean, art.halloween.shipEveryMs);
+    this.bats.layout(this.ocean, art.halloween.batsEveryMs);
+    this.wisps.layout(this.ocean, 1, [1.2, 2]);
+  }
+
+  protected frame(g: Graphics, view: ViewTransform, art: ArtConfig, deltaMs: number): void {
+    const s = art.halloween;
+    const t = view.tile;
+    const pale = 0xc8f5d0;
+
+    this.ships.step(this.ocean, deltaMs, s.shipEveryMs, s.shipTilesPerSecond, 1.3);
+    for (const ship of this.ships.items) {
+      const y = ship.y + Math.sin(this.clock / 900 + ship.x) * 0.05;
+      const fade = 0.55 + 0.15 * Math.sin(this.clock / 400);
+      g.poly(
+        shape(view, ship.x, y, ship.dir, [
+          [-0.85, -0.05],
+          [0.95, -0.1],
+          [0.65, 0.28],
+          [-0.65, 0.28],
+        ]),
+      );
+      g.fill({ color: 0x2a3b35, alpha: fade });
+      g.stroke({ width: 1, color: pale, alpha: fade * 0.6 });
+      for (const [mx, h] of [
+        [-0.3, 0.85],
+        [0.3, 1.05],
+      ] as const) {
+        g.moveTo(tileX(view, ship.x + ship.dir * mx), tileY(view, y - 0.05));
+        g.lineTo(tileX(view, ship.x + ship.dir * mx), tileY(view, y - h - 0.1));
+        g.stroke({ width: 1, color: pale, alpha: fade });
+        // A torn sail: its foot ragged.
+        g.poly(
+          shape(view, ship.x, y, ship.dir, [
+            [mx - 0.22, -h],
+            [mx + 0.22, -h],
+            [mx + 0.22, -0.35],
+            [mx + 0.1, -0.45],
+            [mx, -0.3],
+            [mx - 0.12, -0.45],
+            [mx - 0.22, -0.32],
+          ]),
+        );
+        g.fill({ color: pale, alpha: fade * 0.45 });
+      }
+    }
+
+    this.bats.step(this.ocean, deltaMs, s.batsEveryMs, s.batsTilesPerSecond, 0.6);
+    for (const flock of this.bats.items) {
+      for (let k = 0; k < 6; k++) {
+        const ox = (k % 3) * 0.6 - 0.6 + (k > 2 ? 0.3 : 0);
+        const oy = (k > 2 ? 0.45 : 0) + Math.sin(this.clock / 300 + k) * 0.12;
+        drawBat(
+          g,
+          tileX(view, flock.x - flock.dir * ox),
+          tileY(view, flock.y + oy - 0.3),
+          t * 0.22,
+          Math.sin(this.clock / 65 + k * 1.3),
+          0x1a1224,
+        );
+      }
+    }
+
+    this.wisps.step(deltaMs);
+    for (const w of this.wisps.items) {
+      const at = Circling.at(w);
+      const x = tileX(view, at.x);
+      const y = tileY(view, at.y) - Math.abs(Math.sin(this.clock / 500)) * t * 0.2;
+      g.circle(x, y, t * 0.35);
+      g.fill({ color: 0xa6f0a8, alpha: 0.18 });
+      g.circle(x, y, t * 0.13);
+      g.fill({ color: 0xeaffea, alpha: 0.9 });
     }
   }
 }

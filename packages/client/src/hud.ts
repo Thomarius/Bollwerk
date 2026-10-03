@@ -39,6 +39,7 @@ const BANNER_CLASS: Record<ArtStyle, string> = {
   bricks: 'banner-bricks',
   glass: 'banner-glass',
   chocolate: 'banner-chocolate',
+  halloween: 'banner-halloween',
 };
 
 /**
@@ -56,6 +57,7 @@ const HUD_SKIN: Record<ArtStyle, string> = {
   bricks: 'hud-bricks',
   glass: 'hud-glass',
   chocolate: 'hud-chocolate',
+  halloween: 'hud-halloween',
 };
 
 const PHASE_LABEL: Record<Phase, string> = {

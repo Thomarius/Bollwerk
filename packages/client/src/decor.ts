@@ -629,6 +629,61 @@ export function chocolateTitle(text: string, art: ArtConfig): Title {
   return { src: canvas.toDataURL(), ...title };
 }
 
+/**
+ * Halloween's title: the word carved in pumpkin, each stroke rounded and ribbed in orange,
+ * lit from inside so a candle glow shows down its middle; a green stem on a letter here and
+ * there.
+ */
+export function halloweenTitle(text: string, _art: ArtConfig): Title {
+  const { canvas, ctx, cells, has } = drawnCanvas(text);
+  const title = { cellPx: DRAWN_CELL, padPx: DRAWN_PAD, tailPx: 0, smooth: true, flicker: false };
+  if (ctx === null) return { src: canvas.toDataURL(), ...title };
+  const at = (v: number): number => DRAWN_PAD + v * DRAWN_CELL;
+  const rng = new Rng(0x5ca3e);
+  ctx.lineJoin = 'round';
+  ctx.lineCap = 'round';
+  const stroke = (width: number, colour: string, glow = 0): void => {
+    ctx.strokeStyle = colour;
+    ctx.lineWidth = width;
+    ctx.shadowColor = colour;
+    ctx.shadowBlur = glow;
+    ctx.beginPath();
+    for (const { x, y } of cells) {
+      const cx = at(x) + DRAWN_CELL / 2;
+      const cy = at(y) + DRAWN_CELL / 2;
+      ctx.moveTo(cx, cy);
+      ctx.lineTo(cx + 0.01, cy);
+      for (const [dx, dy] of [
+        [1, 0],
+        [0, 1],
+      ] as const) {
+        if (!has(x + dx, y + dy)) continue;
+        ctx.moveTo(cx, cy);
+        ctx.lineTo(cx + dx * DRAWN_CELL, cy + dy * DRAWN_CELL);
+      }
+    }
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+  };
+  // The stems, first, on the top of a stroke with nothing above it.
+  ctx.strokeStyle = '#4a7a2a';
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  for (const { x, y } of cells) {
+    if (has(x, y - 1) || rng.nextFloat() > 0.35) continue;
+    const cx = at(x) + DRAWN_CELL / 2;
+    ctx.moveTo(cx, at(y) + 2);
+    ctx.quadraticCurveTo(cx + 2, at(y) - 4, cx + 5, at(y) - 5);
+  }
+  ctx.stroke();
+  stroke(DRAWN_CELL * 1.25, '#3a1a08');
+  stroke(DRAWN_CELL * 1.1, '#c2560e');
+  stroke(DRAWN_CELL * 0.85, '#f07a12');
+  // The candle inside, glowing through the carving.
+  stroke(DRAWN_CELL * 0.3, '#ffe27a', 8);
+  return { src: canvas.toDataURL(), ...title };
+}
+
 const TITLES: Record<ArtStyle, (text: string, art: ArtConfig) => Title> = {
   flat: blockTitle,
   pixel: stoneTitle,
@@ -639,6 +694,7 @@ const TITLES: Record<ArtStyle, (text: string, art: ArtConfig) => Title> = {
   bricks: brickTitle,
   glass: glassTitle,
   chocolate: chocolateTitle,
+  halloween: halloweenTitle,
 };
 
 export function titleFor(style: ArtStyle, art: ArtConfig): Title {

@@ -689,15 +689,17 @@ export interface FinishLook {
   /**
    * `square` Minimal's flat sparks; `streak` sparks trailing light; `neon` streaks with a
    * halo; `mark` a draughtsman's crosses; `blot` drops of ink; `brick` tumbling bricks;
-   * `shard` spinning glass; `sprinkle` candy sprinkles.
+   * `shard` spinning glass; `sprinkle` candy sprinkles; `spirits` bats and little ghosts
+   * flying out and up.
    */
-  spark: 'square' | 'streak' | 'neon' | 'mark' | 'blot' | 'brick' | 'shard' | 'sprinkle';
+  spark:
+    'square' | 'streak' | 'neon' | 'mark' | 'blot' | 'brick' | 'shard' | 'sprinkle' | 'spirits';
   /**
    * `swallowtail` a forked banner; `hologram` a flickering projection; `pennant` a flag in
    * plan; `brick` a square flag of bricks; `leaded` a banner of glass in its lead; `candy` a
-   * pennant on a candy-striped pole.
+   * pennant on a candy-striped pole; `tattered` a ragged pennant on a crooked pole.
    */
-  flag: 'swallowtail' | 'hologram' | 'pennant' | 'brick' | 'leaded' | 'candy';
+  flag: 'swallowtail' | 'hologram' | 'pennant' | 'brick' | 'leaded' | 'candy' | 'tattered';
 }
 
 export const PLAIN_FINISH: FinishLook = { spark: 'square', flag: 'swallowtail' };
@@ -766,7 +768,19 @@ export class WinnerBanners {
           x,
           up + clothH,
         ];
-        if (flag === 'pennant' || flag === 'candy') {
+        if (flag === 'tattered') {
+          // Torn along its fly: the edge ragged, a hole in it, flapping more than the rest.
+          const fly = x + clothW * 1.05;
+          const ragged = [0, 0.18, 0.32, 0.5, 0.64, 0.82, 1].map((f, k) => [
+            fly - (k % 2 === 0 ? 0 : clothW * 0.22) + wave * 1.4 * f,
+            up + clothH * f + wave * f,
+          ]);
+          g.poly([x, up, ...ragged.flat(), x, up + clothH]);
+          g.fill({ color: base });
+          g.stroke({ width: rim, color: 0x120d1a, alpha: 0.85, join: 'round' });
+          g.circle(x + clothW * 0.45, up + clothH * 0.55 + wave * 0.5, tile * 0.09);
+          g.fill({ color: 0x120d1a, alpha: 0.8 });
+        } else if (flag === 'pennant' || flag === 'candy') {
           g.poly([x, up, x + clothW * 1.1, up + clothH / 2 + wave, x, up + clothH]);
           if (flag === 'pennant') {
             g.fill({ color: light, alpha: 0.3 });
@@ -837,6 +851,13 @@ export class WinnerBanners {
     art: ArtConfig,
   ): void {
     const width = Math.max(2, rim + 1);
+    if (flag === 'tattered') {
+      // A crooked branch for a pole.
+      const lean = (foot - top) * 0.06;
+      g.moveTo(x, foot).quadraticCurveTo(x - lean * 2, (foot + top) / 2, x, top);
+      g.stroke({ width: width + 1, color: 0x3a2a22, cap: 'round' });
+      return;
+    }
     g.moveTo(x, foot).lineTo(x, top);
     if (flag === 'hologram') {
       g.stroke({ width: width + 4, color: 0x2ee6ff, alpha: 0.25 });
@@ -928,7 +949,7 @@ export class Fireworks {
               playerColour(art, rocket.owner, 'base'),
               hex(art.palette.uiInk),
             ];
-      const count = kind === 'brick' || kind === 'blot' ? 22 : 40;
+      const count = kind === 'brick' || kind === 'blot' ? 22 : kind === 'spirits' ? 16 : 40;
       for (let k = 0; k < count; k++) {
         const angle = (k / count) * Math.PI * 2 + Math.random() * 0.2;
         const speed = 3.5 + Math.random() * 3.5;
@@ -946,9 +967,10 @@ export class Fireworks {
     }
     this.rockets = this.rockets.filter((rocket) => rocket.age < rise);
 
-    // Ink lingers and bricks fall heavier; the rest burst and fade as sparks do.
-    const life = kind === 'blot' ? 1800 : 1200;
-    const fall = kind === 'brick' ? 6 : 2.2;
+    // Ink lingers, bricks fall heavier and spirits float up; the rest burst and fade as
+    // sparks do.
+    const life = kind === 'blot' || kind === 'spirits' ? 1900 : 1200;
+    const fall = kind === 'brick' ? 6 : kind === 'spirits' ? -1.4 : 2.2;
     const t0 = view.tile;
     for (const spark of this.sparks) {
       spark.age += deltaMs;
@@ -974,6 +996,46 @@ export class Fireworks {
         }
         g.moveTo(tx, ty).lineTo(x, y);
         g.stroke({ width: Math.max(1.5, size * 0.45), color: spark.colour, alpha, cap: 'round' });
+      } else if (kind === 'spirits') {
+        const s = size * 1.3;
+        if (spark.spin > 0) {
+          // A bat in the owner's colour, its wings beating.
+          const flap = Math.sin(spark.age / 60 + spark.angle) * s * 0.5;
+          g.poly([
+            x,
+            y,
+            x - s,
+            y - flap,
+            x - s * 0.55,
+            y + s * 0.15,
+            x - s * 0.3,
+            y - flap * 0.3,
+            x,
+            y + s * 0.3,
+          ]);
+          g.poly([
+            x,
+            y,
+            x + s,
+            y - flap,
+            x + s * 0.55,
+            y + s * 0.15,
+            x + s * 0.3,
+            y - flap * 0.3,
+            x,
+            y + s * 0.3,
+          ]);
+          g.fill({ color: spark.colour, alpha });
+        } else {
+          // A little ghost, swaying as it rises.
+          const sway = Math.sin(spark.age / 150 + spark.angle) * s * 0.3;
+          g.circle(x + sway, y - s * 0.3, s * 0.5);
+          g.rect(x + sway - s * 0.5, y - s * 0.3, s, s * 0.7);
+          g.fill({ color: 0xf4f0ff, alpha: alpha * 0.85 });
+          g.circle(x + sway - s * 0.18, y - s * 0.35, s * 0.1);
+          g.circle(x + sway + s * 0.18, y - s * 0.35, s * 0.1);
+          g.fill({ color: 0x120d1a, alpha });
+        }
       } else if (kind === 'mark') {
         const r = size * 0.6;
         g.moveTo(x - r, y).lineTo(x + r, y);

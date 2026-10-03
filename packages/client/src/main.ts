@@ -345,6 +345,7 @@ const STYLE_NAMES: Record<ArtStyle, string> = {
   bricks: 'Toy bricks',
   glass: 'Stained glass',
   chocolate: 'Chocolate',
+  halloween: 'Halloween',
 };
 
 function styleOptions(look: ArtLook): string {

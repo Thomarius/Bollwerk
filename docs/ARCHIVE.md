@@ -3961,3 +3961,28 @@ that puts each kind into a running match's banner layer under each skin and phot
 a flag — from each theme, the physics and the hoist shared so the send-off keeps one
 timing. Bricks fall heavier and ink lingers longer; nothing else differs in timing. Seen at
 game over in all eight.
+
+## 12a. Halloween, a tenth style (2026-10-03)
+
+Pitched before any code and agreed with the user: Night already does dark and torchlit, so
+Halloween is purple dusk, a murky green bog and pumpkin orange, and its idea is a board
+**haunted** — fog drifting, bubbles, ghosts, bats, eyes in the dark. Decided with the user:
+cute-spooky, no gore, skulls and bones only here and there with more ghosts and pumpkins;
+crypt stone with spirit-light in the mortar for the walls (over an iron graveyard fence,
+which reads less as a solid block); spectral fireballs for shots — not flying pumpkins,
+since the scenery is full of pumpkins and nothing on the ground may read as a shot; the
+name Halloween.
+
+What carries meaning: **sealed is the house lit up** (the porch lantern, the windows, the
+chimney's smoke), by `FlagHoist` as every style's sealed sign is; a wall shot away **sets a
+ghost free**, this style's mark of a hit as the bite is Chocolate's; the piece in hand is a
+spectral wall, cracked rather than red where it does not fit. The finish gained a burst,
+`spirits` — bats in the owner's colour and little ghosts, floating up rather than falling —
+and a flag, `tattered`, on a crooked branch. Bats and ghosts are drawn by `spooky.ts`,
+shared by the theme and its sea life so neither imports the other. `hash` is Chocolate's.
+
+Seen in screenshots building, in combat, at eight players, in the final round's witching
+hour, foggy and snowy matches, across a wipe, in the menu, at game over, and with the
+island banners, stamps and pause menu placed into a running match by a Playwright script.
+The first look changed only sizes: the freed ghosts and the witching hour's eyes were too
+small to notice and were enlarged. Anything moving is still to be seen in play (PLAN §11).

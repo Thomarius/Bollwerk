@@ -47,7 +47,7 @@ wait rather than assuming it hung.
 Client dev query parameters: `?autostart=1&players=3&seed=7` (a random seed without it),
 `&snapshot=build` to jump to a phase (`&round=N` for one deep in a match, `&idle=1` to
 leave your seat undriven on the way, so you are soon knocked out), `&speed=10`,
-`&style=flat|pixel|night|cyberpunk|blueprint|parchment|bricks|glass|chocolate` for both looks (a one-look style sets only its own)
+`&style=flat|pixel|night|cyberpunk|blueprint|parchment|bricks|glass|chocolate|halloween` for both looks (a one-look style sets only its own)
 (`&buildStyle=`, `&combatStyle=` for one), `&watch=1&level=8` to observe a bot match (`&personality=offensive` fixes every bot's),
 `&rounds=12` for the round cap, `&teams=2` for teams of two in seat order. `?host=8` opens
 the lobby at eight seats — a room if a server answers, a local table if not —
@@ -66,7 +66,7 @@ rounds.
 | `ai`             | Bots: min-cut sealing, 0-1 BFS attack, skill levels and personalities.     |
 | `analysis`       | Per-round match statistics, for bot soaks and recorded human play alike.   |
 | `server`         | Authoritative match server, rooms, WebSocket, match recordings.            |
-| `client`         | Pixi renderer, nine visual styles, controls, HUD, netcode client.          |
+| `client`         | Pixi renderer, ten visual styles, controls, HUD, netcode client.           |
 | `desktop`        | Electron app for releases: the server behind a minimal window (M14).       |
 | `tools/headless` | Bot-vs-bot soak runs and map dumps.                                        |
 
@@ -156,8 +156,8 @@ the sea in every style (PLAN 11.16, ARCHIVE 11zk–11zn); and a desktop app for 
 portable file for Windows and Linux (M14, ARCHIVE 11zp–11zt); and a fourth pass (PLAN 11.18,
 ARCHIVE 11zu–11zv): a screen while the board is prepared, a pause menu with the settings
 and Leave match, a strip for a player knocked out, music and sounds volumes, level pips,
-awards at the end, a rematch, and an eighth style, Stained glass; and a ninth, Chocolate
-(ARCHIVE 11zy), and every style carried to the panels, the big timer, the island banners and
+awards at the end, a rematch, and an eighth style, Stained glass; a ninth, Chocolate
+(ARCHIVE 11zy), and a tenth, Halloween (ARCHIVE 12a); and every style carried to the panels, the big timer, the island banners and
 the finish (ARCHIVE 11zz). Online clients catch up
 on the server at once (ARCHIVE 11zg), which ended the hosts' delay on every click. The game is played with the mouse alone; Esc for pause is the one key. Deployment is verified by a
 CI job, since there is no Docker on this machine. Every sound cue is supplied. The protocol
