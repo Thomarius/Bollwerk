@@ -170,6 +170,10 @@ Full detail in PLAN.md §1. The parts that surprise people:
 
 **Next** — PLAN §11 says where to start, in this order of readiness:
 
+0. **First: rendering performance** (PLAN 11.22), the user's priority: serious stutter in
+   Oktoberfest and Opera even on a fast PC. The styles rebuild their moving parts in Pixi
+   `Graphics` every frame, which is CPU work; measure with a `&perf=1` readout, then build once
+   and only move — every effect kept.
 1. **The soaks** (`docs/SOAKS.md`): the weekend run was started on 2026-10-02 **on the
    user's other machine**; read its `summary.txt` together with them and write the figures
    into PLAN 11.2–11.13. Measurement only.

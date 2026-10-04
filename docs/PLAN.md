@@ -1139,6 +1139,9 @@ choosing the looks, two rounds of test-session feedback, help for new players, a
 rematch, the desktop app for releases (M14, v0.5.2 the latest), and the game in English and
 German (M15, ARCHIVE 12g). A new session starts with one of:
 
+0. **First: 11.22, rendering performance** — serious stutter in Oktoberfest and Opera
+   even on a fast PC, getting in the way of play; the user's priority for the next session.
+   Measure, then build once and only move, keeping every effect.
 1. **The soaks** — [`SOAKS.md`](./SOAKS.md) for 11.2, 11.3, 11.4 and 11.13. The weekend run
    of packages A, B and D was started on 2026-10-02 **on the user's other machine**, into
    its `soaks/2026-10-02/`: read its `summary.txt` together with the user, then write the
@@ -1309,6 +1312,55 @@ the user's router, which this machine cannot reach. About one session.
 
 **Not part of it**: relays, tunnels or a public lobby server, which need a machine on the
 internet (§12).
+
+### 11.22 Rendering performance — agreed 2026-10-04, first in the next session
+
+**The problem, the user's report (2026-10-04)**: serious stutter, worst in the newest styles,
+Oktoberfest and Opera, even on a fast gaming PC with a good GPU. It is getting in the way of
+play, so it comes before everything else. **The user's condition: keep every effect** — make
+it cheaper, do not take it away.
+
+**Why, as far as reading the code tells (not yet measured)**: Pixi draws with WebGL, so the
+GPU is used, but the styles drawn from shapes **clear and rebuild their moving parts every
+frame** in `Graphics` objects, and a rebuilt `Graphics` is cut into triangles on the CPU, in
+JavaScript, on one thread, before the GPU sees it. The GPU then waits. Hence no help from a
+good GPU. The heaviest by construction: Opera's staves (five wavy lines a stave across the
+whole sea, a segment every half tile, stroked anew each frame) and the notes riding them;
+Oktoberfest's bubbles (up to 260), the Ferris wheel (12 spokes, 24 lights, 8 gondolas), a
+Maß on every tent, the pretzels as stroked polylines; then Sakura's crests and petals,
+Halloween's fog, Chocolate's swirls, Night's and Cyberpunk's blur under "Glowing". All grow
+with the map, so eight players is the worst case, and the renderer draws at up to twice the
+screen's density. Only the visible look is redrawn (`Scene.drawEffects`), so the two looks
+cost double only during a wipe.
+
+**The principle: build once, then only move.** Moving, rotating, tinting and fading what
+is already built is nearly free on the GPU; rebuilding it is what costs.
+
+**Steps**:
+
+1. **Measure first.** A frame-time readout behind `&perf=1`: milliseconds a frame, split
+   into the sim, the HUD, and each layer's drawing (terrain's flow, effects, overlay), with
+   the worst of the last seconds. Taken by the user on their PC for every style at three and
+   eight players — headless Chrome cannot measure time (CLAUDE.md). The figures before every
+   change, and after.
+2. **Opera's staves**: drawn once, without the breaks at the coasts, and slid sideways each
+   frame by their phase (wrapping by a wavelength); the breaks made by a mask of the open sea,
+   drawn once with the terrain. The finale's swell as a second, taller set, or a scale. The
+   riding notes as sprites of one note drawn once to a texture.
+3. **Many small identical things as sprites** of a texture drawn once, tinted and moved:
+   bubbles, petals, leaves, snow, rain, the riding and rising notes, coins, bits of debris —
+   in a `ParticleContainer` where there are hundreds.
+4. **What turns, turned**: the Ferris wheel drawn once and rotated, its gondolas alone
+   moved; spinning pretzels and the like as sprites rotated rather than redrawn.
+5. **What changes rarely, drawn when it changes**: the Maß on each tent, the houses' lights,
+   the conductor's podium and body, the scorches and puddles — in a `Graphics` of their own,
+   redrawn on a change of state, not sixty times a second.
+6. **What must still be rebuilt, with fewer points**: plain fills for strokes where nobody
+   can tell, fewer segments a curve.
+7. Then the older styles the same way, in the order the measurements give.
+
+Each step measured before and after with the readout, and checked by eye that nothing looks
+different. Opera and Oktoberfest first.
 
 ## 12. Deferred (explicitly out of scope for v1)
 
