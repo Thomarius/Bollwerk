@@ -1,6 +1,6 @@
 import type { ArtConfig, OperaStyleConfig } from '@bollwerk/config';
 import { Structure, Terrain, type Castle, type MatchState, type Shot } from '@bollwerk/sim';
-import { Graphics } from 'pixi.js';
+import { Container, Graphics } from 'pixi.js';
 
 import { motionReduced } from '../motion.js';
 import { perf } from '../perf.js';
@@ -10,9 +10,11 @@ import { timerSpot, type TimerSpot } from '../timerSpot.js';
 import { hash } from './chocolate.js';
 import { GOLD, drawLyre, drawQuaver, drawRest } from './music.js';
 import { roseSpot } from './parchment.js';
+import { IslandParts } from './islandParts.js';
 import { OperaSeaLife } from './seaLife.js';
 import type { SceneryItem } from './scenery.js';
 import { SceneryLayer } from './sceneryLayer.js';
+import { StampBook, Stamps } from './stamps.js';
 import {
   FlagHoist,
   GhostMotion,
@@ -161,7 +163,23 @@ export class OperaTheme implements Theme {
   private readonly seaLife = new OperaSeaLife();
 
   private readonly terrainGfx = new Graphics();
-  /** The staves and their notes, the conductor, the blots: redrawn each frame. */
+  /** Ink where shots came down on the stage: redrawn when one is added or fades a round. */
+  private readonly blotGfx = new Graphics();
+  private blotsDrawn = '';
+  /**
+   * The staves, built once with the terrain and only slid sideways by their phase (PLAN
+   * 11.22): stroked anew each frame they cost 21 000 vertices and most of a frame at eight
+   * players. Calm, and swelling for the finale; broken off at the coasts by a mask of the
+   * open sea, drawn once too.
+   */
+  private readonly staves = new Container();
+  private readonly stavesCalm = new Graphics();
+  private readonly stavesSwell = new Graphics();
+  private readonly staveMask = new Graphics();
+  /** The notes riding the staves, each a stamp of one quaver drawn once. */
+  private readonly riderStamps = new Stamps();
+  private readonly book = new StampBook();
+  /** The conductor: redrawn each frame. */
   private readonly flowGfx = new Graphics();
   private readonly territoryGfx = new Graphics();
   private readonly ghostMotion = new GhostMotion();
@@ -170,8 +188,19 @@ export class OperaTheme implements Theme {
     (g, view, items) => drawOperaScenery(g, view, items, this.art),
     () => PAPER,
   );
-  private readonly structureGfx = new Graphics();
+  /** Walls, houses and guns, an island to a `Graphics`, redrawn where they change. */
+  private readonly structures = new IslandParts();
+  /**
+   * The horns' coils, a stamp drawn once (`stamps.ts`): two stroked rings a gun, sixty
+   * times a second, were the largest part of the effects at eight players. Under the
+   * effects, as the tube drawn from them is over them.
+   */
+  private readonly coilStamps = new Stamps();
   private readonly effectGfx = new Graphics();
+  /** The notes in flight, stamps drawn once a colour and rocked. */
+  private readonly noteStamps = new Stamps();
+  /** Everything over the notes in flight: rings, keys, sour notes, spotlights, the finish. */
+  private readonly lateGfx = new Graphics();
   private readonly overlayGfx = new Graphics();
 
   private terrain: Uint8Array | null = null;
@@ -205,21 +234,41 @@ export class OperaTheme implements Theme {
   init(layers: ThemeLayers, art: ArtConfig): Promise<void> {
     this.art = art;
     this.style = art.opera;
-    layers.terrain.addChild(this.terrainGfx, this.flowGfx);
+    this.staves.addChild(this.stavesCalm, this.stavesSwell, this.staveMask);
+    this.staves.mask = this.staveMask;
+    layers.terrain.addChild(
+      this.terrainGfx,
+      this.blotGfx,
+      this.staves,
+      this.riderStamps.container,
+      this.flowGfx,
+    );
     layers.territory.addChild(this.scenery.gfx, this.territoryGfx);
-    layers.structures.addChild(this.structureGfx);
-    layers.effects.addChild(this.effectGfx);
+    layers.structures.addChild(this.structures.container);
+    layers.effects.addChild(
+      this.coilStamps.container,
+      this.effectGfx,
+      this.noteStamps.container,
+      this.lateGfx,
+    );
     layers.overlay.addChild(this.overlayGfx);
     return Promise.resolve();
   }
 
   destroy(): void {
+    this.coilStamps.destroy();
+    this.noteStamps.destroy();
+    this.lateGfx.destroy();
+    this.structures.destroy();
     this.scenery.destroy();
+    this.riderStamps.destroy();
+    this.book.destroy();
+    this.staves.destroy({ children: true });
     for (const g of [
       this.terrainGfx,
+      this.blotGfx,
       this.flowGfx,
       this.territoryGfx,
-      this.structureGfx,
       this.effectGfx,
       this.overlayGfx,
     ]) {
@@ -401,6 +450,76 @@ export class OperaTheme implements Theme {
     this.seaLife.conductor = this.conductor;
     this.seaLife.layout(state, view, this.art);
     this.layoutRiders();
+    this.buildStaves(view);
+    this.blotsDrawn = '';
+  }
+
+  /**
+   * The staves at rest, five lines each, for the calm and for the finale's swell: from a
+   * wavelength left of the sheet, so that slid right by up to a wavelength they still cover
+   * it. The mask is the open sea of `open`, a run of tiles to a rectangle.
+   */
+  private buildStaves(view: ViewTransform): void {
+    const t = view.tile;
+    const { x0, y0, w, h } = this.sheet;
+    const wave = this.style.staveWavelengthTiles;
+    const staves = Math.ceil(h / this.style.staveEveryTiles) + 1;
+    const step = 0.5;
+    for (const [g, finale] of [
+      [this.stavesCalm, false],
+      [this.stavesSwell, true],
+    ] as const) {
+      g.clear();
+      for (let n = 0; n < staves; n++) {
+        for (let line = 0; line < 5; line++) {
+          for (let x = x0 - wave; x <= x0 + w + step; x += step) {
+            const y = this.staveY(n, x, finale, 0) + line * 0.2;
+            if (x === x0 - wave) g.moveTo(tileX(view, x), tileY(view, y));
+            else g.lineTo(tileX(view, x), tileY(view, y));
+          }
+        }
+      }
+      g.stroke({ width: 1, color: hex(this.art.palette.waterFoam), alpha: 0.32 });
+    }
+    const mask = this.staveMask;
+    mask.clear();
+    for (let ly = 0; ly < h; ly++) {
+      let from = -1;
+      for (let lx = 0; lx <= w; lx++) {
+        const open = lx < w && this.open(lx + x0, ly + y0);
+        if (open && from < 0) from = lx;
+        if (!open && from >= 0) {
+          mask.rect(tileX(view, from + x0), tileY(view, ly + y0), (lx - from) * t, t);
+          from = -1;
+        }
+      }
+    }
+    // Below the sheet a stave may still run, as `open` allows off it.
+    mask.rect(tileX(view, x0), tileY(view, y0 + h), w * t, staves * this.style.staveEveryTiles * t);
+    mask.fill({ color: 0xffffff });
+  }
+
+  /** The ink blots, drawn again only when one comes or fades. */
+  private drawBlots(state: MatchState, view: ViewTransform): void {
+    const rounds = this.art.generators.fx.craterRounds;
+    this.blots = this.blots.filter((b) => state.round - b.round < rounds);
+    const key = `${state.round}|${this.blots.length}|${view.tile}|${view.originX}|${view.originY}`;
+    if (key === this.blotsDrawn) return;
+    this.blotsDrawn = key;
+    const g = this.blotGfx;
+    g.clear();
+    const t = view.tile;
+    for (const b of this.blots) {
+      const fade = 1 - (state.round - b.round) / rounds;
+      const cx = tileX(view, b.x + 0.5);
+      const cy = tileY(view, b.y + 0.5);
+      g.circle(cx, cy, t * 0.3);
+      for (let k = 0; k < 4; k++) {
+        const a = hash(b.x + k, b.y, 530) * Math.PI * 2;
+        g.circle(cx + Math.cos(a) * t * 0.36, cy + Math.sin(a) * t * 0.36, t * 0.07);
+      }
+      g.fill({ color: this.dark, alpha: 0.6 * fade });
+    }
   }
 
   private layoutRiders(): void {
@@ -420,12 +539,16 @@ export class OperaTheme implements Theme {
 
   // ------------------------------------------------------------------ the sea, moving
 
-  /** Where stave `n`'s top line runs at `x`, in tiles, as the waves stand now. */
-  private staveY(n: number, x: number, finale: boolean): number {
+  /** How far the waves have run, in tiles. */
+  private stavePhase(finale: boolean): number {
+    const speed = this.style.staveTilesPerSecond * (finale ? 1.6 : 1);
+    return motionReduced() ? 0 : (this.clock / 1000) * speed;
+  }
+
+  /** Where stave `n`'s top line runs at `x`, in tiles, with the waves run on by `phase`. */
+  private staveY(n: number, x: number, finale: boolean, phase = this.stavePhase(finale)): number {
     const s = this.style;
     const amp = s.staveAmplitudeTiles * (finale ? 1.7 : 1);
-    const speed = s.staveTilesPerSecond * (finale ? 1.6 : 1);
-    const phase = motionReduced() ? 0 : (this.clock / 1000) * speed;
     return (
       this.sheet.y0 +
       1.5 +
@@ -447,54 +570,31 @@ export class OperaTheme implements Theme {
     const finale = (state.phase === 'build' && state.overtime) || inFinalRound(state);
 
     // Ink where a shot came down on the stage, fading over the rounds after.
-    const rounds = this.art.generators.fx.craterRounds;
-    this.blots = this.blots.filter((b) => state.round - b.round < rounds);
-    for (const b of this.blots) {
-      const fade = 1 - (state.round - b.round) / rounds;
-      const cx = tileX(view, b.x + 0.5);
-      const cy = tileY(view, b.y + 0.5);
-      g.circle(cx, cy, t * 0.3);
-      for (let k = 0; k < 4; k++) {
-        const a = hash(b.x + k, b.y, 530) * Math.PI * 2;
-        g.circle(cx + Math.cos(a) * t * 0.36, cy + Math.sin(a) * t * 0.36, t * 0.07);
-      }
-      g.fill({ color: this.dark, alpha: 0.6 * fade });
-    }
+    this.drawBlots(state, view);
 
-    // The staves: five lines each, following the swell, broken off short of every coast.
-    const { x0, w, h } = this.sheet;
-    const staves = Math.ceil(h / this.style.staveEveryTiles) + 1;
-    const step = 0.5;
-    for (let n = 0; n < staves; n++) {
-      for (let line = 0; line < 5; line++) {
-        let drawing = false;
-        for (let x = x0; x <= x0 + w; x += step) {
-          const y = this.staveY(n, x, finale) + line * 0.2;
-          const ok = this.open(x, y);
-          if (ok && drawing) g.lineTo(tileX(view, x), tileY(view, y));
-          else if (ok) g.moveTo(tileX(view, x), tileY(view, y));
-          drawing = ok;
-        }
-      }
-    }
-    g.stroke({ width: 1, color: hex(palette.waterFoam), alpha: 0.32 });
+    // The staves, following the swell: the built set slid on by the phase, a wavelength
+    // being the same wave again.
+    const { x0, w } = this.sheet;
+    const phase = this.stavePhase(finale);
+    const wave = this.style.staveWavelengthTiles;
+    this.stavesCalm.visible = !finale;
+    this.stavesSwell.visible = finale;
+    (finale ? this.stavesSwell : this.stavesCalm).x = (((phase % wave) + wave) % wave) * t;
     // The notes riding them, running on with the melody.
     const run = still ? 0 : (this.style.staveTilesPerSecond * (finale ? 1.6 : 1) * deltaMs) / 1000;
+    const stamps = this.riderStamps;
+    stamps.begin();
     for (const r of this.riders) {
       r.x += run;
       if (r.x > x0 + w) r.x -= w;
-      const y = this.staveY(r.stave, r.x, finale) + r.step * 0.1 + 0.05;
+      const y = this.staveY(r.stave, r.x, finale, phase) + r.step * 0.1 + 0.05;
       if (!this.open(r.x, y)) continue;
-      drawQuaver(
-        g,
-        tileX(view, r.x),
-        tileY(view, y),
-        t * 0.6,
-        hex(palette.waterFoam),
-        0.75,
-        r.flags,
+      const note = this.book.get(`quaver${r.flags}`, t, (q) =>
+        drawQuaver(q, 0, 0, t * 0.6, hex(palette.waterFoam), 0.75, r.flags),
       );
+      stamps.place(note, tileX(view, r.x), tileY(view, y));
     }
+    stamps.end();
 
     if (this.conductor !== null) this.drawConductor(g, state, view, this.conductor, deltaMs);
   }
@@ -667,8 +767,11 @@ export class OperaTheme implements Theme {
 
   drawStructures(state: MatchState, view: ViewTransform): void {
     this.scenery.refresh(state, view, this.art);
-    const g = this.structureGfx;
-    g.clear();
+    this.structures.draw(state, view, (g, island) => this.drawIsland(g, island, view));
+  }
+
+  /** One island's structures, for `IslandParts`: the board holds that island's alone. */
+  private drawIsland(g: Graphics, state: MatchState, view: ViewTransform): void {
     const t = view.tile;
     const wallAt = (x: number, y: number): number =>
       x >= 0 && y >= 0 && x < state.width && y < state.height
@@ -927,6 +1030,7 @@ export class OperaTheme implements Theme {
     perf.end('flow');
     const g = this.effectGfx;
     g.clear();
+    this.lateGfx.clear();
     this.seaLife.draw(g, view, this.art, frame.deltaMs);
     drawDrain(g, view, frame.drain, this.art);
     drawSealGlow(g, view, frame.sealGlow, this.art);
@@ -943,8 +1047,8 @@ export class OperaTheme implements Theme {
     this.drawChords(view, frame.deltaMs);
     this.drawGlisses(view, frame.deltaMs);
     this.drawSpotlights(state, view);
-    this.winnerBanners.draw(g, view, state, this.art, frame.celebrate, frame.deltaMs);
-    this.fireworks.draw(g, view, this.art, frame.celebrate, frame.deltaMs);
+    this.winnerBanners.draw(this.lateGfx, view, state, this.art, frame.celebrate, frame.deltaMs);
+    this.fireworks.draw(this.lateGfx, view, this.art, frame.celebrate, frame.deltaMs);
   }
 
   /**
@@ -1023,6 +1127,13 @@ export class OperaTheme implements Theme {
   private drawHorns(state: MatchState, view: ViewTransform, deltaMs: number): void {
     const g = this.effectGfx;
     const t = view.tile;
+    const coil = this.book.get('coil', t, (k) => {
+      k.circle(0, 0, t * 0.26);
+      k.stroke({ width: Math.max(2, t * 0.11), color: BRASS_DARK });
+      k.circle(0, 0, t * 0.26);
+      k.stroke({ width: Math.max(1.5, t * 0.07), color: BRASS });
+    });
+    this.coilStamps.begin();
     for (const cannon of state.cannons) {
       const aim = this.aims.of(state, cannon.id);
       if (aim === null) continue;
@@ -1039,10 +1150,7 @@ export class OperaTheme implements Theme {
       const ex = cx + dx * reach;
       const ey = cy + dy * reach;
       // The coil, and the tube out to the bell.
-      g.circle(cx, cy, t * 0.26);
-      g.stroke({ width: Math.max(2, t * 0.11), color: BRASS_DARK });
-      g.circle(cx, cy, t * 0.26);
-      g.stroke({ width: Math.max(1.5, t * 0.07), color: BRASS });
+      this.coilStamps.place(coil, cx, cy);
       g.moveTo(cx, cy).lineTo(ex, ey);
       g.stroke({ width: Math.max(2, t * 0.12), color: BRASS, cap: 'round' });
       // The bell, flaring.
@@ -1092,6 +1200,7 @@ export class OperaTheme implements Theme {
         }
       }
     }
+    this.coilStamps.end();
     this.aims.prune(state);
   }
 
@@ -1100,6 +1209,7 @@ export class OperaTheme implements Theme {
     const g = this.effectGfx;
     const t = view.tile;
     const now = state.tick + frame.tickFraction;
+    this.noteStamps.begin();
     for (const shot of state.shots) {
       const span = shot.impactTick - shot.launchTick;
       const p = span <= 0 ? 1 : Math.min(1, Math.max(0, (now - shot.launchTick) / span));
@@ -1115,15 +1225,23 @@ export class OperaTheme implements Theme {
       g.fill({ color: this.colour(shot.owner, 'light'), alpha: 0.35 });
       const size = t * (0.7 + 0.2 * high);
       const rock = motionReduced() ? 0 : Math.sin(this.clock / 140 + shot.id) * 0.35;
-      drawQuaver(g, x + 1, y + 1, size, this.dark, 0.7, 1 + (shot.id % 2), rock);
-      drawQuaver(g, x, y, size, this.colour(shot.owner, 'base'), 1, 1 + (shot.id % 2), rock);
+      // The note and its shadow, drawn for a few heights and scaled the rest of the way.
+      const flags = 1 + (shot.id % 2);
+      const tier = Math.round(high * 4) / 4;
+      const drawn = t * (0.7 + 0.2 * tier);
+      const note = this.book.get(`note|${shot.owner}|${flags}|${tier}`, t, (k) => {
+        drawQuaver(k, 1, 1, drawn, this.dark, 0.7, flags);
+        drawQuaver(k, 0, 0, drawn, this.colour(shot.owner, 'base'), 1, flags);
+      });
+      this.noteStamps.place(note, x, y, { rotation: rock, scale: size / drawn });
       drawShotTarget(g, view, shot, p, this.art, frame.humanPlayer);
     }
+    this.noteStamps.end();
   }
 
   /** A shot at sea: rings of sound spreading on the water. */
   private drawRings(view: ViewTransform, deltaMs: number): void {
-    const g = this.effectGfx;
+    const g = this.lateGfx;
     const t = view.tile;
     for (const s of this.rings) {
       s.age += deltaMs;
@@ -1146,7 +1264,7 @@ export class OperaTheme implements Theme {
 
   /** Keys knocked out of a wall, tumbling and bouncing once. */
   private drawBits(view: ViewTransform, deltaMs: number): void {
-    const g = this.effectGfx;
+    const g = this.lateGfx;
     const t = view.tile;
     const dt = deltaMs / 1000;
     for (const b of this.bits) {
@@ -1180,7 +1298,7 @@ export class OperaTheme implements Theme {
 
   /** The sour note a hit knocks out of a wall: crooked, cracked, jumping up and fading. */
   private drawSours(view: ViewTransform, deltaMs: number): void {
-    const g = this.effectGfx;
+    const g = this.lateGfx;
     const t = view.tile;
     for (const s of this.sours) {
       s.age += deltaMs;
@@ -1202,7 +1320,7 @@ export class OperaTheme implements Theme {
 
   /** A piece set down lands as a chord: three heads stacked on one stem, rising and fading. */
   private drawChords(view: ViewTransform, deltaMs: number): void {
-    const g = this.effectGfx;
+    const g = this.lateGfx;
     const t = view.tile;
     for (const c of this.chords) {
       c.age += deltaMs;
@@ -1219,7 +1337,7 @@ export class OperaTheme implements Theme {
 
   /** A swept key's glissando: a run of small notes skipping up and away, one after another. */
   private drawGlisses(view: ViewTransform, deltaMs: number): void {
-    const g = this.effectGfx;
+    const g = this.lateGfx;
     const t = view.tile;
     for (const s of this.glisses) {
       s.age += deltaMs;
@@ -1247,7 +1365,7 @@ export class OperaTheme implements Theme {
   private drawSpotlights(state: MatchState, view: ViewTransform): void {
     const finale = (state.phase === 'build' && state.overtime) || inFinalRound(state);
     if (!finale) return;
-    const g = this.effectGfx;
+    const g = this.lateGfx;
     const t = view.tile;
     const still = motionReduced();
     const top = view.top;

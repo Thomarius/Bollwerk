@@ -12,7 +12,9 @@ import { roseSpot } from './parchment.js';
 import { weatherFor, type Weather } from './pixel/atmosphere.js';
 import { OktoberfestSeaLife } from './seaLife.js';
 import type { SceneryItem } from './scenery.js';
+import { IslandParts } from './islandParts.js';
 import { SceneryLayer } from './sceneryLayer.js';
+import { StampBook, Stamps } from './stamps.js';
 import {
   FlagHoist,
   GhostMotion,
@@ -184,8 +186,26 @@ export class OktoberfestTheme implements Theme {
     (g, view, items) => drawWiesnScenery(g, view, items, this.art),
     () => FOAM,
   );
-  private readonly structureGfx = new Graphics();
+  /** Walls, houses and guns, an island to a `Graphics`, redrawn where they change. */
+  private readonly structures = new IslandParts();
+  /** What lies under the kegs: the sea's life, the glow of a seal, the smoke of ruins. */
   private readonly effectGfx = new Graphics();
+  /**
+   * The Maß on every tent, drawn again only as one fills or empties (PLAN 11.22): the same
+   * picture sixty times a second was a Maß's worth of vertices on every tent, every frame.
+   */
+  private readonly mugGfx = new Graphics();
+  private mugsDrawn = '';
+  /** The kegs, a stamp a colour drawn once and turned to the target (`stamps.ts`). */
+  private readonly kegStamps = new Stamps();
+  /** Everything over the kegs: shots' shadows and crumbs, splashes, the band, the finish. */
+  private readonly lateGfx = new Graphics();
+  /**
+   * The pretzels in flight, stamps drawn once and spun: stroked anew each frame with round
+   * joins they were three quarters of the effects' vertices, 70 000 at eight players.
+   */
+  private readonly pretzelStamps = new Stamps();
+  private readonly book = new StampBook();
   private readonly overlayGfx = new Graphics();
 
   private terrain: Uint8Array | null = null;
@@ -224,19 +244,30 @@ export class OktoberfestTheme implements Theme {
     this.weather = weatherFor(this.seed, art.pixel.weatherOdds);
     layers.terrain.addChild(this.terrainGfx, this.flowGfx);
     layers.territory.addChild(this.scenery.gfx, this.territoryGfx);
-    layers.structures.addChild(this.structureGfx);
-    layers.effects.addChild(this.effectGfx);
+    layers.structures.addChild(this.structures.container);
+    layers.effects.addChild(
+      this.effectGfx,
+      this.mugGfx,
+      this.kegStamps.container,
+      this.lateGfx,
+      this.pretzelStamps.container,
+    );
     layers.overlay.addChild(this.overlayGfx);
     return Promise.resolve();
   }
 
   destroy(): void {
+    this.kegStamps.destroy();
+    this.pretzelStamps.destroy();
+    this.book.destroy();
+    this.mugGfx.destroy();
+    this.lateGfx.destroy();
+    this.structures.destroy();
     this.scenery.destroy();
     for (const g of [
       this.terrainGfx,
       this.flowGfx,
       this.territoryGfx,
-      this.structureGfx,
       this.effectGfx,
       this.overlayGfx,
     ]) {
@@ -580,8 +611,11 @@ export class OktoberfestTheme implements Theme {
 
   drawStructures(state: MatchState, view: ViewTransform): void {
     this.scenery.refresh(state, view, this.art);
-    const g = this.structureGfx;
-    g.clear();
+    this.structures.draw(state, view, (g, island) => this.drawIsland(g, island, view));
+  }
+
+  /** One island's structures, for `IslandParts`: the board holds that island's alone. */
+  private drawIsland(g: Graphics, state: MatchState, view: ViewTransform): void {
     const t = view.tile;
     const wallAt = (x: number, y: number): number =>
       x >= 0 && y >= 0 && x < state.width && y < state.height
@@ -862,6 +896,7 @@ export class OktoberfestTheme implements Theme {
     perf.end('flow');
     const g = this.effectGfx;
     g.clear();
+    this.lateGfx.clear();
     this.seaLife.draw(g, view, this.art, frame.deltaMs);
     drawDrain(g, view, frame.drain, this.art);
     drawSealGlow(g, view, frame.sealGlow, this.art);
@@ -870,7 +905,9 @@ export class OktoberfestTheme implements Theme {
     this.ruins.draw(g, view, state, 0xd8d0c0, null, frame.deltaMs);
     drawChoices(g, view, frame.choices, this.art);
     this.drawMugs(state, view, frame);
-    drawMainCastles(g, view, state, this.art, frame.castleSealed);
+    // Over the kegs rather than under, which nobody can see: a crown is on a tent, a keg
+    // on a dray.
+    drawMainCastles(this.lateGfx, view, state, this.art, frame.castleSealed);
     this.drawKegs(state, view, frame.deltaMs);
     this.drawShots(state, view, frame);
     this.drawRings(view, frame.deltaMs);
@@ -880,8 +917,8 @@ export class OktoberfestTheme implements Theme {
     this.drawClinks(view, frame.deltaMs);
     this.drawBand(state, view, frame);
     this.drawDrifts(view, frame.deltaMs);
-    this.winnerBanners.draw(g, view, state, this.art, frame.celebrate, frame.deltaMs);
-    this.fireworks.draw(g, view, this.art, frame.celebrate, frame.deltaMs);
+    this.winnerBanners.draw(this.lateGfx, view, state, this.art, frame.celebrate, frame.deltaMs);
+    this.fireworks.draw(this.lateGfx, view, this.art, frame.celebrate, frame.deltaMs);
   }
 
   /** The sweep's crates fading where they stood, as they go back for the deposit. */
@@ -911,11 +948,18 @@ export class OktoberfestTheme implements Theme {
    * "sealed" is a full Maß, and nobody needs telling what a breach costs.
    */
   private drawMugs(state: MatchState, view: ViewTransform, frame: EffectFrame): void {
-    const g = this.effectGfx;
+    const g = this.mugGfx;
     this.mugs.update(frame.castleSealed, this.clock, this.art);
-    for (const castle of state.castles) {
+    const fills = state.castles.map((castle) => ({
+      castle,
+      fill: this.mugs.raised(castle.id, this.clock, this.art) ?? 0,
+    }));
+    const key = `${view.tile}|${view.originX}|${view.originY}|${fills.map((m) => `${m.castle.id}:${m.castle.x},${m.castle.y}:${m.fill}`).join(' ')}`;
+    if (key === this.mugsDrawn) return;
+    this.mugsDrawn = key;
+    g.clear();
+    for (const { castle, fill } of fills) {
       const k = this.tent(view, castle);
-      const fill = this.mugs.raised(castle.id, this.clock, this.art) ?? 0;
       drawMass(g, k.cx, k.apex + k.W * 0.06, k.W * 0.52, fill, this.brown);
     }
   }
@@ -926,8 +970,10 @@ export class OktoberfestTheme implements Theme {
    * side, its hoops dull, dripping into a puddle.
    */
   private drawKegs(state: MatchState, view: ViewTransform, deltaMs: number): void {
-    const g = this.effectGfx;
+    const g = this.lateGfx;
     const t = view.tile;
+    const stamps = this.kegStamps;
+    stamps.begin();
     for (const cannon of state.cannons) {
       const aim = this.aims.of(state, cannon.id);
       if (aim === null) continue;
@@ -939,40 +985,25 @@ export class OktoberfestTheme implements Theme {
       const angle = cannon.active ? aim.angle : Math.PI * 0.5 + 0.35;
       const dx = Math.sin(angle);
       const dy = -Math.cos(angle) * 0.8;
-      const back = r * (0.55 + 0.25 * kick);
       const front = r * (0.75 - 0.25 * kick);
-      const half = r * 0.48;
-      // Across the keg: its sides bulge at the middle.
+      // Across the keg.
       const nx = -dy;
       const ny = dx;
       const along = (u: number, v: number): [number, number] => [
         cx + dx * u + nx * v,
         cy + dy * u + ny * v,
       ];
-      const mid = (front - back) / 2;
-      g.poly([
-        ...along(-back, -half * 0.82),
-        ...along(mid, -half),
-        ...along(front, -half * 0.82),
-        ...along(front, half * 0.82),
-        ...along(mid, half),
-        ...along(-back, half * 0.82),
-      ]);
-      g.fill({ color: cannon.active ? KEG : mix(KEG, 0x808080, 0.4) });
-      g.stroke({ width: Math.max(1, t * 0.05), color: this.brown, alpha: 0.85, join: 'round' });
-      for (const f of [0.18, 0.82]) {
-        const u = -back + (front + back) * f;
-        g.moveTo(...along(u, -half * 0.92)).lineTo(...along(u, half * 0.92));
-      }
-      g.stroke({
-        width: Math.max(1.5, t * 0.09),
-        color: this.colour(cannon.owner, cannon.active ? 'base' : 'dark'),
+      // The keg at rest, turned and foreshortened: `along` is a turn and a uniform scale,
+      // since its two axes are square and of one length, and the kick only slides it back.
+      const keg = this.book.get(`keg|${cannon.owner}|${cannon.active}|${r}`, t, (k) =>
+        this.drawKeg(k, view, r, cannon.owner, cannon.active),
+      );
+      const slide = -0.25 * kick * r;
+      stamps.place(keg, cx + dx * slide, cy + dy * slide, {
+        rotation: Math.atan2(dy, dx),
+        scale: Math.hypot(dx, dy),
       });
-      // The brass tap at its front.
       const [tx, ty] = along(front + r * 0.12, 0);
-      g.circle(tx, ty, Math.max(1.5, r * 0.16));
-      g.fill({ color: BRASS });
-      g.stroke({ width: 1, color: this.brown, alpha: 0.7 });
       if (!cannon.active) {
         // Dripping into a puddle under the tap: the last of it.
         g.ellipse(tx + t * 0.1, ty + t * 0.25, t * 0.25, t * 0.1);
@@ -997,14 +1028,60 @@ export class OktoberfestTheme implements Theme {
         g.fill({ color: FOAM, alpha: 0.85 * (1 - k) });
       }
     }
+    stamps.end();
     this.aims.prune(state);
+  }
+
+  /** A keg at rest lying along x, its middle at the origin: the stamp `drawKegs` turns. */
+  private drawKeg(
+    g: Graphics,
+    view: ViewTransform,
+    r: number,
+    owner: number,
+    active: boolean,
+  ): void {
+    const t = view.tile;
+    const back = r * 0.55;
+    const front = r * 0.75;
+    const half = r * 0.48;
+    const mid = (front - back) / 2;
+    g.poly([
+      -back,
+      -half * 0.82,
+      mid,
+      -half,
+      front,
+      -half * 0.82,
+      front,
+      half * 0.82,
+      mid,
+      half,
+      -back,
+      half * 0.82,
+    ]);
+    g.fill({ color: active ? KEG : mix(KEG, 0x808080, 0.4) });
+    g.stroke({ width: Math.max(1, t * 0.05), color: this.brown, alpha: 0.85, join: 'round' });
+    for (const f of [0.18, 0.82]) {
+      const u = -back + (front + back) * f;
+      g.moveTo(u, -half * 0.92).lineTo(u, half * 0.92);
+    }
+    g.stroke({
+      width: Math.max(1.5, t * 0.09),
+      color: this.colour(owner, active ? 'base' : 'dark'),
+    });
+    // The brass tap at its front.
+    g.circle(front + r * 0.12, 0, Math.max(1.5, r * 0.16));
+    g.fill({ color: BRASS });
+    g.stroke({ width: 1, color: this.brown, alpha: 0.7 });
   }
 
   /** Shots: pretzels, spinning as they fly, a ring of the owner's colour round each. */
   private drawShots(state: MatchState, view: ViewTransform, frame: EffectFrame): void {
-    const g = this.effectGfx;
+    const g = this.lateGfx;
     const t = view.tile;
     const now = state.tick + frame.tickFraction;
+    const stamps = this.pretzelStamps;
+    stamps.begin();
     for (const shot of state.shots) {
       const span = shot.impactTick - shot.launchTick;
       const at = (q: number): { x: number; y: number; lift: number } => {
@@ -1036,13 +1113,21 @@ export class OktoberfestTheme implements Theme {
       const size = t * (0.3 + 0.1 * high);
       g.circle(here.x, here.y, size * 1.05);
       g.fill({ color: this.colour(shot.owner, 'base'), alpha: 0.45 });
-      drawPretzel(g, here.x, here.y, size, motionReduced() ? 0 : this.clock / 110 + shot.id);
+      // Drawn for a few heights between low and high, and scaled the rest of the way.
+      const tier = Math.round(high * 4) / 4;
+      const drawn = t * (0.3 + 0.1 * tier);
+      const pretzel = this.book.get(`pretzel|${tier}`, t, (k) => drawPretzel(k, 0, 0, drawn, 0));
+      stamps.place(pretzel, here.x, here.y, {
+        rotation: motionReduced() ? 0 : this.clock / 110 + shot.id,
+        scale: size / drawn,
+      });
       drawShotTarget(g, view, shot, p, this.art, frame.humanPlayer);
     }
+    stamps.end();
   }
 
   private drawRings(view: ViewTransform, deltaMs: number): void {
-    const g = this.effectGfx;
+    const g = this.lateGfx;
     const t = view.tile;
     for (const s of this.rings) {
       s.age += deltaMs;
@@ -1061,7 +1146,7 @@ export class OktoberfestTheme implements Theme {
 
   /** Bottles tumbling and bouncing, caps scattering, beer splashing back down. */
   private drawBits(view: ViewTransform, deltaMs: number): void {
-    const g = this.effectGfx;
+    const g = this.lateGfx;
     const t = view.tile;
     const dt = deltaMs / 1000;
     for (const b of this.bits) {
@@ -1102,7 +1187,7 @@ export class OktoberfestTheme implements Theme {
 
   /** The foam a burst crate throws up: a head of white rounds, swelling and falling away. */
   private drawFoams(view: ViewTransform, deltaMs: number): void {
-    const g = this.effectGfx;
+    const g = this.lateGfx;
     const t = view.tile;
     for (const f of this.foams) {
       f.age += deltaMs;
@@ -1124,7 +1209,7 @@ export class OktoberfestTheme implements Theme {
 
   /** The deposit on a swept crate: a gold coin flipping as it rises, fading. */
   private drawCoins(view: ViewTransform, deltaMs: number): void {
-    const g = this.effectGfx;
+    const g = this.lateGfx;
     const t = view.tile;
     const span = this.style.coinMs;
     for (const c of this.coins) {
@@ -1144,7 +1229,7 @@ export class OktoberfestTheme implements Theme {
 
   /** A glint off a bottle where a crate was set down: a four-pointed star, flashing. */
   private drawClinks(view: ViewTransform, deltaMs: number): void {
-    const g = this.effectGfx;
+    const g = this.lateGfx;
     const t = view.tile;
     for (const c of this.clinks) {
       c.age += deltaMs;
@@ -1181,7 +1266,7 @@ export class OktoberfestTheme implements Theme {
    * swaying as they go — "Ein Prosit", one last time.
    */
   private drawBand(state: MatchState, view: ViewTransform, frame: EffectFrame): void {
-    const g = this.effectGfx;
+    const g = this.lateGfx;
     const t = view.tile;
     const playing = (state.phase === 'build' && state.overtime) || inFinalRound(state);
     if (playing && !motionReduced()) {
@@ -1222,7 +1307,7 @@ export class OktoberfestTheme implements Theme {
     const rain = this.weather === 'rain';
     const snow = this.weather === 'snow';
     if ((!rain && !snow) || motionReduced()) return;
-    const g = this.effectGfx;
+    const g = this.lateGfx;
     const t = view.tile;
     const count = rain ? this.style.rainCount : this.style.snowCount;
     while (this.drifts.length < count) {

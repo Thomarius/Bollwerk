@@ -2,6 +2,7 @@ import type { ArtConfig, FlatStyleConfig } from '@bollwerk/config';
 import { Structure, Terrain, type MatchState } from '@bollwerk/sim';
 import { Graphics } from 'pixi.js';
 
+import { IslandParts } from './islandParts.js';
 import {
   FlagHoist,
   GhostMotion,
@@ -83,7 +84,8 @@ export class FlatTheme implements Theme {
     (g, view, items) => drawFlatScenery(g, view, items, this.art),
     () => hex(this.art.palette.grassLight),
   );
-  private readonly structureGfx = new Graphics();
+  /** Walls, houses and guns, an island to a `Graphics`, redrawn where they change. */
+  private readonly structures = new IslandParts();
   private readonly effectGfx = new Graphics();
   private readonly overlayGfx = new Graphics();
 
@@ -101,21 +103,16 @@ export class FlatTheme implements Theme {
     this.style = art.flat;
     layers.terrain.addChild(this.terrainGfx);
     layers.territory.addChild(this.scenery.gfx, this.territoryGfx);
-    layers.structures.addChild(this.structureGfx);
+    layers.structures.addChild(this.structures.container);
     layers.effects.addChild(this.effectGfx);
     layers.overlay.addChild(this.overlayGfx);
     return Promise.resolve();
   }
 
   destroy(): void {
+    this.structures.destroy();
     this.scenery.destroy();
-    for (const g of [
-      this.terrainGfx,
-      this.territoryGfx,
-      this.structureGfx,
-      this.effectGfx,
-      this.overlayGfx,
-    ]) {
+    for (const g of [this.terrainGfx, this.territoryGfx, this.effectGfx, this.overlayGfx]) {
       g.destroy();
     }
   }
@@ -185,8 +182,11 @@ export class FlatTheme implements Theme {
 
   drawStructures(state: MatchState, view: ViewTransform): void {
     this.scenery.refresh(state, view, this.art);
-    const g = this.structureGfx;
-    g.clear();
+    this.structures.draw(state, view, (g, island) => this.drawIsland(g, island, view));
+  }
+
+  /** One island's structures, for `IslandParts`: the board holds that island's alone. */
+  private drawIsland(g: Graphics, state: MatchState, view: ViewTransform): void {
     const inset = view.tile >= 6 ? this.style.structureInsetPx : 0;
     const size = view.tile - inset * 2;
 

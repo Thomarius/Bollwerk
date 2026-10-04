@@ -1362,6 +1362,41 @@ is already built is nearly free on the GPU; rebuilding it is what costs.
 Each step measured before and after with the readout, and checked by eye that nothing looks
 different. Opera and Oktoberfest first.
 
+**Progress (2026-10-04)**. The readout is `&perf=1` (`client/src/perf.ts`): milliseconds a
+section, frame intervals with percentiles and stutter counts, and the vertices Pixi cut into
+triangles again, by `Graphics` (named by layer) and at their worst in one frame — the count
+that matters, since Pixi triangulates a changed `Graphics` inside `render`. Headless Chrome
+on this machine renders on its real GPU (AMD Renoir, integrated), so it measures too; a
+script drove a watched match at eight players, `seed=3&level=8&snapshot=combat&round=3`.
+Found and done, in order of effect:
+
+- **`motionReduced()` read storage and built a media query at every call**, and the styles
+  call it per particle and per point of a curve: Opera's staves called it 37 000 times a
+  frame, 48 ms. Cached (`motion.ts`): Opera 13.5 → 41 fps alone, and every style gains.
+- **Walls redrawn whole at every hit**: Oktoberfest's were 200 000 vertices, 126 times in
+  30 s — the stutter. `IslandParts` (`render/islandParts.ts`) draws an island to a
+  `Graphics` and redraws the one hit: 35 000 at worst. Done in Minimal, Parchment,
+  Oktoberfest and Opera.
+- **Stamps** (`render/stamps.ts`): a `GraphicsContext` drawn once, shared by many
+  `Graphics` that are only moved, turned, scaled and faded. Opera's riding notes, horn coils
+  and notes in flight; Oktoberfest's kegs and pretzels (stroked with round joins, 70 000
+  vertices a frame).
+- **Drawn once, slid**: Opera's staves, masked by the open sea; **drawn on a change**:
+  Opera's ink blots, Oktoberfest's Maß, Parchment's ink stains.
+
+| Style (8 players) | fps         | frames > 50 ms | render ms   | vertices/frame |
+| ----------------- | ----------- | -------------- | ----------- | -------------- |
+| Opera             | 13.5 → 58.8 | 279 → 7        | 14.8 → 4.0  | 78k → 21k      |
+| Oktoberfest       | 45.2 → 57.8 | 84 → 9         | 10.0 → 4.2  | 59k → 22k      |
+| Parchment         | 53.7 → 58.7 | 14 → 6         | 7.7 → 3.3   | 43k → 21k      |
+| Minimal           | 59.2 → 59.1 | 3 → 6          | 0.9 → 0.8   | 3k → 3k        |
+| Medieval (cache)  | 34.7 → 44.3 | 37 → 12        | 18.8 → 15.2 | 57k → 59k      |
+| Chocolate (cache) | 44.8 → 50.6 | 49 → 24        | 13.7 → 11.2 | 83k → 82k      |
+
+The screen's 60 Hz caps fps here. **Next**: the user's figures on their PC for Minimal,
+Parchment and Opera (or Oktoberfest), before and after; if they hold, the same three tools in
+every other style, Medieval (its effects layer, 50 000 a frame), Chocolate and Sakura first.
+
 ## 12. Deferred (explicitly out of scope for v1)
 
 Quick-match and matchmaking, accounts and persistence, ranking, mobile

@@ -6,6 +6,7 @@ import { timerSpot, type TimerSpot } from '../timerSpot.js';
 
 import { ParchmentSeaLife } from './seaLife.js';
 import { seaDepth } from './pixel.js';
+import { IslandParts } from './islandParts.js';
 import {
   FlagHoist,
   GhostMotion,
@@ -188,7 +189,10 @@ export class ParchmentTheme implements Theme {
    * walls, a stain showed through the wall rebuilt over it for rounds after.
    */
   private readonly stainGfx = new Graphics();
-  private readonly structureGfx = new Graphics();
+  /** The stains as last drawn: they change at a hit and a round, not every frame (PLAN 11.22). */
+  private stainsDrawn = '';
+  /** Walls, houses and guns, an island to a `Graphics`, redrawn where they change. */
+  private readonly structures = new IslandParts();
   private readonly effectGfx = new Graphics();
   private readonly overlayGfx = new Graphics();
   private grain: Sprite | null = null;
@@ -219,20 +223,20 @@ export class ParchmentTheme implements Theme {
     this.layers = layers;
     layers.terrain.addChild(this.terrainGfx, this.roseGfx);
     layers.territory.addChild(this.scenery.gfx, this.territoryGfx, this.stainGfx);
-    layers.structures.addChild(this.structureGfx);
+    layers.structures.addChild(this.structures.container);
     layers.effects.addChild(this.effectGfx);
     layers.overlay.addChild(this.overlayGfx);
     return Promise.resolve();
   }
 
   destroy(): void {
+    this.structures.destroy();
     this.scenery.destroy();
     for (const g of [
       this.terrainGfx,
       this.roseGfx,
       this.territoryGfx,
       this.stainGfx,
-      this.structureGfx,
       this.effectGfx,
       this.overlayGfx,
     ]) {
@@ -551,8 +555,11 @@ export class ParchmentTheme implements Theme {
 
   drawStructures(state: MatchState, view: ViewTransform): void {
     this.scenery.refresh(state, view, this.art);
-    const g = this.structureGfx;
-    g.clear();
+    this.structures.draw(state, view, (g, island) => this.drawIsland(g, island, view));
+  }
+
+  /** One island's structures, for `IslandParts`: the board holds that island's alone. */
+  private drawIsland(g: Graphics, state: MatchState, view: ViewTransform): void {
     const { palette } = this.art;
     const t = view.tile;
     const ink = this.style.inkWidthPx;
@@ -811,6 +818,10 @@ export class ParchmentTheme implements Theme {
 
   /** Ink splashed where shots came down on land, fading over the rounds after. */
   private drawStains(view: ViewTransform): void {
+    const last = this.stains.at(-1);
+    const key = `${this.round}|${this.stains.length}|${last?.seed}|${view.tile}|${view.originX}|${view.originY}`;
+    if (key === this.stainsDrawn) return;
+    this.stainsDrawn = key;
     const g = this.stainGfx;
     g.clear();
     const t = view.tile;
