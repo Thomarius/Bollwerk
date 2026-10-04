@@ -23,6 +23,8 @@ import {
   type Rejection,
 } from '@bollwerk/sim';
 
+import { t } from './i18n.js';
+
 export interface LocalMatchOptions {
   seed: number;
   /**
@@ -78,7 +80,7 @@ export class LocalMatch {
     seats.forEach((seat, index) => {
       players[order[index] as number] = {
         // Numbered by seat, as the lobby and a room number them.
-        name: seat === null ? 'You' : `Bot ${index + 1}`,
+        name: seat === null ? t('local.you') : t('lobby.bot', { n: index + 1 }),
         isBot: seat !== null,
         team: options.teams?.[index] ?? index,
       };

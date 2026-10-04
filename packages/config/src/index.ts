@@ -3,6 +3,7 @@ export * from './terrain.js';
 export * from './art.js';
 export * from './audio.js';
 export * from './credits.js';
+export * from './locale.js';
 export * from './server.js';
 export * from './settings.js';
 export * from './ai.js';

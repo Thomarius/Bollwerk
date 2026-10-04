@@ -1,5 +1,6 @@
 import { isTeamMatch } from './scores.js';
 import type { MatchState } from '@bollwerk/sim';
+import { t } from './i18n.js';
 
 /**
  * Out, and watching (PLAN 11.18 Y3): a player knocked out stays to see the match finish,
@@ -12,7 +13,7 @@ import type { MatchState } from '@bollwerk/sim';
 export function watchingText(state: MatchState, humanPlayer: number): string | null {
   const me = state.players[humanPlayer];
   if (me === undefined || !me.eliminated || state.phase === 'game_over') return null;
-  return isTeamMatch(state) ? 'Your team is out — watching' : "You're out — watching";
+  return isTeamMatch(state) ? t('watching.outTeam') : t('watching.out');
 }
 
 export class WatchingStrip {
@@ -22,7 +23,7 @@ export class WatchingStrip {
   constructor(leave: () => void) {
     this.node.className = 'watching';
     this.node.hidden = true;
-    this.node.innerHTML = '<span></span><button class="leave-watching">Back to menu</button>';
+    this.node.innerHTML = `<span></span><button class="leave-watching">${t('watching.back')}</button>`;
     this.node.querySelector('button')?.addEventListener('click', leave);
     document.body.append(this.node);
   }

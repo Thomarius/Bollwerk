@@ -1,6 +1,7 @@
 import type { MatchState, PlayerState } from '@bollwerk/sim';
 
 import { isTeamMatch, teamLetter } from './scores.js';
+import { t } from './i18n.js';
 
 /**
  * What the banners over the islands should say.
@@ -57,10 +58,6 @@ export interface BannerText {
   urgent: boolean;
 }
 
-function lifeWord(count: number): string {
-  return count === 1 ? 'life' : 'lives';
-}
-
 export function bannersFor(
   state: MatchState,
   livesLost: ReadonlyMap<number, LifeLost>,
@@ -79,8 +76,11 @@ export function bannersFor(
       out.push({
         player: player.id,
         kind: 'out',
-        title: 'Knocked out',
-        detail: `${teamed ? `Team ${teamLetter(player.team)}` : player.name}, round ${player.eliminatedRound ?? state.round}`,
+        title: t('banner.out'),
+        detail: t('banner.outDetail', {
+          who: teamed ? t('team.name', { letter: teamLetter(player.team) }) : player.name,
+          round: player.eliminatedRound ?? state.round,
+        }),
         urgent: false,
       });
       continue;
@@ -96,11 +96,12 @@ export function bannersFor(
           kind: 'gain',
           title: `+${shown}`,
           // The total climbs with it, from what was held before this round.
-          detail:
-            `${player.score - points.amount + shown} total` +
-            (points.guns !== undefined && points.guns > 0
-              ? ` · +${points.guns} gun${points.guns === 1 ? '' : 's'}`
-              : ''),
+          detail: [
+            t('banner.gainTotal', { total: player.score - points.amount + shown }),
+            ...(points.guns !== undefined && points.guns > 0
+              ? [t('banner.gainGuns', { n: points.guns })]
+              : []),
+          ].join(' · '),
           urgent: false,
         });
       }
@@ -112,11 +113,11 @@ export function bannersFor(
     out.push({
       player: player.id,
       kind: 'life',
-      title: 'Life lost',
+      title: t('banner.lifeLost'),
       detail:
         lost.remaining > 0
-          ? `${player.name} — ${lives} ${teamed ? 'team ' : ''}${lifeWord(lives)} left`
-          : `${player.name} — last ${teamed ? 'team ' : ''}life`,
+          ? t(teamed ? 'banner.teamLivesLeft' : 'banner.livesLeft', { name: player.name, n: lives })
+          : t(teamed ? 'banner.lastTeamLife' : 'banner.lastLife', { name: player.name }),
       urgent: lost.remaining === 0,
     });
   }

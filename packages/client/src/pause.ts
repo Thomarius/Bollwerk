@@ -1,3 +1,6 @@
+import type { TextKey } from '@bollwerk/config';
+
+import { t } from './i18n.js';
 import { escape } from './lobby.js';
 import { saveEffects, storedEffects, type EffectsLevel } from './motion.js';
 import { refreshVolumeSliders, volumeSliders, type VolumeTarget } from './volume.js';
@@ -16,9 +19,9 @@ import { refreshVolumeSliders, volumeSliders, type VolumeTarget } from './volume
 
 /** The overlay's line: who paused, from the viewer's side. */
 export function pauseText(pausedBy: number, humanPlayer: number, names: readonly string[]): string {
-  if (pausedBy === humanPlayer || pausedBy < 0) return 'You paused the match';
+  if (pausedBy === humanPlayer || pausedBy < 0) return t('pause.you');
   const name = names[pausedBy];
-  return name === undefined ? 'The match is paused' : `${name} paused the match`;
+  return name === undefined ? t('pause.anyone') : t('pause.by', { name });
 }
 
 /** What the pause menu does, given by the match it belongs to. */
@@ -39,10 +42,10 @@ export interface PauseActions {
 }
 
 /** The Effects choices as the main menu names them. */
-const EFFECTS: readonly [EffectsLevel, string][] = [
-  ['high', 'Glowing'],
-  ['full', 'Standard'],
-  ['reduced', 'Reduced'],
+export const EFFECTS: readonly [EffectsLevel, TextKey][] = [
+  ['high', 'effects.high'],
+  ['full', 'effects.full'],
+  ['reduced', 'effects.reduced'],
 ];
 
 export class PauseControls {
@@ -66,8 +69,8 @@ export class PauseControls {
   constructor(private readonly actions: PauseActions) {
     this.button = document.createElement('button');
     this.button.id = 'pause';
-    this.button.textContent = 'Pause';
-    this.button.title = 'Pause the match for everyone (Esc)';
+    this.button.textContent = t('pause.button');
+    this.button.title = t('pause.buttonTitle');
     this.button.addEventListener('click', () => {
       actions.click();
       actions.toggle(!this.paused);
@@ -80,18 +83,20 @@ export class PauseControls {
     this.overlay.className = 'pause-overlay';
     this.overlay.hidden = true;
     const options = EFFECTS.map(
-      ([value, name]) => `<option value="${value}">${escape(name)}</option>`,
+      ([value, key]) => `<option value="${value}">${escape(t(key))}</option>`,
     ).join('');
     this.overlay.innerHTML =
-      `<div class="panel"><strong>Paused</strong><p class="who"></p>` +
-      `<button class="resume">Resume</button>` +
+      `<div class="panel"><strong>${t('pause.title')}</strong><p class="who"></p>` +
+      `<button class="resume">${t('pause.resume')}</button>` +
       `<div class="settings">` +
-      `<label>Effects <select class="effects">${options}</select></label>` +
+      `<label>${t('settings.effects')} <select class="effects">${options}</select></label>` +
       `<button class="sound quiet"></button>` +
-      (actions.looks === undefined ? '' : `<button class="looks quiet">Looks</button>`) +
-      `</div><small class="glow-note" hidden>Glowing takes effect from the next match.</small>` +
-      `<button class="leave-match quiet">Leave match</button>` +
-      `<small>or press Esc to resume</small></div>`;
+      (actions.looks === undefined
+        ? ''
+        : `<button class="looks quiet">${t('pause.looks')}</button>`) +
+      `</div><small class="glow-note" hidden>${t('pause.glowNote')}</small>` +
+      `<button class="leave-match quiet">${t('pause.leave')}</button>` +
+      `<small>${t('pause.escHint')}</small></div>`;
     this.line = this.overlay.querySelector<HTMLParagraphElement>('.who')!;
     this.sound = this.overlay.querySelector<HTMLButtonElement>('.sound')!;
     this.leaving = this.overlay.querySelector<HTMLButtonElement>('.leave-match')!;
@@ -129,7 +134,7 @@ export class PauseControls {
         return;
       }
       this.leaving.classList.add('confirm');
-      this.leaving.textContent = 'Really leave? Click again';
+      this.leaving.textContent = t('pause.leaveConfirm');
     });
 
     document.body.append(this.button, this.overlay);
@@ -137,7 +142,7 @@ export class PauseControls {
   }
 
   private showSound(): void {
-    this.sound.textContent = this.actions.isMuted() ? 'Sound off' : 'Sound on';
+    this.sound.textContent = this.actions.isMuted() ? t('sound.off') : t('sound.on');
     this.sound.classList.toggle('off', this.actions.isMuted());
   }
 
@@ -146,7 +151,7 @@ export class PauseControls {
     this.over = over;
     this.paused = pausedBy !== null;
     this.button.hidden = over;
-    this.button.textContent = this.paused ? 'Resume' : 'Pause';
+    this.button.textContent = this.paused ? t('pause.resume') : t('pause.button');
     const text = pausedBy === null || over ? null : pauseText(pausedBy, humanPlayer, names);
     if (text === this.shown) return;
     const opening = this.shown === null && text !== null;
@@ -159,7 +164,7 @@ export class PauseControls {
       this.showSound();
       refreshVolumeSliders(this.sliders, this.actions.volumes);
       this.leaving.classList.remove('confirm');
-      this.leaving.textContent = 'Leave match';
+      this.leaving.textContent = t('pause.leave');
     }
   }
 

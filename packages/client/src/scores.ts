@@ -1,4 +1,7 @@
+import type { TextKey } from '@bollwerk/config';
 import { teamScore, type MatchState, type PlayerState } from '@bollwerk/sim';
+
+import { listOf, t, type TextParams } from './i18n.js';
 
 /**
  * What the HUD says about points: the round against the cap, the standings, and who
@@ -73,10 +76,8 @@ export function teamStandings(state: MatchState): TeamStanding[] {
 
 export function roundLabel(state: MatchState): string {
   const cap = state.ruleset.scoring.maxRounds;
-  if (cap === null) return `round ${state.round}`;
-  return inFinalRound(state)
-    ? `final round ${state.round} / ${cap}`
-    : `round ${state.round} / ${cap}`;
+  if (cap === null) return t('round.label', { round: state.round });
+  return t(inFinalRound(state) ? 'round.finalOf' : 'round.labelOf', { round: state.round, cap });
 }
 
 /**
@@ -93,7 +94,7 @@ export function inFinalRound(state: MatchState): boolean {
  * last round gets a banner of its own, with "Fire!" riding under it.
  */
 export function announcementTitle(state: MatchState): string | null {
-  return finalRoundNext(state) ? 'Final round' : null;
+  return finalRoundNext(state) ? t('announce.finalRound') : null;
 }
 
 /**
@@ -141,14 +142,14 @@ export interface RankEntry {
 export function ranking(state: MatchState, before: readonly number[] | null): RankEntry[] {
   const was = (id: number): number => before?.[id] ?? 0;
   const entries = isTeamMatch(state)
-    ? teamStandings(state).map((t) => ({
-        key: `t${t.team}`,
-        label: `Team ${teamLetter(t.team)}`,
-        lead: t.members[0] ?? 0,
-        score: t.score,
-        from: t.members.reduce((sum, id) => sum + was(id), 0),
-        out: t.eliminated,
-        order: t.team,
+    ? teamStandings(state).map((team) => ({
+        key: `t${team.team}`,
+        label: t('team.name', { letter: teamLetter(team.team) }),
+        lead: team.members[0] ?? 0,
+        score: team.score,
+        from: team.members.reduce((sum, id) => sum + was(id), 0),
+        out: team.eliminated,
+        order: team.team,
       }))
     : standings(state).map((p) => ({
         key: `p${p.player}`,
@@ -183,44 +184,46 @@ export interface AnnouncementLine {
  */
 export function announcementLines(state: MatchState): AnnouncementLine[] {
   // The final round's banner is headed "Final round", so the call it replaced rides under.
-  return finalRoundNext(state) ? [{ text: 'Fire!', emphasis: true }] : [];
-}
-
-function names(list: readonly string[]): string {
-  if (list.length <= 1) return list[0] ?? '';
-  return `${list.slice(0, -1).join(', ')} and ${list[list.length - 1]}`;
+  return finalRoundNext(state) ? [{ text: t('announce.fire'), emphasis: true }] : [];
 }
 
 /** The headline once a match is over, from the point of view of `humanPlayer`. */
 export function endOfMatchText(state: MatchState, humanPlayer: number): string {
-  if (state.draw) return 'Draw — nobody held a castle';
+  if (state.draw) return t('end.draw');
   const { winners } = state;
-  if (winners.length === 0) return 'Nobody wins';
+  if (winners.length === 0) return t('end.nobody');
 
-  const onPoints = state.endedBy === 'round_cap' ? ' on points' : '';
+  // Whole sentences for each, "on points" or not: where it goes differs between languages.
+  const points = state.endedBy === 'round_cap';
+  const say = (plain: TextKey, onPoints: TextKey, params: TextParams = {}): string =>
+    t(points ? onPoints : plain, params);
   if (isTeamMatch(state)) {
     // A team wins or loses whole, so the headline names teams, not their members.
     const teams = [...new Set(winners.map((id) => state.players[id]?.team ?? 0))];
     const yours = state.players[humanPlayer]?.team;
     if (teams.length === 1) {
       return teams[0] === yours
-        ? `Your team wins${onPoints}`
-        : `Team ${teamLetter(teams[0] as number)} wins${onPoints}`;
+        ? say('end.yourTeamWins', 'end.yourTeamWinsOnPoints')
+        : say('end.teamWins', 'end.teamWinsOnPoints', { letter: teamLetter(teams[0] as number) });
     }
-    const letters = names(teams.map(teamLetter));
+    const letters = listOf(teams.map(teamLetter));
     return yours !== undefined && teams.includes(yours)
-      ? `Your team shares the win${onPoints}`
-      : `Teams ${letters} share the win${onPoints}`;
+      ? say('end.yourTeamShares', 'end.yourTeamSharesOnPoints')
+      : say('end.teamsShare', 'end.teamsShareOnPoints', { letters });
   }
   if (winners.length === 1) {
     const winner = winners[0] as number;
     return winner === humanPlayer
-      ? `You win${onPoints}`
-      : `${state.players[winner]?.name ?? 'Nobody'} wins${onPoints}`;
+      ? say('end.youWin', 'end.youWinOnPoints')
+      : say('end.playerWins', 'end.playerWinsOnPoints', {
+          name: state.players[winner]?.name ?? t('end.nobodyName'),
+        });
   }
   // A shared win is a win for each of them, not a draw.
-  if (winners.includes(humanPlayer)) return `You share the win${onPoints}`;
-  return `${names(winners.map((id) => state.players[id]?.name ?? '?'))} share the win${onPoints}`;
+  if (winners.includes(humanPlayer)) return say('end.youShare', 'end.youShareOnPoints');
+  return say('end.playersShare', 'end.playersShareOnPoints', {
+    names: listOf(winners.map((id) => state.players[id]?.name ?? '?')),
+  });
 }
 
 /**

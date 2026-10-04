@@ -1325,9 +1325,55 @@ banners into a running match (ARCHIVE 12a) for what the clock cannot reach. CSS
 3. **German**: drafted by the agent, read and corrected by the user, then the layout pass.
 4. **French** the same way, when a reader for it is found.
 
-About one to two sessions for steps 1–3. **To decide with the user before starting**: the
-choice as a dropdown or as buttons with the languages' own names; whether the disclaimer is
-translated (its meaning, keeping the names) or stays in English; who reads the French.
+About one to two sessions for steps 1–3.
+
+**Decided with the user (2026-10-03)**:
+
+- **A dropdown** of the languages in their own names ("English", "Deutsch"), in the menu
+  beside Effects **and in the pause menu**; English and German first, French later.
+- German says **du**, as nearly every game does.
+- **The disclaimer and "Inspired by…" are translated**, their meaning kept and the names
+  (Rampart, Atari Games, Warner Bros.) unchanged; `CREDITS.md` and the README stay English.
+  `credits.ts` marks "Bollwerk" and "Rampart" in the text by pattern, so every language must
+  keep both words.
+- **The desktop app's server window is translated too**, following the system's language
+  (Electron's locale); the game inside it follows the dropdown as everywhere.
+- **Style and award names are translated where natural** — Mittelalter, Nacht, Pergament,
+  Spielzeugsteine, Buntglas, Schokolade, Blaupause, and German award titles — while names
+  that are names stay (Cyberpunk, Halloween, Sakura, Oktoberfest, Opera).
+
+**What the survey found** (2026-10-03): about 300 texts in the client and 25 in the desktop
+app and config. The parts needing more than a move: English-only plurals (`awards.ts`
+`plural`, `banners.ts` `lifeWord`, `hud.ts` cannon counts), ordinals (`awards.ts`
+`ordinal`), lists joined with "and" (`scores.ts` `names`, to `Intl.ListFormat`),
+possessives ("Ada's nemesis"), times and numbers ("18.6s", to the language's number
+format), fragments spliced into sentences (`banners.ts` "team lives", `main.ts` "the
+building look"), the personality words — which recordings carry, so they get display keys
+of their own rather than being changed — and `showError`'s raw English refusals, to be shown
+by `code` instead. The tests asserting English (lobby, scores, banners, awards, network,
+browser, pause, looks, watching, credits, summary, config) keep running in English unchanged,
+which is the proof that step 1 moved nothing.
+
+**Implementation order**: (1) the mechanism and `en.json`, every text moved, nothing on
+screen changed; (2) the dropdowns, `bollwerk.language`, `&lang=` and the page's `lang`
+attribute; (3) German drafted, read by the user; (4) the layout pass in German at 1024 and
+1400 pixels; (5) the desktop window; (6) tests — key and placeholder parity, plurals, the
+main screens rendered in German with no key or placeholder showing through.
+
+**Step 1 done (2026-10-04)**: 272 texts in `config/locale/en.json`, read through
+`packages/config` (`locale.ts`: the schema, `localeProblems`; `TextKey` is `en.json`'s keys,
+so a mistyped key fails the typecheck) and shown by `packages/client/src/i18n.ts` — `t`,
+`ordinal` (by `Intl.PluralRules`' ordinal rules), `formatNumber`, `listOf` (`Intl` in
+British English, so "Ada, Bo and Cy" keeps its missing comma). Texts held in module-level
+tables are keys looked up when shown (style names, phase labels, How to play's captions), so
+a change of language reaches them. The disclaimer's English lives once, in `en.json`;
+`credits.ts` reads it for `CREDITS.md`. Server refusals are shown by `code`
+(`refusalText`, the server's words for a code it does not know), action rejections by
+`rejection.<reason>`. Every existing test passed unchanged, and the screens read as before;
+`locale.test.ts` checks parity, `i18n.test.ts` the mechanism. **Not yet**: the language
+switch (step 2) — panels built once and kept, the pause menu among them, will need relabelling
+when the language changes mid-match; the desktop window (step 5); the names in a match's
+state ("Bot 3", "You" in a local match) stay as the match began, since they travel.
 
 ### 11.21 Opening the host's port by UPnP — agreed 2026-10-03, not started
 

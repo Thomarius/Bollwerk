@@ -1,6 +1,8 @@
 import { dealPersonalities } from '@bollwerk/ai';
-import { personalityWords, type BotSetup, type Personality } from '@bollwerk/config';
+import type { BotSetup, Personality } from '@bollwerk/config';
 import { seatOrder, type MatchEvent, type MatchState } from '@bollwerk/sim';
+
+import { t } from './i18n.js';
 
 /**
  * What the end of a match shows beside the final standings: for each player the wall
@@ -178,7 +180,12 @@ export function revealLines(
       {
         player: p.id,
         name: p.name,
-        text: `Level ${setup.level} · ${personalityWords(setup.personality)}`,
+        text: t('summary.reveal', {
+          level: setup.level,
+          risk: t(`trait.risk.${setup.personality.risk}` as const),
+          targeting: t(`trait.targeting.${setup.personality.targeting}` as const),
+          cannons: t(`trait.cannons.${setup.personality.cannons}` as const),
+        }),
       },
     ];
   });

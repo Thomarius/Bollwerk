@@ -1,6 +1,8 @@
 import { Structure } from '@bollwerk/sim';
 import { describe, expect, it } from 'vitest';
 
+import { t } from './i18n.js';
+
 import {
   COMBAT,
   COMBAT_TARGET,
@@ -18,7 +20,7 @@ describe('how to play', () => {
   it('is seven pages of ten words or fewer, each standing still inside its own loop', () => {
     expect(HOW_TO_PLAY).toHaveLength(7);
     for (const page of HOW_TO_PLAY) {
-      expect(page.caption.split(/\s+/).length).toBeLessThanOrEqual(10);
+      expect(t(page.caption).split(/\s+/).length).toBeLessThanOrEqual(10);
       expect(page.stillMs).toBeGreaterThanOrEqual(0);
       expect(page.stillMs).toBeLessThan(page.loopMs);
     }

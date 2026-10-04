@@ -1,11 +1,11 @@
 import {
   AUDIO_LICENCES,
-  DISCLAIMER,
   audioCredits,
   type AudioManifest,
   type CreditedFile,
 } from '@bollwerk/config';
 
+import { t } from './i18n.js';
 import { escape } from './lobby.js';
 
 /**
@@ -14,17 +14,22 @@ import { escape } from './lobby.js';
  */
 
 function item({ path, credit }: CreditedFile): string {
-  if (credit === null) return `<li><code>${escape(path)}</code> <em>not yet credited</em></li>`;
+  if (credit === null) {
+    return `<li><code>${escape(path)}</code> <em>${t('credits.uncredited')}</em></li>`;
+  }
   const link = (href: string, text: string): string =>
     `<a href="${escape(href)}" target="_blank" rel="noopener noreferrer">${escape(text)}</a>`;
   const changes = credit.changes === undefined ? '' : ` ${escape(credit.changes)}`;
-  const what = path.endsWith('/') ? 'Every sound here: ' : '';
+  const what = path.endsWith('/') ? `${t('credits.everySound')} ` : '';
+  // The credit's title, author and licence are the work's own and never translated.
   const title = credit.title === undefined ? '' : `“${escape(credit.title)}” `;
-  return (
-    `<li>${what}${title}by ${escape(credit.author)} — ` +
-    `${link(AUDIO_LICENCES[credit.licence], credit.licence)}, ` +
-    `${link(credit.source, 'source')}.${changes}</li>`
-  );
+  const body = t('credits.item', {
+    title,
+    author: escape(credit.author),
+    licence: link(AUDIO_LICENCES[credit.licence], credit.licence),
+    source: link(credit.source, t('credits.source')),
+  });
+  return `<li>${what}${body}${changes}</li>`;
 }
 
 /** The panel's markup, apart so a test can read it without a page. */
@@ -32,16 +37,16 @@ export function creditsHtml(audio: AudioManifest): string {
   const { music, sfx } = audioCredits(audio);
   return `
     <div class="panel">
-      <h2>Credits</h2>
-      <p class="disclaimer">${escape(DISCLAIMER)}</p>
-      <p class="disclaimer">The code is under the MIT licence.</p>
+      <h2>${t('credits.title')}</h2>
+      <p class="disclaimer">${escape(t('credits.disclaimer'))}</p>
+      <p class="disclaimer">${t('credits.mit')}</p>
       <div class="list">
-        <h3>Music</h3>
+        <h3>${t('credits.music')}</h3>
         <ul>${music.map(item).join('')}</ul>
-        <h3>Sound effects</h3>
+        <h3>${t('credits.sfx')}</h3>
         <ul>${sfx.map(item).join('')}</ul>
       </div>
-      <button class="close quiet">Close</button>
+      <button class="close quiet">${t('credits.close')}</button>
     </div>`;
 }
 

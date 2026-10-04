@@ -1,5 +1,7 @@
 import { defaultArtConfig, type ArtConfig } from '@bollwerk/config';
 
+import { formatNumber, t } from './i18n.js';
+
 /**
  * The connection, where a player can see it: a badge beside Pause in an online match.
  * It was a line of grey 11 px text in the HUD's far corner, and in the session where
@@ -21,21 +23,19 @@ export function netHealth(
   tickRateHz: number,
   limits: ArtConfig['hud']['network'] = defaultArtConfig.hud.network,
 ): { level: NetworkLevel; text: string } {
-  if (reading.desynced) return { level: 'bad', text: 'Out of sync' };
-  const behind = (reading.behind / tickRateHz).toFixed(1);
-  if (reading.behind >= limits.badBehindTicks) return { level: 'bad', text: `Behind ${behind} s` };
-  if (reading.latencyMs >= limits.badPingMs) {
-    return { level: 'bad', text: `Slow link · ${reading.latencyMs} ms` };
+  if (reading.desynced) return { level: 'bad', text: t('network.desynced') };
+  const seconds = formatNumber(reading.behind / tickRateHz, 1);
+  const ms = reading.latencyMs;
+  if (reading.behind >= limits.badBehindTicks) {
+    return { level: 'bad', text: t('network.behind', { seconds }) };
   }
+  if (ms >= limits.badPingMs) return { level: 'bad', text: t('network.slow', { ms }) };
   if (reading.behind >= limits.slowBehindTicks) {
-    return { level: 'slow', text: `Behind ${behind} s` };
+    return { level: 'slow', text: t('network.behind', { seconds }) };
   }
-  if (reading.latencyMs >= limits.slowPingMs) {
-    return { level: 'slow', text: `Slow link · ${reading.latencyMs} ms` };
-  }
+  if (ms >= limits.slowPingMs) return { level: 'slow', text: t('network.slow', { ms }) };
   // No round trip measured yet: the first ping goes out two seconds in.
-  const ms = reading.latencyMs > 0 ? ` · ${reading.latencyMs} ms` : '';
-  return { level: 'good', text: `Online${ms}` };
+  return { level: 'good', text: ms > 0 ? t('network.onlinePing', { ms }) : t('network.online') };
 }
 
 /** The badge itself, beside the Pause button, for the length of an online match. */
@@ -45,7 +45,7 @@ export class NetworkBadge {
 
   constructor() {
     this.node.id = 'network';
-    this.node.title = 'Round trip to the server, and whether this page keeps up with it';
+    this.node.title = t('network.title');
     document.body.append(this.node);
   }
 

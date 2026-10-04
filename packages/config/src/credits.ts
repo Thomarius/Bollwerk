@@ -1,17 +1,17 @@
+import en from '../../../config/locale/en.json' with { type: 'json' };
+
 import { AUDIO_LICENCES, audioCredits, type AudioManifest, type CreditedFile } from './audio.js';
 
 /**
  * The game's attribution, said once and shown in the menu, the Credits, the desktop app
  * and `CREDITS.md`. Bollwerk takes its rules from Rampart and nothing else — no code,
  * graphics or sound — and must never read as the original or as endorsed by its owner.
+ * The English texts, from the English locale: the game shows them in the player's language
+ * (`credits.inspiredBy`, `credits.disclaimer`), `CREDITS.md` always in English.
  */
-export const INSPIRED_BY = 'Inspired by Atari’s Rampart (1990)';
+export const INSPIRED_BY = en['credits.inspiredBy'];
 
-export const DISCLAIMER =
-  'Bollwerk is an unofficial fan game inspired by Rampart (Atari Games, 1990). It is not ' +
-  'affiliated with or endorsed by Warner Bros. Entertainment, which owns the Rampart ' +
-  'trademark. It uses no code, graphics or sound from the original; the audio is from ' +
-  'OpenGameArt.org, under the licences listed below.';
+export const DISCLAIMER = en['credits.disclaimer'];
 
 /** Credits are free text: whatever Markdown would read as formatting is shown as itself. */
 function plain(text: string): string {

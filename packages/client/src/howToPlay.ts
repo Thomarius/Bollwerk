@@ -1,4 +1,4 @@
-import { defaultArtConfig } from '@bollwerk/config';
+import { defaultArtConfig, type TextKey } from '@bollwerk/config';
 import {
   Structure,
   Terrain,
@@ -8,6 +8,7 @@ import {
   type MatchState,
 } from '@bollwerk/sim';
 
+import { t } from './i18n.js';
 import { motionReduced } from './motion.js';
 
 /**
@@ -21,7 +22,8 @@ import { motionReduced } from './motion.js';
 
 /** One page: a caption, the length of its loop, where it stands still, and its picture. */
 export interface HowToPage {
-  caption: string;
+  /** Looked up as the page is shown, so it is in the language in use then. */
+  caption: TextKey;
   loopMs: number;
   stillMs: number;
   draw(ctx: CanvasRenderingContext2D, w: number, h: number, ms: number): void;
@@ -363,7 +365,7 @@ function text(
 
 /** 1. The mouse: left places and fires, right or the wheel turns, Esc pauses. */
 const mousePage: HowToPage = {
-  caption: 'Left: place and fire. Right or wheel: turn.',
+  caption: 'howTo.mouse',
   loopMs: 4000,
   stillMs: 1000,
   draw(ctx, w, h, ms) {
@@ -437,7 +439,7 @@ const mousePage: HowToPage = {
 
 /** 2. The round: choose a castle, place cannons, fire, rebuild — ten times. */
 const roundPage: HowToPage = {
-  caption: 'Choose, place cannons, fire, rebuild — ten rounds.',
+  caption: 'howTo.round',
   loopMs: 4800,
   stillMs: 2500,
   draw(ctx, w, h, ms) {
@@ -527,7 +529,7 @@ const gapIndex = SEAL_GAP.y * SEAL_OPEN.state.width + SEAL_GAP.x;
 
 /** 3. Close the wall round a castle: the last piece drops in, the ground floods. */
 const sealPage: HowToPage = {
-  caption: 'Close the wall around a castle.',
+  caption: 'howTo.seal',
   loopMs: 4500,
   stillMs: 3200,
   draw(ctx, w, h, ms) {
@@ -561,7 +563,7 @@ const sealPage: HowToPage = {
 
 /** 4. Walls must turn their corners: a join at a point lets the sea in. */
 const cornerPage: HowToPage = {
-  caption: 'Walls must include all corners.',
+  caption: 'howTo.corners',
   loopMs: 4000,
   stillMs: 2600,
   draw(ctx, w, h, ms) {
@@ -596,7 +598,7 @@ const cornerPage: HowToPage = {
 
 /** 5. Guns fire only from sealed ground; the crowned castle earns two. */
 const gunsPage: HowToPage = {
-  caption: 'Guns fire only from sealed ground.',
+  caption: 'howTo.guns',
   loopMs: 2400,
   stillMs: 900,
   draw(ctx, w, h, ms) {
@@ -668,7 +670,7 @@ export const COMBAT = board(
 );
 export const COMBAT_TARGET = { x: 9, y: 3 };
 const combatPage: HowToPage = {
-  caption: 'Click to fire. Break their walls.',
+  caption: 'howTo.fire',
   loopMs: 3600,
   stillMs: 1900,
   draw(ctx, w, h, ms) {
@@ -727,7 +729,7 @@ const combatPage: HowToPage = {
 
 /** 7. Score and lives: sealed ground scores; a ring left open costs a life. */
 const scorePage: HowToPage = {
-  caption: 'Seal ground to score. Fail to seal: lose a life.',
+  caption: 'howTo.score',
   loopMs: 4400,
   stillMs: 3000,
   draw(ctx, w, h, ms) {
@@ -816,11 +818,11 @@ export function openHowToPlay(onClose: () => void = () => {}, click: () => void 
       <canvas width="480" height="300"></canvas>
       <p class="caption"></p>
       <div class="nav">
-        <button class="back" aria-label="Back">‹</button>
+        <button class="back" aria-label="${t('howTo.back')}">‹</button>
         <span class="count"></span>
-        <button class="next" aria-label="Next">›</button>
+        <button class="next" aria-label="${t('howTo.next')}">›</button>
       </div>
-      <button class="close quiet">Close</button>
+      <button class="close quiet">${t('howTo.close')}</button>
     </div>`;
   document.body.append(root);
   const canvas = root.querySelector('canvas')!;
@@ -844,7 +846,7 @@ export function openHowToPlay(onClose: () => void = () => {}, click: () => void 
     page = Math.max(0, Math.min(HOW_TO_PLAY.length - 1, to));
     since = performance.now();
     const current = HOW_TO_PLAY[page]!;
-    caption.textContent = current.caption;
+    caption.textContent = t(current.caption);
     count.textContent = `${page + 1} / ${HOW_TO_PLAY.length}`;
     back.disabled = page === 0;
     next.disabled = page === HOW_TO_PLAY.length - 1;

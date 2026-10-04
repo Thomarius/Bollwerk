@@ -5,7 +5,6 @@ import {
   defaultConfigBundle,
   defaultSettings,
   defaultTeams,
-  INSPIRED_BY,
   MAX_LEVEL,
   MIN_LEVEL,
   mergeSettings,
@@ -50,7 +49,14 @@ import {
   type LookChoices,
 } from './looks.js';
 import { escape, lobbyMarkup, type LobbyView } from './lobby.js';
-import { REFRESH_MS, gamesMarkup, joinRefusedNotice, parseRoomList } from './browser.js';
+import {
+  REFRESH_MS,
+  gamesMarkup,
+  joinRefusedNotice,
+  parseRoomList,
+  refusalText,
+} from './browser.js';
+import { t } from './i18n.js';
 import { Hud, type IslandBanner } from './hud.js';
 import { MatchAudio } from './matchAudio.js';
 import { LocalMatch } from './localMatch.js';
@@ -66,7 +72,7 @@ import { timerSpot } from './timerSpot.js';
 import { SplitTitle, installBackdrop } from './decor.js';
 import { MatchLog, botSetupsFromSeats, revealLines } from './summary.js';
 import { applyEffects, motionReduced, saveEffects, storedEffects } from './motion.js';
-import { PauseControls } from './pause.js';
+import { EFFECTS, PauseControls } from './pause.js';
 import { openingShot, winnerShot } from './camera.js';
 import { drawPreview, tablePreview } from './preview.js';
 import { RecordingUpload } from './recordingUpload.js';
@@ -128,10 +134,10 @@ function showError(source: string, detail: unknown): void {
   app?.replaceChildren(box);
 }
 globalThis.addEventListener('error', (event) =>
-  showError('Uncaught error', event.error ?? event.message),
+  showError(t('error.uncaught'), event.error ?? event.message),
 );
 globalThis.addEventListener('unhandledrejection', (event) =>
-  showError('Unhandled rejection', event.reason),
+  showError(t('error.unhandled'), event.reason),
 );
 
 /**
@@ -160,7 +166,7 @@ function installSoundButton(): void {
   const button = document.createElement('button');
   button.id = 'sound';
   const show = (): void => {
-    button.textContent = audio.isMuted ? 'Sound off' : 'Sound on';
+    button.textContent = audio.isMuted ? t('sound.off') : t('sound.on');
     button.classList.toggle('off', audio.isMuted);
     button.setAttribute('aria-pressed', String(!audio.isMuted));
   };
@@ -336,13 +342,13 @@ function readStyles(): LookChoices {
  * arrows that step to the previous and next style in place.
  */
 function lookPicker(look: ArtLook): string {
-  const name = look === 'build' ? 'building' : 'combat';
+  const build = look === 'build';
   return (
     `<span class="look-picker">` +
-    `<button class="step prev" title="The previous ${name} look" aria-label="Previous">&#9664;</button>` +
-    `<button class="look-picture" title="Choose the ${name} look from all of them">` +
+    `<button class="step prev" title="${t(build ? 'menu.prevBuild' : 'menu.prevCombat')}" aria-label="${t('menu.previous')}">&#9664;</button>` +
+    `<button class="look-picture" title="${t(build ? 'menu.pickBuild' : 'menu.pickCombat')}">` +
     `<img class="style-preview" alt="" /><span class="look-name"></span></button>` +
-    `<button class="step next" title="The next ${name} look" aria-label="Next">&#9654;</button>` +
+    `<button class="step next" title="${t(build ? 'menu.nextBuild' : 'menu.nextCombat')}" aria-label="${t('menu.next')}">&#9654;</button>` +
     `</span>`
   );
 }
@@ -352,14 +358,15 @@ const NAME_KEY = 'bollwerk.name';
 
 function storedName(): string {
   try {
-    return globalThis.localStorage?.getItem(NAME_KEY)?.trim() || 'Player';
+    return globalThis.localStorage?.getItem(NAME_KEY)?.trim() || t('menu.defaultName');
   } catch {
-    return 'Player';
+    return t('menu.defaultName');
   }
 }
 
 function readCommon(): Common {
-  const name = document.querySelector<HTMLInputElement>('#name')?.value.trim() || 'Player';
+  const name =
+    document.querySelector<HTMLInputElement>('#name')?.value.trim() || t('menu.defaultName');
   try {
     globalThis.localStorage?.setItem(NAME_KEY, name);
   } catch {
@@ -384,7 +391,7 @@ function watchOpenGames(): void {
     const code = button?.dataset.code;
     if (code === undefined) return;
     audio.play('select');
-    void openLobby(readCommon(), code).catch((e: unknown) => showError('Could not join', e));
+    void openLobby(readCommon(), code).catch((e: unknown) => showError(t('error.couldNotJoin'), e));
   });
   let shown = '';
   const refresh = async (): Promise<void> => {
@@ -418,22 +425,22 @@ function showMenu(notice: string | null = null): void {
   app!.innerHTML = `
     <div class="menu">
       <h1 class="title"><span class="title-split" id="title"></span></h1>
-      <p class="inspired">${escape(INSPIRED_BY)} · <button id="credits" class="link">Credits</button></p>
-      <label>Name <input id="name" type="text" maxlength="16" value="Player" /></label>
-      <div class="look" data-look="build">Building look ${lookPicker('build')}</div>
-      <div class="look" data-look="combat">Combat look ${lookPicker('combat')}</div>
-      <label>Effects <select id="effects"><option value="high">Glowing</option><option value="full">Standard</option><option value="reduced">Reduced</option></select></label>
+      <p class="inspired">${escape(t('credits.inspiredBy'))} · <button id="credits" class="link">${t('menu.credits')}</button></p>
+      <label>${t('menu.name')} <input id="name" type="text" maxlength="16" value="${escape(t('menu.defaultName'))}" /></label>
+      <div class="look" data-look="build">${t('menu.buildLook')} ${lookPicker('build')}</div>
+      <div class="look" data-look="combat">${t('menu.combatLook')} ${lookPicker('combat')}</div>
+      <label>${t('settings.effects')} <select id="effects">${EFFECTS.map(([value, key]) => `<option value="${value}">${t(key)}</option>`).join('')}</select></label>
       <div class="split play-row">
-        <button id="play">Play</button>
-        <button id="visibility" data-public="true" title="Public tables are listed under Open games; a private one is joined by its code alone">Public</button>
+        <button id="play">${t('menu.play')}</button>
+        <button id="visibility" data-public="true" title="${t('menu.visibilityTitle')}">${t('menu.public')}</button>
       </div>
-      <button id="how-to-play" class="quiet${howToPlaySeen() ? '' : ' fresh'}">How to play</button>
+      <button id="how-to-play" class="quiet${howToPlaySeen() ? '' : ' fresh'}">${t('menu.howToPlay')}</button>
       <div class="split">
-        <input id="code" type="text" maxlength="8" placeholder="room code" />
-        <button id="join">Join</button>
+        <input id="code" type="text" maxlength="8" placeholder="${t('menu.codePlaceholder')}" />
+        <button id="join">${t('menu.join')}</button>
       </div>
       <section id="open-games-section" class="open-games-section"${notice === null ? ' hidden' : ''}>
-        <h2>Open games</h2>
+        <h2>${t('menu.openGames')}</h2>
         ${notice === null ? '' : `<p class="notice">${escape(notice)}</p>`}
         <div id="open-games"></div>
       </section>
@@ -445,7 +452,7 @@ function showMenu(notice: string | null = null): void {
     audio.play('select');
     const isPublic = visibility.dataset.public === 'false';
     visibility.dataset.public = String(isPublic);
-    visibility.textContent = isPublic ? 'Public' : 'Private';
+    visibility.textContent = isPublic ? t('menu.public') : t('menu.private');
   });
   watchOpenGames();
   // The banners either side of combat swap one look for the other as they cross the
@@ -542,9 +549,7 @@ function showMenu(notice: string | null = null): void {
 
   document.querySelector('#play')?.addEventListener('click', () => {
     audio.play('select');
-    void openLobby(readCommon(), null).catch((e: unknown) =>
-      showError('Could not open a table', e),
-    );
+    void openLobby(readCommon(), null).catch((e: unknown) => showError(t('error.couldNotOpen'), e));
   });
   // How to play (PLAN 11.16 H1): pages of pictures over the menu, marked until first opened.
   const howTo = document.querySelector<HTMLButtonElement>('#how-to-play');
@@ -562,7 +567,7 @@ function showMenu(notice: string | null = null): void {
     audio.play('select');
     const code = document.querySelector<HTMLInputElement>('#code')?.value.trim() ?? '';
     if (code.length === 0) return;
-    void openLobby(readCommon(), code).catch((e: unknown) => showError('Could not join', e));
+    void openLobby(readCommon(), code).catch((e: unknown) => showError(t('error.couldNotJoin'), e));
   });
 }
 
@@ -698,8 +703,8 @@ function drawLobby(view: LobbyView, on: LobbyHandlers): void {
     audio.play('select');
     const code = view.code ?? '';
     const copied = (): void => {
-      copy.textContent = 'Copied';
-      setTimeout(() => (copy.textContent = 'Copy'), 1200);
+      copy.textContent = t('lobby.copied');
+      setTimeout(() => (copy.textContent = t('lobby.copy')), 1200);
     };
     // The old way, still honoured over plain http: select the code and copy the selection.
     // Failing that, it is left selected so it can be copied by hand.
@@ -713,7 +718,7 @@ function drawLobby(view: LobbyView, on: LobbyHandlers): void {
         ok = false;
       }
       if (ok) copied();
-      else copy.textContent = 'Select and copy';
+      else copy.textContent = t('lobby.selectCopy');
     };
     if (globalThis.isSecureContext && navigator.clipboard !== undefined) {
       navigator.clipboard.writeText(code).then(copied, bySelection);
@@ -755,7 +760,7 @@ function playLocally(common: Common, table: TableState): void {
   // A rematch reopens this table as it was, on a new map (PLAN 11.18 Y6).
   const rematch = (): void => localLobby(common, table.playerCount, randomSeed(), table);
   void runSession(localSession(localMatchFor(setup), rematch), setup).catch((error: unknown) =>
-    showError('Failed to start match', error),
+    showError(t('error.failedToStart'), error),
   );
 }
 
@@ -774,7 +779,7 @@ async function openLobby(
   playerCount = DEFAULT_PLAYERS,
 ): Promise<void> {
   const seed = chosenSeed();
-  app!.innerHTML = `<div class="menu"><h1>Setting the table</h1><p class="note">Looking for a server…</p></div>`;
+  app!.innerHTML = `<div class="menu"><h1>${t('menu.settingTable')}</h1><p class="note">${t('menu.lookingForServer')}</p></div>`;
   const connection = new ServerConnection(ServerConnection.defaultUrl());
   const answered = new Promise<ServerMessage | null>((resolve) => {
     connection.onMessage((message) => {
@@ -807,11 +812,11 @@ async function openLobby(
     return;
   }
   if (first?.type === 'error') {
-    showError(`Server refused: ${first.code}`, first.message);
+    showError(t('error.refused', { code: first.code }), refusalText(first.code, first.message));
     return;
   }
   if (code !== null) {
-    showError('Could not join', `no server answered at ${ServerConnection.defaultUrl()}`);
+    showError(t('error.couldNotJoin'), t('error.noServer', { url: ServerConnection.defaultUrl() }));
     return;
   }
   localLobby(common, playerCount, seed);
@@ -1031,12 +1036,15 @@ function roomLobby(
             setup,
           ).then(
             (end) => (endMatch = end),
-            (e: unknown) => showError('Match failed', e),
+            (e: unknown) => showError(t('error.matchFailed'), e),
           );
         }
         break;
       case 'error':
-        showError(`Server refused: ${message.code}`, message.message);
+        showError(
+          t('error.refused', { code: message.code }),
+          refusalText(message.code, message.message),
+        );
         break;
       default:
         break;
@@ -1088,7 +1096,8 @@ function networkSession(
       return match.pausedBy;
     },
     setPaused: (paused) => match.requestPause(paused),
-    status: () => (match.lastRejection === null ? '' : match.lastRejection.replace(/_/g, ' ')),
+    status: () =>
+      match.lastRejection === null ? '' : t(`rejection.${match.lastRejection}` as const),
     network: () => ({
       latencyMs: connection.latencyMs,
       behind: match.behind,
@@ -1122,7 +1131,7 @@ async function runSession(session: Session, setup: Setup): Promise<() => void> {
   // the page freezing. Painted before that work starts, so it is on screen through it.
   app!.innerHTML =
     `<canvas id="stage"></canvas><div id="hud"></div><div id="banner"></div>` +
-    `<div id="preparing" class="preparing"><p>Preparing the board</p><span class="blocks"><i></i><i></i><i></i></span></div>`;
+    `<div id="preparing" class="preparing"><p>${t('menu.preparing')}</p><span class="blocks"><i></i><i></i><i></i></span></div>`;
   const canvas = document.querySelector<HTMLCanvasElement>('#stage');
   const hudRoot = document.querySelector<HTMLElement>('#hud');
   const bannerRoot = document.querySelector<HTMLElement>('#banner');
@@ -1229,7 +1238,7 @@ async function runSession(session: Session, setup: Setup): Promise<() => void> {
     hud.showTeamTags(
       [...islandTops].map(([player, at]) => ({
         player,
-        text: `Team ${teamLetter(session.state.players[player]?.team ?? 0)}`,
+        text: t('team.name', { letter: teamLetter(session.state.players[player]?.team ?? 0) }),
         colour: playerCssColour(player),
         ...scene.screenAt(at.x, at.y - 0.3),
       })),
@@ -1880,7 +1889,7 @@ if (params.get('autostart') === '1') {
     seats: Array.from({ length: count }, (_, i) => (i === 0 && !watching ? null : level)),
     seed: chosenSeed(),
     styles: preferredStyles(),
-    name: 'Player',
+    name: t('menu.defaultName'),
     settings: settingsFromParams(),
     // &teams=N puts the seats in teams of N, in seat order, when N divides the table.
     ...(Number(params.get('teams') ?? 1) > 1 && count % Number(params.get('teams')) === 0
@@ -1898,7 +1907,7 @@ if (params.get('autostart') === '1') {
     );
   }
   void runSession(localSession(match), setup).catch((error: unknown) =>
-    showError('Failed to start match', error),
+    showError(t('error.failedToStart'), error),
   );
 } else if (params.get('host') !== null || params.get('join') !== null) {
   // The lobby had no way in except clicking through the menu, which meant it could not
@@ -1911,7 +1920,8 @@ if (params.get('autostart') === '1') {
     isPublic: params.get('private') !== '1',
   };
   void openLobby(common, joining, Number(params.get('host') ?? DEFAULT_PLAYERS)).catch(
-    (error: unknown) => showError(joining !== null ? 'Could not join' : 'Could not host', error),
+    (error: unknown) =>
+      showError(t(joining !== null ? 'error.couldNotJoin' : 'error.couldNotHost'), error),
   );
 } else {
   showMenu();

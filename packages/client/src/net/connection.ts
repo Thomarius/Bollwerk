@@ -6,6 +6,8 @@ import {
   type ServerMessage,
 } from '@bollwerk/protocol';
 
+import { t } from '../i18n.js';
+
 export type ConnectionState = 'connecting' | 'open' | 'closed';
 
 /**
@@ -46,7 +48,8 @@ export class ServerConnection {
         this.state = 'closed';
       });
       socket.addEventListener('error', () => {
-        if (this.state === 'connecting') reject(new Error(`cannot reach ${this.url}`));
+        if (this.state === 'connecting')
+          reject(new Error(t('error.cannotReach', { url: this.url })));
       });
       socket.addEventListener('message', (event: MessageEvent) => {
         const message = decodeServerMessage(String(event.data));

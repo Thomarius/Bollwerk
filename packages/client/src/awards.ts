@@ -1,5 +1,6 @@
 import { streamFor, type MatchState } from '@bollwerk/sim';
 
+import { ordinal, t } from './i18n.js';
 import { standings } from './scores.js';
 import type { MatchLog } from './summary.js';
 
@@ -37,11 +38,6 @@ function soleBest(values: ReadonlyMap<number, number>, floor = 1): [number, numb
   return shared ? null : best;
 }
 
-const ordinal = (n: number): string =>
-  `${n}${n % 10 === 1 && n % 100 !== 11 ? 'st' : n % 10 === 2 && n % 100 !== 12 ? 'nd' : n % 10 === 3 && n % 100 !== 13 ? 'rd' : 'th'}`;
-
-const plural = (n: number, one: string, many = `${one}s`): string => `${n} ${n === 1 ? one : many}`;
-
 /** Places in the standings by these scores, 1 the best; a tie shares the better place. */
 function placesBy(scores: readonly number[]): number[] {
   return scores.map((s) => 1 + scores.filter((other) => other > s).length);
@@ -65,8 +61,9 @@ export function awardCandidates(log: MatchLog, state: Judged): Award[] {
   const outAtEnd = (p: number): boolean => players[p]?.eliminated ?? false;
 
   const wrecker = soleBest(log.destroyed);
-  if (wrecker)
-    give('wrecker', 'Wrecker', wrecker[0], `${plural(wrecker[1], 'wall block')} shot down`);
+  if (wrecker) {
+    give('wrecker', t('award.wrecker'), wrecker[0], t('award.wrecker.detail', { n: wrecker[1] }));
+  }
 
   // The best single round's points from held ground, and which round it was.
   let landlord: { player: number; points: number; round: number; shared: boolean } | null = null;
@@ -87,9 +84,9 @@ export function awardCandidates(log: MatchLog, state: Judged): Award[] {
   if (land !== null && !land.shared) {
     give(
       'landlord',
-      'Landlord',
+      t('award.landlord'),
       land.player,
-      `${land.points} points of ground in round ${land.round}`,
+      t('award.landlord.detail', { n: land.points, round: land.round }),
     );
   }
 
@@ -98,12 +95,17 @@ export function awardCandidates(log: MatchLog, state: Judged): Award[] {
     2,
   );
   if (collector)
-    give('collector', 'Castle collector', collector[0], `${collector[1]} castles sealed at once`);
+    give(
+      'collector',
+      t('award.collector'),
+      collector[0],
+      t('award.collector.detail', { n: collector[1] }),
+    );
 
   for (const p of players) {
     const sealedEvery = rounds.every((r) => (r.castles[p.id] ?? 0) > 0);
     if (sealedEvery && (log.livesSpent.get(p.id) ?? 0) === 0 && !p.eliminated && seen >= 3) {
-      give('iron-wall', 'Iron wall', p.id, 'never failed a seal');
+      give('iron-wall', t('award.ironWall'), p.id, t('award.ironWall.detail'));
     }
   }
 
@@ -118,9 +120,12 @@ export function awardCandidates(log: MatchLog, state: Judged): Award[] {
       const p = climb[0];
       give(
         'comeback',
-        'Comeback',
+        t('award.comeback'),
         p,
-        `${ordinal(then[p] ?? 0)} after round 5, ${ordinal(finalPlace.get(p) ?? 0)} at the end`,
+        t('award.comeback.detail', {
+          before: ordinal(then[p] ?? 0),
+          after: ordinal(finalPlace.get(p) ?? 0),
+        }),
       );
     }
   }
@@ -137,7 +142,12 @@ export function awardCandidates(log: MatchLog, state: Judged): Award[] {
   }
   const front = soleBest(leads, Math.max(2, Math.ceil(seen / 2)));
   if (front)
-    give('front-runner', 'Front-runner', front[0], `led after ${front[1]} of ${seen} rounds`);
+    give(
+      'front-runner',
+      t('award.frontRunner'),
+      front[0],
+      t('award.frontRunner.detail', { n: front[1], rounds: seen }),
+    );
 
   // A close win at the cap, for each winner: by under 5% of their score.
   if (state.endedBy === 'round_cap' && state.winners.length > 0) {
@@ -152,7 +162,12 @@ export function awardCandidates(log: MatchLog, state: Judged): Award[] {
     const margin = first - (runnerUp?.score ?? second);
     if (runnerUp !== undefined && first > 0 && margin > 0 && margin < first * 0.05) {
       for (const w of state.winners)
-        give('photo-finish', 'Photo finish', w, `won by ${plural(margin, 'point')}`);
+        give(
+          'photo-finish',
+          t('award.photoFinish'),
+          w,
+          t('award.photoFinish.detail', { n: margin }),
+        );
     }
   }
 
@@ -161,14 +176,14 @@ export function awardCandidates(log: MatchLog, state: Judged): Award[] {
     const pool = state.teams[p.team];
     if (p.eliminated || spent === 0) continue;
     if ((pool?.continuesRemaining ?? 0) === 0)
-      give('last-stand', 'Last stand', p.id, 'finished on the last life');
+      give('last-stand', t('award.lastStand'), p.id, t('award.lastStand.detail'));
     const place = finalPlace.get(p.id) ?? players.length;
     if (place <= Math.floor(players.length / 2)) {
       give(
         'phoenix',
-        'Phoenix',
+        t('award.phoenix'),
         p.id,
-        `lost ${plural(spent, 'life', 'lives')}, finished ${ordinal(place)}`,
+        t('award.phoenix.detail', { n: spent, place: ordinal(place) }),
       );
     }
   }
@@ -187,9 +202,9 @@ export function awardCandidates(log: MatchLog, state: Judged): Award[] {
     if (bloom) {
       give(
         'late-bloomer',
-        'Late bloomer',
+        t('award.lateBloomer'),
         bloom[0],
-        `+${bloom[1]} in round ${late.get(bloom[0])?.round}`,
+        t('award.lateBloomer.detail', { points: bloom[1], round: late.get(bloom[0])?.round ?? 0 }),
       );
     }
   }
@@ -198,12 +213,19 @@ export function awardCandidates(log: MatchLog, state: Judged): Award[] {
     byPlayer((p) => Math.max(0, ...log.guns.map((r) => r[p] ?? 0))),
     1,
   );
-  if (artillery) give('artillerist', 'Artillerist', artillery[0], `${artillery[1]} guns at once`);
+  if (artillery) {
+    give(
+      'artillerist',
+      t('award.artillerist'),
+      artillery[0],
+      t('award.artillerist.detail', { n: artillery[1] }),
+    );
+  }
 
   if (seen >= 3) {
     for (const p of players) {
       if (rounds.every((_, k) => gainIn(k, p.id) > 0))
-        give('steady', 'Steady', p.id, 'scored in every round');
+        give('steady', t('award.steady'), p.id, t('award.steady.detail'));
     }
   }
 
@@ -224,17 +246,17 @@ export function awardCandidates(log: MatchLog, state: Judged): Award[] {
     shared: boolean;
   } | null;
   if (foe !== null && !foe.shared) {
-    const name = players[foe.victim]?.name ?? 'a rival';
+    const name = players[foe.victim]?.name ?? t('award.nemesis.rival');
     give(
       'nemesis',
-      `${name}'s nemesis`,
+      t('award.nemesis', { name }),
       foe.shooter,
-      `${plural(foe.blocks, 'block')} of ${name}'s wall`,
+      t('award.nemesis.detail', { n: foe.blocks, name }),
     );
   }
 
   const mason = soleBest(log.pieces);
-  if (mason) give('mason', 'Mason', mason[0], `${plural(mason[1], 'piece')} laid`);
+  if (mason) give('mason', t('award.mason'), mason[0], t('award.mason.detail', { n: mason[1] }));
 
   return out;
 }

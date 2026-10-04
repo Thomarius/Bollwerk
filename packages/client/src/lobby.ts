@@ -9,6 +9,7 @@ import {
 } from '@bollwerk/config';
 import type { Seat } from '@bollwerk/protocol';
 
+import { t } from './i18n.js';
 import { teamLetter } from './scores.js';
 import { shapeSvg } from './shapes.js';
 
@@ -94,9 +95,15 @@ export function teamSizesFor(view: LobbyView): number[] {
 /** The table's settings: controls for the host, a statement for everyone else. */
 function tableControls(view: LobbyView, isHost: boolean): string {
   const { maxRounds, teamSize } = view.settings;
-  const teamName = (size: number): string => (size === 1 ? 'Free-for-all' : `Teams of ${size}`);
+  const teamName = (size: number): string =>
+    size === 1 ? t('lobby.freeForAll') : t('lobby.teamsOf', { n: size });
   if (!isHost) {
-    return `<p class="note settings">${view.playerCount} players · ${teamName(teamSize)} · ${maxRounds} rounds, then the best score wins.</p>`;
+    const statement = t('lobby.statement', {
+      players: view.playerCount,
+      teams: teamName(teamSize),
+      rounds: maxRounds,
+    });
+    return `<p class="note settings">${statement}</p>`;
   }
   const counts = validPlayerCounts(teamSize, view.playerLimits).filter(
     (n) => n >= view.seats.length,
@@ -104,14 +111,14 @@ function tableControls(view: LobbyView, isHost: boolean): string {
   const { min, max } = view.settingBounds.maxRounds;
   return `
     <div class="settings">
-      <label>Teams
-        <select id="team-size" aria-label="Team size">${options(teamSizesFor(view), teamSize, teamName)}</select>
+      <label>${t('lobby.teams')}
+        <select id="team-size" aria-label="${t('lobby.teamSize')}">${options(teamSizesFor(view), teamSize, teamName)}</select>
       </label>
-      <label>Players
-        <select id="player-count" aria-label="Players">${options(counts, view.playerCount)}</select>
+      <label>${t('lobby.players')}
+        <select id="player-count" aria-label="${t('lobby.players')}">${options(counts, view.playerCount)}</select>
       </label>
-      <label>Rounds
-        <select id="max-rounds" aria-label="Rounds">${rangeOptions(min, max, maxRounds)}</select>
+      <label>${t('lobby.rounds')}
+        <select id="max-rounds" aria-label="${t('lobby.rounds')}">${rangeOptions(min, max, maxRounds)}</select>
       </label>
     </div>`;
 }
@@ -134,7 +141,7 @@ function occupant(view: LobbyView, index: number, isHost: boolean, name: string)
         `<option value="${seat.playerId}"${seat.playerId === index ? ' selected' : ''}>${escape(seat.name)}</option>`,
     )
     .join('');
-  return `<select class="occupant who" data-seat="${index}" aria-label="Who sits in seat ${index + 1}">${bot}${names}</select>`;
+  return `<select class="occupant who" data-seat="${index}" aria-label="${t('lobby.seatAria', { n: index + 1 })}">${bot}${names}</select>`;
 }
 
 /**
@@ -159,7 +166,7 @@ function seatBadge(view: LobbyView, index: number): string {
  */
 export function levelPips(level: number): string {
   const pips = LEVELS.map((n) => `<i${n <= level ? ' class="on"' : ''}></i>`).join('');
-  return `<span class="pips" title="Level ${level}" aria-hidden="true">${pips}</span>`;
+  return `<span class="pips" title="${t('lobby.level', { n: level })}" aria-hidden="true">${pips}</span>`;
 }
 
 function levelControl(
@@ -169,10 +176,13 @@ function levelControl(
   label_: string,
   withPerson = false,
 ): string {
-  if (!isHost) return `<em class="tag level">Level ${level}</em>${levelPips(level)}`;
-  const person = withPerson ? '<option value="">You play</option>' : '';
+  if (!isHost) {
+    return `<em class="tag level">${t('lobby.level', { n: level })}</em>${levelPips(level)}`;
+  }
+  const person = withPerson ? `<option value="">${t('lobby.youPlay')}</option>` : '';
   return `${levelPips(level)}<select ${attributes} aria-label="${label_}">${person}${LEVELS.map(
-    (n) => `<option value="${n}"${n === level ? ' selected' : ''}>Level ${n}</option>`,
+    (n) =>
+      `<option value="${n}"${n === level ? ' selected' : ''}>${t('lobby.level', { n })}</option>`,
   ).join('')}</select>`;
 }
 
@@ -183,9 +193,9 @@ function seatRow(view: LobbyView, index: number, isHost: boolean, defaultLevel: 
   if (seat) {
     const isHostSeat = seat.playerId === view.hostId;
     const tags = [
-      seat.playerId === view.humanPlayer ? '<em class="tag you">you</em>' : '',
-      isHostSeat ? '<em class="tag">host</em>' : '',
-      seat.connected ? '' : '<em class="tag away">away</em>',
+      seat.playerId === view.humanPlayer ? `<em class="tag you">${t('lobby.tagYou')}</em>` : '',
+      isHostSeat ? `<em class="tag">${t('lobby.tagHost')}</em>` : '',
+      seat.connected ? '' : `<em class="tag away">${t('lobby.tagAway')}</em>`,
     ].join('');
     const mine = seat.playerId === view.humanPlayer ? ' you' : '';
     // The host may hand their own seat to a bot and watch: with nobody else at the
@@ -193,11 +203,11 @@ function seatRow(view: LobbyView, index: number, isHost: boolean, defaultLevel: 
     let control = '';
     let blurb = '';
     if (isHostSeat && view.hostBot !== null) {
-      control = levelControl(view.hostBot, isHost, 'id="host-bot"', 'Who plays your seat', true);
-      blurb = `<small class="blurb">${escape(seat.name)} watches a bot play their seat</small>`;
+      control = levelControl(view.hostBot, isHost, 'id="host-bot"', t('lobby.whoPlays'), true);
+      blurb = `<small class="blurb">${t('lobby.watches', { name: escape(seat.name) })}</small>`;
     } else if (isHostSeat && isHost) {
-      control = `<select id="host-bot" aria-label="Who plays your seat"><option value="" selected>You play</option>${LEVELS.map(
-        (n) => `<option value="${n}">Level ${n}</option>`,
+      control = `<select id="host-bot" aria-label="${t('lobby.whoPlays')}"><option value="" selected>${t('lobby.youPlay')}</option>${LEVELS.map(
+        (n) => `<option value="${n}">${t('lobby.level', { n })}</option>`,
       ).join('')}</select>`;
     }
     return `<li class="seat${mine}${arrived}">${seatBadge(view, index)}${occupant(view, index, isHost, seat.name)}${tags}${control}${blurb}</li>`;
@@ -207,19 +217,22 @@ function seatRow(view: LobbyView, index: number, isHost: boolean, defaultLevel: 
     view.bots[index] ?? defaultLevel,
     isHost,
     `class="bot-select" data-seat="${index}"`,
-    `Seat ${index + 1} bot level`,
+    t('lobby.botLevelAria', { n: index + 1 }),
   );
-  return `<li class="seat bot${arrived}">${seatBadge(view, index)}${occupant(view, index, isHost, `Bot ${index + 1}`)}${control}</li>`;
+  const bot = t('lobby.bot', { n: index + 1 });
+  return `<li class="seat bot${arrived}">${seatBadge(view, index)}${occupant(view, index, isHost, bot)}${control}</li>`;
 }
 
 /** The map and the seed it comes from: the host may draw another or type one in. */
 function mapControls(view: LobbyView, isHost: boolean): string {
-  const canvas = '<canvas id="map-preview" class="map-preview" aria-label="The map"></canvas>';
-  if (!isHost) return `${canvas}<p class="note map-note">Map ${view.seed}</p>`;
+  const canvas = `<canvas id="map-preview" class="map-preview" aria-label="${t('lobby.mapAria')}"></canvas>`;
+  if (!isHost) {
+    return `${canvas}<p class="note map-note">${t('lobby.mapSeed', { seed: String(view.seed) })}</p>`;
+  }
   return `${canvas}
     <div class="map-row">
-      <label>Map <input id="seed" type="number" min="0" max="4294967295" step="1" value="${view.seed}" aria-label="Map seed" /></label>
-      <button id="reroll" class="quiet">New map</button>
+      <label>${t('lobby.map')} <input id="seed" type="number" min="0" max="4294967295" step="1" value="${view.seed}" aria-label="${t('lobby.seedAria')}" /></label>
+      <button id="reroll" class="quiet">${t('lobby.newMap')}</button>
     </div>`;
 }
 
@@ -235,7 +248,7 @@ function seatLists(view: LobbyView, rows: readonly string[]): string {
     .sort(([a], [b]) => a - b)
     .map(
       ([team, members]) =>
-        `<section class="team-column"><h2>Team ${teamLetter(team)}</h2><ul class="seats">${members.join('')}</ul></section>`,
+        `<section class="team-column"><h2>${t('team.name', { letter: teamLetter(team) })}</h2><ul class="seats">${members.join('')}</ul></section>`,
     )
     .join('');
   return `<div class="team-columns">${columns}</div>`;
@@ -244,7 +257,7 @@ function seatLists(view: LobbyView, rows: readonly string[]): string {
 /** Whether the table can start as it stands, and if not, why not. */
 export function startBlocked(view: LobbyView): string | null {
   if (!teamsBalanced([...view.teams], view.settings.teamSize)) {
-    return `Teams must be the same size: ${view.settings.teamSize} each.`;
+    return t('lobby.teamsUnequal', { n: view.settings.teamSize });
   }
   return null;
 }
@@ -255,8 +268,8 @@ export function lobbyMarkup(view: LobbyView): string {
 
   const blocked = startBlocked(view);
   const start = !isHost
-    ? '<p class="note">Waiting for the host to start.</p>'
-    : `<button id="begin"${blocked === null ? '' : ' disabled'}>Start match</button>` +
+    ? `<p class="note">${t('lobby.waiting')}</p>`
+    : `<button id="begin"${blocked === null ? '' : ' disabled'}>${t('lobby.start')}</button>` +
       (blocked === null ? '' : `<p class="note warn">${escape(blocked)}</p>`);
 
   const code =
@@ -264,12 +277,12 @@ export function lobbyMarkup(view: LobbyView): string {
       ? ''
       : `<div class="code-row">
         <code id="room-code" class="room-code">${escape(view.code)}</code>
-        <button id="copy-code" class="quiet">Copy</button>
+        <button id="copy-code" class="quiet">${t('lobby.copy')}</button>
       </div>`;
 
   return `
     <div class="menu lobby">
-      <h1>${view.code === null ? 'Table' : 'Room'}</h1>
+      <h1>${view.code === null ? t('lobby.table') : t('lobby.room')}</h1>
       ${code}
       <div class="lobby-body">
         <div class="lobby-side">
@@ -279,7 +292,7 @@ export function lobbyMarkup(view: LobbyView): string {
         <div class="lobby-seats">${seatLists(view, rows)}</div>
       </div>
       ${start}
-      <button id="leave" class="quiet">Leave</button>
+      <button id="leave" class="quiet">${t('lobby.leave')}</button>
     </div>
   `;
 }

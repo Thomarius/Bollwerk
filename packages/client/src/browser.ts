@@ -1,6 +1,9 @@
 import { PROTOCOL_VERSION, RoomListSchema, type RoomListing } from '@bollwerk/protocol';
 
 import { escape } from './lobby.js';
+import type { TextKey } from '@bollwerk/config';
+
+import { t } from './i18n.js';
 
 /**
  * The open games browser in the menu (PLAN 11.12 F3): public rooms still being set, each
@@ -25,26 +28,48 @@ export function parseRoomList(body: unknown): RoomListing[] | null {
 /** The list's markup: a row per room, or a line saying there are none yet. */
 export function gamesMarkup(rooms: readonly RoomListing[]): string {
   if (rooms.length === 0) {
-    return '<p class="note">No open games</p>';
+    return `<p class="note">${t('browser.none')}</p>`;
   }
   const rows = rooms.map((room) => {
-    const teams = room.teamSize > 1 ? ` · teams of ${room.teamSize}` : '';
+    const detail = [
+      t('browser.seated', { people: room.people, players: room.playerCount }),
+      ...(room.teamSize > 1 ? [t('browser.teams', { n: room.teamSize })] : []),
+      t('browser.rounds', { n: room.maxRounds }),
+    ].join(' · ');
     return (
       `<li><span class="host">${escape(room.host)}</span>` +
-      `<span class="detail">${room.people} of ${room.playerCount} seated${teams} · ${room.maxRounds} rounds</span>` +
-      `<button class="join-open" data-code="${escape(room.code)}">Join</button></li>`
+      `<span class="detail">${detail}</span>` +
+      `<button class="join-open" data-code="${escape(room.code)}">${t('browser.join')}</button></li>`
     );
   });
   return `<ul class="open-games">${rows.join('')}</ul>`;
+}
+
+/** The refusals a player can be told of in their own language, by the server's code. */
+const REFUSALS: Record<string, TextKey> = {
+  bad_message: 'refusal.bad_message',
+  no_capacity: 'refusal.no_capacity',
+  no_room: 'refusal.no_room',
+  room_full: 'refusal.room_full',
+};
+
+/**
+ * What a server's refusal says, in the player's language where the code is known; a code
+ * this page does not know — a newer server's — keeps the server's own English words, so it
+ * still says something.
+ */
+export function refusalText(code: string, message: string): string {
+  const key = REFUSALS[code];
+  return key === undefined ? message : t(key);
 }
 
 /** What the menu is told when a room it chose went while it was looking. */
 export function joinRefusedNotice(code: string): string | null {
   switch (code) {
     case 'room_full':
-      return 'That game filled up or started before you got there. Here are the open ones now.';
+      return t('browser.refused.full');
     case 'no_room':
-      return 'That game has closed. Here are the open ones now.';
+      return t('browser.refused.closed');
     default:
       return null;
   }

@@ -5,8 +5,10 @@ import {
   type ArtLook,
   type ArtStyle,
   type ArtStyles,
+  type TextKey,
 } from '@bollwerk/config';
 
+import { t } from './i18n.js';
 import { escape } from './lobby.js';
 import { stylePreview } from './stylePreview.js';
 
@@ -23,25 +25,26 @@ export type LookChoices = Record<ArtLook, LookChoice>;
 
 export const RANDOM = 'random' as const;
 
-/** Names for the styles, as the menu and the gallery offer them. */
-export const STYLE_NAMES: Record<ArtStyle, string> = {
-  flat: 'Minimal',
-  pixel: 'Medieval',
-  night: 'Night',
-  cyberpunk: 'Cyberpunk',
-  blueprint: 'Blueprint',
-  parchment: 'Parchment',
-  bricks: 'Toy bricks',
-  glass: 'Stained glass',
-  chocolate: 'Chocolate',
-  halloween: 'Halloween',
-  sakura: 'Sakura',
-  oktoberfest: 'Oktoberfest',
-  opera: 'Opera',
+/** The texts naming the styles, as the menu and the gallery offer them. */
+const STYLE_NAMES: Record<LookChoice, TextKey> = {
+  flat: 'style.flat',
+  pixel: 'style.pixel',
+  night: 'style.night',
+  cyberpunk: 'style.cyberpunk',
+  blueprint: 'style.blueprint',
+  parchment: 'style.parchment',
+  bricks: 'style.bricks',
+  glass: 'style.glass',
+  chocolate: 'style.chocolate',
+  halloween: 'style.halloween',
+  sakura: 'style.sakura',
+  oktoberfest: 'style.oktoberfest',
+  opera: 'style.opera',
+  random: 'style.random',
 };
 
 export function lookName(choice: LookChoice): string {
-  return choice === RANDOM ? 'Random' : STYLE_NAMES[choice];
+  return t(STYLE_NAMES[choice]);
 }
 
 /**
@@ -85,7 +88,7 @@ export function resolveLooks(choices: LookChoices, random: () => number = Math.r
  * alphabetical order, so a new one finds its place as the list grows, and "random" last.
  */
 export function lookOptions(look: ArtLook): LookChoice[] {
-  const styles = [...stylesFor(look)].sort((a, b) => STYLE_NAMES[a].localeCompare(STYLE_NAMES[b]));
+  const styles = [...stylesFor(look)].sort((a, b) => lookName(a).localeCompare(lookName(b)));
   return [...styles, RANDOM];
 }
 
@@ -120,7 +123,10 @@ export function galleryMarkup(choices: LookChoices, active: ArtLook): string {
     .map((choice) => {
       const badges = (['build', 'combat'] as const)
         .filter((look) => choices[look] === choice)
-        .map((look) => `<i class="badge ${look}">${look === 'build' ? 'Building' : 'Combat'}</i>`)
+        .map(
+          (look) =>
+            `<i class="badge ${look}">${t(look === 'build' ? 'looks.build' : 'looks.combat')}</i>`,
+        )
         .join('');
       const chosen = choices[active] === choice ? ' chosen' : '';
       return (
@@ -131,10 +137,10 @@ export function galleryMarkup(choices: LookChoices, active: ArtLook): string {
     })
     .join('');
   return (
-    `<div class="panel"><h2>Looks</h2>` +
-    `<div class="tabs">${tab('build', 'Building')}${tab('combat', 'Combat')}</div>` +
+    `<div class="panel"><h2>${t('looks.title')}</h2>` +
+    `<div class="tabs">${tab('build', t('looks.build'))}${tab('combat', t('looks.combat'))}</div>` +
     `<div class="cards">${cards}</div>` +
-    `<button class="done">Done</button></div>`
+    `<button class="done">${t('looks.done')}</button></div>`
   );
 }
 

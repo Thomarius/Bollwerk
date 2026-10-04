@@ -1,4 +1,7 @@
 import type { VolumeKind } from './audio.js';
+import type { TextKey } from '@bollwerk/config';
+
+import { t } from './i18n.js';
 
 /** What the sliders need of the sound: its volumes, and a cue to hear one by. */
 export interface VolumeTarget {
@@ -8,9 +11,9 @@ export interface VolumeTarget {
 }
 
 /** Each slider's label, as the menus name them: "Effects" is already the visual setting. */
-const SLIDERS: readonly [VolumeKind, string][] = [
-  ['music', 'Music'],
-  ['sounds', 'Sounds'],
+const SLIDERS: readonly [VolumeKind, TextKey][] = [
+  ['music', 'volume.music'],
+  ['sounds', 'volume.sounds'],
 ];
 
 /**
@@ -21,7 +24,8 @@ const SLIDERS: readonly [VolumeKind, string][] = [
 export function volumeSliders(target: VolumeTarget): HTMLElement {
   const node = document.createElement('div');
   node.className = 'volumes';
-  for (const [kind, name] of SLIDERS) {
+  for (const [kind, key] of SLIDERS) {
+    const name = t(key);
     const label = document.createElement('label');
     label.className = 'volume';
     label.textContent = name;
@@ -31,7 +35,7 @@ export function volumeSliders(target: VolumeTarget): HTMLElement {
     slider.max = '100';
     slider.step = '5';
     slider.value = String(Math.round(target.volume(kind) * 100));
-    slider.setAttribute('aria-label', `${name} volume`);
+    slider.setAttribute('aria-label', t('volume.aria', { name }));
     slider.dataset.kind = kind;
     slider.addEventListener('input', () => target.setVolume(kind, Number(slider.value) / 100));
     if (kind === 'sounds') slider.addEventListener('change', () => target.play('select'));

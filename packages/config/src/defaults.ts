@@ -4,6 +4,7 @@ import artJson from '../../../config/art.default.json' with { type: 'json' };
 import audioJson from '../../../config/audio.manifest.json' with { type: 'json' };
 import serverJson from '../../../config/server.default.json' with { type: 'json' };
 import aiJson from '../../../config/ai.default.json' with { type: 'json' };
+import enJson from '../../../config/locale/en.json' with { type: 'json' };
 
 import { RulesetSchema, type Ruleset } from './ruleset.js';
 import { TerrainConfigSchema, type TerrainConfig } from './terrain.js';
@@ -11,6 +12,7 @@ import { ArtConfigSchema, type ArtConfig } from './art.js';
 import { AudioManifestSchema, type AudioManifest } from './audio.js';
 import { ServerConfigSchema, type ServerConfig } from './server.js';
 import { AiConfigSchema, type AiConfig } from './ai.js';
+import { LocaleSchema, type Language, type Locale } from './locale.js';
 
 /**
  * Parsed at module load, so a malformed config file fails immediately at startup
@@ -31,3 +33,13 @@ export const defaultConfigBundle = {
   server: defaultServerConfig,
   ai: defaultAiConfig,
 } as const;
+
+/** Every text the game shows, keyed as in English, the reference. */
+export type TextKey = keyof typeof enJson;
+
+/**
+ * The texts of every language, English first. Parsed, not checked against English here: a
+ * gap shows the English text at runtime, and the locale test fails on it
+ * (`localeProblems`), as the credits' test does on a sound without a credit.
+ */
+export const locales: Record<Language, Locale> = { en: LocaleSchema.parse(enJson) };

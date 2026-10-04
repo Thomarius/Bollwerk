@@ -2,8 +2,9 @@ import { playerCssColour } from './colours.js';
 import { SHAPE_PATHS, playerShape, shapeSvg } from './shapes.js';
 import { awardCandidates, drawAwards, type Award } from './awards.js';
 import type { BannerKind } from './banners.js';
+import { formatNumber, t } from './i18n.js';
 import { escape } from './lobby.js';
-import { defaultArtConfig, type ArtStyle, type PlayerShape } from '@bollwerk/config';
+import { defaultArtConfig, type ArtStyle, type PlayerShape, type TextKey } from '@bollwerk/config';
 
 import { showsClock } from './clock.js';
 import { motionReduced } from './motion.js';
@@ -66,14 +67,14 @@ const HUD_SKIN: Record<ArtStyle, string> = {
   opera: 'hud-opera',
 };
 
-const PHASE_LABEL: Record<Phase, string> = {
-  lobby: 'Waiting',
-  intermission: 'Stand by',
-  castle_select: 'Choose your castle',
-  combat: 'Fire!',
-  build: 'Rebuild your walls',
-  cannon_place: 'Place your cannons',
-  game_over: 'Game over',
+const PHASE_LABEL: Record<Phase, TextKey> = {
+  lobby: 'phase.lobby',
+  intermission: 'phase.intermission',
+  castle_select: 'phase.castleSelect',
+  combat: 'phase.combat',
+  build: 'phase.build',
+  cannon_place: 'phase.cannonPlace',
+  game_over: 'phase.gameOver',
 };
 
 /** One banner over one island. */
@@ -92,14 +93,14 @@ export interface IslandBanner {
 }
 
 /** Short, shouted names for the sweeping phase announcement. */
-const PHASE_CALL: Record<Phase, string> = {
-  lobby: '',
-  intermission: '',
-  castle_select: 'Choose your castle',
-  combat: 'Fire!',
-  build: 'Rebuild',
-  cannon_place: 'Place cannons',
-  game_over: '',
+const PHASE_CALL: Record<Phase, TextKey | null> = {
+  lobby: null,
+  intermission: null,
+  castle_select: 'call.castleSelect',
+  combat: 'call.combat',
+  build: 'call.build',
+  cannon_place: 'call.cannonPlace',
+  game_over: null,
 };
 
 /** How long a ranking's entries take to come in before their scores start counting. */
@@ -143,7 +144,7 @@ export class Hud {
       this.youAreHere = document.createElement('div');
       this.youAreHere.className = 'you-are-here';
       // With the player's shape, so the opening is where they learn it.
-      this.youAreHere.innerHTML = `${shapeSvg(at.shape, at.colour)}You are here`;
+      this.youAreHere.innerHTML = `${shapeSvg(at.shape, at.colour)}${t('hud.youAreHere')}`;
       this.bannerRoot.append(this.youAreHere);
     }
     // Light text in a border of the player's colour: crimson text on the dark box did
@@ -190,7 +191,7 @@ export class Hud {
     this.finalStamped = true;
     const stamp = document.createElement('div');
     stamp.className = 'final-stamp';
-    stamp.textContent = 'Final round';
+    stamp.textContent = t('announce.finalRound');
     stamp.style.animationDuration = `${defaultArtConfig.effects.finalStampMs}ms`;
     stamp.addEventListener('animationend', () => stamp.remove());
     this.bannerRoot.append(stamp);
@@ -385,7 +386,8 @@ export class Hud {
     ranks: readonly RankEntry[] = [],
   ): void {
     this.clearAnnouncement();
-    const text = title ?? PHASE_CALL[phase];
+    const call = PHASE_CALL[phase];
+    const text = title ?? (call === null ? '' : t(call));
     if (text === '') return;
     const banner = document.createElement('div');
     banner.className = `phase-call ${BANNER_CLASS[style]}${title === null ? '' : ' titled'}`;
@@ -456,9 +458,9 @@ export class Hud {
       const gain = r.score - r.from;
       const moved =
         r.moved > 0
-          ? '<i class="moved up" title="climbed">▲</i>'
+          ? `<i class="moved up" title="${t('hud.climbed')}">▲</i>`
           : r.moved < 0
-            ? '<i class="moved down" title="dropped">▼</i>'
+            ? `<i class="moved down" title="${t('hud.dropped')}">▼</i>`
             : '';
       entry.innerHTML =
         `<b class="rank">${r.rank}</b>${shapeSvg(playerShape(r.lead), colour)}` +
@@ -578,7 +580,7 @@ export class Hud {
       .map((award) => {
         const colour = playerCssColour(award.player);
         const name =
-          award.player === humanPlayer ? 'You' : (state.players[award.player]?.name ?? '');
+          award.player === humanPlayer ? t('hud.you') : (state.players[award.player]?.name ?? '');
         return (
           `<li class="award" style="--who:${colour}"><strong>${escape(award.title)}</strong>` +
           `<span class="who">${shapeSvg(playerShape(award.player), colour)}${escape(name)}</span>` +
@@ -591,9 +593,9 @@ export class Hud {
 
   /** Rematch, for whoever may call it; for the others online, the host's to call. */
   private rematchButton(): string {
-    if (this.rematchBy === 'mine') return '<button class="rematch">Rematch</button>';
+    if (this.rematchBy === 'mine') return `<button class="rematch">${t('hud.rematch')}</button>`;
     if (this.rematchBy === 'host') {
-      return '<button class="rematch" disabled>Rematch — the host decides</button>';
+      return `<button class="rematch" disabled>${t('hud.rematchHost')}</button>`;
     }
     return '';
   }
@@ -606,7 +608,7 @@ export class Hud {
           `<li><b style="background:${playerCssColour(r.player)}"></b>${escape(r.name)} <span>${escape(r.text)}</span></li>`,
       )
       .join('');
-    return `<div class="reveal"><small>How the bots played</small><ul>${lines}</ul></div>`;
+    return `<div class="reveal"><small>${t('hud.revealTitle')}</small><ul>${lines}</ul></div>`;
   }
 
   /** Scores counting up, by the same keys. */
@@ -728,11 +730,12 @@ export class Hud {
     // or where a client that joined part-way came in.
     const first = log.scores[0]?.round ?? 1;
     const last = log.scores.at(-1)?.round ?? first;
-    const start = first === 1 ? 'start' : `round ${first - 1}`;
+    const start = first === 1 ? t('hud.chartStart') : t('round.label', { round: first - 1 });
     return (
       `<figure class="score-chart"><svg viewBox="-8 -8 ${width + 16} ${height + 16}" width="${width}" height="${height}">` +
       `<line x1="0" y1="${height}" x2="${width}" y2="${height}" class="axis"/>${lines}</svg>` +
-      `<figcaption><span>${start}</span><span>points by round</span><span>round ${last}</span></figcaption></figure>`
+      `<figcaption><span>${start}</span><span>${t('hud.chartCaption')}</span>` +
+      `<span>${t('round.label', { round: last })}</span></figcaption></figure>`
     );
   }
 
@@ -765,13 +768,14 @@ export class Hud {
     // the team's pool, in free-for-all a team of one. A pool too big for pips — a team of
     // three or four — is one pip and the count.
     const livesOf = (team: number, out: boolean): string => {
-      if (out) return '<span class="lives out">out</span>';
+      if (out) return `<span class="lives out">${t('hud.out')}</span>`;
       const pool = state.teams[team];
       const total = (pool?.continuesAtStart ?? 0) + 1;
       const left = (pool?.continuesRemaining ?? 0) + 1;
       const pips =
         total > 5 ? `●<small>${left}</small>` : '●'.repeat(left) + '○'.repeat(total - left);
-      return `<span class="lives${left === 1 ? ' last' : ''}" title="${left} of ${total} lives">${pips}</span>`;
+      const title = t('hud.livesTitle', { left, total });
+      return `<span class="lives${left === 1 ? ' last' : ''}" title="${title}">${pips}</span>`;
     };
     const teamed = isTeamMatch(state);
     const now = performance.now();
@@ -827,20 +831,18 @@ export class Hud {
       (shown === 'cannon_place' || shown === 'castle_select');
     // Overtime: the clock has run out and one more piece may go down.
     const overtime = state.phase === 'build' && state.overtime;
-    const label = choosing
-      ? PHASE_LABEL.castle_select
-      : overtime
-        ? 'Overtime — last piece'
-        : PHASE_LABEL[shown];
+    const label = t(
+      choosing ? PHASE_LABEL.castle_select : overtime ? 'hud.overtime' : PHASE_LABEL[shown],
+    );
 
     let cannonCount = '';
     if (state.phase === 'cannon_place' && human && !human.eliminated) {
       const left = human.cannonsToPlace;
       cannonCount = choosing
-        ? `<div class="counter">Choose a castle — then ${left} cannon${left === 1 ? '' : 's'} to place</div>`
+        ? `<div class="counter">${t('hud.chooseThenCannons', { n: left })}</div>`
         : left > 0
-          ? `<div class="counter">${left} cannon${left === 1 ? '' : 's'} left to place</div>`
-          : `<div class="counter done">All cannons placed</div>`;
+          ? `<div class="counter">${t('hud.cannonsLeft', { n: left })}</div>`
+          : `<div class="counter done">${t('hud.allPlaced')}</div>`;
     }
 
     // The labels over the islands live in the layer above this one, and at the end of a
@@ -869,8 +871,9 @@ export class Hud {
       const head =
         log === null
           ? ''
-          : '<tr class="head"><td></td><td></td><td>points</td><td>wall</td>' +
-            '<td>castles</td><td>lives left</td><td></td></tr>';
+          : `<tr class="head"><td></td><td></td><td>${t('hud.colPoints')}</td>` +
+            `<td>${t('hud.colWall')}</td><td>${t('hud.colCastles')}</td>` +
+            `<td>${t('hud.colLives')}</td><td></td></tr>`;
       // A table rather than a line: with more than three players a single line of
       // names and numbers could not be read at a glance.
       const rows = teamed
@@ -885,8 +888,8 @@ export class Hud {
                 .join(' ');
               return (
                 `<tr class="${s.eliminated ? 'out' : ''}${mine ? ' you' : ''}">` +
-                `<td>${rank + 1}</td><td>${shapeSvg(playerShape(s.members[0] ?? 0), playerCssColour(s.members[0] ?? 0))}Team ${teamLetter(s.team)} · ${members}</td>` +
-                `<td>${s.score}</td>${stats(s.members, s.team, s.eliminated)}<td>${s.eliminated ? 'out' : ''}</td></tr>`
+                `<td>${rank + 1}</td><td>${shapeSvg(playerShape(s.members[0] ?? 0), playerCssColour(s.members[0] ?? 0))}${t('hud.teamRow', { letter: teamLetter(s.team), members })}</td>` +
+                `<td>${s.score}</td>${stats(s.members, s.team, s.eliminated)}<td>${s.eliminated ? t('hud.out') : ''}</td></tr>`
               );
             })
             .join('')
@@ -895,22 +898,23 @@ export class Hud {
               (s, rank) =>
                 `<tr class="${s.eliminated ? 'out' : ''}${s.player === humanPlayer ? ' you' : ''}">` +
                 `<td>${rank + 1}</td><td>${shapeSvg(playerShape(s.player), playerCssColour(s.player))}${escape(s.name)}</td>` +
-                `<td>${s.score}</td>${stats([s.player], state.players[s.player]?.team ?? s.player, s.eliminated)}<td>${s.eliminated ? 'out' : ''}</td></tr>`,
+                `<td>${s.score}</td>${stats([s.player], state.players[s.player]?.team ?? s.player, s.eliminated)}<td>${s.eliminated ? t('hud.out') : ''}</td></tr>`,
             )
             .join('');
       const table = `<table class="final">${head}${rows}</table>`;
       // A button, not a key: everything else in the game is the mouse, and a key that
       // does something unannounced is the kind of surprise players dislike.
-      banner = `<div class="banner summary">${text}${table}${this.awardsMarkup(state, humanPlayer)}${this.chart(state, humanPlayer)}${this.revealMarkup()}<div class="end-buttons">${this.rematchButton()}<button class="leave">Back to menu</button></div></div>`;
+      banner = `<div class="banner summary">${text}${table}${this.awardsMarkup(state, humanPlayer)}${this.chart(state, humanPlayer)}${this.revealMarkup()}<div class="end-buttons">${this.rematchButton()}<button class="leave">${t('watching.back')}</button></div></div>`;
     }
     this.showEndScreen(banner);
+    const seconds = t('hud.seconds', { seconds: formatNumber(secondsLeft, 1) });
     phaseRoot.innerHTML =
-      `<strong>${waiting ? `Next: ${label}` : label}</strong>` +
+      `<strong>${waiting ? t('hud.next', { label }) : label}</strong>` +
       // Hidden rather than removed, so the round label does not jump sideways every
       // intermission; and there is no clock to show once the match is over.
       (waiting || state.phase === 'game_over' || !showsClock(state)
-        ? `<span class="timer" style="visibility:hidden">${secondsLeft.toFixed(1)}s</span>`
-        : `<span class="timer">${secondsLeft.toFixed(1)}s</span>`) +
+        ? `<span class="timer" style="visibility:hidden">${seconds}</span>`
+        : `<span class="timer">${seconds}</span>`) +
       `<span class="round${inFinalRound(state) ? ' final' : ''}">${roundLabel(state)}</span>`;
     // No piece box and no line of hints at the bottom: the test sessions found nobody
     // had time to look down there. The ghost at the cursor is the piece held, the
