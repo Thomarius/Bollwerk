@@ -103,6 +103,9 @@ const PHASE_CALL: Record<Phase, TextKey | null> = {
   game_over: null,
 };
 
+/** A phase label longer than this, in characters, is set smaller (`.phase.long`). */
+const LONG_PHASE_LABEL = 22;
+
 /** How long a ranking's entries take to come in before their scores start counting. */
 const RANK_COUNT_DELAY_MS = 450;
 
@@ -613,6 +616,8 @@ export class Hud {
 
   /** Scores counting up, by the same keys. */
   private readonly counts = new Map<string, { from: number; to: number; since: number }>();
+  /** The phase label's width as last measured, so the roster is told only of a change. */
+  private phaseWidth = 0;
 
   private layout(): { phase: HTMLElement; roster: HTMLElement; rest: HTMLElement } {
     if (this.frame !== null && this.frame.roster.isConnected) return this.frame;
@@ -820,8 +825,11 @@ export class Hud {
       order = standings(state).map((s) => `p${s.player}`);
     }
     this.placeEntries(rosterRoot, order);
-    // The stylesheet sizes the figures by the width each entry has (`--entries`).
-    rosterRoot.style.setProperty('--entries', String(order.length));
+    // The stylesheet sizes the figures by the width each entry has (`--entries`). A team's
+    // entry holds its letter and five pips beside the score, half as wide again as a
+    // player's: counted as 1.4, four teams fit at 1024 pixels with a German phase label,
+    // where at 1 their pips ran into the next team's letter and even English clipped.
+    rosterRoot.style.setProperty('--entries', String(order.length * (teamed ? 1.4 : 1)));
 
     // A player who has just spent a continue chooses a castle in the cannon phase
     // before any guns, so for them this phase is a castle choice first.
@@ -908,8 +916,12 @@ export class Hud {
     }
     this.showEndScreen(banner);
     const seconds = t('hud.seconds', { seconds: formatNumber(secondsLeft, 1) });
+    const heading = waiting ? t('hud.next', { label }) : label;
+    // A long label — German's run half as long again as English's — is set smaller and
+    // tighter, so eight players' figures keep their pips at 1024 pixels.
+    phaseRoot.classList.toggle('long', heading.length > LONG_PHASE_LABEL);
     phaseRoot.innerHTML =
-      `<strong>${waiting ? t('hud.next', { label }) : label}</strong>` +
+      `<strong>${heading}</strong>` +
       // Hidden rather than removed, so the round label does not jump sideways every
       // intermission; and there is no clock to show once the match is over.
       (waiting || state.phase === 'game_over' || !showsClock(state)
@@ -920,5 +932,13 @@ export class Hud {
     // had time to look down there. The ghost at the cursor is the piece held, the
     // stamp over an island says who is out, and the phase label says overtime.
     rest.innerHTML = timebar + cannonCount + (status ? `<div class="net">${status}</div>` : '');
+    // The roster's figures are sized by the room the phase label leaves (`--phase`):
+    // measured, not assumed, since a language's label may be half as long again as
+    // English's, and the four teams' figures then ran into one another at 1024 pixels.
+    const phaseWidth = phaseRoot.offsetWidth;
+    if (phaseWidth !== this.phaseWidth) {
+      this.phaseWidth = phaseWidth;
+      rosterRoot.style.setProperty('--phase', `${phaseWidth}px`);
+    }
   }
 }

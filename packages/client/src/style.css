@@ -644,6 +644,11 @@ body {
   text-shadow: var(--hud-glow);
 }
 
+.phase.long strong {
+  font-size: 0.78rem;
+  letter-spacing: 0.03em;
+}
+
 .timer {
   font-size: 1.5rem;
   font-variant-numeric: tabular-nums;
@@ -659,25 +664,28 @@ body {
    roster may shrink, names are cut short (the whole name on hover), the figures scale
    down on narrow windows, and nothing is ever drawn past the edge. */
 /* The figures are as large as the bar allows: by the width each entry gets — the window
-   less the phase on the left, shared among them (`--entries`, set by the HUD) — and never
+   less the phase on the left as measured (`--phase`, the padding and the gap beside it),
+   shared among them (`--entries`; both set by the HUD) — and never
    taller than the 64-pixel bar holds, a name over a score. Three players get large
    figures; eight on a narrow window as large as still fits. */
 .roster {
-  --slot: calc((100vw - 300px) / var(--entries, 4));
+  --slot: calc((100vw - var(--phase, 248px) - 52px) / var(--entries, 4));
   display: flex;
   flex: 0 1 auto;
   min-width: 0;
-  gap: clamp(0.35rem, 0.9vw, 1.1rem);
+  gap: clamp(0.35rem, 0.7vw, 1.1rem);
   margin: 0;
   padding: 0;
   overflow: hidden;
   list-style: none;
 }
 
+/* Clipped at its own edge, so a figure too large for its share never runs into the next. */
 .roster .player {
   display: flex;
   flex-direction: column;
   min-width: 0;
+  overflow: hidden;
   padding-left: 0.45rem;
   border-left: 3px solid var(--who);
 }
@@ -715,8 +723,8 @@ body {
 }
 
 .roster .lives {
-  font-size: clamp(13px, calc(var(--slot) * 0.135), 21px);
-  letter-spacing: 0.08em;
+  font-size: clamp(12px, calc(var(--slot) * 0.135), 21px);
+  letter-spacing: 0.05em;
   color: var(--hud-ink);
 }
 
@@ -746,6 +754,7 @@ body {
   display: flex;
   flex-direction: column;
   min-width: 0;
+  overflow: hidden;
   padding: 0 0.5rem;
   border-left: 2px solid color-mix(in srgb, var(--hud-muted) 40%, transparent);
 }
@@ -2485,11 +2494,14 @@ body.reduced-effects .preparing .blocks i {
   text-align: left;
 }
 
+/* Balanced, so a long title — "Erzfeind von Bot 3" — breaks into two even lines rather
+   than leaving a word alone on the second. */
 .summary .award strong {
   color: var(--accent);
   font-size: 0.85rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
+  text-wrap: balance;
 }
 
 .summary .award .who {

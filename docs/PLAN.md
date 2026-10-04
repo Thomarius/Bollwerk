@@ -1395,6 +1395,21 @@ Mauer, Kanone, Runde, umschließen, Spiel; "Teil" for a wall piece; "Optik" for 
 text, failing on any key or placeholder showing through. Seen switching in the menu and, from
 the pause menu, mid-match.
 
+**Step 4 done (2026-10-04)**: every screen in German at 1024 and 1400 pixels — menu,
+gallery, Spielregeln, Credits, the lobby in teams of eight, the HUD at three and eight and in
+teams, the cannon count, the pause menu, the "out" strip, the end screen with awards and the
+bots' reveal, and the banners, plaques and stamps placed by script. What did not fit, all at
+1024 and all in the HUD's bar: the roster sized its figures assuming a 300-pixel phase label,
+and German's "Bau deine Mauern wieder auf" is half as long again — so four teams' pips ran
+into the next team's letter (English already clipped the last) and eight players lost a
+pip each. Fixed for every language rather than by shortening approved German: the HUD
+measures the label (`--phase`), a team counts as 1.4 entries since its figures carry five
+pips, an entry clips at its own edge rather than spilling into the next, a phase label over
+22 characters is set smaller (`.phase.long`; English's "Next: Rebuild your walls" too), and
+the pips' smallest size and the gap between entries came down a little. Award titles wrap
+balanced ("Erzfeind von Bot 3"). The Credits keep each audio file's own words, so the
+sound effects read "von various authors"; credits are not translated, as decided.
+
 ### 11.21 Opening the host's port by UPnP — agreed 2026-10-03, not started
 
 **The goal**: a person hosting from the desktop app or `npm start` is reachable from the
