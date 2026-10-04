@@ -84,6 +84,7 @@ import { EFFECTS, PauseControls } from './pause.js';
 import { openingShot, winnerShot } from './camera.js';
 import { drawPreview, tablePreview } from './preview.js';
 import { RecordingUpload } from './recordingUpload.js';
+import { perf } from './perf.js';
 import {
   floodFrom,
   floodOver,
@@ -233,6 +234,10 @@ function saveStyles(choices: LookChoices): void {
   }
 }
 const timeScale = Math.max(1, Number(params.get('speed') ?? 1));
+// The frame-time readout (PLAN 11.22).
+perf.enabled = params.get('perf') === '1';
+// For a script driving the page, which reads the figures rather than clicking Copy.
+if (perf.enabled) Object.assign(globalThis, { bollwerkPerf: perf });
 
 /** A seed from the browser's own entropy, for a table nobody has asked a map of. */
 function randomSeed(): number {
@@ -1173,6 +1178,7 @@ async function runSession(session: Session, setup: Setup): Promise<() => void> {
   await shownOnScreen();
 
   const scene = new Scene();
+  if (perf.enabled) Object.assign(globalThis, { bollwerkScene: scene });
   // Colours for this match: families by team in a team match, distinct otherwise. The
   // HUD takes the shared ramps, and each look its own style's restyling of them.
   const art = defaultConfigBundle.art;
@@ -1472,6 +1478,7 @@ async function runSession(session: Session, setup: Setup): Promise<() => void> {
     controls.detach();
     pause.destroy();
     badge?.destroy();
+    perf.detach();
     watching.destroy();
     hud.useSkin(null);
     globalThis.removeEventListener('resize', fit);
@@ -1840,6 +1847,12 @@ async function runSession(session: Session, setup: Setup): Promise<() => void> {
     );
   }
 
+  perf.attach(scene.app.stage, scene.app.renderer, () => ({
+    url: globalThis.location.search,
+    styles: `build ${styles.build}, combat ${styles.combat}`,
+    players: String(session.state.players.length),
+    effects: storedEffects(),
+  }));
   let last = performance.now();
   const loop = (now: number): void => {
     const delta = now - last;
@@ -1847,6 +1860,7 @@ async function runSession(session: Session, setup: Setup): Promise<() => void> {
     // The board is ready: the first frame takes the screen over it down.
     if (preparing?.isConnected) preparing.remove();
 
+    perf.begin('sim');
     const events = session.advance(delta);
     pause.update(
       session.pausedBy,
@@ -1857,6 +1871,8 @@ async function runSession(session: Session, setup: Setup): Promise<() => void> {
     applyEvents(events);
     matchAudio.handle(events);
     matchAudio.frame(session.state);
+    perf.end('sim');
+    perf.begin('hud');
     pointCamera(now);
     drawTransition();
     drawIslandBanners();
@@ -1866,6 +1882,7 @@ async function runSession(session: Session, setup: Setup): Promise<() => void> {
     if (reading !== null) badge?.update(reading, session.state.ruleset.tickRateHz);
 
     crumbleRuins();
+    perf.end('hud');
     // Once the match is over, fireworks over whoever won it.
     const celebrate =
       session.state.phase === 'game_over'
@@ -1874,6 +1891,7 @@ async function runSession(session: Session, setup: Setup): Promise<() => void> {
             return centre === undefined ? [] : [{ ...centre, owner: id }];
           })
         : [];
+    perf.begin('effects');
     scene.drawEffects(
       session.state,
       session.tickFraction,
@@ -1888,6 +1906,8 @@ async function runSession(session: Session, setup: Setup): Promise<() => void> {
       recentChoices(now),
       advanceDrains(now),
     );
+    perf.end('effects');
+    perf.begin('overlay');
     const ghost = {
       ...controls.ghost(session.tickFraction),
       ...hints,
@@ -1895,7 +1915,12 @@ async function runSession(session: Session, setup: Setup): Promise<() => void> {
     };
     scene.drawOverlay(session.state, ghost, session.humanPlayer);
     drawCounters(ghost);
+    perf.end('overlay');
+    perf.beforeRender();
+    perf.begin('render');
     scene.render();
+    perf.end('render');
+    perf.frameDone(now, delta);
 
     frame = requestAnimationFrame(loop);
   };

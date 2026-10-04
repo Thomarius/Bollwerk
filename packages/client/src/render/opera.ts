@@ -3,6 +3,7 @@ import { Structure, Terrain, type Castle, type MatchState, type Shot } from '@bo
 import { Graphics } from 'pixi.js';
 
 import { motionReduced } from '../motion.js';
+import { perf } from '../perf.js';
 import { inFinalRound } from '../scores.js';
 import { timerSpot, type TimerSpot } from '../timerSpot.js';
 
@@ -921,7 +922,9 @@ export class OperaTheme implements Theme {
     const frame = { ...given, deltaMs: Math.max(0, given.deltaMs || 0) };
     this.round = state.round;
     this.clock += frame.deltaMs;
+    perf.begin('flow');
     this.drawFlow(state, view, frame.deltaMs);
+    perf.end('flow');
     const g = this.effectGfx;
     g.clear();
     this.seaLife.draw(g, view, this.art, frame.deltaMs);

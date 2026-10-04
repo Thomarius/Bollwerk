@@ -47,6 +47,7 @@ wait rather than assuming it hung.
 Client dev query parameters: `?autostart=1&players=3&seed=7` (a random seed without it),
 `&snapshot=build` to jump to a phase (`&round=N` for one deep in a match, `&idle=1` to
 leave your seat undriven on the way, so you are soon knocked out), `&speed=10`,
+`&perf=1` for the frame-time readout (PLAN 11.22: a fixed 30 s window, Copy for the figures),
 `&style=flat|pixel|night|cyberpunk|blueprint|parchment|bricks|glass|chocolate|halloween|sakura|oktoberfest|opera` for both looks (a one-look style sets only its own)
 (`&buildStyle=`, `&combatStyle=` for one), `&watch=1&level=8` to observe a bot match (`&personality=offensive` fixes every bot's),
 `&rounds=12` for the round cap, `&teams=2` for teams of two in seat order, `&lang=de` for a

@@ -91,11 +91,12 @@ interface Slot {
 
 function newLayers(): ThemeLayers {
   return {
-    terrain: new Container(),
-    territory: new Container(),
-    structures: new Container(),
-    effects: new Container(),
-    overlay: new Container(),
+    // Named for the frame-time readout, which says which layer's drawing is rebuilt.
+    terrain: new Container({ label: 'terrain' }),
+    territory: new Container({ label: 'territory' }),
+    structures: new Container({ label: 'structures' }),
+    effects: new Container({ label: 'effects' }),
+    overlay: new Container({ label: 'overlay' }),
   };
 }
 
