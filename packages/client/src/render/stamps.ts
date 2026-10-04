@@ -104,3 +104,54 @@ export class StampBook {
     this.contexts.clear();
   }
 }
+
+/**
+ * A `Graphics` for each of many things — a gun each — drawn again only when its `key`
+ * changes (PLAN 11.22). For what is still most of the time but drawn every frame because
+ * it sometimes moves: a barrel turns when its gun fires and kicks for a moment after, and
+ * stands still between. The drawing code is the style's own, unchanged; the key must name
+ * everything it reads.
+ *
+ * `begin`, a `draw` per thing, `end`: what was not drawn this frame is thrown away.
+ */
+export class Memos {
+  readonly container = new Container();
+  private readonly entries = new Map<number | string, { g: Graphics; key: string; seen: number }>();
+  private frame = 0;
+
+  begin(): void {
+    this.frame++;
+  }
+
+  draw(id: number | string, key: string, draw: (g: Graphics) => void): void {
+    let entry = this.entries.get(id);
+    if (entry === undefined) {
+      entry = { g: new Graphics(), key: '', seen: 0 };
+      this.entries.set(id, entry);
+      this.container.addChild(entry.g);
+    }
+    entry.seen = this.frame;
+    if (entry.key === key) return;
+    entry.key = key;
+    entry.g.clear();
+    draw(entry.g);
+  }
+
+  end(): void {
+    for (const [id, entry] of this.entries) {
+      if (entry.seen === this.frame) continue;
+      entry.g.destroy();
+      this.entries.delete(id);
+    }
+  }
+
+  destroy(): void {
+    this.entries.clear();
+    this.container.destroy({ children: true });
+  }
+}
+
+/** The part of a key that says where the board is drawn: a change redraws everything. */
+export function viewKey(view: { tile: number; originX: number; originY: number }): string {
+  return `${view.tile},${view.originX},${view.originY}`;
+}

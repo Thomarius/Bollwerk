@@ -43,7 +43,12 @@ export interface LocalMatchOptions {
   ruleset?: Ruleset;
   /** Where the match's recording goes, line by line; see `recording.ts`. */
   record?: (line: RecordingLine) => void;
+  /** Milliseconds of a frame the bots may think in; 0 for one bot a frame, in tests. */
+  thinkBudgetMs?: number;
 }
+
+/** Milliseconds of a frame the bots may think in before the rest wait for the next. */
+const THINK_BUDGET_MS = 8;
 
 /**
  * A match running entirely in the browser, with no server.
@@ -59,6 +64,14 @@ export class LocalMatch {
   private readonly rng: Rng;
   private readonly bots = new Map<number, Bot>();
   private readonly tickMs: number;
+  /**
+   * The next seat to think on the tick in progress, or null between ticks. A bot planning
+   * its walls takes 15 to 50 ms, and bots of one level plan on the same ticks: eight of them
+   * froze the page for up to 135 ms (PLAN 11.22). So a tick's thinking may run over several
+   * frames, the screen drawn between; the actions and the tick they land on are the same.
+   */
+  private thinking: number | null = null;
+  private readonly thinkBudgetMs: number;
   private accumulator = 0;
   private events: MatchEvent[] = [];
   private recorder: MatchRecorder | null = null;
@@ -112,6 +125,7 @@ export class LocalMatch {
     this.setups = setups;
     this.rng = new Rng(options.seed ^ 0x5f3759df);
     this.tickMs = 1000 / ruleset.tickRateHz;
+    this.thinkBudgetMs = options.thinkBudgetMs ?? THINK_BUDGET_MS;
 
     if (options.record !== undefined) {
       const startedAt = new Date();
@@ -160,11 +174,37 @@ export class LocalMatch {
   advance(elapsedMs: number): MatchEvent[] {
     if (this.finished) return this.takeEvents();
     this.accumulator += Math.min(elapsedMs, 250);
-    while (this.accumulator >= this.tickMs && !this.finished) {
-      this.accumulator -= this.tickMs;
+    const deadline = performance.now() + this.thinkBudgetMs;
+    let progressed = false;
+    while ((this.thinking !== null || this.accumulator >= this.tickMs) && !this.finished) {
+      if (this.thinking === null) {
+        this.accumulator -= this.tickMs;
+        this.thinking = 0;
+      }
+      // Out of time among the bots: the rest of them, and the step, wait for the next frame.
+      if (!this.think(deadline, progressed)) break;
+      progressed = true;
       this.stepOnce();
     }
     return this.takeEvents();
+  }
+
+  /**
+   * The bots' turns on the tick in progress, from where the last frame stopped; false when
+   * the frame's time ran out first. Always at least one, so a match never stalls.
+   */
+  private think(deadline: number, progressed: boolean): boolean {
+    const players = this.state.players;
+    while (this.thinking !== null && this.thinking < players.length) {
+      if (progressed && performance.now() > deadline) return false;
+      const player = players[this.thinking++] as (typeof players)[number];
+      progressed = true;
+      if (player.id === this.humanPlayer || player.eliminated) continue;
+      const action = this.bots.get(player.id)?.think(this.state, this.rng) ?? null;
+      if (action !== null && applyAction(this.state, action) === null) this.applied.push(action);
+    }
+    this.thinking = null;
+    return true;
   }
 
   /**
@@ -190,12 +230,8 @@ export class LocalMatch {
     }
   }
 
+  /** The tick, once every bot has had its turn on it. */
   private stepOnce(): void {
-    for (const player of this.state.players) {
-      if (player.id === this.humanPlayer || player.eliminated) continue;
-      const action = this.bots.get(player.id)?.think(this.state, this.rng) ?? null;
-      if (action !== null && applyAction(this.state, action) === null) this.applied.push(action);
-    }
     const tick = this.state.tick;
     step(this.state);
     this.events.push(...drainEvents(this.state));

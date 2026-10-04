@@ -8,6 +8,7 @@ import { SEA_NE, SEA_NW, SEA_SE, SEA_SW, filletCorners } from './pixel/coast.js'
 import { daylight, shadowCast, weatherFor, type Weather } from './pixel/atmosphere.js';
 import { OceanLife } from './pixel/ocean.js';
 import { SceneryTracker } from './scenery.js';
+import { StampBook, Stamps } from './stamps.js';
 import { CASTLE_WINDOWS, E, FILLET_CORNERS, KEY, N, S, W, buildAtlas } from './pixel/generators.js';
 import {
   FlagHoist,
@@ -168,6 +169,12 @@ export class PixelTheme implements Theme {
   private readonly seed: number;
 
   private terrainLayer!: Container;
+  /**
+   * The terrain's sprites, ten thousand at eight players, as a render group of their own
+   * (PLAN 11.22): Pixi then keeps their batch from frame to frame, where in the layer with
+   * the sea's crests, redrawn every frame, it gathered and packed every one of them again.
+   */
+  private readonly tileLayer = new Container({ isRenderGroup: true });
   private structureLayer!: Container;
   private effectLayer!: Container;
   private readonly territoryGfx = new Graphics();
@@ -199,7 +206,15 @@ export class PixelTheme implements Theme {
   /** Every tile of water drawn, for the glints. */
   private seaCells: Cell[] = [];
   private readonly seaGfx = new Graphics();
-  private readonly cloudGfx = new Graphics();
+  /**
+   * The clouds' shadows, a stamp a cloud drawn once and only moved (PLAN 11.22): their 700
+   * soft discs, filled anew each frame, were 48 000 vertices at eight players, most of
+   * what Medieval cost.
+   */
+  private readonly cloudStamps = new Stamps();
+  private readonly cloudBook = new StampBook();
+  /** Which set of clouds the book's stamps are of; a new set is drawn afresh. */
+  private cloudSet = 0;
   /** Trees, bushes and boulders on open land; see `scenery.ts`. */
   private readonly scenery = new SceneryTracker();
   private readonly sceneryLayer = new Container();
@@ -305,6 +320,7 @@ export class PixelTheme implements Theme {
 
   destroy(): void {
     this.terrainLayer?.removeChildren();
+    this.tileLayer.destroy({ children: true });
     this.structureLayer?.removeChildren();
     this.effectLayer?.removeChildren();
     this.territoryGfx.destroy();
@@ -315,7 +331,8 @@ export class PixelTheme implements Theme {
     this.airLight.destroy();
     this.seaGfx.destroy();
     this.ghostShadow.destroy();
-    this.cloudGfx.destroy();
+    this.cloudStamps.destroy();
+    this.cloudBook.destroy();
     this.courtLayer.destroy({ children: true });
     this.sceneryLayer.destroy({ children: true });
     this.craterLayer.destroy({ children: true });
@@ -352,6 +369,7 @@ export class PixelTheme implements Theme {
 
   drawTerrain(state: MatchState, view: ViewTransform): void {
     this.terrainLayer.removeChildren();
+    this.tileLayer.removeChildren();
     this.waterSprites = [];
     this.waterVariants = [];
     this.openSea = [];
@@ -374,7 +392,7 @@ export class PixelTheme implements Theme {
     const sea = (x: number, y: number): Sprite => {
       // Scattered by a hash of the tile rather than in a pattern, which would show.
       const variant = (((x * 73856093) ^ (y * 19349663)) >>> 0) % seaVariants;
-      const sprite = this.place(this.terrainLayer, KEY.water(0, variant), view, x, y);
+      const sprite = this.place(this.tileLayer, KEY.water(0, variant), view, x, y);
       this.waterSprites.push(sprite);
       this.waterVariants.push(variant);
       return sprite;
@@ -410,7 +428,7 @@ export class PixelTheme implements Theme {
           if (land(x, y + 1)) coast |= S;
           if (land(x - 1, y)) coast |= W;
           if (coast !== 0) {
-            const surf = this.place(this.terrainLayer, KEY.foam(coast), view, x, y);
+            const surf = this.place(this.tileLayer, KEY.foam(coast), view, x, y);
             this.surf.push({ sprite: surf, phase: ((x * 7 + y * 11) % 13) / 13 });
           }
           // Where the coast turns inward, the corner of the sea is filled with beach.
@@ -420,7 +438,7 @@ export class PixelTheme implements Theme {
             // Tinted for the island across the corner, which the fillet belongs to.
             const [dx, dy] = ACROSS[corner] as [number, number];
             const owner = (state.islandId[(y + dy) * state.width + x + dx] as number) - 1;
-            const fillet = this.place(this.terrainLayer, KEY.fillet(corner), view, x, y);
+            const fillet = this.place(this.tileLayer, KEY.fillet(corner), view, x, y);
             fillet.tint = beachTint(owner);
           }
           continue;
@@ -441,7 +459,7 @@ export class PixelTheme implements Theme {
         // A coast tile's rounded corners show the sea, so it is laid on some.
         if (mask !== 0) sea(x, y).tint = 0xffffff;
         const key = mask === 0 ? KEY.grass((x * 7 + y * 13) % variants) : KEY.shore(mask);
-        const sprite = this.place(this.terrainLayer, key, view, x, y);
+        const sprite = this.place(this.tileLayer, key, view, x, y);
 
         // Only a hint of the owner's colour. Tinting hard enough to identify an
         // island by its grass turns the ground muddy and throws away the generated
@@ -455,10 +473,10 @@ export class PixelTheme implements Theme {
         // The beach over it, tinted faintly: sand as hard-tinted as the grass beside it
         // made the coast a coloured rim rather than a shore.
         if (mask !== 0)
-          this.place(this.terrainLayer, KEY.beach(mask), view, x, y).tint = beachTint(owner);
+          this.place(this.tileLayer, KEY.beach(mask), view, x, y).tint = beachTint(owner);
       }
     }
-    this.terrainLayer.addChild(this.seaGfx);
+    this.terrainLayer.addChild(this.tileLayer, this.seaGfx);
     this.islandId = state.islandId;
     this.ocean.layout(state, view, this.art);
     this.weather = this.torchlit ? 'clear' : weatherFor(state.seed, this.art.pixel.weatherOdds);
@@ -894,7 +912,7 @@ export class PixelTheme implements Theme {
     this.clock += frame.deltaMs;
     this.animateWater(frame.deltaMs);
     this.effectLayer.removeChildren();
-    this.effectLayer.addChild(this.cloudGfx, g, this.airLight);
+    this.effectLayer.addChild(this.cloudStamps.container, g, this.airLight);
     this.age(state);
     this.groundLight.clear();
     this.airLight.clear();
@@ -1090,8 +1108,13 @@ export class PixelTheme implements Theme {
    * none — there is no sun to cast them. Still when motion is reduced, not gone.
    */
   private drawClouds(view: ViewTransform, deltaMs: number, still: boolean): void {
-    const g = this.cloudGfx;
-    g.clear();
+    const stamps = this.cloudStamps;
+    stamps.begin();
+    this.cloudsOf(view, deltaMs, still);
+    stamps.end();
+  }
+
+  private cloudsOf(view: ViewTransform, deltaMs: number, still: boolean): void {
     if (this.torchlit) return;
     const style = this.art.pixel;
     const { x0, y0, x1, y1 } = this.drawn;
@@ -1106,6 +1129,7 @@ export class PixelTheme implements Theme {
       (spanX * spanY * style.cloudsPerThousandTiles * (heavy ? 2.5 : fog ? 1.6 : 1)) / 1000,
     );
     if (this.clouds.length !== wanted) {
+      this.cloudSet++;
       const [small, large] = style.cloudTiles;
       this.clouds = Array.from({ length: wanted }, () => {
         const size = small + Math.random() * (large - small);
@@ -1122,22 +1146,21 @@ export class PixelTheme implements Theme {
     const colour = hex(fog ? this.art.palette.uiInk : this.art.palette.shadow);
     const rings = [1, 0.86, 0.72, 0.58, 0.44, 0.3];
     const alpha = (style.cloudShadowAlpha * (heavy ? 1.25 : fog ? 1.1 : 1)) / rings.length;
-    for (const cloud of this.clouds) {
+    for (const [n, cloud] of this.clouds.entries()) {
       cloud.x += drift * WIND_X;
       cloud.y += drift * WIND_Y;
       // Round again once wholly past the far edge, entering from the near one.
       if (cloud.x - cloud.reach > x1) cloud.x -= spanX + cloud.reach * 2;
       if (cloud.y - cloud.reach > y1) cloud.y -= spanY + cloud.reach * 2;
-      for (const blob of cloud.blobs) {
-        for (const k of rings) {
-          g.circle(
-            tileX(view, cloud.x + blob.dx),
-            tileY(view, cloud.y + blob.dy),
-            view.tile * blob.r * k,
-          );
-          g.fill({ color: colour, alpha });
+      const shadow = this.cloudBook.get(`${this.cloudSet}|${n}`, view.tile, (g) => {
+        for (const blob of cloud.blobs) {
+          for (const k of rings) {
+            g.circle(view.tile * blob.dx, view.tile * blob.dy, view.tile * blob.r * k);
+            g.fill({ color: colour, alpha });
+          }
         }
-      }
+      });
+      this.cloudStamps.place(shadow, tileX(view, cloud.x), tileY(view, cloud.y));
     }
   }
 

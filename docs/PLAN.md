@@ -1139,9 +1139,9 @@ choosing the looks, two rounds of test-session feedback, help for new players, a
 rematch, the desktop app for releases (M14, v0.5.2 the latest), and the game in English and
 German (M15, ARCHIVE 12g). A new session starts with one of:
 
-0. **First: 11.22, rendering performance** — serious stutter in Oktoberfest and Opera
-   even on a fast PC, getting in the way of play; the user's priority for the next session.
-   Measure, then build once and only move, keeping every effect.
+0. **11.22, rendering performance**, done in every style on 2026-10-04 (58–60 fps at eight
+   players on an integrated GPU, Opera from 13.5): left are a look at the styles in motion
+   and the server's bots, both in 11.22.
 1. **The soaks** — [`SOAKS.md`](./SOAKS.md) for 11.2, 11.3, 11.4 and 11.13. The weekend run
    of packages A, B and D was started on 2026-10-02 **on the user's other machine**, into
    its `soaks/2026-10-02/`: read its `summary.txt` together with the user, then write the
@@ -1384,18 +1384,60 @@ Found and done, in order of effect:
 - **Drawn once, slid**: Opera's staves, masked by the open sea; **drawn on a change**:
   Opera's ink blots, Oktoberfest's Maß, Parchment's ink stains.
 
-| Style (8 players) | fps         | frames > 50 ms | render ms   | vertices/frame |
-| ----------------- | ----------- | -------------- | ----------- | -------------- |
-| Opera             | 13.5 → 58.8 | 279 → 7        | 14.8 → 4.0  | 78k → 21k      |
-| Oktoberfest       | 45.2 → 57.8 | 84 → 9         | 10.0 → 4.2  | 59k → 22k      |
-| Parchment         | 53.7 → 58.7 | 14 → 6         | 7.7 → 3.3   | 43k → 21k      |
-| Minimal           | 59.2 → 59.1 | 3 → 6          | 0.9 → 0.8   | 3k → 3k        |
-| Medieval (cache)  | 34.7 → 44.3 | 37 → 12        | 18.8 → 15.2 | 57k → 59k      |
-| Chocolate (cache) | 44.8 → 50.6 | 49 → 24        | 13.7 → 11.2 | 83k → 82k      |
+The user's figures on their own machine (the same integrated GPU, 2341x1160) confirmed it —
+Opera 20.2 → 58.9 fps, frames over 50 ms 201 → 8; Parchment's render 6.3 → 3.4 ms; Minimal
+unchanged — and the same was then done in **every style**:
 
-The screen's 60 Hz caps fps here. **Next**: the user's figures on their PC for Minimal,
-Parchment and Opera (or Oktoberfest), before and after; if they hold, the same three tools in
-every other style, Medieval (its effects layer, 50 000 a frame), Chocolate and Sakura first.
+- `IslandParts` for walls in all eleven styles drawn from shapes, and for **sealed ground**
+  too (`of: 'territory'`), redrawn some 300 times in 30 s as breaches change it: each island's
+  board carries only its own `islandId`, so `dimEliminated` dims an island once. Cyberpunk's
+  additive glow is a second layer of parts.
+- **`Memos`** for the guns' barrels in seven styles: a `Graphics` a gun, redrawn as it fires
+  and kicks and not between. Halloween's brew keeps bubbling every frame, outside the memo.
+- **Stamps** for Chocolate's swirls (a step per sixty-fourth of a turn and twentieth of a
+  tile in size, since a squashed spiral turned is not the same shape rotated), Sakura's
+  crests (per forty-eighth of their rise, mirrored for direction), Halloween's bog bubbles
+  (a ring per half pixel of radius, so the line stays one pixel) and fog banks, and
+  **Medieval's cloud shadows** — 700 soft discs a frame, 48 000 vertices, most of its cost.
+- **Medieval's terrain sprites as a render group of their own** (`tileLayer`): beside the
+  sea's crests, redrawn every frame, Pixi gathered and packed all ten thousand again each
+  frame. Render 8.7 → 4.5 ms. Making the scene's layers render groups did nothing.
+- **The bots' spikes**: in a local match bots think inside the frame, and a plan of their
+  walls takes 15 to 50 ms; bots of one level plan on the same ticks (49 apart at level 8),
+  so eight made ticks of 80 to 135 ms. `LocalMatch` now spreads a tick's turns over frames,
+  8 ms a frame, the rest and the step waiting for the next: the same actions on the same
+  ticks, which a test checks against a run with every bot in a frame of its own.
+
+Final, the same 30 s at eight players on this machine, before any of it and now:
+
+| Style         | fps         | frames > 50 ms | render ms  | vertices/frame | worst sim ms |
+| ------------- | ----------- | -------------- | ---------- | -------------- | ------------ |
+| Minimal       | 59.2 → 59.9 | 3 → 0          | 0.9 → 0.8  | 3k → 2k        | 83 → 22      |
+| Medieval      | 34.7 → 58.9 | 37 → 0         | 18.8 → 4.5 | 57k → 9k       | 99 → 26      |
+| Night         | 46.8 → 58.3 | 19 → 0         | 12.0 → 5.5 | 17k → 18k      | 100 → 25     |
+| Cyberpunk     | 55.5 → 59.7 | 6 → 0          | 5.3 → 3.9  | 28k → 25k      | 90 → 29      |
+| Blueprint     | 55.1 → 59.5 | 9 → 1          | 4.9 → 2.9  | 21k → 16k      | 120 → 33     |
+| Parchment     | 53.7 → 59.7 | 14 → 0         | 7.7 → 2.5  | 43k → 10k      | 95 → 25      |
+| Toy bricks    | 54.4 → 59.6 | 15 → 1         | 4.3 → 2.0  | 22k → 8k       | 90 → 22      |
+| Stained glass | 58.1 → 59.9 | 7 → 0          | 3.5 → 1.6  | 22k → 7k       | 87 → 25      |
+| Chocolate     | 44.8 → 58.8 | 49 → 1         | 13.7 → 5.8 | 83k → 19k      | 93 → 24      |
+| Halloween     | 53.1 → 59.6 | 16 → 0         | 7.8 → 3.4  | 41k → 14k      | 95 → 22      |
+| Sakura        | 50.3 → 59.6 | 20 → 0         | 10.3 → 4.0 | 67k → 18k      | 120 → 22     |
+| Oktoberfest   | 45.2 → 58.9 | 84 → 4         | 10.0 → 3.7 | 59k → 22k      | 81 → 25      |
+| Opera         | 13.5 → 59.5 | 279 → 0        | 14.8 → 3.7 | 78k → 19k      | 130 → 23     |
+
+The screen's 60 Hz caps fps. Still open:
+
+- **The styles in motion, by eye**: stills before and after matched for every style, but
+  the stepped stamps — swirls turning, crests rising, bubbles swelling — and the draw order
+  moved where a stamp now lies over later effects (Oktoberfest's pretzels and Opera's notes
+  over splashes) need a look in play.
+- **The server's bots** stall its tick the same way when several plan at once: online,
+  every client then receives that tick late. The same spreading, over the server's event
+  loop, or a faster `planSeal` — eleven max-flows a `sealOptions` over the same graph,
+  rebuilt each time — would answer it.
+- **Night's and Cyberpunk's effects** are the largest left (17k and 25k a frame) and could
+  take the same tools if a slower machine ever needs it.
 
 ## 12. Deferred (explicitly out of scope for v1)
 

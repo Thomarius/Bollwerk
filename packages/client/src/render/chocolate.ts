@@ -1,5 +1,12 @@
 import type { ArtConfig, ChocolateStyleConfig } from '@bollwerk/config';
-import { Structure, Terrain, type Castle, type MatchState, type Shot } from '@bollwerk/sim';
+import {
+  Structure,
+  Terrain,
+  type Cannon,
+  type Castle,
+  type MatchState,
+  type Shot,
+} from '@bollwerk/sim';
 import { Graphics } from 'pixi.js';
 
 import { motionReduced } from '../motion.js';
@@ -7,12 +14,15 @@ import { perf } from '../perf.js';
 import { inFinalRound } from '../scores.js';
 import { timerSpot, type TimerSpot } from '../timerSpot.js';
 
+import { IslandParts } from './islandParts.js';
+import { Memos, StampBook, Stamps, viewKey } from './stamps.js';
 import {
   FlagHoist,
   GhostMotion,
   Fireworks,
   WinnerBanners,
   GunAims,
+  type Aim,
   RuinSmoke,
   dimEliminated,
   drawAimLine,
@@ -125,6 +135,8 @@ const RING_MS = 1100;
 const MELT_MS = 900;
 const WOBBLE_MS = 560;
 const PUFF_MS = 700;
+/** A whole turn. */
+const TAU = Math.PI * 2;
 const SNAP_MS = 700;
 
 /** Candy for the sprinkles: neutral sweet-shop colours, so none reads as a player's. */
@@ -202,15 +214,33 @@ export class ChocolateTheme implements Theme {
   private readonly terrainGfx = new Graphics();
   /** The river's moving surface and the splats, under everything else: redrawn each frame. */
   private readonly flowGfx = new Graphics();
-  private readonly territoryGfx = new Graphics();
+  /** Sealed ground, an island to a `Graphics`, redrawn where it changes. */
+  private readonly territory = new IslandParts(1, 'territory');
   private readonly ghostMotion = new GhostMotion();
   private readonly ruins = new RuinSmoke();
   private readonly scenery = new SceneryLayer(
     (g, view, items) => drawChocolateScenery(g, view, items, this.art),
     () => hex(this.art.palette.rockLight),
   );
-  private readonly structureGfx = new Graphics();
+  /** Walls, houses and guns, an island to a `Graphics`, redrawn where they change. */
+  private readonly structures = new IslandParts();
   private readonly effectGfx = new Graphics();
+  /** Splats on open ground: drawn again when one lands or a round fades them. */
+  private readonly splatGfx = new Graphics();
+  private splatsDrawn = '';
+  /**
+   * The swirls on the river, up to 500 of them: stamps drawn once a size and a sixty-fourth
+   * of a turn (PLAN 11.22). Squashed into the board's perspective, a swirl turned is not
+   * the same shape rotated, and a turned stamp would thin its line unevenly; they turn once
+   * in sixteen seconds, a step every quarter second. Stroked anew each frame they were
+   * 35 000 vertices at eight players.
+   */
+  private readonly swirlStamps = new Stamps();
+  private readonly book = new StampBook();
+  /** The guns' barrels, a `Graphics` a gun redrawn only as it turns or kicks (`Memos`). */
+  private readonly gunMemo = new Memos();
+  /** What lies over the guns: shots, splashes, the finish. */
+  private readonly lateGfx = new Graphics();
   private readonly overlayGfx = new Graphics();
 
   private terrain: Uint8Array | null = null;
@@ -246,24 +276,29 @@ export class ChocolateTheme implements Theme {
     this.art = art;
     this.style = art.chocolate;
     this.snowy = weatherFor(this.seed, art.pixel.weatherOdds) === 'snow';
-    layers.terrain.addChild(this.terrainGfx, this.flowGfx);
-    layers.territory.addChild(this.scenery.gfx, this.territoryGfx);
-    layers.structures.addChild(this.structureGfx);
-    layers.effects.addChild(this.effectGfx);
+    layers.terrain.addChild(
+      this.terrainGfx,
+      this.splatGfx,
+      this.swirlStamps.container,
+      this.flowGfx,
+    );
+    layers.territory.addChild(this.scenery.gfx, this.territory.container);
+    layers.structures.addChild(this.structures.container);
+    layers.effects.addChild(this.effectGfx, this.gunMemo.container, this.lateGfx);
     layers.overlay.addChild(this.overlayGfx);
     return Promise.resolve();
   }
 
   destroy(): void {
+    this.territory.destroy();
+    this.splatGfx.destroy();
+    this.swirlStamps.destroy();
+    this.book.destroy();
+    this.gunMemo.destroy();
+    this.lateGfx.destroy();
+    this.structures.destroy();
     this.scenery.destroy();
-    for (const g of [
-      this.terrainGfx,
-      this.flowGfx,
-      this.territoryGfx,
-      this.structureGfx,
-      this.effectGfx,
-      this.overlayGfx,
-    ]) {
+    for (const g of [this.terrainGfx, this.flowGfx, this.effectGfx, this.overlayGfx]) {
       g.destroy();
     }
   }
@@ -487,12 +522,75 @@ export class ChocolateTheme implements Theme {
     const g = this.flowGfx;
     g.clear();
     const t = view.tile;
-    const { palette } = this.art;
     const still = motionReduced();
 
     // Splats on open ground, hardening and fading over the rounds after.
+    this.drawSplats(state, view);
+
+    // Swirls, carried east on the current, melting in and out.
+    const target = Math.min(500, Math.floor(this.seaCells.length / this.style.swirlTiles));
+    while (this.swirls.length < target && this.seaCells.length > 0) {
+      this.swirls.push(this.newSwirl(still ? 0.5 : Math.random()));
+    }
+    const dt = still ? 0 : deltaMs / 1000;
+    const stamps = this.swirlStamps;
+    stamps.begin();
+    for (let i = 0; i < this.swirls.length; i++) {
+      const s = this.swirls[i]!;
+      s.age += still ? 0 : deltaMs;
+      s.x += this.style.currentTilesPerSecond * dt;
+      s.y += Math.sin(this.clock / 1400 + s.turn * 3) * 0.08 * dt;
+      if (s.age >= s.life || this.land(Math.floor(s.x), Math.floor(s.y))) {
+        this.swirls[i] = this.newSwirl(0);
+        continue;
+      }
+      const alpha = Math.sin((Math.PI * s.age) / s.life);
+      const level = Math.max(0, Math.min(2, Math.floor(alpha * 3)));
+      // Drawn a twentieth of a tile apart in size and scaled the rest of the way.
+      const size = Math.round(s.size * 20) / 20;
+      const step =
+        Math.round(((((s.turn + this.clock / 2600) % TAU) + TAU) % TAU) / (TAU / 64)) % 64;
+      const swirl = this.book.get(`swirl|${size}|${step}`, t, (k) =>
+        this.drawSwirl(k, t * size, (step / 64) * TAU, t),
+      );
+      stamps.place(swirl, tileX(view, s.x), tileY(view, s.y), {
+        scale: s.size / size,
+        alpha: 0.14 + 0.13 * level,
+      });
+    }
+    stamps.end();
+
+    if (this.fall !== null) this.drawFall(view, this.fall);
+  }
+
+  /** One swirl at the origin, `r` its size and `a` its turn, in full: the stamp fades it. */
+  private drawSwirl(g: Graphics, r: number, a: number, t: number): void {
+    g.moveTo(Math.cos(a) * r, Math.sin(a) * r * 0.6);
+    for (let k = 1; k <= 10; k++) {
+      const f = k / 10;
+      const aa = a + f * Math.PI * 1.6;
+      const rr = r * (1 - f * 0.65);
+      g.lineTo(Math.cos(aa) * rr, Math.sin(aa) * rr * 0.6);
+    }
+    g.stroke({
+      width: Math.max(1, t * 0.07),
+      color: hex(this.art.palette.waterFoam),
+      cap: 'round',
+    });
+  }
+
+  /** The splats, drawn again only when one comes or fades. */
+  private drawSplats(state: MatchState, view: ViewTransform): void {
     const rounds = this.art.generators.fx.craterRounds;
     this.splats = this.splats.filter((s) => state.round - s.round < rounds);
+    const last = this.splats.at(-1);
+    const key = `${state.round}|${this.splats.length}|${last?.x},${last?.y},${last?.seed}|${viewKey(view)}`;
+    if (key === this.splatsDrawn) return;
+    this.splatsDrawn = key;
+    const g = this.splatGfx;
+    g.clear();
+    const t = view.tile;
+    const { palette } = this.art;
     for (const s of this.splats) {
       const fade = 1 - (state.round - s.round) / rounds;
       const cx = tileX(view, s.x + 0.5);
@@ -507,49 +605,6 @@ export class ChocolateTheme implements Theme {
       g.circle(cx - t * 0.1, cy - t * 0.1, t * 0.08);
       g.fill({ color: 0xffffff, alpha: 0.35 * fade });
     }
-
-    // Swirls, carried east on the current, melting in and out.
-    const target = Math.min(500, Math.floor(this.seaCells.length / this.style.swirlTiles));
-    while (this.swirls.length < target && this.seaCells.length > 0) {
-      this.swirls.push(this.newSwirl(still ? 0.5 : Math.random()));
-    }
-    const dt = still ? 0 : deltaMs / 1000;
-    const levels: Swirl[][] = [[], [], []];
-    for (let i = 0; i < this.swirls.length; i++) {
-      const s = this.swirls[i]!;
-      s.age += still ? 0 : deltaMs;
-      s.x += this.style.currentTilesPerSecond * dt;
-      s.y += Math.sin(this.clock / 1400 + s.turn * 3) * 0.08 * dt;
-      if (s.age >= s.life || this.land(Math.floor(s.x), Math.floor(s.y))) {
-        this.swirls[i] = this.newSwirl(0);
-        continue;
-      }
-      const alpha = Math.sin((Math.PI * s.age) / s.life);
-      levels[Math.max(0, Math.min(2, Math.floor(alpha * 3)))]?.push(s);
-    }
-    levels.forEach((list, level) => {
-      for (const s of list) {
-        const cx = tileX(view, s.x);
-        const cy = tileY(view, s.y);
-        const r = t * s.size;
-        const a = s.turn + this.clock / 2600;
-        g.moveTo(cx + Math.cos(a) * r, cy + Math.sin(a) * r * 0.6);
-        for (let k = 1; k <= 10; k++) {
-          const f = k / 10;
-          const aa = a + f * Math.PI * 1.6;
-          const rr = r * (1 - f * 0.65);
-          g.lineTo(cx + Math.cos(aa) * rr, cy + Math.sin(aa) * rr * 0.6);
-        }
-      }
-      g.stroke({
-        width: Math.max(1, t * 0.07),
-        color: hex(palette.waterFoam),
-        alpha: 0.14 + 0.13 * level,
-        cap: 'round',
-      });
-    });
-
-    if (this.fall !== null) this.drawFall(view, this.fall);
   }
 
   private newSwirl(age: number): Swirl {
@@ -621,8 +676,11 @@ export class ChocolateTheme implements Theme {
    */
   drawTerritory(state: MatchState, view: ViewTransform): void {
     this.scenery.refresh(state, view, this.art);
-    const g = this.territoryGfx;
-    g.clear();
+    this.territory.draw(state, view, (g, island) => this.drawSealed(g, island, view));
+  }
+
+  /** One island's sealed ground, for `IslandParts`: the board holds that island's alone. */
+  private drawSealed(g: Graphics, state: MatchState, view: ViewTransform): void {
     const t = view.tile;
     for (let player = 0; player < state.players.length; player++) {
       const owned = (x: number, y: number): boolean =>
@@ -682,8 +740,11 @@ export class ChocolateTheme implements Theme {
 
   drawStructures(state: MatchState, view: ViewTransform): void {
     this.scenery.refresh(state, view, this.art);
-    const g = this.structureGfx;
-    g.clear();
+    this.structures.draw(state, view, (g, island) => this.drawIsland(g, island, view));
+  }
+
+  /** One island's structures, for `IslandParts`: the board holds that island's alone. */
+  private drawIsland(g: Graphics, state: MatchState, view: ViewTransform): void {
     const { palette } = this.art;
     const t = view.tile;
     const wallAt = (x: number, y: number): number =>
@@ -1026,6 +1087,7 @@ export class ChocolateTheme implements Theme {
     perf.end('flow');
     const g = this.effectGfx;
     g.clear();
+    this.lateGfx.clear();
     this.seaLife.draw(g, view, this.art, frame.deltaMs);
     drawDrain(g, view, frame.drain, this.art);
     drawSealGlow(g, view, frame.sealGlow, this.art);
@@ -1044,8 +1106,8 @@ export class ChocolateTheme implements Theme {
     this.drawBits(view, frame.deltaMs);
     this.drawSprinkles(view, frame.deltaMs);
     this.drawHeat(state, view);
-    this.winnerBanners.draw(g, view, state, this.art, frame.celebrate, frame.deltaMs);
-    this.fireworks.draw(g, view, this.art, frame.celebrate, frame.deltaMs);
+    this.winnerBanners.draw(this.lateGfx, view, state, this.art, frame.celebrate, frame.deltaMs);
+    this.fireworks.draw(this.lateGfx, view, this.art, frame.celebrate, frame.deltaMs);
   }
 
   /** A piece poured into its mould: a stream from above, then the blocks wobble as they set. */
@@ -1252,59 +1314,68 @@ export class ChocolateTheme implements Theme {
    * cane droops, soft, its stripes faded.
    */
   private drawBarrels(state: MatchState, view: ViewTransform, deltaMs: number): void {
-    const g = this.effectGfx;
-    const t = view.tile;
-    const { palette } = this.art;
+    const memo = this.gunMemo;
+    memo.begin();
     for (const cannon of state.cannons) {
       const aim = this.aims.of(state, cannon.id);
       if (aim === null) continue;
       aim.firedAgo += deltaMs;
-      const kick = Math.max(0, 1 - aim.firedAgo / RECOIL_MS);
-      const length = cannon.active ? 1.05 - 0.3 * kick : 0.75;
-      const cx = cannon.x + cannon.w / 2;
-      const cy = cannon.y + cannon.h / 2 - 0.25;
-      const dx = Math.sin(aim.angle);
-      const dy = -Math.cos(aim.angle);
-      const sx = tileX(view, cx);
-      const sy = tileY(view, cy);
-      const ex = tileX(view, cx + dx * length);
-      const ey = tileY(view, cy + dy * length) + (cannon.active ? 0 : t * 0.35);
-      const mx = (sx + ex) / 2;
-      const my = (sy + ey) / 2 + (cannon.active ? 0 : t * 0.25);
-      const width = Math.max(3, t * 0.26);
-      const stripe = this.colour(cannon.owner, cannon.active ? 'base' : 'dark');
-      const white = cannon.active ? 0xffffff : hex(palette.rockMid);
-      g.moveTo(sx, sy).quadraticCurveTo(mx, my, ex, ey);
-      g.stroke({ width: width + this.ink(view) * 2, color: hex(palette.shadow), cap: 'round' });
-      g.moveTo(sx, sy).quadraticCurveTo(mx, my, ex, ey);
-      g.stroke({ width, color: white, cap: 'round' });
-      // The stripes: short bands across the cane, every other one in the owner's colour.
-      const at = (f: number): [number, number] => [
-        (1 - f) * (1 - f) * sx + 2 * (1 - f) * f * mx + f * f * ex,
-        (1 - f) * (1 - f) * sy + 2 * (1 - f) * f * my + f * f * ey,
-      ];
-      for (let k = 0; k < 6; k += 2) {
-        const [ax, ay] = at(k / 6 + 0.04);
-        const [bx, by] = at((k + 1) / 6 + 0.04);
-        g.moveTo(ax, ay).lineTo(bx, by);
-      }
-      g.stroke({ width, color: stripe, cap: 'butt' });
-      // The cocoa puff from the muzzle.
-      if (cannon.active && aim.firedAgo < PUFF_MS) {
-        const k = aim.firedAgo / PUFF_MS;
-        for (let n = 0; n < 3; n++) {
-          const d = t * (0.2 + 0.5 * k + n * 0.15);
-          g.circle(ex + dx * d, ey + dy * d, t * (0.12 + 0.22 * k) * (1 - n * 0.2));
-        }
-        g.fill({ color: hex(palette.craterMid), alpha: 0.5 * (1 - k) });
-      }
+      // Still between shots: drawn again only as it fires, kicks and puffs.
+      const moving = aim.firedAgo < Math.max(RECOIL_MS, PUFF_MS);
+      const key = `${viewKey(view)}|${cannon.x},${cannon.y},${cannon.owner},${cannon.active}|${aim.angle}|${moving ? aim.firedAgo : '-'}`;
+      memo.draw(cannon.id, key, (g) => this.drawBarrel(g, view, cannon, aim));
     }
+    memo.end();
     this.aims.prune(state);
+  }
+
+  private drawBarrel(g: Graphics, view: ViewTransform, cannon: Cannon, aim: Aim): void {
+    const t = view.tile;
+    const { palette } = this.art;
+    const kick = Math.max(0, 1 - aim.firedAgo / RECOIL_MS);
+    const length = cannon.active ? 1.05 - 0.3 * kick : 0.75;
+    const cx = cannon.x + cannon.w / 2;
+    const cy = cannon.y + cannon.h / 2 - 0.25;
+    const dx = Math.sin(aim.angle);
+    const dy = -Math.cos(aim.angle);
+    const sx = tileX(view, cx);
+    const sy = tileY(view, cy);
+    const ex = tileX(view, cx + dx * length);
+    const ey = tileY(view, cy + dy * length) + (cannon.active ? 0 : t * 0.35);
+    const mx = (sx + ex) / 2;
+    const my = (sy + ey) / 2 + (cannon.active ? 0 : t * 0.25);
+    const width = Math.max(3, t * 0.26);
+    const stripe = this.colour(cannon.owner, cannon.active ? 'base' : 'dark');
+    const white = cannon.active ? 0xffffff : hex(palette.rockMid);
+    g.moveTo(sx, sy).quadraticCurveTo(mx, my, ex, ey);
+    g.stroke({ width: width + this.ink(view) * 2, color: hex(palette.shadow), cap: 'round' });
+    g.moveTo(sx, sy).quadraticCurveTo(mx, my, ex, ey);
+    g.stroke({ width, color: white, cap: 'round' });
+    // The stripes: short bands across the cane, every other one in the owner's colour.
+    const at = (f: number): [number, number] => [
+      (1 - f) * (1 - f) * sx + 2 * (1 - f) * f * mx + f * f * ex,
+      (1 - f) * (1 - f) * sy + 2 * (1 - f) * f * my + f * f * ey,
+    ];
+    for (let k = 0; k < 6; k += 2) {
+      const [ax, ay] = at(k / 6 + 0.04);
+      const [bx, by] = at((k + 1) / 6 + 0.04);
+      g.moveTo(ax, ay).lineTo(bx, by);
+    }
+    g.stroke({ width, color: stripe, cap: 'butt' });
+    // The cocoa puff from the muzzle.
+    if (cannon.active && aim.firedAgo < PUFF_MS) {
+      const k = aim.firedAgo / PUFF_MS;
+      for (let n = 0; n < 3; n++) {
+        const d = t * (0.2 + 0.5 * k + n * 0.15);
+        g.circle(ex + dx * d, ey + dy * d, t * (0.12 + 0.22 * k) * (1 - n * 0.2));
+      }
+      g.fill({ color: hex(palette.craterMid), alpha: 0.5 * (1 - k) });
+    }
   }
 
   /** Shots: a bonbon in foil of the owner's colour, its twisted ends spinning, over its shadow. */
   private drawShots(state: MatchState, view: ViewTransform, frame: EffectFrame): void {
-    const g = this.effectGfx;
+    const g = this.lateGfx;
     const t = view.tile;
     const now = state.tick + frame.tickFraction;
     for (const shot of state.shots) {
@@ -1346,7 +1417,7 @@ export class ChocolateTheme implements Theme {
   }
 
   private drawRings(view: ViewTransform, deltaMs: number): void {
-    const g = this.effectGfx;
+    const g = this.lateGfx;
     const t = view.tile;
     for (const s of this.rings) {
       s.age += deltaMs;
@@ -1366,7 +1437,7 @@ export class ChocolateTheme implements Theme {
 
   /** The squares a shot snaps off: flipping end over end as they fly, then gone. */
   private drawSnapped(view: ViewTransform, deltaMs: number): void {
-    const g = this.effectGfx;
+    const g = this.lateGfx;
     const t = view.tile;
     const dt = deltaMs / 1000;
     for (const s of this.snapped) {
@@ -1388,7 +1459,7 @@ export class ChocolateTheme implements Theme {
 
   /** Crumbs and drops of chocolate, falling and bouncing once; drops splash and are gone. */
   private drawBits(view: ViewTransform, deltaMs: number): void {
-    const g = this.effectGfx;
+    const g = this.lateGfx;
     const t = view.tile;
     const dt = deltaMs / 1000;
     for (const b of this.bits) {
@@ -1423,7 +1494,7 @@ export class ChocolateTheme implements Theme {
   /** On a snowy match, sprinkles drift down over the board instead of snow. */
   private drawSprinkles(view: ViewTransform, deltaMs: number): void {
     if (!this.snowy || motionReduced()) return;
-    const g = this.effectGfx;
+    const g = this.lateGfx;
     const t = view.tile;
     while (this.sprinkles.length < this.style.sprinkleCount) {
       this.sprinkles.push({
@@ -1465,7 +1536,7 @@ export class ChocolateTheme implements Theme {
   private drawHeat(state: MatchState, view: ViewTransform): void {
     const hot = (state.phase === 'build' && state.overtime) || inFinalRound(state);
     if (!hot) return;
-    const g = this.effectGfx;
+    const g = this.lateGfx;
     const t = view.tile;
     const { palette } = this.art;
     const left = Math.max(0, view.originX);

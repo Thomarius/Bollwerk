@@ -50,6 +50,29 @@ describe('a local match, recorded', () => {
     expect(hashMatchState(replay.state)).toBe(hashMatchState(match.state));
   });
 
+  it('is the same match when the bots’ thinking runs over several frames', () => {
+    // A bot planning its walls can take a frame and more, so a tick's turns may be spread
+    // over frames (PLAN 11.22). With no time at all, every bot waits for a frame of its
+    // own; the match must not change by a single action.
+    const run = (thinkBudgetMs?: number): { hash: string; lines: RecordingLine[] } => {
+      const lines: RecordingLine[] = [];
+      const match = new LocalMatch({
+        seed: 7,
+        seats: [4, 6, 8],
+        record: (line) => lines.push(line),
+        ...(thinkBudgetMs === undefined ? {} : { thinkBudgetMs }),
+      });
+      while (match.state.tick < 3000 && !match.finished) match.advance(1000 / 60);
+      return { hash: hashMatchState(match.state), lines: lines.slice(1) };
+    };
+    const whole = run(Number.POSITIVE_INFINITY);
+    const spread = run(0);
+    // Built and fought over: plenty of actions to get out of order.
+    expect(whole.lines.filter((l) => l.kind === 'tick').length).toBeGreaterThan(50);
+    expect(spread.lines).toEqual(whole.lines);
+    expect(spread.hash).toBe(whole.hash);
+  });
+
   it('records nothing of a dev fast-forward', () => {
     const lines: RecordingLine[] = [];
     const match = new LocalMatch({

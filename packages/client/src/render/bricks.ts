@@ -2,6 +2,8 @@ import type { ArtConfig, BricksStyleConfig } from '@bollwerk/config';
 import { Structure, Terrain, type MatchState, type Shot } from '@bollwerk/sim';
 import { Graphics } from 'pixi.js';
 
+import { IslandParts } from './islandParts.js';
+import { Memos, viewKey } from './stamps.js';
 import {
   FlagHoist,
   GhostMotion,
@@ -97,7 +99,8 @@ export class BricksTheme implements Theme {
   private style!: BricksStyleConfig;
 
   private readonly terrainGfx = new Graphics();
-  private readonly territoryGfx = new Graphics();
+  /** Sealed ground, an island to a `Graphics`, redrawn where it changes. */
+  private readonly territory = new IslandParts(1, 'territory');
   private readonly ghostMotion = new GhostMotion();
   private readonly ruins = new RuinSmoke();
   /** Trees, bushes and boulders on open land, built of bricks; see `scenery.ts`. */
@@ -105,8 +108,13 @@ export class BricksTheme implements Theme {
     (g, view, items) => drawBrickScenery(g, view, items, this.art),
     () => hex(this.art.palette.grassLight),
   );
-  private readonly structureGfx = new Graphics();
+  /** Walls, houses and guns, an island to a `Graphics`, redrawn where they change. */
+  private readonly structures = new IslandParts();
   private readonly effectGfx = new Graphics();
+  /** The guns' barrels, a `Graphics` a gun redrawn only as it turns or kicks (`Memos`). */
+  private readonly gunMemo = new Memos();
+  /** What lies over the guns: shots, splashes, the finish. */
+  private readonly lateGfx = new Graphics();
   private readonly overlayGfx = new Graphics();
 
   private terrain: Uint8Array | null = null;
@@ -125,22 +133,20 @@ export class BricksTheme implements Theme {
     this.art = art;
     this.style = art.bricks;
     layers.terrain.addChild(this.terrainGfx);
-    layers.territory.addChild(this.territoryGfx, this.scenery.gfx);
-    layers.structures.addChild(this.structureGfx);
-    layers.effects.addChild(this.effectGfx);
+    layers.territory.addChild(this.territory.container, this.scenery.gfx);
+    layers.structures.addChild(this.structures.container);
+    layers.effects.addChild(this.effectGfx, this.gunMemo.container, this.lateGfx);
     layers.overlay.addChild(this.overlayGfx);
     return Promise.resolve();
   }
 
   destroy(): void {
+    this.gunMemo.destroy();
+    this.lateGfx.destroy();
+    this.territory.destroy();
+    this.structures.destroy();
     this.scenery.destroy();
-    for (const g of [
-      this.terrainGfx,
-      this.territoryGfx,
-      this.structureGfx,
-      this.effectGfx,
-      this.overlayGfx,
-    ]) {
+    for (const g of [this.terrainGfx, this.effectGfx, this.overlayGfx]) {
       g.destroy();
     }
   }
@@ -241,8 +247,11 @@ export class BricksTheme implements Theme {
   /** Sealed ground as smooth tiles laid over the studs, in the owner's colour. */
   drawTerritory(state: MatchState, view: ViewTransform): void {
     this.scenery.refresh(state, view, this.art);
-    const g = this.territoryGfx;
-    g.clear();
+    this.territory.draw(state, view, (g, island) => this.drawSealed(g, island, view));
+  }
+
+  /** One island's sealed ground, for `IslandParts`: the board holds that island's alone. */
+  private drawSealed(g: Graphics, state: MatchState, view: ViewTransform): void {
     const t = view.tile;
     const gap = Math.max(1, t * 0.06);
     for (let player = 0; player < state.players.length; player++) {
@@ -274,8 +283,11 @@ export class BricksTheme implements Theme {
 
   drawStructures(state: MatchState, view: ViewTransform): void {
     this.scenery.refresh(state, view, this.art);
-    const g = this.structureGfx;
-    g.clear();
+    this.structures.draw(state, view, (g, island) => this.drawIsland(g, island, view));
+  }
+
+  /** One island's structures, for `IslandParts`: the board holds that island's alone. */
+  private drawIsland(g: Graphics, state: MatchState, view: ViewTransform): void {
     const { palette } = this.art;
     const t = view.tile;
     const wallOf = (x: number, y: number): number =>
@@ -482,6 +494,7 @@ export class BricksTheme implements Theme {
   drawEffects(state: MatchState, view: ViewTransform, frame: EffectFrame): void {
     const g = this.effectGfx;
     g.clear();
+    this.lateGfx.clear();
     this.seaLife.draw(g, view, this.art, frame.deltaMs);
     this.clock += frame.deltaMs;
     drawDrain(g, view, frame.drain, this.art);
@@ -496,8 +509,8 @@ export class BricksTheme implements Theme {
     this.drawShots(state, view, frame);
     this.drawSplashes(view, frame.deltaMs);
     this.drawLoose(view, frame.deltaMs);
-    this.winnerBanners.draw(g, view, state, this.art, frame.celebrate, frame.deltaMs);
-    this.fireworks.draw(g, view, this.art, frame.celebrate, frame.deltaMs);
+    this.winnerBanners.draw(this.lateGfx, view, state, this.art, frame.celebrate, frame.deltaMs);
+    this.fireworks.draw(this.lateGfx, view, this.art, frame.celebrate, frame.deltaMs);
   }
 
   /** A piece clicking down: a flash off its studs, as plastic snapping home catches light. */
@@ -519,37 +532,43 @@ export class BricksTheme implements Theme {
 
   /** Barrels: a round barrel from the mount, a lighter muzzle ring, kicking back on firing. */
   private drawBarrels(state: MatchState, view: ViewTransform, deltaMs: number): void {
-    const g = this.effectGfx;
     const t = view.tile;
     const { palette } = this.art;
+    const memo = this.gunMemo;
+    memo.begin();
     for (const cannon of state.cannons) {
       const aim = this.aims.of(state, cannon.id);
       if (aim === null) continue;
       aim.firedAgo += deltaMs;
-      const kick = Math.max(0, 1 - aim.firedAgo / RECOIL_MS);
-      const length = cannon.active ? 1.0 - 0.28 * kick : 0.45;
-      const cx = cannon.x + cannon.w / 2;
-      const cy = cannon.y + cannon.h / 2 - this.faceFraction() * 0.5;
-      const ex = tileX(view, cx + Math.sin(aim.angle) * length);
-      const ey = tileY(view, cy - Math.cos(aim.angle) * length);
-      const width = Math.max(3, t * 0.36);
-      g.moveTo(tileX(view, cx), tileY(view, cy)).lineTo(ex, ey);
-      g.stroke({
-        width,
-        color: hex(cannon.active ? palette.rockDark : palette.craterDark),
-        cap: 'round',
+      // Still between shots: drawn again only as it turns and kicks.
+      const key = `${viewKey(view)}|${cannon.x},${cannon.y},${cannon.w},${cannon.h},${cannon.owner},${cannon.active}|${aim.angle}|${aim.firedAgo < RECOIL_MS ? aim.firedAgo : '-'}`;
+      memo.draw(cannon.id, key, (g) => {
+        const kick = Math.max(0, 1 - aim.firedAgo / RECOIL_MS);
+        const length = cannon.active ? 1.0 - 0.28 * kick : 0.45;
+        const cx = cannon.x + cannon.w / 2;
+        const cy = cannon.y + cannon.h / 2 - this.faceFraction() * 0.5;
+        const ex = tileX(view, cx + Math.sin(aim.angle) * length);
+        const ey = tileY(view, cy - Math.cos(aim.angle) * length);
+        const width = Math.max(3, t * 0.36);
+        g.moveTo(tileX(view, cx), tileY(view, cy)).lineTo(ex, ey);
+        g.stroke({
+          width,
+          color: hex(cannon.active ? palette.rockDark : palette.craterDark),
+          cap: 'round',
+        });
+        g.circle(ex, ey, width * 0.55);
+        g.fill({ color: hex(cannon.active ? palette.rockLight : palette.rockMid) });
+        g.circle(tileX(view, cx), tileY(view, cy), width * 0.7);
+        g.fill({ color: this.colour(cannon.owner, cannon.active ? 'base' : 'dark') });
       });
-      g.circle(ex, ey, width * 0.55);
-      g.fill({ color: hex(cannon.active ? palette.rockLight : palette.rockMid) });
-      g.circle(tileX(view, cx), tileY(view, cy), width * 0.7);
-      g.fill({ color: this.colour(cannon.owner, cannon.active ? 'base' : 'dark') });
     }
+    memo.end();
     this.aims.prune(state);
   }
 
   /** A square flag on a pole over each sealed castle, hoisted as it is sealed. */
   private drawFlags(state: MatchState, view: ViewTransform, frame: EffectFrame): void {
-    const g = this.effectGfx;
+    const g = this.lateGfx;
     const t = view.tile;
     this.flags.update(frame.castleSealed, this.clock, this.art);
     for (const castle of state.castles) {
@@ -572,7 +591,7 @@ export class BricksTheme implements Theme {
 
   /** Shots: a round brick lobbed, growing toward the top of its arc over a shadow. */
   private drawShots(state: MatchState, view: ViewTransform, frame: EffectFrame): void {
-    const g = this.effectGfx;
+    const g = this.lateGfx;
     const t = view.tile;
     const now = state.tick + frame.tickFraction;
     drawMainCastles(g, view, state, this.art, frame.castleSealed);
@@ -596,7 +615,7 @@ export class BricksTheme implements Theme {
   }
 
   private drawSplashes(view: ViewTransform, deltaMs: number): void {
-    const g = this.effectGfx;
+    const g = this.lateGfx;
     const t = view.tile;
     for (const s of this.splashes) {
       s.age += deltaMs;
@@ -613,7 +632,7 @@ export class BricksTheme implements Theme {
 
   /** Loose bricks: small blocks tumbling, bouncing once off the ground, then gone. */
   private drawLoose(view: ViewTransform, deltaMs: number): void {
-    const g = this.effectGfx;
+    const g = this.lateGfx;
     const t = view.tile;
     const dt = deltaMs / 1000;
     for (const b of this.loose) {

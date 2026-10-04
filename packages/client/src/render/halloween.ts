@@ -12,8 +12,10 @@ import { roseSpot } from './parchment.js';
 import { weatherFor, type Weather } from './pixel/atmosphere.js';
 import { HalloweenSeaLife } from './seaLife.js';
 import type { SceneryItem } from './scenery.js';
+import { IslandParts } from './islandParts.js';
 import { SceneryLayer } from './sceneryLayer.js';
 import { drawBat, drawGhost } from './spooky.js';
+import { Memos, StampBook, Stamps, viewKey } from './stamps.js';
 import {
   FlagHoist,
   GhostMotion,
@@ -174,15 +176,21 @@ export class HalloweenTheme implements Theme {
   private readonly terrainGfx = new Graphics();
   /** The bog's bubbles, the bats round the moon and the scorches: redrawn each frame. */
   private readonly flowGfx = new Graphics();
-  private readonly territoryGfx = new Graphics();
+  /** Sealed ground, an island to a `Graphics`, redrawn where it changes. */
+  private readonly territory = new IslandParts(1, 'territory');
   private readonly ghostMotion = new GhostMotion();
   private readonly ruins = new RuinSmoke();
   private readonly scenery = new SceneryLayer(
     (g, view, items) => drawHalloweenScenery(g, view, items, this.art),
     () => hex(this.art.palette.rockLight),
   );
-  private readonly structureGfx = new Graphics();
+  /** Walls, houses and guns, an island to a `Graphics`, redrawn where they change. */
+  private readonly structures = new IslandParts();
   private readonly effectGfx = new Graphics();
+  /** The guns' barrels, a `Graphics` a gun redrawn only as it turns or kicks (`Memos`). */
+  private readonly gunMemo = new Memos();
+  /** What lies over the guns: shots, splashes, the finish. */
+  private readonly lateGfx = new Graphics();
   private readonly overlayGfx = new Graphics();
 
   private terrain: Uint8Array | null = null;
@@ -193,6 +201,14 @@ export class HalloweenTheme implements Theme {
   private bogCells: Cell[] = [];
   private bubbles: Bubble[] = [];
   private fog: FogBank[] = [];
+  /**
+   * The bog's bubbles, stamps of a ring drawn once a half pixel of radius, and the fog banks,
+   * a stamp a bank drawn once and only moved (PLAN 11.22): 240 rings and the banks' ellipses
+   * drawn anew each frame were 15 000 vertices at eight players.
+   */
+  private readonly bubbleStamps = new Stamps();
+  private readonly fogStamps = new Stamps();
+  private readonly book = new StampBook();
   /** Where the fog drifts, in tiles: the board and its margins. */
   private fogSpan = { x0: 0, x1: 0, y0: 0, y1: 0 };
   private moon: TimerSpot | null = null;
@@ -220,24 +236,29 @@ export class HalloweenTheme implements Theme {
     this.style = art.halloween;
     // Medieval's weather, drawn from the seed: fog thickens the fog, snow falls as leaves.
     this.weather = weatherFor(this.seed, art.pixel.weatherOdds);
-    layers.terrain.addChild(this.terrainGfx, this.flowGfx);
-    layers.territory.addChild(this.scenery.gfx, this.territoryGfx);
-    layers.structures.addChild(this.structureGfx);
-    layers.effects.addChild(this.effectGfx);
+    layers.terrain.addChild(this.terrainGfx, this.flowGfx, this.bubbleStamps.container);
+    layers.territory.addChild(this.scenery.gfx, this.territory.container);
+    layers.structures.addChild(this.structures.container);
+    layers.effects.addChild(
+      this.effectGfx,
+      this.gunMemo.container,
+      this.fogStamps.container,
+      this.lateGfx,
+    );
     layers.overlay.addChild(this.overlayGfx);
     return Promise.resolve();
   }
 
   destroy(): void {
+    this.bubbleStamps.destroy();
+    this.fogStamps.destroy();
+    this.book.destroy();
+    this.gunMemo.destroy();
+    this.lateGfx.destroy();
+    this.territory.destroy();
+    this.structures.destroy();
     this.scenery.destroy();
-    for (const g of [
-      this.terrainGfx,
-      this.flowGfx,
-      this.territoryGfx,
-      this.structureGfx,
-      this.effectGfx,
-      this.overlayGfx,
-    ]) {
+    for (const g of [this.terrainGfx, this.flowGfx, this.effectGfx, this.overlayGfx]) {
       g.destroy();
     }
   }
@@ -500,6 +521,8 @@ export class HalloweenTheme implements Theme {
     while (this.bubbles.length < target && this.bogCells.length > 0) {
       this.bubbles.push(this.newBubble(still ? 0.5 : Math.random()));
     }
+    const rings = this.bubbleStamps;
+    rings.begin();
     for (let i = 0; i < this.bubbles.length; i++) {
       const b = this.bubbles[i]!;
       if (!still) b.age += deltaMs;
@@ -508,16 +531,17 @@ export class HalloweenTheme implements Theme {
         continue;
       }
       const k = b.age / b.life;
-      const x = tileX(view, b.x);
-      const y = tileY(view, b.y);
-      if (k < 0.85) {
-        g.circle(x, y, t * b.size * (0.3 + 0.7 * (k / 0.85)));
-        g.stroke({ width: 1, color: hex(palette.waterFoam), alpha: 0.35 });
-      } else {
-        g.circle(x, y, t * b.size * (1 + (k - 0.85) * 6));
-        g.stroke({ width: 1, color: hex(palette.waterFoam), alpha: 0.4 * (1 - (k - 0.85) / 0.15) });
-      }
+      const radius = t * b.size * (k < 0.85 ? 0.3 + 0.7 * (k / 0.85) : 1 + (k - 0.85) * 6);
+      const alpha = k < 0.85 ? 0.35 : 0.4 * (1 - (k - 0.85) / 0.15);
+      // A ring a half pixel of radius, so its line stays one pixel wide as it swells.
+      const r = Math.max(0.5, Math.round(radius * 2) / 2);
+      const ring = this.book.get(`ring|${r}`, t, (q) => {
+        q.circle(0, 0, r);
+        q.stroke({ width: 1, color: hex(palette.waterFoam) });
+      });
+      rings.place(ring, tileX(view, b.x), tileY(view, b.y), { alpha });
     }
+    rings.end();
 
     // Bats wheeling across the moon.
     if (this.moon !== null && !still) {
@@ -558,8 +582,11 @@ export class HalloweenTheme implements Theme {
    */
   drawTerritory(state: MatchState, view: ViewTransform): void {
     this.scenery.refresh(state, view, this.art);
-    const g = this.territoryGfx;
-    g.clear();
+    this.territory.draw(state, view, (g, island) => this.drawSealed(g, island, view));
+  }
+
+  /** One island's sealed ground, for `IslandParts`: the board holds that island's alone. */
+  private drawSealed(g: Graphics, state: MatchState, view: ViewTransform): void {
     const t = view.tile;
     this.candles = [];
     for (let player = 0; player < state.players.length; player++) {
@@ -612,8 +639,11 @@ export class HalloweenTheme implements Theme {
 
   drawStructures(state: MatchState, view: ViewTransform): void {
     this.scenery.refresh(state, view, this.art);
-    const g = this.structureGfx;
-    g.clear();
+    this.structures.draw(state, view, (g, island) => this.drawIsland(g, island, view));
+  }
+
+  /** One island's structures, for `IslandParts`: the board holds that island's alone. */
+  private drawIsland(g: Graphics, state: MatchState, view: ViewTransform): void {
     const { palette } = this.art;
     const t = view.tile;
     const wallAt = (x: number, y: number): number =>
@@ -943,6 +973,7 @@ export class HalloweenTheme implements Theme {
     perf.end('flow');
     const g = this.effectGfx;
     g.clear();
+    this.lateGfx.clear();
     this.seaLife.draw(g, view, this.art, frame.deltaMs);
     drawDrain(g, view, frame.drain, this.art);
     drawSealGlow(g, view, frame.sealGlow, this.art);
@@ -961,8 +992,8 @@ export class HalloweenTheme implements Theme {
     this.drawGhosts(view, frame.deltaMs);
     this.drawLeaves(view, frame.deltaMs);
     this.drawWitchingHour(state, view);
-    this.winnerBanners.draw(g, view, state, this.art, frame.celebrate, frame.deltaMs);
-    this.fireworks.draw(g, view, this.art, frame.celebrate, frame.deltaMs);
+    this.winnerBanners.draw(this.lateGfx, view, state, this.art, frame.celebrate, frame.deltaMs);
+    this.fireworks.draw(this.lateGfx, view, this.art, frame.celebrate, frame.deltaMs);
   }
 
   /** The ward's candle flames, flickering, each with a little warm light round it. */
@@ -1084,76 +1115,94 @@ export class HalloweenTheme implements Theme {
    * hangs limp over the rim.
    */
   private drawCauldrons(state: MatchState, view: ViewTransform, deltaMs: number): void {
-    const g = this.effectGfx;
     const t = view.tile;
     const still = motionReduced();
+    const memo = this.gunMemo;
+    memo.begin();
     for (const cannon of state.cannons) {
       const aim = this.aims.of(state, cannon.id);
       if (aim === null) continue;
       aim.firedAgo += deltaMs;
+      // Still between shots: drawn again only as it turns and kicks.
+      const key = `${viewKey(view)}|${cannon.x},${cannon.y},${cannon.w},${cannon.h},${cannon.owner},${cannon.active}|${aim.angle}|${aim.firedAgo < Math.max(RECOIL_MS, 600) ? aim.firedAgo : '-'}`;
+      memo.draw(cannon.id, key, (g) => {
+        const r = Math.min(cannon.w, cannon.h) * t * 0.38;
+        const cx = tileX(view, cannon.x + cannon.w / 2);
+        const cy = tileY(view, cannon.y + cannon.h / 2) - r * 0.25;
+        const kick = Math.max(0, 1 - aim.firedAgo / RECOIL_MS);
+        const length = cannon.active ? t * (0.95 - 0.3 * kick) : t * 0.55;
+        const dx = Math.sin(aim.angle);
+        const dy = cannon.active ? -Math.cos(aim.angle) : 0.6;
+        const ex = cx + dx * length;
+        const ey = cy + dy * length * 0.8;
+        g.moveTo(cx, cy).lineTo(ex, ey);
+        g.stroke({ width: Math.max(2, t * 0.12), color: 0x6b4a2a, cap: 'round' });
+        g.circle(ex, ey, t * 0.1);
+        g.fill({ color: 0x6b4a2a });
+        if (!cannon.active) return;
+        if (aim.firedAgo < 600) {
+          const k = aim.firedAgo / 600;
+          for (let n = 0; n < 4; n++) {
+            const d = t * (0.2 + 0.6 * k + n * 0.1);
+            g.circle(
+              cx + dx * d + (n - 1.5) * t * 0.08,
+              cy - Math.cos(aim.angle) * d,
+              t * 0.09 * (1 - k * 0.5),
+            );
+          }
+          g.fill({ color: this.colour(cannon.owner, 'base'), alpha: 0.7 * (1 - k) });
+        }
+      });
+      // The brew bubbling, every frame: over the ladle, as it was drawn after it.
+      if (!cannon.active || still) continue;
       const r = Math.min(cannon.w, cannon.h) * t * 0.38;
       const cx = tileX(view, cannon.x + cannon.w / 2);
       const cy = tileY(view, cannon.y + cannon.h / 2) - r * 0.25;
-      const kick = Math.max(0, 1 - aim.firedAgo / RECOIL_MS);
-      const length = cannon.active ? t * (0.95 - 0.3 * kick) : t * 0.55;
-      const dx = Math.sin(aim.angle);
-      const dy = cannon.active ? -Math.cos(aim.angle) : 0.6;
-      const ex = cx + dx * length;
-      const ey = cy + dy * length * 0.8;
-      g.moveTo(cx, cy).lineTo(ex, ey);
-      g.stroke({ width: Math.max(2, t * 0.12), color: 0x6b4a2a, cap: 'round' });
-      g.circle(ex, ey, t * 0.1);
-      g.fill({ color: 0x6b4a2a });
-      if (!cannon.active) continue;
-      const base = this.colour(cannon.owner, 'light');
-      if (!still) {
-        for (let k = 0; k < 2; k++) {
-          const p = (((this.clock / 700 + k * 0.5 + cannon.id * 0.21) % 1) + 1) % 1;
-          g.circle(cx + (k - 0.5) * r * 0.6, cy - p * t * 0.35, t * 0.06 * (1 + p));
-        }
-        g.stroke({ width: 1, color: base, alpha: 0.8 });
+      const g = this.lateGfx;
+      for (let k = 0; k < 2; k++) {
+        const p = (((this.clock / 700 + k * 0.5 + cannon.id * 0.21) % 1) + 1) % 1;
+        g.circle(cx + (k - 0.5) * r * 0.6, cy - p * t * 0.35, t * 0.06 * (1 + p));
       }
-      if (aim.firedAgo < 600) {
-        const k = aim.firedAgo / 600;
-        for (let n = 0; n < 4; n++) {
-          const d = t * (0.2 + 0.6 * k + n * 0.1);
-          g.circle(
-            cx + dx * d + (n - 1.5) * t * 0.08,
-            cy - Math.cos(aim.angle) * d,
-            t * 0.09 * (1 - k * 0.5),
-          );
-        }
-        g.fill({ color: this.colour(cannon.owner, 'base'), alpha: 0.7 * (1 - k) });
-      }
+      g.stroke({ width: 1, color: this.colour(cannon.owner, 'light'), alpha: 0.8 });
     }
+    memo.end();
     this.aims.prune(state);
   }
 
   /** Ground fog drifting across the board in soft banks, thicker in a foggy match. */
   private drawFog(view: ViewTransform, deltaMs: number): void {
-    if (this.fog.length === 0) return;
-    const g = this.effectGfx;
+    const stamps = this.fogStamps;
+    stamps.begin();
+    if (this.fog.length === 0) {
+      stamps.end();
+      return;
+    }
     const t = view.tile;
     const still = motionReduced();
     const { x0, x1 } = this.fogSpan;
+    const alpha = this.style.fogAlpha * (this.weather === 'fog' ? 1.6 : 1);
     for (const f of this.fog) {
       if (!still) f.x += f.speed * (deltaMs / 1000);
       if (f.x - f.r > x1) f.x = x0 - f.r;
-      for (let k = 0; k < 4; k++) {
-        g.ellipse(
-          tileX(view, f.x + (k - 1.5) * f.r * 0.45),
-          tileY(view, f.y + Math.sin(k * 1.7) * f.r * 0.12),
-          f.r * t * 0.55,
-          f.r * t * 0.22,
-        );
-      }
+      const bank = this.book.get(`fog|${f.r}`, t, (g) => {
+        for (let k = 0; k < 4; k++) {
+          g.ellipse(
+            (k - 1.5) * f.r * 0.45 * t,
+            Math.sin(k * 1.7) * f.r * 0.12 * t,
+            f.r * t * 0.55,
+            f.r * t * 0.22,
+          );
+        }
+        g.fill({ color: 0xd8d0f0, alpha });
+      });
+      stamps.place(bank, tileX(view, f.x), tileY(view, f.y));
     }
-    g.fill({ color: 0xd8d0f0, alpha: this.style.fogAlpha * (this.weather === 'fog' ? 1.6 : 1) });
+    stamps.end();
   }
 
   /** Shots: a spectral fireball of the owner's colour, white at its heart, trailing wisps. */
   private drawShots(state: MatchState, view: ViewTransform, frame: EffectFrame): void {
-    const g = this.effectGfx;
+    const g = this.lateGfx;
     const t = view.tile;
     const now = state.tick + frame.tickFraction;
     for (const shot of state.shots) {
@@ -1196,7 +1245,7 @@ export class HalloweenTheme implements Theme {
   }
 
   private drawRings(view: ViewTransform, deltaMs: number): void {
-    const g = this.effectGfx;
+    const g = this.lateGfx;
     const t = view.tile;
     for (const s of this.rings) {
       s.age += deltaMs;
@@ -1219,7 +1268,7 @@ export class HalloweenTheme implements Theme {
 
   /** Rubble bouncing once, slime splashing back into the bog. */
   private drawBits(view: ViewTransform, deltaMs: number): void {
-    const g = this.effectGfx;
+    const g = this.lateGfx;
     const t = view.tile;
     const dt = deltaMs / 1000;
     for (const b of this.bits) {
@@ -1247,7 +1296,7 @@ export class HalloweenTheme implements Theme {
 
   /** The ghosts a shot sets free from a wall: rising, swaying, fading as they go. */
   private drawGhosts(view: ViewTransform, deltaMs: number): void {
-    const g = this.effectGfx;
+    const g = this.lateGfx;
     const t = view.tile;
     const span = this.style.ghostMs;
     for (const ghost of this.ghosts) {
@@ -1272,7 +1321,7 @@ export class HalloweenTheme implements Theme {
   /** On a snowy match, autumn leaves drift down over the board instead of snow. */
   private drawLeaves(view: ViewTransform, deltaMs: number): void {
     if (this.weather !== 'snow' || motionReduced()) return;
-    const g = this.effectGfx;
+    const g = this.lateGfx;
     const t = view.tile;
     while (this.leaves.length < this.style.leafCount) {
       this.leaves.push({
@@ -1318,7 +1367,7 @@ export class HalloweenTheme implements Theme {
   private drawWitchingHour(state: MatchState, view: ViewTransform): void {
     const hot = (state.phase === 'build' && state.overtime) || inFinalRound(state);
     if (!hot) return;
-    const g = this.effectGfx;
+    const g = this.lateGfx;
     const t = view.tile;
     const still = motionReduced();
     const pairs = this.style.eyePairs;

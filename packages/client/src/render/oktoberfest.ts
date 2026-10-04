@@ -179,7 +179,8 @@ export class OktoberfestTheme implements Theme {
   private readonly terrainGfx = new Graphics();
   /** The bubbles, the puddles and the Ferris wheel: redrawn each frame. */
   private readonly flowGfx = new Graphics();
-  private readonly territoryGfx = new Graphics();
+  /** Sealed ground, an island to a `Graphics`, redrawn where it changes. */
+  private readonly territory = new IslandParts(1, 'territory');
   private readonly ghostMotion = new GhostMotion();
   private readonly ruins = new RuinSmoke();
   private readonly scenery = new SceneryLayer(
@@ -243,7 +244,7 @@ export class OktoberfestTheme implements Theme {
     // then it snows; fog is left to the morning after.
     this.weather = weatherFor(this.seed, art.pixel.weatherOdds);
     layers.terrain.addChild(this.terrainGfx, this.flowGfx);
-    layers.territory.addChild(this.scenery.gfx, this.territoryGfx);
+    layers.territory.addChild(this.scenery.gfx, this.territory.container);
     layers.structures.addChild(this.structures.container);
     layers.effects.addChild(
       this.effectGfx,
@@ -257,6 +258,7 @@ export class OktoberfestTheme implements Theme {
   }
 
   destroy(): void {
+    this.territory.destroy();
     this.kegStamps.destroy();
     this.pretzelStamps.destroy();
     this.book.destroy();
@@ -264,13 +266,7 @@ export class OktoberfestTheme implements Theme {
     this.lateGfx.destroy();
     this.structures.destroy();
     this.scenery.destroy();
-    for (const g of [
-      this.terrainGfx,
-      this.flowGfx,
-      this.territoryGfx,
-      this.effectGfx,
-      this.overlayGfx,
-    ]) {
+    for (const g of [this.terrainGfx, this.flowGfx, this.effectGfx, this.overlayGfx]) {
       g.destroy();
     }
   }
@@ -571,8 +567,11 @@ export class OktoberfestTheme implements Theme {
    */
   drawTerritory(state: MatchState, view: ViewTransform): void {
     this.scenery.refresh(state, view, this.art);
-    const g = this.territoryGfx;
-    g.clear();
+    this.territory.draw(state, view, (g, island) => this.drawSealed(g, island, view));
+  }
+
+  /** One island's sealed ground, for `IslandParts`: the board holds that island's alone. */
+  private drawSealed(g: Graphics, state: MatchState, view: ViewTransform): void {
     const t = view.tile;
     for (let player = 0; player < state.players.length; player++) {
       const owned = (x: number, y: number): boolean =>

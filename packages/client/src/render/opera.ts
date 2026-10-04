@@ -181,7 +181,8 @@ export class OperaTheme implements Theme {
   private readonly book = new StampBook();
   /** The conductor: redrawn each frame. */
   private readonly flowGfx = new Graphics();
-  private readonly territoryGfx = new Graphics();
+  /** Sealed ground, an island to a `Graphics`, redrawn where it changes. */
+  private readonly territory = new IslandParts(1, 'territory');
   private readonly ghostMotion = new GhostMotion();
   private readonly ruins = new RuinSmoke();
   private readonly scenery = new SceneryLayer(
@@ -243,7 +244,7 @@ export class OperaTheme implements Theme {
       this.riderStamps.container,
       this.flowGfx,
     );
-    layers.territory.addChild(this.scenery.gfx, this.territoryGfx);
+    layers.territory.addChild(this.scenery.gfx, this.territory.container);
     layers.structures.addChild(this.structures.container);
     layers.effects.addChild(
       this.coilStamps.container,
@@ -256,6 +257,7 @@ export class OperaTheme implements Theme {
   }
 
   destroy(): void {
+    this.territory.destroy();
     this.coilStamps.destroy();
     this.noteStamps.destroy();
     this.lateGfx.destroy();
@@ -268,7 +270,6 @@ export class OperaTheme implements Theme {
       this.terrainGfx,
       this.blotGfx,
       this.flowGfx,
-      this.territoryGfx,
       this.effectGfx,
       this.overlayGfx,
     ]) {
@@ -706,8 +707,11 @@ export class OperaTheme implements Theme {
    */
   drawTerritory(state: MatchState, view: ViewTransform): void {
     this.scenery.refresh(state, view, this.art);
-    const g = this.territoryGfx;
-    g.clear();
+    this.territory.draw(state, view, (g, island) => this.drawSealed(g, island, view));
+  }
+
+  /** One island's sealed ground, for `IslandParts`: the board holds that island's alone. */
+  private drawSealed(g: Graphics, state: MatchState, view: ViewTransform): void {
     const t = view.tile;
     for (let player = 0; player < state.players.length; player++) {
       const owned = (x: number, y: number): boolean =>

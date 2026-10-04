@@ -76,7 +76,8 @@ export class FlatTheme implements Theme {
   private style!: FlatStyleConfig;
 
   private readonly terrainGfx = new Graphics();
-  private readonly territoryGfx = new Graphics();
+  /** Sealed ground, an island to a `Graphics`, redrawn where it changes. */
+  private readonly territory = new IslandParts(1, 'territory');
   private readonly ghostMotion = new GhostMotion();
   private readonly ruins = new RuinSmoke();
   /** Trees, bushes and boulders on open land; see `scenery.ts`. */
@@ -102,7 +103,7 @@ export class FlatTheme implements Theme {
     this.art = art;
     this.style = art.flat;
     layers.terrain.addChild(this.terrainGfx);
-    layers.territory.addChild(this.scenery.gfx, this.territoryGfx);
+    layers.territory.addChild(this.scenery.gfx, this.territory.container);
     layers.structures.addChild(this.structures.container);
     layers.effects.addChild(this.effectGfx);
     layers.overlay.addChild(this.overlayGfx);
@@ -110,9 +111,10 @@ export class FlatTheme implements Theme {
   }
 
   destroy(): void {
+    this.territory.destroy();
     this.structures.destroy();
     this.scenery.destroy();
-    for (const g of [this.terrainGfx, this.territoryGfx, this.effectGfx, this.overlayGfx]) {
+    for (const g of [this.terrainGfx, this.effectGfx, this.overlayGfx]) {
       g.destroy();
     }
   }
@@ -160,8 +162,11 @@ export class FlatTheme implements Theme {
 
   drawTerritory(state: MatchState, view: ViewTransform): void {
     this.scenery.refresh(state, view, this.art);
-    const g = this.territoryGfx;
-    g.clear();
+    this.territory.draw(state, view, (g, island) => this.drawSealed(g, island, view));
+  }
+
+  /** One island's sealed ground, for `IslandParts`: the board holds that island's alone. */
+  private drawSealed(g: Graphics, state: MatchState, view: ViewTransform): void {
     for (let player = 0; player < state.players.length; player++) {
       let any = false;
       for (let i = 0; i < state.territory.length; i++) {

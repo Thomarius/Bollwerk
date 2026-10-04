@@ -7,6 +7,7 @@ import { timerSpot, type TimerSpot } from '../timerSpot.js';
 import { ParchmentSeaLife } from './seaLife.js';
 import { seaDepth } from './pixel.js';
 import { IslandParts } from './islandParts.js';
+import { Memos, viewKey } from './stamps.js';
 import {
   FlagHoist,
   GhostMotion,
@@ -175,7 +176,8 @@ export class ParchmentTheme implements Theme {
 
   private readonly terrainGfx = new Graphics();
   private readonly roseGfx = new Graphics();
-  private readonly territoryGfx = new Graphics();
+  /** Sealed ground, an island to a `Graphics`, redrawn where it changes. */
+  private readonly territory = new IslandParts(1, 'territory');
   private readonly ghostMotion = new GhostMotion();
   private readonly ruins = new RuinSmoke();
   /** Trees, bushes and boulders on open land; see `scenery.ts`. */
@@ -194,6 +196,10 @@ export class ParchmentTheme implements Theme {
   /** Walls, houses and guns, an island to a `Graphics`, redrawn where they change. */
   private readonly structures = new IslandParts();
   private readonly effectGfx = new Graphics();
+  /** The guns' barrels, a `Graphics` a gun redrawn only as it turns or kicks (`Memos`). */
+  private readonly gunMemo = new Memos();
+  /** What lies over the guns: shots, splashes, the finish. */
+  private readonly lateGfx = new Graphics();
   private readonly overlayGfx = new Graphics();
   private grain: Sprite | null = null;
   private grainKey = '';
@@ -222,20 +228,22 @@ export class ParchmentTheme implements Theme {
     this.style = art.parchment;
     this.layers = layers;
     layers.terrain.addChild(this.terrainGfx, this.roseGfx);
-    layers.territory.addChild(this.scenery.gfx, this.territoryGfx, this.stainGfx);
+    layers.territory.addChild(this.scenery.gfx, this.territory.container, this.stainGfx);
     layers.structures.addChild(this.structures.container);
-    layers.effects.addChild(this.effectGfx);
+    layers.effects.addChild(this.effectGfx, this.gunMemo.container, this.lateGfx);
     layers.overlay.addChild(this.overlayGfx);
     return Promise.resolve();
   }
 
   destroy(): void {
+    this.gunMemo.destroy();
+    this.lateGfx.destroy();
+    this.territory.destroy();
     this.structures.destroy();
     this.scenery.destroy();
     for (const g of [
       this.terrainGfx,
       this.roseGfx,
-      this.territoryGfx,
       this.stainGfx,
       this.effectGfx,
       this.overlayGfx,
@@ -491,8 +499,11 @@ export class ParchmentTheme implements Theme {
    */
   drawTerritory(state: MatchState, view: ViewTransform): void {
     this.scenery.refresh(state, view, this.art);
-    const g = this.territoryGfx;
-    g.clear();
+    this.territory.draw(state, view, (g, island) => this.drawSealed(g, island, view));
+  }
+
+  /** One island's sealed ground, for `IslandParts`: the board holds that island's alone. */
+  private drawSealed(g: Graphics, state: MatchState, view: ViewTransform): void {
     const t = view.tile;
     const wash = this.style.washAlpha;
     for (let player = 0; player < state.players.length; player++) {
@@ -792,6 +803,7 @@ export class ParchmentTheme implements Theme {
   drawEffects(state: MatchState, view: ViewTransform, frame: EffectFrame): void {
     const g = this.effectGfx;
     g.clear();
+    this.lateGfx.clear();
     this.seaLife.draw(g, view, this.art, frame.deltaMs);
     this.clock += frame.deltaMs;
     if (state.round !== this.round) {
@@ -812,8 +824,8 @@ export class ParchmentTheme implements Theme {
     this.drawSeals(state, view, frame);
     this.drawShots(state, view, frame);
     this.drawDrops(view, frame.deltaMs);
-    this.winnerBanners.draw(g, view, state, this.art, frame.celebrate, frame.deltaMs);
-    this.fireworks.draw(g, view, this.art, frame.celebrate, frame.deltaMs);
+    this.winnerBanners.draw(this.lateGfx, view, state, this.art, frame.celebrate, frame.deltaMs);
+    this.fireworks.draw(this.lateGfx, view, this.art, frame.celebrate, frame.deltaMs);
   }
 
   /** Ink splashed where shots came down on land, fading over the rounds after. */
@@ -877,32 +889,38 @@ export class ParchmentTheme implements Theme {
 
   /** Barrels in ink, from the carriage toward the last target, kicking back on firing. */
   private drawBarrels(state: MatchState, view: ViewTransform, deltaMs: number): void {
-    const g = this.effectGfx;
     const t = view.tile;
+    const memo = this.gunMemo;
+    memo.begin();
     for (const cannon of state.cannons) {
       const aim = this.aims.of(state, cannon.id);
       if (aim === null) continue;
       aim.firedAgo += deltaMs;
-      const kick = Math.max(0, 1 - aim.firedAgo / RECOIL_MS);
-      const length = cannon.active ? 0.95 - 0.3 * kick : 0.5;
-      const cx = cannon.x + cannon.w / 2;
-      const cy = cannon.y + cannon.h / 2;
-      const ex = tileX(view, cx + Math.sin(aim.angle) * length);
-      const ey = tileY(view, cy - Math.cos(aim.angle) * length);
-      const colour = cannon.active
-        ? this.colour(cannon.owner, 'dark')
-        : hex(this.art.palette.rockMid);
-      g.moveTo(tileX(view, cx), tileY(view, cy)).lineTo(ex, ey);
-      g.stroke({
-        width: Math.max(2, t * (cannon.active ? 0.24 : 0.16)),
-        color: colour,
-        cap: 'round',
+      // Still between shots: drawn again only as it turns and kicks.
+      const key = `${viewKey(view)}|${cannon.x},${cannon.y},${cannon.w},${cannon.h},${cannon.owner},${cannon.active}|${aim.angle}|${aim.firedAgo < RECOIL_MS ? aim.firedAgo : '-'}`;
+      memo.draw(cannon.id, key, (g) => {
+        const kick = Math.max(0, 1 - aim.firedAgo / RECOIL_MS);
+        const length = cannon.active ? 0.95 - 0.3 * kick : 0.5;
+        const cx = cannon.x + cannon.w / 2;
+        const cy = cannon.y + cannon.h / 2;
+        const ex = tileX(view, cx + Math.sin(aim.angle) * length);
+        const ey = tileY(view, cy - Math.cos(aim.angle) * length);
+        const colour = cannon.active
+          ? this.colour(cannon.owner, 'dark')
+          : hex(this.art.palette.rockMid);
+        g.moveTo(tileX(view, cx), tileY(view, cy)).lineTo(ex, ey);
+        g.stroke({
+          width: Math.max(2, t * (cannon.active ? 0.24 : 0.16)),
+          color: colour,
+          cap: 'round',
+        });
+        if (!cannon.active) return;
+        g.circle(ex, ey, t * 0.13);
+        g.fill({ color: this.paper(cannon.owner, 0.5) });
+        g.stroke({ width: 1, color: colour });
       });
-      if (!cannon.active) continue;
-      g.circle(ex, ey, t * 0.13);
-      g.fill({ color: this.paper(cannon.owner, 0.5) });
-      g.stroke({ width: 1, color: colour });
     }
+    memo.end();
     this.aims.prune(state);
   }
 
@@ -912,7 +930,7 @@ export class ParchmentTheme implements Theme {
    * a breach unseals it. Timed by the flag hoist the other styles fly their flags by.
    */
   private drawSeals(state: MatchState, view: ViewTransform, frame: EffectFrame): void {
-    const g = this.effectGfx;
+    const g = this.lateGfx;
     const t = view.tile;
     this.flags.update(frame.castleSealed, this.clock, this.art);
     for (const castle of state.castles) {
@@ -964,7 +982,7 @@ export class ParchmentTheme implements Theme {
 
   /** Shots as ink dots on a dotted course, like a route marked on a map. */
   private drawShots(state: MatchState, view: ViewTransform, frame: EffectFrame): void {
-    const g = this.effectGfx;
+    const g = this.lateGfx;
     const t = view.tile;
     const now = state.tick + frame.tickFraction;
     drawMainCastles(g, view, state, this.art, frame.castleSealed);
@@ -999,7 +1017,7 @@ export class ParchmentTheme implements Theme {
 
   /** Drops of ink and chips of stone flying, and gun smoke drifting as washes of ink. */
   private drawDrops(view: ViewTransform, deltaMs: number): void {
-    const g = this.effectGfx;
+    const g = this.lateGfx;
     const dt = deltaMs / 1000;
     for (const d of this.drops) {
       d.age += deltaMs;

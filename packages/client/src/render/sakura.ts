@@ -12,7 +12,9 @@ import { roseSpot } from './parchment.js';
 import { weatherFor, type Weather } from './pixel/atmosphere.js';
 import { SakuraSeaLife } from './seaLife.js';
 import type { SceneryItem } from './scenery.js';
+import { IslandParts } from './islandParts.js';
 import { SceneryLayer } from './sceneryLayer.js';
+import { Memos, StampBook, Stamps, viewKey } from './stamps.js';
 import {
   FlagHoist,
   GhostMotion,
@@ -249,16 +251,30 @@ export class SakuraTheme implements Theme {
 
   private readonly terrainGfx = new Graphics();
   /** The crests on the sea and the blots of ink: redrawn each frame. */
+  /** Ink where shots came down on open ground: drawn again when one comes or fades. */
   private readonly flowGfx = new Graphics();
-  private readonly territoryGfx = new Graphics();
+  private blotsDrawn = '';
+  /**
+   * The crests, stamps drawn once a size, a direction and a forty-eighth of their rise, and
+   * faded (PLAN 11.22): curled anew each frame they were 30 000 vertices at eight players.
+   */
+  private readonly crestStamps = new Stamps();
+  private readonly book = new StampBook();
+  /** Sealed ground, an island to a `Graphics`, redrawn where it changes. */
+  private readonly territory = new IslandParts(1, 'territory');
   private readonly ghostMotion = new GhostMotion();
   private readonly ruins = new RuinSmoke();
   private readonly scenery = new SceneryLayer(
     (g, view, items) => drawSakuraScenery(g, view, items, this.art),
     () => PAPER,
   );
-  private readonly structureGfx = new Graphics();
+  /** Walls, houses and guns, an island to a `Graphics`, redrawn where they change. */
+  private readonly structures = new IslandParts();
   private readonly effectGfx = new Graphics();
+  /** The guns' barrels, a `Graphics` a gun redrawn only as it turns or kicks (`Memos`). */
+  private readonly gunMemo = new Memos();
+  /** What lies over the guns: shots, splashes, the finish. */
+  private readonly lateGfx = new Graphics();
   private readonly overlayGfx = new Graphics();
 
   private terrain: Uint8Array | null = null;
@@ -297,24 +313,23 @@ export class SakuraTheme implements Theme {
     // Medieval's weather, drawn from the seed: fog is the prints' bands of mist, rain
     // Hiroshige's slanting streaks, snow lies on the roofs.
     this.weather = weatherFor(this.seed, art.pixel.weatherOdds);
-    layers.terrain.addChild(this.terrainGfx, this.flowGfx);
-    layers.territory.addChild(this.scenery.gfx, this.territoryGfx);
-    layers.structures.addChild(this.structureGfx);
-    layers.effects.addChild(this.effectGfx);
+    layers.terrain.addChild(this.terrainGfx, this.flowGfx, this.crestStamps.container);
+    layers.territory.addChild(this.scenery.gfx, this.territory.container);
+    layers.structures.addChild(this.structures.container);
+    layers.effects.addChild(this.effectGfx, this.gunMemo.container, this.lateGfx);
     layers.overlay.addChild(this.overlayGfx);
     return Promise.resolve();
   }
 
   destroy(): void {
+    this.crestStamps.destroy();
+    this.book.destroy();
+    this.gunMemo.destroy();
+    this.lateGfx.destroy();
+    this.territory.destroy();
+    this.structures.destroy();
     this.scenery.destroy();
-    for (const g of [
-      this.terrainGfx,
-      this.flowGfx,
-      this.territoryGfx,
-      this.structureGfx,
-      this.effectGfx,
-      this.overlayGfx,
-    ]) {
+    for (const g of [this.terrainGfx, this.flowGfx, this.effectGfx, this.overlayGfx]) {
       g.destroy();
     }
   }
@@ -579,15 +594,58 @@ export class SakuraTheme implements Theme {
 
   /** Each frame, under everything: crests curling on the sea, and the blots of ink. */
   private drawFlow(state: MatchState, view: ViewTransform, deltaMs: number): void {
+    const t = view.tile;
+    const { palette } = this.art;
+    const still = motionReduced();
+    this.drawBlots(state, view);
+
+    // Crests rising on the open sea, curling over, breaking in claws of foam and settling.
+    const target = Math.min(70, Math.floor(this.seaCells.length / this.style.crestTiles));
+    while (this.crests.length < target && this.seaCells.length > 0) {
+      this.crests.push(this.newCrest(still ? 0.6 : Math.random()));
+    }
+    const body = mix(hex(palette.waterMid), hex(palette.waterShallow), 0.6);
+    const stamps = this.crestStamps;
+    stamps.begin();
+    for (let i = 0; i < this.crests.length; i++) {
+      const c = this.crests[i]!;
+      if (!still) c.age += deltaMs;
+      if (c.age >= c.life) {
+        this.crests[i] = this.newCrest(0);
+        continue;
+      }
+      const k = c.age / c.life;
+      const rise = Math.round(Math.sin(Math.min(1, k / 0.8) * Math.PI * 0.5) * 48) / 48;
+      const fade = Math.min(1, (1 - k) / 0.25);
+      if (rise <= 0.02 || fade <= 0) continue;
+      // Drawn a tenth of a tile apart in size and scaled the rest of the way; mirrored for
+      // a crest breaking the other way.
+      const size = Math.round(c.size * 10) / 10;
+      const crest = this.book.get(`crest|${size}|${rise}`, t, (g) =>
+        drawCrest(g, 0, 0, t * size, 1, rise, body, hex(palette.waterFoam), hex(palette.waterDeep)),
+      );
+      const scale = c.size / size;
+      stamps.place(crest, tileX(view, c.x), tileY(view, c.y), {
+        scale: scale * c.dir,
+        scaleY: scale,
+        alpha: 0.85 * fade,
+      });
+    }
+    stamps.end();
+  }
+
+  /** Where shots came down on open ground: a splash of ink, fading over the rounds after. */
+  private drawBlots(state: MatchState, view: ViewTransform): void {
+    const rounds = this.art.generators.fx.craterRounds;
+    this.blots = this.blots.filter((b) => state.round - b.round < rounds);
+    const last = this.blots.at(-1);
+    const key = `${state.round}|${this.blots.length}|${last?.x},${last?.y}|${viewKey(view)}`;
+    if (key === this.blotsDrawn) return;
+    this.blotsDrawn = key;
     const g = this.flowGfx;
     g.clear();
     const t = view.tile;
     const { palette } = this.art;
-    const still = motionReduced();
-
-    // Where shots came down on open ground: a splash of ink, fading over the rounds after.
-    const rounds = this.art.generators.fx.craterRounds;
-    this.blots = this.blots.filter((b) => state.round - b.round < rounds);
     for (const b of this.blots) {
       const fade = 1 - (state.round - b.round) / rounds;
       const cx = tileX(view, b.x + 0.5);
@@ -599,36 +657,6 @@ export class SakuraTheme implements Theme {
         g.circle(cx + Math.cos(a) * d, cy + Math.sin(a) * d, t * (0.05 + 0.05 * hash(k, b.x, 332)));
       }
       g.fill({ color: hex(palette.craterDark), alpha: 0.6 * fade });
-    }
-
-    // Crests rising on the open sea, curling over, breaking in claws of foam and settling.
-    const target = Math.min(70, Math.floor(this.seaCells.length / this.style.crestTiles));
-    while (this.crests.length < target && this.seaCells.length > 0) {
-      this.crests.push(this.newCrest(still ? 0.6 : Math.random()));
-    }
-    const body = mix(hex(palette.waterMid), hex(palette.waterShallow), 0.6);
-    for (let i = 0; i < this.crests.length; i++) {
-      const c = this.crests[i]!;
-      if (!still) c.age += deltaMs;
-      if (c.age >= c.life) {
-        this.crests[i] = this.newCrest(0);
-        continue;
-      }
-      const k = c.age / c.life;
-      const rise = Math.sin(Math.min(1, k / 0.8) * Math.PI * 0.5);
-      const fade = Math.min(1, (1 - k) / 0.25);
-      drawCrest(
-        g,
-        tileX(view, c.x),
-        tileY(view, c.y),
-        t * c.size,
-        c.dir,
-        rise,
-        body,
-        hex(palette.waterFoam),
-        hex(palette.waterDeep),
-        0.85 * fade,
-      );
     }
   }
 
@@ -654,8 +682,11 @@ export class SakuraTheme implements Theme {
    */
   drawTerritory(state: MatchState, view: ViewTransform): void {
     this.scenery.refresh(state, view, this.art);
-    const g = this.territoryGfx;
-    g.clear();
+    this.territory.draw(state, view, (g, island) => this.drawSealed(g, island, view));
+  }
+
+  /** One island's sealed ground, for `IslandParts`: the board holds that island's alone. */
+  private drawSealed(g: Graphics, state: MatchState, view: ViewTransform): void {
     const t = view.tile;
     const keeps = new Uint8Array(state.width * state.height);
     for (const c of state.castles) {
@@ -697,8 +728,11 @@ export class SakuraTheme implements Theme {
 
   drawStructures(state: MatchState, view: ViewTransform): void {
     this.scenery.refresh(state, view, this.art);
-    const g = this.structureGfx;
-    g.clear();
+    this.structures.draw(state, view, (g, island) => this.drawIsland(g, island, view));
+  }
+
+  /** One island's structures, for `IslandParts`: the board holds that island's alone. */
+  private drawIsland(g: Graphics, state: MatchState, view: ViewTransform): void {
     const t = view.tile;
     const wallAt = (x: number, y: number): number =>
       x >= 0 && y >= 0 && x < state.width && y < state.height
@@ -1040,6 +1074,7 @@ export class SakuraTheme implements Theme {
     perf.end('flow');
     const g = this.effectGfx;
     g.clear();
+    this.lateGfx.clear();
     this.seaLife.draw(g, view, this.art, frame.deltaMs);
     drawDrain(g, view, frame.drain, this.art);
     drawSealGlow(g, view, frame.sealGlow, this.art);
@@ -1057,8 +1092,8 @@ export class SakuraTheme implements Theme {
     this.drawBits(view, frame.deltaMs);
     this.drawPuffs(view, frame.deltaMs);
     this.drawDrifts(state, view, frame.deltaMs);
-    this.winnerBanners.draw(g, view, state, this.art, frame.celebrate, frame.deltaMs);
-    this.fireworks.draw(g, view, this.art, frame.celebrate, frame.deltaMs);
+    this.winnerBanners.draw(this.lateGfx, view, state, this.art, frame.celebrate, frame.deltaMs);
+    this.fireworks.draw(this.lateGfx, view, this.art, frame.celebrate, frame.deltaMs);
   }
 
   /** A piece set down: pressed onto the print, the paper showing white and fading, a curl of cloud. */
@@ -1140,63 +1175,69 @@ export class SakuraTheme implements Theme {
    * smoke from the muzzle. A silenced gun's barrel droops and a cloth is thrown over it.
    */
   private drawBarrels(state: MatchState, view: ViewTransform, deltaMs: number): void {
-    const g = this.effectGfx;
     const t = view.tile;
+    const memo = this.gunMemo;
+    memo.begin();
     for (const cannon of state.cannons) {
       const aim = this.aims.of(state, cannon.id);
       if (aim === null) continue;
       aim.firedAgo += deltaMs;
-      const r = Math.min(cannon.w, cannon.h) * t * 0.36;
-      const cx = tileX(view, cannon.x + cannon.w / 2);
-      const cy = tileY(view, cannon.y + cannon.h / 2) - r * 0.1;
-      const kick = Math.max(0, 1 - aim.firedAgo / RECOIL_MS);
-      const length = cannon.active ? t * (0.95 - 0.3 * kick) : t * 0.6;
-      const dx = cannon.active ? Math.sin(aim.angle) : 0.35;
-      const dy = cannon.active ? -Math.cos(aim.angle) : 0.75;
-      const ex = cx + dx * length;
-      const ey = cy + dy * length * 0.8;
-      g.moveTo(cx, cy).lineTo(ex, ey);
-      g.stroke({ width: Math.max(3, t * 0.3), color: this.sumi, cap: 'round' });
-      g.moveTo(cx, cy).lineTo(ex, ey);
-      g.stroke({ width: Math.max(2, t * 0.22), color: BRONZE, cap: 'round' });
-      g.circle(ex, ey, Math.max(1.5, t * 0.13));
-      g.fill({ color: BRONZE_DARK });
-      if (!cannon.active) {
-        // The cloth thrown over it, falling in folds.
-        g.moveTo(cx - r * 0.9, cy + r * 0.55);
-        g.quadraticCurveTo(cx - r * 0.7, cy - r * 0.6, cx, cy - r * 0.55);
-        g.quadraticCurveTo(cx + r * 0.7, cy - r * 0.6, cx + r * 0.9, cy + r * 0.55);
-        g.lineTo(cx + r * 0.45, cy + r * 0.4);
-        g.lineTo(cx, cy + r * 0.6);
-        g.lineTo(cx - r * 0.45, cy + r * 0.4);
-        g.closePath();
-        g.fill({ color: CLOTH });
-        g.stroke({ width: Math.max(1, t * 0.05), color: this.sumi, alpha: 0.8, join: 'round' });
-        g.moveTo(cx - r * 0.3, cy - r * 0.4).lineTo(cx - r * 0.4, cy + r * 0.4);
-        g.moveTo(cx + r * 0.3, cy - r * 0.4).lineTo(cx + r * 0.4, cy + r * 0.4);
-        g.stroke({ width: 1, color: this.sumi, alpha: 0.4 });
-        continue;
-      }
-      if (aim.firedAgo < SMOKE_MS) {
-        const k = aim.firedAgo / SMOKE_MS;
-        drawCloudCurl(
-          g,
-          ex + dx * t * 0.4 * k,
-          ey + dy * t * 0.4 * k - k * t * 0.2,
-          t * (0.16 + 0.18 * k),
-          PAPER,
-          this.sumi,
-          0.85 * (1 - k),
-        );
-      }
+      // Still between shots: drawn again only as it turns and kicks.
+      const key = `${viewKey(view)}|${cannon.x},${cannon.y},${cannon.w},${cannon.h},${cannon.owner},${cannon.active}|${aim.angle}|${aim.firedAgo < Math.max(RECOIL_MS, SMOKE_MS) ? aim.firedAgo : '-'}`;
+      memo.draw(cannon.id, key, (g) => {
+        const r = Math.min(cannon.w, cannon.h) * t * 0.36;
+        const cx = tileX(view, cannon.x + cannon.w / 2);
+        const cy = tileY(view, cannon.y + cannon.h / 2) - r * 0.1;
+        const kick = Math.max(0, 1 - aim.firedAgo / RECOIL_MS);
+        const length = cannon.active ? t * (0.95 - 0.3 * kick) : t * 0.6;
+        const dx = cannon.active ? Math.sin(aim.angle) : 0.35;
+        const dy = cannon.active ? -Math.cos(aim.angle) : 0.75;
+        const ex = cx + dx * length;
+        const ey = cy + dy * length * 0.8;
+        g.moveTo(cx, cy).lineTo(ex, ey);
+        g.stroke({ width: Math.max(3, t * 0.3), color: this.sumi, cap: 'round' });
+        g.moveTo(cx, cy).lineTo(ex, ey);
+        g.stroke({ width: Math.max(2, t * 0.22), color: BRONZE, cap: 'round' });
+        g.circle(ex, ey, Math.max(1.5, t * 0.13));
+        g.fill({ color: BRONZE_DARK });
+        if (!cannon.active) {
+          // The cloth thrown over it, falling in folds.
+          g.moveTo(cx - r * 0.9, cy + r * 0.55);
+          g.quadraticCurveTo(cx - r * 0.7, cy - r * 0.6, cx, cy - r * 0.55);
+          g.quadraticCurveTo(cx + r * 0.7, cy - r * 0.6, cx + r * 0.9, cy + r * 0.55);
+          g.lineTo(cx + r * 0.45, cy + r * 0.4);
+          g.lineTo(cx, cy + r * 0.6);
+          g.lineTo(cx - r * 0.45, cy + r * 0.4);
+          g.closePath();
+          g.fill({ color: CLOTH });
+          g.stroke({ width: Math.max(1, t * 0.05), color: this.sumi, alpha: 0.8, join: 'round' });
+          g.moveTo(cx - r * 0.3, cy - r * 0.4).lineTo(cx - r * 0.4, cy + r * 0.4);
+          g.moveTo(cx + r * 0.3, cy - r * 0.4).lineTo(cx + r * 0.4, cy + r * 0.4);
+          g.stroke({ width: 1, color: this.sumi, alpha: 0.4 });
+          return;
+        }
+        if (aim.firedAgo < SMOKE_MS) {
+          const k = aim.firedAgo / SMOKE_MS;
+          drawCloudCurl(
+            g,
+            ex + dx * t * 0.4 * k,
+            ey + dy * t * 0.4 * k - k * t * 0.2,
+            t * (0.16 + 0.18 * k),
+            PAPER,
+            this.sumi,
+            0.85 * (1 - k),
+          );
+        }
+      });
     }
+    memo.end();
     this.aims.prune(state);
   }
 
   /** Bands of mist drifting across a foggy match, as the prints lay them over a view. */
   private drawMist(view: ViewTransform, deltaMs: number): void {
     if (this.mist.length === 0) return;
-    const g = this.effectGfx;
+    const g = this.lateGfx;
     const t = view.tile;
     const still = motionReduced();
     const { x0, x1 } = this.span;
@@ -1223,7 +1264,7 @@ export class SakuraTheme implements Theme {
    * brush stroke that tapers to a point behind it.
    */
   private drawShots(state: MatchState, view: ViewTransform, frame: EffectFrame): void {
-    const g = this.effectGfx;
+    const g = this.lateGfx;
     const t = view.tile;
     const now = state.tick + frame.tickFraction;
     for (const shot of state.shots) {
@@ -1280,7 +1321,7 @@ export class SakuraTheme implements Theme {
   }
 
   private drawRings(view: ViewTransform, deltaMs: number): void {
-    const g = this.effectGfx;
+    const g = this.lateGfx;
     const t = view.tile;
     for (const s of this.rings) {
       s.age += deltaMs;
@@ -1303,7 +1344,7 @@ export class SakuraTheme implements Theme {
 
   /** Roof tiles bouncing once, spray falling back into the sea, petals fluttering down. */
   private drawBits(view: ViewTransform, deltaMs: number): void {
-    const g = this.effectGfx;
+    const g = this.lateGfx;
     const t = view.tile;
     const dt = deltaMs / 1000;
     for (const b of this.bits) {
@@ -1344,7 +1385,7 @@ export class SakuraTheme implements Theme {
 
   /** The curled cloud a hit throws up from a wall: rising, swelling and fading as it goes. */
   private drawPuffs(view: ViewTransform, deltaMs: number): void {
-    const g = this.effectGfx;
+    const g = this.lateGfx;
     const t = view.tile;
     const span = this.style.puffMs;
     for (const p of this.puffs) {
@@ -1372,7 +1413,7 @@ export class SakuraTheme implements Theme {
    */
   private drawDrifts(state: MatchState, view: ViewTransform, deltaMs: number): void {
     if (motionReduced()) return;
-    const g = this.effectGfx;
+    const g = this.lateGfx;
     const t = view.tile;
     const autumn = (state.phase === 'build' && state.overtime) || inFinalRound(state);
     if (autumn !== this.autumn) {

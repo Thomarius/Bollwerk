@@ -1,9 +1,10 @@
 import type { ArtConfig, CyberpunkStyleConfig } from '@bollwerk/config';
 import { Rng, Structure, Terrain, type MatchState, type Shot } from '@bollwerk/sim';
-import { BlurFilter, Graphics } from 'pixi.js';
+import { BlurFilter, Graphics, type Container } from 'pixi.js';
 
 import { bloomWanted, motionReduced } from '../motion.js';
 
+import { IslandParts } from './islandParts.js';
 import { CyberpunkSeaLife } from './seaLife.js';
 import { seaDepth } from './pixel.js';
 import { trace, wallGeometry } from './walls.js';
@@ -214,7 +215,8 @@ export class CyberpunkTheme implements Theme {
   private readonly seed: number;
 
   private readonly terrainGfx = new Graphics();
-  private readonly territoryGfx = new Graphics();
+  /** Sealed ground, an island to a `Graphics` redrawn where it changes: the fill, its grid glowing over it. */
+  private readonly territory = new IslandParts(2, 'territory');
   private readonly ghostMotion = new GhostMotion();
   private readonly ruins = new RuinSmoke();
   /** Trees, bushes and boulders on open land; see `scenery.ts`. */
@@ -222,9 +224,11 @@ export class CyberpunkTheme implements Theme {
     (g, view, items) => drawCyberpunkScenery(g, view, items, this.art),
     () => hex(this.art.palette.waterFoam),
   );
-  private readonly territoryGlow = new Graphics();
-  private readonly structureGfx = new Graphics();
-  private readonly structureGlow = new Graphics();
+  /**
+   * Walls, houses and guns, an island to a `Graphics` redrawn where they change, in two
+   * layers: the glow under, added, and the lines over it.
+   */
+  private readonly structures = new IslandParts(2);
   private readonly effectGfx = new Graphics();
   private readonly effectGlow = new Graphics();
   private readonly overlayGfx = new Graphics();
@@ -261,8 +265,8 @@ export class CyberpunkTheme implements Theme {
     this.art = art;
     this.style = art.cyberpunk;
     for (const glow of [
-      this.territoryGlow,
-      this.structureGlow,
+      this.territory.containers[1] as Container,
+      this.structures.containers[0] as Container,
       this.effectGlow,
       this.overlayGlow,
     ]) {
@@ -271,8 +275,8 @@ export class CyberpunkTheme implements Theme {
       if (bloomWanted()) glow.filters = [new BlurFilter({ strength: 5, quality: 2 })];
     }
     layers.terrain.addChild(this.terrainGfx);
-    layers.territory.addChild(this.scenery.gfx, this.territoryGfx, this.territoryGlow);
-    layers.structures.addChild(this.structureGlow, this.structureGfx);
+    layers.territory.addChild(this.scenery.gfx, ...this.territory.containers);
+    layers.structures.addChild(...this.structures.containers);
     layers.effects.addChild(this.effectGfx, this.effectGlow);
     layers.overlay.addChild(this.overlayGlow, this.overlayGfx);
     return Promise.resolve();
@@ -280,12 +284,10 @@ export class CyberpunkTheme implements Theme {
 
   destroy(): void {
     this.scenery.destroy();
+    this.structures.destroy();
+    this.territory.destroy();
     for (const g of [
       this.terrainGfx,
-      this.territoryGfx,
-      this.territoryGlow,
-      this.structureGfx,
-      this.structureGlow,
       this.effectGfx,
       this.effectGlow,
       this.overlayGfx,
@@ -426,10 +428,13 @@ export class CyberpunkTheme implements Theme {
   /** Sealed ground as a lit floor: the owner's colour under a bright grid. */
   drawTerritory(state: MatchState, view: ViewTransform): void {
     this.scenery.refresh(state, view, this.art);
-    const g = this.territoryGfx;
-    const glow = this.territoryGlow;
-    g.clear();
-    glow.clear();
+    this.territory.draw(state, view, (g, island, [, glow]) =>
+      this.drawSealed(g, glow as Graphics, island, view),
+    );
+  }
+
+  /** One island's sealed ground and its grid, for `IslandParts`. */
+  private drawSealed(g: Graphics, glow: Graphics, state: MatchState, view: ViewTransform): void {
     for (let player = 0; player < state.players.length; player++) {
       let any = false;
       for (let i = 0; i < state.territory.length; i++) {
@@ -490,10 +495,13 @@ export class CyberpunkTheme implements Theme {
 
   drawStructures(state: MatchState, view: ViewTransform): void {
     this.scenery.refresh(state, view, this.art);
-    const g = this.structureGfx;
-    const glow = this.structureGlow;
-    g.clear();
-    glow.clear();
+    this.structures.draw(state, view, (glow, island, [, g]) =>
+      this.drawIsland(g as Graphics, glow, island, view),
+    );
+  }
+
+  /** One island's structures and their glow, for `IslandParts`: the board holds that island's alone. */
+  private drawIsland(g: Graphics, glow: Graphics, state: MatchState, view: ViewTransform): void {
     const { palette } = this.art;
     const line = this.style.wallLinePx;
     const glowWidth = Math.max(line * 2, view.tile * this.style.glowWidthTiles);

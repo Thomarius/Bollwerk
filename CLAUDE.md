@@ -171,10 +171,10 @@ Full detail in PLAN.md §1. The parts that surprise people:
 
 **Next** — PLAN §11 says where to start, in this order of readiness:
 
-0. **First: rendering performance** (PLAN 11.22), the user's priority: serious stutter in
-   Oktoberfest and Opera even on a fast PC. The styles rebuild their moving parts in Pixi
-   `Graphics` every frame, which is CPU work; measure with a `&perf=1` readout, then build once
-   and only move — every effect kept.
+0. **Rendering performance** (PLAN 11.22) is done in every style (2026-10-04): 58–59 fps at
+   eight players on an integrated GPU, Opera from 13.5, and no frame over 50 ms where there
+   were up to 279 in 30 s. Left: the user's look at the styles in motion, and the server's
+   bots, which still stall a server's tick when several plan at once.
 1. **The soaks** (`docs/SOAKS.md`): the weekend run was started on 2026-10-02 **on the
    user's other machine**; read its `summary.txt` together with them and write the figures
    into PLAN 11.2–11.13. Measurement only.
@@ -334,6 +334,12 @@ its header but the simulation does not — so the server stamps each header with
 - **Stopping a background `npm start` leaves its node child serving the port.** Find it by
   port and check its command line before killing it; remove any recording a test match
   left in `recordings/` — that folder is the user's tuning data.
+- **`motionReduced()` is called per particle and per point**: it once read storage and built
+  a media query at every call, 48 ms a frame in Opera. It is cached in `motion.ts`; anything
+  else read that often must be too.
+- **A local match's bots think inside the frame**: one bot planning its walls takes 15 to
+  50 ms, and bots of one level plan on the same ticks. `LocalMatch` spreads a tick's turns
+  over frames (8 ms a frame) without changing an action or its tick.
 - **Never `app.destroy(true)` while another Pixi renderer runs**: `true` releases what every
   renderer on the page shares, including pooled batches the other is using, and its next
   frame fails in the batcher. The style pictures destroy theirs without it (ARCHIVE 12b).
@@ -343,6 +349,27 @@ its header but the simulation does not — so the server stamps each header with
   this machine's, a Windows runner's — fails every file against prettier's `endOfLine: lf`
   and `CREDITS.md` against its staleness test, which is what stopped the first v0.5.0
   Windows build.
+
+## Drawing a style cheaply
+
+Pixi cuts every changed `Graphics` into triangles on the CPU inside `render`; a good graphics
+card does not help with that (PLAN 11.22). So a style **never redraws what has not changed**:
+
+- **Walls and sealed ground by island**: `IslandParts` (`render/islandParts.ts`) gives the
+  style's drawing one island's board and redraws only the island that changed.
+- **Many alike, moving**: `Stamps` and `StampBook` (`render/stamps.ts`) — a shape drawn once
+  for the tile size, then only placed, turned, scaled, tinted and faded. A shape whose
+  look changes with its motion is stamped per step (Chocolate's swirls by turn, Sakura's
+  crests by rise), never stretched where a line would thin.
+- **Still most of the time**: `Memos` — a `Graphics` per thing redrawn when its key changes;
+  the guns' barrels, which move only when firing. The key must name everything drawn.
+- **Changing at a hit or a round**: its own `Graphics` behind a key (blots, stains, the Maß).
+- **Thousands of sprites** beside something redrawn each frame: a render group of their own
+  (Medieval's `tileLayer`), or Pixi gathers and packs every one of them again each frame.
+
+Check with `&perf=1` at eight players: the readout names the `Graphics` rebuilt most, every
+frame and at worst. Keep the draw order where it shows; what came after a stamped thing goes
+in a second `Graphics` above it.
 
 ## Conventions
 
