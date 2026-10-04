@@ -49,7 +49,8 @@ Client dev query parameters: `?autostart=1&players=3&seed=7` (a random seed with
 leave your seat undriven on the way, so you are soon knocked out), `&speed=10`,
 `&style=flat|pixel|night|cyberpunk|blueprint|parchment|bricks|glass|chocolate|halloween|sakura|oktoberfest|opera` for both looks (a one-look style sets only its own)
 (`&buildStyle=`, `&combatStyle=` for one), `&watch=1&level=8` to observe a bot match (`&personality=offensive` fixes every bot's),
-`&rounds=12` for the round cap, `&teams=2` for teams of two in seat order. `?host=8` opens
+`&rounds=12` for the round cap, `&teams=2` for teams of two in seat order, `&lang=de` for a
+language (not saved). `?host=8` opens
 the lobby at eight seats — a room if a server answers, a local table if not —
 `?join=CODE` joins one, `&name=Bo` sets the name, `&seed=N` the map, `&private=1` makes
 the room private. The menu's Play (with its Public / Private switch), its list of open
@@ -142,7 +143,7 @@ Full detail in PLAN.md §1. The parts that surprise people:
 
 ## Status
 
-**Done** (2026-10-03; released as **v0.5.2**):
+**Done** (2026-10-04; released as **v0.5.2**, languages since):
 
 - **The game**: its rules, online play with rooms, a games browser, pause, and recording
   of every match (ARCHIVE 11e, each header stamped with the server's commit); team mode
@@ -157,6 +158,10 @@ Full detail in PLAN.md §1. The parts that surprise people:
   and sounds volumes, a pause menu with Leave match; two rounds of test-session feedback
   (ARCHIVE 11n–11w, 11ze) and a trim of the menu's and lobby's texts with larger roster
   figures and team tags (ARCHIVE 12c). Mouse only; Esc for pause is the one key.
+- **Languages**: English and German, every text in `config/locale/`, chosen in the menu and
+  pause menu, the desktop window in the system's language (M15, ARCHIVE 12g). A text is a key
+  until shown (`t` in `client/src/i18n.ts`); a new text goes into every locale file, or
+  `locale.test.ts` fails.
 - **Releases**: the desktop app, a portable file for Windows and Linux (M14, ARCHIVE
   11zp–11zt); every audio file credited (ARCHIVE 11zx). Online clients catch up on the
   server at once (ARCHIVE 11zg). Deployment is verified by a CI job, since there is no
@@ -168,8 +173,9 @@ Full detail in PLAN.md §1. The parts that surprise people:
 1. **The soaks** (`docs/SOAKS.md`): the weekend run was started on 2026-10-02 **on the
    user's other machine**; read its `summary.txt` together with them and write the figures
    into PLAN 11.2–11.13. Measurement only.
-2. **More languages** (PLAN 11.20, planned in detail): every text in external files,
-   English, German, then French; three questions to settle with the user first.
+2. **The languages, checked** (ARCHIVE 12g): the user tests German in play and reads the
+   desktop window's German; corrections go into `config/locale/de.json`. French when a reader
+   is found.
 3. **UPnP** (PLAN 11.21): open the host's port where the router allows it, and say so.
 4. Then **balance** (M7). **The goal** (2026-10-01, the user's): almost every match is
    decided **on points at the round cap**, so **the scoring formula is the game's balance**;

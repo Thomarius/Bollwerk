@@ -4126,3 +4126,212 @@ crowded the islands, and are fewer and smaller. Anything moving is still to be s
 
 **Released as v0.5.2**, the user's call, to try the three new styles — Sakura, Oktoberfest
 and Opera since v0.5.1 — on the desktop app.
+
+## 12g. More languages: English and German (PLAN 11.20, 2026-10-03 to 10-04)
+
+Planned and agreed with the user before any code, in six steps, each committed on its own.
+Decided first: a dropdown in the menu and the pause menu; German says _du_; the disclaimer
+translated with its names kept; the desktop window in the system's language; style and award
+names translated where natural, names that are names kept (Cyberpunk, Halloween, Sakura,
+Oktoberfest, Opera).
+
+**Step 1, every text moved, nothing changed.** 272 texts into `config/locale/en.json`, typed
+(`TextKey` is its keys, so a mistyped key fails the typecheck), read through
+`packages/config` and shown by the client's `i18n.ts`. The proof that nothing moved: every
+existing test passed with its English expectations untouched. What took more than a move:
+English-only plurals and ordinals, lists joined with "and" (to `Intl.ListFormat`, in
+British English so a list of three keeps no comma before "and"), "Ada's nemesis", "… on
+points" endings, fragments spliced into sentences — all whole templates now. Texts in
+module-level tables became keys looked up when shown, so a change of language reaches them.
+The disclaimer's English lives once, in `en.json`, and `credits.ts` reads it for
+`CREDITS.md`. Server refusals are shown by `code`, the server's own words for a code the page
+does not know; action rejections by reason.
+
+**Step 2, the chooser.** Saved as `bollwerk.language`; the browser's own language on a first
+visit; `&lang=` for screenshots, unsaved; the page's `lang` follows. Panels built once and
+kept — the pause menu, the network badge, the "out" strip, the sound switch — listen for the
+change.
+
+**Step 3, German**, drafted by the agent with fixed terms (Burg, Mauer, Kanone, Runde,
+umschließen, Spiel, Teil for a wall piece, Optik for the looks) and read by the user, who kept
+"Credits", chose "Spielregeln", "Host" and, for the bots' targeting, "effizient",
+"gnadenlos", "nachtragend". `german.test.ts` renders the main screens in German and fills
+every text, failing on a key or a placeholder showing through. Found by switching: the old
+language's default name was saved as if typed.
+
+**Step 4, the layout pass** at 1024 and 1400 pixels, every screen. Only the HUD's bar broke,
+at 1024: the roster sized its figures assuming a 300-pixel phase label, German's is half as
+long again, and four teams' pips ran into the next team's letter (English already clipped
+the last) while eight players lost a pip each. Fixed for every language rather than by
+shortening approved German: the label measured (`--phase`), a team counted as 1.4 entries, an
+entry clipped at its own edge, a label over 22 characters set smaller, the pips and gaps a
+little smaller. Award titles wrap balanced.
+
+**Step 5, the desktop window**, 22 texts in the system's language. Importing the
+configuration whole into its page took its script from 2.5 kB to 870 kB; the language list
+moved to `@bollwerk/config/languages`, a module with no dependencies, and the page reads the
+locale files directly, 31 kB.
+
+**Step 6**, the tests, came with the steps: parity of keys and placeholders, the plurals and
+ordinals of both languages, the German screens. Left to the user's next session: German in
+play, and the desktop window's German, not yet read by anyone but the agent. French waits for
+a reader.
+
+### Formerly PLAN 11.20 More languages — as planned and recorded step by step
+
+**The goal**: the game in English, German and French to begin with, every text a player
+reads in external files that a translator edits without touching code. Adding a language
+is adding a file. English stays the reference and the default.
+
+**What is translated** — everything a player reads, all of it in the client:
+
+- the menu and the looks gallery (`main.ts`, `looks.ts` — the style names too), the lobby
+  (`lobby.ts`), the open games list (`browser.ts`), How to play's captions (`howToPlay.ts`),
+  the Credits panel's headings (`credits.ts`);
+- in a match: the HUD's phase names and lines (`hud.ts`), the announcements and the winner's
+  line (`banners.ts`, `scores.ts`), the island banners and team tags ("Team A"), the
+  connection badge (`network.ts`), the pause menu (`pause.ts`), the "You're out" strip
+  (`watching.ts`), the end screen and its awards (`summary.ts`, `awards.ts`), the
+  personality reveal, "Bot 3";
+- the server's refusals, which arrive as `{ code, message }` (`protocol/messages.ts`): the
+  client translates by `code` and shows the English `message` for a code it does not know,
+  so an older client still says something;
+- the desktop app's two window titles and its server window.
+
+**Not translated**: player names; the title's letters, which spell Bollwerk in every
+language; the disclaimer's legal names (Rampart, Atari Games, Warner Bros.); `CREDITS.md`,
+the README and the docs; log lines, recordings and the soak's tables.
+
+**The files**: `config/locale/en.json`, `de.json`, `fr.json` — flat keys grouped by screen
+(`"menu.play"`, `"lobby.start"`, `"hud.phase.build"`, `"award.wrecker.title"`), values with
+named placeholders (`"{name} wins on points"`). Whole sentences, never assembled from
+pieces, since word order differs between languages; plurals as an object of the forms the
+language needs (`{ "one": "{n} life", "other": "{n} lives" }`), chosen by the browser's
+`Intl.PluralRules`. Read through `packages/config` like every other file, behind a schema:
+**every language must have exactly English's keys and the same placeholders in each**, an
+unknown key is an error, and a test fails on any gap — as the credits' test does — so a
+text added to the game cannot be forgotten in a language. A key missing at runtime shows
+the English text, never the key.
+
+**The mechanism**: `packages/client/src/i18n.ts` — `t(key, params?)`, the language in use,
+and the plural helper. The pure functions that make markup and lines today (`lobbyMarkup`,
+`bannersFor`, the awards, the summary) call `t()` instead of holding English, so their tests
+keep running in English unchanged; one more test renders the main screens in German and
+fails if any key or `{placeholder}` shows through.
+
+**Choosing the language**: in the menu, beside Effects; saved in the browser like the other
+settings (`bollwerk.language`). The first time, the browser's own language if the game has
+it, otherwise English. A change redraws the menu at once; a match takes it at the next
+frame, since the HUD is redrawn every frame anyway. It is the page's own choice: players at
+one table may each play in their own language, since nothing translated travels.
+
+**Layout**: German runs about a third longer than English, and the tight places are known —
+the HUD bar and the roster, the phase banner, the island banners, the buttons, How to play's
+captions of ten words or fewer. A screenshot pass per language at 1024 and 1400 pixels wide,
+by `tools/screenshots.sh` with a `&lang=` parameter, and the Playwright script that places
+banners into a running match (ARCHIVE 12a) for what the clock cannot reach. CSS
+`text-transform: uppercase` turns ß into SS, which is correct; the fonts carry ä, ö, ü, é,
+è, ç.
+
+**Steps**:
+
+1. The mechanism and the English file: every text moved out, nothing on screen changes,
+   every test still passes. The largest step — a few hundred texts, most of them already in
+   the well-separated places listed above.
+2. The language choice in the menu, and `&lang=` for screenshots.
+3. **German**: drafted by the agent, read and corrected by the user, then the layout pass.
+4. **French** the same way, when a reader for it is found.
+
+About one to two sessions for steps 1–3.
+
+**Decided with the user (2026-10-03)**:
+
+- **A dropdown** of the languages in their own names ("English", "Deutsch"), in the menu
+  beside Effects **and in the pause menu**; English and German first, French later.
+- German says **du**, as nearly every game does.
+- **The disclaimer and "Inspired by…" are translated**, their meaning kept and the names
+  (Rampart, Atari Games, Warner Bros.) unchanged; `CREDITS.md` and the README stay English.
+  `credits.ts` marks "Bollwerk" and "Rampart" in the text by pattern, so every language must
+  keep both words.
+- **The desktop app's server window is translated too**, following the system's language
+  (Electron's locale); the game inside it follows the dropdown as everywhere.
+- **Style and award names are translated where natural** — Mittelalter, Nacht, Pergament,
+  Spielzeugsteine, Buntglas, Schokolade, Blaupause, and German award titles — while names
+  that are names stay (Cyberpunk, Halloween, Sakura, Oktoberfest, Opera).
+
+**What the survey found** (2026-10-03): about 300 texts in the client and 25 in the desktop
+app and config. The parts needing more than a move: English-only plurals (`awards.ts`
+`plural`, `banners.ts` `lifeWord`, `hud.ts` cannon counts), ordinals (`awards.ts`
+`ordinal`), lists joined with "and" (`scores.ts` `names`, to `Intl.ListFormat`),
+possessives ("Ada's nemesis"), times and numbers ("18.6s", to the language's number
+format), fragments spliced into sentences (`banners.ts` "team lives", `main.ts` "the
+building look"), the personality words — which recordings carry, so they get display keys
+of their own rather than being changed — and `showError`'s raw English refusals, to be shown
+by `code` instead. The tests asserting English (lobby, scores, banners, awards, network,
+browser, pause, looks, watching, credits, summary, config) keep running in English unchanged,
+which is the proof that step 1 moved nothing.
+
+**Implementation order**: (1) the mechanism and `en.json`, every text moved, nothing on
+screen changed; (2) the dropdowns, `bollwerk.language`, `&lang=` and the page's `lang`
+attribute; (3) German drafted, read by the user; (4) the layout pass in German at 1024 and
+1400 pixels; (5) the desktop window; (6) tests — key and placeholder parity, plurals, the
+main screens rendered in German with no key or placeholder showing through.
+
+**Step 1 done (2026-10-04)**: 272 texts in `config/locale/en.json`, read through
+`packages/config` (`locale.ts`: the schema, `localeProblems`; `TextKey` is `en.json`'s keys,
+so a mistyped key fails the typecheck) and shown by `packages/client/src/i18n.ts` — `t`,
+`ordinal` (by `Intl.PluralRules`' ordinal rules), `formatNumber`, `listOf` (`Intl` in
+British English, so "Ada, Bo and Cy" keeps its missing comma). Texts held in module-level
+tables are keys looked up when shown (style names, phase labels, How to play's captions), so
+a change of language reaches them. The disclaimer's English lives once, in `en.json`;
+`credits.ts` reads it for `CREDITS.md`. Server refusals are shown by `code`
+(`refusalText`, the server's words for a code it does not know), action rejections by
+`rejection.<reason>`. Every existing test passed unchanged, and the screens read as before;
+`locale.test.ts` checks parity, `i18n.test.ts` the mechanism. **Not yet**: the language
+switch (step 2) — panels built once and kept, the pause menu among them, will need relabelling
+when the language changes mid-match; the desktop window (step 5); the names in a match's
+state ("Bot 3", "You" in a local match) stay as the match began, since they travel.
+
+**Step 2 done (2026-10-04)**: a Language dropdown above Effects in the menu and among the
+pause menu's settings, each language in its own name (`languageOptions`). The choice is saved
+as `bollwerk.language`; a first visit takes the browser's own language if the game speaks it
+(`detectLanguage`: "de-AT" is German), else English; `&lang=` sets one for screenshots
+without saving it (`startingLanguage`). The page's `lang` follows, for CSS uppercase and
+screen readers. A change in the menu writes the menu afresh, keeping a name typed but not yet
+saved; mid-match, the HUD takes it at the next frame since it is redrawn every frame, and the
+panels built once and kept listen (`onLanguageChange`) — the pause menu fills itself afresh,
+the network badge's tooltip and the "You're out" strip's button are relabelled, as is the
+corner sound switch. With English alone the dropdown has one entry; German arrives in step 3,
+and with it the first real switch to watch.
+
+**Step 3 done (2026-10-04)**: German, drafted and read by the user, who changed Credits
+(kept as "Credits"), How to play ("Spielregeln"), host ("Host", throughout) and the bots'
+targeting ("effizient", "gnadenlos", "nachtragend"); the rest was approved. Fixed terms: Burg,
+Mauer, Kanone, Runde, umschließen, Spiel; "Teil" for a wall piece; "Optik" for the looks.
+`german.test.ts` renders the lobby, open games, gallery and credits in German and fills every
+text, failing on any key or placeholder showing through. Seen switching in the menu and, from
+the pause menu, mid-match.
+
+**Step 4 done (2026-10-04)**: every screen in German at 1024 and 1400 pixels — menu,
+gallery, Spielregeln, Credits, the lobby in teams of eight, the HUD at three and eight and in
+teams, the cannon count, the pause menu, the "out" strip, the end screen with awards and the
+bots' reveal, and the banners, plaques and stamps placed by script. What did not fit, all at
+1024 and all in the HUD's bar: the roster sized its figures assuming a 300-pixel phase label,
+and German's "Bau deine Mauern wieder auf" is half as long again — so four teams' pips ran
+into the next team's letter (English already clipped the last) and eight players lost a
+pip each. Fixed for every language rather than by shortening approved German: the HUD
+measures the label (`--phase`), a team counts as 1.4 entries since its figures carry five
+pips, an entry clips at its own edge rather than spilling into the next, a phase label over
+22 characters is set smaller (`.phase.long`; English's "Next: Rebuild your walls" too), and
+the pips' smallest size and the gap between entries came down a little. Award titles wrap
+balanced ("Erzfeind von Bot 3"). The Credits keep each audio file's own words, so the
+sound effects read "von various authors"; credits are not translated, as decided.
+
+**Step 5 done (2026-10-04)**: the desktop app's server window speaks the system's language
+(`detectLanguage` over the page's `navigator.languages`, which Electron takes from the
+system), 22 texts under `desktop.*` — its title, the status lines, Start and Stop, the port
+messages, Copy, Open in browser, Play here, the two notes. The game in its own window follows
+the dropdown as everywhere. The language list and its detection moved to
+`@bollwerk/config/languages`, a module with no dependencies, and the window reads the two
+locale files directly: importing the configuration whole took its script from 2.5 kB to
+870 kB, now 31 kB. Seen in German and English, running and with its port taken.

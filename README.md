@@ -15,6 +15,7 @@ score among those still standing wins.
 - Thirteen visual styles — Medieval, Minimal, Night, Cyberpunk, Blueprint, Parchment, Toy
   bricks, Stained glass, Chocolate, Halloween, Sakura, Oktoberfest and Opera — one for building and one for combat, swapped by the
   banners as in Rampart
+- In English and German, chosen in the menu
 - Awards at the end of every match, and a rematch in one click
 - Played with the mouse alone; How to play in the menu shows the rules in pictures
 - An authoritative server, with a deterministic simulation shared by client, server and bots
