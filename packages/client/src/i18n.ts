@@ -1,6 +1,8 @@
 import {
   LANGUAGES,
   LANGUAGE_NAMES,
+  detectLanguage,
+  isLanguage,
   locales,
   type Language,
   type LocaleText,
@@ -40,22 +42,7 @@ export function setLanguage(next: Language): void {
   for (const listener of listeners) listener(next);
 }
 
-/** Whether `code` names a language the game speaks. */
-export function isLanguage(code: string | null | undefined): code is Language {
-  return code !== null && code !== undefined && (LANGUAGES as readonly string[]).includes(code);
-}
-
-/**
- * The first language of the browser's own the game speaks — "de-AT" is German — or English.
- * What a first visit starts in, before anybody has chosen.
- */
-export function detectLanguage(preferences: readonly string[]): Language {
-  for (const preference of preferences) {
-    const code = preference.toLowerCase().split('-')[0];
-    if (isLanguage(code)) return code;
-  }
-  return 'en';
-}
+export { detectLanguage, isLanguage };
 
 /** Where the menu remembers the choice, as it does the looks and the name. */
 const LANGUAGE_KEY = 'bollwerk.language';

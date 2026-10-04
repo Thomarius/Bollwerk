@@ -3,23 +3,27 @@
   <head>
     <meta charset="utf-8" />
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self'" />
-    <title>Bollwerk server</title>
+    <title data-t="desktop.title">Bollwerk server</title>
     <link rel="stylesheet" href="window.css" />
   </head>
   <body>
     <main>
       <h1>Bollwerk</h1>
-      <p id="status" class="status idle">Starting…</p>
+      <p id="status" class="status idle" data-t="desktop.starting">Starting…</p>
       <p id="detail" class="detail"></p>
       <ul id="urls"></ul>
-      <button id="toggle">Start</button>
-      <button id="next" class="quiet" hidden>Try another port</button>
+      <button id="toggle" data-t="desktop.start">Start</button>
+      <button id="next" class="quiet" hidden data-t="desktop.tryAnother">Try another port</button>
       <div class="row">
-        <button id="browser" class="quiet" disabled>Open in browser</button>
-        <button id="play" disabled>Play here</button>
+        <button id="browser" class="quiet" disabled data-t="desktop.openBrowser">
+          Open in browser
+        </button>
+        <button id="play" disabled data-t="desktop.playHere">Play here</button>
       </div>
-      <p class="note">Closing this window stops the server.</p>
-      <p class="note">An unofficial fan game, inspired by Atari’s Rampart (1990).</p>
+      <p class="note" data-t="desktop.closeNote">Closing this window stops the server.</p>
+      <p class="note" data-t="desktop.fanNote">
+        An unofficial fan game, inspired by Atari’s Rampart (1990).
+      </p>
     </main>
     <script type="module" src="../dist/window.js"></script>
   </body>

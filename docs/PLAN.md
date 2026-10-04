@@ -1410,6 +1410,15 @@ the pips' smallest size and the gap between entries came down a little. Award ti
 balanced ("Erzfeind von Bot 3"). The Credits keep each audio file's own words, so the
 sound effects read "von various authors"; credits are not translated, as decided.
 
+**Step 5 done (2026-10-04)**: the desktop app's server window speaks the system's language
+(`detectLanguage` over the page's `navigator.languages`, which Electron takes from the
+system), 22 texts under `desktop.*` — its title, the status lines, Start and Stop, the port
+messages, Copy, Open in browser, Play here, the two notes. The game in its own window follows
+the dropdown as everywhere. The language list and its detection moved to
+`@bollwerk/config/languages`, a module with no dependencies, and the window reads the two
+locale files directly: importing the configuration whole took its script from 2.5 kB to
+870 kB, now 31 kB. Seen in German and English, running and with its port taken.
+
 ### 11.21 Opening the host's port by UPnP — agreed 2026-10-03, not started
 
 **The goal**: a person hosting from the desktop app or `npm start` is reachable from the

@@ -1,10 +1,12 @@
 import { z } from 'zod';
 
+export * from './languages.js';
+
 /*
  * The game's texts, one file a language in `config/locale/` (PLAN 11.20): flat keys grouped
  * by screen, whole sentences with named placeholders (`{name}`), since word order differs
  * between languages and a sentence assembled from pieces cannot be translated. Adding a
- * language is adding a file and a name below. English is the reference: every other
+ * language is adding a file, and its name in `languages.ts`. English is the reference: every other
  * language must have exactly its keys and, in each, the same placeholders.
  */
 
@@ -33,11 +35,6 @@ export type LocaleText = z.infer<typeof LocaleTextSchema>;
 
 export const LocaleSchema = z.record(z.string(), LocaleTextSchema);
 export type Locale = z.infer<typeof LocaleSchema>;
-
-/** The languages the game speaks, by code, each named in itself for the chooser. */
-export const LANGUAGES = ['en', 'de'] as const;
-export type Language = (typeof LANGUAGES)[number];
-export const LANGUAGE_NAMES: Record<Language, string> = { en: 'English', de: 'Deutsch' };
 
 /** The placeholders a text uses, across all its forms. */
 export function placeholders(text: LocaleText): Set<string> {

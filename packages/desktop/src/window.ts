@@ -1,3 +1,8 @@
+import { detectLanguage, type Language } from '@bollwerk/config/languages';
+
+import de from '../../../config/locale/de.json' with { type: 'json' };
+import en from '../../../config/locale/en.json' with { type: 'json' };
+
 import type { ControlState } from './control.js';
 import type { DesktopApi } from './preload.js';
 
@@ -9,6 +14,32 @@ declare global {
   interface Window {
     bollwerk: DesktopApi;
   }
+}
+
+/**
+ * The window speaks the system's language, if the game does (PLAN 11.20): Electron gives the
+ * page the system's languages. The game in its own window follows its menu, as everywhere.
+ */
+const language = detectLanguage(navigator.languages);
+
+/**
+ * The locale files themselves rather than the configuration's parsed copy, which would bring
+ * every config file and its schemas into this page — 2.5 kB of script became 870 kB.
+ */
+type Key = keyof typeof en;
+const TEXTS: Record<Language, Partial<Record<Key, unknown>>> = { en, de };
+
+/** A text in that language — English where it lacks one — its `{placeholders}` filled. */
+function say(key: Key, params: Record<string, string | number> = {}): string {
+  const text = TEXTS[language][key] ?? en[key];
+  const form = typeof text === 'string' ? text : key;
+  return form.replace(/\{(\w+)\}/g, (whole, name: string) => String(params[name] ?? whole));
+}
+
+// The page's fixed texts, written in its language once.
+document.documentElement.lang = language;
+for (const node of Array.from(document.querySelectorAll<HTMLElement>('[data-t]'))) {
+  node.textContent = say(node.dataset.t as Key);
 }
 
 const api = window.bollwerk;
@@ -25,23 +56,27 @@ const next = $<HTMLButtonElement>('next');
 export function describe(state: ControlState): { text: string; tone: string; detail: string } {
   switch (state.status) {
     case 'running':
-      return { text: 'Running', tone: 'good', detail: 'Other players open one of these:' };
+      return { text: say('desktop.running'), tone: 'good', detail: say('desktop.runningDetail') };
     case 'starting':
-      return { text: 'Starting…', tone: 'busy', detail: `On port ${state.port}` };
+      return {
+        text: say('desktop.starting'),
+        tone: 'busy',
+        detail: say('desktop.startingDetail', { port: state.port }),
+      };
     case 'stopping':
-      return { text: 'Stopping…', tone: 'busy', detail: '' };
+      return { text: say('desktop.stopping'), tone: 'busy', detail: '' };
     case 'stopped':
-      return { text: 'Stopped', tone: 'idle', detail: 'Nobody can join until it is started.' };
+      return { text: say('desktop.stopped'), tone: 'idle', detail: say('desktop.stoppedDetail') };
     case 'failed':
       return {
-        text: 'Not started',
+        text: say('desktop.failed'),
         tone: 'bad',
         detail:
           state.reason === 'port_in_use'
-            ? `Port ${state.port} is in use — another server may be running.`
+            ? say('desktop.portInUse', { port: state.port })
             : state.reason === 'no_permission'
-              ? `Not allowed to use port ${state.port}.`
-              : 'The server could not start.',
+              ? say('desktop.noPermission', { port: state.port })
+              : say('desktop.couldNotStart'),
       };
   }
 }
@@ -53,12 +88,12 @@ function show(state: ControlState): void {
   detail.textContent = said.detail;
   const running = state.status === 'running';
   const busy = state.status === 'starting' || state.status === 'stopping';
-  toggle.textContent = running ? 'Stop' : 'Start';
+  toggle.textContent = running ? say('desktop.stop') : say('desktop.start');
   toggle.disabled = busy;
   browser.disabled = !running;
   play.disabled = !running;
   next.hidden = !(state.status === 'failed' && state.reason === 'port_in_use');
-  next.textContent = `Try port ${state.port + 1}`;
+  next.textContent = say('desktop.tryPort', { port: state.port + 1 });
   urls.replaceChildren(
     ...(state.status === 'running' ? state.urls : []).map((url) => {
       const item = document.createElement('li');
@@ -66,11 +101,11 @@ function show(state: ControlState): void {
       text.textContent = url;
       const copy = document.createElement('button');
       copy.className = 'quiet';
-      copy.textContent = 'Copy';
+      copy.textContent = say('desktop.copy');
       copy.addEventListener('click', () => {
         void api.copy(url);
-        copy.textContent = 'Copied';
-        setTimeout(() => (copy.textContent = 'Copy'), 1200);
+        copy.textContent = say('desktop.copied');
+        setTimeout(() => (copy.textContent = say('desktop.copy')), 1200);
       });
       item.append(text, copy);
       return item;
