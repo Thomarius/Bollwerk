@@ -5,6 +5,7 @@ import audioJson from '../../../config/audio.manifest.json' with { type: 'json' 
 import serverJson from '../../../config/server.default.json' with { type: 'json' };
 import aiJson from '../../../config/ai.default.json' with { type: 'json' };
 import enJson from '../../../config/locale/en.json' with { type: 'json' };
+import deJson from '../../../config/locale/de.json' with { type: 'json' };
 
 import { RulesetSchema, type Ruleset } from './ruleset.js';
 import { TerrainConfigSchema, type TerrainConfig } from './terrain.js';
@@ -42,4 +43,7 @@ export type TextKey = keyof typeof enJson;
  * gap shows the English text at runtime, and the locale test fails on it
  * (`localeProblems`), as the credits' test does on a sound without a credit.
  */
-export const locales: Record<Language, Locale> = { en: LocaleSchema.parse(enJson) };
+export const locales: Record<Language, Locale> = {
+  en: LocaleSchema.parse(enJson),
+  de: LocaleSchema.parse(deJson),
+};

@@ -1387,6 +1387,14 @@ the network badge's tooltip and the "You're out" strip's button are relabelled, 
 corner sound switch. With English alone the dropdown has one entry; German arrives in step 3,
 and with it the first real switch to watch.
 
+**Step 3 done (2026-10-04)**: German, drafted and read by the user, who changed Credits
+(kept as "Credits"), How to play ("Spielregeln"), host ("Host", throughout) and the bots'
+targeting ("effizient", "gnadenlos", "nachtragend"); the rest was approved. Fixed terms: Burg,
+Mauer, Kanone, Runde, umschließen, Spiel; "Teil" for a wall piece; "Optik" for the looks.
+`german.test.ts` renders the lobby, open games, gallery and credits in German and fills every
+text, failing on any key or placeholder showing through. Seen switching in the menu and, from
+the pause menu, mid-match.
+
 ### 11.21 Opening the host's port by UPnP — agreed 2026-10-03, not started
 
 **The goal**: a person hosting from the desktop app or `npm start` is reachable from the

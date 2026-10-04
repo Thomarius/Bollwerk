@@ -21,7 +21,7 @@ let current: Language = 'en';
  * The tag `Intl` is given for each language: British English, as the game is written, so a
  * list of three has no comma before "and".
  */
-const INTL: Record<Language, string> = { en: 'en-GB' };
+const INTL: Record<Language, string> = { en: 'en-GB', de: 'de-DE' };
 const listeners = new Set<(language: Language) => void>();
 
 export function language(): Language {

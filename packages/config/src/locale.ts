@@ -35,9 +35,9 @@ export const LocaleSchema = z.record(z.string(), LocaleTextSchema);
 export type Locale = z.infer<typeof LocaleSchema>;
 
 /** The languages the game speaks, by code, each named in itself for the chooser. */
-export const LANGUAGES = ['en'] as const;
+export const LANGUAGES = ['en', 'de'] as const;
 export type Language = (typeof LANGUAGES)[number];
-export const LANGUAGE_NAMES: Record<Language, string> = { en: 'English' };
+export const LANGUAGE_NAMES: Record<Language, string> = { en: 'English', de: 'Deutsch' };
 
 /** The placeholders a text uses, across all its forms. */
 export function placeholders(text: LocaleText): Set<string> {

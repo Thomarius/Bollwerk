@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import {
   detectLanguage,
@@ -7,7 +7,9 @@ import {
   language,
   languageOptions,
   listOf,
+  onLanguageChange,
   ordinal,
+  setLanguage,
   startingLanguage,
   t,
 } from './i18n.js';
@@ -56,6 +58,8 @@ describe('the texts', () => {
   it('starts in the browser’s language if it speaks it, else English', () => {
     expect(detectLanguage(['xx-YY', 'en-GB'])).toBe('en');
     expect(detectLanguage(['EN'])).toBe('en');
+    expect(detectLanguage(['de-AT', 'en'])).toBe('de');
+    expect(detectLanguage(['fr-FR', 'de'])).toBe('de');
     expect(detectLanguage(['xx'])).toBe('en');
     expect(detectLanguage([])).toBe('en');
   });
@@ -65,10 +69,35 @@ describe('the texts', () => {
     expect(isLanguage('xx')).toBe(false);
     expect(isLanguage(null)).toBe(false);
     expect(startingLanguage('en')).toBe('en');
-    expect(startingLanguage('xx')).toBe('en');
+    expect(startingLanguage('de')).toBe('de');
   });
 
   it('offers every language in its own name, the current one chosen', () => {
     expect(languageOptions()).toContain('<option value="en" selected>English</option>');
+    expect(languageOptions()).toContain('<option value="de">Deutsch</option>');
+  });
+
+  describe('in German', () => {
+    beforeEach(() => setLanguage('de'));
+    afterEach(() => setLanguage('en'));
+
+    it('speaks German, with its own plurals, places, lists and decimals', () => {
+      expect(t('menu.play')).toBe('Spielen');
+      expect(t('banner.gainGuns', { n: 1 })).toBe('+1 Kanone');
+      expect(t('banner.gainGuns', { n: 2 })).toBe('+2 Kanonen');
+      expect(ordinal(3)).toBe('3.');
+      expect(listOf(['Ada', 'Bo', 'Cy'])).toBe('Ada, Bo und Cy');
+      expect(t('hud.seconds', { seconds: formatNumber(18.6, 1) })).toBe('18,6 s');
+    });
+
+    it('tells whoever listens that the language changed', () => {
+      const heard: string[] = [];
+      const stop = onLanguageChange((language) => heard.push(language));
+      setLanguage('en');
+      setLanguage('en');
+      stop();
+      setLanguage('de');
+      expect(heard).toEqual(['en']);
+    });
   });
 });

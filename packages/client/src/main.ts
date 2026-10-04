@@ -488,8 +488,9 @@ function showMenu(notice: string | null = null): void {
   languageField?.addEventListener('change', () => {
     audio.play('select');
     if (!isLanguage(languageField.value)) return;
+    // The default name is the language's own, so only a name somebody typed is kept.
     const typed = document.querySelector<HTMLInputElement>('#name')?.value.trim();
-    if (typed) saveName(typed);
+    if (typed && typed !== t('menu.defaultName')) saveName(typed);
     saveLanguage(languageField.value);
     setLanguage(languageField.value);
     showMenu(notice);
