@@ -144,7 +144,7 @@ Full detail in PLAN.md §1. The parts that surprise people:
 
 ## Status
 
-**Done** (2026-10-04; released as **v0.5.2**, languages since):
+**Done** (2026-10-04; released as **v0.6.0**, with German and the rendering performance):
 
 - **The game**: its rules, online play with rooms, a games browser, pause, and recording
   of every match (ARCHIVE 11e, each header stamped with the server's commit); team mode

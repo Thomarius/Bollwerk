@@ -1136,7 +1136,7 @@ every resolution against an independent search, not only on unit pictures.
 **Where to start (2026-10-04).** Everything but balance is done: the game, online play, bots
 as skill levels and personalities (M13), thirteen styles and four visual passes, a gallery for
 choosing the looks, two rounds of test-session feedback, help for new players, awards and a
-rematch, the desktop app for releases (M14, v0.5.2 the latest), and the game in English and
+rematch, the desktop app for releases (M14, v0.6.0 the latest, released 2026-10-04), and the game in English and
 German (M15, ARCHIVE 12g). A new session starts with one of:
 
 0. **11.22, rendering performance**, done in every style on 2026-10-04 (58–60 fps at eight
