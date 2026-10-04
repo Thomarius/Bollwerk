@@ -15,6 +15,13 @@
 
 export const INFINITE_CAPACITY = 1 << 28;
 
+/** A graph as it stood, edges and capacities, to come back to with `MaxFlow.reset`. */
+export interface FlowMark {
+  edges: number;
+  head: Int32Array;
+  capacity: number[];
+}
+
 export class MaxFlow {
   private readonly head: Int32Array;
   private readonly to: number[] = [];
@@ -40,6 +47,23 @@ export class MaxFlow {
     this.capacity.push(0);
     this.next.push(this.head[to] as number);
     this.head[to] = this.to.length - 1;
+  }
+
+  /** The graph as it stands, before any flow is pushed through it. */
+  mark(): FlowMark {
+    return { edges: this.to.length, head: this.head.slice(), capacity: this.capacity.slice() };
+  }
+
+  /**
+   * Back to a mark: the edges added since gone, every capacity as it was. The edges are
+   * walked in the same order as before, so a flow pushed again is the same flow.
+   */
+  reset(mark: FlowMark): void {
+    this.to.length = mark.edges;
+    this.next.length = mark.edges;
+    this.capacity.length = mark.edges;
+    for (let e = 0; e < mark.edges; e++) this.capacity[e] = mark.capacity[e] as number;
+    this.head.set(mark.head);
   }
 
   maxFlow(source: number, sink: number, limit = INFINITE_CAPACITY): number {

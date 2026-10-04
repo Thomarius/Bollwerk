@@ -155,3 +155,41 @@ export class Memos {
 export function viewKey(view: { tile: number; originX: number; originY: number }): string {
   return `${view.tile},${view.originX},${view.originY}`;
 }
+
+/**
+ * Filled discs as stamps of one white disc, scaled, tinted and faded: for a layer of soft
+ * light drawn in circles every frame (Night's torches, pools and glows). Meant for an added
+ * layer, where the order of what is drawn does not change the sum.
+ */
+export class Discs {
+  readonly stamps = new Stamps();
+  private readonly book = new StampBook();
+  private tile = 1;
+
+  get container(): Container {
+    return this.stamps.container;
+  }
+
+  begin(tile: number): void {
+    this.tile = tile;
+    this.stamps.begin();
+  }
+
+  disc(x: number, y: number, radius: number, color: number, alpha: number): void {
+    const tile = this.tile;
+    const disc = this.book.get('disc', tile, (g) => {
+      g.circle(0, 0, tile);
+      g.fill({ color: 0xffffff });
+    });
+    this.stamps.place(disc, x, y, { scale: radius / tile, tint: color, alpha });
+  }
+
+  end(): void {
+    this.stamps.end();
+  }
+
+  destroy(): void {
+    this.stamps.destroy();
+    this.book.destroy();
+  }
+}

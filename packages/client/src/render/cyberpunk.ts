@@ -8,6 +8,7 @@ import { IslandParts } from './islandParts.js';
 import { CyberpunkSeaLife } from './seaLife.js';
 import { seaDepth } from './pixel.js';
 import { trace, wallGeometry } from './walls.js';
+import { Memos, viewKey } from './stamps.js';
 import {
   FlagHoist,
   GhostMotion,
@@ -230,6 +231,12 @@ export class CyberpunkTheme implements Theme {
    */
   private readonly structures = new IslandParts(2);
   private readonly effectGfx = new Graphics();
+  /** The guns' barrels, a `Graphics` a gun redrawn only as it turns or kicks (`Memos`). */
+  private readonly gunMemo = new Memos();
+  /** Their glow, the same way: added, so where it lies among the glow does not matter. */
+  private readonly gunGlow = new Memos();
+  /** What lies over the guns: shots, splashes, the finish. */
+  private readonly lateGfx = new Graphics();
   private readonly effectGlow = new Graphics();
   private readonly overlayGfx = new Graphics();
   private readonly overlayGlow = new Graphics();
@@ -268,6 +275,7 @@ export class CyberpunkTheme implements Theme {
       this.territory.containers[1] as Container,
       this.structures.containers[0] as Container,
       this.effectGlow,
+      this.gunGlow.container,
       this.overlayGlow,
     ]) {
       glow.blendMode = 'add';
@@ -277,12 +285,21 @@ export class CyberpunkTheme implements Theme {
     layers.terrain.addChild(this.terrainGfx);
     layers.territory.addChild(this.scenery.gfx, ...this.territory.containers);
     layers.structures.addChild(...this.structures.containers);
-    layers.effects.addChild(this.effectGfx, this.effectGlow);
+    layers.effects.addChild(
+      this.effectGfx,
+      this.gunMemo.container,
+      this.lateGfx,
+      this.effectGlow,
+      this.gunGlow.container,
+    );
     layers.overlay.addChild(this.overlayGlow, this.overlayGfx);
     return Promise.resolve();
   }
 
   destroy(): void {
+    this.gunMemo.destroy();
+    this.gunGlow.destroy();
+    this.lateGfx.destroy();
     this.scenery.destroy();
     this.structures.destroy();
     this.territory.destroy();
@@ -861,6 +878,7 @@ export class CyberpunkTheme implements Theme {
     const glow = this.effectGlow;
     g.clear();
     glow.clear();
+    this.lateGfx.clear();
     this.seaLife.draw(g, view, this.art, frame.deltaMs, glow);
     this.clock += frame.deltaMs;
 
@@ -888,8 +906,8 @@ export class CyberpunkTheme implements Theme {
     this.drawShorts(view, frame.deltaMs);
     this.drawFades(view, frame.deltaMs);
     this.drawSparks(view, frame.deltaMs);
-    this.winnerBanners.draw(g, view, state, this.art, frame.celebrate, frame.deltaMs);
-    this.fireworks.draw(g, view, this.art, frame.celebrate, frame.deltaMs);
+    this.winnerBanners.draw(this.lateGfx, view, state, this.art, frame.celebrate, frame.deltaMs);
+    this.fireworks.draw(this.lateGfx, view, this.art, frame.celebrate, frame.deltaMs);
   }
 
   /** A pulse running along each trace and off its end, then round again. */
@@ -941,12 +959,16 @@ export class CyberpunkTheme implements Theme {
 
   /** Barrels as lit rails from the mount toward the last target, kicking back on firing. */
   private drawBarrels(state: MatchState, view: ViewTransform, deltaMs: number): void {
-    const g = this.effectGfx;
-    const glow = this.effectGlow;
+    const memo = this.gunMemo;
+    const glows = this.gunGlow;
+    memo.begin();
+    glows.begin();
     for (const cannon of state.cannons) {
       const aim = this.aims.of(state, cannon.id);
       if (aim === null) continue;
       aim.firedAgo += deltaMs;
+      // Still between shots: drawn again only as it turns and kicks.
+      const key = `${viewKey(view)}|${cannon.x},${cannon.y},${cannon.owner},${cannon.active}|${aim.angle}|${aim.firedAgo < RECOIL_MS ? aim.firedAgo : '-'}`;
       const kick = Math.max(0, 1 - aim.firedAgo / RECOIL_MS);
       const length = cannon.active ? 0.95 - 0.3 * kick : 0.55;
       const cx = cannon.x + cannon.w / 2;
@@ -954,26 +976,32 @@ export class CyberpunkTheme implements Theme {
       const ex = cx + Math.sin(aim.angle) * length;
       const ey = cy - Math.cos(aim.angle) * length;
       const width = Math.max(2, view.tile * 0.2);
-      g.moveTo(tileX(view, cx), tileY(view, cy)).lineTo(tileX(view, ex), tileY(view, ey));
-      g.stroke({
-        width,
-        color: cannon.active ? this.colour(cannon.owner, 'light') : hex(this.art.palette.rockMid),
-        alpha: cannon.active ? 1 : 0.5,
-        cap: 'round',
+      memo.draw(cannon.id, key, (g) => {
+        g.moveTo(tileX(view, cx), tileY(view, cy)).lineTo(tileX(view, ex), tileY(view, ey));
+        g.stroke({
+          width,
+          color: cannon.active ? this.colour(cannon.owner, 'light') : hex(this.art.palette.rockMid),
+          alpha: cannon.active ? 1 : 0.5,
+          cap: 'round',
+        });
       });
-      if (!cannon.active) continue;
-      glow.moveTo(tileX(view, cx), tileY(view, cy)).lineTo(tileX(view, ex), tileY(view, ey));
-      glow.stroke({
-        width: width * 2.4,
-        color: this.colour(cannon.owner, 'base'),
-        alpha: 0.35,
-        cap: 'round',
+      glows.draw(cannon.id, key, (glow) => {
+        if (!cannon.active) return;
+        glow.moveTo(tileX(view, cx), tileY(view, cy)).lineTo(tileX(view, ex), tileY(view, ey));
+        glow.stroke({
+          width: width * 2.4,
+          color: this.colour(cannon.owner, 'base'),
+          alpha: 0.35,
+          cap: 'round',
+        });
+        if (kick > 0) {
+          glow.circle(tileX(view, ex), tileY(view, ey), view.tile * (0.2 + 0.35 * kick));
+          glow.fill({ color: hex(this.art.palette.uiInk), alpha: 0.8 * kick });
+        }
       });
-      if (kick > 0) {
-        glow.circle(tileX(view, ex), tileY(view, ey), view.tile * (0.2 + 0.35 * kick));
-        glow.fill({ color: hex(this.art.palette.uiInk), alpha: 0.8 * kick });
-      }
     }
+    memo.end();
+    glows.end();
     this.aims.prune(state);
   }
 
@@ -1070,7 +1098,7 @@ export class CyberpunkTheme implements Theme {
 
   /** Shots as plasma tracers: a white-hot head in a glow of the firer's colour. */
   private drawShots(state: MatchState, view: ViewTransform, frame: EffectFrame): void {
-    const g = this.effectGfx;
+    const g = this.lateGfx;
     const glow = this.effectGlow;
     const now = state.tick + frame.tickFraction;
     drawMainCastles(g, view, state, this.art, frame.castleSealed);

@@ -8,7 +8,7 @@ import { SEA_NE, SEA_NW, SEA_SE, SEA_SW, filletCorners } from './pixel/coast.js'
 import { daylight, shadowCast, weatherFor, type Weather } from './pixel/atmosphere.js';
 import { OceanLife } from './pixel/ocean.js';
 import { SceneryTracker } from './scenery.js';
-import { StampBook, Stamps } from './stamps.js';
+import { Discs, StampBook, Stamps } from './stamps.js';
 import { CASTLE_WINDOWS, E, FILLET_CORNERS, KEY, N, S, W, buildAtlas } from './pixel/generators.js';
 import {
   FlagHoist,
@@ -279,6 +279,12 @@ export class PixelTheme implements Theme {
    */
   private readonly groundLight = new Graphics();
   private readonly airLight = new Graphics();
+  /**
+   * The discs of light in those two, stamps of one disc (PLAN 11.22): the torches' pools
+   * and flames, flickering, were most of what Night drew anew each frame.
+   */
+  private readonly groundDiscs = new Discs();
+  private readonly airDiscs = new Discs();
   /** Muzzle flashes lighting the ground, in tile coordinates. */
   private lights: { x: number; y: number; age: number }[] = [];
   /** Each castle's torches: how far alight, 0 to 1, and whether it was sealed. */
@@ -295,7 +301,10 @@ export class PixelTheme implements Theme {
     this.textures = buildAtlas(art, this.seed);
 
     this.terrainLayer = layers.terrain;
-    this.structureLayer = layers.structures;
+    // A render group of its own, as the terrain's tiles are: thousands of wall sprites, which
+    // Pixi would otherwise gather and pack again with every frame's effects (PLAN 11.22).
+    this.structureLayer = new Container({ isRenderGroup: true });
+    layers.structures.addChild(this.structureLayer);
     this.effectLayer = layers.effects;
 
     layers.territory.addChild(
@@ -305,13 +314,18 @@ export class PixelTheme implements Theme {
       this.daylightGfx,
       this.territoryGfx,
       this.groundLight,
+      this.groundDiscs.container,
     );
-    this.groundLight.blendMode = 'add';
-    this.airLight.blendMode = 'add';
+    for (const light of [this.groundLight, this.groundDiscs.container]) light.blendMode = 'add';
+    for (const light of [this.airLight, this.airDiscs.container]) light.blendMode = 'add';
     if (this.torchlit && bloomWanted()) {
       // High effects: the light bloomed by a real blur rather than only the wider shapes.
-      this.groundLight.filters = [new BlurFilter({ strength: 6, quality: 2 })];
-      this.airLight.filters = [new BlurFilter({ strength: 4, quality: 2 })];
+      for (const light of [this.groundLight, this.groundDiscs.container]) {
+        light.filters = [new BlurFilter({ strength: 6, quality: 2 })];
+      }
+      for (const light of [this.airLight, this.airDiscs.container]) {
+        light.filters = [new BlurFilter({ strength: 4, quality: 2 })];
+      }
     }
     layers.effects.addChild(this.effectGfx);
     layers.overlay.addChild(this.ghostShadow, this.ghostLayer, this.overlayGfx);
@@ -321,7 +335,7 @@ export class PixelTheme implements Theme {
   destroy(): void {
     this.terrainLayer?.removeChildren();
     this.tileLayer.destroy({ children: true });
-    this.structureLayer?.removeChildren();
+    this.structureLayer?.destroy({ children: true });
     this.effectLayer?.removeChildren();
     this.territoryGfx.destroy();
     this.overlayGfx.destroy();
@@ -329,6 +343,8 @@ export class PixelTheme implements Theme {
     this.effectGfx.destroy();
     this.groundLight.destroy();
     this.airLight.destroy();
+    this.groundDiscs.destroy();
+    this.airDiscs.destroy();
     this.seaGfx.destroy();
     this.ghostShadow.destroy();
     this.cloudStamps.destroy();
@@ -912,10 +928,17 @@ export class PixelTheme implements Theme {
     this.clock += frame.deltaMs;
     this.animateWater(frame.deltaMs);
     this.effectLayer.removeChildren();
-    this.effectLayer.addChild(this.cloudStamps.container, g, this.airLight);
+    this.effectLayer.addChild(
+      this.cloudStamps.container,
+      g,
+      this.airLight,
+      this.airDiscs.container,
+    );
     this.age(state);
     this.groundLight.clear();
     this.airLight.clear();
+    this.groundDiscs.begin(view.tile);
+    this.airDiscs.begin(view.tile);
     const still = motionReduced();
     this.drawSea(view, frame.deltaMs, still);
     this.drawClouds(view, frame.deltaMs, still);
@@ -988,10 +1011,8 @@ export class PixelTheme implements Theme {
         const glow = view.tile * this.art.night.shotGlowTiles;
         const bx = tileX(view, x + 0.5);
         const by = tileY(view, y + 0.5 - lift);
-        this.airLight.circle(bx, by, glow);
-        this.airLight.fill({ color: hex(this.art.palette.emberMid), alpha: 0.28 });
-        this.airLight.circle(bx, by, glow * 0.5);
-        this.airLight.fill({ color: hex(this.art.palette.emberHot), alpha: 0.35 });
+        this.airDiscs.disc(bx, by, glow, hex(this.art.palette.emberMid), 0.28);
+        this.airDiscs.disc(bx, by, glow * 0.5, hex(this.art.palette.emberHot), 0.35);
       }
 
       drawShotTarget(g, view, shot, t, this.art, frame.humanPlayer);
@@ -1020,6 +1041,8 @@ export class PixelTheme implements Theme {
       g.fill({ color: f.colour, alpha: Math.max(0, 1 - f.age / life) });
     }
     this.fragments = this.fragments.filter((f) => f.age < life);
+    this.groundDiscs.end();
+    this.airDiscs.end();
   }
 
   /**
@@ -1498,8 +1521,7 @@ export class PixelTheme implements Theme {
         cy - t * 0.5 + Math.sin(angle + width) * reach,
       ]);
       this.groundLight.fill({ color: hex(palette.emberHot), alpha: 0.16 });
-      this.airLight.circle(cx, cy - t * 0.5, t * 0.35);
-      this.airLight.fill({ color: hex(palette.emberMid), alpha: 0.3 });
+      this.airDiscs.disc(cx, cy - t * 0.5, t * 0.35, hex(palette.emberMid), 0.3);
     });
 
     // Fireflies wandering and winking; none when motion is reduced.
@@ -1513,8 +1535,7 @@ export class PixelTheme implements Theme {
       if (glow <= 0.05) continue;
       const x = tileX(view, fly.x);
       const y = tileY(view, fly.y);
-      this.airLight.circle(x, y, t * 0.18);
-      this.airLight.fill({ color: 0xd8ff6a, alpha: 0.25 * glow });
+      this.airDiscs.disc(x, y, t * 0.18, 0xd8ff6a, 0.25 * glow);
       this.effectGfx.rect(x, y, px, px);
       this.effectGfx.fill({ color: 0xf0ffb0, alpha: glow });
     }
@@ -1542,8 +1563,13 @@ export class PixelTheme implements Theme {
         g.rect(x, y, Math.max(1, window.w * w), Math.max(1, window.h * h));
         g.fill({ color: warm, alpha: glow * flicker });
         if (this.torchlit) {
-          this.airLight.circle(x + (window.w * w) / 2, y + (window.h * h) / 2, view.tile * 0.3);
-          this.airLight.fill({ color: hex(this.art.palette.emberMid), alpha: 0.18 * flicker });
+          this.airDiscs.disc(
+            x + (window.w * w) / 2,
+            y + (window.h * h) / 2,
+            view.tile * 0.3,
+            hex(this.art.palette.emberMid),
+            0.18 * flicker,
+          );
         }
       });
     }
@@ -1604,14 +1630,18 @@ export class PixelTheme implements Theme {
   private drawTorchlight(state: MatchState, view: ViewTransform, frame: EffectFrame): void {
     const night = this.art.night;
     const { palette } = this.art;
-    const ground = this.groundLight;
     const g = this.effectGfx;
     const warm = hex(palette.emberMid);
     const pool = (x: number, y: number, radius: number, alpha: number): void => {
       // Three discs, each inside the last, so the light is brightest at its heart.
       for (const k of [1, 0.66, 0.36]) {
-        ground.circle(tileX(view, x), tileY(view, y), view.tile * radius * k);
-        ground.fill({ color: warm, alpha: alpha * 0.4 });
+        this.groundDiscs.disc(
+          tileX(view, x),
+          tileY(view, y),
+          view.tile * radius * k,
+          warm,
+          alpha * 0.4,
+        );
       }
     };
     const flicker = (seed: number): number =>
@@ -1667,8 +1697,7 @@ export class PixelTheme implements Theme {
         g.fill({ color: warm, alpha: 0.95 });
         g.circle(fx, fy + t * 0.03, t * 0.08 * f);
         g.fill({ color: hex(palette.emberHot) });
-        this.airLight.circle(fx, fy, t * 0.55 * f);
-        this.airLight.fill({ color: warm, alpha: 0.28 * f });
+        this.airDiscs.disc(fx, fy, t * 0.55 * f, warm, 0.28 * f);
       });
     }
 

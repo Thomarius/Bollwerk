@@ -1432,12 +1432,21 @@ The screen's 60 Hz caps fps. Still open:
   the stepped stamps — swirls turning, crests rising, bubbles swelling — and the draw order
   moved where a stamp now lies over later effects (Oktoberfest's pretzels and Opera's notes
   over splashes) need a look in play.
-- **The server's bots** stall its tick the same way when several plan at once: online,
-  every client then receives that tick late. The same spreading, over the server's event
-  loop, or a faster `planSeal` — eleven max-flows a `sealOptions` over the same graph,
-  rebuilt each time — would answer it.
-- **Night's and Cyberpunk's effects** are the largest left (17k and 25k a frame) and could
-  take the same tools if a slower machine ever needs it.
+- **The server's bots**, partly answered (2026-10-04, second pass): `SealGraph` lays an
+  island's flow graph once and cuts it for every set of castles a bot weighs, instead of
+  eleven times a `sealOptions`; the cut is the same, edge for edge, and the headless
+  matches end on the same hashes (seeds 3–4 at eight players, 11–13 at three). Bot time
+  down a third (eight players, two matches: 25.3 → 17.1 s); in one eight-player match the
+  worst tick fell 135 → 80 ms and ticks over 50 ms 65 → 14. Tried and dropped: caching
+  graphs across a plan's calls (17.1 → 17.0 s) and a reused BFS queue (no change). Spreading
+  the server's bots over its event loop would not help the room, which cannot send a tick
+  before every bot has thought on it, and online the stall falls in the build phase, where a
+  late tick only delays others' pieces. What remains is behaviour: bots of one level planning
+  on the same ticks, which staggering would answer, as a design question first.
+- **Night and Cyberpunk** took the same tools: Cyberpunk's barrels and their glow as `Memos`
+  (25k → 16k a frame, 59.8 fps), Night's torch pools and flames as stamps of one disc in
+  their added layers (`Discs`; 17k → 10k), and Medieval's and Night's wall sprites a render
+  group of their own (render 5.3 → 4.9 ms in Night, 4.5 → 4.1 in Medieval).
 
 ## 12. Deferred (explicitly out of scope for v1)
 

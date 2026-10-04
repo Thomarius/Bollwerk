@@ -173,8 +173,8 @@ Full detail in PLAN.md §1. The parts that surprise people:
 
 0. **Rendering performance** (PLAN 11.22) is done in every style (2026-10-04): 58–59 fps at
    eight players on an integrated GPU, Opera from 13.5, and no frame over 50 ms where there
-   were up to 279 in 30 s. Left: the user's look at the styles in motion, and the server's
-   bots, which still stall a server's tick when several plan at once.
+   were up to 279 in 30 s; bot planning a third faster, same play. Left: the user's look at
+   the styles in motion, and bots of one level planning on the same ticks (PLAN 11.22).
 1. **The soaks** (`docs/SOAKS.md`): the weekend run was started on 2026-10-02 **on the
    user's other machine**; read its `summary.txt` together with them and write the figures
    into PLAN 11.2–11.13. Measurement only.

@@ -7,7 +7,7 @@ import {
   type MatchState,
 } from '@bollwerk/sim';
 
-import { INFINITE_CAPACITY, MaxFlow } from './flow.js';
+import { INFINITE_CAPACITY, MaxFlow, type FlowMark } from './flow.js';
 
 /** The cheapest wall that would seal a set of castles. */
 export interface SealPlan {
@@ -74,97 +74,133 @@ export function planSeal(
   roomRadius = 0,
 ): SealPlan | null {
   if (castles.length === 0) return null;
-  const islandId = state.players[playerId]?.islandId;
-  if (islandId === undefined) return null;
+  return new SealGraph(state, playerId, blocked).plan(castles, keepCannons, roomRadius);
+}
 
-  // Only this player's own island can ever be part of the cut, so the graph is built
-  // over its few hundred land tiles rather than all six thousand on the map. Water is
-  // all connected to the border, so every tile where the island meets the sea is an
-  // entry point and hangs straight off the source. That is not an approximation: any
-  // route from the open map to the castle has to come ashore somewhere.
-  const size = state.width * state.height;
-  const node = new Int32Array(size).fill(-1);
-  const tiles: number[] = [];
-  for (let i = 0; i < size; i++) {
-    if (state.islandId[i] !== islandId || !passable(state, i)) continue;
-    node[i] = tiles.length;
-    tiles.push(i);
-  }
-  if (tiles.length === 0) return null;
+/**
+ * The graph `planSeal` cuts, for one player's island as it stands: built once and cut for
+ * every set of castles a bot weighs (PLAN 11.22). Only the sink differs between them, so the
+ * island's tiles and their edges are laid once, marked, and put back before each cut. A bot
+ * weighs eleven sets at a time, and laying the graph each time was a third of its planning.
+ */
+export class SealGraph {
+  private readonly islandId: number | undefined;
+  private readonly node: Int32Array;
+  private readonly tiles: number[] = [];
+  private readonly flow: MaxFlow;
+  private readonly bare: FlowMark;
 
-  const count = tiles.length;
-  const inNode = (n: number): number => n * 2;
-  const outNode = (n: number): number => n * 2 + 1;
-  const source = count * 2;
-  const sink = count * 2 + 1;
-  const flow = new MaxFlow(count * 2 + 2);
-
-  for (let n = 0; n < count; n++) {
-    const i = tiles[n] as number;
-    const canBuild = buildable(state, playerId, i) && blocked?.has(i) !== true;
-    flow.addEdge(inNode(n), outNode(n), canBuild ? 1 : INFINITE_CAPACITY);
-
-    const x = i % state.width;
-    const y = (i - x) / state.width;
-    let coastal = false;
-    for (const [ox, oy] of NEIGHBOURS_8) {
-      const nx = x + ox;
-      const ny = y + oy;
-      if (nx < 0 || ny < 0 || nx >= state.width || ny >= state.height) {
-        coastal = true;
-        continue;
-      }
-      const j = ny * state.width + nx;
-      if (state.islandId[j] !== islandId) {
-        // Sea, or somebody else's ground: either way it is open to the border.
-        if (passable(state, j)) coastal = true;
-        continue;
-      }
-      const m = node[j] as number;
-      if (m >= 0) flow.addEdge(outNode(n), inNode(m), INFINITE_CAPACITY);
-    }
-    if (coastal) flow.addEdge(source, inNode(n), INFINITE_CAPACITY);
-  }
-
-  const sinkTile = (i: number): void => {
-    const n = node[i] as number;
-    if (n >= 0) flow.addEdge(outNode(n), sink, INFINITE_CAPACITY);
-  };
-
-  for (const castle of castles) {
-    // The castle, plus the band of ground the wall has to take in around it.
-    const x0 = Math.max(0, castle.x - roomRadius);
-    const y0 = Math.max(0, castle.y - roomRadius);
-    const x1 = Math.min(state.width - 1, castle.x + castle.w - 1 + roomRadius);
-    const y1 = Math.min(state.height - 1, castle.y + castle.h - 1 + roomRadius);
-    for (let y = y0; y <= y1; y++) {
-      for (let x = x0; x <= x1; x++) sinkTile(y * state.width + x);
-    }
-  }
-
-  if (keepCannons) {
-    for (const cannon of state.cannons) {
-      if (cannon.owner !== playerId) continue;
-      for (let oy = 0; oy < cannon.h; oy++) {
-        for (let ox = 0; ox < cannon.w; ox++)
-          sinkTile((cannon.y + oy) * state.width + cannon.x + ox);
+  constructor(
+    private readonly state: MatchState,
+    private readonly playerId: number,
+    private readonly blocked?: ReadonlySet<number>,
+  ) {
+    this.islandId = state.players[playerId]?.islandId;
+    const islandId = this.islandId;
+    // Only this player's own island can ever be part of the cut, so the graph is built
+    // over its few hundred land tiles rather than all six thousand on the map. Water is
+    // all connected to the border, so every tile where the island meets the sea is an
+    // entry point and hangs straight off the source. That is not an approximation: any
+    // route from the open map to the castle has to come ashore somewhere.
+    const size = state.width * state.height;
+    const node = new Int32Array(size).fill(-1);
+    this.node = node;
+    const tiles = this.tiles;
+    if (islandId !== undefined) {
+      for (let i = 0; i < size; i++) {
+        if (state.islandId[i] !== islandId || !passable(state, i)) continue;
+        node[i] = tiles.length;
+        tiles.push(i);
       }
     }
+
+    const count = tiles.length;
+    const inNode = (n: number): number => n * 2;
+    const outNode = (n: number): number => n * 2 + 1;
+    const source = count * 2;
+    const flow = new MaxFlow(count * 2 + 2);
+    this.flow = flow;
+
+    for (let n = 0; n < count; n++) {
+      const i = tiles[n] as number;
+      const canBuild = buildable(state, playerId, i) && blocked?.has(i) !== true;
+      flow.addEdge(inNode(n), outNode(n), canBuild ? 1 : INFINITE_CAPACITY);
+
+      const x = i % state.width;
+      const y = (i - x) / state.width;
+      let coastal = false;
+      for (const [ox, oy] of NEIGHBOURS_8) {
+        const nx = x + ox;
+        const ny = y + oy;
+        if (nx < 0 || ny < 0 || nx >= state.width || ny >= state.height) {
+          coastal = true;
+          continue;
+        }
+        const j = ny * state.width + nx;
+        if (state.islandId[j] !== islandId) {
+          // Sea, or somebody else's ground: either way it is open to the border.
+          if (passable(state, j)) coastal = true;
+          continue;
+        }
+        const m = node[j] as number;
+        if (m >= 0) flow.addEdge(outNode(n), inNode(m), INFINITE_CAPACITY);
+      }
+      if (coastal) flow.addEdge(source, inNode(n), INFINITE_CAPACITY);
+    }
+    this.bare = flow.mark();
   }
 
-  const cost = flow.maxFlow(source, sink, 400);
-  if (cost >= 400) return null;
+  /** The smallest wall around these castles, as `planSeal` describes. */
+  plan(castles: readonly Castle[], keepCannons = false, roomRadius = 0): SealPlan | null {
+    const { state, playerId, blocked, node, tiles, flow } = this;
+    if (castles.length === 0 || this.islandId === undefined || tiles.length === 0) return null;
+    flow.reset(this.bare);
 
-  const near = flow.reachable(source);
-  const cut: number[] = [];
-  for (let n = 0; n < count; n++) {
-    const i = tiles[n] as number;
-    if (!buildable(state, playerId, i) || blocked?.has(i) === true) continue;
-    // A tile is on the cut when the flow reaches into it but not out of it.
-    if (near[inNode(n)] === 1 && near[outNode(n)] === 0) cut.push(i);
+    const count = tiles.length;
+    const inNode = (n: number): number => n * 2;
+    const outNode = (n: number): number => n * 2 + 1;
+    const source = count * 2;
+    const sink = count * 2 + 1;
+    const sinkTile = (i: number): void => {
+      const n = node[i] as number;
+      if (n >= 0) flow.addEdge(outNode(n), sink, INFINITE_CAPACITY);
+    };
+
+    for (const castle of castles) {
+      // The castle, plus the band of ground the wall has to take in around it.
+      const x0 = Math.max(0, castle.x - roomRadius);
+      const y0 = Math.max(0, castle.y - roomRadius);
+      const x1 = Math.min(state.width - 1, castle.x + castle.w - 1 + roomRadius);
+      const y1 = Math.min(state.height - 1, castle.y + castle.h - 1 + roomRadius);
+      for (let y = y0; y <= y1; y++) {
+        for (let x = x0; x <= x1; x++) sinkTile(y * state.width + x);
+      }
+    }
+
+    if (keepCannons) {
+      for (const cannon of state.cannons) {
+        if (cannon.owner !== playerId) continue;
+        for (let oy = 0; oy < cannon.h; oy++) {
+          for (let ox = 0; ox < cannon.w; ox++)
+            sinkTile((cannon.y + oy) * state.width + cannon.x + ox);
+        }
+      }
+    }
+
+    const cost = flow.maxFlow(source, sink, 400);
+    if (cost >= 400) return null;
+
+    const near = flow.reachable(source);
+    const cut: number[] = [];
+    for (let n = 0; n < count; n++) {
+      const i = tiles[n] as number;
+      if (!buildable(state, playerId, i) || blocked?.has(i) === true) continue;
+      // A tile is on the cut when the flow reaches into it but not out of it.
+      if (near[inNode(n)] === 1 && near[outNode(n)] === 0) cut.push(i);
+    }
+
+    return { tiles: cut, castleIds: castles.map((c) => c.id), cost };
   }
-
-  return { tiles: cut, castleIds: castles.map((c) => c.id), cost };
 }
 
 /**
@@ -186,33 +222,25 @@ export function sealOptions(
   const mine = state.castles.filter((c) => c.islandId === islandId);
   if (mine.length === 0) return [];
 
+  const graph = new SealGraph(state, playerId, blocked);
   const plans: SealPlan[] = [];
   const add = (plan: SealPlan | null): void => {
     if (plan !== null) plans.push(plan);
   };
 
   for (const castle of mine) {
-    add(planSeal(state, playerId, [castle], blocked, keepCannons, roomRadius));
+    add(graph.plan([castle], keepCannons, roomRadius));
   }
 
   if (maxCastles > 1) {
     for (let a = 0; a < mine.length; a++) {
       for (let b = a + 1; b < mine.length; b++) {
-        add(
-          planSeal(
-            state,
-            playerId,
-            [mine[a] as Castle, mine[b] as Castle],
-            blocked,
-            keepCannons,
-            roomRadius,
-          ),
-        );
+        add(graph.plan([mine[a] as Castle, mine[b] as Castle], keepCannons, roomRadius));
       }
     }
   }
   if (maxCastles > 2 && mine.length >= 3) {
-    add(planSeal(state, playerId, mine, blocked, keepCannons, roomRadius));
+    add(graph.plan(mine, keepCannons, roomRadius));
   }
 
   return plans.sort((x, y) => x.cost - y.cost);
