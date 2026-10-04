@@ -1375,6 +1375,18 @@ switch (step 2) — panels built once and kept, the pause menu among them, will 
 when the language changes mid-match; the desktop window (step 5); the names in a match's
 state ("Bot 3", "You" in a local match) stay as the match began, since they travel.
 
+**Step 2 done (2026-10-04)**: a Language dropdown above Effects in the menu and among the
+pause menu's settings, each language in its own name (`languageOptions`). The choice is saved
+as `bollwerk.language`; a first visit takes the browser's own language if the game speaks it
+(`detectLanguage`: "de-AT" is German), else English; `&lang=` sets one for screenshots
+without saving it (`startingLanguage`). The page's `lang` follows, for CSS uppercase and
+screen readers. A change in the menu writes the menu afresh, keeping a name typed but not yet
+saved; mid-match, the HUD takes it at the next frame since it is redrawn every frame, and the
+panels built once and kept listen (`onLanguageChange`) — the pause menu fills itself afresh,
+the network badge's tooltip and the "You're out" strip's button are relabelled, as is the
+corner sound switch. With English alone the dropdown has one entry; German arrives in step 3,
+and with it the first real switch to watch.
+
 ### 11.21 Opening the host's port by UPnP — agreed 2026-10-03, not started
 
 **The goal**: a person hosting from the desktop app or `npm start` is reachable from the

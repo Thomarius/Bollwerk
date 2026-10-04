@@ -56,7 +56,15 @@ import {
   parseRoomList,
   refusalText,
 } from './browser.js';
-import { t } from './i18n.js';
+import {
+  isLanguage,
+  languageOptions,
+  onLanguageChange,
+  saveLanguage,
+  setLanguage,
+  startingLanguage,
+  t,
+} from './i18n.js';
 import { Hud, type IslandBanner } from './hud.js';
 import { MatchAudio } from './matchAudio.js';
 import { LocalMatch } from './localMatch.js';
@@ -121,6 +129,9 @@ if (problems.length > 0) {
 
 const app = document.querySelector<HTMLElement>('#app');
 if (!app) throw new Error('missing #app');
+// The language before anything is written: `&lang=` for screenshots, else the saved
+// choice, else the browser's own if the game speaks it (PLAN 11.20).
+setLanguage(startingLanguage(new URLSearchParams(globalThis.location.search).get('lang')));
 installBackdrop(defaultConfigBundle.art);
 applyEffects();
 
@@ -176,6 +187,7 @@ function installSoundButton(): void {
   });
   show();
   showSoundButton = show;
+  onLanguageChange(show);
   document.body.append(button);
 }
 installSoundButton();
@@ -364,6 +376,14 @@ function storedName(): string {
   }
 }
 
+function saveName(name: string): void {
+  try {
+    globalThis.localStorage?.setItem(NAME_KEY, name);
+  } catch {
+    // Not remembered; the field still holds it for this visit.
+  }
+}
+
 function readCommon(): Common {
   const name =
     document.querySelector<HTMLInputElement>('#name')?.value.trim() || t('menu.defaultName');
@@ -429,6 +449,7 @@ function showMenu(notice: string | null = null): void {
       <label>${t('menu.name')} <input id="name" type="text" maxlength="16" value="${escape(t('menu.defaultName'))}" /></label>
       <div class="look" data-look="build">${t('menu.buildLook')} ${lookPicker('build')}</div>
       <div class="look" data-look="combat">${t('menu.combatLook')} ${lookPicker('combat')}</div>
+      <label>${t('settings.language')} <select id="language">${languageOptions()}</select></label>
       <label>${t('settings.effects')} <select id="effects">${EFFECTS.map(([value, key]) => `<option value="${value}">${t(key)}</option>`).join('')}</select></label>
       <div class="split play-row">
         <button id="play">${t('menu.play')}</button>
@@ -462,6 +483,17 @@ function showMenu(notice: string | null = null): void {
   const nameField = document.querySelector<HTMLInputElement>('#name');
   if (nameField) nameField.value = storedName();
   menuChoices = { ...styles };
+  // A change of language writes the menu afresh, keeping a name typed but not yet saved.
+  const languageField = document.querySelector<HTMLSelectElement>('#language');
+  languageField?.addEventListener('change', () => {
+    audio.play('select');
+    if (!isLanguage(languageField.value)) return;
+    const typed = document.querySelector<HTMLInputElement>('#name')?.value.trim();
+    if (typed) saveName(typed);
+    saveLanguage(languageField.value);
+    setLanguage(languageField.value);
+    showMenu(notice);
+  });
   const effectsField = document.querySelector<HTMLSelectElement>('#effects');
   // The two volumes, under the looks and Effects (PLAN 11.18 Y4).
   effectsField?.closest('label')?.after(volumeSliders(audio));

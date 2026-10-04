@@ -1,4 +1,11 @@
-import { locales, type Language, type LocaleText, type TextKey } from '@bollwerk/config';
+import {
+  LANGUAGES,
+  LANGUAGE_NAMES,
+  locales,
+  type Language,
+  type LocaleText,
+  type TextKey,
+} from '@bollwerk/config';
 
 /*
  * The language the page speaks, and its texts (PLAN 11.20). Everything a player reads goes
@@ -21,11 +28,71 @@ export function language(): Language {
   return current;
 }
 
-/** Changes the language, and tells whoever redraws text that it has changed. */
+/**
+ * Changes the language, and tells whoever redraws text that it has changed. The page's own
+ * `lang` follows, so CSS uppercase writes German's ß as SS, and a screen reader reads aloud
+ * in the right voice.
+ */
 export function setLanguage(next: Language): void {
+  if (globalThis.document !== undefined) document.documentElement.lang = next;
   if (next === current) return;
   current = next;
   for (const listener of listeners) listener(next);
+}
+
+/** Whether `code` names a language the game speaks. */
+export function isLanguage(code: string | null | undefined): code is Language {
+  return code !== null && code !== undefined && (LANGUAGES as readonly string[]).includes(code);
+}
+
+/**
+ * The first language of the browser's own the game speaks — "de-AT" is German — or English.
+ * What a first visit starts in, before anybody has chosen.
+ */
+export function detectLanguage(preferences: readonly string[]): Language {
+  for (const preference of preferences) {
+    const code = preference.toLowerCase().split('-')[0];
+    if (isLanguage(code)) return code;
+  }
+  return 'en';
+}
+
+/** Where the menu remembers the choice, as it does the looks and the name. */
+const LANGUAGE_KEY = 'bollwerk.language';
+
+export function saveLanguage(language: Language): void {
+  try {
+    globalThis.localStorage?.setItem(LANGUAGE_KEY, language);
+  } catch {
+    // A browser refusing storage forgets the choice at the next visit; nothing worse.
+  }
+}
+
+function savedLanguage(): string | null {
+  try {
+    return globalThis.localStorage?.getItem(LANGUAGE_KEY) ?? null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * The language a page opens in: `&lang=` for screenshots and tests, which is not saved;
+ * otherwise the choice saved; otherwise the browser's own, if the game speaks it.
+ */
+export function startingLanguage(asked: string | null): Language {
+  if (isLanguage(asked)) return asked;
+  const saved = savedLanguage();
+  if (isLanguage(saved)) return saved;
+  return detectLanguage(globalThis.navigator?.languages ?? []);
+}
+
+/** The options of a language chooser, each language named in itself, the current chosen. */
+export function languageOptions(): string {
+  return LANGUAGES.map(
+    (code) =>
+      `<option value="${code}"${code === current ? ' selected' : ''}>${LANGUAGE_NAMES[code]}</option>`,
+  ).join('');
 }
 
 /** Called whenever the language changes; returns the way to stop listening. */

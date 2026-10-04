@@ -1,6 +1,13 @@
 import type { TextKey } from '@bollwerk/config';
 
-import { t } from './i18n.js';
+import {
+  isLanguage,
+  languageOptions,
+  onLanguageChange,
+  saveLanguage,
+  setLanguage,
+  t,
+} from './i18n.js';
 import { escape } from './lobby.js';
 import { saveEffects, storedEffects, type EffectsLevel } from './motion.js';
 import { refreshVolumeSliders, volumeSliders, type VolumeTarget } from './volume.js';
@@ -51,15 +58,17 @@ export const EFFECTS: readonly [EffectsLevel, TextKey][] = [
 export class PauseControls {
   private readonly button: HTMLButtonElement;
   private readonly overlay: HTMLDivElement;
-  private readonly line: HTMLParagraphElement;
-  private readonly sound: HTMLButtonElement;
-  private readonly leaving: HTMLButtonElement;
-  private readonly glowNote: HTMLElement;
-  private readonly sliders: HTMLElement;
+  private line!: HTMLParagraphElement;
+  private sound!: HTMLButtonElement;
+  private leaving!: HTMLButtonElement;
+  private glowNote!: HTMLElement;
+  private sliders!: HTMLElement;
   /** What the line says, so the DOM is touched only when it changes. */
   private shown: string | null = null;
   private paused = false;
   private over = false;
+  private readonly glowAtStart = storedEffects() === 'high';
+  private readonly stopListening: () => void;
   private readonly key = (event: KeyboardEvent): void => {
     if (event.key !== 'Escape' || this.over) return;
     event.preventDefault();
@@ -69,8 +78,6 @@ export class PauseControls {
   constructor(private readonly actions: PauseActions) {
     this.button = document.createElement('button');
     this.button.id = 'pause';
-    this.button.textContent = t('pause.button');
-    this.button.title = t('pause.buttonTitle');
     this.button.addEventListener('click', () => {
       actions.click();
       actions.toggle(!this.paused);
@@ -78,10 +85,27 @@ export class PauseControls {
       this.button.blur();
     });
 
-    // Built once and kept: rewriting it while open would replace a control under the mouse.
+    // Built once and kept: rewriting it while open would replace a control under the mouse —
+    // except when the language changes, which is chosen in it, and fills it afresh.
     this.overlay = document.createElement('div');
     this.overlay.className = 'pause-overlay';
     this.overlay.hidden = true;
+    this.fill();
+    this.stopListening = onLanguageChange(() => {
+      this.fill();
+      // The line and the settings are written again at the next frame, as on opening.
+      this.shown = null;
+    });
+
+    document.body.append(this.button, this.overlay);
+    globalThis.addEventListener('keydown', this.key);
+  }
+
+  /** The overlay's contents, in the language in use, its controls wired. */
+  private fill(): void {
+    const actions = this.actions;
+    this.button.textContent = this.paused ? t('pause.resume') : t('pause.button');
+    this.button.title = t('pause.buttonTitle');
     const options = EFFECTS.map(
       ([value, key]) => `<option value="${value}">${escape(t(key))}</option>`,
     ).join('');
@@ -90,6 +114,7 @@ export class PauseControls {
       `<button class="resume">${t('pause.resume')}</button>` +
       `<div class="settings">` +
       `<label>${t('settings.effects')} <select class="effects">${options}</select></label>` +
+      `<label>${t('settings.language')} <select class="language">${languageOptions()}</select></label>` +
       `<button class="sound quiet"></button>` +
       (actions.looks === undefined
         ? ''
@@ -104,7 +129,8 @@ export class PauseControls {
     this.sliders = volumeSliders(actions.volumes);
     this.overlay.querySelector('.settings')?.after(this.sliders);
     const effects = this.overlay.querySelector<HTMLSelectElement>('.effects')!;
-    const glowAtStart = storedEffects() === 'high';
+    effects.value = storedEffects();
+    this.showSound();
 
     this.overlay.querySelector('.resume')?.addEventListener('click', () => {
       actions.click();
@@ -116,7 +142,15 @@ export class PauseControls {
       const level = (EFFECTS.find(([value]) => value === effects.value)?.[0] ??
         'full') as EffectsLevel;
       saveEffects(level);
-      this.glowNote.hidden = (level === 'high') === glowAtStart;
+      this.glowNote.hidden = (level === 'high') === this.glowAtStart;
+    });
+    // The language, mid-match: the HUD takes it at the next frame, this menu at once.
+    const language = this.overlay.querySelector<HTMLSelectElement>('.language')!;
+    language.addEventListener('change', () => {
+      actions.click();
+      if (!isLanguage(language.value)) return;
+      saveLanguage(language.value);
+      setLanguage(language.value);
     });
     this.overlay.querySelector('.looks')?.addEventListener('click', () => {
       actions.click();
@@ -136,9 +170,6 @@ export class PauseControls {
       this.leaving.classList.add('confirm');
       this.leaving.textContent = t('pause.leaveConfirm');
     });
-
-    document.body.append(this.button, this.overlay);
-    globalThis.addEventListener('keydown', this.key);
   }
 
   private showSound(): void {
@@ -170,6 +201,7 @@ export class PauseControls {
 
   destroy(): void {
     globalThis.removeEventListener('keydown', this.key);
+    this.stopListening();
     this.button.remove();
     this.overlay.remove();
   }

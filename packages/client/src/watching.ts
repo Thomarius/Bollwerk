@@ -1,6 +1,6 @@
 import { isTeamMatch } from './scores.js';
 import type { MatchState } from '@bollwerk/sim';
-import { t } from './i18n.js';
+import { onLanguageChange, t } from './i18n.js';
 
 /**
  * Out, and watching (PLAN 11.18 Y3): a player knocked out stays to see the match finish,
@@ -19,12 +19,18 @@ export function watchingText(state: MatchState, humanPlayer: number): string | n
 export class WatchingStrip {
   private readonly node = document.createElement('div');
   private shown: string | null = null;
+  private readonly stopListening: () => void;
 
   constructor(leave: () => void) {
     this.node.className = 'watching';
     this.node.hidden = true;
     this.node.innerHTML = `<span></span><button class="leave-watching">${t('watching.back')}</button>`;
     this.node.querySelector('button')?.addEventListener('click', leave);
+    this.stopListening = onLanguageChange(() => {
+      const button = this.node.querySelector('button');
+      if (button !== null) button.textContent = t('watching.back');
+      this.shown = null;
+    });
     document.body.append(this.node);
   }
 
@@ -38,6 +44,7 @@ export class WatchingStrip {
   }
 
   destroy(): void {
+    this.stopListening();
     this.node.remove();
   }
 }

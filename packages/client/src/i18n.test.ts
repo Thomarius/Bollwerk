@@ -1,6 +1,16 @@
 import { describe, expect, it } from 'vitest';
 
-import { formatNumber, language, listOf, ordinal, t } from './i18n.js';
+import {
+  detectLanguage,
+  formatNumber,
+  isLanguage,
+  language,
+  languageOptions,
+  listOf,
+  ordinal,
+  startingLanguage,
+  t,
+} from './i18n.js';
 
 describe('the texts', () => {
   it('speaks English until told otherwise', () => {
@@ -41,5 +51,24 @@ describe('the texts', () => {
 
   it('leaves a placeholder it was not given, rather than inventing one', () => {
     expect(t('pause.by')).toBe('{name} paused the match');
+  });
+
+  it('starts in the browser’s language if it speaks it, else English', () => {
+    expect(detectLanguage(['xx-YY', 'en-GB'])).toBe('en');
+    expect(detectLanguage(['EN'])).toBe('en');
+    expect(detectLanguage(['xx'])).toBe('en');
+    expect(detectLanguage([])).toBe('en');
+  });
+
+  it('takes a language asked for by the address only if it speaks it', () => {
+    expect(isLanguage('en')).toBe(true);
+    expect(isLanguage('xx')).toBe(false);
+    expect(isLanguage(null)).toBe(false);
+    expect(startingLanguage('en')).toBe('en');
+    expect(startingLanguage('xx')).toBe('en');
+  });
+
+  it('offers every language in its own name, the current one chosen', () => {
+    expect(languageOptions()).toContain('<option value="en" selected>English</option>');
   });
 });

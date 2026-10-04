@@ -1,6 +1,6 @@
 import { defaultArtConfig, type ArtConfig } from '@bollwerk/config';
 
-import { formatNumber, t } from './i18n.js';
+import { formatNumber, onLanguageChange, t } from './i18n.js';
 
 /**
  * The connection, where a player can see it: a badge beside Pause in an online match.
@@ -42,10 +42,16 @@ export function netHealth(
 export class NetworkBadge {
   private readonly node = document.createElement('div');
   private shown = '';
+  private readonly stopListening: () => void;
 
   constructor() {
     this.node.id = 'network';
     this.node.title = t('network.title');
+    // Its word is made afresh at each reading; its tooltip only here, and on a change.
+    this.stopListening = onLanguageChange(() => {
+      this.node.title = t('network.title');
+      this.shown = '';
+    });
     document.body.append(this.node);
   }
 
@@ -59,6 +65,7 @@ export class NetworkBadge {
   }
 
   destroy(): void {
+    this.stopListening();
     this.node.remove();
   }
 }

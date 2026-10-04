@@ -317,5 +317,6 @@
   "howTo.next": "Next",
   "howTo.close": "Close",
   "local.you": "You",
-  "error.cannotReach": "cannot reach {url}"
+  "error.cannotReach": "cannot reach {url}",
+  "settings.language": "Language"
 }
