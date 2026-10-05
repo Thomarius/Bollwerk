@@ -4887,3 +4887,208 @@ hover, its looks swapped by `Scene.replaceLooks` as the pointer moves — a quic
 only where it stops — drawing only while a card is hovered, destroyed with the gallery and
 never with `destroy(true)`; nothing under reduced motion. Checked over the menu and over a
 running match from the pause menu, which drew on unharmed.
+
+## 12n. The test session of 2026-10-05: everything visual checked, 11.22 closed
+
+The user and testers checked everything visual in a session of their own: **Office** ("very
+cool", ARCHIVE 12l), **the stutter as the looks swap is gone** (PLAN 11.22 below), **the
+German texts** in play and in the desktop window, **the square gun bases** in every style
+(ARCHIVE 12i), and every style in motion from the plan's list of things to check in play.
+Rendering performance, PLAN 11.22, is closed with it; its one item left, bots of one level
+planning on the same ticks, is behaviour rather than drawing and stays in the plan as a
+session of its own with a soak before and after. Its other ideas — the banner's HTML,
+bringing the hidden look up to date during the pause before a banner, and Pixi's texture
+GC — were not needed: the stutter they would have answered is gone.
+
+### The list of things to check in play, as it stood
+
+**To check in play**, since a still frame cannot show them: a knocked-out player's own
+roster card looked cut off at its right edge in a screenshot (2026-10-02, the user to test);
+Stained glass's shards, glints, fish and ship; the music and sounds sliders by ear; and
+Chocolate in motion (ARCHIVE 11zy) — the river's current and the fall, the shine on the
+walls, the fountains starting and stopping, a square snapping off, the sweep's melting, the
+mould poured and wobbling, and whether the swirls cost frame rate at eight players; and
+Halloween in motion (ARCHIVE 12a) — the fog, the bubbles, the freed ghosts, the lanterns
+lit and put out, the candles, the cauldrons, the witching hour's eyes, and the frame rate
+at eight players with the fog over everything; Sakura in motion (ARCHIVE 12d) — the crests
+curling and breaking, the petals and the turn to maple leaves, the carp swimming and hanging
+limp, the clouds a hit throws up, the rain's streaks, and the frame rate at eight players;
+Oktoberfest in motion (ARCHIVE 12e) — the bubbles, the Ferris wheel, the Maß filling and
+being drunk dry, pretzels spinning, bottles flying, the deposit's coin, the band's notes,
+the Weißwurst; Opera in motion (ARCHIVE 12f) — the staves swelling and their notes riding,
+the conductor's beat and its hurry, the houses playing and falling silent, the horns, the
+sour notes, chords and glissandos, the finale's spotlights; Office in motion (ARCHIVE 12l) —
+the copiers turning and flashing, the planes' flight and their crashes on the carpet, the
+sheets fluttering out of a hit, the shredder, the flat-packs, the marching ants, the offices
+working and their sad faces, the cooler's gossips, the deadline's tubes and ringing phones,
+the robot vacuums and the chair racer, and the weather's shreds, drips and haze; whether one gallery for both looks reads
+clearly, or two would (ARCHIVE 12b); and the larger roster figures and team tags in a
+real team match (ARCHIVE 12c).
+
+### Formerly PLAN 11.22 Rendering performance — agreed 2026-10-04, first in the next session
+
+**The problem, the user's report (2026-10-04)**: serious stutter, worst in the newest styles,
+Oktoberfest and Opera, even on a fast gaming PC with a good GPU. It is getting in the way of
+play, so it comes before everything else. **The user's condition: keep every effect** — make
+it cheaper, do not take it away.
+
+**Why, as far as reading the code tells (not yet measured)**: Pixi draws with WebGL, so the
+GPU is used, but the styles drawn from shapes **clear and rebuild their moving parts every
+frame** in `Graphics` objects, and a rebuilt `Graphics` is cut into triangles on the CPU, in
+JavaScript, on one thread, before the GPU sees it. The GPU then waits. Hence no help from a
+good GPU. The heaviest by construction: Opera's staves (five wavy lines a stave across the
+whole sea, a segment every half tile, stroked anew each frame) and the notes riding them;
+Oktoberfest's bubbles (up to 260), the Ferris wheel (12 spokes, 24 lights, 8 gondolas), a
+Maß on every tent, the pretzels as stroked polylines; then Sakura's crests and petals,
+Halloween's fog, Chocolate's swirls, Night's and Cyberpunk's blur under "Glowing". All grow
+with the map, so eight players is the worst case, and the renderer draws at up to twice the
+screen's density. Only the visible look is redrawn (`Scene.drawEffects`), so the two looks
+cost double only during a wipe.
+
+**The principle: build once, then only move.** Moving, rotating, tinting and fading what
+is already built is nearly free on the GPU; rebuilding it is what costs.
+
+**Steps**:
+
+1. **Measure first.** A frame-time readout behind `&perf=1`: milliseconds a frame, split
+   into the sim, the HUD, and each layer's drawing (terrain's flow, effects, overlay), with
+   the worst of the last seconds. Taken by the user on their PC for every style at three and
+   eight players — headless Chrome cannot measure time (CLAUDE.md). The figures before every
+   change, and after.
+2. **Opera's staves**: drawn once, without the breaks at the coasts, and slid sideways each
+   frame by their phase (wrapping by a wavelength); the breaks made by a mask of the open sea,
+   drawn once with the terrain. The finale's swell as a second, taller set, or a scale. The
+   riding notes as sprites of one note drawn once to a texture.
+3. **Many small identical things as sprites** of a texture drawn once, tinted and moved:
+   bubbles, petals, leaves, snow, rain, the riding and rising notes, coins, bits of debris —
+   in a `ParticleContainer` where there are hundreds.
+4. **What turns, turned**: the Ferris wheel drawn once and rotated, its gondolas alone
+   moved; spinning pretzels and the like as sprites rotated rather than redrawn.
+5. **What changes rarely, drawn when it changes**: the Maß on each tent, the houses' lights,
+   the conductor's podium and body, the scorches and puddles — in a `Graphics` of their own,
+   redrawn on a change of state, not sixty times a second.
+6. **What must still be rebuilt, with fewer points**: plain fills for strokes where nobody
+   can tell, fewer segments a curve.
+7. Then the older styles the same way, in the order the measurements give.
+
+Each step measured before and after with the readout, and checked by eye that nothing looks
+different. Opera and Oktoberfest first.
+
+**Progress (2026-10-04)**. The readout is `&perf=1` (`client/src/perf.ts`): milliseconds a
+section, frame intervals with percentiles and stutter counts, and the vertices Pixi cut into
+triangles again, by `Graphics` (named by layer) and at their worst in one frame — the count
+that matters, since Pixi triangulates a changed `Graphics` inside `render`. Headless Chrome
+on this machine renders on its real GPU (AMD Renoir, integrated), so it measures too; a
+script drove a watched match at eight players, `seed=3&level=8&snapshot=combat&round=3`.
+Found and done, in order of effect:
+
+- **`motionReduced()` read storage and built a media query at every call**, and the styles
+  call it per particle and per point of a curve: Opera's staves called it 37 000 times a
+  frame, 48 ms. Cached (`motion.ts`): Opera 13.5 → 41 fps alone, and every style gains.
+- **Walls redrawn whole at every hit**: Oktoberfest's were 200 000 vertices, 126 times in
+  30 s — the stutter. `IslandParts` (`render/islandParts.ts`) draws an island to a
+  `Graphics` and redraws the one hit: 35 000 at worst. Done in Minimal, Parchment,
+  Oktoberfest and Opera.
+- **Stamps** (`render/stamps.ts`): a `GraphicsContext` drawn once, shared by many
+  `Graphics` that are only moved, turned, scaled and faded. Opera's riding notes, horn coils
+  and notes in flight; Oktoberfest's kegs and pretzels (stroked with round joins, 70 000
+  vertices a frame).
+- **Drawn once, slid**: Opera's staves, masked by the open sea; **drawn on a change**:
+  Opera's ink blots, Oktoberfest's Maß, Parchment's ink stains.
+
+The user's figures on their own machine (the same integrated GPU, 2341x1160) confirmed it —
+Opera 20.2 → 58.9 fps, frames over 50 ms 201 → 8; Parchment's render 6.3 → 3.4 ms; Minimal
+unchanged — and the same was then done in **every style**:
+
+- `IslandParts` for walls in all eleven styles drawn from shapes, and for **sealed ground**
+  too (`of: 'territory'`), redrawn some 300 times in 30 s as breaches change it: each island's
+  board carries only its own `islandId`, so `dimEliminated` dims an island once. Cyberpunk's
+  additive glow is a second layer of parts.
+- **`Memos`** for the guns' barrels in seven styles: a `Graphics` a gun, redrawn as it fires
+  and kicks and not between. Halloween's brew keeps bubbling every frame, outside the memo.
+- **Stamps** for Chocolate's swirls (a step per sixty-fourth of a turn and twentieth of a
+  tile in size, since a squashed spiral turned is not the same shape rotated), Sakura's
+  crests (per forty-eighth of their rise, mirrored for direction), Halloween's bog bubbles
+  (a ring per half pixel of radius, so the line stays one pixel) and fog banks, and
+  **Medieval's cloud shadows** — 700 soft discs a frame, 48 000 vertices, most of its cost.
+- **Medieval's terrain sprites as a render group of their own** (`tileLayer`): beside the
+  sea's crests, redrawn every frame, Pixi gathered and packed all ten thousand again each
+  frame. Render 8.7 → 4.5 ms. Making the scene's layers render groups did nothing.
+- **The bots' spikes**: in a local match bots think inside the frame, and a plan of their
+  walls takes 15 to 50 ms; bots of one level plan on the same ticks (49 apart at level 8),
+  so eight made ticks of 80 to 135 ms. `LocalMatch` now spreads a tick's turns over frames,
+  8 ms a frame, the rest and the step waiting for the next: the same actions on the same
+  ticks, which a test checks against a run with every bot in a frame of its own.
+
+Final, the same 30 s at eight players on this machine, before any of it and now:
+
+| Style         | fps         | frames > 50 ms | render ms  | vertices/frame | worst sim ms |
+| ------------- | ----------- | -------------- | ---------- | -------------- | ------------ |
+| Minimal       | 59.2 → 59.9 | 3 → 0          | 0.9 → 0.8  | 3k → 2k        | 83 → 22      |
+| Medieval      | 34.7 → 58.9 | 37 → 0         | 18.8 → 4.5 | 57k → 9k       | 99 → 26      |
+| Night         | 46.8 → 58.3 | 19 → 0         | 12.0 → 5.5 | 17k → 18k      | 100 → 25     |
+| Cyberpunk     | 55.5 → 59.7 | 6 → 0          | 5.3 → 3.9  | 28k → 25k      | 90 → 29      |
+| Blueprint     | 55.1 → 59.5 | 9 → 1          | 4.9 → 2.9  | 21k → 16k      | 120 → 33     |
+| Parchment     | 53.7 → 59.7 | 14 → 0         | 7.7 → 2.5  | 43k → 10k      | 95 → 25      |
+| Toy bricks    | 54.4 → 59.6 | 15 → 1         | 4.3 → 2.0  | 22k → 8k       | 90 → 22      |
+| Stained glass | 58.1 → 59.9 | 7 → 0          | 3.5 → 1.6  | 22k → 7k       | 87 → 25      |
+| Chocolate     | 44.8 → 58.8 | 49 → 1         | 13.7 → 5.8 | 83k → 19k      | 93 → 24      |
+| Halloween     | 53.1 → 59.6 | 16 → 0         | 7.8 → 3.4  | 41k → 14k      | 95 → 22      |
+| Sakura        | 50.3 → 59.6 | 20 → 0         | 10.3 → 4.0 | 67k → 18k      | 120 → 22     |
+| Oktoberfest   | 45.2 → 58.9 | 84 → 4         | 10.0 → 3.7 | 59k → 22k      | 81 → 25      |
+| Opera         | 13.5 → 59.5 | 279 → 0        | 14.8 → 3.7 | 78k → 19k      | 130 → 23     |
+
+The screen's 60 Hz caps fps. Still open:
+
+- **The styles in motion, by eye**: stills before and after matched for every style, but
+  the stepped stamps — swirls turning, crests rising, bubbles swelling — and the draw order
+  moved where a stamp now lies over later effects (Oktoberfest's pretzels and Opera's notes
+  over splashes) need a look in play.
+- **The server's bots**, partly answered (2026-10-04, second pass): `SealGraph` lays an
+  island's flow graph once and cuts it for every set of castles a bot weighs, instead of
+  eleven times a `sealOptions`; the cut is the same, edge for edge, and the headless
+  matches end on the same hashes (seeds 3–4 at eight players, 11–13 at three). Bot time
+  down a third (eight players, two matches: 25.3 → 17.1 s); in one eight-player match the
+  worst tick fell 135 → 80 ms and ticks over 50 ms 65 → 14. Tried and dropped: caching
+  graphs across a plan's calls (17.1 → 17.0 s) and a reused BFS queue (no change). Spreading
+  the server's bots over its event loop would not help the room, which cannot send a tick
+  before every bot has thought on it, and online the stall falls in the build phase, where a
+  late tick only delays others' pieces. What remains is behaviour: bots of one level planning
+  on the same ticks, which staggering would answer, as a design question first.
+- **Night and Cyberpunk** took the same tools: Cyberpunk's barrels and their glow as `Memos`
+  (25k → 16k a frame, 59.8 fps), Night's torch pools and flames as stamps of one disc in
+  their added layers (`Discs`; 17k → 10k), and Medieval's and Night's wall sprites a render
+  group of their own (render 5.3 → 4.9 ms in Night, 4.5 → 4.1 in Medieval).
+
+**The stutter as the looks swap (2026-10-05)**, reported by testers as minor. Measured by a
+script logging every frame of a watched eight-player match in headless Chrome on this
+machine's integrated GPU, with Chrome's tracer for what lay outside the script: outside the
+banners not one frame over 17 ms, but the "Fire!" bringing in the combat look cost two
+frames of 117–167 ms (Minimal to Opera); "Rebuild" back into Minimal cost nothing. Three
+causes, two done:
+
+- **Done: the hidden look redrew its terrain at every wipe.** It was marked stale as a whole,
+  and terrain, each style's dearest drawing, changes only with the window. Staleness is now
+  by layer (`Scene`). At a later reveal Opera's drawing went 28 → 4 ms and Pixi's render of
+  it 68 → 18.5 ms; Medieval's terrain alone had been 42 ms at every banner, and its reveal
+  now drops no frame.
+- **Done: a look's first reveal** cut all its drawing into triangles and uploaded its
+  textures in that frame. `Scene.warmUp` renders the hidden look once offscreen in the
+  match's first frame, behind "Preparing the board", and after a change of looks from the
+  pause menu. The first "Fire!": Opera 183 → 68 ms, Medieval 117 → 33, Cyberpunk 100 → 65.
+- **Left, the user's decision: the banner's own HTML.** Chrome's GPU process rastered the
+  new Opera banner and the eight island banners in their Opera dress for 73 ms at one reveal
+  (33 ms at the next), and the banner's first layout costs 7–18 ms, part of it fonts used
+  for the first time. Putting the banner on a layer of its own (`will-change`) changed
+  nothing. Ideas if it matters: reuse each style's banner element rather than making a new
+  one, or make it in the pause before it moves.
+
+**Done since (ARCHIVE 12m): the HUD's bar is written only when its text changes** — it was
+rebuilt every frame (`innerHTML` of the phase label and the rest, then `offsetWidth`); now
+the clock's figures are the timer's text, the time bar's fill only its width, and the label
+measured only when it changes. Further ideas from the same reading, not taken up yet:
+**bring the hidden look up to date during the pause
+before a banner**, a layer a frame, so the reveal has nothing left to draw (Cyberpunk's
+structures still take 13 ms then); and **Pixi's GC** unloads a texture unused for 60 s
+(`gcMaxUnusedTime`), while the combat look is hidden 50–58 s around a build phase and longer
+with a pause — not seen happening, but raising the limit would rule it out.

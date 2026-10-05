@@ -47,7 +47,7 @@ wait rather than assuming it hung.
 Client dev query parameters: `?autostart=1&players=3&seed=7` (a random seed without it),
 `&snapshot=build` to jump to a phase (`&round=N` for one deep in a match, `&idle=1` to
 leave your seat undriven on the way, so you are soon knocked out), `&speed=10`,
-`&perf=1` for the frame-time readout (PLAN 11.22: a fixed 30 s window, Copy for the figures),
+`&perf=1` for the frame-time readout (ARCHIVE 12n: a fixed 30 s window, Copy for the figures),
 `&style=flat|pixel|night|cyberpunk|blueprint|parchment|bricks|glass|chocolate|halloween|sakura|oktoberfest|opera|office` for both looks (a one-look style sets only its own)
 (`&buildStyle=`, `&combatStyle=` for one), `&watch=1&level=8` to observe a bot match (`&personality=offensive` fixes every bot's),
 `&rounds=12` for the round cap, `&teams=2` for teams of two in seat order, `&lang=de` for a
@@ -176,13 +176,15 @@ Full detail in PLAN.md §1. The parts that surprise people:
   the ladder in order — and one cliff, Level 4 to 5, ended by `carelessness` fading by
   level. The default is to change no rule without a very good reason. `npm run soak`
   reruns the whole plan, resumable (`tools/headless/src/soak.ts`; the plan as run in ARCHIVE 12h).
-- **Rendering performance** (PLAN 11.22): 58–60 fps at eight players on an integrated GPU,
-  every effect kept; every gun stands on a square base so its footprint reads (ARCHIVE 12i).
+- **Rendering performance** (ARCHIVE 12n, formerly PLAN 11.22): 58–60 fps at eight players on
+  an integrated GPU, every effect kept, and no stutter as the looks swap; every gun stands on
+  a square base so its footprint reads (ARCHIVE 12i). The test session of 2026-10-05 checked
+  everything visual, Office and German included (ARCHIVE 12n).
 
-**Next** — PLAN §11 says where to start: the user's manual tests of UPnP, the square gun
-bases, German and the lower bot levels, reported back and triaged; another round of
-improvements from their feedback; or, as a session of its own with a soak before and after,
-bots of one level planning on the same ticks (PLAN 11.22).
+**Next** — PLAN §11 says where to start: the user's manual tests of UPnP and the lower bot
+levels, reported back and triaged; another round of improvements from their feedback; or, as
+a session of its own with a soak before and after, bots of one level planning on the same
+ticks (PLAN §11).
 
 **Declined for budget** (PLAN §12): macOS builds (Apple's paid signing) and a hosted public
 server. This is a fan project with no budget: propose nothing that costs money to run.
@@ -348,7 +350,7 @@ its header but the simulation does not — so the server stamps each header with
 ## Drawing a style cheaply
 
 Pixi cuts every changed `Graphics` into triangles on the CPU inside `render`; a good graphics
-card does not help with that (PLAN 11.22). So a style **never redraws what has not changed**:
+card does not help with that (ARCHIVE 12n). So a style **never redraws what has not changed**:
 
 - **Walls and sealed ground by island**: `IslandParts` (`render/islandParts.ts`) gives the
   style's drawing one island's board and redraws only the island that changed.
