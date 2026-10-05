@@ -1027,6 +1027,31 @@
         "uiValid": "#9de6a0",
         "uiInvalid": "#ff5a6a"
       }
+    },
+    "office": {
+      "palette": {
+        "waterDeep": "#2c2f34",
+        "waterMid": "#373b41",
+        "waterShallow": "#43484f",
+        "waterFoam": "#c9ccd1",
+        "sand": "#b9bfc7",
+        "grassDark": "#aea796",
+        "grassMid": "#d4cebf",
+        "grassLight": "#e7e2d6",
+        "rockDark": "#5a5d63",
+        "rockMid": "#9a9ea5",
+        "rockLight": "#e6e8ec",
+        "shadow": "#16181c",
+        "craterDark": "#4a2e1a",
+        "craterMid": "#7a5232",
+        "emberHot": "#fff8dc",
+        "emberMid": "#ffd27a",
+        "emberCool": "#e08a3a",
+        "uiInk": "#f4f5f7",
+        "uiAccent": "#ffd23c",
+        "uiValid": "#8fe08a",
+        "uiInvalid": "#ff5a5a"
+      }
     }
   },
   "dither": {
@@ -1338,5 +1363,19 @@
     "gondolaTilesPerSecond": 0.45,
     "shipEveryMs": 34000,
     "shipTilesPerSecond": 0.5
+  },
+  "office": {
+    "territoryAlpha": 0.55,
+    "glugEveryMs": 4200,
+    "flickerAlpha": 0.22,
+    "snowCount": 110,
+    "rainCount": 90,
+    "hazeBanks": 7,
+    "hazeAlpha": 0.14,
+    "vacuums": 2,
+    "gliderEveryMs": 14000,
+    "gliderTilesPerSecond": 1.6,
+    "chairEveryMs": 22000,
+    "chairTilesPerSecond": 1.1
   }
 }

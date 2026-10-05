@@ -4815,3 +4815,41 @@ since only "on" had ever run. The user's decision: the rewind is absolutely need
 coming back from a continue must get the early pieces again, and there is nothing to learn
 from turning it off. The item is dropped, and with it 11.4; position bias and the full
 ladder, its other two items, were measured by the weekend soak (12h).
+
+## 12l. Office, a fourteenth style (2026-10-05)
+
+The user's idea: something weird and funny, "Office". Pitched and agreed before building: an
+open-plan office at war with itself, every department taking it deadly seriously, built of
+office life where the other styles are built of a material. Decided with the user:
+**cubicle partitions** for the walls, over stacked reams of copier paper or filing cabinets;
+**photocopiers throwing paper planes** for the guns, over staplers firing paper balls; and
+**silly** rather than dry, with the little people and jokes of the pitch kept — the
+gossips at the water cooler, the colleague racing past on an office chair, the jammed
+printer, the ringing phones.
+
+What carries meaning: **sealed is the office working** (`FlagHoist`) — screen on with its
+chart climbing, lamp lit, coffee steaming — and a breach puts a sad face on the screen;
+**sealed ground is booked**, the owner's carpet tiles inside floor tape; **a silenced gun has
+"out of order" taped on**. Changed from the pitch while building: the booked ground's tape is
+striped in the owner's colour and white rather than yellow, and the big timer's liquid
+crystal is dark on a pale green rather than amber — yellow and amber on the board would read
+as the amber player's — and the pails under the leaks are grey for the same reason with
+azure. The name stickers carry no "HELLO my name is": a text drawn by the stylesheet would
+escape the locale files. The finish gained `memo`, sticky notes and paper clips, and
+`necktie`, the winners' flag; the paper plane is `drawPlane` in `seaLife.ts`, shared by the
+shots, the planes come down on the carpet and the sea life.
+
+Drawn cheaply from the start (CLAUDE.md, drawing a style cheaply): partitions, offices and
+booked ground by island (`IslandParts`), the copiers and planes as stamps turned and placed,
+the coffee rings on a change, the shreds of a snowy match as stamps, the popcorn haze as
+`Discs`. At eight players in combat, headless Chrome on this machine: 60 fps, render 0.8 ms
+and 4,900 vertices rebuilt a frame, against Opera's 1.65 ms and 13,900 in the same run.
+
+Seen in screenshots building, in combat at two, three and eight players, in the final round
+with its tubes, at game over with the neckties, in a rainy and a foggy match, with the
+printer-paper banner mid-wipe, the name stickers after a resolution, and the menu's title on
+sticky notes. What the first look changed: the robot vacuums' bumpers, drawn as arcs with no
+`moveTo`, carried on from the last path across the whole screen in long thin lines (an arc
+in Pixi starts from wherever the path was); the title's letters, dots of marker, read as
+blobs and became joined strokes; memos pinned to one partition in ten were too many, and are
+one in sixteen. Anything moving is still to be seen in play (PLAN §11).

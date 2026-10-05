@@ -2752,7 +2752,8 @@ body.hud-chocolate,
 body.hud-halloween,
 body.hud-sakura,
 body.hud-wiesn,
-body.hud-opera {
+body.hud-opera,
+body.hud-office {
   --hud-panel: var(--hud-box);
 }
 
@@ -3468,6 +3469,120 @@ body.hud-opera .final-stamp {
   box-shadow: 0 3px 8px #0006;
   color: #7a1424;
   font-family: Didot, 'Bodoni 72', 'Playfair Display', Georgia, 'Times New Roman', serif;
+  text-shadow: none;
+}
+
+/* Office: the banner a strip of continuous printer paper, pale green bars across it and the
+   feed holes punched down both edges, typed; the HUD the grey front of a filing cabinet under
+   a rule of floor tape. */
+.phase-call.banner-office {
+  border-top: 1px dashed #9aa79a;
+  border-bottom: 1px dashed #9aa79a;
+  background-color: #fbfcf7;
+  background-image:
+    radial-gradient(circle at 50% 50%, #3a3d44 0 4px, transparent 4.5px),
+    radial-gradient(circle at 50% 50%, #3a3d44 0 4px, transparent 4.5px),
+    repeating-linear-gradient(#fbfcf7 0 22px, #dcebd9 22px 44px);
+  background-size:
+    22px 22px,
+    22px 22px,
+    100% 100%;
+  background-position:
+    6px 0,
+    calc(100% - 6px) 0,
+    0 0;
+  background-repeat: repeat-y, repeat-y, no-repeat;
+  color: #22252b;
+  font-family: 'Courier New', Courier, monospace;
+  font-weight: 700;
+  text-shadow: 1px 1px 0 #ffffff;
+}
+
+.phase-call.banner-office small {
+  color: #3a3d44;
+  font-family: 'Courier New', Courier, monospace;
+}
+
+.phase-call.banner-office small.news {
+  color: #b02a2a;
+}
+
+body.hud-office {
+  --hud-bar: #4a4e55;
+  --hud-rule: 8px solid transparent;
+  --hud-ink: #f4f5f7;
+  --hud-muted: #c9ccd1;
+  --hud-accent: #ffd23c;
+  --hud-box: #3a3d44;
+  --hud-box-edge: 2px solid #9a9ea5;
+  --hud-box-shadow: 0 3px 0 #0008;
+  --hud-track: #ffffff22;
+}
+
+/* The cabinet's brushed steel, and along its foot a rule of yellow and black floor tape. */
+body.hud-office #hud .bar {
+  background-image:
+    repeating-linear-gradient(-45deg, #ffd23c 0 10px, #16181c 10px 20px),
+    repeating-linear-gradient(90deg, #ffffff08 0 2px, transparent 2px 5px),
+    linear-gradient(#ffffff14, transparent 60%);
+  background-size:
+    100% 8px,
+    100% 100%,
+    100% 100%;
+  background-position:
+    0 100%,
+    0 0,
+    0 0;
+  background-repeat: no-repeat;
+  background-origin: border-box;
+  background-clip: border-box;
+}
+
+/* The big timer as a desk clock's liquid crystal: dark figures, a faint ghost of the
+   segments' green behind them. */
+body.hud-office .big-timer {
+  color: rgb(28 40 30 / 72%);
+  font-family: Consolas, 'Lucida Console', 'Courier New', monospace;
+  font-weight: 700;
+  -webkit-text-stroke: 3px rgb(196 214 168 / 70%);
+  paint-order: stroke fill;
+  text-shadow: 0 0 10px rgb(196 214 168 / 35%);
+}
+
+body.hud-office .big-timer.urgent {
+  color: rgb(200 40 40 / 90%);
+}
+
+/* Island banners a name sticker, white under a band across its top; the stamps a rubber
+   stamp in red ink. */
+body.hud-office .island-banner:not(.out),
+body.hud-office .team-tag,
+body.hud-office .you-are-here {
+  border-radius: 8px;
+  background: #fbfcf7;
+  box-shadow:
+    inset 0 7px 0 #3a3d44,
+    0 2px 4px #0006;
+  color: #16181c;
+  font-family: 'Comic Sans MS', 'Segoe Print', 'Bradley Hand', cursive;
+  text-shadow: none;
+}
+
+body.hud-office .island-banner:not(.out) {
+  padding-top: 0.75rem;
+}
+
+body.hud-office .island-banner.out,
+body.hud-office .final-stamp {
+  border: 3px solid #c0303a !important;
+  border-radius: 4px;
+  background: #fbfcf7cc;
+  box-shadow:
+    inset 0 0 0 2px #fbfcf7,
+    inset 0 0 0 4px #c0303a;
+  color: #c0303a;
+  font-family: Impact, 'Arial Narrow', sans-serif;
+  letter-spacing: 0.12em;
   text-shadow: none;
 }
 

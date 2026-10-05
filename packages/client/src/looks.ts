@@ -40,6 +40,7 @@ const STYLE_NAMES: Record<LookChoice, TextKey> = {
   sakura: 'style.sakura',
   oktoberfest: 'style.oktoberfest',
   opera: 'style.opera',
+  office: 'style.office',
   random: 'style.random',
 };
 

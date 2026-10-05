@@ -11,6 +11,7 @@ import { BricksTheme } from './bricks.js';
 import { ChocolateTheme } from './chocolate.js';
 import { HalloweenTheme } from './halloween.js';
 import { OktoberfestTheme } from './oktoberfest.js';
+import { OfficeTheme } from './office.js';
 import { OperaTheme } from './opera.js';
 import { SakuraTheme } from './sakura.js';
 import { GlassTheme } from './glass.js';
@@ -62,6 +63,8 @@ export function createTheme(style: ArtStyle, seed = 1): Theme {
       return new OktoberfestTheme(seed);
     case 'opera':
       return new OperaTheme(seed);
+    case 'office':
+      return new OfficeTheme(seed);
   }
 }
 

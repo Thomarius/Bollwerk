@@ -893,6 +893,67 @@ export function operaTitle(text: string, _art: ArtConfig): Title {
   return { src: canvas.toDataURL(), ...title };
 }
 
+/**
+ * Office's title: the word on sticky notes, a letter to a note, each note a player's light
+ * colour and stuck on a little askew, its top edge darker where the glue is, the letter
+ * written on it in black marker.
+ */
+export function officeTitle(text: string, art: ArtConfig): Title {
+  const { canvas, ctx, cells, has } = drawnCanvas(text);
+  const title = { cellPx: DRAWN_CELL, padPx: DRAWN_PAD, tailPx: 0, smooth: true, flicker: false };
+  if (ctx === null) return { src: canvas.toDataURL(), ...title };
+  const at = (v: number): number => DRAWN_PAD + v * DRAWN_CELL;
+  const rng = new Rng(0x0ff1ce);
+  const letters = Math.max(1, Math.ceil(Math.max(0, ...cells.map((c) => c.x + 1)) / 6));
+  for (let n = 0; n < letters; n++) {
+    const note = art.players[n % art.players.length];
+    const cx = at(n * 6 + 2.5);
+    const cy = at(3.5);
+    const hw = DRAWN_CELL * 3.2;
+    const hh = DRAWN_CELL * 4.1;
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.rotate((rng.nextFloat() - 0.5) * 0.22);
+    ctx.fillStyle = 'rgba(0,0,0,0.35)';
+    ctx.fillRect(-hw + 2, -hh + 3, hw * 2, hh * 2);
+    ctx.fillStyle = note?.light ?? '#fff07a';
+    ctx.fillRect(-hw, -hh, hw * 2, hh * 2);
+    ctx.fillStyle = 'rgba(0,0,0,0.12)';
+    ctx.fillRect(-hw, -hh, hw * 2, hh * 0.22);
+    // The corner curling up, as a note stuck on in a hurry does.
+    ctx.fillStyle = 'rgba(255,255,255,0.35)';
+    ctx.beginPath();
+    ctx.moveTo(hw, hh - hw * 0.3);
+    ctx.lineTo(hw - hw * 0.3, hh);
+    ctx.lineTo(hw, hh);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+  }
+  // The letters in marker: round strokes from every cell to the next along and below.
+  ctx.strokeStyle = '#16181c';
+  ctx.lineWidth = DRAWN_CELL * 0.95;
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  ctx.beginPath();
+  for (const { x, y } of cells) {
+    const cx = at(x) + DRAWN_CELL / 2;
+    const cy = at(y) + DRAWN_CELL / 2;
+    ctx.moveTo(cx, cy);
+    ctx.lineTo(cx + 0.01, cy);
+    for (const [dx, dy] of [
+      [1, 0],
+      [0, 1],
+    ] as const) {
+      if (!has(x + dx, y + dy)) continue;
+      ctx.moveTo(cx, cy);
+      ctx.lineTo(cx + dx * DRAWN_CELL, cy + dy * DRAWN_CELL);
+    }
+  }
+  ctx.stroke();
+  return { src: canvas.toDataURL(), ...title };
+}
+
 const TITLES: Record<ArtStyle, (text: string, art: ArtConfig) => Title> = {
   flat: blockTitle,
   pixel: stoneTitle,
@@ -907,6 +968,7 @@ const TITLES: Record<ArtStyle, (text: string, art: ArtConfig) => Title> = {
   sakura: sakuraTitle,
   oktoberfest: wiesnTitle,
   opera: operaTitle,
+  office: officeTitle,
 };
 
 export function titleFor(style: ArtStyle, art: ArtConfig): Title {

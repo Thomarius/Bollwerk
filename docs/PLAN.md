@@ -388,9 +388,9 @@ sender's seat**, so a client cannot act for someone else.
 
 ## 7. `packages/client`
 
-Thirteen visual styles — Minimal (`flat`), Medieval (`pixel`: named Pixel art until the other
+Fourteen visual styles — Minimal (`flat`), Medieval (`pixel`: named Pixel art until the other
 styles made the name mean nothing), Night, Cyberpunk, Blueprint, Parchment, Toy bricks
-(`bricks`), Stained glass (`glass`), Chocolate (`chocolate`), Halloween (`halloween`), Sakura (`sakura`), Oktoberfest (`oktoberfest`) and Opera (`opera`) — behind one `Theme` interface: the scene owns the camera, the layer stacks,
+(`bricks`), Stained glass (`glass`), Chocolate (`chocolate`), Halloween (`halloween`), Sakura (`sakura`), Oktoberfest (`oktoberfest`), Opera (`opera`) and Office (`office`) — behind one `Theme` interface: the scene owns the camera, the layer stacks,
 dirty tracking and input mapping; a theme owns only what things look like. Adding a style
 is a name in `ArtStyleSchema`, the looks it is made for in `STYLE_LOOKS`, a `Theme`, a
 case in `createTheme`, a menu title in `decor.ts` and a banner class in `hud.ts`; the
@@ -482,12 +482,12 @@ the rockets and the hoist are shared, so the timing is one, but the bursts are s
 Medieval and Night, neon in Cyberpunk, a draughtsman's crosses in Blueprint, ink blots in
 Parchment, tumbling bricks, glass shards, candy sprinkles, in Halloween bats and little
 ghosts flying up, in Sakura a chrysanthemum's bowed streaks among cherry petals, in
-Oktoberfest pretzels and gingerbread hearts and in Opera roses and flowers thrown at a
-curtain call, and the
+Oktoberfest pretzels and gingerbread hearts, in Opera roses and flowers thrown at a
+curtain call and in Office sticky notes and paper clips from party poppers, and the
 winners' flag a swallowtail, a flickering hologram on a light-beam, a pennant in plan, a
 square flag of bricks, a leaded banner, a pennant on a candy-cane pole, a tattered pennant
 on a crooked branch, a tall war banner (_nobori_) hung from an arm, the Bavarian lozenges
-on a maypole, or a pennant bearing a golden lyre. Minimal keeps the plain ones.
+on a maypole, a pennant bearing a golden lyre, or a necktie on an aluminium pole. Minimal
 
 **Each banner is drawn in the look it brings** (`BANNER_CLASS` in `hud.ts`, a record
 over every style): flat gold for Minimal, a neon strip that flickers on for Cyberpunk, a
@@ -952,7 +952,46 @@ with a keyboard for its rule; its timer gold italic figures; its island banners 
 cartouches and its stamps a torn ticket; its title the word in noteheads on a five-line
 staff behind a treble clef. The player colours are the shared ones.
 
-The ten shape-drawn styles share `walls.ts`: the wall geometry (tops, faces, rim), and
+**Office** (`office.ts`, `art.office`), for either look: an open-plan office at war with
+itself, every department taking it deadly seriously — the user's idea, "weird and funny",
+and silly by their choice. **The sea is the carpet**, charcoal tiles of two by two laid in
+alternating directions so it shows a faint checker, flecked, an old stain here and there;
+the land each department's pale linoleum, edged in aluminium skirting. **Walls are cubicle
+partitions**: fabric panels in the owner's colour, flecked, an aluminium cap along the top, a
+seam between panels and a kick plate at each face's foot, a memo pinned on now and then,
+standing to the shared height; a player who is out has theirs under grey dust sheets.
+Castles are **corner offices** seen across the desk — an executive chair in the owner's
+colour, monitor, angled lamp, mug, phone and a nameplate — and **sealed is the office
+working** (`FlagHoist`): the screen on with a bar chart climbing, the lamp lighting the desk,
+the coffee steaming; a breach puts **a sad face** on the screen as it goes dark. **Sealed
+ground is booked**: the owner's carpet tiles over the linoleum inside a border of floor tape
+striped in the owner's colour and white — the owner's colour rather than yellow, which would
+read as the amber player's. Guns are **photocopiers on the five-star base of an office
+chair**, banded in the owner's colour, turning to their target, kicking back and flashing the
+scan light as they fire; **a silenced one has "out of order" taped on**, crossed in red. Shots
+are **paper planes** in the owner's colour, nose along their course. A hit on a wall throws
+sheets fluttering down, paper clips and a bit of the panel; a plane on the carpet lies there
+crumpled; on the linoleum it leaves **a coffee ring** that fades over `fx.craterRounds`. The
+sweep **shreds** its panels; a piece set down **unfolds out of its flat-pack**; the piece in
+hand is **a selection with marching ants**, a "not allowed" sign over it where it does not
+fit. **A water cooler** stands in the corner Parchment gives its compass rose, glugging a
+bubble now and then, two colleagues gossiping beside it under a balloon of "…". In **the
+deadline** — overtime and the final round — the fluorescent tubes at the screen's edges
+flicker and **every desk's phone rings**. Weather from the seed: snow is shredded paper from
+the vents, rain the ceiling leaking into grey pails, fog the haze of burnt popcorn. Scenery is
+potted ficus, open-plan desks with their computers — a copse of them a cluster — snake plants
+and a cactus on a filing cabinet, and for boulders an abandoned swivel chair, archive boxes or,
+one in three, a printer with a sheet jammed in it; on the outer carpet robot vacuums wander,
+a stray paper plane glides across and now and then **a colleague races past on an office
+chair, spinning**. Its banner is **continuous printer paper**, green bars and feed holes,
+typed; its HUD the grey front of a filing cabinet under a rule of yellow and black floor tape;
+its timer a desk clock's liquid crystal; its island banners **name stickers**; its stamps a
+red rubber stamp; its title the word on sticky notes, a letter to each; and its finish sticky
+notes and paper clips from the poppers, the winners' flag **a necktie** on an aluminium pole.
+Named for the place, never after a programme or a product. The player colours are the shared
+ones.
+
+The eleven shape-drawn styles share `walls.ts`: the wall geometry (tops, faces, rim), and
 hatching laid on one lattice so neighbouring tiles hatch as one fill.
 
 **Scenery on open land** (`scenery.ts`, `art.scenery`), in every style: copses of trees and
@@ -964,7 +1003,7 @@ Cyberpunk, lollipops, meringue, candy floss and cookies in Chocolate, dead trees
 toadstools and headstones in Halloween, cherry trees, pines, bamboo, garden rocks and stone
 lanterns in Sakura, chestnut trees, beer-garden tables, gingerbread hearts, dropped Maß
 mugs and sleeping revellers in Oktoberfest, harps, music stands, choir singers, metronomes
-and grand pianos in Opera, a faint dot in Minimal. **It must never read as wall**, nor as a gun or a
+and grand pianos in Opera, potted plants, open-plan desks, a cactus on a filing cabinet, **It must never read as wall**, nor as a gun or a
 shot: Blueprint's trees were first a circle with a cross, a gun's survey mark in small,
 and Medieval's boulders a round grey rock, a cannonball's double. A tile once built on or
 sealed is cleared for the rest of the match, so nothing grows back through a breach; a
@@ -982,7 +1021,7 @@ under a glass pipe, kept off the chocolate fall; in Halloween a ghost ship, a fl
 and a will-o'-wisp; in Sakura a boat under a square sail, a line of cranes and a great wave,
 hidden behind Mount Fuji as they pass it; in Oktoberfest a floating Maß, a reveller asleep
 on a lilo and a Weißwurst swimming circles, hidden behind the Ferris wheel; in Opera swans, a singing gondolier and the Flying
-Dutchman, hidden behind the conductor; in Minimal a plain boat's silhouette. Anything tall keeps
+Dutchman, hidden behind the conductor; in Office robot vacuums, a stray paper plane and a a plain boat's silhouette. Anything tall keeps
 to rows whose top is clear of the HUD bar.
 
 **The match's moments** (`camera.ts`, `art.camera`). The match opens
@@ -1135,7 +1174,7 @@ every resolution against an independent search, not only on unit pictures.
 ## 11. Open work
 
 **Where to start (2026-10-05).** Everything planned is done: the game, online play, bots as
-skill levels and personalities (M13), thirteen styles and four visual passes, help for new
+skill levels and personalities (M13), fourteen styles and four visual passes, help for new
 players, awards and a rematch, the desktop app for releases (M14, v0.6.0 the latest), English
 and German (M15), rendering performance (11.22), the weekend soak and the one change it led
 to (ARCHIVE 12h), square bases under every gun (ARCHIVE 12i) and UPnP (ARCHIVE 12j). A new
@@ -1173,7 +1212,11 @@ Oktoberfest in motion (ARCHIVE 12e) — the bubbles, the Ferris wheel, the Maß 
 being drunk dry, pretzels spinning, bottles flying, the deposit's coin, the band's notes,
 the Weißwurst; Opera in motion (ARCHIVE 12f) — the staves swelling and their notes riding,
 the conductor's beat and its hurry, the houses playing and falling silent, the horns, the
-sour notes, chords and glissandos, the finale's spotlights; whether one gallery for both looks reads
+sour notes, chords and glissandos, the finale's spotlights; Office in motion (ARCHIVE 12l) —
+the copiers turning and flashing, the planes' flight and their crashes on the carpet, the
+sheets fluttering out of a hit, the shredder, the flat-packs, the marching ants, the offices
+working and their sad faces, the cooler's gossips, the deadline's tubes and ringing phones,
+the robot vacuums and the chair racer, and the weather's shreds, drips and haze; whether one gallery for both looks reads
 clearly, or two would (ARCHIVE 12b); and the larger roster figures and team tags in a
 real team match (ARCHIVE 12c).
 

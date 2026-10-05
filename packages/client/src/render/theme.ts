@@ -696,7 +696,8 @@ export interface FinishLook {
    * `shard` spinning glass; `sprinkle` candy sprinkles; `spirits` bats and little ghosts
    * flying out and up; `blossom` a chrysanthemum's drooping streaks and cherry petals;
    * `pretzel` pretzels and gingerbread hearts iced in the owner's colours; `roses` roses and
-   * flowers in the owner's colours thrown at a curtain call.
+   * flowers in the owner's colours thrown at a curtain call; `memo` sticky notes in the
+   * owner's colours fluttering down among paper clips, from an office party's poppers.
    */
   spark:
     | 'square'
@@ -710,13 +711,15 @@ export interface FinishLook {
     | 'spirits'
     | 'blossom'
     | 'pretzel'
-    | 'roses';
+    | 'roses'
+    | 'memo';
   /**
    * `swallowtail` a forked banner; `hologram` a flickering projection; `pennant` a flag in
    * plan; `brick` a square flag of bricks; `leaded` a banner of glass in its lead; `candy` a
    * pennant on a candy-striped pole; `tattered` a ragged pennant on a crooked pole; `nobori`
    * a tall war banner hung from an arm at its top; `rauten` a flag in the Bavarian lozenges
-   * on a maypole; `lyre` a pennant bearing a golden lyre on a gilded pole.
+   * on a maypole; `lyre` a pennant bearing a golden lyre on a gilded pole; `necktie` a
+   * necktie in the owner's colour, knotted at the top of an aluminium pole, flying.
    */
   flag:
     | 'swallowtail'
@@ -728,7 +731,8 @@ export interface FinishLook {
     | 'tattered'
     | 'nobori'
     | 'rauten'
-    | 'lyre';
+    | 'lyre'
+    | 'necktie';
 }
 
 export const PLAIN_FINISH: FinishLook = { spark: 'square', flag: 'swallowtail' };
@@ -815,6 +819,51 @@ export class WinnerBanners {
           g.fill({ color: 0xf6f1e3 });
           g.circle(x + W / 2 + wave * 0.15, head + H * 0.24, W * 0.16);
           g.fill({ color: light });
+          continue;
+        }
+        if (flag === 'necktie') {
+          // A necktie flying from the knot at the pole's head: the blade widening to its
+          // point, diagonal stripes of the lighter shade, the tail swinging in the wind.
+          const knot = foot - (pole - clothH * 1.6) * hoist - clothH * 1.6;
+          const len = clothW * 1.25;
+          const half = clothH * 0.32;
+          const swing = wave * 1.6;
+          const tie = [
+            x,
+            knot - half * 0.5,
+            x + len * 0.85,
+            knot - half + swing,
+            x + len,
+            knot + swing * 1.1,
+            x + len * 0.85,
+            knot + half + swing,
+            x,
+            knot + half * 0.5,
+          ];
+          g.poly(tie);
+          g.fill({ color: base });
+          for (let k = 1; k < 5; k++) {
+            const sx = x + len * (k / 5);
+            const sw = swing * (k / 5);
+            g.moveTo(sx - tile * 0.12, knot - half * 0.9 + sw).lineTo(
+              sx + tile * 0.12,
+              knot + half * 0.9 + sw,
+            );
+          }
+          g.stroke({ width: Math.max(1, tile * 0.08), color: light, alpha: 0.8 });
+          g.poly(tie);
+          g.stroke({ width: rim, color: 0x16181c, alpha: 0.85, join: 'round' });
+          g.poly([
+            x - tile * 0.04,
+            knot - half * 0.6,
+            x + tile * 0.22,
+            knot - half * 0.55,
+            x + tile * 0.22,
+            knot + half * 0.55,
+            x - tile * 0.04,
+            knot + half * 0.6,
+          ]);
+          g.fill({ color: dimmed(base, 0.25) });
           continue;
         }
         if (flag === 'lyre') {
@@ -970,6 +1019,11 @@ export class WinnerBanners {
       g.stroke({ width, color: 0x2ee6ff });
     } else if (flag === 'pennant') {
       g.stroke({ width: Math.max(1, rim), color: hex(art.palette.uiInk) });
+    } else if (flag === 'necktie') {
+      // An aluminium pole, as a coat stand's, a round cap on top.
+      g.stroke({ width: width + 1, color: 0xb9bfc7 });
+      g.circle(x, top, width + 1);
+      g.fill({ color: 0xe6e8ec });
     } else if (flag === 'brick') {
       g.stroke({ width: width + 1, color: 0x9aa3ad });
       g.circle(x, top, width + 1);
@@ -1071,7 +1125,7 @@ export class Fireworks {
           angle: Math.random() * Math.PI * 2,
           // A blossom's petals are the sparks that spin; its streaks, the ones that do not.
           spin:
-            kind === 'blossom'
+            kind === 'blossom' || kind === 'memo'
               ? k % 2 === 0
                 ? 2 + Math.random() * 4
                 : 0
@@ -1083,8 +1137,9 @@ export class Fireworks {
 
     // Ink lingers, bricks fall heavier, spirits float up and a blossom's petals drift down
     // slowly; the rest burst and fade as sparks do.
-    const life = kind === 'blot' || kind === 'spirits' ? 1900 : kind === 'blossom' ? 1700 : 1200;
-    const fall = kind === 'brick' ? 6 : kind === 'spirits' ? -1.4 : kind === 'blossom' ? 1.4 : 2.2;
+    const drifts = kind === 'blossom' || kind === 'memo';
+    const life = kind === 'blot' || kind === 'spirits' ? 1900 : drifts ? 1700 : 1200;
+    const fall = kind === 'brick' ? 6 : kind === 'spirits' ? -1.4 : drifts ? 1.4 : 2.2;
     const t0 = view.tile;
     for (const spark of this.sparks) {
       spark.age += deltaMs;
@@ -1122,6 +1177,33 @@ export class Fireworks {
           g.fill({ color: spark.colour, alpha });
           g.circle(x, y, size * 0.22);
           g.fill({ color: 0xe8c25a, alpha });
+        }
+      } else if (kind === 'memo') {
+        const c = Math.cos(spark.angle);
+        const s = Math.sin(spark.angle);
+        const at = (u: number, v: number): [number, number] => [
+          x + c * u - s * v,
+          y + s * u + c * v,
+        ];
+        if (spark.spin > 0) {
+          // A sticky note, fluttering: squashed as it turns, its glued edge darker.
+          const w = size * 0.75;
+          const h = size * 0.75 * (0.35 + 0.65 * Math.abs(Math.sin(spark.age / 160 + spark.x)));
+          g.poly([...at(-w, -h), ...at(w, -h), ...at(w, h), ...at(-w, h)]);
+          g.fill({ color: spark.colour, alpha });
+          g.poly([...at(-w, -h), ...at(w, -h), ...at(w, -h * 0.55), ...at(-w, -h * 0.55)]);
+          g.fill({ color: 0x000000, alpha: 0.15 * alpha });
+        } else {
+          // A paper clip, tumbling: two loops of wire.
+          const l = size * 0.7;
+          g.poly([...at(-l, -l * 0.3), ...at(l, -l * 0.3), ...at(l, l * 0.3), ...at(-l, l * 0.3)]);
+          g.poly([
+            ...at(-l * 0.6, -l * 0.15),
+            ...at(l * 0.75, -l * 0.15),
+            ...at(l * 0.75, l * 0.15),
+            ...at(-l * 0.6, l * 0.15),
+          ]);
+          g.stroke({ width: Math.max(1, size * 0.14), color: 0xc9ccd1, alpha });
         }
       } else if (kind === 'pretzel') {
         if (spark.spin > 0) drawPretzel(g, x, y, size * 0.9, spark.angle, alpha);

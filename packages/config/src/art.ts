@@ -51,7 +51,7 @@ export type PlayerPalette = z.infer<typeof PlayerPaletteSchema>;
  * church window of stained glass, `chocolate` a sweet-shop land on a river of chocolate,
  * `halloween` a haunted land round a bog, `sakura` an Edo castle town as a woodblock print,
  * `oktoberfest` the beer festival on an island in a sea of beer, `opera` a night at the opera
- * on a sea whose waves are staves.
+ * on a sea whose waves are staves, `office` an open-plan office at war with itself.
  */
 export const ArtStyleSchema = z.enum([
   'flat',
@@ -67,6 +67,7 @@ export const ArtStyleSchema = z.enum([
   'sakura',
   'oktoberfest',
   'opera',
+  'office',
 ]);
 export type ArtStyle = z.infer<typeof ArtStyleSchema>;
 
@@ -499,6 +500,36 @@ export const OperaStyleSchema = z.strictObject({
 });
 export type OperaStyleConfig = z.infer<typeof OperaStyleSchema>;
 
+/**
+ * The Office look: an open-plan office at war with itself — the sea is the carpet, the land
+ * the departments' linoleum, walls cubicle partitions, castles corner offices that work while
+ * sealed, sealed ground booked inside floor tape, guns photocopiers on swivel bases throwing
+ * paper planes, and a water cooler in the corner.
+ */
+export const OfficeStyleSchema = z.strictObject({
+  /** The owner's carpet tiles on booked ground, how strongly they cover the linoleum. */
+  territoryAlpha: z.number().min(0).max(1),
+  /** The water cooler glugs a bubble up its bottle so often. */
+  glugEveryMs: z.number().int().positive(),
+  /** How brightly the fluorescent tubes flicker at the edges in the deadline. */
+  flickerAlpha: z.number().min(0).max(1),
+  /** Shreds of paper or drips from the ceiling at once, in a match with snow or rain. */
+  snowCount: z.number().int().nonnegative(),
+  rainCount: z.number().int().nonnegative(),
+  /** Banks of burnt-popcorn haze drifting over the board, in a match with fog. */
+  hazeBanks: z.number().int().nonnegative(),
+  hazeAlpha: z.number().min(0).max(1),
+  /** Robot vacuums wandering in circles on the outer carpet. */
+  vacuums: z.number().int().nonnegative(),
+  /** A paper plane gliding across it now and then. */
+  gliderEveryMs: z.number().int().positive(),
+  gliderTilesPerSecond: z.number().positive(),
+  /** Somebody racing past on an office chair, spinning, now and then. */
+  chairEveryMs: z.number().int().positive(),
+  chairTilesPerSecond: z.number().positive(),
+});
+export type OfficeStyleConfig = z.infer<typeof OfficeStyleSchema>;
+
 /** One of the two looks a match is drawn in. */
 export type ArtLook = 'build' | 'combat';
 
@@ -544,6 +575,7 @@ export const STYLE_LOOKS: Record<ArtStyle, readonly ArtLook[]> = {
   sakura: ['build', 'combat'],
   oktoberfest: ['build', 'combat'],
   opera: ['build', 'combat'],
+  office: ['build', 'combat'],
 };
 
 export function styleServes(
@@ -668,6 +700,7 @@ export const ArtConfigSchema = z
     sakura: SakuraStyleSchema,
     oktoberfest: OktoberfestStyleSchema,
     opera: OperaStyleSchema,
+    office: OfficeStyleSchema,
     scenery: ScenerySchema,
     /** Effects both styles draw alike, because they carry information. */
     effects: z.strictObject({

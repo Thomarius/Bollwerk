@@ -978,6 +978,142 @@ export class OktoberfestSeaLife extends OceanDrawn {
 }
 
 /**
+ * Office: robot vacuums wandering in circles on the outer carpet, a little light blinking on
+ * each; a paper plane gliding across now and then, somebody's stray; and now and then a
+ * colleague racing past on an office chair, spinning, arms out — grey, white and black,
+ * nothing of any player's colour.
+ */
+export class OfficeSeaLife extends OceanDrawn {
+  private readonly vacuums = new Circling();
+  private readonly gliders = new Crossings();
+  private readonly chairs = new Crossings();
+  /** The water cooler in the corner: whatever crosses its square is hidden behind it. */
+  cooler: { x: number; y: number; size: number } | null = null;
+
+  private hidden(x: number, y: number): boolean {
+    const f = this.cooler;
+    return f !== null && Math.abs(x - f.x) < f.size / 2 && Math.abs(y - f.y) < f.size / 2;
+  }
+
+  override layout(state: MatchState, view: ViewTransform, art: ArtConfig): void {
+    super.layout(state, view, art);
+    this.vacuums.layout(this.ocean, art.office.vacuums, [1.2, 2.4]);
+    this.gliders.layout(this.ocean, art.office.gliderEveryMs);
+    this.chairs.layout(this.ocean, art.office.chairEveryMs);
+  }
+
+  protected frame(g: Graphics, view: ViewTransform, art: ArtConfig, deltaMs: number): void {
+    const s = art.office;
+    const t = view.tile;
+    const ink = hex(art.palette.shadow);
+
+    this.vacuums.step(deltaMs);
+    for (const v of this.vacuums.items) {
+      const at = Circling.at(v);
+      if (this.hidden(at.x, at.y)) continue;
+      const x = tileX(view, at.x);
+      const y = tileY(view, at.y);
+      const heading = v.angle + (v.speed > 0 ? Math.PI / 2 : -Math.PI / 2);
+      g.circle(x + t * 0.05, y + t * 0.08, t * 0.42);
+      g.fill({ color: 0x000000, alpha: 0.3 });
+      g.circle(x, y, t * 0.42);
+      g.fill({ color: 0x24262b });
+      g.stroke({ width: Math.max(1, t * 0.06), color: 0x6a6e76 });
+      g.circle(x, y, t * 0.18);
+      g.fill({ color: 0x3a3d44 });
+      // Its bumper at the front, and the little light, blinking. Moved to first: an arc
+      // carries on from wherever the last path left off, across the screen.
+      g.moveTo(x + Math.cos(heading - 0.9) * t * 0.4, y + Math.sin(heading - 0.9) * t * 0.4);
+      g.arc(x, y, t * 0.4, heading - 0.9, heading + 0.9);
+      g.stroke({ width: Math.max(1, t * 0.08), color: 0x9a9ea5 });
+      if (Math.floor(this.clock / 600 + v.cx) % 2 === 0) {
+        g.circle(x + Math.cos(heading) * t * 0.25, y + Math.sin(heading) * t * 0.25, t * 0.05);
+        g.fill({ color: 0x7af08a });
+      }
+    }
+
+    this.gliders.step(this.ocean, deltaMs, s.gliderEveryMs, s.gliderTilesPerSecond, 0.5);
+    for (const plane of this.gliders.items) {
+      if (this.hidden(plane.x, plane.y)) continue;
+      const y = plane.y + Math.sin(this.clock / 420 + plane.x) * 0.2;
+      g.ellipse(tileX(view, plane.x), tileY(view, plane.y + 0.45), t * 0.35, t * 0.08);
+      g.fill({ color: 0x000000, alpha: 0.2 });
+      drawPlane(
+        g,
+        tileX(view, plane.x),
+        tileY(view, y),
+        t * 0.9,
+        plane.dir === 1 ? 0 : Math.PI,
+        0xf4f5f7,
+        ink,
+      );
+    }
+
+    this.chairs.step(this.ocean, deltaMs, s.chairEveryMs, s.chairTilesPerSecond, 0.8);
+    for (const chair of this.chairs.items) {
+      if (this.hidden(chair.x, chair.y)) continue;
+      const x = tileX(view, chair.x);
+      const y = tileY(view, chair.y);
+      const spin = this.clock / 160;
+      // The five-star base, its castors, and the seat with somebody on it, arms out.
+      for (let k = 0; k < 5; k++) {
+        const a = spin * 0.3 + (k / 5) * Math.PI * 2;
+        g.moveTo(x, y).lineTo(x + Math.cos(a) * t * 0.45, y + Math.sin(a) * t * 0.45);
+      }
+      g.stroke({ width: Math.max(1.5, t * 0.08), color: 0x2a2c31, cap: 'round' });
+      g.circle(x, y, t * 0.3);
+      g.fill({ color: 0x3a3d44 });
+      const c = Math.cos(spin);
+      const sn = Math.sin(spin);
+      g.moveTo(x - c * t * 0.55, y - sn * t * 0.55).lineTo(x + c * t * 0.55, y + sn * t * 0.55);
+      g.stroke({ width: Math.max(1.5, t * 0.1), color: 0xf4f5f7, cap: 'round' });
+      for (const e of [-0.58, 0.58]) g.circle(x + c * t * e, y + sn * t * e, t * 0.07);
+      g.fill({ color: 0xf2d0b0 });
+      g.circle(x, y, t * 0.17);
+      g.fill({ color: 0x5a3a24 });
+      // Wind in their wake.
+      for (let k = 1; k <= 2; k++) {
+        const wx = x - chair.dir * t * (0.6 + k * 0.35);
+        g.moveTo(wx, y - t * 0.15 * k).lineTo(wx - chair.dir * t * 0.4, y - t * 0.15 * k);
+      }
+      g.stroke({ width: 1, color: 0xc9ccd1, alpha: 0.6 });
+    }
+  }
+}
+
+/**
+ * A paper plane seen from above, nose along `angle` (0 to the right), `size` from nose to
+ * tail: the two wings either side of the fold, the far one shaded. Shared by Office's
+ * shots, its sea life and its guns.
+ */
+export function drawPlane(
+  g: Graphics,
+  x: number,
+  y: number,
+  size: number,
+  angle: number,
+  colour: number,
+  ink: number,
+  alpha = 1,
+): void {
+  const c = Math.cos(angle);
+  const s = Math.sin(angle);
+  const at = (u: number, v: number): [number, number] => [
+    x + (c * u - s * v) * size,
+    y + (s * u + c * v) * size,
+  ];
+  g.poly([...at(0.5, 0), ...at(-0.5, -0.32), ...at(-0.32, 0)]);
+  g.fill({ color: colour, alpha });
+  g.poly([...at(0.5, 0), ...at(-0.32, 0), ...at(-0.5, 0.32)]);
+  g.fill({ color: colour, alpha });
+  g.poly([...at(0.5, 0), ...at(-0.5, 0.32), ...at(-0.32, 0)]);
+  g.fill({ color: 0x000000, alpha: 0.18 * alpha });
+  g.moveTo(...at(0.5, 0)).lineTo(...at(-0.32, 0));
+  g.poly([...at(0.5, 0), ...at(-0.5, -0.32), ...at(-0.32, 0), ...at(-0.5, 0.32)]);
+  g.stroke({ width: Math.max(1, size * 0.05), color: ink, alpha: 0.6 * alpha, join: 'round' });
+}
+
+/**
  * Opera: swans gliding in slow circles, as on the lake of the ballet; a gondola crossing now
  * and then, its gondolier singing a serenade, notes trailing behind him; and now and then the
  * Flying Dutchman's ship, dark, riding high — white birds, black lacquer and gold, nothing of
