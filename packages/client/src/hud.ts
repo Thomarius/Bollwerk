@@ -175,6 +175,8 @@ export class Hud {
     if (this.skin !== null) page.classList.remove(this.skin);
     if (skin !== null) page.classList.add(skin);
     this.skin = skin;
+    // A skin brings its own lettering, so the phase label's width is measured again.
+    if (this.frame !== null) this.frame.phaseHtml = '';
   }
 
   /** Whether the final round's stamp has been shown, so it lands once, as it opens. */
@@ -544,10 +546,23 @@ export class Hud {
   }
 
   /**
-   * The HUD's frame, built once: the phase and the rest are rewritten every frame, the
-   * roster is kept, so its entries can count up and slide rather than being replaced.
+   * The HUD's frame, built once: the phase and the rest are rewritten when their markup
+   * changes, the roster is kept, so its entries can count up and slide rather than being
+   * replaced. Rewritten every frame, as they once were, they had the page restyled, laid out
+   * and repainted sixty times a second for nothing (PLAN 11.22); the time bar's fill is the
+   * one thing that moves every frame, and only its width is set.
    */
-  private frame: { phase: HTMLElement; roster: HTMLElement; rest: HTMLElement } | null = null;
+  private frame: {
+    phase: HTMLElement;
+    roster: HTMLElement;
+    rest: HTMLElement;
+    phaseHtml: string;
+    timer: HTMLElement | null;
+    seconds: string;
+    restHtml: string;
+    fill: HTMLElement | null;
+    fillWidth: string;
+  } | null = null;
   /** Roster entries by key — `p<player>` or `t<team>` — and the markup each last had. */
   private readonly entries = new Map<string, { node: HTMLElement; html: string }>();
   /** The match's log, for the summary at its end; see `summary.ts`. */
@@ -621,7 +636,7 @@ export class Hud {
   /** The phase label's width as last measured, so the roster is told only of a change. */
   private phaseWidth = 0;
 
-  private layout(): { phase: HTMLElement; roster: HTMLElement; rest: HTMLElement } {
+  private layout(): NonNullable<Hud['frame']> {
     if (this.frame !== null && this.frame.roster.isConnected) return this.frame;
     this.root.innerHTML =
       '<div class="bar"><div class="phase"></div><ul class="roster"></ul></div>' +
@@ -631,6 +646,12 @@ export class Hud {
       phase: this.root.querySelector<HTMLElement>('.phase')!,
       roster: this.root.querySelector<HTMLElement>('.roster')!,
       rest: this.root.querySelector<HTMLElement>('.hud-rest')!,
+      phaseHtml: '',
+      timer: null,
+      seconds: '',
+      restHtml: '',
+      fill: null,
+      fillWidth: '',
     };
     return this.frame;
   }
@@ -762,10 +783,12 @@ export class Hud {
     }
     const span = Math.max(1, state.phaseEndTick - this.phaseStartTick);
     const left = Math.min(1, Math.max(0, (state.phaseEndTick - state.tick) / span));
+    // Its fill's width is set apart from the markup, which then changes only with the phase.
     const timebar =
       waiting || state.phase === 'game_over' || !showsClock(state)
         ? ''
-        : `<div class="timebar${secondsLeft <= 3 ? ' urgent' : ''}"><i style="width:${(left * 100).toFixed(1)}%"></i></div>`;
+        : `<div class="timebar${secondsLeft <= 3 ? ' urgent' : ''}"><i></i></div>`;
+    const fillWidth = `${(left * 100).toFixed(1)}%`;
     const human = state.players[humanPlayer];
 
     // The roster carries only what decides the match — points and lives (PLAN 11.15).
@@ -800,7 +823,8 @@ export class Hud {
         ? `<li class="${classes}" style="--who:${colour}"><b></b>${name}</li>`
         : `<li class="${classes}" style="--who:${colour}">${name}${card(`p${p.id}`, p.score, livesOf(p.team, p.eliminated), shapeSvg(playerShape(p.id), colour))}</li>`;
     };
-    const { phase: phaseRoot, roster: rosterRoot, rest } = this.layout();
+    const frame = this.layout();
+    const { phase: phaseRoot, roster: rosterRoot, rest } = frame;
     // Free-for-all in standing, best first, so a change of places slides; a team match
     // groups by team in team order, which never reshuffles, each headed by its letter,
     // score and pooled lives.
@@ -921,26 +945,54 @@ export class Hud {
     const heading = waiting ? t('hud.next', { label }) : label;
     // A long label — German's run half as long again as English's — is set smaller and
     // tighter, so eight players' figures keep their pips at 1024 pixels.
-    phaseRoot.classList.toggle('long', heading.length > LONG_PHASE_LABEL);
-    phaseRoot.innerHTML =
+    // The clock's figures change ten times a second and nothing else does, so they are set
+    // as the timer's text; the label is written whole only when the rest of it changes.
+    const phaseHtml =
       `<strong>${heading}</strong>` +
       // Hidden rather than removed, so the round label does not jump sideways every
       // intermission; and there is no clock to show once the match is over.
       (waiting || state.phase === 'game_over' || !showsClock(state)
-        ? `<span class="timer" style="visibility:hidden">${seconds}</span>`
-        : `<span class="timer">${seconds}</span>`) +
+        ? `<span class="timer" style="visibility:hidden"></span>`
+        : `<span class="timer"></span>`) +
       `<span class="round${inFinalRound(state) ? ' final' : ''}">${roundLabel(state)}</span>`;
+    // Measured again when the clock loses or gains a figure, from 10.0 s to 9.9 s.
+    const rewrite = phaseHtml !== frame.phaseHtml;
+    const remeasure = rewrite || seconds.length !== frame.seconds.length;
+    if (rewrite) {
+      frame.phaseHtml = phaseHtml;
+      phaseRoot.classList.toggle('long', heading.length > LONG_PHASE_LABEL);
+      phaseRoot.innerHTML = phaseHtml;
+      frame.timer = phaseRoot.querySelector<HTMLElement>('.timer');
+      frame.seconds = '';
+    }
+    if (frame.timer !== null && seconds !== frame.seconds) {
+      frame.seconds = seconds;
+      frame.timer.textContent = seconds;
+    }
+    if (remeasure) {
+      // The roster's figures are sized by the room the phase label leaves (`--phase`):
+      // measured, not assumed, since a language's label may be half as long again as
+      // English's, and the four teams' figures then ran into one another at 1024 pixels.
+      // Measured only when the label changed, since reading it lays the page out.
+      const phaseWidth = phaseRoot.offsetWidth;
+      if (phaseWidth !== this.phaseWidth) {
+        this.phaseWidth = phaseWidth;
+        rosterRoot.style.setProperty('--phase', `${phaseWidth}px`);
+      }
+    }
     // No piece box and no line of hints at the bottom: the test sessions found nobody
     // had time to look down there. The ghost at the cursor is the piece held, the
     // stamp over an island says who is out, and the phase label says overtime.
-    rest.innerHTML = timebar + cannonCount + (status ? `<div class="net">${status}</div>` : '');
-    // The roster's figures are sized by the room the phase label leaves (`--phase`):
-    // measured, not assumed, since a language's label may be half as long again as
-    // English's, and the four teams' figures then ran into one another at 1024 pixels.
-    const phaseWidth = phaseRoot.offsetWidth;
-    if (phaseWidth !== this.phaseWidth) {
-      this.phaseWidth = phaseWidth;
-      rosterRoot.style.setProperty('--phase', `${phaseWidth}px`);
+    const restHtml = timebar + cannonCount + (status ? `<div class="net">${status}</div>` : '');
+    if (restHtml !== frame.restHtml) {
+      frame.restHtml = restHtml;
+      rest.innerHTML = restHtml;
+      frame.fill = rest.querySelector<HTMLElement>('.timebar i');
+      frame.fillWidth = '';
+    }
+    if (frame.fill !== null && fillWidth !== frame.fillWidth) {
+      frame.fillWidth = fillWidth;
+      frame.fill.style.width = fillWidth;
     }
   }
 }

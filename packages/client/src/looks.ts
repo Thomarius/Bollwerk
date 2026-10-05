@@ -8,6 +8,7 @@ import {
   type TextKey,
 } from '@bollwerk/config';
 
+import { LivePreview } from './galleryLive.js';
 import { t } from './i18n.js';
 import { escape } from './lobby.js';
 import { stylePreview } from './stylePreview.js';
@@ -175,7 +176,29 @@ export function openLookGallery(options: GalleryOptions): void {
   const click = options.click ?? ((): void => undefined);
   const root = document.createElement('div');
   root.className = 'look-gallery';
+  // The hovered card's picture plays (`galleryLive.ts`).
+  const live = new LivePreview();
+  let hovered: HTMLElement | null = null;
+  root.addEventListener('pointerover', (event) => {
+    const card = (event.target as HTMLElement).closest<HTMLElement>('.card');
+    if (card === hovered) return;
+    hovered = card;
+    const image = card?.querySelector<HTMLImageElement>('img[data-preview]');
+    const choice = card?.dataset.choice;
+    const style = ArtStyleSchema.safeParse(choice);
+    if (image === null || image === undefined || !style.success) {
+      live.hide();
+      return;
+    }
+    live.show(style.data, image);
+  });
+  root.addEventListener('pointerleave', () => {
+    hovered = null;
+    live.hide();
+  });
   const render = (): void => {
+    live.hide();
+    hovered = null;
     root.innerHTML = galleryMarkup(choices, active);
     if (options.random === false) root.querySelector(`[data-choice="${RANDOM}"]`)?.remove();
     for (const image of root.querySelectorAll<HTMLImageElement>('img[data-preview]')) {
@@ -190,6 +213,7 @@ export function openLookGallery(options: GalleryOptions): void {
     }
   };
   const close = (): void => {
+    live.destroy();
     root.remove();
     options.onClose?.(choices);
   };

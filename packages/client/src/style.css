@@ -619,15 +619,20 @@ body {
      the time bar sits just under it: grown to its content it overhung the board by a
      fifth, which the old see-through gradient hid and a solid skin did not. */
   height: 64px;
-  padding: 0.6rem 1rem 0;
+  /* Less at the top under a thick rule (`--hud-pad-top`), which the bar's 64 pixels must
+     also hold: under Opera's keyboard and Office's tape the timer and the round label ran
+     into the rule, which was painted over them. */
+  padding: var(--hud-pad-top, 0.6rem) 1rem 0;
   background: var(--hud-bar);
   border-bottom: var(--hud-rule);
 }
 
-/* Never wrapped: at eight players the round label once fell under the clock. */
+/* Never wrapped: at eight players the round label once fell under the clock. Set tight,
+   so the clock's line ends above the rule in every skin. */
 .phase {
   flex: none;
   white-space: nowrap;
+  line-height: 1.1;
 }
 
 /* Timebar, cannon count and banner, rewritten each frame beside the kept roster. */
@@ -3253,6 +3258,7 @@ body.hud-sakura .final-stamp {
 body.hud-wiesn {
   --hud-bar: #3b2616;
   --hud-rule: 6px solid transparent;
+  --hud-pad-top: 0.35rem;
   --hud-ink: #fffaf0;
   --hud-muted: #e8d2b0;
   --hud-accent: #f2b632;
@@ -3390,6 +3396,7 @@ body.hud-wiesn .final-stamp {
 body.hud-opera {
   --hud-bar: #0d0b0e;
   --hud-rule: 9px solid transparent;
+  --hud-pad-top: 0.35rem;
   --hud-ink: #fbf3e0;
   --hud-muted: #cfc6b0;
   --hud-accent: #e8c25a;
@@ -3510,6 +3517,7 @@ body.hud-opera .final-stamp {
 body.hud-office {
   --hud-bar: #4a4e55;
   --hud-rule: 8px solid transparent;
+  --hud-pad-top: 0.35rem;
   --hud-ink: #f4f5f7;
   --hud-muted: #c9ccd1;
   --hud-accent: #ffd23c;
@@ -3692,6 +3700,12 @@ body.hud-office .final-stamp {
 
 .look-gallery .card img.ready {
   opacity: 1;
+}
+
+/* The hovered card's picture, playing over its still (galleryLive.ts), placed by script. */
+.look-gallery .card canvas.live {
+  position: absolute;
+  pointer-events: none;
 }
 
 .look-gallery .card .name {

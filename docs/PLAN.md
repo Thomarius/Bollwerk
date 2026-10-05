@@ -525,8 +525,12 @@ and the picture opens **the gallery** — every style's picture as a card, a swi
 top saying whether a click chooses the building or the combat look, each card badged with
 the look it is chosen for. The styles are in alphabetical order by name, so a new one finds
 its place, and **Random** comes last, a die for its picture: drawn afresh from
-every style as each match starts, never the other look's style while another is left. The
-pause menu has **Looks**, the same gallery without Random, which changes the looks
+every style as each match starts, never the other look's style while another is left.
+**A hovered card plays** (`galleryLive.ts`, ARCHIVE 12m): the style itself runs over its
+still on the same island — the sea, the flags, and a shot from the gun every couple of
+seconds, at the wall and into the sea by turns — through one renderer for the whole
+gallery, its style swapped as the pointer moves; drawing only while a card is hovered, and
+not at all under reduced motion. The pause menu has **Looks**, the same gallery without Random, which changes the looks
 mid-match (`Scene.replaceLooks`) and saves the choice as the menu's. A picture made for the
 gallery over a running match must not release what every renderer shares
 (`destroy(true)`): it took the match's pooled batches with it. One gallery for both looks
@@ -1388,10 +1392,11 @@ causes, two done:
   nothing. Ideas if it matters: reuse each style's banner element rather than making a new
   one, or make it in the pause before it moves.
 
-Further ideas from the same reading, not taken up yet: **the HUD's bar is rebuilt every
-frame** (`innerHTML` of the phase label and the rest, then `offsetWidth`), so the page's top
-layer is restyled, laid out and repainted sixty times a second when nothing in it changed —
-write it only when its text changes; **bring the hidden look up to date during the pause
+**Done since (ARCHIVE 12m): the HUD's bar is written only when its text changes** — it was
+rebuilt every frame (`innerHTML` of the phase label and the rest, then `offsetWidth`); now
+the clock's figures are the timer's text, the time bar's fill only its width, and the label
+measured only when it changes. Further ideas from the same reading, not taken up yet:
+**bring the hidden look up to date during the pause
 before a banner**, a layer a frame, so the reveal has nothing left to draw (Cyberpunk's
 structures still take 13 ms then); and **Pixi's GC** unloads a texture unused for 60 s
 (`gcMaxUnusedTime`), while the combat look is hidden 50–58 s around a build phase and longer

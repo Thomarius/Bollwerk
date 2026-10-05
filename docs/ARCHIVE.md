@@ -4853,3 +4853,37 @@ sticky notes. What the first look changed: the robot vacuums' bumpers, drawn as 
 in Pixi starts from wherever the path was); the title's letters, dots of marker, read as
 blobs and became joined strokes; memos pinned to one partition in ten were too many, and are
 one in sixteen. Anything moving is still to be seen in play (PLAN §11).
+
+## 12m. The bar clear of its rule, written on a change, and the gallery playing (2026-10-05)
+
+Three of six suggestions after Office, chosen by the user; the rest declined — a card on
+hovering an island (nobody has time to hover in a game this fast, and the arcade feel wants
+information kept minimal), tips on "Preparing the board" (up for a second at most), quick
+emotes online, and a preview of the next piece, which would change the balance and give
+people more to parse.
+
+**The bar's second line under its rule.** The timer and the round label ran into the rule at
+the bar's foot in every skin — unseen under rules of one to three pixels, where it is the
+font's empty descent, but under Oktoberfest's lozenges (6 px), Office's tape (8) and Opera's
+keyboard (9) the rule was painted over the figures, and the roster's by about three pixels.
+Measured in every style at three players in English and eight in German: the phase block is
+set at a line height of 1.1, which lifts the clock clear in every skin, and the three thick
+rules take less padding at the top (`--hud-pad-top`). Everything in the bar now ends above
+its rule.
+
+**The bar written on a change** (PLAN 11.22). It was rebuilt with `innerHTML` and measured
+every frame, which had the page restyled, laid out and repainted sixty times a second. The
+label is written when its text changes and measured then, and again when the clock gains or
+loses a figure; the clock's figures are the timer's text; the time bar's fill is the one
+thing set every frame, by its width alone; a change of skin, whose lettering changes the
+label's width, measures again. Over 300 frames of a watched build phase the label was
+rewritten 7 times where it had been 265.
+
+**The gallery's cards play on hover** (`galleryLive.ts`): the style runs over its still on
+the same island, the sea and flags moving and a shot from the first gun every couple of
+seconds, at the wall block farthest from it and into the sea by turns (`liveShot`, tested),
+so each style's hit and splash are seen. One renderer for the gallery, made at the first
+hover, its looks swapped by `Scene.replaceLooks` as the pointer moves — a quick sweep shows
+only where it stops — drawing only while a card is hovered, destroyed with the gallery and
+never with `destroy(true)`; nothing under reduced motion. Checked over the menu and over a
+running match from the pause menu, which drew on unharmed.
