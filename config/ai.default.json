@@ -8,7 +8,8 @@
       "aimJitter": 0.85,
       "riskMargin": 0.5,
       "replanTicks": 80,
-      "sloppiness": 0.35
+      "sloppiness": 0.35,
+      "carelessness": 1
     },
     {
       "level": 2,
@@ -18,7 +19,8 @@
       "aimJitter": 0.7,
       "riskMargin": 0.55,
       "replanTicks": 60,
-      "sloppiness": 0.25
+      "sloppiness": 0.25,
+      "carelessness": 0.75
     },
     {
       "level": 5,
@@ -28,7 +30,8 @@
       "aimJitter": 0.25,
       "riskMargin": 0.8,
       "replanTicks": 30,
-      "sloppiness": 0
+      "sloppiness": 0,
+      "carelessness": 0
     },
     {
       "level": 8,
@@ -38,7 +41,8 @@
       "aimJitter": 0.05,
       "riskMargin": 1,
       "replanTicks": 20,
-      "sloppiness": 0
+      "sloppiness": 0,
+      "carelessness": 0
     },
     {
       "level": 10,
@@ -48,7 +52,8 @@
       "aimJitter": 0,
       "riskMargin": 1.1,
       "replanTicks": 15,
-      "sloppiness": 0
+      "sloppiness": 0,
+      "carelessness": 0
     }
   ],
   "risk": {

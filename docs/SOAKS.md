@@ -1,5 +1,8 @@
 # Soak plan — measuring the bots and the points game
 
+**Run and read**: 2026-10-02 to 10-05, its figures and what came of them in ARCHIVE 12h.
+The runner stays, for the next soak.
+
 Agreed with the user on 2026-10-02, to be run at the end of a day, when the machine is free
 for an hour or two. **Measurement only**: nothing here changes a rule, a bot or a number in
 `config/`. A finding that suggests a change goes into `PLAN.md` as a question for the user,

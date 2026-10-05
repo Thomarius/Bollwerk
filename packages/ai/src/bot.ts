@@ -955,8 +955,10 @@ export class Bot {
     const mine = state.castles.filter((c) => c.islandId === player.islandId);
     if (mine.length === 0) return null;
 
-    // A careless bot takes whichever castle comes to hand.
-    if (this.profile.sloppiness > 0) {
+    // A careless moment takes whichever castle comes to hand. The stream is drawn only by
+    // a level with any carelessness, so careful levels play exactly as they did.
+    const careless = this.profile.carelessness;
+    if (careless > 0 && rng.nextFloat() < careless) {
       const pick = mine[rng.nextInt(mine.length)];
       return pick ? { kind: 'select_castle', player: this.playerId, castleId: pick.id } : null;
     }
@@ -1025,6 +1027,11 @@ export class Bot {
     const hazard = this.clearanceField(state, player.islandId);
     const [cw, ch] = state.ruleset.cannons.footprint;
 
+    // A careless placement weighs proximity half by chance; decided once a gun, and drawn
+    // only by a level with any carelessness.
+    const careless = this.profile.carelessness;
+    const noisy = careless > 0 && rng.nextFloat() < careless;
+
     let best: { x: number; y: number } | null = null;
     // Never pinned if there is any alternative, then room, then proximity: compared in
     // that order rather than summed, so there is no exchange rate to invent between them.
@@ -1051,7 +1058,7 @@ export class Bot {
         for (const enemy of enemies) {
           nearest = Math.min(nearest, distanceSquared(x, y, enemy.x, enemy.y));
         }
-        const score = -nearest + (this.profile.sloppiness > 0 ? rng.nextFloat() * 5000 : 0);
+        const score = -nearest + (noisy ? rng.nextFloat() * 5000 : 0);
 
         const pinned = this.pinnedWalls(state, player.islandId, x, y, cw, ch);
 

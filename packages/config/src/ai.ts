@@ -42,10 +42,16 @@ export const SkillSchema = z.strictObject({
   replanTicks: z.number().int().positive(),
   /**
    * Mistakes, as a hurried person makes them: the chance of taking a worse fit for a
-   * piece, and while any, a castle and gun spots chosen carelessly. Players like to see a
-   * bot slip.
+   * piece. Players like to see a bot slip.
    */
   sloppiness: z.number().min(0).max(1),
+  /**
+   * The chance that a castle, or the spot for a gun, is chosen carelessly — a castle at
+   * random, a gun's place half by chance. The weightiest mistake a bot makes: a careless
+   * Level 4 wins 64% against two that are not (2026-10-05), so it fades by level rather
+   * than stopping at once, which made the step from Level 4 to 5 a cliff.
+   */
+  carelessness: z.number().min(0).max(1),
 });
 export type Skill = z.infer<typeof SkillSchema>;
 
@@ -237,6 +243,7 @@ export function skillAt(ai: AiConfig, level: number): Skill {
     riskMargin: mix(below.riskMargin, above.riskMargin),
     replanTicks: whole(below.replanTicks, above.replanTicks),
     sloppiness: mix(below.sloppiness, above.sloppiness),
+    carelessness: mix(below.carelessness, above.carelessness),
   };
 }
 

@@ -4335,3 +4335,188 @@ the dropdown as everywhere. The language list and its detection moved to
 `@bollwerk/config/languages`, a module with no dependencies, and the window reads the two
 locale files directly: importing the configuration whole took its script from 2.5 kB to
 870 kB, now 31 kB. Seen in German and English, running and with its port taken.
+
+## 12h. The weekend soak, and carelessness that fades (2026-10-05)
+
+The soak of `docs/SOAKS.md`, packages A, B and D, ran on this machine from the evening of
+2026-10-02 to the next morning: 22,656 matches at `568feb6` in 1,417 chunks of 16, ten
+processes at a time, about eleven hours, nothing failed. Its folder is `soaks/2026-10-02/`
+(git-ignored), its reading `summary.txt`. The weekend's commits — languages, styles,
+rendering, and bots planning a third faster (`fac3d8b`) — were pulled first, and 57 soak
+matches from 19 tables (2–8 players, Levels 1–10, teams, no cap) replayed on the new code
+to identical hashes, so the figures describe the code as of `1ec623e`.
+
+**PLAN 11.2, points decide, elimination threatens — met.** At Level 5, dealt personalities:
+
+| Table       | At the cap | Knockouts a match | Median margin | Under 10% | Lead changed after round 5 | Round 5's leader won |
+| ----------- | ---------- | ----------------- | ------------- | --------- | -------------------------- | -------------------- |
+| 3 players   | 100%       | 0.14              | 20.6%         | 27%       | 47%                        | 64%                  |
+| 4 players   | 100%       | 0.18              | 15.8%         | 33%       | 53%                        | 61%                  |
+| 2v2         | 93%        | 0.14              | 24.1%         | 23%       | 33%                        | 73%                  |
+| 6 players   | 100%       | 0.26              | 13.6%         | 38%       | 69%                        | 45%                  |
+| 8 players   | 100%       | 0.25              | 13.9%         | 38%       | 75%                        | 35%                  |
+| 3p, Level 8 | 100%       | 0.10              | 23.1%         | 22%       | 51%                        | 60%                  |
+| 3p, 3/5/6   | 99%        | 0.22              | 28.1%         | 18%       | 42%                        | 67%                  |
+
+960 matches a table (Level 8, 480). No knockout in rounds 1–2 in any capped table, nearly
+all in rounds 6–10. 12–13% of player-rounds fail to seal and about 90% of players fail at
+least once; the user's four recorded games, replayed, fail 15%. Bot against bot the margins
+are wider than the user's 6% game, but a third of matches finish within 10% and the lead
+changes after round 5 in half of them. Decided with the user: nothing to change.
+
+**PLAN 11.3, two players — no longer a problem.** At Level 5, 93% end at the cap in 9.9
+rounds, cannon room 2.7 (it was 0.7, with matches that would not end). Without a cap, 94%
+end by knockout in 19 rounds on average; 4 of 480 reached the tick limit and 27 were
+simultaneous knockouts, a draw. Level 3 against Level 6, no cap: 18 of 480 unfinished. A
+skill gap tells hard at two: Level 6 beats Level 3 95% of the time, by a median 82%.
+
+**PLAN 11.4, position bias.** None at four players. At three, pooled over 14,976 matches of
+rotated and uniform tables, island 3 wins 35.3% and island 1 31.6% (±0.8): a small edge of
+the ring, which the seat shuffle hides from players. Left alone, the user's decision. At 5–8
+players one island a table falls past two standard errors, as chance alone allows.
+
+**PLAN 11.4 and 11.13, the ladder.** One bot at the row's level against two at the column's,
+the odd seat rotated through the islands (96 matches a cell, 480 against Level 5):
+
+```
+  vs     L1   L2   L3   L4   L5   L6   L7   L8   L9  L10
+  L1      ·  20%  13%   2%   0%   1%   0%   0%   0%   0%
+  L2    54%    ·  36%  17%   2%   3%   2%   0%   2%   0%
+  L3    66%  42%    ·  29%   3%   2%   1%   0%   0%   1%
+  L4    76%  55%  41%    ·   6%   4%   4%   4%   3%   0%
+  L5    95%  89%  82%  82%  31%  27%  16%  11%   9%   4%
+  L6    95%  86%  92%  78%  42%    ·  24%  15%  10%   7%
+  L7    96%  90%  88%  93%  49%  26%    ·  39%  21%  13%
+  L8    98%  89%  92%  82%  56%  50%  45%    ·  27%  14%
+  L9   100%  96%  97%  81%  70%  71%  54%  51%    ·  23%
+  L10   99%  98%  98%  92%  75%  72%  65%  60%  33%    ·
+```
+
+The order holds, with a cliff from Level 4 to 5. **Levels 6 and 7** looked alike head to
+head, but those cells carry ±9.6 points; against two Level 5s (±4.3) the climb is even —
+42%, 49%, 56%, 70%, 75% for Levels 6 to 10 — and the step from 6 to 7 is the same in the
+table as 5 to 6 and 7 to 8 (4% faster building, 11–13% faster firing). The three steps
+from 5 to 8 build only 4% faster where the others build 7–9%; the user leaves them. The
+jump from 8 to 9 matches its 9% building step: building speed is what strength follows.
+**Level 8's knockouts** (11.13) are 0.10 a match against Level 5's 0.14: no problem.
+
+**Personalities.** Win share over seat share, 7,200 Level 5 matches: risk balanced 1.15,
+defensive 0.96, offensive 0.90; cannons secondary 1.13, balanced 0.95, max 0.92; targeting
+strategic 1.04, finisher 1.02, grudge 1.01, points 0.94 — the same in every table. No trait
+decides a match (the strongest, 38% where 33% is fair); the user accepts it, offensive play
+being meant to swing.
+
+### The cliff from Level 4 to 5, and carelessness that fades
+
+The code said why: below Level 5 any sloppiness at all switched on two careless choices —
+the castle taken at random, and a gun's spot weighed half by chance — while the slips in
+fitting a piece faded with sloppiness. Measured with a temporary table, 192 matches a cell,
+a Level 4 variant against two Level 5s: as it was 6.3% (the soak's 480); with the switches
+and no slips in fitting 5.2%; careful, with neither, 13.0% — and that careful Level 4 won
+64.1% against two ordinary ones. So the switches were the cliff, the fitting slips nothing,
+and the step in speed from 4 to 5 the rest.
+
+**`carelessness`**, a new column of the level table, makes the switches chances: the castle
+at random, and a gun placed carelessly, each with that probability — 1, 0.75, 0.5, 0.25 and
+0 for Levels 1 to 5, anchored at Levels 1, 2 and 5. The stream is drawn only by a level with
+any carelessness, so Levels 5–10 play exactly as before: 96 control matches of theirs ended
+on the soak's hashes. Measured on the soak's own seeds (240 matches a level against two
+Level 5s, 96 a cell otherwise), before and after:
+
+| One at ... against two at ... | Before      | After        |
+| ----------------------------- | ----------- | ------------ |
+| L2 against L1                 | 54%         | 58%          |
+| L3 against L2                 | 42%         | 53%          |
+| L4 against L3                 | 41%         | 53%          |
+| L5 against L4                 | 82%         | 58%          |
+| L1 against L2                 | 20%         | 7%           |
+| L2 against L3                 | 36%         | 17%          |
+| L3 against L4                 | 29%         | 19%          |
+| L4 against L5                 | 6%          | 15%          |
+| L1, L2, L3, L4 against two L5 | 0, 2, 3, 6% | 0, 1, 7, 15% |
+
+The steps from 1 to 5 are now alike — a level wins 53–58% against two of the one below, and
+7–19% against two of the one above — where 4 to 5 was a cliff and the steps below it shallow.
+Level 1, still careless every time, falls further behind the rest.
+
+### The plan's sections, as they stood
+
+### Formerly PLAN 11.2 Points decide, elimination threatens — goal revised 2026-10-01
+
+**The goal, the user's decision of 2026-10-01**: almost every match is decided **on points
+at the round cap**. Elimination stays a real threat and must stay relevant — failing to
+seal costs the round's points and a life, and a player who fails one time more than their
+lives allow is out, can no longer win, and should feel it coming — but a knockout is the
+exception that punishes, not the way matches end. It replaces the target of 2026-09-25,
+half of three- and four-player matches ending with one player left before the cap, which
+is in ARCHIVE 11zo with the levers it called for.
+
+**So the scoring formula is the game's balance** (§1.7), as it already was in practice, and
+what is measured is whether points make good matches:
+
+- **Close finishes and changes of lead**: a winner's margin, and how often the lead changes
+  hands after the early rounds, so that the last rounds still matter.
+- **The threat is real**: most players fail to seal at least once in a match and spend a
+  life for it; a person's failure rate stays near what it is (about 20%); knockouts happen
+  now and then — to a player who takes too much risk or falls behind on repairs — and
+  hardly ever in rounds 1–2.
+- **The ladder holds** under points: a better level still wins most matches, and no
+  personality decides a match on its own (the 11.6 guardrail).
+
+**Levers no longer wanted for it**: continues 2 -> 1 and the placement delay
+(`build.placementCooldownMs`) were planned to raise eliminations to half; neither is
+needed now, and neither is planned. Kept in mind only if elimination stops being a threat
+at all — nobody ever spending a life. **The weights stay** (§1.7).
+
+**Today's evidence.** The latest test game (2026-10-01, one person against three Level 5
+bots dealt from the bag — balanced, defensive and offensive risk, three different
+targetings — in `recordings/`): the person won on points, 1423 to 1335, 1039 and 819, a
+margin of 6%. Bot 4 took the lead in round 6 and lost it in round 8. Nobody was knocked
+out; seven of forty player-rounds failed to seal (17.5%), every player failed at least once
+and three of four twice — one short of being out. The person's territory points led
+(113 a round against 45–87) and their damage trailed (30 against 33–46). The user's verdict:
+close, and the balance quite good as it is. The first human game (2026-09-28) was also won
+on points, failing two rounds of ten. Two games; the soak is what tells it at scale.
+
+#### Steps
+
+1. **Measure points as the deciding thing**, current rules, at three and four players and
+   2v2, Level 5 and Level 8 tables over the dealt personality mix: winners' margins,
+   changes of lead after round 5, lives spent per player, forfeit rate, knockouts and the
+   round each happens in. Measurement only; `--stats` and `analysis` carry all of it but
+   the lead changes, which are a few lines over the per-round scores.
+2. **The same over the recorded human games**, with `--replay`, as they accumulate.
+3. **Decide with the user** whether anything wants changing. The game reads as balanced to
+   them today, so the default is to change nothing.
+
+**Recording it** (ARCHIVE 11e): every test match lands in `recordings/` with its
+statistics beside it once it ends — the same per-round table the bots produce — so how
+often a person loses a castle, how much of the build phase they use and what repair they
+leave undone are measured, not recalled. The user's impressions come separately.
+
+### Formerly PLAN 11.3 Two-player balance
+
+The worst thing in the project. At gunner, over ten seeds: **33.8 rounds average, three
+matches unfinished, cannon room 0.7, and only 48% of the build phase used.** Three players
+is healthy by comparison at 12.3 rounds. The bots are back to cramped walls with idle guns
+— the failure mode of 10h — because the smaller starting ring plus heavier incoming fire
+leaves no budget for room.
+
+Levers not yet tried: `cannons.maxTotal` (still `null`), the opening cannon count, and the
+combat-to-build ratio. **Needs re-measuring before anything is tried**: that figure predates
+the round cap and the bots of 10s. At the cap, eight two-player gunner matches all reached
+round 10, two ending by elimination. Best done after 11.2's measurements, which say what
+balanced means.
+
+### Formerly PLAN 11.13 Loose ends from the bots
+
+Left open when 11.6 finished (ARCHIVE 11x–11zb, 11zd); none blocks anything.
+
+- **Levels 6 and 7 play alike** (5 wins of 12 each against two Level 5 bots), and Levels 1
+  and 2 are not told apart by that test, since Level 5 beats both every time. The table is
+  anchors in `ai.default.json`, interpolated.
+- **Max cannons forfeits more** (13.6% against 9.4%) for gun room its fixed reward cannot
+  fill, though it wins a fair share; pockets only when room is short is the first thing to
+  try, if it matters.
+- **Level 8 knockouts rose** after phase 2's "close gaps from the outside" (1 to 7 in 36
+  matches), forfeits within noise. Worth a look when 11.2 measures knockouts anyway.

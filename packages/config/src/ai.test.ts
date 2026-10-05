@@ -33,7 +33,15 @@ describe('skill levels', () => {
       expect(next.placementBaseMs).toBeLessThanOrEqual(here.placementBaseMs);
       expect(next.aimJitter).toBeLessThanOrEqual(here.aimJitter);
       expect(next.sloppiness).toBeLessThanOrEqual(here.sloppiness);
+      expect(next.carelessness).toBeLessThanOrEqual(here.carelessness);
     }
+  });
+
+  it('fades carelessness by level rather than stopping it at once', () => {
+    // All or nothing it made the step from Level 4 to 5 a cliff (2026-10-05).
+    expect([1, 2, 3, 4, 5].map((l) => skillAt(defaultAiConfig, l).carelessness)).toEqual([
+      1, 0.75, 0.5, 0.25, 0,
+    ]);
   });
 
   it('makes mistakes only below the old gunner, and clamps levels out of range', () => {

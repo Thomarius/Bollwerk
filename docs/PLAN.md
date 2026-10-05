@@ -278,7 +278,7 @@ snapshot, because a client on different rules would desync rather than merely lo
 | ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `ruleset.default.json` | Phase lengths, cannon rewards and footprint, shot flight and damage, the piece catalogue and its size schedule, enclosure rules, elimination and continues, scoring and the round cap |
 | `terrain.default.json` | Island size and shape, the generation box, castle placement, the starting ring, the per-player-count pattern table                                                                    |
-| `ai.default.json`      | Bot skill as a table of levels (pace, aim, judgement, sloppiness) interpolated between anchors, and the personality traits: risk, targeting, cannon space                             |
+| `ai.default.json`      | Bot skill as a table of levels (pace, aim, judgement, sloppiness, carelessness) interpolated between anchors, and the personality traits: risk, targeting, cannon space               |
 | `art.default.json`     | Palettes, per-player colour ramps and each style's own over them, sprite generator parameters                                                                                         |
 | `audio.manifest.json`  | Cue names to files, and a credit for every file; see `assets/audio/README.md` for what fires each one                                                                                 |
 | `server.default.json`  | Ports, room limits, rate limits, reconnect grace, and the bounds of what a host may set in the lobby                                                                                  |
@@ -1058,7 +1058,8 @@ only on their own island, so they never help a teammate, whatever the rule allow
 
 **A bot is a skill level and a personality** (11.6). **Skill, Level 1–10**, chosen per seat
 in the lobby: pace, aim, replanning, judgement, and at low levels sloppiness — a worse fit
-now and then, careless castle and gun spots. A table of anchors in `ai.default.json`,
+now and then — and carelessness, the chance of a castle taken at random or a gun placed
+half by chance, fading from always at Level 1 to never at Level 5 (ARCHIVE 12h). A table of anchors in `ai.default.json`,
 interpolated between (`skillAt`); Level 5 is the old gunner, 8 the marshal, 2 the recruit.
 **Personality**, dealt from the seed for the whole table (`dealPersonalities`) and hidden
 until the end, each trait from a bag so a table is mixed (ARCHIVE 11zi): risk (defensive thickens until no way in takes fewer than two shots, then expands;
@@ -1142,10 +1143,11 @@ German (M15, ARCHIVE 12g). A new session starts with one of:
 0. **11.22, rendering performance**, done in every style on 2026-10-04 (58–60 fps at eight
    players on an integrated GPU, Opera from 13.5): left are a look at the styles in motion
    and the server's bots, both in 11.22.
-1. **The soaks** — [`SOAKS.md`](./SOAKS.md) for 11.2, 11.3, 11.4 and 11.13. The weekend run
-   of packages A, B and D was started on 2026-10-02 **on the user's other machine**, into
-   its `soaks/2026-10-02/`: read its `summary.txt` together with the user, then write the
-   figures into 11.2–11.13 (SOAKS §4). Measurement only.
+1. **Balance (M7)**: the weekend soak was read with the user on 2026-10-05 (ARCHIVE 12h).
+   Points decide almost every match, knockouts come late, two players are fine, the ladder
+   holds; the one change was the cliff from Level 4 to 5, now gone (`carelessness`). What is
+   left is 11.4's one setting never measured, and the user's own impressions in play — the
+   lower levels feel different now, Level 4 in particular.
 2. **The languages, checked by the user** (ARCHIVE 12g): German in play, and the desktop
    window's 22 German texts, which nobody but the agent has read yet. Whatever they find is
    an edit to `config/locale/de.json`. **French** is a file of its own and a name in
@@ -1175,8 +1177,7 @@ sour notes, chords and glissandos, the finale's spotlights; whether one gallery 
 clearly, or two would (ARCHIVE 12b); and the larger roster figures and team tags in a
 real team match (ARCHIVE 12c).
 
-Then, as they fit: **11.3**, two-player balance, re-measured before anything is tried;
-**11.4**, measurements never taken; **11.13**, the bots' loose ends.
+Then, as it fits: **11.4**, the one measurement never taken.
 
 Only open work is kept here. Finished packages move to `ARCHIVE.md` under their old
 numbers — 11.1 scoring, 11.7 team mode, 11.8 the visual pass, 11.9 the themes, 11.10 the
@@ -1185,100 +1186,15 @@ test-session feedback, in ARCHIVE 11w; 11.5 the small items and 11.6 the bots, i
 11zd; 11.14 the second test-session feedback, in ARCHIVE 11ze; 11.15 the third visual pass,
 11.16 help for new players, the menu and the sea, and 11.17 the desktop app, in ARCHIVE
 11zt; 11.18 the fourth visual pass, in ARCHIVE 11zv; 11.19 every style to the edges, in
-ARCHIVE 11zz; 11.20 more languages, in ARCHIVE 12g — so the open sections keep theirs.
-
-### 11.2 Points decide, elimination threatens — goal revised 2026-10-01
-
-**The goal, the user's decision of 2026-10-01**: almost every match is decided **on points
-at the round cap**. Elimination stays a real threat and must stay relevant — failing to
-seal costs the round's points and a life, and a player who fails one time more than their
-lives allow is out, can no longer win, and should feel it coming — but a knockout is the
-exception that punishes, not the way matches end. It replaces the target of 2026-09-25,
-half of three- and four-player matches ending with one player left before the cap, which
-is in ARCHIVE 11zo with the levers it called for.
-
-**So the scoring formula is the game's balance** (§1.7), as it already was in practice, and
-what is measured is whether points make good matches:
-
-- **Close finishes and changes of lead**: a winner's margin, and how often the lead changes
-  hands after the early rounds, so that the last rounds still matter.
-- **The threat is real**: most players fail to seal at least once in a match and spend a
-  life for it; a person's failure rate stays near what it is (about 20%); knockouts happen
-  now and then — to a player who takes too much risk or falls behind on repairs — and
-  hardly ever in rounds 1–2.
-- **The ladder holds** under points: a better level still wins most matches, and no
-  personality decides a match on its own (the 11.6 guardrail).
-
-**Levers no longer wanted for it**: continues 2 -> 1 and the placement delay
-(`build.placementCooldownMs`) were planned to raise eliminations to half; neither is
-needed now, and neither is planned. Kept in mind only if elimination stops being a threat
-at all — nobody ever spending a life. **The weights stay** (§1.7).
-
-**Today's evidence.** The latest test game (2026-10-01, one person against three Level 5
-bots dealt from the bag — balanced, defensive and offensive risk, three different
-targetings — in `recordings/`): the person won on points, 1423 to 1335, 1039 and 819, a
-margin of 6%. Bot 4 took the lead in round 6 and lost it in round 8. Nobody was knocked
-out; seven of forty player-rounds failed to seal (17.5%), every player failed at least once
-and three of four twice — one short of being out. The person's territory points led
-(113 a round against 45–87) and their damage trailed (30 against 33–46). The user's verdict:
-close, and the balance quite good as it is. The first human game (2026-09-28) was also won
-on points, failing two rounds of ten. Two games; the soak is what tells it at scale.
-
-#### Steps
-
-1. **Measure points as the deciding thing**, current rules, at three and four players and
-   2v2, Level 5 and Level 8 tables over the dealt personality mix: winners' margins,
-   changes of lead after round 5, lives spent per player, forfeit rate, knockouts and the
-   round each happens in. Measurement only; `--stats` and `analysis` carry all of it but
-   the lead changes, which are a few lines over the per-round scores.
-2. **The same over the recorded human games**, with `--replay`, as they accumulate.
-3. **Decide with the user** whether anything wants changing. The game reads as balanced to
-   them today, so the default is to change nothing.
-
-**Recording it** (ARCHIVE 11e): every test match lands in `recordings/` with its
-statistics beside it once it ends — the same per-round table the bots produce — so how
-often a person loses a castle, how much of the build phase they use and what repair they
-leave undone are measured, not recalled. The user's impressions come separately.
-
-### 11.3 Two-player balance
-
-The worst thing in the project. At gunner, over ten seeds: **33.8 rounds average, three
-matches unfinished, cannon room 0.7, and only 48% of the build phase used.** Three players
-is healthy by comparison at 12.3 rounds. The bots are back to cramped walls with idle guns
-— the failure mode of 10h — because the smaller starting ring plus heavier incoming fire
-leaves no budget for room.
-
-Levers not yet tried: `cannons.maxTotal` (still `null`), the opening cannon count, and the
-combat-to-build ratio. **Needs re-measuring before anything is tried**: that figure predates
-the round cap and the bots of 10s. At the cap, eight two-player gunner matches all reached
-round 10, two ending by elimination. Best done after 11.2's measurements, which say what
-balanced means.
+ARCHIVE 11zz; 11.20 more languages, in ARCHIVE 12g; 11.2 points decide, 11.3 two players
+and 11.13 the bots' loose ends, measured by the weekend soak, in ARCHIVE 12h — so the open sections keep theirs.
 
 ### 11.4 Measurements never taken
 
-- **Position bias** at 4, 6 and 8 players, where grids give islands structurally different
-  neighbourhoods. Seats are shuffled onto islands now, so no seat is favoured, but an
-  island position still could be — it would show as the player on it winning more often,
-  whoever that is. At three players the gap seen in 10s was mostly a bot bug; with it fixed
-  marshal wins about equally from either island.
-- **The full level ladder**, every pairing and more than three players — part of 11.6's
-  tuning. Measured so far only at three, under the old tiers: marshal and baron over
-  gunner, gunner over recruit.
 - **`resetPieceScheduleOnContinue`**, against the alternative. Only the "on" setting has
-  ever run.
-
-### 11.13 Loose ends from the bots
-
-Left open when 11.6 finished (ARCHIVE 11x–11zb, 11zd); none blocks anything.
-
-- **Levels 6 and 7 play alike** (5 wins of 12 each against two Level 5 bots), and Levels 1
-  and 2 are not told apart by that test, since Level 5 beats both every time. The table is
-  anchors in `ai.default.json`, interpolated.
-- **Max cannons forfeits more** (13.6% against 9.4%) for gun room its fixed reward cannot
-  fill, though it wins a fair share; pockets only when room is short is the first thing to
-  try, if it matters.
-- **Level 8 knockouts rose** after phase 2's "close gaps from the outside" (1 to 7 in 36
-  matches), forfeits within noise. Worth a look when 11.2 measures knockouts anyway.
+  ever run; the rule variants of the weekend soak (package C) were declined, the rules
+  reading as solid. Position bias and the full ladder were measured in that soak (ARCHIVE
+  12h).
 
 ### 11.21 Opening the host's port by UPnP — agreed 2026-10-03, not started
 

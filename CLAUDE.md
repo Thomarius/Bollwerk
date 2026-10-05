@@ -175,9 +175,10 @@ Full detail in PLAN.md §1. The parts that surprise people:
    eight players on an integrated GPU, Opera from 13.5, and no frame over 50 ms where there
    were up to 279 in 30 s; bot planning a third faster, same play. Left: the user's look at
    the styles in motion, and bots of one level planning on the same ticks (PLAN 11.22).
-1. **The soaks** (`docs/SOAKS.md`): the weekend run was started on 2026-10-02 **on the
-   user's other machine**; read its `summary.txt` together with them and write the figures
-   into PLAN 11.2–11.13. Measurement only.
+1. **The soaks are done** (ARCHIVE 12h, 2026-10-05): 22,656 matches. Points decide almost
+   every match, knockouts come late, two players are fine, the ladder holds; the cliff from
+   Level 4 to 5 was the careless castle and gun switches, which now fade by level
+   (`carelessness` in the level table). `npm run soak` reruns it, resumable.
 2. **The languages, checked** (ARCHIVE 12g): the user tests German in play and reads the
    desktop window's German; corrections go into `config/locale/de.json`. French when a reader
    is found.
@@ -185,9 +186,8 @@ Full detail in PLAN.md §1. The parts that surprise people:
 4. Then **balance** (M7). **The goal** (2026-10-01, the user's): almost every match is
    decided **on points at the round cap**, so **the scoring formula is the game's balance**;
    elimination stays a real threat — a life spent for every failed seal, a knockout now and
-   then — but not the way matches end. The test games read as balanced; the soaks say how
-   good the points matches are (11.2), then two players (11.3), measurements never taken
-   (11.4) and the bots' loose ends (11.13).
+   then — but not the way matches end. The soak confirmed it (ARCHIVE 12h): the default is to
+   change nothing without a very good reason. Left: 11.4's one setting never measured.
 
 **Declined for budget** (PLAN §12): macOS builds (Apple's paid signing) and a hosted public
 server. This is a fan project with no budget: propose nothing that costs money to run.
