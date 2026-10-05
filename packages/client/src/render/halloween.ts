@@ -50,6 +50,7 @@ import {
   type ViewTransform,
 } from './theme.js';
 import { outline, trace, wallGeometry } from './walls.js';
+import { cannonBase } from './cannonBase.js';
 
 /** Something with a place and an age: a ghost set free, a ring on the bog, a sinking block. */
 interface Aged {
@@ -672,6 +673,13 @@ export class HalloweenTheme implements Theme {
       const cx = tileX(view, cannon.x + cannon.w / 2);
       const cy = tileY(view, cannon.y + cannon.h / 2);
       const r = Math.min(cannon.w, cannon.h) * t * 0.38;
+      cannonBase(
+        g,
+        view,
+        cannon,
+        this.colour(cannon.owner, 'dark'),
+        this.colour(cannon.owner, 'base'),
+      );
       g.ellipse(cx + t * 0.08, cy + r * 0.85, r * 0.95, r * 0.3);
       g.fill({ color: hex(palette.shadow), alpha: 0.35 });
       for (const lx of [-0.55, 0, 0.55]) {

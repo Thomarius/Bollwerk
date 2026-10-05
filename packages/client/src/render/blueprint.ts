@@ -42,6 +42,7 @@ import { BlueprintSeaLife } from './seaLife.js';
 import type { SceneryItem } from './scenery.js';
 import { SceneryLayer } from './sceneryLayer.js';
 import { dashed, hatch, outline, trace, wallGeometry, type Segment } from './walls.js';
+import { cannonBase } from './cannonBase.js';
 
 /** A mark where a shot landed: rings for a moment, and on a wall a demolition cross. */
 interface Mark {
@@ -411,6 +412,7 @@ export class BlueprintTheme implements Theme {
       const cx = tileX(view, cannon.x + cannon.w / 2);
       const cy = tileY(view, cannon.y + cannon.h / 2);
       const r = (Math.min(cannon.w, cannon.h) * t) / 2 - t * 0.2;
+      cannonBase(g, view, cannon, null, this.colour(cannon.owner, 'light'));
       if (!cannon.active) {
         // Silenced: a dashed ring and no crosshair, as a mark struck from the plan. In the
         // owner's ink at full weight: a hairline of dark rock all but vanished on the sheet.

@@ -56,6 +56,7 @@ import { ChocolateSeaLife } from './seaLife.js';
 import type { SceneryItem } from './scenery.js';
 import { SceneryLayer } from './sceneryLayer.js';
 import { outline, trace, wallGeometry } from './walls.js';
+import { cannonBase } from './cannonBase.js';
 
 /** A swirl on the river, carried along by the current, melting back in as it ages. */
 interface Swirl {
@@ -774,6 +775,13 @@ export class ChocolateTheme implements Theme {
       const cx = tileX(view, cannon.x + cannon.w / 2);
       const cy = tileY(view, cannon.y + cannon.h / 2);
       const r = Math.min(cannon.w, cannon.h) * t * 0.4;
+      cannonBase(
+        g,
+        view,
+        cannon,
+        this.colour(cannon.owner, 'dark'),
+        this.colour(cannon.owner, 'base'),
+      );
       g.ellipse(cx + t * 0.08, cy + r * 0.75, r * 0.95, r * 0.35);
       g.fill({ color: hex(palette.shadow), alpha: 0.3 });
       const caseTop = cy - r * 0.05;

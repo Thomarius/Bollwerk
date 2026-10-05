@@ -47,6 +47,7 @@ import {
 } from './theme.js';
 import type { SceneryItem } from './scenery.js';
 import { SceneryLayer } from './sceneryLayer.js';
+import { cannonBase } from './cannonBase.js';
 
 /** A circuit trace on the sea floor, as tile centres in board coordinates. */
 export interface Trace {
@@ -614,6 +615,14 @@ export class CyberpunkTheme implements Theme {
       const cy = tileY(view, cannon.y + cannon.h / 2);
       const r = (Math.min(cannon.w, cannon.h) * view.tile) / 2 - view.tile * 0.15;
       const side = (view.tile * this.art.generators.wall.frontFacePx * 0.6) / this.art.tileSizePx;
+      cannonBase(
+        g,
+        view,
+        cannon,
+        this.colour(cannon.owner, 'dark'),
+        this.colour(cannon.owner, 'base'),
+        0.4,
+      );
       g.circle(cx, cy + side, r);
       g.fill({
         color: cannon.active

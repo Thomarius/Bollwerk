@@ -46,6 +46,7 @@ import {
 import type { SceneryItem } from './scenery.js';
 import { SceneryLayer } from './sceneryLayer.js';
 import { hatch, outline, trace, wallGeometry, type Segment } from './walls.js';
+import { cannonBase } from './cannonBase.js';
 
 /** Squares tried for the compass rose, largest first. */
 const ROSE_SIZES = [4, 3] as const;
@@ -677,6 +678,14 @@ export class ParchmentTheme implements Theme {
     for (const cannon of state.cannons) {
       const cx = tileX(view, cannon.x + cannon.w / 2);
       const cy = tileY(view, cannon.y + cannon.h / 2);
+      cannonBase(
+        g,
+        view,
+        cannon,
+        this.paper(cannon.owner, 0.3),
+        this.colour(cannon.owner, 'dark'),
+        1,
+      );
       const r = (Math.min(cannon.w, cannon.h) * t) / 2 - t * 0.22;
       g.circle(cx, cy, r);
       g.fill({ color: cannon.active ? this.paper(cannon.owner, 0.5) : hex(palette.grassDark) });

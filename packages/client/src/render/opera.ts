@@ -49,6 +49,7 @@ import {
   type ViewTransform,
 } from './theme.js';
 import { outline, trace, wallGeometry } from './walls.js';
+import { cannonBase } from './cannonBase.js';
 
 /** Something with a place and an age: rings of sound, a sour note, a chord, a glissando. */
 interface Aged {
@@ -803,6 +804,13 @@ export class OperaTheme implements Theme {
       const cx = tileX(view, cannon.x + cannon.w / 2);
       const cy = tileY(view, cannon.y + cannon.h / 2);
       const r = Math.min(cannon.w, cannon.h) * t * 0.38;
+      cannonBase(
+        g,
+        view,
+        cannon,
+        this.colour(cannon.owner, 'dark'),
+        this.colour(cannon.owner, 'base'),
+      );
       for (const a of [Math.PI * 0.6, Math.PI * 0.4, Math.PI * 1.5]) {
         g.moveTo(cx, cy).lineTo(cx + Math.cos(a) * r, cy + Math.sin(a) * r * 0.8);
       }

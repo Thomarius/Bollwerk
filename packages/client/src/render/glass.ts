@@ -43,6 +43,7 @@ import type { SceneryItem } from './scenery.js';
 import { SceneryLayer } from './sceneryLayer.js';
 import { paneOf, paneShade } from './panes.js';
 import { outline, trace, wallGeometry } from './walls.js';
+import { cannonBase } from './cannonBase.js';
 
 /** A shard of glass thrown out by a shot or the sweep, spinning as it falls. */
 interface Shard {
@@ -414,6 +415,7 @@ export class GlassTheme implements Theme {
       const cx = tileX(view, cannon.x + cannon.w / 2);
       const cy = tileY(view, cannon.y + cannon.h / 2) - this.faceFraction() * t * 0.4;
       const r = Math.min(cannon.w, cannon.h) * t * 0.36;
+      cannonBase(g, view, cannon, this.colour(cannon.owner, 'dark'), hex(palette.shadow));
       g.circle(cx + t * 0.05, cy + t * 0.1, r);
       g.fill({ color: 0x000000, alpha: 0.3 });
       g.circle(cx, cy, r);

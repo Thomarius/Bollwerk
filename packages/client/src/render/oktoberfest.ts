@@ -59,6 +59,7 @@ import {
   drawPretzel,
   drawReveller,
 } from './wiesn.js';
+import { cannonBase } from './cannonBase.js';
 
 /** Something with a place and an age: a ring on the beer, a burst of foam, a coin, a clink. */
 interface Aged {
@@ -642,6 +643,13 @@ export class OktoberfestTheme implements Theme {
       const cx = tileX(view, cannon.x + cannon.w / 2);
       const cy = tileY(view, cannon.y + cannon.h / 2);
       const r = Math.min(cannon.w, cannon.h) * t * 0.38;
+      cannonBase(
+        g,
+        view,
+        cannon,
+        this.colour(cannon.owner, 'dark'),
+        this.colour(cannon.owner, 'base'),
+      );
       for (const [sx, sy] of [
         [-1, -1],
         [1, -1],

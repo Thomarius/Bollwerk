@@ -445,8 +445,10 @@ function castle(art: ArtConfig, rng: Rng, size: number): Pixels {
 }
 
 /**
- * A gun pit: a ring of dressed stone round a sunken floor, lit on its northern rim. The
- * carriage and barrel are sprites of their own, so they can turn.
+ * A gun pit: a ring of dressed stone round a sunken floor, lit on its northern rim, on a
+ * square slab that fills the footprint — a round pit alone hid its corners from a player
+ * building round it (test-session feedback, 2026-10-05). The carriage and barrel are
+ * sprites of their own, so they can turn.
  */
 function cannon(art: ArtConfig, size: number): Pixels {
   const p = new Pixels(size, size);
@@ -454,6 +456,8 @@ function cannon(art: ArtConfig, size: number): Pixels {
   const c = size / 2 - 0.5;
   const outer = size / 2 - 1;
   const inner = outer - 3.5;
+  p.rect(1, 1, size - 2, size - 2, rockDark);
+  p.rect(2, 2, size - 4, size - 4, rockLight);
   p.disc(c, c, outer + 0.6, shadow);
   p.disc(c, c, outer, rockMid);
   for (let y = 0; y < size; y++) {

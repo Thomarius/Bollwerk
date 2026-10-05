@@ -4520,3 +4520,17 @@ Left open when 11.6 finished (ARCHIVE 11x–11zb, 11zd); none blocks anything.
   try, if it matters.
 - **Level 8 knockouts rose** after phase 2's "close gaps from the outside" (1 to 7 in 36
   matches), forfeits within noise. Worth a look when 11.2 measures knockouts anyway.
+
+## 12i. Square bases under every gun (2026-10-05)
+
+Test players found the round guns of several styles hard to read while building: a player
+building round a gun judges what its 2x2 footprint takes up, and a circle hides the corners,
+where the square guns of Minimal and Toy bricks were clear. Every gun now stands on a plain
+square filling its footprint, a hair in from the edge so neighbours part, in the owner's
+darker shade and outlined in their colour (`cannonBase` in `render/cannonBase.ts`): under the
+round guns of Opera, Cyberpunk, Stained glass, Chocolate and Halloween, and the stands of
+Sakura and Oktoberfest, which were not round but showed no footprint either; Blueprint's an
+outline in the owner's ink, Parchment's tinted paper. Medieval's and Night's gun pits are
+sprites, so their square is a stone slab in the pit's sprite, tinted per player with the
+rest. Simple on purpose, the user's wish: the gun on it is the style's; the base only says
+where it stands and whose it is. Checked in screenshots of every style's build phase.

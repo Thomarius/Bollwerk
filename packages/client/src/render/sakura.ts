@@ -50,6 +50,7 @@ import {
 } from './theme.js';
 import { MAPLE, PETALS, drawCloudCurl, drawCrest, drawMapleLeaf, drawPetal } from './ukiyo.js';
 import { outline, trace, wallGeometry, type Segment } from './walls.js';
+import { cannonBase } from './cannonBase.js';
 
 /** Something with a place and an age: a cloud thrown up, a ring on the sea, a block pressed. */
 interface Aged {
@@ -760,6 +761,13 @@ export class SakuraTheme implements Theme {
       const cx = tileX(view, cannon.x + cannon.w / 2);
       const cy = tileY(view, cannon.y + cannon.h / 2);
       const r = Math.min(cannon.w, cannon.h) * t * 0.36;
+      cannonBase(
+        g,
+        view,
+        cannon,
+        this.colour(cannon.owner, 'dark'),
+        this.colour(cannon.owner, 'base'),
+      );
       g.ellipse(cx + t * 0.08, cy + r * 0.9, r * 1.05, r * 0.3);
       g.fill({ color: this.sumi, alpha: 0.3 });
       g.roundRect(cx - r, cy - r * 0.75, r * 2, r * 1.5, r * 0.3);
