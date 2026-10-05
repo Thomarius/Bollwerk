@@ -29,7 +29,7 @@ npm install
 npm start                           # build, then serve the game at http://localhost:8080
 npm run check                       # format, lint, typecheck, test — must pass before committing
 npm run credits                     # CREDITS.md, from the audio manifest's credits
-npm run soak                        # the soak of docs/SOAKS.md, resumable; --list, --trial, --summary
+npm run soak                        # the weekend soak again (ARCHIVE 12h), resumable; --list, --trial, --summary
 npm run build                       # client + server bundles, both needed by the image
 npm run dev   -w @bollwerk/client   # play offline at http://localhost:5173
 npm start     -w @bollwerk/server   # serves the built client at http://localhost:8080
@@ -175,7 +175,7 @@ Full detail in PLAN.md §1. The parts that surprise people:
   target — almost every match decided at the cap, knockouts late and rare, two players fine,
   the ladder in order — and one cliff, Level 4 to 5, ended by `carelessness` fading by
   level. The default is to change no rule without a very good reason. `npm run soak`
-  reruns the whole plan, resumable (SOAKS.md).
+  reruns the whole plan, resumable (`tools/headless/src/soak.ts`; the plan as run in ARCHIVE 12h).
 - **Rendering performance** (PLAN 11.22): 58–60 fps at eight players on an integrated GPU,
   every effect kept; every gun stands on a square base so its footprint reads (ARCHIVE 12i).
 

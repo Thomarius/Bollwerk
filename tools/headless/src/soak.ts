@@ -24,7 +24,7 @@ import { chunkArgs, chunksOf, soakPlan, type Batch, type Chunk } from './soakPla
 import { soakSummary, type SoakGroup } from './soakSummary.js';
 
 /**
- * The soak runner (docs/SOAKS.md), `npm run soak` from the repository root.
+ * The soak runner (ARCHIVE 12h), `npm run soak` from the repository root.
  *
  * Runs the plan's chunks in a pool of harness processes at below-normal priority, each
  * writing `<chunk>.csv`, `<chunk>.outcomes.csv` and `<chunk>.log` into `soaks/<date>/`.

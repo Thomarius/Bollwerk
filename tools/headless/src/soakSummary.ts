@@ -1,7 +1,7 @@
 import type { MatchOutcome, StatRow } from '@bollwerk/analysis';
 
 /**
- * A soak's summary (docs/SOAKS.md): the measures of PLAN 11.2–11.4 and 11.13, from the
+ * A soak's summary (ARCHIVE 12h): the measures of PLAN 11.2–11.4 and 11.13, from the
  * per-round tables and the per-match outcomes, as one short text — the file read after
  * the run, so the CSVs need not be.
  *

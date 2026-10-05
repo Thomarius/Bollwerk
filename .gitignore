@@ -13,5 +13,5 @@ coverage/
 # Match recordings from test sessions: data, not source (docs/PLAN.md, recordings).
 recordings/
 
-# Soak runs of the bots (docs/SOAKS.md): data, summarised into the plan, never committed.
+# Soak runs of the bots (ARCHIVE 12h): data, summarised into the plan, never committed.
 soaks/

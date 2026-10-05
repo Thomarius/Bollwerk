@@ -1153,7 +1153,8 @@ session starts with one of:
 3. **Bots of one level planning on the same ticks** (11.22's last item): the stall a
    server's room still feels when several plan at once. Spreading their planning over
    different ticks changes every bot's play and every hash, so it needs a soak before and
-   after (`npm run soak`, SOAKS.md) — a session of its own, at the end of a day.
+   after (`npm run soak`; the last one's plan in ARCHIVE 12h) — a session of its own, at the
+   end of a day.
 
 **French** is a file of its own and a name in `languages.ts`, when a reader is found.
 

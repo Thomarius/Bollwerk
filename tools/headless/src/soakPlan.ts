@@ -1,5 +1,5 @@
 /**
- * The weekend soak of 2026-10-03 (docs/SOAKS.md): packages A, B and D, agreed with the
+ * The weekend soak of 2026-10-03 (ARCHIVE 12h): packages A, B and D, agreed with the
  * user — the planned soaks at twice to ten times their size, the full level ladder with
  * every pairing, and the odd cases. Measurement only: every batch runs the rules as they
  * are.
