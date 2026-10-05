@@ -1322,6 +1322,38 @@ The screen's 60 Hz caps fps. Still open:
   their added layers (`Discs`; 17k → 10k), and Medieval's and Night's wall sprites a render
   group of their own (render 5.3 → 4.9 ms in Night, 4.5 → 4.1 in Medieval).
 
+**The stutter as the looks swap (2026-10-05)**, reported by testers as minor. Measured by a
+script logging every frame of a watched eight-player match in headless Chrome on this
+machine's integrated GPU, with Chrome's tracer for what lay outside the script: outside the
+banners not one frame over 17 ms, but the "Fire!" bringing in the combat look cost two
+frames of 117–167 ms (Minimal to Opera); "Rebuild" back into Minimal cost nothing. Three
+causes, two done:
+
+- **Done: the hidden look redrew its terrain at every wipe.** It was marked stale as a whole,
+  and terrain, each style's dearest drawing, changes only with the window. Staleness is now
+  by layer (`Scene`). At a later reveal Opera's drawing went 28 → 4 ms and Pixi's render of
+  it 68 → 18.5 ms; Medieval's terrain alone had been 42 ms at every banner, and its reveal
+  now drops no frame.
+- **Done: a look's first reveal** cut all its drawing into triangles and uploaded its
+  textures in that frame. `Scene.warmUp` renders the hidden look once offscreen in the
+  match's first frame, behind "Preparing the board", and after a change of looks from the
+  pause menu. The first "Fire!": Opera 183 → 68 ms, Medieval 117 → 33, Cyberpunk 100 → 65.
+- **Left, the user's decision: the banner's own HTML.** Chrome's GPU process rastered the
+  new Opera banner and the eight island banners in their Opera dress for 73 ms at one reveal
+  (33 ms at the next), and the banner's first layout costs 7–18 ms, part of it fonts used
+  for the first time. Putting the banner on a layer of its own (`will-change`) changed
+  nothing. Ideas if it matters: reuse each style's banner element rather than making a new
+  one, or make it in the pause before it moves.
+
+Further ideas from the same reading, not taken up yet: **the HUD's bar is rebuilt every
+frame** (`innerHTML` of the phase label and the rest, then `offsetWidth`), so the page's top
+layer is restyled, laid out and repainted sixty times a second when nothing in it changed —
+write it only when its text changes; **bring the hidden look up to date during the pause
+before a banner**, a layer a frame, so the reveal has nothing left to draw (Cyberpunk's
+structures still take 13 ms then); and **Pixi's GC** unloads a texture unused for 60 s
+(`gcMaxUnusedTime`), while the combat look is hidden 50–58 s around a build phase and longer
+with a pause — not seen happening, but raising the limit would rule it out.
+
 ## 12. Deferred (explicitly out of scope for v1)
 
 Quick-match and matchmaking, accounts and persistence, ranking, mobile

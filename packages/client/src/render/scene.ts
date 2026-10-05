@@ -1,6 +1,6 @@
 import { defaultArtConfig, type ArtConfig, type ArtStyle } from '@bollwerk/config';
 import type { MatchState, Shot } from '@bollwerk/sim';
-import { Application, Container, Graphics } from 'pixi.js';
+import { Application, Container, Graphics, RenderTexture } from 'pixi.js';
 
 import type { CameraShot } from '../camera.js';
 import type { DrainWash, SealGlow } from '../seal.js';
@@ -85,9 +85,17 @@ interface Slot {
   layers: ThemeLayers;
   /** Screen-space rectangle this look is confined to during a wipe. */
   mask: Graphics;
-  /** Something changed while it was hidden, so it must be redrawn before it is shown. */
-  stale: boolean;
+  /**
+   * The layers that changed while it was hidden, to be redrawn before it is shown. By
+   * layer, since terrain changes only with the window and is each style's dearest drawing:
+   * redrawn at every wipe, it was most of a frame of 100 ms as Opera came into view.
+   */
+  stale: Set<BoardLayer>;
 }
+
+/** The layers a look draws from the board, as against its effects drawn every frame. */
+const BOARD_LAYERS = ['terrain', 'territory', 'structures'] as const;
+type BoardLayer = (typeof BOARD_LAYERS)[number];
 
 function newLayers(): ThemeLayers {
   return {
@@ -214,6 +222,7 @@ export class Scene {
       this.refresh(slot);
     }
     this.applyVisibility();
+    this.warmUp();
   }
 
   private async slotFor({ theme, art }: SceneLook): Promise<Slot> {
@@ -234,7 +243,8 @@ export class Scene {
     this.cameraRoot.addChild(root);
     this.app.stage.addChild(mask);
     await theme.init(layers, art);
-    return { theme, art, root, backdrop, layers, mask, stale: false };
+    // A new look has drawn nothing yet.
+    return { theme, art, root, backdrop, layers, mask, stale: new Set(BOARD_LAYERS) };
   }
 
   /** The styles in use, one per look. */
@@ -268,7 +278,7 @@ export class Scene {
   showLooks(frame: LookFrame): void {
     this.shown = frame;
     for (const slot of this.visible()) {
-      if (slot.stale) this.refresh(slot);
+      if (slot.stale.size > 0) this.refresh(slot);
     }
     this.applyVisibility();
   }
@@ -299,11 +309,12 @@ export class Scene {
   /** Brings a look up to date with the last board drawn. */
   private refresh(slot: Slot): void {
     const { state, territory, structures } = this.board;
-    if (state !== null) slot.theme.drawTerrain(state, this.view);
-    if (state !== null && territory !== null)
+    if (state !== null && slot.stale.has('terrain')) slot.theme.drawTerrain(state, this.view);
+    if (state !== null && territory !== null && slot.stale.has('territory'))
       slot.theme.drawTerritory({ ...state, territory: territory[this.lookOf(slot)] }, this.view);
-    if (structures !== null) slot.theme.drawStructures(structures, this.view);
-    slot.stale = false;
+    if (structures !== null && slot.stale.has('structures'))
+      slot.theme.drawStructures(structures, this.view);
+    slot.stale.clear();
   }
 
   /**
@@ -314,11 +325,11 @@ export class Scene {
     return slot === this.slots.combat && slot !== this.slots.build ? 'combat' : 'build';
   }
 
-  /** Draws on the looks on screen and marks the rest stale. */
-  private paint(draw: (slot: Slot) => void): void {
+  /** Draws a layer on the looks on screen and marks it stale in the rest. */
+  private paint(layer: BoardLayer, draw: (slot: Slot) => void): void {
     for (const slot of this.all()) {
       if (this.isVisible(slot)) draw(slot);
-      else slot.stale = true;
+      else slot.stale.add(layer);
     }
   }
 
@@ -403,7 +414,7 @@ export class Scene {
 
   drawTerrain(state: MatchState): void {
     this.board.state = state;
-    this.paint((slot) => slot.theme.drawTerrain(state, this.view));
+    this.paint('terrain', (slot) => slot.theme.drawTerrain(state, this.view));
   }
 
   /**
@@ -416,7 +427,7 @@ export class Scene {
   drawTerritory(state: MatchState, territory: Record<Look, Uint8Array>): void {
     this.board.state = state;
     this.board.territory = territory;
-    this.paint((slot) =>
+    this.paint('territory', (slot) =>
       slot.theme.drawTerritory({ ...state, territory: territory[this.lookOf(slot)] }, this.view),
     );
   }
@@ -427,7 +438,7 @@ export class Scene {
    */
   drawStructures(state: MatchState): void {
     this.board.structures = state;
-    this.paint((slot) => slot.theme.drawStructures(state, this.view));
+    this.paint('structures', (slot) => slot.theme.drawStructures(state, this.view));
   }
 
   drawEffects(
@@ -514,5 +525,26 @@ export class Scene {
 
   render(): void {
     this.app.renderer.render(this.app.stage);
+  }
+
+  /**
+   * Draws the hidden look once, offscreen, so its first wipe costs no more than any
+   * other: a look's first render cuts all of its drawing into triangles and uploads its
+   * textures, 100 to 180 ms at eight players (Cyberpunk, Medieval, Opera), which fell on
+   * the frame "Fire!" first brought it in. Into a small texture of its own rather than
+   * the canvas, which would show both looks at once for a frame; the stage rather than
+   * the look's root, since rendering a container makes it a render group for good.
+   */
+  warmUp(): void {
+    const hidden = this.all().filter((slot) => !this.isVisible(slot));
+    if (hidden.length === 0) return;
+    for (const slot of hidden) {
+      if (slot.stale.size > 0) this.refresh(slot);
+      slot.root.visible = true;
+    }
+    const target = RenderTexture.create({ width: 64, height: 64 });
+    this.app.renderer.render({ container: this.app.stage, target });
+    target.destroy(true);
+    this.applyVisibility();
   }
 }

@@ -1865,8 +1865,10 @@ async function runSession(session: Session, setup: Setup): Promise<() => void> {
   const loop = (now: number): void => {
     const delta = now - last;
     last = now;
-    // The board is ready: the first frame takes the screen over it down.
-    if (preparing?.isConnected) preparing.remove();
+    // The board is ready: the first frame takes the screen over it down, and draws the
+    // hidden look behind it once (`Scene.warmUp`).
+    const first = preparing?.isConnected === true;
+    if (first) preparing?.remove();
 
     perf.begin('sim');
     const events = session.advance(delta);
@@ -1924,6 +1926,7 @@ async function runSession(session: Session, setup: Setup): Promise<() => void> {
     scene.drawOverlay(session.state, ghost, session.humanPlayer);
     drawCounters(ghost);
     perf.end('overlay');
+    if (first) scene.warmUp();
     perf.beforeRender();
     perf.begin('render');
     scene.render();

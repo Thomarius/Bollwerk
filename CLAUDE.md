@@ -362,6 +362,9 @@ card does not help with that (PLAN 11.22). So a style **never redraws what has n
 - **Thousands of sprites** beside something redrawn each frame: a render group of their own
   (Medieval's `tileLayer`), or Pixi gathers and packs every one of them again each frame.
 
+A hidden look redraws only the layers it missed as a wipe reveals it, and is rendered once
+offscreen at the start (`Scene.warmUp`), so its first reveal costs no more than later ones.
+
 Check with `&perf=1` at eight players: the readout names the `Graphics` rebuilt most, every
 frame and at worst. Keep the draw order where it shows; what came after a stamped thing goes
 in a second `Graphics` above it.
