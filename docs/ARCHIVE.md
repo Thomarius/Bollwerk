@@ -5092,3 +5092,52 @@ before a banner**, a layer a frame, so the reveal has nothing left to draw (Cybe
 structures still take 13 ms then); and **Pixi's GC** unloads a texture unused for 60 s
 (`gcMaxUnusedTime`), while the combat look is hidden 50–58 s around a build phase and longer
 with a pause — not seen happening, but raising the limit would rule it out.
+
+## 12o. Levels 2–4 and the volume sliders approved in play (2026-10-05)
+
+The user and testers played the lower levels after carelessness began to fade by level
+(12h): Levels 2–4 are approved as they are. The music and sounds sliders work as they
+should by ear. Both come off the plan's list; UPnP on a real router is the one manual test
+left.
+
+## 12p. Bots share their plans, so they no longer plan on the same ticks (2026-10-05)
+
+Left from 11.22 (12n): the stall a room feels when several bots plan at once. **Why they
+coincided**: the pieces are dealt by `(seed, round, index)`, the same to every player, so
+bots of one level take the same time over each piece, and a replan falls due only on a bot's
+placement ticks. Every bot planned on the build phase's first tick, and bots of one level
+stayed in step all phase. The room cannot send a tick before its bots have thought, and the
+client does not predict, so a person's own piece showed up to two ticks late about every
+1.5 s of an online build phase. Measured with a throwaway probe timing every bot's turn
+(two matches a table, seeds 3 and 4, this machine; a tick is 33 ms): eight Level 8 bots all
+planned together every 40–49 ticks, 40 ms a tick and up to 79, a plan being about 5 ms.
+
+**The fix, the user's choice of two**: a table's bots share **a number of plans a tick**
+(`PlanningSlots` in `packages/ai/src/planning.ts`, `ai.plansPerTick`, 2) — a wall's plan, the
+spare work planned afresh at each placement once the plan stands, and a castle's choice — and
+a bot finding none left waits a tick. Counted in plans, never in time, so a match plays the
+same on any machine. Once apart they stay apart, keeping the same pace from different starts.
+**The turns go in player order rotated by the round** (`turnOrder`), in the room, the local
+match and the harness alike, so the bots that wait as a phase opens are not the same every
+round. The other way offered, staggering each bot's first move of a phase, needed nothing
+shared but guaranteed nothing once bots fell back in step. A bot made without slots, as in
+tests, is never held back.
+
+Build ticks over 33 ms, before and after; worst build tick in brackets:
+
+| Table                  | Before   | After   |
+| ---------------------- | -------- | ------- |
+| 8 players, Level 8     | 111 (79) | 4 (59)  |
+| 8 players, Level 5     | 99 (92)  | 13 (54) |
+| 4 players, Level 5     | 33 (47)  | 8 (61)  |
+| 8 players, Levels 3–10 | 29 (77)  | 3 (46)  |
+
+Every bot choosing its castle on one tick cost 39–69 ms; now 30–46. One plan a
+tick gained nothing over two (eight at Level 8: 4 slow ticks either way). What is left is a
+different thing: a single bot's plan of 30 to 55 ms in a build phase's last few seconds (PLAN
+§11), and the first salvo of combat, where every bot looks for each opponent's weakest wall
+on one tick (one slow tick in two matches).
+
+**No soak**, the user's decision: it does not matter that matches play out differently; the
+probe is enough to show the gain. Every hash changed, so recordings made before replay only
+against the commit that made them, as ever.

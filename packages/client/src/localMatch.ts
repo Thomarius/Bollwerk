@@ -1,12 +1,13 @@
 import {
   BALANCED,
+  defaultAiConfig,
   defaultRuleset,
   defaultTerrainConfig,
   type BotSetup,
   type Personality,
   type Ruleset,
 } from '@bollwerk/config';
-import { Bot, dealPersonalities } from '@bollwerk/ai';
+import { Bot, PlanningSlots, dealPersonalities, turnOrder } from '@bollwerk/ai';
 import { MatchRecorder, recordingId, type RecordingLine } from '@bollwerk/protocol';
 
 import {
@@ -63,12 +64,15 @@ export class LocalMatch {
   readonly humanPlayer: number;
   private readonly rng: Rng;
   private readonly bots = new Map<number, Bot>();
+  /** The plans the bots may make on one tick between them, shared by all of them. */
+  private readonly slots = new PlanningSlots(defaultAiConfig.plansPerTick);
   private readonly tickMs: number;
   /**
-   * The next seat to think on the tick in progress, or null between ticks. A bot planning
-   * its walls takes 15 to 50 ms, and bots of one level plan on the same ticks: eight of them
-   * froze the page for up to 135 ms (PLAN 11.22). So a tick's thinking may run over several
-   * frames, the screen drawn between; the actions and the tick they land on are the same.
+   * The next turn to think on the tick in progress, or null between ticks. A bot planning
+   * its walls takes 15 to 50 ms, and bots of one level planned on the same ticks: eight of
+   * them froze the page for up to 135 ms (PLAN 11.22). Since then they share a few plans a
+   * tick (`PlanningSlots`), and a tick's thinking may still run over several frames, the
+   * screen drawn between; the actions and the tick they land on are the same.
    */
   private thinking: number | null = null;
   private readonly thinkBudgetMs: number;
@@ -120,7 +124,7 @@ export class LocalMatch {
         personality: options.personality ?? (dealt[id] as Personality),
       };
       setups.set(id, setup);
-      this.bots.set(id, new Bot(id, setup));
+      this.bots.set(id, new Bot(id, setup, defaultAiConfig, this.slots));
     });
     this.setups = setups;
     this.rng = new Rng(options.seed ^ 0x5f3759df);
@@ -194,7 +198,7 @@ export class LocalMatch {
    * the frame's time ran out first. Always at least one, so a match never stalls.
    */
   private think(deadline: number, progressed: boolean): boolean {
-    const players = this.state.players;
+    const players = turnOrder(this.state.players, this.state.round);
     while (this.thinking !== null && this.thinking < players.length) {
       if (progressed && performance.now() > deadline) return false;
       const player = players[this.thinking++] as (typeof players)[number];
@@ -217,7 +221,7 @@ export class LocalMatch {
     this.recorder = null;
     const arrived = (): boolean => this.state.phase === phase && this.state.round >= fromRound;
     while (!arrived() && this.state.tick < maxTicks && !this.finished) {
-      for (const player of this.state.players) {
+      for (const player of turnOrder(this.state.players, this.state.round)) {
         if (player.eliminated) continue;
         // Left to itself, the person's seat builds nothing and is soon knocked out,
         // which is the quickest way to put a mid-match elimination on screen.
@@ -243,7 +247,7 @@ export class LocalMatch {
   private botFor(playerId: number): Bot {
     let bot = this.bots.get(playerId);
     if (!bot) {
-      bot = new Bot(playerId, { level: 5, personality: BALANCED });
+      bot = new Bot(playerId, { level: 5, personality: BALANCED }, defaultAiConfig, this.slots);
       this.bots.set(playerId, bot);
     }
     return bot;

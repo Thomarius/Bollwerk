@@ -209,6 +209,14 @@ export const AiConfigSchema = z
       finisher: TargetingTraitSchema,
       grudge: TargetingTraitSchema,
     }),
+    /**
+     * Plans a table's bots may make on one tick between them (`PlanningSlots`): a wall's
+     * plan, or a castle's choice. One costs about 5 ms; bots of one level are dealt the
+     * same pieces at the same pace, so without a limit they all planned on the same ticks
+     * — eight at once, 40 to 90 ms where a tick is 33 (2026-10-05). A bot finding none
+     * left waits a tick.
+     */
+    plansPerTick: z.number().int().positive(),
   })
   .refine(
     (ai) =>

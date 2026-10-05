@@ -13,7 +13,7 @@ import {
   type Personality,
 } from '@bollwerk/config';
 import { loadConfigBundle } from '@bollwerk/config/node';
-import { Bot, dealPersonalities } from '@bollwerk/ai';
+import { Bot, PlanningSlots, dealPersonalities, turnOrder } from '@bollwerk/ai';
 import {
   Rng,
   applyAction,
@@ -387,13 +387,14 @@ for (let i = 0; i < args.matches; i++) {
     })),
   });
   const rng = new Rng(seed);
-  const bots = state.players.map((p) => new Bot(p.id, seatSetup(p.id, seed), bundle.ai));
+  const slots = new PlanningSlots(bundle.ai.plansPerTick);
+  const bots = state.players.map((p) => new Bot(p.id, seatSetup(p.id, seed), bundle.ai, slots));
   let refused = 0;
 
   const sampler = new RoundStats(bundle, `sim-${seed}`, seed, (p) => seatSetup(p, seed));
 
   while (state.phase !== 'game_over' && state.tick < args.maxTicks) {
-    for (const player of state.players) {
+    for (const player of turnOrder(state.players, state.round)) {
       const action = bots[player.id]?.think(state, rng) ?? null;
       if (action !== null && applyAction(state, action) !== null) refused++;
     }

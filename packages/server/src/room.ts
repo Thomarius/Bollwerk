@@ -13,7 +13,7 @@ import {
   type ServerConfig,
   type TerrainConfig,
 } from '@bollwerk/config';
-import { Bot, dealPersonalities } from '@bollwerk/ai';
+import { Bot, PlanningSlots, dealPersonalities, turnOrder } from '@bollwerk/ai';
 import {
   ActionSchema,
   MatchRecorder,
@@ -105,6 +105,8 @@ export class Room {
   private state: MatchState | null = null;
   /** One per seat, created when the match starts: a bot keeps a plan between ticks. */
   private bots = new Map<number, Bot>();
+  /** The plans the bots may make on one tick between them, a fresh set each match. */
+  private slots = new PlanningSlots();
   private accumulatorMs = 0;
   private pending: { seat: Seat; action: Action }[] = [];
   private hostId = 0;
@@ -493,10 +495,11 @@ export class Room {
       });
     }
 
+    this.slots = new PlanningSlots(this.options.ai.plansPerTick);
     for (const seat of this.seats) {
       // A seat a person holds still gets a bot, ready to cover them if they drop.
       const setup = setups[seat.playerId] as BotSetup;
-      this.bots.set(seat.playerId, new Bot(seat.playerId, setup, this.options.ai));
+      this.bots.set(seat.playerId, new Bot(seat.playerId, setup, this.options.ai, this.slots));
     }
 
     // Every connection learns the player it has become before the match reaches it.
@@ -566,7 +569,10 @@ export class Room {
       if (seat.graceTicks > 0) seat.graceTicks--;
     }
 
-    for (const seat of this.seats) {
+    // In player order rotated by the round, so the bots waiting for a plan as a phase opens
+    // are not the same ones every round (`PlanningSlots`).
+    const byPlayer = [...this.seats].sort((a, b) => a.playerId - b.playerId);
+    for (const seat of turnOrder(byPlayer, state.round)) {
       const playsItself = seat.bot || (seat.connection === null && seat.graceTicks === 0);
       if (!playsItself) continue;
       const action = this.bots.get(seat.playerId)?.think(state, this.rng) ?? null;

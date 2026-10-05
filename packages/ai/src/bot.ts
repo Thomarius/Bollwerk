@@ -24,6 +24,7 @@ import {
   type Rng,
 } from '@bollwerk/sim';
 
+import { PlanningSlots } from './planning.js';
 import {
   cannonRoom,
   cheapestPlanFor,
@@ -104,10 +105,15 @@ export class Bot {
   /** How well and how it plays: a level's skill under a personality (PLAN 11.6). */
   readonly setup: BotSetup;
 
+  /**
+   * @param slots shared by every bot at the table, so they do not all plan on one tick;
+   * a bot alone, as in tests, is never held back.
+   */
   constructor(
     readonly playerId: number,
     setup: BotSetup = { level: 5, personality: BALANCED },
     ai: AiConfig = defaultAiConfig,
+    private readonly slots: PlanningSlots = new PlanningSlots(),
   ) {
     this.setup = setup;
     this.profile = botProfile(ai, setup);
@@ -440,6 +446,8 @@ export class Bot {
     }
 
     if (this.plannedAt < 0 || state.tick - this.plannedAt > this.profile.replanTicks) {
+      // No plan left at the table this tick: try again on the next.
+      if (!this.slots.take(state.tick)) return null;
       this.plan = this.decide(state);
       this.plannedAt = state.tick;
     }
@@ -452,18 +460,27 @@ export class Bot {
     // used to mark them, pause, replan, get the same targets back, and stand idle for
     // the rest of the phase beside a castle it had not finished walling.
     const thickens = this.profile.thickens;
+    // Spare work plans afresh at every placement, so it takes a plan from the table; with
+    // none left this tick, the bot waits for the next rather than skip to the outer skin.
+    let deferred = false;
     const choices: (() => number[])[] = [
       () => this.plan,
       // Outward only, which `thickenTargets` guarantees — a second layer laid on the
       // inside stands where a cannon could have stood.
       () => (thickens ? thickenTargets(state, this.playerId) : []),
-      () => this.spareWork(state),
+      () => {
+        if (this.slots.take(state.tick)) return this.spareWork(state);
+        deferred = true;
+        return [];
+      },
       () => (thickens ? outerSkin(state, this.playerId) : []),
     ];
     let placement: { x: number; y: number; rotation: number } | null = null;
     let tried = false;
     for (const choice of choices) {
-      const wanted = choice().filter(
+      const tiles = choice();
+      if (deferred) return null;
+      const wanted = tiles.filter(
         (i) => state.structure[i] === Structure.Empty && !this.unreachable.has(i),
       );
       if (wanted.length === 0) continue;
@@ -948,6 +965,8 @@ export class Bot {
   private chooseCastle(state: MatchState, rng: Rng): Action | null {
     const player = state.players[this.playerId];
     if (!player || player.startingCastleId !== null) return null;
+    // Weighing every castle's wall is a plan: with none left at the table, the next tick.
+    if (!this.slots.take(state.tick)) return null;
     // Last round's plan described an island that no longer exists: a continue wipes it.
     this.plan = [];
     this.plannedAt = -1;

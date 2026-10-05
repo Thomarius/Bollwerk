@@ -145,7 +145,7 @@ Full detail in PLAN.md §1. The parts that surprise people:
 
 ## Status
 
-**Done** (2026-10-05; the latest release **v0.6.0**, 2026-10-04):
+**Done** (2026-10-05; the latest release **v0.6.1**, 2026-10-05):
 
 - **The game**: its rules, online play with rooms, a games browser, pause, and recording
   of every match (ARCHIVE 11e, each header stamped with the server's commit); team mode
@@ -181,10 +181,10 @@ Full detail in PLAN.md §1. The parts that surprise people:
   a square base so its footprint reads (ARCHIVE 12i). The test session of 2026-10-05 checked
   everything visual, Office and German included (ARCHIVE 12n).
 
-**Next** — PLAN §11 says where to start: the user's manual tests of UPnP and the lower bot
-levels, reported back and triaged; another round of improvements from their feedback; or, as
-a session of its own with a soak before and after, bots of one level planning on the same
-ticks (PLAN §11).
+**Next** — PLAN §11 says where to start: the user's manual test of UPnP, reported back and
+triaged (Levels 2–4 and the volume sliders were approved in play, ARCHIVE 12o); another round
+of improvements from their feedback; or a single bot's plan that is slow late in a build phase
+(PLAN §11). Bots no longer plan on the same ticks (ARCHIVE 12p).
 
 **Declined for budget** (PLAN §12): macOS builds (Apple's paid signing) and a hosted public
 server. This is a fan project with no budget: propose nothing that costs money to run.
@@ -335,8 +335,12 @@ its header but the simulation does not — so the server stamps each header with
   a media query at every call, 48 ms a frame in Opera. It is cached in `motion.ts`; anything
   else read that often must be too.
 - **A local match's bots think inside the frame**: one bot planning its walls takes 15 to
-  50 ms, and bots of one level plan on the same ticks. `LocalMatch` spreads a tick's turns
-  over frames (8 ms a frame) without changing an action or its tick.
+  50 ms. `LocalMatch` spreads a tick's turns over frames (8 ms a frame) without changing an
+  action or its tick.
+- **Bots share a few plans a tick** (`PlanningSlots`, `ai.plansPerTick`): every player is dealt
+  the same pieces, so bots of one level fall due to plan on the same ticks. Every driver —
+  room, `LocalMatch`, harness — gives a table's bots one `PlanningSlots` and calls them in
+  `turnOrder`; a bot made without one is never held back (ARCHIVE 12p).
 - **Never `app.destroy(true)` while another Pixi renderer runs**: `true` releases what every
   renderer on the page shares, including pooled batches the other is using, and its next
   frame fails in the batcher. The style pictures destroy theirs without it (ARCHIVE 12b).

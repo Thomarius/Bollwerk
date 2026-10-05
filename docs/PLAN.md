@@ -487,7 +487,7 @@ curtain call and in Office sticky notes and paper clips from party poppers, and 
 winners' flag a swallowtail, a flickering hologram on a light-beam, a pennant in plan, a
 square flag of bricks, a leaded banner, a pennant on a candy-cane pole, a tattered pennant
 on a crooked branch, a tall war banner (_nobori_) hung from an arm, the Bavarian lozenges
-on a maypole, a pennant bearing a golden lyre, or a necktie on an aluminium pole. Minimal
+on a maypole, a pennant bearing a golden lyre, or a necktie on an aluminium pole. Minimal keeps the plain ones.
 
 **Each banner is drawn in the look it brings** (`BANNER_CLASS` in `hud.ts`, a record
 over every style): flat gold for Minimal, a neon strip that flickers on for Cyberpunk, a
@@ -577,7 +577,7 @@ the word, a combat banner across it, a build banner back to the middle. Still un
 reduced motion; one title and no line when both looks are one style. Behind the panel the pixel
 sea drifts. The lobby shows the map the table will play (`preview.ts`), alive — surf
 breathing along its coasts a little out of step tile to tile, the castles breathing
-together (`surfAt`, `castleBreath`, `art.menu`), still under reduced motion — — each island in the colour its seat will play and numbered
+together (`surfAt`, `castleBreath`, `art.menu`), still under reduced motion — each island in the colour its seat will play and numbered
 for it, the viewer's own ringed — beside seat cards that carry the same number and
 colour, a level per bot seat, and columns per team. A newcomer's card flashes as they
 sit down.
@@ -1007,7 +1007,8 @@ Cyberpunk, lollipops, meringue, candy floss and cookies in Chocolate, dead trees
 toadstools and headstones in Halloween, cherry trees, pines, bamboo, garden rocks and stone
 lanterns in Sakura, chestnut trees, beer-garden tables, gingerbread hearts, dropped Maß
 mugs and sleeping revellers in Oktoberfest, harps, music stands, choir singers, metronomes
-and grand pianos in Opera, potted plants, open-plan desks, a cactus on a filing cabinet, **It must never read as wall**, nor as a gun or a
+and grand pianos in Opera, potted plants, open-plan desks, cacti on filing cabinets, swivel chairs, archive boxes and
+jammed printers in Office, a faint dot in Minimal. **It must never read as wall**, nor as a gun or a
 shot: Blueprint's trees were first a circle with a cross, a gun's survey mark in small,
 and Medieval's boulders a round grey rock, a cannonball's double. A tile once built on or
 sealed is cleared for the rest of the match, so nothing grows back through a breach; a
@@ -1025,7 +1026,8 @@ under a glass pipe, kept off the chocolate fall; in Halloween a ghost ship, a fl
 and a will-o'-wisp; in Sakura a boat under a square sail, a line of cranes and a great wave,
 hidden behind Mount Fuji as they pass it; in Oktoberfest a floating Maß, a reveller asleep
 on a lilo and a Weißwurst swimming circles, hidden behind the Ferris wheel; in Opera swans, a singing gondolier and the Flying
-Dutchman, hidden behind the conductor; in Office robot vacuums, a stray paper plane and a a plain boat's silhouette. Anything tall keeps
+Dutchman, hidden behind the conductor; in Office robot vacuums, a stray paper plane and a
+colleague racing past on an office chair; in Minimal a plain boat's silhouette. Anything tall keeps
 to rows whose top is clear of the HUD bar.
 
 **The match's moments** (`camera.ts`, `art.camera`). The match opens
@@ -1089,6 +1091,12 @@ construction, and the soak asserts they never ask for a move the rules refuse.
   exactly the tile it hits, so a second is always wasted.
 - **Pace is in human units** — milliseconds per placement, scaling with piece size — so a
   bot slows as the piece schedule widens, for the same reason a person does.
+- **A table's bots share their plans** (`PlanningSlots`, `ai.plansPerTick`): a wall's plan or
+  a castle's choice costs about 5 ms, and a room cannot send a tick before its bots have
+  thought. Everyone is dealt the same pieces, so bots of one level fell due on the same
+  ticks all phase; now a bot finding none left waits a tick, and they fall out of step. They
+  take their turns in player order rotated by the round (`turnOrder`), so the same ones do
+  not always wait (ARCHIVE 12p).
 - A bot **does not idle while anything is worth building**. Choices are tried in turn —
   the plan, thickening, the next castle (up to every castle on the island), more room,
   and finally any tile against the outside of its wall — skipping tiles already found
@@ -1171,7 +1179,7 @@ every resolution against an independent search, not only on unit pictures.
 | M13 | Bots as skill levels and personalities                    | Done (11.6)         |
 | M14 | A desktop app for releases                                | Done (ARCHIVE 11zt) |
 | M15 | More languages: German, then French                       | German done (12g)   |
-| M16 | UPnP for hosting without touching the router              | Planned (11.21)     |
+| M16 | UPnP for hosting without touching the router              | Done (ARCHIVE 12j)  |
 
 ---
 
@@ -1179,30 +1187,27 @@ every resolution against an independent search, not only on unit pictures.
 
 **Where to start (2026-10-05).** Everything planned is done: the game, online play, bots as
 skill levels and personalities (M13), fourteen styles and four visual passes, help for new
-players, awards and a rematch, the desktop app for releases (M14, v0.6.0 the latest), English
+players, awards and a rematch, the desktop app for releases (M14, v0.6.1 the latest), English
 and German (M15), rendering performance and the stutter as the looks swap (ARCHIVE 12n), the
 weekend soak and the one change it led to (ARCHIVE 12h), square bases under every gun
 (ARCHIVE 12i), UPnP (ARCHIVE 12j) and a fourteenth style, Office (ARCHIVE 12l). The test
 session of 2026-10-05 checked everything visual, German included (ARCHIVE 12n). A new
 session starts with one of:
 
-1. **The user's manual tests, reported back** — still to try: **UPnP** on their router
-   (switch on Open to the internet in the app, or `npm start -- --upnp`, and open the invite
-   link from a phone on mobile data; ARCHIVE 12j), and how **Levels 2–4** feel now that their
-   carelessness fades (ARCHIVE 12h). Whatever they find is triaged with them first.
+1. **The user's manual test of UPnP**, reported back: switch on Open to the internet in the
+   app, or `npm start -- --upnp`, and open the invite link from a phone on mobile data
+   (ARCHIVE 12j). Whatever they find is triaged with them first.
 2. **Another round of improvements**, from a test session or the user's own list. The
    server must be rebuilt (`npm start`) and every page reloaded: the protocol is 16. Every
    match is recorded with its statistics (§9, ARCHIVE 11e).
-3. **Bots of one level planning on the same ticks** (left from 11.22, ARCHIVE 12n): the stall a
-   server's room still feels when several plan at once. Spreading their planning over
-   different ticks changes every bot's play and every hash, so it needs a soak before and
-   after (`npm run soak`; the last one's plan in ARCHIVE 12h) — a session of its own, at the
-   end of a day.
+3. **A single slow plan late in a build phase** (found 2026-10-05, ARCHIVE 12p): with bots
+   sharing their plans (§8), the slow ticks left at eight players are one bot's plan of 30
+   to 55 ms in the phase's last few seconds, against about 5 ms otherwise — 13 ticks over
+   33 ms in two matches at Level 5. Possibly a plan with little time left trying every
+   width of wall before giving up (`widestAffordable`, `reseal`); not yet looked into.
+   Changes play, which needs no soak (the user's decision, ARCHIVE 12p).
 
 **French** is a file of its own and a name in `languages.ts`, when a reader is found.
-
-**To check in play**: the music and sounds sliders by ear. Everything visual on the old list
-was checked in the test session of 2026-10-05 (ARCHIVE 12n).
 
 Only open work is kept here. Finished packages move to `ARCHIVE.md` under their old
 numbers — 11.1 scoring, 11.7 team mode, 11.8 the visual pass, 11.9 the themes, 11.10 the
@@ -1212,7 +1217,7 @@ test-session feedback, in ARCHIVE 11w; 11.5 the small items and 11.6 the bots, i
 11.16 help for new players, the menu and the sea, and 11.17 the desktop app, in ARCHIVE
 11zt; 11.18 the fourth visual pass, in ARCHIVE 11zv; 11.19 every style to the edges, in
 ARCHIVE 11zz; 11.20 more languages, in ARCHIVE 12g; 11.21 UPnP, in ARCHIVE 12j; 11.2 points decide, 11.3 two players,
-11.4 measurements never taken and 11.13 the bots' loose ends, closed by the weekend soak, in ARCHIVE 12h; 11.22 rendering performance, in ARCHIVE 12n — so the open sections keep theirs.
+11.4 measurements never taken and 11.13 the bots' loose ends, closed by the weekend soak, in ARCHIVE 12h; 11.22 rendering performance, in ARCHIVE 12n, its bots planning on the same ticks in ARCHIVE 12p — so the open sections keep theirs.
 
 ## 12. Deferred (explicitly out of scope for v1)
 

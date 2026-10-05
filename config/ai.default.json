@@ -118,5 +118,6 @@
     "grudge": {
       "share": 0.5
     }
-  }
+  },
+  "plansPerTick": 2
 }
