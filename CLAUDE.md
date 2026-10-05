@@ -125,7 +125,8 @@ Full detail in PLAN.md §1. The parts that surprise people:
   wall. Geometry, not a bot failing.
 - **Continues**: failing to seal spends a life, wipes the island, and hands back a fresh
   castle and ring. It also rewinds that player's piece schedule to round 1, which is why
-  `build.sharedPieceSequence` is false.
+  `build.sharedPieceSequence` is false. The rewind is required, the user's decision
+  (2026-10-05, ARCHIVE 12k): it is not to be measured or questioned again.
 - **Orphaned wall is swept in one pass**: blocks with fewer than two orthogonal wall
   neighbours are marked against the board as it stands, then go together. A run of three
   keeps its middle. Stranded wall stays as an obstacle.
@@ -144,7 +145,7 @@ Full detail in PLAN.md §1. The parts that surprise people:
 
 ## Status
 
-**Done** (2026-10-04; released as **v0.6.0**, with German and the rendering performance):
+**Done** (2026-10-05; the latest release **v0.6.0**, 2026-10-04):
 
 - **The game**: its rules, online play with rooms, a games browser, pause, and recording
   of every match (ARCHIVE 11e, each header stamped with the server's commit); team mode
@@ -167,27 +168,21 @@ Full detail in PLAN.md §1. The parts that surprise people:
   11zp–11zt); every audio file credited (ARCHIVE 11zx). Online clients catch up on the
   server at once (ARCHIVE 11zg). Deployment is verified by a CI job, since there is no
   Docker on this machine. The protocol is 16: a test session needs the server rebuilt and
-  every page reloaded.
+  every page reloaded. **UPnP** (ARCHIVE 12j): the desktop app's switch Open to the
+  internet, off by default, and `npm start -- --upnp` ask the router to open the port; the
+  lobby then offers an invite link. Never in the image.
+- **Balance** (M7, ARCHIVE 12h): a weekend soak of 22,656 matches found the points game on
+  target — almost every match decided at the cap, knockouts late and rare, two players fine,
+  the ladder in order — and one cliff, Level 4 to 5, ended by `carelessness` fading by
+  level. The default is to change no rule without a very good reason. `npm run soak`
+  reruns the whole plan, resumable (SOAKS.md).
+- **Rendering performance** (PLAN 11.22): 58–60 fps at eight players on an integrated GPU,
+  every effect kept; every gun stands on a square base so its footprint reads (ARCHIVE 12i).
 
-**Next** — PLAN §11 says where to start, in this order of readiness:
-
-0. **Rendering performance** (PLAN 11.22) is done in every style (2026-10-04): 58–59 fps at
-   eight players on an integrated GPU, Opera from 13.5, and no frame over 50 ms where there
-   were up to 279 in 30 s; bot planning a third faster, same play. Left: the user's look at
-   the styles in motion, and bots of one level planning on the same ticks (PLAN 11.22).
-1. **The soaks are done** (ARCHIVE 12h, 2026-10-05): 22,656 matches. Points decide almost
-   every match, knockouts come late, two players are fine, the ladder holds; the cliff from
-   Level 4 to 5 was the careless castle and gun switches, which now fade by level
-   (`carelessness` in the level table). `npm run soak` reruns it, resumable.
-2. **The languages, checked** (ARCHIVE 12g): the user tests German in play and reads the
-   desktop window's German; corrections go into `config/locale/de.json`. French when a reader
-   is found.
-3. **UPnP** (PLAN 11.21): open the host's port where the router allows it, and say so.
-4. Then **balance** (M7). **The goal** (2026-10-01, the user's): almost every match is
-   decided **on points at the round cap**, so **the scoring formula is the game's balance**;
-   elimination stays a real threat — a life spent for every failed seal, a knockout now and
-   then — but not the way matches end. The soak confirmed it (ARCHIVE 12h): the default is to
-   change nothing without a very good reason. Left: 11.4's one setting never measured.
+**Next** — PLAN §11 says where to start: the user's manual tests of UPnP, the square gun
+bases, German and the lower bot levels, reported back and triaged; another round of
+improvements from their feedback; or, as a session of its own with a soak before and after,
+bots of one level planning on the same ticks (PLAN 11.22).
 
 **Declined for budget** (PLAN §12): macOS builds (Apple's paid signing) and a hosted public
 server. This is a fan project with no budget: propose nothing that costs money to run.

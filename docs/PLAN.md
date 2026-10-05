@@ -1119,7 +1119,7 @@ every resolution against an independent search, not only on unit pictures.
 | M4  | Online multiplayer                                        | Done                |
 | M5  | AI opponents                                              | Done                |
 | M6  | Full scope: 2–8 players, audio, lobby, Docker, deployment | Done                |
-| M7  | Balance pass                                              | **In progress**     |
+| M7  | Balance pass                                              | Done (ARCHIVE 12h)  |
 | M8  | Team mode, and one lobby for online and offline           | Done                |
 | M9  | Visual pass: phase themes, banner wipe, effects, lobby    | Done (ARCHIVE 11h)  |
 | M10 | Alternative visual themes: Night, Blueprint, Cyberpunk…   | Done (ARCHIVE 11h)  |
@@ -1134,30 +1134,28 @@ every resolution against an independent search, not only on unit pictures.
 
 ## 11. Open work
 
-**Where to start (2026-10-04).** Everything but balance is done: the game, online play, bots
-as skill levels and personalities (M13), thirteen styles and four visual passes, a gallery for
-choosing the looks, two rounds of test-session feedback, help for new players, awards and a
-rematch, the desktop app for releases (M14, v0.6.0 the latest, released 2026-10-04), and the game in English and
-German (M15, ARCHIVE 12g). A new session starts with one of:
+**Where to start (2026-10-05).** Everything planned is done: the game, online play, bots as
+skill levels and personalities (M13), thirteen styles and four visual passes, help for new
+players, awards and a rematch, the desktop app for releases (M14, v0.6.0 the latest), English
+and German (M15), rendering performance (11.22), the weekend soak and the one change it led
+to (ARCHIVE 12h), square bases under every gun (ARCHIVE 12i) and UPnP (ARCHIVE 12j). A new
+session starts with one of:
 
-0. **11.22, rendering performance**, done in every style on 2026-10-04 (58–60 fps at eight
-   players on an integrated GPU, Opera from 13.5): left are a look at the styles in motion
-   and the server's bots, both in 11.22.
-1. **Balance (M7)**: the weekend soak was read with the user on 2026-10-05 (ARCHIVE 12h).
-   Points decide almost every match, knockouts come late, two players are fine, the ladder
-   holds; the one change was the cliff from Level 4 to 5, now gone (`carelessness`). What is
-   left is 11.4's one setting never measured, and the user's own impressions in play — the
-   lower levels feel different now, Level 4 in particular.
-2. **The languages, checked by the user** (ARCHIVE 12g): German in play, and the desktop
-   window's 22 German texts, which nobody but the agent has read yet. Whatever they find is
-   an edit to `config/locale/de.json`. **French** is a file of its own and a name in
-   `languages.ts`, when a reader for it is found.
-3. **UPnP, to be tried on the user's router** (ARCHIVE 12j): switch on Open to the internet
-   in the app, or `npm start -- --upnp`, and open the game from a phone on mobile data.
-4. **Another round of improvements**, from a test session or the user's own list. The
+1. **The user's manual tests, reported back** — they are trying: **UPnP** on their router
+   (switch on Open to the internet in the app, or `npm start -- --upnp`, and open the invite
+   link from a phone on mobile data; ARCHIVE 12j); **the square gun bases** in every style
+   (ARCHIVE 12i); **German** in play and the desktop window's German texts (ARCHIVE 12g);
+   and how **Levels 2–4** feel now that their carelessness fades (ARCHIVE 12h). Whatever they
+   find is triaged with them first; German corrections go into `config/locale/de.json`.
+2. **Another round of improvements**, from a test session or the user's own list. The
    server must be rebuilt (`npm start`) and every page reloaded: the protocol is 16. Every
-   match is recorded with its statistics (§9, ARCHIVE 11e); the user sends compiled
-   feedback, which is triaged with them first.
+   match is recorded with its statistics (§9, ARCHIVE 11e).
+3. **Bots of one level planning on the same ticks** (11.22's last item): the stall a
+   server's room still feels when several plan at once. Spreading their planning over
+   different ticks changes every bot's play and every hash, so it needs a soak before and
+   after (`npm run soak`, SOAKS.md) — a session of its own, at the end of a day.
+
+**French** is a file of its own and a name in `languages.ts`, when a reader is found.
 
 **To check in play**, since a still frame cannot show them: a knocked-out player's own
 roster card looked cut off at its right edge in a screenshot (2026-10-02, the user to test);
@@ -1178,8 +1176,6 @@ sour notes, chords and glissandos, the finale's spotlights; whether one gallery 
 clearly, or two would (ARCHIVE 12b); and the larger roster figures and team tags in a
 real team match (ARCHIVE 12c).
 
-Then, as it fits: **11.4**, the one measurement never taken.
-
 Only open work is kept here. Finished packages move to `ARCHIVE.md` under their old
 numbers — 11.1 scoring, 11.7 team mode, 11.8 the visual pass, 11.9 the themes, 11.10 the
 UI polish, all in ARCHIVE 11h; 11.11 the second visual pass and 11.12 the first
@@ -1187,15 +1183,8 @@ test-session feedback, in ARCHIVE 11w; 11.5 the small items and 11.6 the bots, i
 11zd; 11.14 the second test-session feedback, in ARCHIVE 11ze; 11.15 the third visual pass,
 11.16 help for new players, the menu and the sea, and 11.17 the desktop app, in ARCHIVE
 11zt; 11.18 the fourth visual pass, in ARCHIVE 11zv; 11.19 every style to the edges, in
-ARCHIVE 11zz; 11.20 more languages, in ARCHIVE 12g; 11.21 UPnP, in ARCHIVE 12j; 11.2 points decide, 11.3 two players
-and 11.13 the bots' loose ends, measured by the weekend soak, in ARCHIVE 12h — so the open sections keep theirs.
-
-### 11.4 Measurements never taken
-
-- **`resetPieceScheduleOnContinue`**, against the alternative. Only the "on" setting has
-  ever run; the rule variants of the weekend soak (package C) were declined, the rules
-  reading as solid. Position bias and the full ladder were measured in that soak (ARCHIVE
-  12h).
+ARCHIVE 11zz; 11.20 more languages, in ARCHIVE 12g; 11.21 UPnP, in ARCHIVE 12j; 11.2 points decide, 11.3 two players,
+11.4 measurements never taken and 11.13 the bots' loose ends, closed by the weekend soak, in ARCHIVE 12h — so the open sections keep theirs.
 
 ### 11.22 Rendering performance — agreed 2026-10-04, first in the next session
 

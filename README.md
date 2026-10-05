@@ -252,20 +252,20 @@ ruleset to every client in the match snapshot, so all of them run one identical 
 
 ## Status
 
-| Milestone                                       | State       |
-| ----------------------------------------------- | ----------- |
-| M0 — scaffold, config schemas, CI               | Done        |
-| M1 — simulation core                            | Done        |
-| M2 — locally playable, placeholder art          | Done        |
-| M3 — procedural art                             | Done        |
-| M4 — online multiplayer                         | Done        |
-| M5 — AI opponents                               | Done        |
-| M6 — full scope, 2–8 players, audio, deployment | Done        |
-| M7 — balance pass                               | In progress |
-| M8 — team mode, one lobby online and offline    | Done        |
-| M9–M12 — visual passes and thirteen styles      | Done        |
-| M13 — bots as skill levels and personalities    | Done        |
-| M14 — a desktop app for releases                | Done        |
+| Milestone                                       | State |
+| ----------------------------------------------- | ----- |
+| M0 — scaffold, config schemas, CI               | Done  |
+| M1 — simulation core                            | Done  |
+| M2 — locally playable, placeholder art          | Done  |
+| M3 — procedural art                             | Done  |
+| M4 — online multiplayer                         | Done  |
+| M5 — AI opponents                               | Done  |
+| M6 — full scope, 2–8 players, audio, deployment | Done  |
+| M7 — balance pass                               | Done  |
+| M8 — team mode, one lobby online and offline    | Done  |
+| M9–M12 — visual passes and thirteen styles      | Done  |
+| M13 — bots as skill levels and personalities    | Done  |
+| M14 — a desktop app for releases                | Done  |
 
 ## License
 

@@ -4613,3 +4613,11 @@ the user's router, which this machine cannot reach. About one session.
 
 **Not part of it**: relays, tunnels or a public lobby server, which need a machine on the
 internet (§12).
+
+## 12k. The piece schedule's rewind is settled (2026-10-05)
+
+PLAN 11.4's last item was measuring `resetPieceScheduleOnContinue` against the alternative,
+since only "on" had ever run. The user's decision: the rewind is absolutely needed, a player
+coming back from a continue must get the early pieces again, and there is nothing to learn
+from turning it off. The item is dropped, and with it 11.4; position bias and the full
+ladder, its other two items, were measured by the weekend soak (12h).
