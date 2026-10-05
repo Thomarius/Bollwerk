@@ -4,6 +4,8 @@ import { resolve } from 'node:path';
 
 import { build } from 'esbuild';
 
+import { ssdpPackageJson } from '../server/bundling.js';
+
 /** Resolved from this file, so the script works from any working directory. */
 const here = import.meta.dirname;
 
@@ -45,6 +47,7 @@ await build({
   platform: 'node',
   format: 'esm',
   external: ['electron', 'bufferutil', 'utf-8-validate'],
+  plugins: [ssdpPackageJson],
   // ws is CommonJS, and needs a real `require` inside an ES module; see the server's build.
   banner: {
     js: [

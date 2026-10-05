@@ -97,6 +97,14 @@ Use `http://`, not `https://`. The address has to be the host's network address 
 
 Everything on the LAN applies; in addition, people outside your network need a way in.
 
+**First, let the router open the port itself.** In the app, switch on **Open to the
+internet**; from the source, start with `npm start -- --upnp`. The game asks the router to
+open its port (UPnP) while the server runs, and says what happened: the public address to
+give your friends — the lobby then shows a ready link to copy, beside the room code — or why
+it did not work. It works where the router allows UPnP (on a FRITZ!Box: _Internet → Permit
+Access → the computer → Permit independent port sharing_). If it does not, forward the port
+by hand:
+
 1. **Forward port 8080 on your router to the host.** In the router's settings (usually
    at `http://192.168.1.1` or `http://192.168.0.1`; look for _Port forwarding_,
    _Virtual server_ or _NAT_), add a rule:

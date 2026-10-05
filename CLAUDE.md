@@ -166,7 +166,7 @@ Full detail in PLAN.md §1. The parts that surprise people:
 - **Releases**: the desktop app, a portable file for Windows and Linux (M14, ARCHIVE
   11zp–11zt); every audio file credited (ARCHIVE 11zx). Online clients catch up on the
   server at once (ARCHIVE 11zg). Deployment is verified by a CI job, since there is no
-  Docker on this machine. The protocol is 15: a test session needs the server rebuilt and
+  Docker on this machine. The protocol is 16: a test session needs the server rebuilt and
   every page reloaded.
 
 **Next** — PLAN §11 says where to start, in this order of readiness:

@@ -52,6 +52,8 @@ export interface LobbyView {
   seatShapes?: readonly PlayerShape[];
   /** Seats somebody has just taken, to be marked as they arrive. */
   arrived?: readonly number[];
+  /** A link to this room from the internet, while the host's port is open there (PLAN 11.21). */
+  invite?: string | null;
 }
 
 /** The levels a seat's bot may play at, as the lobby offers them. */
@@ -278,7 +280,14 @@ export function lobbyMarkup(view: LobbyView): string {
       : `<div class="code-row">
         <code id="room-code" class="room-code">${escape(view.code)}</code>
         <button id="copy-code" class="quiet">${t('lobby.copy')}</button>
-      </div>`;
+      </div>` +
+        (view.invite
+          ? `<div class="code-row invite-row">
+        <span class="invite-label">${t('lobby.invite')}</span>
+        <code id="invite-link" class="invite-link">${escape(view.invite)}</code>
+        <button id="copy-invite" class="quiet">${t('lobby.copy')}</button>
+      </div>`
+          : '');
 
   return `
     <div class="menu lobby">

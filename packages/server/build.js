@@ -2,6 +2,8 @@ import { resolve } from 'node:path';
 
 import { build } from 'esbuild';
 
+import { ssdpPackageJson } from './bundling.js';
+
 /** Resolved from this file, so the script works from any working directory. */
 const here = import.meta.dirname;
 
@@ -30,6 +32,7 @@ await build({
   // without them. They are the only optional dependencies in the tree, so leaving
   // them out is what lets the runtime image carry no node_modules at all.
   external: ['bufferutil', 'utf-8-validate'],
+  plugins: [ssdpPackageJson],
   // `ws` is CommonJS, and its `require` of Node builtins does not survive being
   // bundled into an ES module — the server dies on the first connection attempt with
   // "Dynamic require of events is not supported". This gives the bundle a real

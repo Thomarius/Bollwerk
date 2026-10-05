@@ -23,8 +23,13 @@ if (port !== undefined && (!Number.isInteger(port) || port < 1 || port > 65535))
   process.exit(1);
 }
 
+// Opening the port on the router is the host's choice (PLAN 11.21): `npm start -- --upnp`.
+// A flag, not the environment: the image must never ask, and nothing in it passes one.
+const upnp = process.argv.slice(2).includes('--upnp');
+
 const started = await startServer({
   root: repoRoot,
+  upnp,
   ...(port === undefined ? {} : { port }),
   ...(process.env['HOST'] === undefined ? {} : { host: process.env['HOST'] }),
 });
@@ -43,3 +48,26 @@ console.error(
   `bollwerk server on ${first} (protocol ${PROTOCOL_VERSION}, ${loadConfigBundle(repoRoot).ruleset.tickRateHz}Hz)`,
 );
 for (const url of others) console.error(`  on the network at ${url}`);
+if (upnp) {
+  console.error(`  asking the router to open port ${server.port} to the internet…`);
+  server.onInternet((status) => {
+    // The server itself says where it is reachable; the failures are said here.
+    if (status.state === 'no_router') {
+      console.error(
+        `  the router did not answer (UPnP is off on it, or not supported): forward port ${server.port} by hand`,
+      );
+    } else if (status.state === 'refused') {
+      console.error(
+        `  the router would not open port ${server.port} (${status.detail}): forward it by hand`,
+      );
+    } else if (status.state === 'no_public_address') {
+      console.error(
+        `  this connection has no public address (${status.address}): no router setting can open it`,
+      );
+    } else if (status.state === 'open' && status.ipv6 !== null) {
+      console.error(
+        `  guests with IPv6 may also reach http://[${status.ipv6}]:${server.port}, if the router lets them`,
+      );
+    }
+  });
+}

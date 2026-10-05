@@ -18,6 +18,7 @@ import type { Connection, Room } from './room.js';
 import { openRecordingStore } from './recordings.js';
 import { codeVersion } from './version.js';
 import { RoomManager } from './rooms.js';
+import { PortOpener, type InternetStatus } from './upnp.js';
 
 /**
  * The server as something a program starts and stops (PLAN 11.17 A1): the command line in
@@ -43,6 +44,13 @@ export interface ServerOptions {
   commit?: string | null;
   /** Where the server's own news goes; stderr by default, as its start-up line does. */
   log?: (message: string) => void;
+  /**
+   * Ask the router to open the port as the server starts (PLAN 11.21): the host's choice,
+   * never a default. `setInternet` changes it while running.
+   */
+  upnp?: boolean;
+  /** The port opener; a real one by default, a fake in tests. */
+  opener?: PortOpener;
 }
 
 export interface RunningServer {
@@ -52,6 +60,12 @@ export interface RunningServer {
   urls: string[];
   /** Closes every connection, room and timer, and resolves once the port is free. */
   stop(): Promise<void>;
+  /** Whether the port is open to the internet, and where. */
+  readonly internet: InternetStatus;
+  /** Asks the router to open the port, or closes it; resolves with what happened. */
+  setInternet(on: boolean): Promise<InternetStatus>;
+  /** Told whenever `internet` changes. */
+  onInternet(listener: (status: InternetStatus) => void): void;
 }
 
 /** A start that could not bind: told as such, so a caller can say so rather than crash. */
@@ -98,10 +112,14 @@ export async function startServer(options: ServerOptions): Promise<StartResult> 
         options.commit === undefined ? codeVersion(options.root) : options.commit,
       )
     : null;
+  // The public address while the port is open, for the lobby's invitation (PLAN 11.21).
+  let internet: InternetStatus = { state: 'off' };
+  const internetListeners: ((status: InternetStatus) => void)[] = [];
   const rooms = new RoomManager(
     bundle,
     undefined,
     store === null ? undefined : () => store.writer(),
+    () => (internet.state === 'open' ? internet.url : null),
   );
 
   /**
@@ -274,21 +292,62 @@ export async function startServer(options: ServerOptions): Promise<StartResult> 
   const address = http.address();
   const actualPort = typeof address === 'object' && address !== null ? address.port : port;
   let stopping: Promise<void> | null = null;
+  const opener =
+    options.opener ??
+    new PortOpener({
+      leaseSeconds: bundle.server.upnp.leaseSeconds,
+      searchMs: bundle.server.upnp.searchMs,
+      interfaces: networkInterfaces,
+    });
+  const announce = (status: InternetStatus): InternetStatus => {
+    internet = status;
+    rooms.refreshLobbies();
+    for (const listener of internetListeners) listener(status);
+    return status;
+  };
+  // The latest request wins: an answer to one the host has since withdrawn is dropped.
+  let request = 0;
+  const setInternet = async (on: boolean): Promise<InternetStatus> => {
+    const mine = ++request;
+    if (!on) {
+      await opener.close();
+      return announce({ state: 'off' });
+    }
+    announce({ state: 'searching' });
+    const status = await opener.open(actualPort);
+    if (mine !== request || stopping !== null) return internet;
+    if (status.state === 'open') log(`reachable from the internet at ${status.url}`);
+    return announce(status);
+  };
+  if (options.upnp === true) void setInternet(true);
   return {
     ok: true,
     server: {
+      get internet() {
+        return internet;
+      },
+      setInternet,
+      onInternet(listener) {
+        internetListeners.push(listener);
+      },
       port: actualPort,
       host,
       // The addresses to open, not the one bound: a browser refuses http://0.0.0.0:8080.
       urls: openableUrls(host, actualPort, networkInterfaces()),
       stop() {
+        // The mapping goes first, so a router is not left pointing at a port nobody holds;
+        // bounded, since a router that does not answer must not hold up a stop.
+        const unmapped = Promise.race([
+          opener.close(),
+          new Promise<void>((resolve) => setTimeout(resolve, 2000).unref()),
+        ]);
         stopping ??= new Promise<void>((resolve) => {
           clearInterval(ticking);
           for (const client of wss.clients) client.terminate();
           wss.close();
           http.closeAllConnections();
           http.close(() => resolve());
-        });
+        }).then(() => unmapped);
         return stopping;
       },
     },

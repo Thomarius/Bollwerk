@@ -1152,9 +1152,10 @@ German (M15, ARCHIVE 12g). A new session starts with one of:
    window's 22 German texts, which nobody but the agent has read yet. Whatever they find is
    an edit to `config/locale/de.json`. **French** is a file of its own and a name in
    `languages.ts`, when a reader for it is found.
-3. **11.21, UPnP** — opening the host's port without touching the router, where it works.
+3. **UPnP, to be tried on the user's router** (ARCHIVE 12j): switch on Open to the internet
+   in the app, or `npm start -- --upnp`, and open the game from a phone on mobile data.
 4. **Another round of improvements**, from a test session or the user's own list. The
-   server must be rebuilt (`npm start`) and every page reloaded: the protocol is 15. Every
+   server must be rebuilt (`npm start`) and every page reloaded: the protocol is 16. Every
    match is recorded with its statistics (§9, ARCHIVE 11e); the user sends compiled
    feedback, which is triaged with them first.
 
@@ -1186,7 +1187,7 @@ test-session feedback, in ARCHIVE 11w; 11.5 the small items and 11.6 the bots, i
 11zd; 11.14 the second test-session feedback, in ARCHIVE 11ze; 11.15 the third visual pass,
 11.16 help for new players, the menu and the sea, and 11.17 the desktop app, in ARCHIVE
 11zt; 11.18 the fourth visual pass, in ARCHIVE 11zv; 11.19 every style to the edges, in
-ARCHIVE 11zz; 11.20 more languages, in ARCHIVE 12g; 11.2 points decide, 11.3 two players
+ARCHIVE 11zz; 11.20 more languages, in ARCHIVE 12g; 11.21 UPnP, in ARCHIVE 12j; 11.2 points decide, 11.3 two players
 and 11.13 the bots' loose ends, measured by the weekend soak, in ARCHIVE 12h — so the open sections keep theirs.
 
 ### 11.4 Measurements never taken
@@ -1195,39 +1196,6 @@ and 11.13 the bots' loose ends, measured by the weekend soak, in ARCHIVE 12h —
   ever run; the rule variants of the weekend soak (package C) were declined, the rules
   reading as solid. Position bias and the full ladder were measured in that soak (ARCHIVE
   12h).
-
-### 11.21 Opening the host's port by UPnP — agreed 2026-10-03, not started
-
-**The goal**: a person hosting from the desktop app or `npm start` is reachable from the
-internet without forwarding port 8080 by hand — **where the router allows it**, which is
-not everywhere, and saying plainly when it did not work. A hosted public server would solve
-it for everyone but costs money every month, which a fan project without a budget does not
-spend (decided 2026-10-03, §12).
-
-**How**: as the server starts, ask the router for a mapping of the game's port — UPnP IGD,
-and NAT-PMP / PCP for routers that speak those instead — with a lease of about an hour,
-renewed while running and removed as the server stops; a lease that expires on its own
-covers a crash. A small pure-JavaScript library rather than a native one, so it works in
-Electron and Node alike; to be evaluated first (`@achingbrain/nat-port-mapper` is a
-candidate). Only the one port, only while the server runs.
-
-**Saying what happened**, in the server window and the console where the addresses are
-printed today (`addresses.ts`): "Reachable from the internet at 203.0.113.7:8080"; or "The
-router did not open the port (UPnP is off, or not supported) — forward 8080 by hand"; or
-**"This connection has no public address"** when the address the router reports is itself
-private or carrier-grade (100.64.0.0/10) — common in Germany on cable (DS-Lite) and some
-fibre and mobile lines, where no router setting can help. A public IPv6 address, where
-there is one, is listed too: guests with IPv6 can reach it directly.
-
-**Configuration**: `server.upnp.enabled` in `config/server.default.json` — on for the
-desktop app and `npm start`, off in the Docker image, which is deployed behind its own
-networking.
-
-**Testing**: the mapping logic against a fake gateway in unit tests; the real thing only on
-the user's router, which this machine cannot reach. About one session.
-
-**Not part of it**: relays, tunnels or a public lobby server, which need a machine on the
-internet (§12).
 
 ### 11.22 Rendering performance — agreed 2026-10-04, first in the next session
 

@@ -340,5 +340,14 @@
   "desktop.openBrowser": "Open in browser",
   "desktop.playHere": "Play here",
   "desktop.closeNote": "Closing this window stops the server.",
-  "desktop.fanNote": "An unofficial fan game, inspired by Atari’s Rampart (1990)."
+  "desktop.fanNote": "An unofficial fan game, inspired by Atari’s Rampart (1990).",
+  "desktop.upnp": "Open to the internet",
+  "desktop.internetOff": "Only this network can join. Switch on to let friends elsewhere in.",
+  "desktop.searching": "Asking the router to open port {port}…",
+  "desktop.internetOpen": "Open: friends anywhere open this.",
+  "desktop.ipv6": "Guests with IPv6 may also reach [{address}]:{port}, if the router lets them.",
+  "desktop.noRouter": "The router did not answer (UPnP is off on it, or not supported). Forward port {port} by hand, or switch on UPnP in the router.",
+  "desktop.refused": "The router would not open port {port}: {detail}. Forward it by hand.",
+  "desktop.noPublic": "This connection has no public address ({address}): no router setting can open it. Use a VPN such as Tailscale.",
+  "lobby.invite": "Over the internet"
 }

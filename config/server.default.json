@@ -1,6 +1,10 @@
 {
   "port": 8080,
   "host": "0.0.0.0",
+  "upnp": {
+    "leaseSeconds": 3600,
+    "searchMs": 6000
+  },
   "rooms": {
     "codeLength": 6,
     "codeAlphabet": "ABCDEFGHJKLMNPQRSTUVWXYZ23456789",

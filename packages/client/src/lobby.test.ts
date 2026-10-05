@@ -259,3 +259,14 @@ describe('lobby', () => {
     expect(rows(guest)[0]).toContain('Level 8');
   });
 });
+
+describe('the invitation over the internet', () => {
+  it('offers the link while the host’s port is open, and nothing otherwise', () => {
+    expect(lobbyMarkup(view())).not.toContain('invite-link');
+    const html = lobbyMarkup(view({ invite: 'http://203.0.113.7:8080/?join=ABC123' }));
+    expect(html).toContain(
+      '<code id="invite-link" class="invite-link">http://203.0.113.7:8080/?join=ABC123</code>',
+    );
+    expect(html).toContain('id="copy-invite"');
+  });
+});

@@ -51,6 +51,51 @@ const toggle = $<HTMLButtonElement>('toggle');
 const browser = $<HTMLButtonElement>('browser');
 const play = $<HTMLButtonElement>('play');
 const next = $<HTMLButtonElement>('next');
+const upnp = $<HTMLInputElement>('upnp');
+const internet = $('internet');
+const publicList = $<HTMLUListElement>('public');
+
+upnp.addEventListener('change', () => void api.setUpnp(upnp.checked));
+
+/** What the router said, in words for the host (PLAN 11.21). */
+export function describeInternet(state: ControlState): string {
+  if (!state.upnp || state.status !== 'running')
+    return state.upnp ? '' : say('desktop.internetOff');
+  const s = state.internet;
+  const port = state.port;
+  switch (s.state) {
+    case 'off':
+    case 'searching':
+      return say('desktop.searching', { port });
+    case 'open':
+      return s.ipv6 === null
+        ? say('desktop.internetOpen')
+        : `${say('desktop.internetOpen')} ${say('desktop.ipv6', { address: s.ipv6, port })}`;
+    case 'no_router':
+      return say('desktop.noRouter', { port });
+    case 'refused':
+      return say('desktop.refused', { port, detail: s.detail });
+    case 'no_public_address':
+      return say('desktop.noPublic', { address: s.address });
+  }
+}
+
+/** An address with a button that copies it. */
+function copyItem(url: string): HTMLLIElement {
+  const item = document.createElement('li');
+  const text = document.createElement('code');
+  text.textContent = url;
+  const copy = document.createElement('button');
+  copy.className = 'quiet';
+  copy.textContent = say('desktop.copy');
+  copy.addEventListener('click', () => {
+    void api.copy(url);
+    copy.textContent = say('desktop.copied');
+    setTimeout(() => (copy.textContent = say('desktop.copy')), 1200);
+  });
+  item.append(text, copy);
+  return item;
+}
 
 /** What the status line says, and how it is coloured, for each state. */
 export function describe(state: ControlState): { text: string; tone: string; detail: string } {
@@ -94,22 +139,13 @@ function show(state: ControlState): void {
   play.disabled = !running;
   next.hidden = !(state.status === 'failed' && state.reason === 'port_in_use');
   next.textContent = say('desktop.tryPort', { port: state.port + 1 });
-  urls.replaceChildren(
-    ...(state.status === 'running' ? state.urls : []).map((url) => {
-      const item = document.createElement('li');
-      const text = document.createElement('code');
-      text.textContent = url;
-      const copy = document.createElement('button');
-      copy.className = 'quiet';
-      copy.textContent = say('desktop.copy');
-      copy.addEventListener('click', () => {
-        void api.copy(url);
-        copy.textContent = say('desktop.copied');
-        setTimeout(() => (copy.textContent = say('desktop.copy')), 1200);
-      });
-      item.append(text, copy);
-      return item;
-    }),
+  urls.replaceChildren(...(state.status === 'running' ? state.urls : []).map(copyItem));
+  upnp.checked = state.upnp;
+  internet.textContent = describeInternet(state);
+  publicList.replaceChildren(
+    ...(state.status === 'running' && state.upnp && state.internet.state === 'open'
+      ? [copyItem(state.internet.url)]
+      : []),
   );
 }
 

@@ -4,3 +4,4 @@
 
 export { repoRoot } from './paths.js';
 export { startServer, type RunningServer, type ServerOptions, type StartResult } from './server.js';
+export type { InternetStatus } from './upnp.js';

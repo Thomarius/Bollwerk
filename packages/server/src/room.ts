@@ -79,6 +79,8 @@ export interface RoomOptions {
    * files and its tests of disks.
    */
   record?: (line: RecordingLine) => void;
+  /** The server's public address while its port is open to the internet (PLAN 11.21). */
+  publicUrl?: () => string | null;
 }
 
 /** How often the server sends its state fingerprint for clients to check against. */
@@ -640,7 +642,13 @@ export class Room {
       playerLimits: { ...this.options.ruleset.players },
       hostId: this.hostId,
       started: this.started,
+      internet: this.options.publicUrl?.() ?? null,
     });
+  }
+
+  /** The lobby told again, while it is one: the public address came or went. */
+  refreshLobby(): void {
+    if (!this.started) this.broadcastRoom();
   }
 
   private broadcast(message: ServerMessage): void {

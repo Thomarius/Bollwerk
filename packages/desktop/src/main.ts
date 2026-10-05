@@ -1,3 +1,4 @@
+import { readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -33,6 +34,19 @@ app.setName('Bollwerk');
 /** One copy at a time: a second would only find the first's port taken. */
 if (!app.requestSingleInstanceLock()) app.quit();
 
+/**
+ * The window's one remembered choice, "Open to the internet" (PLAN 11.21): off until the
+ * host switches it on, then on at every start until they switch it off.
+ */
+const settingsFile = join(app.getPath('userData'), 'settings.json');
+function savedUpnp(): boolean {
+  try {
+    return (JSON.parse(readFileSync(settingsFile, 'utf8')) as { upnp?: unknown }).upnp === true;
+  } catch {
+    return false;
+  }
+}
+
 const bundle = loadConfigBundle(root);
 const control = new ServerControl(
   (port) =>
@@ -45,6 +59,7 @@ const control = new ServerControl(
       ...(app.isPackaged ? { commit: BUILT_FROM } : {}),
     }),
   bundle.server.port,
+  savedUpnp(),
 );
 
 let window: BrowserWindow | null = null;
@@ -53,7 +68,7 @@ let quitting = false;
 function createWindow(): void {
   window = new BrowserWindow({
     width: 440,
-    height: 520,
+    height: 640,
     resizable: false,
     title: 'Bollwerk server',
     backgroundColor: '#12131c',
@@ -76,6 +91,14 @@ control.onChange((state) => window?.webContents.send('state', state));
 ipcMain.handle('start', (_event, port?: number) => control.startOn(port));
 ipcMain.handle('stop', () => control.stop());
 ipcMain.handle('next-port', () => control.startOn(nextPort(control.state.port)));
+ipcMain.handle('set-upnp', (_event, on: boolean) => {
+  try {
+    writeFileSync(settingsFile, JSON.stringify({ upnp: on === true }));
+  } catch {
+    // Not remembered: it still applies until the app closes.
+  }
+  return control.setUpnp(on === true);
+});
 ipcMain.handle('copy', (_event, text: string) => clipboard.writeText(text));
 ipcMain.handle('open-browser', () => {
   const state = control.state;

@@ -4,7 +4,7 @@ import { z } from 'zod';
 import { SnapshotSchema } from './snapshot.js';
 
 /** Bumped on any breaking change to the message set; mismatched clients are rejected. */
-export const PROTOCOL_VERSION = 15;
+export const PROTOCOL_VERSION = 16;
 
 /**
  * A player's intent. The server overwrites `player` with the sender's own seat before
@@ -143,6 +143,11 @@ export const ServerMessageSchema = z.discriminatedUnion('type', [
     playerLimits: z.strictObject({ min: z.number().int(), max: z.number().int() }),
     hostId: z.number().int().nonnegative(),
     started: z.boolean(),
+    /**
+     * The server's address on the internet while its port is open there (PLAN 11.21), or
+     * null: the lobby offers it as an invitation, with the room's code.
+     */
+    internet: z.string().nullable(),
   }),
   z.strictObject({ type: z.literal('snapshot'), snapshot: SnapshotSchema }),
   /**

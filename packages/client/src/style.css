@@ -1617,6 +1617,26 @@ body.hud-bricks #hud .roster .team .player b {
   gap: 0.6rem;
 }
 
+/* The link for friends outside the house, while the host's port is open (PLAN 11.21):
+   under the code, smaller, since it is copied rather than read out. */
+.invite-row {
+  margin-top: 0.4rem;
+  font-size: 12px;
+}
+
+.invite-label {
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.invite-link {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  user-select: all;
+}
+
 /*
  * The room code is the one thing in the lobby somebody has to read out or type in, so
  * it is set large, spaced, and in a face where O and 0 cannot be confused. The code

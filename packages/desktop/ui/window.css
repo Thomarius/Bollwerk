@@ -142,3 +142,17 @@ li button {
 .row button {
   flex: 1;
 }
+
+/* "Open to the internet" (PLAN 11.21): a switch, and what the router said under it. */
+.switch {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  margin-top: 0.4rem;
+  cursor: pointer;
+}
+
+.switch input {
+  accent-color: var(--accent);
+  cursor: pointer;
+}

@@ -7,6 +7,17 @@ export const ServerConfigSchema = z.strictObject({
   port: z.number().int().min(1).max(65535),
   host: z.string().min(1),
 
+  /**
+   * Asking the host's router to open the port (UPnP, PLAN 11.21). Whether to ask at all is
+   * not here: the desktop app's switch and `npm start -- --upnp` decide, and the image never
+   * asks. The lease lapses on its own if the server dies; the library renews it while it runs.
+   */
+  upnp: z.strictObject({
+    leaseSeconds: z.number().int().min(120),
+    /** How long to look for a router before saying there is none. */
+    searchMs: z.number().int().positive(),
+  }),
+
   rooms: z.strictObject({
     codeLength: z.number().int().min(4).max(12),
     /** Ambiguous glyphs (0/O, 1/I) are excluded so codes can be read aloud. */

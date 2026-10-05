@@ -337,5 +337,14 @@
   "desktop.openBrowser": "Im Browser öffnen",
   "desktop.playHere": "Hier spielen",
   "desktop.closeNote": "Wer dieses Fenster schließt, hält den Server an.",
-  "desktop.fanNote": "Ein inoffizielles Fanspiel, inspiriert von Ataris Rampart (1990)."
+  "desktop.fanNote": "Ein inoffizielles Fanspiel, inspiriert von Ataris Rampart (1990).",
+  "desktop.upnp": "Fürs Internet öffnen",
+  "desktop.internetOff": "Nur dieses Netzwerk kann beitreten. Einschalten, um Freunde von anderswo hereinzulassen.",
+  "desktop.searching": "Bitte den Router, Port {port} zu öffnen …",
+  "desktop.internetOpen": "Offen: Freunde überall öffnen diese Adresse.",
+  "desktop.ipv6": "Gäste mit IPv6 erreichen vielleicht auch [{address}]:{port}, wenn der Router sie lässt.",
+  "desktop.noRouter": "Der Router hat nicht geantwortet (UPnP ist dort aus oder wird nicht unterstützt). Port {port} von Hand weiterleiten oder UPnP im Router einschalten.",
+  "desktop.refused": "Der Router wollte Port {port} nicht öffnen: {detail}. Bitte von Hand weiterleiten.",
+  "desktop.noPublic": "Dieser Anschluss hat keine öffentliche Adresse ({address}): Keine Router-Einstellung kann ihn öffnen. Ein VPN wie Tailscale hilft.",
+  "lobby.invite": "Übers Internet"
 }

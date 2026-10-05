@@ -13,6 +13,7 @@
     "build": "node build.js"
   },
   "dependencies": {
+    "@achingbrain/nat-port-mapper": "^4.0.5",
     "@bollwerk/ai": "*",
     "@bollwerk/analysis": "*",
     "@bollwerk/config": "*",

@@ -11,6 +11,7 @@ const api = {
   stop: (): Promise<void> => ipcRenderer.invoke('stop'),
   nextPort: (): Promise<void> => ipcRenderer.invoke('next-port'),
   copy: (text: string): Promise<void> => ipcRenderer.invoke('copy', text),
+  setUpnp: (on: boolean): Promise<void> => ipcRenderer.invoke('set-upnp', on),
   openBrowser: (): Promise<void> => ipcRenderer.invoke('open-browser'),
   playHere: (): Promise<void> => ipcRenderer.invoke('play-here'),
   onState: (listener: (state: ControlState) => void): void => {

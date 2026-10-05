@@ -20,6 +20,8 @@ export class RoomManager {
     seed = Date.now() >>> 0,
     /** A fresh writer for each room's match recording, or nothing to record. */
     private readonly recorder?: () => (line: RecordingLine) => void,
+    /** The server's public address while its port is open to the internet, or null. */
+    private readonly publicUrl: () => string | null = () => null,
   ) {
     this.rng = new Rng(seed);
   }
@@ -49,10 +51,16 @@ export class RoomManager {
       server: this.config.server,
       ai: this.config.ai,
       seed: this.rng.nextU32(),
+      publicUrl: this.publicUrl,
       ...(this.recorder === undefined ? {} : { record: this.recorder() }),
     });
     this.rooms.set(room.code, room);
     return room;
+  }
+
+  /** Tells every lobby again, when what they show from outside the room has changed. */
+  refreshLobbies(): void {
+    for (const room of this.rooms.values()) room.refreshLobby();
   }
 
   /** Advances every room and retires the ones nobody is left in. */

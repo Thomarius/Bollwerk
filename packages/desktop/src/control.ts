@@ -1,4 +1,4 @@
-import type { RunningServer, StartResult } from '@bollwerk/server';
+import type { InternetStatus, RunningServer, StartResult } from '@bollwerk/server';
 
 /**
  * The server as the window shows it (PLAN 11.17 A2), kept apart from Electron so it can be
@@ -6,17 +6,23 @@ import type { RunningServer, StartResult } from '@bollwerk/server';
  * why. A failure to bind is a state the window offers a way out of — the next port — not
  * an error.
  */
-export type ControlState =
+export type ControlState = (
   | { status: 'stopped'; port: number }
   | { status: 'starting'; port: number }
-  | { status: 'running'; port: number; urls: string[] }
+  | { status: 'running'; port: number; urls: string[]; internet: InternetStatus }
   | { status: 'stopping'; port: number }
-  | { status: 'failed'; port: number; reason: 'port_in_use' | 'no_permission' | 'error' };
+  | { status: 'failed'; port: number; reason: 'port_in_use' | 'no_permission' | 'error' }
+) & {
+  /** The host's switch "Open to the internet" (PLAN 11.21), whatever the server's state. */
+  upnp: boolean;
+};
 
 /** The port to offer once one is taken: the next, wrapping inside the unprivileged range. */
 export function nextPort(port: number): number {
   return port >= 65535 ? 1024 : port + 1;
 }
+
+type DistributiveOmit<T, K extends PropertyKey> = T extends unknown ? Omit<T, K> : never;
 
 export class ServerControl {
   private server: RunningServer | null = null;
@@ -26,8 +32,9 @@ export class ServerControl {
   constructor(
     private readonly start: (port: number) => Promise<StartResult>,
     port: number,
+    private upnp = false,
   ) {
-    this.current = { status: 'stopped', port };
+    this.current = { status: 'stopped', port, upnp };
   }
 
   get state(): ControlState {
@@ -38,9 +45,10 @@ export class ServerControl {
     this.listeners.push(listener);
   }
 
-  private set(state: ControlState): void {
-    this.current = state;
-    for (const listener of this.listeners) listener(state);
+  /** Sets the state, the switch carried along. */
+  private set(state: DistributiveOmit<ControlState, 'upnp'>): void {
+    this.current = { ...state, upnp: this.upnp } as ControlState;
+    for (const listener of this.listeners) listener(this.current);
   }
 
   /** Starts on the port given, or the last one; does nothing unless stopped or failed. */
@@ -58,8 +66,28 @@ export class ServerControl {
       this.set({ status: 'failed', port, reason: result.reason });
       return;
     }
-    this.server = result.server;
-    this.set({ status: 'running', port: result.server.port, urls: result.server.urls });
+    const server = result.server;
+    this.server = server;
+    const running = (internet: InternetStatus) => ({
+      status: 'running' as const,
+      port: server.port,
+      urls: server.urls,
+      internet,
+    });
+    server.onInternet((internet) => {
+      if (this.server === server && this.current.status === 'running') this.set(running(internet));
+    });
+    this.set(running(server.internet));
+    if (this.upnp) void server.setInternet(true);
+  }
+
+  /** The host's switch: remembered, and acted on at once if the server is running. */
+  async setUpnp(on: boolean): Promise<void> {
+    this.upnp = on;
+    this.set(this.current);
+    if (this.server !== null && this.current.status === 'running') {
+      await this.server.setInternet(on);
+    }
   }
 
   /** Stops it, resolving once the port is free; does nothing unless running. */

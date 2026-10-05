@@ -4534,3 +4534,82 @@ outline in the owner's ink, Parchment's tinted paper. Medieval's and Night's gun
 sprites, so their square is a stone slab in the pit's sprite, tinted per player with the
 rest. Simple on purpose, the user's wish: the gun on it is the style's; the base only says
 where it stands and whose it is. Checked in screenshots of every style's build phase.
+
+## 12j. Opening the host's port by UPnP (PLAN 11.21, 2026-10-05)
+
+A host can let friends outside the house join without forwarding a port by hand, where the
+router allows it. Decided with the user before building: **off by default** — it opens a
+port to the whole internet, which a game among friends at home does not need — so the
+desktop app has a switch, **Open to the internet**, remembered once set (`settings.json` in
+the app's data folder), and `npm start -- --upnp` asks from the command line; the image
+never does, and nothing in it passes the flag. That also settled the plan's contradiction:
+it wanted UPnP off in the image through `server.default.json`, which the image ships, while
+the environment may say only where to listen. The config holds only the lease
+(`server.upnp.leaseSeconds`, an hour) and how long to look for a router.
+
+**How** (`packages/server/src/upnp.ts`): `@achingbrain/nat-port-mapper`, pure JavaScript
+and maintained, finds the first IPv4 internet gateway answering UPnP IGD within six seconds,
+asks it for its outside address first — a private or carrier-grade one (100.64.0.0/10:
+DS-Lite cable, some fibre and mobile) means **no mapping can help**, and the host is told so
+rather than shown an address nobody can reach — then maps the same port from this machine's
+address on the router's network, with a lease the library renews. The mapping is removed
+before the server stops (bounded at two seconds, so a silent router cannot hold up a stop)
+and lapses by itself if the process dies. A request the host has withdrawn meanwhile is
+dropped. NAT-PMP and PCP, which the plan named for routers without UPnP, were left out: the
+library needs the default gateway's address for them, and the routers common here — the
+FRITZ!Box above all — speak UPnP IGD. A public IPv6 address of the machine is mentioned too,
+"if the router lets them": many routers' firewalls do not by default.
+
+**Saying what happened**: the desktop window under the switch — the public address with a
+Copy button, or that the router did not answer (UPnP off or unsupported: forward by hand),
+refused (with its reason), or that the line has no public address (a VPN such as Tailscale
+helps) — and the console for `npm start`. **The lobby** shows the link for friends outside,
+`http://<public address>:<port>/?join=<code>`, under the room code with its own Copy: the
+`room` message carries the server's public address while the port is open (`internet`,
+**protocol 16**), and every open lobby is told again when it comes or goes.
+
+**Bundling**: `@achingbrain/ssdp`, beneath the library, reads its own `package.json` at run
+time to sign its messages, which no bundle resolves — the bundled server died on start. A
+small esbuild plugin (`packages/server/bundling.js`, shared with the desktop app's build)
+writes the name and version into that code as it is bundled, and fails the build if the
+library stops reading it that way.
+
+**Tested** against a fake router (mapping, refusal, no router, no public address, a request
+withdrawn mid-search, the lobby's address arriving and leaving), and the window drawn in its
+states in both languages. **Not tested on a real router**: this machine cannot reach the
+user's; the user tries it at home, from a phone on mobile data.
+
+### The plan's section, as it stood
+
+### Formerly PLAN 11.21 Opening the host's port by UPnP — agreed 2026-10-03, not started
+
+**The goal**: a person hosting from the desktop app or `npm start` is reachable from the
+internet without forwarding port 8080 by hand — **where the router allows it**, which is
+not everywhere, and saying plainly when it did not work. A hosted public server would solve
+it for everyone but costs money every month, which a fan project without a budget does not
+spend (decided 2026-10-03, §12).
+
+**How**: as the server starts, ask the router for a mapping of the game's port — UPnP IGD,
+and NAT-PMP / PCP for routers that speak those instead — with a lease of about an hour,
+renewed while running and removed as the server stops; a lease that expires on its own
+covers a crash. A small pure-JavaScript library rather than a native one, so it works in
+Electron and Node alike; to be evaluated first (`@achingbrain/nat-port-mapper` is a
+candidate). Only the one port, only while the server runs.
+
+**Saying what happened**, in the server window and the console where the addresses are
+printed today (`addresses.ts`): "Reachable from the internet at 203.0.113.7:8080"; or "The
+router did not open the port (UPnP is off, or not supported) — forward 8080 by hand"; or
+**"This connection has no public address"** when the address the router reports is itself
+private or carrier-grade (100.64.0.0/10) — common in Germany on cable (DS-Lite) and some
+fibre and mobile lines, where no router setting can help. A public IPv6 address, where
+there is one, is listed too: guests with IPv6 can reach it directly.
+
+**Configuration**: `server.upnp.enabled` in `config/server.default.json` — on for the
+desktop app and `npm start`, off in the Docker image, which is deployed behind its own
+networking.
+
+**Testing**: the mapping logic against a fake gateway in unit tests; the real thing only on
+the user's router, which this machine cannot reach. About one session.
+
+**Not part of it**: relays, tunnels or a public lobby server, which need a machine on the
+internet (§12).

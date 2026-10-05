@@ -736,10 +736,21 @@ function drawLobby(view: LobbyView, on: LobbyHandlers): void {
   // somebody will first try this on a home network. There `navigator.clipboard` is
   // undefined, and an optional call on it once skipped the fallback too, so the button
   // did nothing at all (reported from Linux Mint over a LAN address).
-  const copy = document.querySelector<HTMLButtonElement>('#copy-code');
+  wireCopy('#copy-code', '#room-code', view.code ?? '');
+  // The link for friends outside the house, while the host's port is open (PLAN 11.21).
+  if (view.invite) wireCopy('#copy-invite', '#invite-link', view.invite);
+  document.querySelector('#begin')?.addEventListener('click', () => {
+    audio.play('select');
+    on.start();
+  });
+}
+
+/** A button that copies `text`, shown in the node `shown`; see the lobby's copy above. */
+function wireCopy(button: string, shown: string, text: string): void {
+  const copy = document.querySelector<HTMLButtonElement>(button);
   copy?.addEventListener('click', () => {
     audio.play('select');
-    const code = view.code ?? '';
+    const code = text;
     const copied = (): void => {
       copy.textContent = t('lobby.copied');
       setTimeout(() => (copy.textContent = t('lobby.copy')), 1200);
@@ -747,7 +758,7 @@ function drawLobby(view: LobbyView, on: LobbyHandlers): void {
     // The old way, still honoured over plain http: select the code and copy the selection.
     // Failing that, it is left selected so it can be copied by hand.
     const bySelection = (): void => {
-      const node = document.querySelector('#room-code');
+      const node = document.querySelector(shown);
       if (node) globalThis.getSelection()?.selectAllChildren(node);
       let ok: boolean;
       try {
@@ -763,10 +774,6 @@ function drawLobby(view: LobbyView, on: LobbyHandlers): void {
     } else {
       bySelection();
     }
-  });
-  document.querySelector('#begin')?.addEventListener('click', () => {
-    audio.play('select');
-    on.start();
   });
 }
 
@@ -1039,6 +1046,7 @@ function roomLobby(
           seed: message.seed,
           hostBot: message.hostBot,
           arrived,
+          invite: message.internet === null ? null : `${message.internet}/?join=${roomCode}`,
         };
         if (!message.started) {
           // Unstarted again after a match: the host called a rematch, and the room is its
