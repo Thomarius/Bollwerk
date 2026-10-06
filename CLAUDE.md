@@ -145,7 +145,7 @@ Full detail in PLAN.md §1. The parts that surprise people:
 
 ## Status
 
-**Done** (2026-10-05; the latest release **v0.6.1**, 2026-10-05):
+**Done** (2026-10-06; the latest release **v0.7.0**, 2026-10-06):
 
 - **The game**: its rules, online play with rooms, a games browser, pause, and recording
   of every match (ARCHIVE 11e, each header stamped with the server's commit); team mode
@@ -182,10 +182,9 @@ Full detail in PLAN.md §1. The parts that surprise people:
   a square base so its footprint reads (ARCHIVE 12i). The test session of 2026-10-05 checked
   everything visual, Office and German included (ARCHIVE 12n).
 
-**Next** — PLAN §11 says where to start: the user's manual test of UPnP, reported back and
-triaged (Levels 2–4 and the volume sliders were approved in play, ARCHIVE 12o); another round
-of improvements from their feedback; or a single bot's plan that is slow late in a build phase
-(PLAN §11). Bots no longer plan on the same ticks (ARCHIVE 12p).
+**Next** — more test games towards a first feature-ready version, then perhaps a big new
+feature, not yet decided. PLAN §11 holds what is open: the user's manual test of UPnP. French
+is not to be done.
 
 **Declined for budget** (PLAN §12): macOS builds (Apple's paid signing) and a hosted public
 server. This is a fan project with no budget: propose nothing that costs money to run.

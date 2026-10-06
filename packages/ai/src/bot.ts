@@ -655,8 +655,16 @@ export class Bot {
       if (affordable(tight)) return (tight as SealPlan).tiles;
 
       // Reaching for two castles while unenclosed is the real gamble: it is more
-      // cannons if it lands and elimination if it does not. Only when it clearly fits.
-      if (this.profile.maxCastles > 1) {
+      // cannons if it lands and elimination if it does not. Only when it clearly fits —
+      // and only searched when the cheapest pair at no room fits, since no wider wall
+      // round two castles costs less. Late in a phase nothing fits, and the search at
+      // every width was a third of a plan of 30 ms where 5 is usual (PLAN 11).
+      if (
+        this.profile.maxCastles > 1 &&
+        affordable(
+          cheapestPlanFor(state, this.playerId, 2, this.profile.maxCastles, this.unreachable),
+        )
+      ) {
         const bold = this.widestAffordable(state, 2, false, budget);
         if (bold !== null) return bold.tiles;
       }
@@ -806,14 +814,11 @@ export class Bot {
    * more for.
    */
   private reseal(state: MatchState, budget: number): number[] {
-    // First ask for a wall that keeps the guns, with room inside it for the ones this
-    // round is about to earn. Taking the cheapest gun-keeping plan instead was the
-    // same mistake in a different place: it saved the artillery it had and left
-    // nowhere to stand the artillery it was owed. If even a tight version is more
-    // than this phase can build, fall back to merely surviving — a silent cannon
-    // still beats elimination.
-    const withGuns = this.widestAffordable(state, 1, true, budget);
-    if (withGuns !== null) return withGuns.tiles;
+    // No wall that keeps the guns is asked for here: `decide` comes here only once the
+    // tightest of them is past the budget, and a wall with room in it is never cheaper,
+    // so asking at every width could only fail — a third of a slow plan late in a phase
+    // (PLAN 11). The guns are weighed below instead, a silent cannon still beating
+    // elimination.
 
     // Which of this bot's guns stand near the castles a wall would take in. Not which
     // castles were sealed last round: after a breach that is nothing at all, which is

@@ -1186,36 +1186,28 @@ every resolution against an independent search, not only on unit pictures.
 | M12 | Second visual pass: scenery, atmosphere, Toy bricks       | Done (ARCHIVE 11w)  |
 | M13 | Bots as skill levels and personalities                    | Done (11.6)         |
 | M14 | A desktop app for releases                                | Done (ARCHIVE 11zt) |
-| M15 | More languages: German, then French                       | German done (12g)   |
+| M15 | More languages: German                                    | Done (12g)          |
 | M16 | UPnP for hosting without touching the router              | Done (ARCHIVE 12j)  |
 
 ---
 
 ## 11. Open work
 
-**Where to start (2026-10-05).** Everything planned is done: the game, online play, bots as
+**Where to start (2026-10-06).** More test games come first, towards a first feature-ready
+version; a big new feature may follow, not yet decided. French is not to be done (the user's
+decision, 2026-10-06). Everything planned is done: the game, online play, bots as
 skill levels and personalities (M13), fourteen styles and four visual passes, help for new
-players, awards and a rematch, the desktop app for releases (M14, v0.6.1 the latest), English
+players, awards and a rematch, the desktop app for releases (M14, v0.7.0 the latest), English
 and German (M15), rendering performance and the stutter as the looks swap (ARCHIVE 12n), the
 weekend soak and the one change it led to (ARCHIVE 12h), square bases under every gun
-(ARCHIVE 12i), UPnP (ARCHIVE 12j) and a fourteenth style, Office (ARCHIVE 12l). The test
-session of 2026-10-05 checked everything visual, German included (ARCHIVE 12n). A new
-session starts with one of:
+(ARCHIVE 12i), UPnP (ARCHIVE 12j), a fourteenth style, Office (ARCHIVE 12l), random looks
+every round (ARCHIVE 12q), Cyberpunk's glow made cheap and sharp (ARCHIVE 12r) and the slow
+plan late in a build phase (ARCHIVE 12s), all in v0.7.0. The test session of 2026-10-05
+checked everything visual, German included (ARCHIVE 12n). Still open:
 
 1. **The user's manual test of UPnP**, reported back: switch on Open to the internet in the
    app, or `npm start -- --upnp`, and open the invite link from a phone on mobile data
    (ARCHIVE 12j). Whatever they find is triaged with them first.
-2. **Another round of improvements**, from a test session or the user's own list. The
-   server must be rebuilt (`npm start`) and every page reloaded: the protocol is 16. Every
-   match is recorded with its statistics (§9, ARCHIVE 11e).
-3. **A single slow plan late in a build phase** (found 2026-10-05, ARCHIVE 12p): with bots
-   sharing their plans (§8), the slow ticks left at eight players are one bot's plan of 30
-   to 55 ms in the phase's last few seconds, against about 5 ms otherwise — 13 ticks over
-   33 ms in two matches at Level 5. Possibly a plan with little time left trying every
-   width of wall before giving up (`widestAffordable`, `reseal`); not yet looked into.
-   Changes play, which needs no soak (the user's decision, ARCHIVE 12p).
-
-**French** is a file of its own and a name in `languages.ts`, when a reader is found.
 
 Only open work is kept here. Finished packages move to `ARCHIVE.md` under their old
 numbers — 11.1 scoring, 11.7 team mode, 11.8 the visual pass, 11.9 the themes, 11.10 the
@@ -1225,7 +1217,7 @@ test-session feedback, in ARCHIVE 11w; 11.5 the small items and 11.6 the bots, i
 11.16 help for new players, the menu and the sea, and 11.17 the desktop app, in ARCHIVE
 11zt; 11.18 the fourth visual pass, in ARCHIVE 11zv; 11.19 every style to the edges, in
 ARCHIVE 11zz; 11.20 more languages, in ARCHIVE 12g; 11.21 UPnP, in ARCHIVE 12j; 11.2 points decide, 11.3 two players,
-11.4 measurements never taken and 11.13 the bots' loose ends, closed by the weekend soak, in ARCHIVE 12h; 11.22 rendering performance, in ARCHIVE 12n, its bots planning on the same ticks in ARCHIVE 12p; 11.23 random looks every round, in ARCHIVE 12q; Cyberpunk under Glowing, in ARCHIVE 12r — so the open sections keep theirs.
+11.4 measurements never taken and 11.13 the bots' loose ends, closed by the weekend soak, in ARCHIVE 12h; 11.22 rendering performance, in ARCHIVE 12n, its bots planning on the same ticks in ARCHIVE 12p; 11.23 random looks every round, in ARCHIVE 12q; Cyberpunk under Glowing, in ARCHIVE 12r; the slow plan late in a build phase, in ARCHIVE 12s — so the open sections keep theirs.
 
 ## 12. Deferred (explicitly out of scope for v1)
 

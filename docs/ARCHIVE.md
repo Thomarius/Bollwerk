@@ -5237,3 +5237,27 @@ half resolution, which looked nearly alike side by side. Measured the same way: 
 frame under Standard, 14.6 under Glowing before, 9.7 now — the blur's own cost 6.7 → 1.8 ms;
 46.7 fps against 40.9, Standard 54.2 in that run. Under Glowing a shot's coloured trail and halo
 are glow alone, so they read as a soft haze of the owner's colour round a sharp white head.
+
+**Checked in play** by the user (2026-10-06): it looks very good and runs stable.
+
+## 12s. A slow plan late in a build phase, and v0.7.0 (2026-10-06)
+
+**The problem** (ARCHIVE 12p): with bots sharing their plans, the slow ticks left at eight
+players were one bot's plan of 30 to 55 ms in a build phase's last seconds, against about 5 ms.
+**Why**, from a throwaway probe timing every `decide()` in two matches of eight Level 5 bots
+(seeds 3 and 4): 17 plans of 2046 over 25 ms, up to 104 — all with nothing sealed, under 2.5 s
+left and a budget of 0.1–1.1 pieces, each three searches of about 10 ms that could not succeed:
+`widestAffordable` for two castles at every room radius, `reseal`'s `widestAffordable` for one
+castle keeping the guns, and `reseal`'s `sealOptions` at every radius, for its last resort.
+
+**The fix, exact**: a wall that must enclose more — more castles, the guns, a band of room — is
+never cheaper than one enclosing less, since any wall round the larger set also cuts off the
+smaller. So `reseal`'s gun-keeping search is gone, which could never succeed: `decide` calls it
+only once the tightest gun-keeping wall, its radius 0, is past the budget. And the two-castle
+search runs only when the cheapest pair at no room fits. Tried first as a probe: no plan over
+25 ms, the worst in a phase's last 3 s 15 ms. **Play is unchanged**: nine matches — eight at
+Level 5, three at Level 8, four of mixed levels, six with personalities dealt — end on the same
+hashes before and after, and whole matches run 5–9% faster.
+
+**v0.7.0** was released the same day: random looks every round (12q), Cyberpunk's glow (12r)
+and this.
