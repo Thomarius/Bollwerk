@@ -145,7 +145,7 @@ Full detail in PLAN.md §1. The parts that surprise people:
 
 ## Status
 
-**Done** (2026-10-06; the latest release **v0.8.0**, 2026-10-06):
+**Done** (2026-10-06; the latest release **v0.8.1**, 2026-10-06):
 
 - **The game**: its rules, online play with rooms, a games browser, pause, and recording
   of every match (ARCHIVE 11e, each header stamped with the server's commit); team mode
@@ -155,11 +155,13 @@ Full detail in PLAN.md §1. The parts that surprise people:
 - **The looks**: sixteen styles for either look — Minimal, Medieval, Night, Cyberpunk,
   Blueprint, Parchment, Toy bricks, Stained glass, Chocolate (ARCHIVE 11zy), Halloween
   (ARCHIVE 12a), Sakura (ARCHIVE 12d), Oktoberfest (ARCHIVE 12e), Opera (ARCHIVE 12f),
-  Office (ARCHIVE 12l), Under the sea (ARCHIVE 12u), Electric (ARCHIVE 12v) — over four visual passes (M9–M12); every style carried to the panels,
-  the big timer, the island banners and the finish (ARCHIVE 11zz), and each with a piece of
-  its own in the sea's corner (`corner.ts`, ARCHIVE 12t); chosen from a gallery with Random —
-  a new style every round, in the title too (ARCHIVE 12q) — and changeable mid-match from the
-  pause menu (ARCHIVE 12b).
+  Office (ARCHIVE 12l), Under the sea (ARCHIVE 12u) and Electric (ARCHIVE 12v) — over four
+  visual passes (M9–M12); every style carried to the panels, the big timer, the island
+  banners and the finish (ARCHIVE 11zz), and each with a piece of its own in the sea's corner
+  (`corner.ts`, ARCHIVE 12t); chosen from a gallery with Random — a new style every round, in
+  the title too (ARCHIVE 12q) — and changeable mid-match from the pause menu (ARCHIVE 12b).
+  A new style is drawn cheaply from the start and measured against Office with `&perf=1`
+  (ARCHIVE 12u: curves and round caps on every block cost four times as much).
 - **Around a match**: How to play, the ranking between rounds, awards, a rematch, music
   and sounds volumes, a pause menu with Leave match; two rounds of test-session feedback
   (ARCHIVE 11n–11w, 11ze) and a trim of the menu's and lobby's texts with larger roster

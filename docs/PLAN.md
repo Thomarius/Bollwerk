@@ -1313,19 +1313,17 @@ every resolution against an independent search, not only on unit pictures.
 
 ## 11. Open work
 
-**Where to start (2026-10-06).** Everything planned is done and in **v0.8.0**, the latest
-release: the game and online play, bots as skill levels and personalities, fourteen styles
-each with its piece in the corner, random looks every round, English and German, the desktop
-app, UPnP, the balance soak and the rendering work (ARCHIVE 12h–12t). More test games come
-first, towards a first feature-ready version; a big new feature may follow, not yet decided.
-French is not to be done (the user's decision, 2026-10-06). Still open:
+**Where to start (2026-10-06).** Everything planned is done and in **v0.8.1**, the latest
+release: the game and online play, bots as skill levels and personalities, sixteen styles —
+Under the sea and Electric the newest (ARCHIVE 12u, 12v) — each with its piece in the corner,
+random looks every round, English and German, the desktop app, UPnP, the balance soak and the
+rendering work (ARCHIVE 12h–12v). More test games come first, towards a first feature-ready
+version; a big new feature may follow, not yet decided. French is not to be done (the user's
+decision, 2026-10-06). Still open:
 
 1. **The user's manual test of UPnP**, reported back: switch on Open to the internet in the
    app, or `npm start -- --upnp`, and open the invite link from a phone on mobile data
    (ARCHIVE 12j). Whatever they find is triaged with them first.
-2. **Electric's calmer piece in hand, seen in play** (ARCHIVE 12v): the live wire's pulses
-   slowed and the short circuit's arcs steadied after the user found them hectic; the rest of
-   the style has been checked in play.
 
 Only open work is kept here. Finished packages move to `ARCHIVE.md` under their old
 numbers — 11.1 scoring, 11.7 team mode, 11.8 the visual pass, 11.9 the themes, 11.10 the
@@ -1335,7 +1333,7 @@ test-session feedback, in ARCHIVE 11w; 11.5 the small items and 11.6 the bots, i
 11.16 help for new players, the menu and the sea, and 11.17 the desktop app, in ARCHIVE
 11zt; 11.18 the fourth visual pass, in ARCHIVE 11zv; 11.19 every style to the edges, in
 ARCHIVE 11zz; 11.20 more languages, in ARCHIVE 12g; 11.21 UPnP, in ARCHIVE 12j; 11.2 points decide, 11.3 two players,
-11.4 measurements never taken and 11.13 the bots' loose ends, closed by the weekend soak, in ARCHIVE 12h; 11.22 rendering performance, in ARCHIVE 12n, its bots planning on the same ticks in ARCHIVE 12p; 11.23 random looks every round, in ARCHIVE 12q; Cyberpunk under Glowing, in ARCHIVE 12r; the slow plan late in a build phase, in ARCHIVE 12s; 11.24 a piece in the corner for every style, in ARCHIVE 12t — so the open sections keep theirs.
+11.4 measurements never taken and 11.13 the bots' loose ends, closed by the weekend soak, in ARCHIVE 12h; 11.22 rendering performance, in ARCHIVE 12n, its bots planning on the same ticks in ARCHIVE 12p; 11.23 random looks every round, in ARCHIVE 12q; Cyberpunk under Glowing, in ARCHIVE 12r; the slow plan late in a build phase, in ARCHIVE 12s; 11.24 a piece in the corner for every style, in ARCHIVE 12t; Under the sea and Electric, in ARCHIVE 12u and 12v — so the open sections keep theirs.
 
 ## 12. Deferred (explicitly out of scope for v1)
 

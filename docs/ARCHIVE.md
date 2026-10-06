@@ -5399,3 +5399,6 @@ in hand calmed down**: its pulses jumped a stretch of the wire every 45 ms, abou
 second, which the user found hectic and unnerving; they glide at 1.2 tiles a second now, on one
 lattice so they run on from stretch to stretch, and the short circuit's arcs change shape about
 six times a second rather than every frame.
+
+**Checked in play** by the user (2026-10-06): the calmer piece in hand "much better", the
+style "perfect". Released, with Under the sea, as **v0.8.1** the same day.
