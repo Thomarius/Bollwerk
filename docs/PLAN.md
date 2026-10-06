@@ -1324,6 +1324,39 @@ decision, 2026-10-06). Still open:
 1. **The user's manual test of UPnP**, reported back: switch on Open to the internet in the
    app, or `npm start -- --upnp`, and open the invite link from a phone on mobile data
    (ARCHIVE 12j). Whatever they find is triaged with them first.
+2. **Bots that miss as people do** (the user's task, 2026-10-06; how and at which levels not
+   yet decided). Bots should feel fair, and in combat they are superhumanly precise: their
+   only error, `aimJitter`, chooses a worse target, never a worse shot — a jittered shot
+   still lands on an opponent's wall that none of its own shots is headed for. People playing
+   fast and frantic, as the game wants, hover and click as quickly as they can: the cursor
+   is not on a wall at all, a double click sends two shots at one block, and now and then a
+   teammate's shot gets there first. Combat is meant to stay frantic; accuracy is a skill
+   players grow into. The task is an execution error beside `aimJitter` — say a share of
+   shots landing a tile or two off, or a second shot at the block just fired at — scaled by
+   level, then a soak to keep the ladder in order, since it weakens every level it touches.
+
+   **The yardstick** is the recordings of 2026-09-30 to 10-05 (five team matches of the two
+   testers against L3–L5 bots, replayed exactly; sparse, so tendencies only). **Thomas is a
+   good player but not a pro, Mausica a casual one**, and the bots should be balanced with
+   both in mind. Where each shot went, as it landed:
+
+   |            | on a wall | wall already gone | bare ground or sea |
+   | ---------- | --------- | ----------------- | ------------------ |
+   | L3–L5 bots | 91–94%    | 6–9%              | 0%                 |
+   | Thomas     | 72%       | 18%               | 10%                |
+   | Mausica    | 57%       | 25%               | 18%                |
+
+   **The build phase** can be judged from the same data, and there the bots are within human
+   range: pieces a build phase L3 13.6, L4 13.4, L5 14.2, against Thomas 16.2 and Mausica 12.8;
+   median time between pieces L5 1.5 s, Thomas 1.1 s, Mausica 1.5 s; overtime used for 5–7% of
+   pieces by everyone. What is not human is reaction: bots choose their castle, lay their
+   first piece and fire their first shot at once, and place their guns in about 0.5 s
+   (people 3–4 s, up to 10). Bots at L3–L4 also leave about half their guns inert outside
+   sealed ground (L5 a fifth, people almost none), and fade late — L5 banked about 216 points
+   a round in rounds 4–7 and 104 in 8–10, where both testers rose. Of the five matches the
+   testers won both six-player ones (L4, L5) and the two-against-two against L3, and lost
+   both two-against-two against L5 by knockout in rounds 7 and 8, where every bot shot is at
+   them.
 
 Only open work is kept here. Finished packages move to `ARCHIVE.md` under their old
 numbers — 11.1 scoring, 11.7 team mode, 11.8 the visual pass, 11.9 the themes, 11.10 the

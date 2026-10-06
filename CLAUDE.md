@@ -188,7 +188,8 @@ Full detail in PLAN.md §1. The parts that surprise people:
   every corner piece and German were checked in play by the user (ARCHIVE 12n–12t).
 
 **Next** — more test games towards a first feature-ready version, then perhaps a big new
-feature, not yet decided. PLAN §11 holds what is open: the user's manual test of UPnP.
+feature, not yet decided. PLAN §11 holds what is open: the user's manual test of UPnP, and bots that miss as people do
+(combat accuracy, measured against the testers' recordings; how is not yet decided).
 French is not to be done. Signing the Windows app was explained (PLAN §12) and is not
 pursued for now.
 
