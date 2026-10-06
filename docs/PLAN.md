@@ -1210,17 +1210,12 @@ every resolution against an independent search, not only on unit pictures.
 
 ## 11. Open work
 
-**Where to start (2026-10-06).** More test games come first, towards a first feature-ready
-version; a big new feature may follow, not yet decided. French is not to be done (the user's
-decision, 2026-10-06). Everything planned is done: the game, online play, bots as
-skill levels and personalities (M13), fourteen styles and four visual passes, help for new
-players, awards and a rematch, the desktop app for releases (M14, v0.7.0 the latest), English
-and German (M15), rendering performance and the stutter as the looks swap (ARCHIVE 12n), the
-weekend soak and the one change it led to (ARCHIVE 12h), square bases under every gun
-(ARCHIVE 12i), UPnP (ARCHIVE 12j), a fourteenth style, Office (ARCHIVE 12l), random looks
-every round (ARCHIVE 12q), Cyberpunk's glow made cheap and sharp (ARCHIVE 12r) and the slow
-plan late in a build phase (ARCHIVE 12s), all in v0.7.0. The test session of 2026-10-05
-checked everything visual, German included (ARCHIVE 12n). Still open:
+**Where to start (2026-10-06).** Everything planned is done and in **v0.8.0**, the latest
+release: the game and online play, bots as skill levels and personalities, fourteen styles
+each with its piece in the corner, random looks every round, English and German, the desktop
+app, UPnP, the balance soak and the rendering work (ARCHIVE 12h–12t). More test games come
+first, towards a first feature-ready version; a big new feature may follow, not yet decided.
+French is not to be done (the user's decision, 2026-10-06). Still open:
 
 1. **The user's manual test of UPnP**, reported back: switch on Open to the internet in the
    app, or `npm start -- --upnp`, and open the invite link from a phone on mobile data
@@ -1240,6 +1235,15 @@ ARCHIVE 11zz; 11.20 more languages, in ARCHIVE 12g; 11.21 UPnP, in ARCHIVE 12j; 
 
 Quick-match and matchmaking, accounts and persistence, ranking, mobile
 and touch input, spectator mode, shipped replays, naval units, singleplayer campaign.
+
+**Signing the Windows app** (explained 2026-10-06, not pursued for now): unsigned, Windows
+warns of an unknown publisher; a signature names the publisher, though SmartScreen still
+warns until downloads build reputation, and since 2023 the key must live in hardware or a
+cloud service. The free routes are **SignPath Foundation** (free signing for open-source
+projects such as this MIT one, from GitHub Actions, the publisher shown as SignPath
+Foundation) and the **Microsoft Store** (free for individual developers; the Store signs and
+installs it, with a review, an age rating and a privacy policy). Certificates (about 50–400
+euros a year) and Azure Trusted Signing (monthly) cost money.
 
 **Declined for budget** (2026-10-03, the user's: a fan project without one): **macOS builds**,
 since an unsigned app is refused by Gatekeeper and signing needs the paid Apple Developer

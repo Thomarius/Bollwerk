@@ -145,18 +145,21 @@ Full detail in PLAN.md §1. The parts that surprise people:
 
 ## Status
 
-**Done** (2026-10-06; the latest release **v0.7.0**, 2026-10-06):
+**Done** (2026-10-06; the latest release **v0.8.0**, 2026-10-06):
 
 - **The game**: its rules, online play with rooms, a games browser, pause, and recording
   of every match (ARCHIVE 11e, each header stamped with the server's commit); team mode
   (ARCHIVE 10u); bots as a skill level 1–10 chosen in the lobby and a personality dealt
-  from the seed, revealed at game over (M13, ARCHIVE 11x–11zb).
+  from the seed, revealed at game over (M13, ARCHIVE 11x–11zb); bots sharing a few plans a
+  tick (ARCHIVE 12p) and skipping searches that cannot fit (ARCHIVE 12s).
 - **The looks**: fourteen styles for either look — Minimal, Medieval, Night, Cyberpunk,
   Blueprint, Parchment, Toy bricks, Stained glass, Chocolate (ARCHIVE 11zy), Halloween
-  (ARCHIVE 12a), Sakura (ARCHIVE 12d), Oktoberfest (ARCHIVE 12e), Opera (ARCHIVE 12f), Office (ARCHIVE 12l) — over four visual passes (M9–M12, PLAN 11.15–11.18); every style carried
-  to the panels, the big timer, the island banners and the finish (ARCHIVE 11zz); chosen
-  from a gallery with Random — a new style every round, in the title too (ARCHIVE 12q) — and
-  changeable mid-match from the pause menu (ARCHIVE 12b).
+  (ARCHIVE 12a), Sakura (ARCHIVE 12d), Oktoberfest (ARCHIVE 12e), Opera (ARCHIVE 12f),
+  Office (ARCHIVE 12l) — over four visual passes (M9–M12); every style carried to the panels,
+  the big timer, the island banners and the finish (ARCHIVE 11zz), and each with a piece of
+  its own in the sea's corner (`corner.ts`, ARCHIVE 12t); chosen from a gallery with Random —
+  a new style every round, in the title too (ARCHIVE 12q) — and changeable mid-match from the
+  pause menu (ARCHIVE 12b).
 - **Around a match**: How to play, the ranking between rounds, awards, a rematch, music
   and sounds volumes, a pause menu with Leave match; two rounds of test-session feedback
   (ARCHIVE 11n–11w, 11ze) and a trim of the menu's and lobby's texts with larger roster
@@ -177,14 +180,15 @@ Full detail in PLAN.md §1. The parts that surprise people:
   the ladder in order — and one cliff, Level 4 to 5, ended by `carelessness` fading by
   level. The default is to change no rule without a very good reason. `npm run soak`
   reruns the whole plan, resumable (`tools/headless/src/soak.ts`; the plan as run in ARCHIVE 12h).
-- **Rendering performance** (ARCHIVE 12n, formerly PLAN 11.22): 58–60 fps at eight players on
-  an integrated GPU, every effect kept, and no stutter as the looks swap; every gun stands on
-  a square base so its footprint reads (ARCHIVE 12i). The test session of 2026-10-05 checked
-  everything visual, Office and German included (ARCHIVE 12n).
+- **Rendering performance** (ARCHIVE 12n): 58–60 fps at eight players on an integrated GPU,
+  every effect kept, and no stutter as the looks swap; no memory kept by a swap of looks
+  (ARCHIVE 12q); Cyberpunk's "Glowing" cheap and its cores sharp (ARCHIVE 12r). Every look,
+  every corner piece and German were checked in play by the user (ARCHIVE 12n–12t).
 
 **Next** — more test games towards a first feature-ready version, then perhaps a big new
-feature, not yet decided. PLAN §11 holds what is open: the user's manual test of UPnP. French
-is not to be done.
+feature, not yet decided. PLAN §11 holds what is open: the user's manual test of UPnP.
+French is not to be done. Signing the Windows app was explained (PLAN §12) and is not
+pursued for now.
 
 **Declined for budget** (PLAN §12): macOS builds (Apple's paid signing) and a hosted public
 server. This is a fan project with no budget: propose nothing that costs money to run.

@@ -5296,4 +5296,4 @@ square and its stamp larger; the boat's hull edged in moonlight, lost in the dar
 **Measured** in a paused eight-player match, each piece on and off by turns three times: frame
 rates 54–60 either way, render time within 0.6 ms; drawing a piece 0.1–0.3 ms a frame.
 
-**Checked in play** by the user and testers (2026-10-06), every style: the new pieces are great.
+**Checked in play** by the user and testers (2026-10-06), every style: the new pieces are great. Released as **v0.8.0** the same day.
