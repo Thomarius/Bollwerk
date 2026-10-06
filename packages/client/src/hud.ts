@@ -45,6 +45,7 @@ const BANNER_CLASS: Record<ArtStyle, string> = {
   oktoberfest: 'banner-wiesn',
   opera: 'banner-opera',
   office: 'banner-office',
+  undersea: 'banner-undersea',
 };
 
 /**
@@ -67,6 +68,7 @@ const HUD_SKIN: Record<ArtStyle, string> = {
   oktoberfest: 'hud-wiesn',
   opera: 'hud-opera',
   office: 'hud-office',
+  undersea: 'hud-undersea',
 };
 
 const PHASE_LABEL: Record<Phase, TextKey> = {

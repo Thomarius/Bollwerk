@@ -12,6 +12,7 @@ import { ChocolateTheme } from './chocolate.js';
 import { HalloweenTheme } from './halloween.js';
 import { OktoberfestTheme } from './oktoberfest.js';
 import { OfficeTheme } from './office.js';
+import { UnderseaTheme } from './undersea.js';
 import { OperaTheme } from './opera.js';
 import { release } from './release.js';
 import { SakuraTheme } from './sakura.js';
@@ -67,6 +68,8 @@ export function createTheme(style: ArtStyle, seed = 1): Theme {
       return new OperaTheme(seed);
     case 'office':
       return new OfficeTheme(seed);
+    case 'undersea':
+      return new UnderseaTheme(seed);
   }
 }
 

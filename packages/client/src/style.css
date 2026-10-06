@@ -2758,7 +2758,8 @@ body.hud-halloween,
 body.hud-sakura,
 body.hud-wiesn,
 body.hud-opera,
-body.hud-office {
+body.hud-office,
+body.hud-undersea {
   --hud-panel: var(--hud-box);
 }
 
@@ -3591,6 +3592,129 @@ body.hud-office .final-stamp {
   color: #c0303a;
   font-family: Impact, 'Arial Narrow', sans-serif;
   letter-spacing: 0.12em;
+  text-shadow: none;
+}
+
+/* Under the sea: the banner a plank of driftwood, bleached and grained, barnacles at its
+   ends; the HUD a submarine's riveted hull with a rule of brass along its foot. */
+.phase-call.banner-undersea {
+  border-top: 2px solid #4a3c2c;
+  border-bottom: 2px solid #4a3c2c;
+  background-color: #a8977c;
+  background-image:
+    radial-gradient(circle at 18px 30%, #eef0ea 0 4px, transparent 4.5px),
+    radial-gradient(circle at 30px 70%, #eef0ea 0 3px, transparent 3.5px),
+    radial-gradient(circle at calc(100% - 22px) 40%, #eef0ea 0 4px, transparent 4.5px),
+    radial-gradient(circle at calc(100% - 36px) 75%, #eef0ea 0 3px, transparent 3.5px),
+    repeating-linear-gradient(
+      178deg,
+      #0000 0 7px,
+      #5a4a3622 7px 9px,
+      #0000 9px 15px,
+      #ffffff1a 15px 16px
+    ),
+    linear-gradient(#ffffff22, #0000 40%, #00000022);
+  color: #f6f1e6;
+  font-family: 'Trebuchet MS', 'Segoe UI', system-ui, sans-serif;
+  font-weight: 700;
+  text-shadow:
+    0 2px 0 #3a2e20,
+    0 0 10px #0a2a3a88;
+}
+
+.phase-call.banner-undersea small {
+  color: #2a2218;
+  text-shadow: 0 1px 0 #d8ccb4;
+}
+
+.phase-call.banner-undersea small.news {
+  color: #0a4a66;
+}
+
+body.hud-undersea {
+  --hud-bar: #0f2c3a;
+  --hud-rule: 6px solid transparent;
+  --hud-pad-top: 0.4rem;
+  --hud-ink: #eafcff;
+  --hud-muted: #a9cbd6;
+  --hud-accent: #e2b866;
+  --hud-box: #0c2430;
+  --hud-box-edge: 2px solid #b08a4a;
+  --hud-box-shadow: 0 3px 0 #0009;
+  --hud-track: #ffffff22;
+}
+
+/* The hull's plates, a row of rivets along its top, and the brass rule riveted along its foot. */
+body.hud-undersea #hud .bar {
+  background-image:
+    radial-gradient(circle at 50% 50%, #e8c47a 0 1.5px, #7a5a2a 2px, transparent 2.5px),
+    linear-gradient(#b08a4a, #e2b866 40%, #8a6a32),
+    radial-gradient(circle at 50% 50%, #5a7a88 0 1.5px, transparent 2px),
+    repeating-linear-gradient(90deg, #0000 0 159px, #00000055 159px 161px),
+    linear-gradient(#ffffff12, transparent 55%);
+  background-size:
+    18px 6px,
+    100% 6px,
+    18px 8px,
+    100% 100%,
+    100% 100%;
+  background-position:
+    0 100%,
+    0 100%,
+    0 0,
+    0 0,
+    0 0;
+  background-repeat: repeat-x, no-repeat, repeat-x, no-repeat, no-repeat;
+  background-origin: border-box;
+  background-clip: border-box;
+}
+
+/* The big timer as bubbles: pale figures, see-through, rimmed in light. */
+body.hud-undersea .big-timer {
+  color: rgb(190 240 255 / 30%);
+  font-family: 'Arial Rounded MT Bold', 'Trebuchet MS', system-ui, sans-serif;
+  font-weight: 700;
+  -webkit-text-stroke: 3px rgb(234 252 255 / 75%);
+  paint-order: stroke fill;
+  text-shadow: 0 0 14px rgb(190 240 255 / 40%);
+}
+
+body.hud-undersea .big-timer.urgent {
+  color: rgb(255 120 120 / 70%);
+}
+
+/* Island banners a scallop shell, fluted from its hinge; the stamps a label tied on with
+   rope, as on a bottle washed up. */
+body.hud-undersea .island-banner:not(.out),
+body.hud-undersea .team-tag,
+body.hud-undersea .you-are-here {
+  border-radius: 50% 50% 12px 12px / 60% 60% 12px 12px;
+  background: repeating-conic-gradient(from -90deg at 50% 115%, #f6e8d8 0 7deg, #e6cdb4 7deg 14deg);
+  box-shadow:
+    inset 0 0 0 2px #c9a98e,
+    0 2px 6px #0007;
+  color: #3a2a20;
+  font-family: 'Trebuchet MS', 'Segoe UI', system-ui, sans-serif;
+  text-shadow: 0 1px 0 #fff8;
+}
+
+body.hud-undersea .island-banner:not(.out) {
+  padding-top: 0.55rem;
+}
+
+body.hud-undersea .island-banner.out,
+body.hud-undersea .final-stamp {
+  border: 3px dashed #a8855a !important;
+  border-radius: 6px;
+  background: #f3ead6;
+  box-shadow:
+    inset 0 0 0 3px #f3ead6,
+    inset 0 0 0 5px #1d4e6e,
+    0 3px 8px #0006;
+  color: #1d4e6e;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-weight: 700;
+  letter-spacing: 0.08em;
   text-shadow: none;
 }
 

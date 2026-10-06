@@ -5297,3 +5297,49 @@ square and its stamp larger; the boat's hull edged in moonlight, lost in the dar
 rates 54–60 either way, render time within 0.6 ms; drawing a piece 0.1–0.3 ms a frame.
 
 **Checked in play** by the user and testers (2026-10-06), every style: the new pieces are great. Released as **v0.8.0** the same day.
+
+## 12u. Under the sea, a fifteenth style (2026-10-06)
+
+The user's idea: "Under the sea" / "Unter dem Meer". Pitched and agreed before building: the map
+turned upside down, **each island a sunlit reef plateau on the seabed and the sea round it the
+deep**, so land and sea still tell apart at a glance — bright sand against the dark. Chosen by the
+user from the pitch: **a colourful living reef** over a sunken Atlantis (which would have stood
+too near Medieval); **coral blocks** for the walls, over clam shells or barnacled stone; **shell
+palaces** for the castles, with the giant clam opening on its pearl as the sealed sign, as
+pitched; **pufferfish** for the guns, over an octopus or a ship's cannon; and **a shipwreck with
+an octopus** for the corner piece, over a diver in a brass helmet. Named for the place, never the
+film the phrase is a song from.
+
+What carries meaning: **sealed is the clam open on its glowing pearl** (`FlagHoist`), a breach
+shutting it; **sealed ground is a meadow of seagrass** in the owner's colour; **a silenced gun is
+a pufferfish deflated and limp**, and a firing one puffs up round; **a hit frees the little fish
+living in the coral**; a player who is out has their coral bleached. Kept off the board: any
+colour a player has — the octopus is taupe rather than a real one's red or orange, the light
+white, the sea life silver and slate — and coral and urchins in the scenery, since they are the
+walls and the shots. The finish gained `bubbles`, bubbles and little fish in the winners'
+colours, and `trident`, a pennant under a bronze trident. The fish, bubble, urchin, pufferfish,
+clam and conch are `reef.ts`, shared by the theme, its sea life and the finish.
+
+**Drawn cheaply**, and measured to it. The caustics are two sets of wavy lines drawn once with the
+terrain and only slid, each its own way, through a mask of the land, as Opera's staves are; the
+pufferfish and urchins are stamps, every small bubble a stamp of one bubble, the clams a `Memos`
+each, redrawn only while one opens or shuts. The first version, in headless Chrome on this
+machine (SwiftShader) in combat at eight players, rebuilt 140 000 vertices a frame against
+Office's 36 000 in the same conditions: a wall redrawn at a hit was 21 000 vertices an island
+against Office's 8 000 — curved grooves, discs and round joins on every block — the seagrass
+meadow 22 000 against 1 900 for Office's booked ground, round caps on every blade, and the clams
+and bubbles redrawn every frame. Drawn in straight strokes and small squares with plain caps and
+joins, the clams memoised and the bubbles stamped: 40 000 vertices a frame, a wall at worst
+7 600 against Office's 8 500, the meadow out of the list.
+
+Seen in screenshots building, in combat at two, three and eight players, in the final round with
+its lures, in rain and fog, at game over with the tridents, and the menu's title. What the first
+look changed: rain's rings drew opaque and too large, since a long frame carried one past the end
+of its life before it was dropped — its alpha went negative, which Pixi draws solid — so a ring
+past its end is no longer drawn; the depth bands of the deep stepped like stairs, and are discs;
+the plankton bloom's discs had hard edges, and are each three, one inside another; the castles
+and their clams were too small to read the sealed sign, and were enlarged; the title's bubbles
+were lost on the menu's dark sea, and are lit and glowing; the lures read as grey dots and the
+manta as a kite.
+
+**Checked in play** by the user (2026-10-06): it looks great.

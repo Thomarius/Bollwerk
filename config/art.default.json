@@ -1052,6 +1052,31 @@
         "uiValid": "#8fe08a",
         "uiInvalid": "#ff5a5a"
       }
+    },
+    "undersea": {
+      "palette": {
+        "waterDeep": "#041a30",
+        "waterMid": "#0a3554",
+        "waterShallow": "#15607c",
+        "waterFoam": "#c8f1f2",
+        "sand": "#e9d8ab",
+        "grassDark": "#b49a6c",
+        "grassMid": "#dcc699",
+        "grassLight": "#f0e2bc",
+        "rockDark": "#3c4a52",
+        "rockMid": "#7d8b91",
+        "rockLight": "#dfe7e6",
+        "shadow": "#071420",
+        "craterDark": "#8a7450",
+        "craterMid": "#b39c70",
+        "emberHot": "#f4fdff",
+        "emberMid": "#bfeefa",
+        "emberCool": "#5ab8d8",
+        "uiInk": "#eafcff",
+        "uiAccent": "#ffd98a",
+        "uiValid": "#8ff0b4",
+        "uiInvalid": "#ff6a6a"
+      }
     }
   },
   "dither": {
@@ -1385,5 +1410,26 @@
     "gliderTilesPerSecond": 1.6,
     "chairEveryMs": 22000,
     "chairTilesPerSecond": 1.1
+  },
+  "undersea": {
+    "territoryAlpha": 0.3,
+    "causticAlpha": 0.22,
+    "causticTilesPerSecond": 0.35,
+    "shafts": 6,
+    "shaftAlpha": 0.07,
+    "marineSnow": 60,
+    "snowCount": 220,
+    "rainCount": 26,
+    "bloomBanks": 7,
+    "bloomAlpha": 0.16,
+    "lures": 6,
+    "whaleEveryMs": 26000,
+    "whaleTilesPerSecond": 2.2,
+    "fishSchools": 2,
+    "jellyfish": 3,
+    "turtleEveryMs": 18000,
+    "turtleTilesPerSecond": 0.8,
+    "mantaEveryMs": 26000,
+    "mantaTilesPerSecond": 1.1
   }
 }

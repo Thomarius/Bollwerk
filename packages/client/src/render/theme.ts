@@ -7,6 +7,7 @@ import type { DrainWash, SealGlow } from '../seal.js';
 import { PETALS, drawPetal } from './ukiyo.js';
 import { drawLyre, drawRose } from './music.js';
 import { drawGingerHeart, drawPretzel } from './wiesn.js';
+import { drawBubble, drawFish } from './reef.js';
 
 /**
  * A visual style.
@@ -701,7 +702,8 @@ export interface FinishLook {
    * flying out and up; `blossom` a chrysanthemum's drooping streaks and cherry petals;
    * `pretzel` pretzels and gingerbread hearts iced in the owner's colours; `roses` roses and
    * flowers in the owner's colours thrown at a curtain call; `memo` sticky notes in the
-   * owner's colours fluttering down among paper clips, from an office party's poppers.
+   * owner's colours fluttering down among paper clips, from an office party's poppers;
+   * `bubbles` bubbles tinted in the owner's colours rising among little fish darting out.
    */
   spark:
     | 'square'
@@ -716,14 +718,16 @@ export interface FinishLook {
     | 'blossom'
     | 'pretzel'
     | 'roses'
-    | 'memo';
+    | 'memo'
+    | 'bubbles';
   /**
    * `swallowtail` a forked banner; `hologram` a flickering projection; `pennant` a flag in
    * plan; `brick` a square flag of bricks; `leaded` a banner of glass in its lead; `candy` a
    * pennant on a candy-striped pole; `tattered` a ragged pennant on a crooked pole; `nobori`
    * a tall war banner hung from an arm at its top; `rauten` a flag in the Bavarian lozenges
    * on a maypole; `lyre` a pennant bearing a golden lyre on a gilded pole; `necktie` a
-   * necktie in the owner's colour, knotted at the top of an aluminium pole, flying.
+   * necktie in the owner's colour, knotted at the top of an aluminium pole, flying; `trident`
+   * a pennant flying under the head of a bronze trident.
    */
   flag:
     | 'swallowtail'
@@ -736,7 +740,8 @@ export interface FinishLook {
     | 'nobori'
     | 'rauten'
     | 'lyre'
-    | 'necktie';
+    | 'necktie'
+    | 'trident';
 }
 
 export const PLAIN_FINISH: FinishLook = { spark: 'square', flag: 'swallowtail' };
@@ -870,6 +875,22 @@ export class WinnerBanners {
           g.fill({ color: dimmed(base, 0.25) });
           continue;
         }
+        if (flag === 'trident') {
+          // A pennant in the owner's colour under the trident's head, a wave along it.
+          const head = up + clothH * 0.35;
+          g.poly([x, head, x + clothW * 1.1, head + clothH / 2 + wave, x, head + clothH]);
+          g.fill({ color: base });
+          g.stroke({ width: rim, color: 0x071420, alpha: 0.85, join: 'round' });
+          g.moveTo(x + tile * 0.1, head + clothH * 0.5);
+          g.quadraticCurveTo(
+            x + clothW * 0.3,
+            head + clothH * 0.3 + wave * 0.3,
+            x + clothW * 0.6,
+            head + clothH * 0.5 + wave * 0.6,
+          );
+          g.stroke({ width: Math.max(1, rim), color: light });
+          continue;
+        }
         if (flag === 'lyre') {
           // A pennant in the owner's colour, edged in gold, a golden lyre on it.
           g.poly([x, up, x + clothW * 1.15, up + clothH / 2 + wave, x, up + clothH]);
@@ -995,6 +1016,30 @@ export class WinnerBanners {
       g.stroke({ width: width + 1, color: 0xe8c25a });
       g.circle(x, top, width + 1);
       g.fill({ color: 0xe8c25a });
+      return;
+    }
+    if (flag === 'trident') {
+      // A bronze shaft, and the trident's head: three prongs, barbed, over a crossbar.
+      const bronze = 0xc9a24a;
+      const w = (foot - top) * 0.09;
+      g.moveTo(x, foot).lineTo(x, top);
+      g.moveTo(x - w, top + w * 0.9).lineTo(x + w, top + w * 0.9);
+      g.moveTo(x - w, top + w * 0.9).lineTo(x - w, top - w * 0.6);
+      g.moveTo(x + w, top + w * 0.9).lineTo(x + w, top - w * 0.6);
+      g.moveTo(x, top).lineTo(x, top - w * 1.1);
+      g.stroke({ width: width + 1, color: bronze, cap: 'round' });
+      for (const px of [x - w, x, x + w]) {
+        const tip = px === x ? top - w * 1.1 : top - w * 0.6;
+        g.poly([
+          px - width * 1.4,
+          tip + width,
+          px,
+          tip - width * 2.2,
+          px + width * 1.4,
+          tip + width,
+        ]);
+      }
+      g.fill({ color: bronze });
       return;
     }
     if (flag === 'rauten') {
@@ -1129,7 +1174,7 @@ export class Fireworks {
           angle: Math.random() * Math.PI * 2,
           // A blossom's petals are the sparks that spin; its streaks, the ones that do not.
           spin:
-            kind === 'blossom' || kind === 'memo'
+            kind === 'blossom' || kind === 'memo' || kind === 'bubbles'
               ? k % 2 === 0
                 ? 2 + Math.random() * 4
                 : 0
@@ -1142,8 +1187,18 @@ export class Fireworks {
     // Ink lingers, bricks fall heavier, spirits float up and a blossom's petals drift down
     // slowly; the rest burst and fade as sparks do.
     const drifts = kind === 'blossom' || kind === 'memo';
-    const life = kind === 'blot' || kind === 'spirits' ? 1900 : drifts ? 1700 : 1200;
-    const fall = kind === 'brick' ? 6 : kind === 'spirits' ? -1.4 : drifts ? 1.4 : 2.2;
+    const life =
+      kind === 'blot' || kind === 'spirits' || kind === 'bubbles' ? 1900 : drifts ? 1700 : 1200;
+    const fall =
+      kind === 'brick'
+        ? 6
+        : kind === 'spirits'
+          ? -1.4
+          : kind === 'bubbles'
+            ? -1.8
+            : drifts
+              ? 1.4
+              : 2.2;
     const t0 = view.tile;
     for (const spark of this.sparks) {
       spark.age += deltaMs;
@@ -1181,6 +1236,15 @@ export class Fireworks {
           g.fill({ color: spark.colour, alpha });
           g.circle(x, y, size * 0.22);
           g.fill({ color: 0xe8c25a, alpha });
+        }
+      } else if (kind === 'bubbles') {
+        if (spark.spin > 0) {
+          // A bubble tinted in the owner's colour, wobbling as it rises.
+          const wobble = Math.sin(spark.age / 120 + spark.angle) * size * 0.25;
+          drawBubble(g, x + wobble, y, size * 0.6, alpha, spark.colour);
+        } else {
+          // A little fish in the owner's colour, darting out along its burst.
+          drawFish(g, x, y, size * 1.6, Math.atan2(spark.vy, spark.vx), spark.colour, alpha);
         }
       } else if (kind === 'memo') {
         const c = Math.cos(spark.angle);

@@ -954,6 +954,52 @@ export function officeTitle(text: string, art: ArtConfig): Title {
   return { src: canvas.toDataURL(), ...title };
 }
 
+/**
+ * Under the sea's title: the word in bubbles, a bubble to every cell of the letters, each
+ * lit from its upper left and glowing faintly, a glint in its corner, and a few small ones
+ * rising off the tops of the letters.
+ */
+export function underseaTitle(text: string, _art: ArtConfig): Title {
+  const { canvas, ctx, cells, has } = drawnCanvas(text);
+  const title = { cellPx: DRAWN_CELL, padPx: DRAWN_PAD, tailPx: 0, smooth: true, flicker: false };
+  if (ctx === null) return { src: canvas.toDataURL(), ...title };
+  const at = (v: number): number => DRAWN_PAD + v * DRAWN_CELL;
+  const rng = new Rng(0x5eab0b);
+  const bubble = (x: number, y: number, r: number): void => {
+    ctx.beginPath();
+    ctx.arc(x, y, r, 0, Math.PI * 2);
+    const fill = ctx.createRadialGradient(x - r * 0.3, y - r * 0.3, r * 0.1, x, y, r);
+    fill.addColorStop(0, '#c8f4ff');
+    fill.addColorStop(1, '#2a9cc0');
+    ctx.fillStyle = fill;
+    ctx.shadowColor = '#7fdcff';
+    ctx.shadowBlur = 6;
+    ctx.fill();
+    ctx.shadowBlur = 0;
+    ctx.lineWidth = Math.max(1, r * 0.2);
+    ctx.strokeStyle = '#f0fcff';
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(x - r * 0.35, y - r * 0.35, r * 0.25, 0, Math.PI * 2);
+    ctx.fillStyle = '#ffffff';
+    ctx.fill();
+  };
+  for (const { x, y } of cells) {
+    bubble(
+      at(x) + DRAWN_CELL / 2,
+      at(y) + DRAWN_CELL / 2,
+      DRAWN_CELL * (0.6 + rng.nextFloat() * 0.1),
+    );
+  }
+  // Small ones rising off the tops of the letters, into the room above them.
+  for (const { x, y } of cells) {
+    if (has(x, y - 1) || rng.nextFloat() > 0.3) continue;
+    const cx = at(x) + DRAWN_CELL / 2 + (rng.nextFloat() - 0.5) * 6;
+    bubble(cx, at(y) - 4 - rng.nextFloat() * 6, 1.5 + rng.nextFloat() * 2);
+  }
+  return { src: canvas.toDataURL(), ...title };
+}
+
 const TITLES: Record<ArtStyle, (text: string, art: ArtConfig) => Title> = {
   flat: blockTitle,
   pixel: stoneTitle,
@@ -969,6 +1015,7 @@ const TITLES: Record<ArtStyle, (text: string, art: ArtConfig) => Title> = {
   oktoberfest: wiesnTitle,
   opera: operaTitle,
   office: officeTitle,
+  undersea: underseaTitle,
 };
 
 export function titleFor(style: ArtStyle, art: ArtConfig): Title {

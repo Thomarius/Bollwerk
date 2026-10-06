@@ -51,7 +51,8 @@ export type PlayerPalette = z.infer<typeof PlayerPaletteSchema>;
  * church window of stained glass, `chocolate` a sweet-shop land on a river of chocolate,
  * `halloween` a haunted land round a bog, `sakura` an Edo castle town as a woodblock print,
  * `oktoberfest` the beer festival on an island in a sea of beer, `opera` a night at the opera
- * on a sea whose waves are staves, `office` an open-plan office at war with itself.
+ * on a sea whose waves are staves, `office` an open-plan office at war with itself,
+ * `undersea` a coral reef on the seabed, the deep all round it.
  */
 export const ArtStyleSchema = z.enum([
   'flat',
@@ -68,6 +69,7 @@ export const ArtStyleSchema = z.enum([
   'oktoberfest',
   'opera',
   'office',
+  'undersea',
 ]);
 export type ArtStyle = z.infer<typeof ArtStyleSchema>;
 
@@ -544,6 +546,46 @@ export const OfficeStyleSchema = z.strictObject({
 });
 export type OfficeStyleConfig = z.infer<typeof OfficeStyleSchema>;
 
+/**
+ * The Under the sea look: the board on the seabed — each island a sunlit reef plateau of
+ * sand, the deep dark all round it — with walls of coral, shell palaces whose giant clam opens
+ * on its pearl while sealed, a meadow of seagrass for sealed ground, pufferfish for guns, and
+ * a shipwreck with an octopus on it in the corner.
+ */
+export const UnderseaStyleSchema = z.strictObject({
+  /** Sealed ground's meadow, how strongly the owner's colour covers the sand. */
+  territoryAlpha: z.number().min(0).max(1),
+  /** The light rippling over the sand, how bright, and how fast it moves. */
+  causticAlpha: z.number().min(0).max(1),
+  causticTilesPerSecond: z.number().nonnegative(),
+  /** Shafts of light slanting down from the surface, and how bright they are. */
+  shafts: z.number().int().nonnegative(),
+  shaftAlpha: z.number().min(0).max(1),
+  /** Marine snow drifting down at once, in any match and in one whose weather is snow. */
+  marineSnow: z.number().int().nonnegative(),
+  snowCount: z.number().int().nonnegative(),
+  /** Raindrops ringing the surface above at once, in a match with rain. */
+  rainCount: z.number().int().nonnegative(),
+  /** Banks of a plankton bloom drifting over the board in a foggy match, and how thick. */
+  bloomBanks: z.number().int().nonnegative(),
+  bloomAlpha: z.number().min(0).max(1),
+  /** Anglerfish lures glowing at the screen's edges as the deep comes up. */
+  lures: z.number().int().nonnegative(),
+  /** A whale's shadow passing over the whole board now and then, as the deep comes up. */
+  whaleEveryMs: z.number().int().positive(),
+  whaleTilesPerSecond: z.number().positive(),
+  /** Schools of fish and jellyfish wheeling over the outer deep. */
+  fishSchools: z.number().int().nonnegative(),
+  jellyfish: z.number().int().nonnegative(),
+  /** A sea turtle gliding across it now and then, one at a time. */
+  turtleEveryMs: z.number().int().positive(),
+  turtleTilesPerSecond: z.number().positive(),
+  /** A manta ray gliding across it now and then. */
+  mantaEveryMs: z.number().int().positive(),
+  mantaTilesPerSecond: z.number().positive(),
+});
+export type UnderseaStyleConfig = z.infer<typeof UnderseaStyleSchema>;
+
 /** One of the two looks a match is drawn in. */
 export type ArtLook = 'build' | 'combat';
 
@@ -590,6 +632,7 @@ export const STYLE_LOOKS: Record<ArtStyle, readonly ArtLook[]> = {
   oktoberfest: ['build', 'combat'],
   opera: ['build', 'combat'],
   office: ['build', 'combat'],
+  undersea: ['build', 'combat'],
 };
 
 export function styleServes(
@@ -715,6 +758,7 @@ export const ArtConfigSchema = z
     oktoberfest: OktoberfestStyleSchema,
     opera: OperaStyleSchema,
     office: OfficeStyleSchema,
+    undersea: UnderseaStyleSchema,
     scenery: ScenerySchema,
     /** Effects both styles draw alike, because they carry information. */
     effects: z.strictObject({

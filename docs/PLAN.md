@@ -388,9 +388,9 @@ sender's seat**, so a client cannot act for someone else.
 
 ## 7. `packages/client`
 
-Fourteen visual styles — Minimal (`flat`), Medieval (`pixel`: named Pixel art until the other
+Fifteen visual styles — Minimal (`flat`), Medieval (`pixel`: named Pixel art until the other
 styles made the name mean nothing), Night, Cyberpunk, Blueprint, Parchment, Toy bricks
-(`bricks`), Stained glass (`glass`), Chocolate (`chocolate`), Halloween (`halloween`), Sakura (`sakura`), Oktoberfest (`oktoberfest`), Opera (`opera`) and Office (`office`) — behind one `Theme` interface: the scene owns the camera, the layer stacks,
+(`bricks`), Stained glass (`glass`), Chocolate (`chocolate`), Halloween (`halloween`), Sakura (`sakura`), Oktoberfest (`oktoberfest`), Opera (`opera`), Office (`office`) and Under the sea (`undersea`) — behind one `Theme` interface: the scene owns the camera, the layer stacks,
 dirty tracking and input mapping; a theme owns only what things look like. Adding a style
 is a name in `ArtStyleSchema`, the looks it is made for in `STYLE_LOOKS`, a `Theme`, a
 case in `createTheme`, a menu title in `decor.ts` and a banner class in `hud.ts`; the
@@ -483,11 +483,13 @@ Medieval and Night, neon in Cyberpunk, a draughtsman's crosses in Blueprint, ink
 Parchment, tumbling bricks, glass shards, candy sprinkles, in Halloween bats and little
 ghosts flying up, in Sakura a chrysanthemum's bowed streaks among cherry petals, in
 Oktoberfest pretzels and gingerbread hearts, in Opera roses and flowers thrown at a
-curtain call and in Office sticky notes and paper clips from party poppers, and the
+curtain call, in Office sticky notes and paper clips from party poppers and in Under the sea
+bubbles and little fish, and the
 winners' flag a swallowtail, a flickering hologram on a light-beam, a pennant in plan, a
 square flag of bricks, a leaded banner, a pennant on a candy-cane pole, a tattered pennant
 on a crooked branch, a tall war banner (_nobori_) hung from an arm, the Bavarian lozenges
-on a maypole, a pennant bearing a golden lyre, or a necktie on an aluminium pole. Minimal keeps the plain ones.
+on a maypole, a pennant bearing a golden lyre, a necktie on an aluminium pole, or a pennant under a bronze
+trident. Minimal keeps the plain ones.
 
 **Each banner is drawn in the look it brings** (`BANNER_CLASS` in `hud.ts`, a record
 over every style): flat gold for Minimal, a neon strip that flickers on for Cyberpunk, a
@@ -526,7 +528,7 @@ top saying whether a click chooses the building or the combat look, each card ba
 the look it is chosen for. The styles are in alphabetical order by name, so a new one finds
 its place, and **Random** comes last, a die for its picture: **a new style at every
 banner that brings its look** (`LookRotation`, ARCHIVE 12q), repeating none until every
-style has been shown — both looks random share one cycle of all fourteen, one random cycles
+style has been shown — both looks random share one cycle of all fifteen, one random cycles
 through all but the other look's — and never the style the banner takes away, nor the one a
 look last had across a cycle's end. Each next look is made a step a frame, hidden, in the
 intermission after the build phase (`Scene.prepare`), and goes on screen once the look it
@@ -1003,7 +1005,51 @@ notes and paper clips from the poppers, the winners' flag **a necktie** on an al
 Named for the place, never after a programme or a product. The player colours are the shared
 ones.
 
-The eleven shape-drawn styles share `walls.ts`: the wall geometry (tops, faces, rim), and
+**Under the sea** (`undersea.ts`, `art.undersea`, `reef.ts`), for either look: the board on the
+seabed, a colourful reef — the user's idea and choices, ARCHIVE 12u. **Each island is a sunlit
+reef plateau** of pale sand, rippled by the current, and **the sea round it is the deep**:
+turquoise at the plateau's edge, darkening tile by tile to ink, the drop-off curving round the
+coast, the plateau's lip a rocky edge. **Light ripples over the sand** — caustics, two sets of
+wavy lines drawn once and only slid, each its own way, through a mask of the land — **shafts of
+light** slant down from the surface over everything, drifting and breathing, and **marine snow**
+drifts down always. Walls are **coral** in the owner's colour, a brain coral's grooves winding
+over each block and polyps dotted along them, a crevice between blocks so a shot visibly takes
+one, the face its pitted rocky foot, standing to the shared height; a player who is out has
+theirs **bleached** white. Castles are **shell palaces**, a conch standing on its end, whorl on
+whorl to its spire, the bands and spire in the owner's colour, arched windows and a door; and
+**sealed is the giant clam at the door open on a glowing pearl** (`FlagHoist`), a bubble rising
+from it now and then; a breach shuts it. **Sealed ground is a meadow of seagrass** in the
+owner's colour, blades leaning with the current, an anemone here and there, its edge in the
+owner's light. Guns are **pufferfish** on a nest of rock, turned to their target, **puffing up
+round** with every spine out as they fire and spitting bubbles after the shot; **a silenced one
+hangs deflated and limp**, turned aside, a slow bubble rising. Shots are **sea urchins** in the
+owner's colour, spinning, a trail of bubbles behind. A hit on a wall breaks off coral chips that
+sink and settle, and **the little fish living in it dart away**; a shot into the deep sends up a
+ring and a column of bubbles; on the sand a cloud of silt billows up and leaves a dimple that
+fades over `fx.craterRounds`. The sweep crumbles its lumps to sand; a piece set down settles with
+a puff of sand; the piece in hand is **outlined in a string of bubbles**, which have burst into
+little stars of spray where it does not fit. **A shipwreck** lies in the corner Parchment gives
+its compass rose, its bow rising from a mound of sand, portholes along it, weed hanging and a
+bubble now and then — and **an octopus draped over the bow**, its arms swaying, blinking, which
+blanches pale and dark by turns and curls its arms quicker while the clock presses. As **the
+deep comes up** — overtime and the final round — the light dims, the water darkens toward the
+screen's edges, **anglerfish lures** glow and bob there over the fish barely seen below, and
+now and then **a whale's shadow** passes over the whole board. Weather from the seed: snow is
+thick marine snow, rain the surface far above pocked by it, rings spreading faintly and the
+shafts flickering, fog a plankton bloom greening the water. Scenery is kelp with its floats,
+tube sponges, starfish, scallop shells, rocks crusted with barnacles, pale anemones, and one
+boulder in three an anchor or a bottle with a message in it — **no coral**, which is the wall,
+and no urchin, which is a shot; on the outer deep schools of silver fish wheel and turn as one,
+jellyfish drift pulsing, and now and then a sea turtle or a manta ray glides across, hidden
+behind the wreck. Its banner is a plank of bleached driftwood with barnacles at its ends; its
+HUD a submarine's riveted hull under a riveted brass rule; its timer figures of bubbles; its
+island banners scallop shells and its stamps a label tied on with rope; its title the word in
+bubbles, and its finish bubbles and little fish in the winners' colours, the winners' flag a
+pennant under a bronze **trident**. Named for the place, never the film the phrase is also a
+song of: no mermaid, no singing crab. The player colours are the shared ones; the octopus is
+taupe and the light white, so nothing on the board is a player's colour.
+
+The twelve shape-drawn styles share `walls.ts`: the wall geometry (tops, faces, rim), and
 hatching laid on one lattice so neighbouring tiles hatch as one fill.
 
 **Scenery on open land** (`scenery.ts`, `art.scenery`), in every style: copses of trees and
@@ -1016,7 +1062,8 @@ toadstools and headstones in Halloween, cherry trees, pines, bamboo, garden rock
 lanterns in Sakura, chestnut trees, beer-garden tables, gingerbread hearts, dropped Maß
 mugs and sleeping revellers in Oktoberfest, harps, music stands, choir singers, metronomes
 and grand pianos in Opera, potted plants, open-plan desks, cacti on filing cabinets, swivel chairs, archive boxes and
-jammed printers in Office, a faint dot in Minimal. **It must never read as wall**, nor as a gun or a
+jammed printers in Office, kelp, tube sponges, starfish, scallop shells, barnacled rocks,
+anemones, anchors and bottles in Under the sea, a faint dot in Minimal. **It must never read as wall**, nor as a gun or a
 shot: Blueprint's trees were first a circle with a cross, a gun's survey mark in small,
 and Medieval's boulders a round grey rock, a cannonball's double. A tile once built on or
 sealed is cleared for the rest of the match, so nothing grows back through a breach; a
@@ -1035,14 +1082,16 @@ and a will-o'-wisp; in Sakura a boat under a square sail, a line of cranes and a
 hidden behind Mount Fuji as they pass it; in Oktoberfest a floating Maß, a reveller asleep
 on a lilo and a Weißwurst swimming circles, hidden behind the Ferris wheel; in Opera swans, a singing gondolier and the Flying
 Dutchman, hidden behind the conductor; in Office robot vacuums, a stray paper plane and a
-colleague racing past on an office chair; in Minimal a plain boat's silhouette. Anything tall keeps
+colleague racing past on an office chair; in Under the sea schools of fish, jellyfish, a sea
+turtle and a manta ray, hidden behind the wreck; in Minimal a plain boat's silhouette. Anything tall keeps
 to rows whose top is clear of the HUD bar.
 
 **A piece in the corner, in every style** (`corner.ts`, PLAN 11.24, ARCHIVE 12t): in the
 sea's bottom-right corner, the one the HUD leaves alone and clear of the big timer (`roseSpot`,
 `cornerSpot`), each style stands something of its own — Parchment's compass rose, Chocolate's
 chocolate fall, Halloween's moon and bats, Sakura's Mount Fuji, Oktoberfest's Ferris wheel,
-Opera's conductor, Office's water cooler and its gossips; Minimal's signal buoy, bobbing, its
+Opera's conductor, Office's water cooler and its gossips, Under the sea's shipwreck with an
+octopus draped over its bow (ARCHIVE 12u); Minimal's signal buoy, bobbing, its
 gold light blinking; Medieval's windmill on a rocky islet, sails turning, quicker in rain, in
 the day's light and mirrored in the sea; Night's fishing boat at anchor, its lanterns swaying
 and lighting the water, flaring in the final round; Cyberpunk's holographic billboard, a

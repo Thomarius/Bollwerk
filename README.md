@@ -12,8 +12,8 @@ score among those still standing wins.
 
 - 2–8 players, free-for-all or in equal teams; bots of ten skill levels fill any empty seat
 - Play alone on your own computer, with friends on your home network, or over the internet
-- Fourteen visual styles — Medieval, Minimal, Night, Cyberpunk, Blueprint, Parchment, Toy
-  bricks, Stained glass, Chocolate, Halloween, Sakura, Oktoberfest, Opera and Office — one for building and one for combat, swapped by the
+- Fifteen visual styles — Medieval, Minimal, Night, Cyberpunk, Blueprint, Parchment, Toy
+  bricks, Stained glass, Chocolate, Halloween, Sakura, Oktoberfest, Opera, Office and Under the sea — one for building and one for combat, swapped by the
   banners as in Rampart
 - In English and German, chosen in the menu
 - Awards at the end of every match, and a rematch in one click
@@ -263,7 +263,7 @@ ruleset to every client in the match snapshot, so all of them run one identical 
 | M6 — full scope, 2–8 players, audio, deployment | Done  |
 | M7 — balance pass                               | Done  |
 | M8 — team mode, one lobby online and offline    | Done  |
-| M9–M12 — visual passes and fourteen styles      | Done  |
+| M9–M12 — visual passes and fifteen styles       | Done  |
 | M13 — bots as skill levels and personalities    | Done  |
 | M14 — a desktop app for releases                | Done  |
 

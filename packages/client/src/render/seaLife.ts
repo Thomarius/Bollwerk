@@ -19,6 +19,7 @@ import { hex, tileX, tileY, type ViewTransform } from './theme.js';
 import { drawCrest } from './ukiyo.js';
 import { GOLD, drawQuaver, drawSwan } from './music.js';
 import { FOAM, drawMass, drawReveller } from './wiesn.js';
+import { drawFish } from './reef.js';
 
 /**
  * Life on the outer ocean in the styles drawn from shapes (PLAN 11.16 O1), as Medieval and
@@ -1252,6 +1253,148 @@ export class OperaSeaLife extends OceanDrawn {
       }
       g.circle(tileX(view, ship.x - ship.dir * 0.9), tileY(view, y - 0.3), t * 0.08);
       g.fill({ color: 0xfff0b0 });
+    }
+  }
+}
+
+/**
+ * Under the sea: schools of silver fish wheeling over the outer deep, turning as one;
+ * jellyfish drifting in slow circles, their bells pulsing; and now and then a sea turtle or a
+ * manta ray gliding across — silver, white and slate, nothing of any player's colour.
+ */
+export class UnderseaSeaLife extends OceanDrawn {
+  private readonly schools = new Circling();
+  private readonly jellies = new Circling();
+  private readonly turtles = new Crossings();
+  private readonly mantas = new Crossings();
+
+  override layout(state: MatchState, view: ViewTransform, art: ArtConfig): void {
+    super.layout(state, view, art);
+    this.schools.layout(this.ocean, art.undersea.fishSchools, [1.6, 2.8]);
+    this.jellies.layout(this.ocean, art.undersea.jellyfish, [0.6, 1.4]);
+    this.turtles.layout(this.ocean, art.undersea.turtleEveryMs);
+    this.mantas.layout(this.ocean, art.undersea.mantaEveryMs);
+  }
+
+  protected frame(g: Graphics, view: ViewTransform, art: ArtConfig, deltaMs: number): void {
+    const s = art.undersea;
+    const t = view.tile;
+
+    this.schools.step(deltaMs);
+    this.schools.items.forEach((school, n) => {
+      const heading = school.angle + (school.speed > 0 ? Math.PI / 2 : -Math.PI / 2);
+      for (let k = 0; k < 9; k++) {
+        // Each fish keeps its place in the school, a little out of step with the rest.
+        const u = ((k % 3) - 1) * 0.45 + Math.sin(this.clock / 400 + k) * 0.06;
+        const v = (Math.floor(k / 3) - 1) * 0.4 + ((k % 3) - 1) * 0.12;
+        const at = Circling.at({ ...school, angle: school.angle - v * 0.25 });
+        const x = at.x + Math.cos(heading + Math.PI / 2) * u * 0.6;
+        const y = at.y + Math.sin(heading + Math.PI / 2) * u * 0.6;
+        if (this.behind(x, y)) continue;
+        const flick = Math.sin(this.clock / 90 + k + n) * 0.12;
+        drawFish(
+          g,
+          tileX(view, x),
+          tileY(view, y),
+          t * 0.42,
+          Math.atan2(Math.sin(heading) * 0.6, Math.cos(heading)) + flick,
+          k % 4 === 0 ? 0xdfeaf0 : 0xa9bcc8,
+          0.85,
+        );
+      }
+    });
+
+    this.jellies.step(deltaMs * 0.3);
+    this.jellies.items.forEach((jelly, n) => {
+      const at = Circling.at(jelly);
+      if (this.behind(at.x, at.y)) return;
+      const pulse = 0.5 + 0.5 * Math.sin(this.clock / 500 + n * 2);
+      const x = tileX(view, at.x);
+      const y = tileY(view, at.y);
+      const w = t * (0.38 + 0.08 * pulse);
+      const h = t * (0.36 - 0.06 * pulse);
+      // The tentacles trailing, swaying, then the bell over them.
+      for (let k = 0; k < 5; k++) {
+        const fx = x + (k - 2) * w * 0.35;
+        const sway = Math.sin(this.clock / 300 + k + n) * t * 0.08;
+        g.moveTo(fx, y).quadraticCurveTo(
+          fx + sway,
+          y + t * 0.4,
+          fx - sway,
+          y + t * (0.7 + 0.1 * (k % 2)),
+        );
+      }
+      g.stroke({ width: Math.max(1, t * 0.04), color: 0xe8dcf4, alpha: 0.55 });
+      g.moveTo(x - w, y);
+      g.arc(x, y, w, Math.PI, 0);
+      g.quadraticCurveTo(x, y - h * 0.1 + h * 0.4, x - w, y);
+      g.fill({ color: 0xf2eaff, alpha: 0.4 });
+      g.moveTo(x - w, y);
+      g.arc(x, y, w, Math.PI, 0);
+      g.stroke({ width: Math.max(1, t * 0.05), color: 0xffffff, alpha: 0.7 });
+    });
+
+    this.turtles.step(this.ocean, deltaMs, s.turtleEveryMs, s.turtleTilesPerSecond, 0.6);
+    for (const turtle of this.turtles.items) {
+      if (this.behind(turtle.x, turtle.y)) continue;
+      const x = tileX(view, turtle.x);
+      const y = tileY(view, turtle.y);
+      const dir = turtle.dir;
+      const stroke = Math.sin(this.clock / 380);
+      // Flippers rowing, the head out front, the shell over all.
+      for (const side of [-1, 1]) {
+        const reach = side * stroke * t * 0.12;
+        g.ellipse(x + dir * t * 0.25 + reach, y + side * t * 0.42, t * 0.24, t * 0.09);
+        g.ellipse(x - dir * t * 0.32 - reach * 0.5, y + side * t * 0.28, t * 0.12, t * 0.07);
+      }
+      g.circle(x + dir * t * 0.62, y, t * 0.14);
+      g.fill({ color: 0x8a9a7e });
+      g.ellipse(x, y, t * 0.5, t * 0.38);
+      g.fill({ color: 0x5f6e58 });
+      g.stroke({ width: Math.max(1, t * 0.05), color: 0x2f3a2c });
+      for (const [u, v] of [
+        [0, 0],
+        [-0.25, -0.17],
+        [0.25, -0.17],
+        [-0.25, 0.17],
+        [0.25, 0.17],
+      ] as const) {
+        g.circle(x + u * t, y + v * t, t * 0.1);
+      }
+      g.stroke({ width: 1, color: 0x2f3a2c, alpha: 0.7 });
+    }
+
+    this.mantas.step(this.ocean, deltaMs, s.mantaEveryMs, s.mantaTilesPerSecond, 1);
+    for (const manta of this.mantas.items) {
+      if (this.behind(manta.x, manta.y)) continue;
+      const x = tileX(view, manta.x);
+      const y = tileY(view, manta.y);
+      const dir = manta.dir;
+      const flap = Math.sin(this.clock / 520) * t * 0.25;
+      // Seen from above: the wings swept back in curves, their tips flapping slowly, the two
+      // horns of its head forward and the tail a whip behind.
+      const u = (f: number): number => x + dir * t * f;
+      g.moveTo(u(-0.5), y).lineTo(u(-1.7), y + flap * 0.3);
+      g.stroke({ width: Math.max(1, t * 0.05), color: 0x2a3a48 });
+      g.moveTo(u(0.5), y);
+      for (const side of [-1, 1]) {
+        const tip = y + side * (t * 1.1 + flap);
+        g.quadraticCurveTo(u(0.45), y + side * t * 0.5, u(-0.05), tip);
+        g.quadraticCurveTo(u(-0.1), y + side * t * 0.45, u(-0.5), y);
+        if (side === -1) g.moveTo(u(0.5), y);
+      }
+      g.fill({ color: 0x2a3a48, alpha: 0.9 });
+      g.ellipse(u(0.05), y, t * 0.42, t * 0.22);
+      g.fill({ color: 0x41556a, alpha: 0.8 });
+      for (const side of [-1, 1]) {
+        g.moveTo(u(0.45), y + side * t * 0.1).quadraticCurveTo(
+          u(0.7),
+          y + side * t * 0.12,
+          u(0.68),
+          y + side * t * 0.02,
+        );
+      }
+      g.stroke({ width: Math.max(1, t * 0.06), color: 0x2a3a48, cap: 'round' });
     }
   }
 }
