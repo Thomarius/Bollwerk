@@ -2,6 +2,10 @@ import type { ArtConfig, GlassStyleConfig } from '@bollwerk/config';
 import { Structure, Terrain, type MatchState, type Shot } from '@bollwerk/sim';
 import { Graphics } from 'pixi.js';
 
+import { motionReduced } from '../motion.js';
+import type { TimerSpot } from '../timerSpot.js';
+
+import { cornerSpot } from './corner.js';
 import { IslandParts } from './islandParts.js';
 import { Memos, viewKey } from './stamps.js';
 import {
@@ -46,6 +50,19 @@ import { outline, trace, wallGeometry } from './walls.js';
 import { cannonBase } from './cannonBase.js';
 
 /** A shard of glass thrown out by a shot or the sweep, spinning as it falls. */
+/** How long the hourglass takes to turn over as a phase begins. */
+const TURN_MS = 700;
+
+/** The phases the hourglass measures, and the rules' length of each. */
+const PHASE_MS: Partial<
+  Record<string, 'castleSelectMs' | 'cannonPlaceMs' | 'combatMs' | 'buildMs'>
+> = {
+  castle_select: 'castleSelectMs',
+  cannon_place: 'cannonPlaceMs',
+  combat: 'combatMs',
+  build: 'buildMs',
+};
+
 interface Shard {
   x: number;
   y: number;
@@ -105,6 +122,12 @@ export class GlassTheme implements Theme {
   private readonly seaLife = new GlassSeaLife();
 
   private readonly terrainGfx = new Graphics();
+  /** The hourglass in the corner (PLAN 11.24), drawn about its middle so it can turn over. */
+  private readonly hourglassGfx = new Graphics();
+  private hourglass: TimerSpot | null = null;
+  /** The phase it last measured, and how far through turning it over for a new one. */
+  private glassPhase = '';
+  private turning = TURN_MS;
   /** Sealed ground, an island to a `Graphics`, redrawn where it changes. */
   private readonly territory = new IslandParts(1, 'territory');
   private readonly ghostMotion = new GhostMotion();
@@ -137,7 +160,7 @@ export class GlassTheme implements Theme {
   init(layers: ThemeLayers, art: ArtConfig): Promise<void> {
     this.art = art;
     this.style = art.glass;
-    layers.terrain.addChild(this.terrainGfx);
+    layers.terrain.addChild(this.terrainGfx, this.hourglassGfx);
     layers.territory.addChild(this.territory.container, this.scenery.gfx);
     layers.structures.addChild(this.structures.container);
     layers.effects.addChild(this.effectGfx, this.gunMemo.container, this.lateGfx);
@@ -151,7 +174,7 @@ export class GlassTheme implements Theme {
     this.territory.destroy();
     this.structures.destroy();
     this.scenery.destroy();
-    for (const g of [this.terrainGfx, this.effectGfx, this.overlayGfx]) {
+    for (const g of [this.terrainGfx, this.hourglassGfx, this.effectGfx, this.overlayGfx]) {
       g.destroy();
     }
   }
@@ -241,6 +264,8 @@ export class GlassTheme implements Theme {
   // ------------------------------------------------------------------ terrain
 
   drawTerrain(state: MatchState, view: ViewTransform): void {
+    this.hourglass = cornerSpot(state, view);
+    this.seaLife.corner = this.hourglass;
     this.seaLife.layout(state, view, this.art);
     this.scenery.refresh(state, view, this.art, true);
     this.terrain = state.terrain;
@@ -516,9 +541,150 @@ export class GlassTheme implements Theme {
     this.glints.push({ cells, age: 0 });
   }
 
+  /**
+   * An hourglass of leaded glass in the corner: two bulbs, each cut into panes in their
+   * lead, between dark plates on posts; its sand running down with the phase's clock, and
+   * the glass turned over as each new phase begins. Between phases the sand lies run out.
+   */
+  private drawHourglass(
+    state: MatchState,
+    view: ViewTransform,
+    spot: TimerSpot,
+    deltaMs: number,
+  ): void {
+    const g = this.hourglassGfx;
+    const { palette } = this.art;
+    const still = motionReduced();
+    const s = spot.size * view.tile;
+    const timed = PHASE_MS[state.phase];
+    if (timed !== undefined && state.phase !== this.glassPhase) {
+      // Turned over as a timed phase begins — not the first seen, which simply stands.
+      this.turning = this.glassPhase === '' || still ? TURN_MS : 0;
+    }
+    this.glassPhase = state.phase;
+    this.turning += Math.max(0, deltaMs);
+    const turn = Math.min(1, this.turning / TURN_MS);
+
+    // How much sand has run: the phase's time spent, from the rules' length of it.
+    let run = 1;
+    if (timed !== undefined && turn >= 1 && !(state.phase === 'build' && state.overtime)) {
+      const total = (state.ruleset.phases[timed] * state.ruleset.tickRateHz) / 1000;
+      const left = Math.max(0, state.phaseEndTick - state.tick);
+      run = total > 0 ? Math.min(1, Math.max(0, 1 - left / total)) : 1;
+    }
+
+    g.position.set(tileX(view, spot.x), tileY(view, spot.y) + s * 0.04);
+    // Over and over, ending upright: drawn run out while it turns, which upside down is
+    // the new phase's sand all in the top.
+    g.rotation = turn < 1 ? Math.PI * (1 - (1 - turn) * (1 - turn)) : 0;
+    if (turn < 1) run = 1;
+
+    const h = s * 0.4;
+    const w = s * 0.24;
+    const neck = s * 0.03;
+    const plate = s * 0.05;
+    const lead = Math.max(1, this.lead(view));
+    const leadColour = hex(palette.craterDark);
+    const glass = hex(palette.rockLight);
+    const sand = hex(palette.sand);
+    // A bulb's outline from the plate (y = edge) to the neck (y = 0), `dir` up or down.
+    const bulb = (dir: 1 | -1): number[] => [
+      -w,
+      dir * h,
+      w,
+      dir * h,
+      w * 0.9,
+      dir * h * 0.55,
+      neck,
+      dir * h * 0.08,
+      neck,
+      0,
+      -neck,
+      0,
+      -neck,
+      dir * h * 0.08,
+      -w * 0.9,
+      dir * h * 0.55,
+    ];
+    // The posts behind the glass, and the plates.
+    g.rect(-w * 1.25, -h - plate * 0.5, s * 0.03, h * 2 + plate);
+    g.rect(w * 1.25 - s * 0.03, -h - plate * 0.5, s * 0.03, h * 2 + plate);
+    g.fill({ color: hex(palette.rockDark) });
+    // The glass, faint, so the sea shows through it.
+    for (const dir of [-1, 1] as const) {
+      g.poly(bulb(dir));
+      g.fill({ color: glass, alpha: 0.28 });
+    }
+    // The sand: what is left in the top, level across the bulb; what has run in the
+    // bottom, a heap; and the thread of it falling between, while it runs.
+    const left = 1 - run;
+    if (left > 0.01) {
+      const top = -h * 0.08 - (h * 0.92 - h * 0.08) * left;
+      const widthAt = (y: number): number => neck + (w * 0.9 - neck) * Math.min(1, -y / (h * 0.55));
+      g.poly([
+        -widthAt(top),
+        top,
+        widthAt(top),
+        top,
+        neck,
+        -h * 0.08,
+        neck,
+        0,
+        -neck,
+        0,
+        -neck,
+        -h * 0.08,
+      ]);
+      g.fill({ color: sand });
+    }
+    if (run > 0.01) {
+      const heap = h * 0.92 * run;
+      const base = h * 0.96;
+      g.poly([
+        -w * 0.9,
+        base,
+        w * 0.9,
+        base,
+        w * 0.9 * (1 - run * 0.3),
+        base - heap * 0.6,
+        0,
+        base - heap,
+        -w * 0.9 * (1 - run * 0.3),
+        base - heap * 0.6,
+      ]);
+      g.fill({ color: sand });
+    }
+    if (left > 0.01 && run < 1 && turn >= 1 && !still) {
+      g.rect(-Math.max(0.5, neck * 0.35), 0, Math.max(1, neck * 0.7), h * 0.96 - h * 0.92 * run);
+      g.fill({ color: sand, alpha: 0.9 });
+    }
+    // The lead: round each bulb, and across it where its panes meet.
+    for (const dir of [-1, 1] as const) {
+      g.poly(bulb(dir));
+      g.moveTo(-w * 0.9, dir * h * 0.55).lineTo(w * 0.9, dir * h * 0.55);
+      g.moveTo(0, dir * h * 0.55).lineTo(0, dir * h);
+    }
+    g.stroke({ width: lead, color: leadColour, join: 'round' });
+    // The light through the glass: a sheen down each bulb's left.
+    for (const dir of [-1, 1] as const) {
+      g.moveTo(-w * 0.7, dir * h * 0.85).lineTo(-w * 0.6, dir * h * 0.6);
+    }
+    g.stroke({ width: Math.max(1, s * 0.015), color: 0xffffff, alpha: this.style.sheenAlpha });
+    // The plates, top and bottom, dark wood edged in lead.
+    for (const y of [-h - plate, h]) {
+      g.roundRect(-w * 1.35, y, w * 2.7, plate, plate * 0.3);
+      g.fill({ color: hex(palette.craterMid) });
+      g.stroke({ width: lead, color: leadColour });
+    }
+  }
+
   // ------------------------------------------------------------------ effects
 
   drawEffects(state: MatchState, view: ViewTransform, frame: EffectFrame): void {
+    this.hourglassGfx.clear();
+    if (this.hourglass !== null) {
+      this.drawHourglass(state, view, this.hourglass, frame.deltaMs);
+    }
     const g = this.effectGfx;
     g.clear();
     this.lateGfx.clear();

@@ -5261,3 +5261,39 @@ hashes before and after, and whole matches run 5–9% faster.
 
 **v0.7.0** was released the same day: random looks every round (12q), Cyberpunk's glow (12r)
 and this.
+
+## 12t. A piece in the corner for every style (PLAN 11.24, 2026-10-06)
+
+Testers liked the piece seven styles stand in the sea's bottom-right corner — Parchment's
+compass rose, Chocolate's chocolate fall, Halloween's moon, Sakura's Fuji, Oktoberfest's Ferris
+wheel, Opera's conductor, Office's water cooler — so the other seven were given one, each
+chosen by the user from two proposals: **Minimal** a signal buoy (Minimal kept, since players
+choose it for its plainness: not only the style to debug against); **Medieval** a windmill;
+**Night** a fishing boat with swaying lanterns; **Cyberpunk** a holographic billboard;
+**Blueprint** the drawing's title block; **Toy bricks** a crane on a barge; **Stained glass**
+an hourglass.
+
+**Shared**: `corner.ts` — `cornerSpot`, the spot every piece stands on, and `pressing`, a
+phase's last five seconds or overtime, when they hurry as the conductor does; every sea life
+hides what passes behind the piece (`behindCorner` in `ocean.ts`). Each piece's timings are in
+its style's config.
+
+**How each was drawn**: the buoy, the crane and the hourglass are shapes redrawn each frame in
+a `Graphics` of their own in the terrain layer, under everything, as the cooler is; the
+windmill and the boat are pixel art on a grid of 40 by 40, each art pixel as many screen
+pixels as the spot allows, the sails plotted a pixel at a time so they stay pixel art as they
+turn, and in the terrain layer so the day's tint and the clouds pass over them. The boat's
+light on the water is drawn under its hull in its own layer: with the torches' pools, which
+lie over the terrain, it covered the hull as two brown discs. The billboard is drawn sharp in
+`effectCore` and glows in `effectGlow` (12r). The title block is the first text on the board:
+Pixi `Text`, rastered only when the words change, so the sheet's number and the "FINAL" stamp
+are in the reader's language (`plan.sheet`, `plan.final`); a word too long for its cell is
+lettered smaller. Corrected by looking: the buoy and the crane made a third larger than their
+square, which their slender shapes do not fill; the billboard's cube tipped further and turned
+a little, since face on it read as an 8 beside the big timer; the title block wider than its
+square and its stamp larger; the boat's hull edged in moonlight, lost in the dark sea before.
+
+**Measured** in a paused eight-player match, each piece on and off by turns three times: frame
+rates 54–60 either way, render time within 0.6 ms; drawing a piece 0.1–0.3 ms a frame.
+
+**Checked in play** by the user and testers (2026-10-06), every style: the new pieces are great.

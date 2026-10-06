@@ -3,7 +3,10 @@ import { Structure, Terrain, type MatchState, type Shot } from '@bollwerk/sim';
 import { BlurFilter, Container, Graphics, Sprite, Texture } from 'pixi.js';
 
 import { bloomWanted, motionReduced } from '../motion.js';
+import { inFinalRound } from '../scores.js';
+import type { TimerSpot } from '../timerSpot.js';
 
+import { cornerSpot } from './corner.js';
 import { SEA_NE, SEA_NW, SEA_SE, SEA_SW, filletCorners } from './pixel/coast.js';
 import { daylight, shadowCast, weatherFor, type Weather } from './pixel/atmosphere.js';
 import { OceanLife } from './pixel/ocean.js';
@@ -219,6 +222,12 @@ export class PixelTheme implements Theme {
   private seaCells: Cell[] = [];
   private readonly seaGfx = new Graphics();
   /**
+   * The piece in the corner (PLAN 11.24): Medieval's windmill, Night's fishing boat. In the
+   * terrain layer, so the day's light and the clouds pass over it as over the ground.
+   */
+  private readonly cornerGfx = new Graphics();
+  private corner: TimerSpot | null = null;
+  /**
    * The clouds' shadows, a stamp a cloud drawn once and only moved (PLAN 11.22): their 700
    * soft discs, filled anew each frame, were 48 000 vertices at eight players, most of
    * what Medieval cost.
@@ -358,6 +367,7 @@ export class PixelTheme implements Theme {
     this.groundDiscs.destroy();
     this.airDiscs.destroy();
     this.seaGfx.destroy();
+    this.cornerGfx.destroy();
     this.ghostShadow.destroy();
     this.cloudStamps.destroy();
     this.cloudBook.destroy();
@@ -508,8 +518,10 @@ export class PixelTheme implements Theme {
           this.place(this.tileLayer, KEY.beach(mask), view, x, y).tint = beachTint(owner);
       }
     }
-    this.terrainLayer.addChild(this.tileLayer, this.seaGfx);
+    this.terrainLayer.addChild(this.tileLayer, this.seaGfx, this.cornerGfx);
     this.islandId = state.islandId;
+    this.corner = cornerSpot(state, view);
+    this.ocean.corner = this.corner;
     this.ocean.layout(state, view, this.art);
     this.weather = this.torchlit ? 'clear' : weatherFor(state.seed, this.art.pixel.weatherOdds);
     this.layoutNight(state);
@@ -957,6 +969,7 @@ export class PixelTheme implements Theme {
     this.airDiscs.begin(view.tile);
     const still = motionReduced();
     this.drawSea(view, frame.deltaMs, still);
+    this.drawCorner(state, view, still);
     this.drawClouds(view, frame.deltaMs, still);
     this.drawDaylight(state, view);
     this.drawRain(view, frame.deltaMs, still);
@@ -1228,6 +1241,173 @@ export class PixelTheme implements Theme {
     if (this.weather === 'overcast' || this.weather === 'rain' || this.weather === 'snow') {
       area();
       g.fill({ color: hex(this.art.palette.rockDark), alpha: 0.12 });
+    }
+  }
+
+  /** The corner's piece: the windmill by day, the fishing boat at Night. */
+  private drawCorner(state: MatchState, view: ViewTransform, still: boolean): void {
+    const g = this.cornerGfx;
+    g.clear();
+    const spot = this.corner;
+    if (spot === null) return;
+    // Laid out on a grid of 40 by 40 of the art's own pixels, the spot's square, each as
+    // many of the screen's as keeps it pixel art at any size.
+    const s = spot.size * view.tile;
+    const p = Math.max(1, Math.round(s / 40));
+    const left = Math.round(tileX(view, spot.x) - 20 * p);
+    const top = Math.round(tileY(view, spot.y) - 20 * p);
+    const dot = (x: number, y: number, w = 1, h = 1): void => {
+      g.rect(left + Math.round(x) * p, top + Math.round(y) * p, w * p, h * p);
+    };
+    if (this.torchlit) this.drawFishingBoat(state, still, dot, left, top, p);
+    else this.drawWindmill(dot, still);
+  }
+
+  /**
+   * Medieval's windmill on a rocky islet: a tapered stone tower under a wooden cap, its four
+   * sails of cloth on their frames turning — quicker in rain — drawn a pixel at a time as
+   * they turn, so they stay pixel art at any angle; and its reflection in the sea below,
+   * as the castles on a south coast have theirs.
+   */
+  private drawWindmill(
+    dot: (x: number, y: number, w?: number, h?: number) => void,
+    still: boolean,
+  ): void {
+    const g = this.cornerGfx;
+    const { palette } = this.art;
+    const turnMs =
+      this.weather === 'rain' ? this.art.pixel.windmillRainTurnMs : this.art.pixel.windmillTurnMs;
+    // The reflection, three wavering strips under the islet.
+    for (let k = 0; k < 3; k++) {
+      const shift = still ? 0 : Math.round(Math.sin(this.clock / 420 + k * 1.3));
+      dot(15 + shift + k, 38 + k, 10 - 2 * k, 1);
+      g.fill({ color: hex(palette.rockLight), alpha: 0.28 - k * 0.08 });
+    }
+    // The islet: grey rock, darker at the waterline, grass on its top.
+    dot(10, 34, 20, 3);
+    dot(12, 33, 16, 1);
+    g.fill({ color: hex(palette.rockMid) });
+    dot(11, 37, 18, 1);
+    g.fill({ color: hex(palette.rockDark) });
+    dot(14, 32, 12, 1);
+    g.fill({ color: hex(palette.grassMid) });
+    // The tower, narrowing as it rises, shaded on its west side.
+    for (let y = 14; y <= 32; y++) {
+      const half = 3 + Math.round(((y - 14) / 18) * 2);
+      dot(20 - half, y, half * 2, 1);
+    }
+    g.fill({ color: hex(palette.rockLight) });
+    for (let y = 14; y <= 32; y++) dot(20 - 3 - Math.round(((y - 14) / 18) * 2), y, 1, 1);
+    g.fill({ color: hex(palette.rockMid) });
+    // Its door and a window.
+    dot(19, 28, 2, 4);
+    dot(20, 21, 1, 2);
+    g.fill({ color: hex(palette.craterDark) });
+    // The cap, a wooden roof.
+    for (let k = 0; k < 5; k++) dot(15 + k, 14 - k, 10 - 2 * k, 1);
+    g.fill({ color: hex(palette.craterMid) });
+    dot(15, 14, 10, 1);
+    g.fill({ color: hex(palette.craterDark) });
+    // The sails: four arms from the hub, cloth along the outer part of each, one side.
+    const turn = still ? 0.4 : (this.clock / turnMs) * Math.PI * 2;
+    const hub = { x: 20, y: 13 };
+    for (let arm = 0; arm < 4; arm++) {
+      const a = turn + (arm * Math.PI) / 2;
+      const dx = Math.cos(a);
+      const dy = Math.sin(a);
+      for (let d = 5; d <= 16; d++) {
+        for (let e = 1; e <= 3; e++) dot(hub.x + dx * d - dy * e, hub.y + dy * d + dx * e);
+      }
+      g.fill({ color: hex(palette.uiInk), alpha: 0.92 });
+      for (let d = 0; d <= 16; d++) dot(hub.x + dx * d, hub.y + dy * d);
+      g.fill({ color: hex(palette.craterDark) });
+    }
+    dot(hub.x, hub.y);
+    g.fill({ color: hex(palette.rockDark) });
+  }
+
+  /**
+   * Night's fishing boat at anchor, rocking on the swell: a cabin with its window lit, a
+   * furled sail, and two lanterns — one swaying from the yard — each lighting the water
+   * under it as the torches light the ground, and flaring in the final round.
+   */
+  private drawFishingBoat(
+    state: MatchState,
+    still: boolean,
+    dot: (x: number, y: number, w?: number, h?: number) => void,
+    left: number,
+    top: number,
+    p: number,
+  ): void {
+    const g = this.cornerGfx;
+    const { palette } = this.art;
+    const bob = still ? 0 : Math.round(Math.sin(this.clock / 1700));
+    const flare = inFinalRound(state) ? 1.5 : 1;
+    const swing = still
+      ? 0
+      : 0.35 * Math.sin((this.clock / this.art.pixel.lanternSwingMs) * Math.PI * 2);
+    const lanterns = [
+      { x: 27 + Math.sin(swing) * 5, y: 11 + bob + Math.cos(swing) * 5 },
+      { x: 10, y: 20 + bob },
+    ];
+    // The lanterns' light on the water, under the boat, and their reflections in it:
+    // drawn here rather than with the torches' pools, which lie over the terrain and so
+    // over the hull.
+    for (const lantern of lanterns) {
+      for (const [r, alpha] of [
+        [9, 0.06],
+        [6, 0.08],
+        [3.5, 0.1],
+      ] as const) {
+        g.ellipse(left + (lantern.x + 0.5) * p, top + 33 * p, r * p * flare, r * 0.4 * p * flare);
+        g.fill({ color: hex(palette.emberHot), alpha: alpha * flare });
+      }
+      for (let k = 0; k < 3; k++) {
+        const wobble = still ? 0 : Math.round(Math.sin(this.clock / 260 + k * 1.9 + lantern.x));
+        dot(lantern.x - 1 + wobble, 34 + k * 2, k === 2 ? 2 : 3, 1);
+      }
+      g.fill({ color: hex(palette.emberMid), alpha: 0.5 });
+    }
+    // The anchor's line, slanting down into the water from the bow.
+    for (let k = 0; k < 6; k++) dot(32 + k, 30 + bob + k);
+    g.fill({ color: hex(palette.craterDark), alpha: 0.6 });
+    // The hull: a dark gunwale, planks, the keel's shadow; the bow raised.
+    dot(8, 28 + bob, 25, 1);
+    dot(31, 26 + bob, 2, 2);
+    g.fill({ color: hex(palette.craterDark) });
+    dot(9, 29 + bob, 23, 2);
+    dot(11, 31 + bob, 19, 1);
+    g.fill({ color: hex(palette.craterMid) });
+    dot(13, 32 + bob, 15, 1);
+    g.fill({ color: hex(palette.shadow) });
+    // Moonlight along the gunwale and down the mast, or the hull is lost in the dark sea.
+    dot(8, 27 + bob, 24, 1);
+    dot(23, 8 + bob, 1, 15);
+    g.fill({ color: hex(palette.uiInk), alpha: 0.35 });
+    // The cabin, its window lit.
+    dot(12, 23 + bob, 7, 5);
+    g.fill({ color: hex(palette.rockMid) });
+    dot(14, 25 + bob, 3, 2);
+    g.fill({ color: hex(palette.emberHot) });
+    // The mast, the yard and its sail furled on it, and a pole at the stern.
+    dot(22, 8 + bob, 1, 20);
+    dot(16, 11 + bob, 12, 1);
+    dot(10, 21 + bob, 1, 7);
+    g.fill({ color: hex(palette.craterDark) });
+    dot(17, 12 + bob, 10, 1);
+    g.fill({ color: hex(palette.rockLight) });
+    // The lanterns: one hanging from the yard's end on its rope, swinging; one on the
+    // stern's pole; a halo round each flame.
+    for (let k = 1; k <= 4; k++) dot(27 + Math.sin(swing) * k, 11 + bob + Math.cos(swing) * k);
+    g.fill({ color: hex(palette.craterDark) });
+    for (const lantern of lanterns) {
+      dot(lantern.x - 0.5, lantern.y - 1, 2, 1);
+      g.fill({ color: hex(palette.craterDark) });
+      dot(lantern.x - 0.5, lantern.y, 2, 2);
+      g.fill({ color: hex(palette.emberHot) });
+      const x = left + (lantern.x + 0.5) * p;
+      const y = top + (lantern.y + 1) * p;
+      this.airDiscs.disc(x, y, p * 2.5 * flare, hex(palette.emberHot), 0.18 * flare);
     }
   }
 

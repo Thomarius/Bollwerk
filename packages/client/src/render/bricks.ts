@@ -2,6 +2,10 @@ import type { ArtConfig, BricksStyleConfig } from '@bollwerk/config';
 import { Structure, Terrain, type MatchState, type Shot } from '@bollwerk/sim';
 import { Graphics } from 'pixi.js';
 
+import { motionReduced } from '../motion.js';
+import type { TimerSpot } from '../timerSpot.js';
+
+import { cornerSpot } from './corner.js';
 import { IslandParts } from './islandParts.js';
 import { Memos, viewKey } from './stamps.js';
 import {
@@ -99,6 +103,9 @@ export class BricksTheme implements Theme {
   private style!: BricksStyleConfig;
 
   private readonly terrainGfx = new Graphics();
+  /** The crane on its barge in the corner (PLAN 11.24), redrawn each frame as it works. */
+  private readonly craneGfx = new Graphics();
+  private crane: TimerSpot | null = null;
   /** Sealed ground, an island to a `Graphics`, redrawn where it changes. */
   private readonly territory = new IslandParts(1, 'territory');
   private readonly ghostMotion = new GhostMotion();
@@ -132,7 +139,7 @@ export class BricksTheme implements Theme {
   init(layers: ThemeLayers, art: ArtConfig): Promise<void> {
     this.art = art;
     this.style = art.bricks;
-    layers.terrain.addChild(this.terrainGfx);
+    layers.terrain.addChild(this.terrainGfx, this.craneGfx);
     layers.territory.addChild(this.territory.container, this.scenery.gfx);
     layers.structures.addChild(this.structures.container);
     layers.effects.addChild(this.effectGfx, this.gunMemo.container, this.lateGfx);
@@ -146,7 +153,7 @@ export class BricksTheme implements Theme {
     this.territory.destroy();
     this.structures.destroy();
     this.scenery.destroy();
-    for (const g of [this.terrainGfx, this.effectGfx, this.overlayGfx]) {
+    for (const g of [this.terrainGfx, this.craneGfx, this.effectGfx, this.overlayGfx]) {
       g.destroy();
     }
   }
@@ -174,6 +181,8 @@ export class BricksTheme implements Theme {
   // ------------------------------------------------------------------ terrain
 
   drawTerrain(state: MatchState, view: ViewTransform): void {
+    this.crane = cornerSpot(state, view);
+    this.seaLife.corner = this.crane;
     this.seaLife.layout(state, view, this.art);
     this.scenery.refresh(state, view, this.art, true);
     this.terrain = state.terrain;
@@ -489,6 +498,106 @@ export class BricksTheme implements Theme {
     this.clicks.push({ cells, age: 0 });
   }
 
+  /**
+   * A crane built of bricks on a barge in the corner: a studded grey barge, a white cab on
+   * its turntable, a dark lattice jib swinging round — shorter as it turns toward or away
+   * from the viewer — and a brick on its hook, lowered to the deck and lifted again twice a
+   * swing. In white, grey and black: a crane's yellow would be the amber player's. Its
+   * hazard light strobes white in overtime. Still, mid-swing, when motion is reduced.
+   */
+  private drawCrane(state: MatchState, view: ViewTransform, spot: TimerSpot): void {
+    const g = this.craneGfx;
+    const { palette } = this.art;
+    // A third larger than its square, which a crane's open lattice does not fill.
+    const s = spot.size * view.tile * 1.35;
+    const still = motionReduced();
+    const edge = { width: Math.max(1, s * 0.012), color: hex(palette.shadow), alpha: 0.6 };
+    const phase = still ? 0.15 : (this.clock / this.style.craneSwingMs) % 1;
+    const bob = still ? 0 : Math.sin(this.clock / 900) * s * 0.008;
+    const cx = tileX(view, spot.x);
+    const water = tileY(view, spot.y) + s * 0.28;
+    const deck = water - s * 0.1 + bob;
+    const studs = (x0: number, y: number, n: number, pitch: number, colour: number): void => {
+      for (let k = 0; k < n; k++) this.stud(g, x0 + (k + 0.5) * pitch, y, pitch * 1.6, colour);
+    };
+
+    // The barge: a long flat brick with its studs, foam along its waterline.
+    const bargeW = s * 0.9;
+    const bx = cx - bargeW / 2;
+    g.rect(bx, deck, bargeW, s * 0.12);
+    g.fill({ color: hex(palette.rockMid) });
+    g.stroke(edge);
+    studs(bx, deck - s * 0.012, 8, bargeW / 8, hex(palette.rockMid));
+    for (let k = 0; k < 6; k++)
+      g.circle(bx + (k + 0.5) * (bargeW / 6), water + s * 0.02, s * 0.025);
+    g.fill({ color: hex(palette.waterFoam), alpha: 0.7 });
+
+    // The cab on its turntable, toward the barge's stern, a window in it.
+    const cabX = bx + bargeW * 0.12;
+    const cabW = s * 0.24;
+    const cabTop = deck - s * 0.22;
+    g.rect(cabX - s * 0.01, deck - s * 0.035, cabW + s * 0.02, s * 0.035);
+    g.fill({ color: hex(palette.rockDark) });
+    g.rect(cabX, cabTop, cabW, s * 0.19);
+    g.fill({ color: hex(palette.uiInk) });
+    g.stroke(edge);
+    g.rect(cabX + cabW * 0.55, cabTop + s * 0.035, cabW * 0.32, s * 0.07);
+    g.fill({ color: hex(palette.waterShallow) });
+    studs(cabX, cabTop - s * 0.01, 3, cabW / 3, hex(palette.uiInk));
+
+    // The jib: from the cab's top, luffed up, swinging about the upright — so its reach
+    // across the picture is the cosine of the swing.
+    const swing = Math.sin(phase * Math.PI * 2) * 0.95;
+    const reach = s * 0.62 * Math.cos(swing) + s * 0.08;
+    const pivot = { x: cabX + cabW * 0.7, y: cabTop - s * 0.02 };
+    const luff = 0.62;
+    const tip = { x: pivot.x + reach * Math.cos(luff), y: pivot.y - s * 0.62 * Math.sin(luff) };
+    const nx = -(tip.y - pivot.y);
+    const ny = tip.x - pivot.x;
+    const nl = Math.hypot(nx, ny) || 1;
+    const half = s * 0.025;
+    const ox = (nx / nl) * half;
+    const oy = (ny / nl) * half;
+    g.moveTo(pivot.x + ox, pivot.y + oy).lineTo(tip.x + ox, tip.y + oy);
+    g.moveTo(pivot.x - ox, pivot.y - oy).lineTo(tip.x - ox, tip.y - oy);
+    const bays = 6;
+    for (let k = 0; k < bays; k++) {
+      const a = k / bays;
+      const b = (k + 1) / bays;
+      const side = k % 2 === 0 ? 1 : -1;
+      g.moveTo(
+        pivot.x + (tip.x - pivot.x) * a + ox * side,
+        pivot.y + (tip.y - pivot.y) * a + oy * side,
+      ).lineTo(
+        pivot.x + (tip.x - pivot.x) * b - ox * side,
+        pivot.y + (tip.y - pivot.y) * b - oy * side,
+      );
+    }
+    g.stroke({ width: Math.max(1, s * 0.016), color: hex(palette.rockDark) });
+
+    // The hook's cable, paying out to the deck and back twice a swing, and the brick on it.
+    const drop = 0.5 - 0.5 * Math.cos(phase * Math.PI * 4);
+    const hookY = tip.y + s * 0.08 + (deck - s * 0.1 - tip.y - s * 0.08) * drop;
+    g.moveTo(tip.x, tip.y).lineTo(tip.x, hookY);
+    g.stroke({ width: 1, color: hex(palette.rockDark) });
+    g.rect(tip.x - s * 0.07, hookY, s * 0.14, s * 0.07);
+    g.fill({ color: hex(palette.rockLight) });
+    g.stroke(edge);
+    studs(tip.x - s * 0.07, hookY - s * 0.006, 2, s * 0.07, hex(palette.rockLight));
+
+    // The hazard light on the cab, strobing white in overtime.
+    const strobe =
+      state.phase === 'build' &&
+      state.overtime &&
+      (still || Math.floor(this.clock / 180) % 3 === 0);
+    g.circle(cabX + cabW * 0.25, cabTop - s * 0.04, s * 0.022);
+    g.fill({ color: strobe ? 0xffffff : hex(palette.rockMid) });
+    if (strobe) {
+      g.circle(cabX + cabW * 0.25, cabTop - s * 0.04, s * 0.07);
+      g.fill({ color: 0xffffff, alpha: 0.35 });
+    }
+  }
+
   // ------------------------------------------------------------------ effects
 
   drawEffects(state: MatchState, view: ViewTransform, frame: EffectFrame): void {
@@ -497,6 +606,8 @@ export class BricksTheme implements Theme {
     this.lateGfx.clear();
     this.seaLife.draw(g, view, this.art, frame.deltaMs);
     this.clock += frame.deltaMs;
+    this.craneGfx.clear();
+    if (this.crane !== null) this.drawCrane(state, view, this.crane);
     drawDrain(g, view, frame.drain, this.art);
     drawSealGlow(g, view, frame.sealGlow, this.art);
     this.landings.draw(g, view, this.art, frame.deltaMs);

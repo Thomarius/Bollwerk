@@ -2,7 +2,12 @@ import type { ArtConfig, BlueprintStyleConfig } from '@bollwerk/config';
 import { Structure, Terrain, type MatchState, type Shot } from '@bollwerk/sim';
 import { Graphics } from 'pixi.js';
 
+import { motionReduced } from '../motion.js';
+import type { TimerSpot } from '../timerSpot.js';
+
+import { cornerSpot } from './corner.js';
 import { IslandParts } from './islandParts.js';
+import { TitleBlock } from './titleBlock.js';
 import { Memos, viewKey } from './stamps.js';
 import {
   FlagHoist,
@@ -100,6 +105,9 @@ export class BlueprintTheme implements Theme {
   private style!: BlueprintStyleConfig;
 
   private readonly terrainGfx = new Graphics();
+  /** The drawing's title block, in the corner (PLAN 11.24). */
+  private readonly titleBlock = new TitleBlock();
+  private corner: TimerSpot | null = null;
   /** Sealed ground, an island to a `Graphics`, redrawn where it changes. */
   private readonly territory = new IslandParts(1, 'territory');
   private readonly ghostMotion = new GhostMotion();
@@ -141,7 +149,7 @@ export class BlueprintTheme implements Theme {
   init(layers: ThemeLayers, art: ArtConfig): Promise<void> {
     this.art = art;
     this.style = art.blueprint;
-    layers.terrain.addChild(this.terrainGfx);
+    layers.terrain.addChild(this.terrainGfx, this.titleBlock.container);
     layers.territory.addChild(this.scenery.gfx, this.territory.container, this.smudgeGfx);
     layers.structures.addChild(this.structures.container);
     layers.effects.addChild(this.effectGfx, this.gunMemo.container, this.lateGfx);
@@ -150,6 +158,7 @@ export class BlueprintTheme implements Theme {
   }
 
   destroy(): void {
+    this.titleBlock.destroy();
     this.gunMemo.destroy();
     this.lateGfx.destroy();
     this.territory.destroy();
@@ -178,6 +187,8 @@ export class BlueprintTheme implements Theme {
   // ------------------------------------------------------------------ terrain
 
   drawTerrain(state: MatchState, view: ViewTransform): void {
+    this.corner = cornerSpot(state, view);
+    this.seaLife.corner = this.corner;
     this.seaLife.layout(state, view, this.art);
     this.scenery.refresh(state, view, this.art, true);
     this.terrain = state.terrain;
@@ -518,6 +529,10 @@ export class BlueprintTheme implements Theme {
     this.lateGfx.clear();
     this.seaLife.draw(g, view, this.art, frame.deltaMs);
     this.clock += frame.deltaMs;
+    this.titleBlock.container.visible = this.corner !== null;
+    if (this.corner !== null) {
+      this.titleBlock.draw(state, view, this.corner, this.art, frame.deltaMs, motionReduced());
+    }
     drawDrain(g, view, frame.drain, this.art);
     drawSealGlow(g, view, frame.sealGlow, this.art);
     this.landings.draw(g, view, this.art, frame.deltaMs);

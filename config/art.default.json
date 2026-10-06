@@ -1126,7 +1126,10 @@
     "cannonBoreScale": 0.34,
     "crumbleMs": 450,
     "boatEveryMs": 22000,
-    "boatTilesPerSecond": 0.5
+    "boatTilesPerSecond": 0.5,
+    "buoyBlinkMs": 2400,
+    "buoyHurriedBlinkMs": 600,
+    "buoyBobMs": 3200
   },
   "cyberpunk": {
     "rainPerThousandTiles": 70,
@@ -1144,7 +1147,8 @@
     "glitchMs": 280,
     "drones": 2,
     "hovercraftEveryMs": 15000,
-    "hovercraftTilesPerSecond": 1.6
+    "hovercraftTilesPerSecond": 1.6,
+    "billboardTurnMs": 7000
   },
   "blueprint": {
     "lineWidthPx": 2,
@@ -1194,7 +1198,10 @@
     "snowPerThousandTiles": 60,
     "firefliesPerHundredTiles": 1.2,
     "beamTiles": 7,
-    "beamTurnMs": 9000
+    "beamTurnMs": 9000,
+    "windmillTurnMs": 9000,
+    "windmillRainTurnMs": 4000,
+    "lanternSwingMs": 2600
   },
   "scenery": {
     "clustersPerHundredTiles": 1.8,
@@ -1225,7 +1232,8 @@
     "duckEveryMs": 20000,
     "duckTilesPerSecond": 0.25,
     "sharkEveryMs": 24000,
-    "sharkMs": 6000
+    "sharkMs": 6000,
+    "craneSwingMs": 9000
   },
   "effects": {
     "sealFloodTilesPerSecond": 16,

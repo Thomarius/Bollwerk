@@ -104,6 +104,11 @@ export const FlatStyleSchema = z.strictObject({
   /** A plain boat crossing the outer ocean now and then (`render/ocean.ts`), one at a time. */
   boatEveryMs: z.number().int().positive(),
   boatTilesPerSecond: z.number().positive(),
+  /** The buoy in the corner (PLAN 11.24): a blink of its light, and while the clock presses. */
+  buoyBlinkMs: z.number().int().positive(),
+  buoyHurriedBlinkMs: z.number().int().positive(),
+  /** One bob of it on the swell. */
+  buoyBobMs: z.number().int().positive(),
 });
 export type FlatStyleConfig = z.infer<typeof FlatStyleSchema>;
 
@@ -144,6 +149,8 @@ export const CyberpunkStyleSchema = z.strictObject({
   /** A hover-craft crossing the outer ocean now and then (`render/ocean.ts`), one at a time. */
   hovercraftEveryMs: z.number().int().positive(),
   hovercraftTilesPerSecond: z.number().positive(),
+  /** The holographic billboard in the corner (PLAN 11.24): one turn of its emblem. */
+  billboardTurnMs: z.number().int().positive(),
 });
 export type CyberpunkStyleConfig = z.infer<typeof CyberpunkStyleSchema>;
 
@@ -243,6 +250,11 @@ export const PixelStyleSchema = z.strictObject({
   /** Night: a lighthouse's beam, how far it reaches and one turn of it. */
   beamTiles: z.number().positive(),
   beamTurnMs: z.number().int().positive(),
+  /** Medieval's windmill in the corner (PLAN 11.24): one turn of its sails, and in rain. */
+  windmillTurnMs: z.number().int().positive(),
+  windmillRainTurnMs: z.number().int().positive(),
+  /** Night's fishing boat in the corner: one swing of the lantern on its mast. */
+  lanternSwingMs: z.number().int().positive(),
 });
 export type PixelStyleConfig = z.infer<typeof PixelStyleSchema>;
 
@@ -306,6 +318,8 @@ export const BricksStyleSchema = z.strictObject({
   /** A shark's fin circling now and then, for so long. */
   sharkEveryMs: z.number().int().positive(),
   sharkMs: z.number().int().positive(),
+  /** The crane on its barge in the corner (PLAN 11.24): one swing of its jib round and back. */
+  craneSwingMs: z.number().int().positive(),
 });
 export type BricksStyleConfig = z.infer<typeof BricksStyleSchema>;
 

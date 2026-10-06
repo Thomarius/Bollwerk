@@ -4,7 +4,16 @@ import type { Graphics } from 'pixi.js';
 
 import { motionReduced } from '../motion.js';
 
-import { Circling, Crossings, NO_OCEAN, Surfacings, outerOcean, type OuterOcean } from './ocean.js';
+import {
+  Circling,
+  Crossings,
+  NO_OCEAN,
+  Surfacings,
+  behindCorner,
+  outerOcean,
+  type CornerPiece,
+  type OuterOcean,
+} from './ocean.js';
 import { drawBat } from './spooky.js';
 import { hex, tileX, tileY, type ViewTransform } from './theme.js';
 import { drawCrest } from './ukiyo.js';
@@ -28,6 +37,12 @@ export interface SeaLife {
 abstract class OceanDrawn implements SeaLife {
   protected ocean: OuterOcean = NO_OCEAN;
   protected clock = 0;
+  /** The style's piece in the corner, if it has one: what passes there goes behind it. */
+  corner: CornerPiece | null = null;
+
+  protected behind(x: number, y: number): boolean {
+    return behindCorner(this.corner, x, y);
+  }
 
   layout(state: MatchState, view: ViewTransform, _art: ArtConfig): void {
     this.ocean = outerOcean(state, view);
@@ -73,6 +88,7 @@ export class FlatSeaLife extends OceanDrawn {
     this.boats.step(this.ocean, deltaMs, boatEveryMs, boatTilesPerSecond, 1);
     const colour = hex(art.palette.waterShallow);
     for (const b of this.boats.items) {
+      if (this.behind(b.x, b.y)) continue;
       g.poly(
         shape(view, b.x, b.y, b.dir, [
           [-0.6, 0.05],
@@ -243,6 +259,7 @@ export class BlueprintSeaLife extends OceanDrawn {
     const t = view.tile;
     this.ships.step(this.ocean, deltaMs, b.shipEveryMs, b.shipTilesPerSecond, 0.6);
     for (const s of this.ships.items) {
+      if (this.behind(s.x, s.y)) continue;
       // The course, dashed across the sheet behind it and faint ahead, as a plotted route.
       const y = tileY(view, s.y);
       const dash = t * 0.35;
@@ -322,6 +339,7 @@ export class CyberpunkSeaLife extends OceanDrawn {
     this.drones.step(deltaMs);
     for (const [k, d] of this.drones.items.entries()) {
       const at = Circling.at(d);
+      if (this.behind(at.x, at.y)) continue;
       const x = tileX(view, at.x);
       const y = tileY(view, at.y);
       // The searchlight, a pool on the water below and behind.
@@ -356,6 +374,7 @@ export class CyberpunkSeaLife extends OceanDrawn {
 
     this.craft.step(this.ocean, deltaMs, c.hovercraftEveryMs, c.hovercraftTilesPerSecond, 0.5);
     for (const h of this.craft.items) {
+      if (this.behind(h.x, h.y)) continue;
       const y = h.y + Math.sin(this.clock / 260) * 0.03;
       // The trail of light it leaves, fading out behind it.
       for (let k = 1; k <= 8; k++) {
@@ -413,6 +432,7 @@ export class BricksSeaLife extends OceanDrawn {
 
     this.boats.step(this.ocean, deltaMs, b.boatEveryMs, b.boatTilesPerSecond, 1.2);
     for (const s of this.boats.items) {
+      if (this.behind(s.x, s.y)) continue;
       const y = tileY(view, s.y + Math.sin(this.clock / 500 + s.x) * 0.04);
       const x = tileX(view, s.x);
       // A hull of two bricks, a cabin brick with studs, a mast and a white sail with a flag.
@@ -443,6 +463,7 @@ export class BricksSeaLife extends OceanDrawn {
 
     this.ducks.step(this.ocean, deltaMs, b.duckEveryMs, b.duckTilesPerSecond);
     for (const d of this.ducks.items) {
+      if (this.behind(d.x, d.y)) continue;
       const tilt = Math.sin(this.clock / 420) * 0.08;
       const x = tileX(view, d.x);
       const y = tileY(view, d.y + Math.sin(this.clock / 380) * 0.05);
@@ -471,6 +492,7 @@ export class BricksSeaLife extends OceanDrawn {
     // A shark's fin rising, circling and sinking again, its wake a ring of foam.
     this.sharks.step(this.ocean, deltaMs, b.sharkEveryMs, b.sharkMs);
     for (const s of this.sharks.items) {
+      if (this.behind(s.x, s.y)) continue;
       const life = s.ageMs / b.sharkMs;
       const rise = Math.min(1, Math.sin(Math.PI * life) * 2.5);
       const angle = s.dir * life * Math.PI * 2;
@@ -508,6 +530,7 @@ export class GlassSeaLife extends OceanDrawn {
 
     this.ships.step(this.ocean, deltaMs, s.shipEveryMs, s.shipTilesPerSecond, 1.2);
     for (const ship of this.ships.items) {
+      if (this.behind(ship.x, ship.y)) continue;
       const x = tileX(view, ship.x);
       const y = tileY(view, ship.y + Math.sin(this.clock / 600 + ship.x) * 0.04);
       g.poly([x - t * 0.7, y, x + t * 0.75, y, x + t * 0.5, y + t * 0.3, x - t * 0.5, y + t * 0.3]);
@@ -524,6 +547,7 @@ export class GlassSeaLife extends OceanDrawn {
 
     this.fish.step(this.ocean, deltaMs, s.fishEveryMs, s.fishMs);
     for (const f of this.fish.items) {
+      if (this.behind(f.x, f.y)) continue;
       const k = f.ageMs / s.fishMs;
       const x = tileX(view, f.x + f.dir * (k - 0.5) * 1.4);
       const y = tileY(view, f.y) - Math.sin(Math.PI * k) * t * 0.9;

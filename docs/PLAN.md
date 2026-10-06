@@ -1038,6 +1038,23 @@ Dutchman, hidden behind the conductor; in Office robot vacuums, a stray paper pl
 colleague racing past on an office chair; in Minimal a plain boat's silhouette. Anything tall keeps
 to rows whose top is clear of the HUD bar.
 
+**A piece in the corner, in every style** (`corner.ts`, PLAN 11.24, ARCHIVE 12t): in the
+sea's bottom-right corner, the one the HUD leaves alone and clear of the big timer (`roseSpot`,
+`cornerSpot`), each style stands something of its own — Parchment's compass rose, Chocolate's
+chocolate fall, Halloween's moon and bats, Sakura's Mount Fuji, Oktoberfest's Ferris wheel,
+Opera's conductor, Office's water cooler and its gossips; Minimal's signal buoy, bobbing, its
+gold light blinking; Medieval's windmill on a rocky islet, sails turning, quicker in rain, in
+the day's light and mirrored in the sea; Night's fishing boat at anchor, its lanterns swaying
+and lighting the water, flaring in the final round; Cyberpunk's holographic billboard, a
+wireframe cube turning on a panel of light, glitching as walls are hit, a warning in its place
+in overtime; Blueprint's title block — BOLLWERK, sheet N of the rounds, the scale and a north
+arrow — inked anew each round and stamped "FINAL" in red for the last, lettered in the
+reader's language; Toy bricks' crane on a barge, its jib swinging and a brick lowered and
+lifted, a hazard light strobing white in overtime; and Stained glass's hourglass, its sand
+running with the phase's clock, turned over as each phase begins. Most hurry while the clock
+presses (`pressing`). Neutral colours, never a player's: a crane's yellow would be the amber
+player's. The style's sea life passes behind it. Each costs well under a millisecond a frame.
+
 **The match's moments** (`camera.ts`, `art.camera`). The match opens
 close on the viewer's own island, marked **"You are here"** until they choose a castle —
 seats are shuffled onto islands, so nobody knows which is theirs until told — and pulls
@@ -1217,7 +1234,7 @@ test-session feedback, in ARCHIVE 11w; 11.5 the small items and 11.6 the bots, i
 11.16 help for new players, the menu and the sea, and 11.17 the desktop app, in ARCHIVE
 11zt; 11.18 the fourth visual pass, in ARCHIVE 11zv; 11.19 every style to the edges, in
 ARCHIVE 11zz; 11.20 more languages, in ARCHIVE 12g; 11.21 UPnP, in ARCHIVE 12j; 11.2 points decide, 11.3 two players,
-11.4 measurements never taken and 11.13 the bots' loose ends, closed by the weekend soak, in ARCHIVE 12h; 11.22 rendering performance, in ARCHIVE 12n, its bots planning on the same ticks in ARCHIVE 12p; 11.23 random looks every round, in ARCHIVE 12q; Cyberpunk under Glowing, in ARCHIVE 12r; the slow plan late in a build phase, in ARCHIVE 12s — so the open sections keep theirs.
+11.4 measurements never taken and 11.13 the bots' loose ends, closed by the weekend soak, in ARCHIVE 12h; 11.22 rendering performance, in ARCHIVE 12n, its bots planning on the same ticks in ARCHIVE 12p; 11.23 random looks every round, in ARCHIVE 12q; Cyberpunk under Glowing, in ARCHIVE 12r; the slow plan late in a build phase, in ARCHIVE 12s; 11.24 a piece in the corner for every style, in ARCHIVE 12t — so the open sections keep theirs.
 
 ## 12. Deferred (explicitly out of scope for v1)
 

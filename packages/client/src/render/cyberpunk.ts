@@ -3,6 +3,9 @@ import { Rng, Structure, Terrain, type MatchState, type Shot } from '@bollwerk/s
 import { BlurFilter, Graphics, type Container } from 'pixi.js';
 
 import { bloomWanted, motionReduced } from '../motion.js';
+import type { TimerSpot } from '../timerSpot.js';
+
+import { cornerSpot } from './corner.js';
 
 import { IslandParts } from './islandParts.js';
 import { CyberpunkSeaLife } from './seaLife.js';
@@ -245,6 +248,8 @@ export class CyberpunkTheme implements Theme {
    * "Glowing" the blur took them with it, and shots flew as smudges (PLAN 11.24).
    */
   private readonly effectCore = new Graphics();
+  /** The holographic billboard in the corner (PLAN 11.24). */
+  private billboard: TimerSpot | null = null;
   private readonly overlayGfx = new Graphics();
   private readonly overlayGlow = new Graphics();
 
@@ -338,6 +343,8 @@ export class CyberpunkTheme implements Theme {
   // ------------------------------------------------------------------ terrain
 
   drawTerrain(state: MatchState, view: ViewTransform): void {
+    this.billboard = cornerSpot(state, view);
+    this.seaLife.corner = this.billboard;
     this.seaLife.layout(state, view, this.art);
     this.scenery.refresh(state, view, this.art, true);
     this.terrain = state.terrain;
@@ -933,6 +940,7 @@ export class CyberpunkTheme implements Theme {
     this.drawShorts(view, frame.deltaMs);
     this.drawFades(view, frame.deltaMs);
     this.drawSparks(view, frame.deltaMs);
+    if (this.billboard !== null) this.drawBillboard(state, view, this.billboard);
     this.winnerBanners.draw(this.lateGfx, view, state, this.art, frame.celebrate, frame.deltaMs);
     this.fireworks.draw(this.lateGfx, view, this.art, frame.celebrate, frame.deltaMs);
   }
@@ -1291,6 +1299,143 @@ export class CyberpunkTheme implements Theme {
       core.fill({ color: spark.colour, alpha: 1 - t });
     }
     this.sparks = this.sparks.filter((spark) => spark.age < spark.life);
+  }
+
+  /**
+   * A holographic billboard over the water in the corner: a projector on a pad, its beam
+   * rising to a panel of light where an emblem — a wireframe cube — turns slowly under
+   * drifting scanlines. A shot breaking a wall makes it glitch, its colours torn apart for
+   * a moment; in overtime a warning flashes in the cube's place. The lines are drawn sharp
+   * and their glow under them (`effectCore`, `effectGlow`), as everything bright here is.
+   */
+  private drawBillboard(state: MatchState, view: ViewTransform, spot: TimerSpot): void {
+    const core = this.effectCore;
+    const glow = this.effectGlow;
+    const s = spot.size * view.tile;
+    const still = motionReduced();
+    const cyan = hex(this.art.palette.waterFoam);
+    const magenta = hex(this.art.palette.emberMid);
+    const cx = tileX(view, spot.x);
+    const foot = tileY(view, spot.y) + s * 0.42;
+    const panel = { x: cx - s * 0.42, y: tileY(view, spot.y) - s * 0.42, w: s * 0.84, h: s * 0.5 };
+    const line = Math.max(1, this.style.wallLinePx * 0.75);
+    // A wall just broken tears it, as a hit does the board.
+    const torn = !still && this.bursts.some((b) => b.onWall && b.age < 260);
+    const tear = torn ? (Math.random() - 0.5) * s * 0.08 : 0;
+
+    // The projector's pad on the water, and the beam up to the panel.
+    core.rect(cx - s * 0.08, foot - s * 0.03, s * 0.16, s * 0.04);
+    core.fill({ color: hex(this.art.palette.rockMid) });
+    core.circle(cx, foot - s * 0.04, s * 0.02);
+    core.fill({ color: cyan });
+    glow.poly([
+      cx - s * 0.03,
+      foot - s * 0.04,
+      cx + s * 0.03,
+      foot - s * 0.04,
+      panel.x + panel.w * 0.85,
+      panel.y + panel.h,
+      panel.x + panel.w * 0.15,
+      panel.y + panel.h,
+    ]);
+    glow.fill({ color: cyan, alpha: 0.08 });
+    // The panel: a faint pane of light, its frame bracketed at the corners.
+    const px = panel.x + tear;
+    core.rect(px, panel.y, panel.w, panel.h);
+    core.fill({ color: cyan, alpha: 0.07 });
+    const arm = s * 0.08;
+    for (const [x, y, sx, sy] of [
+      [px, panel.y, 1, 1],
+      [px + panel.w, panel.y, -1, 1],
+      [px, panel.y + panel.h, 1, -1],
+      [px + panel.w, panel.y + panel.h, -1, -1],
+    ] as const) {
+      core
+        .moveTo(x + sx * arm, y)
+        .lineTo(x, y)
+        .lineTo(x, y + sy * arm);
+    }
+    core.stroke({ width: line, color: cyan, alpha: 0.9 });
+    glow.rect(px, panel.y, panel.w, panel.h);
+    glow.stroke({ width: line * 4, color: cyan, alpha: 0.12 });
+    // Scanlines drifting up through it.
+    const lines = 5;
+    for (let k = 0; k < lines; k++) {
+      const f = still ? k / lines : (k / lines + this.clock / 2400) % 1;
+      const y = panel.y + panel.h * (1 - f);
+      core.moveTo(px, y).lineTo(px + panel.w, y);
+    }
+    core.stroke({ width: 1, color: cyan, alpha: 0.18 });
+
+    const mx = px + panel.w / 2;
+    const my = panel.y + panel.h / 2;
+    const overtime = state.phase === 'build' && state.overtime;
+    if (overtime) {
+      // A warning, flashing: a triangle with its mark.
+      if (still || Math.floor(this.clock / 250) % 2 === 0) {
+        const r = panel.h * 0.36;
+        core.poly([mx, my - r, mx + r * 1.1, my + r * 0.8, mx - r * 1.1, my + r * 0.8]);
+        core.stroke({ width: line * 1.4, color: magenta });
+        core.rect(mx - line * 0.7, my - r * 0.35, line * 1.4, r * 0.6);
+        core.rect(mx - line * 0.7, my + r * 0.4, line * 1.4, line * 1.4);
+        core.fill({ color: magenta });
+      }
+      return;
+    }
+    // The emblem: a cube turning about its upright, tipped toward the viewer.
+    const turn = (still ? 0 : (this.clock / this.style.billboardTurnMs) * Math.PI * 2) + 0.6;
+    // Tipped well over and a little round, so it never stands face on and reads as an 8.
+    const tip = 0.62;
+    const r = panel.h * 0.27;
+    const corners: [number, number][] = [];
+    for (const [x, y, z] of [
+      [-1, -1, -1],
+      [1, -1, -1],
+      [1, 1, -1],
+      [-1, 1, -1],
+      [-1, -1, 1],
+      [1, -1, 1],
+      [1, 1, 1],
+      [-1, 1, 1],
+    ] as const) {
+      const x1 = x * Math.cos(turn) + z * Math.sin(turn);
+      const z1 = -x * Math.sin(turn) + z * Math.cos(turn);
+      const y1 = y * Math.cos(tip) - z1 * Math.sin(tip);
+      corners.push([mx + x1 * r, my + y1 * r]);
+    }
+    const edges = [
+      [0, 1],
+      [1, 2],
+      [2, 3],
+      [3, 0],
+      [4, 5],
+      [5, 6],
+      [6, 7],
+      [7, 4],
+      [0, 4],
+      [1, 5],
+      [2, 6],
+      [3, 7],
+    ] as const;
+    const cube = (g: Graphics, dx: number): void => {
+      for (const [a, b] of edges) {
+        const [ax, ay] = corners[a]!;
+        const [bx, by] = corners[b]!;
+        g.moveTo(ax + dx, ay).lineTo(bx + dx, by);
+      }
+    };
+    if (torn) {
+      // Torn apart: the cube in magenta and cyan, either side of where it was.
+      cube(core, -s * 0.03);
+      core.stroke({ width: line, color: magenta, alpha: 0.8 });
+      cube(core, s * 0.03);
+      core.stroke({ width: line, color: cyan, alpha: 0.8 });
+      return;
+    }
+    cube(glow, 0);
+    glow.stroke({ width: line * 3, color: cyan, alpha: 0.2 });
+    cube(core, 0);
+    core.stroke({ width: line, color: hex(this.art.palette.uiInk), alpha: 0.9 });
   }
 
   // ------------------------------------------------------------------ overlay

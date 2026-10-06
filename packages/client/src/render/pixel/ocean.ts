@@ -7,7 +7,9 @@ import {
   Crossings,
   NO_OCEAN,
   Surfacings,
+  behindCorner,
   outerOcean,
+  type CornerPiece,
   type OuterOcean,
 } from '../ocean.js';
 import { hex, tileX, tileY, type ViewTransform } from '../theme.js';
@@ -24,6 +26,8 @@ export class OceanLife {
   private readonly boats = new Crossings();
   private readonly gulls = new Circling();
   private readonly fish = new Surfacings();
+  /** The windmill or the fishing boat in the corner: what passes there goes behind it. */
+  corner: CornerPiece | null = null;
 
   /** Rows of open water right across the screen, clear of the land. */
   rows(): number[] {
@@ -44,6 +48,7 @@ export class OceanLife {
     // A boat now and then, crossing a row of open water from one side to the other.
     this.boats.step(this.ocean, deltaMs, art.pixel.boatEveryMs, art.pixel.boatTilesPerSecond, 1);
     for (const boat of this.boats.items) {
+      if (behindCorner(this.corner, boat.x, boat.y)) continue;
       const bx = Math.round(tileX(view, boat.x));
       const by = Math.round(tileY(view, boat.y) + Math.sin(boat.x * 3) * px * 0.5);
       // The wake, fading behind.
@@ -71,6 +76,7 @@ export class OceanLife {
     this.gulls.step(deltaMs);
     for (const gull of this.gulls.items) {
       const at = Circling.at(gull);
+      if (behindCorner(this.corner, at.x, at.y)) continue;
       const gx = Math.round(tileX(view, at.x));
       const gy = Math.round(tileY(view, at.y));
       const wing = (colour: number, oy: number, alpha: number): void => {
@@ -88,6 +94,7 @@ export class OceanLife {
     // A fish jumping: an arc of silver, and a ring where it goes in.
     this.fish.step(this.ocean, deltaMs, art.pixel.fishEveryMs, FISH_MS * 2);
     for (const fish of this.fish.items) {
+      if (behindCorner(this.corner, fish.x, fish.y)) continue;
       const t = Math.min(1, fish.ageMs / FISH_MS);
       const fx = Math.round(tileX(view, fish.x + fish.dir * t * 0.7));
       const fy = Math.round(tileY(view, fish.y) - Math.sin(Math.PI * t) * view.tile * 0.45);

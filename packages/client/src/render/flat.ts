@@ -2,6 +2,10 @@ import type { ArtConfig, FlatStyleConfig } from '@bollwerk/config';
 import { Structure, Terrain, type MatchState } from '@bollwerk/sim';
 import { Graphics } from 'pixi.js';
 
+import { motionReduced } from '../motion.js';
+import type { TimerSpot } from '../timerSpot.js';
+
+import { cornerSpot, pressing } from './corner.js';
 import { IslandParts } from './islandParts.js';
 import {
   FlagHoist,
@@ -76,6 +80,11 @@ export class FlatTheme implements Theme {
   private style!: FlatStyleConfig;
 
   private readonly terrainGfx = new Graphics();
+  /** The buoy in the corner (PLAN 11.24), redrawn each frame as it bobs and blinks. */
+  private readonly buoyGfx = new Graphics();
+  private buoy: TimerSpot | null = null;
+  /** Where the light is in its blink, in blinks, so a change of pace does not jump it. */
+  private blinks = 0;
   /** Sealed ground, an island to a `Graphics`, redrawn where it changes. */
   private readonly territory = new IslandParts(1, 'territory');
   private readonly ghostMotion = new GhostMotion();
@@ -102,7 +111,7 @@ export class FlatTheme implements Theme {
   init(layers: ThemeLayers, art: ArtConfig): Promise<void> {
     this.art = art;
     this.style = art.flat;
-    layers.terrain.addChild(this.terrainGfx);
+    layers.terrain.addChild(this.terrainGfx, this.buoyGfx);
     layers.territory.addChild(this.scenery.gfx, this.territory.container);
     layers.structures.addChild(this.structures.container);
     layers.effects.addChild(this.effectGfx);
@@ -114,7 +123,7 @@ export class FlatTheme implements Theme {
     this.territory.destroy();
     this.structures.destroy();
     this.scenery.destroy();
-    for (const g of [this.terrainGfx, this.effectGfx, this.overlayGfx]) {
+    for (const g of [this.terrainGfx, this.buoyGfx, this.effectGfx, this.overlayGfx]) {
       g.destroy();
     }
   }
@@ -140,6 +149,8 @@ export class FlatTheme implements Theme {
   }
 
   drawTerrain(state: MatchState, view: ViewTransform): void {
+    this.buoy = cornerSpot(state, view);
+    this.seaLife.corner = this.buoy;
     this.seaLife.layout(state, view, this.art);
     this.scenery.refresh(state, view, this.art, true);
     const g = this.terrainGfx;
@@ -251,7 +262,77 @@ export class FlatTheme implements Theme {
     }
   }
 
+  /**
+   * A signal buoy in the corner, as plain as the rest of the style: a white cone banded in
+   * grey, a little cage on top with its light in the accent's gold, bobbing on the swell
+   * and blinking — quicker while the clock presses (PLAN 11.24). Lit and still when motion
+   * is reduced.
+   */
+  private drawBuoy(state: MatchState, view: ViewTransform, spot: TimerSpot, deltaMs: number): void {
+    const g = this.buoyGfx;
+    // A third larger than the square it is given, which a cone this slender does not fill.
+    const s = spot.size * view.tile * 1.35;
+    const still = motionReduced();
+    const blinkMs = pressing(state) ? this.style.buoyHurriedBlinkMs : this.style.buoyBlinkMs;
+    if (!still) this.blinks += Math.max(0, deltaMs) / blinkMs;
+    const swell = still ? 0 : Math.sin((this.clock / this.style.buoyBobMs) * Math.PI * 2);
+    const cx = tileX(view, spot.x);
+    const water = tileY(view, spot.y) + s * 0.18;
+    const y = water + swell * s * 0.025;
+    const lit = still || this.blinks % 1 < 0.35;
+    const sea = hex(this.art.palette.waterShallow);
+    const white = hex(this.art.palette.uiInk);
+    const grey = hex(this.art.palette.rockMid);
+    const gold = hex(this.art.palette.uiAccent);
+
+    // Rings on the water round it, spreading as it bobs.
+    for (let k = 0; k < 2; k++) {
+      const p = still ? 0.5 : (this.clock / this.style.buoyBobMs + k * 0.5) % 1;
+      g.ellipse(cx, water + s * 0.04, s * (0.22 + 0.2 * p), s * (0.05 + 0.04 * p));
+      g.stroke({ width: Math.max(1, s * 0.012), color: sea, alpha: 0.7 * (1 - p) });
+    }
+    // The float, and the cone on it, its band in grey.
+    g.ellipse(cx, y + s * 0.03, s * 0.2, s * 0.05);
+    g.fill({ color: grey });
+    g.poly([
+      cx - s * 0.15,
+      y,
+      cx + s * 0.15,
+      y,
+      cx + s * 0.06,
+      y - s * 0.36,
+      cx - s * 0.06,
+      y - s * 0.36,
+    ]);
+    g.fill({ color: white });
+    g.poly([
+      cx - s * 0.113,
+      y - s * 0.12,
+      cx + s * 0.113,
+      y - s * 0.12,
+      cx + s * 0.09,
+      y - s * 0.2,
+      cx - s * 0.09,
+      y - s * 0.2,
+    ]);
+    g.fill({ color: grey });
+    // The cage, and the light in it.
+    const top = y - s * 0.36;
+    g.rect(cx - s * 0.05, top - s * 0.14, s * 0.1, s * 0.14);
+    g.stroke({ width: Math.max(1, s * 0.015), color: grey });
+    g.rect(cx - s * 0.07, top - s * 0.16, s * 0.14, s * 0.025);
+    g.fill({ color: grey });
+    if (lit) {
+      g.circle(cx, top - s * 0.07, s * 0.12);
+      g.fill({ color: gold, alpha: 0.25 });
+    }
+    g.circle(cx, top - s * 0.07, s * 0.035);
+    g.fill({ color: lit ? gold : grey });
+  }
+
   drawEffects(state: MatchState, view: ViewTransform, frame: EffectFrame): void {
+    this.buoyGfx.clear();
+    if (this.buoy !== null) this.drawBuoy(state, view, this.buoy, frame.deltaMs);
     const g = this.effectGfx;
     g.clear();
     this.seaLife.draw(g, view, this.art, frame.deltaMs);

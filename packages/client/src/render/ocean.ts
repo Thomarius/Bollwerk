@@ -177,3 +177,19 @@ export class Surfacings {
     this.items = this.items.filter((s) => s.ageMs < lifeMs);
   }
 }
+
+/** The piece a style stands in the sea's corner (`roseSpot`): its square, in tiles. */
+export interface CornerPiece {
+  x: number;
+  y: number;
+  size: number;
+}
+
+/** Whether a point lies in the corner piece's square, so whatever passes is behind it. */
+export function behindCorner(corner: CornerPiece | null, x: number, y: number): boolean {
+  return (
+    corner !== null &&
+    Math.abs(x - corner.x) < corner.size / 2 &&
+    Math.abs(y - corner.y) < corner.size / 2
+  );
+}
