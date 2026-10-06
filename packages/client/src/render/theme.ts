@@ -17,14 +17,18 @@ import { drawGingerHeart, drawPretzel } from './wiesn.js';
  * no second copy of the dirty-tracking, and no reach into the simulation, since
  * everything a style needs is derived from grid state the client already has.
  */
+/** Waits for the next frame once this one's share of some long work is spent. */
+export type Pace = () => Promise<void>;
+
 export interface Theme {
   readonly id: ArtStyle;
 
   /**
    * Prepares the style and takes ownership of its layers. Asynchronous because a
-   * texture-based style generates its atlas here.
+   * texture-based style generates its atlas here — between calls to `pace`, where given,
+   * which waits for the next frame once a frame's share of the work is spent.
    */
-  init(layers: ThemeLayers, art: ArtConfig): Promise<void>;
+  init(layers: ThemeLayers, art: ArtConfig, pace?: Pace): Promise<void>;
 
   /** Static for the whole match: land, water, island tint. */
   drawTerrain(state: MatchState, view: ViewTransform): void;

@@ -11,6 +11,7 @@ import { hash } from './chocolate.js';
 import { GOLD, drawLyre, drawQuaver, drawRest } from './music.js';
 import { roseSpot } from './parchment.js';
 import { IslandParts } from './islandParts.js';
+import { release } from './release.js';
 import { OperaSeaLife } from './seaLife.js';
 import type { SceneryItem } from './scenery.js';
 import { SceneryLayer } from './sceneryLayer.js';
@@ -266,7 +267,7 @@ export class OperaTheme implements Theme {
     this.scenery.destroy();
     this.riderStamps.destroy();
     this.book.destroy();
-    this.staves.destroy({ children: true });
+    release(this.staves);
     for (const g of [
       this.terrainGfx,
       this.blotGfx,

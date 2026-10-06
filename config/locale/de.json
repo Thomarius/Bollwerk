@@ -88,6 +88,7 @@
   "looks.build": "Bauen",
   "looks.combat": "Kampf",
   "looks.done": "Fertig",
+  "looks.randomHint": "Jede Runde eine neue Optik",
   "summary.reveal": "Stufe {level} · {risk} · {targeting} · {cannons}",
   "trait.risk.defensive": "defensiv",
   "trait.risk.balanced": "ausgewogen",

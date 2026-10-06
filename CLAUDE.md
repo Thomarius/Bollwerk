@@ -155,7 +155,8 @@ Full detail in PLAN.md §1. The parts that surprise people:
   Blueprint, Parchment, Toy bricks, Stained glass, Chocolate (ARCHIVE 11zy), Halloween
   (ARCHIVE 12a), Sakura (ARCHIVE 12d), Oktoberfest (ARCHIVE 12e), Opera (ARCHIVE 12f), Office (ARCHIVE 12l) — over four visual passes (M9–M12, PLAN 11.15–11.18); every style carried
   to the panels, the big timer, the island banners and the finish (ARCHIVE 11zz); chosen
-  from a gallery with Random, and changeable mid-match from the pause menu (ARCHIVE 12b).
+  from a gallery with Random — a new style every round, in the title too (ARCHIVE 12q) — and
+  changeable mid-match from the pause menu (ARCHIVE 12b).
 - **Around a match**: How to play, the ranking between rounds, awards, a rematch, music
   and sounds volumes, a pause menu with Leave match; two rounds of test-session feedback
   (ARCHIVE 11n–11w, 11ze) and a trim of the menu's and lobby's texts with larger roster
@@ -331,6 +332,10 @@ its header but the simulation does not — so the server stamps each header with
 - **Stopping a background `npm start` leaves its node child serving the port.** Find it by
   port and check its command line before killing it; remove any recording a test match
   left in `recordings/` — that folder is the user's tuning data.
+- **`destroy({ children: true })` keeps every `Graphics`' own drawing**: Pixi hands the
+  options down, and a `Graphics` destroyed with any keeps its context, registered with the
+  renderer for good. Use `release` (`render/release.ts`); a look thrown away also empties
+  Pixi's `BigPool`, whose free batches hold old buffers (`Scene.drop`, ARCHIVE 12q).
 - **`motionReduced()` is called per particle and per point**: it once read storage and built
   a media query at every call, 48 ms a frame in Opera. It is cached in `motion.ts`; anything
   else read that often must be too.

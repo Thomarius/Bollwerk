@@ -6,6 +6,7 @@ import {
   neonTubes,
   titleLayout,
   titleSweep,
+  titleTurn,
   type Title,
   type TitleFrame,
   type Tube,
@@ -91,5 +92,34 @@ describe('the title sweep', () => {
       (frame) => rows.every((row) => lookAt(frame, row) === 'combat'),
     );
     expect(allCombat).toBe(true);
+  });
+});
+
+describe('the title rotating its random halves', () => {
+  /** Whether a half is wholly out of sight at `t` of the way through a sweep. */
+  function hidden(look: 'build' | 'combat', t: number): boolean {
+    const { split, upper } = titleSweep(t * 1000, 1000);
+    // The half below the line shows under it; above, over it.
+    return look === upper ? split <= 0 : split >= 1;
+  }
+
+  it('turns each half once a sweep, while it is out of sight', () => {
+    const turns: { look: string; t: number }[] = [];
+    let before = 0;
+    for (let k = 1; k <= 1000; k++) {
+      const t = k / 1000;
+      const look = titleTurn(before, t);
+      if (look !== null) turns.push({ look, t });
+      before = t;
+    }
+    // Combat first, as "Fire!" brings it, then building, as "Rebuild" does.
+    expect(turns.map((turn) => turn.look)).toEqual(['combat', 'build']);
+    for (const { look, t } of turns) expect(hidden(look as 'build' | 'combat', t)).toBe(true);
+  });
+
+  it('turns a half even when a frame skips past the moment', () => {
+    expect(titleTurn(0.1, 0.5)).toBe('combat');
+    expect(titleTurn(0.5, 0.9)).toBe('build');
+    expect(titleTurn(0.3, 0.4)).toBeNull();
   });
 });

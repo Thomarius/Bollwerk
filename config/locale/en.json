@@ -88,6 +88,7 @@
   "looks.build": "Building",
   "looks.combat": "Combat",
   "looks.done": "Done",
+  "looks.randomHint": "A new style every round",
   "summary.reveal": "Level {level} · {risk} · {targeting} · {cannons}",
   "trait.risk.defensive": "defensive",
   "trait.risk.balanced": "balanced",

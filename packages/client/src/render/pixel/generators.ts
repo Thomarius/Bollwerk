@@ -726,73 +726,100 @@ function scenery(art: ArtConfig, rng: Rng, size: number, kind: string, variant: 
 
 /** Generates every sprite and packs them into one texture. */
 export function buildAtlas(art: ArtConfig, seed: number): Map<string, Texture> {
+  const atlas = new Atlas();
+  const sprites = drawSprites(atlas, art, seed);
+  while (sprites.next().done !== true) continue;
+  return atlas.build(art.atlasSizePx);
+}
+
+/**
+ * The same atlas, drawn a slice a frame where `pace` says so: whole, it is 160 to 180 ms,
+ * which a look made in the pause between phases should not spend in one (PLAN 11.23).
+ */
+export async function buildAtlasPaced(
+  art: ArtConfig,
+  seed: number,
+  pace: () => Promise<void>,
+): Promise<Map<string, Texture>> {
+  const atlas = new Atlas();
+  const sprites = drawSprites(atlas, art, seed);
+  while (sprites.next().done !== true) await pace();
+  return atlas.build(art.atlasSizePx);
+}
+
+/** Draws every sprite into `atlas`, one at a time, in an order the seed's draws depend on. */
+function* drawSprites(atlas: Atlas, art: ArtConfig, seed: number): Generator<void> {
   const tile = art.tileSizePx;
   const gen = art.generators;
-  const atlas = new Atlas();
   const rng = new Rng(seed);
 
   for (let v = 0; v < gen.terrain.waterVariants; v++) {
     for (let f = 0; f < gen.terrain.waterAnimFrames; f++) {
-      atlas.add(KEY.water(f, v), water(art, seed, tile, f, gen.terrain.waterAnimFrames, v));
+      yield atlas.add(KEY.water(f, v), water(art, seed, tile, f, gen.terrain.waterAnimFrames, v));
     }
   }
   for (let v = 0; v < gen.terrain.grassVariants; v++)
-    atlas.add(KEY.grass(v), grass(art, rng, tile));
-  for (let v = 0; v < gen.terrain.rockVariants; v++) atlas.add(KEY.rock(v), rock(art, rng, tile));
+    yield atlas.add(KEY.grass(v), grass(art, rng, tile));
+  for (let v = 0; v < gen.terrain.rockVariants; v++)
+    yield atlas.add(KEY.rock(v), rock(art, rng, tile));
   for (let mask = 0; mask < 256; mask++) {
-    atlas.add(KEY.shore(mask), shore(art, rng, tile, mask));
-    atlas.add(KEY.beach(mask), beach(art, rng, tile, mask));
+    yield atlas.add(KEY.shore(mask), shore(art, rng, tile, mask));
+    yield atlas.add(KEY.beach(mask), beach(art, rng, tile, mask));
   }
   for (const corner of FILLET_CORNERS)
-    atlas.add(KEY.fillet(corner), fillet(art, rng, tile, corner));
+    yield atlas.add(KEY.fillet(corner), fillet(art, rng, tile, corner));
 
   for (let mask = 0; mask < 16; mask++) {
     for (let damage = 0; damage < gen.wall.damageStates; damage++) {
-      atlas.add(KEY.wall(mask, damage), wall(art, rng, tile, mask, damage));
+      yield atlas.add(KEY.wall(mask, damage), wall(art, rng, tile, mask, damage));
     }
   }
 
   for (let v = 0; v < gen.wall.rubbleVariants; v++)
-    atlas.add(KEY.rubble(v), rubble(art, rng, tile));
+    yield atlas.add(KEY.rubble(v), rubble(art, rng, tile));
   for (let v = 0; v < gen.terrain.courtyardVariants; v++)
-    atlas.add(KEY.court(v), court(art, rng, tile));
-  for (let mask = 1; mask < 16; mask++) atlas.add(KEY.foam(mask), foam(art, rng, tile, mask));
+    yield atlas.add(KEY.court(v), court(art, rng, tile));
+  for (let mask = 1; mask < 16; mask++) yield atlas.add(KEY.foam(mask), foam(art, rng, tile, mask));
 
   for (const kind of ['tree', 'pine', 'bush', 'rock']) {
     for (let v = 0; v < SCENERY_VARIANTS; v++) {
-      atlas.add(KEY.scenery(kind, v), scenery(art, rng, tile, kind, v));
+      yield atlas.add(KEY.scenery(kind, v), scenery(art, rng, tile, kind, v));
     }
   }
-  atlas.add(KEY.castle, castle(art, rng, tile * 3));
+  yield atlas.add(KEY.castle, castle(art, rng, tile * 3));
   for (let f = 0; f < gen.castle.bannerWaveFrames; f++) {
     const width = gen.castle.bannerWidthPx;
-    atlas.add(
+    yield atlas.add(
       KEY.banner(f),
       banner(width, Math.round(width * 0.6), f, gen.castle.bannerWaveFrames),
     );
   }
-  atlas.add(KEY.cannon, cannon(art, tile * 2));
+  yield atlas.add(KEY.cannon, cannon(art, tile * 2));
   for (let step = 0; step < gen.cannon.rotationSteps; step++) {
     for (let r = 0; r < gen.cannon.recoilFrames; r++) {
-      atlas.add(KEY.barrel(step, r), barrel(art, tile * 2, step, gen.cannon.rotationSteps, r));
-      atlas.add(KEY.carriage(step, r), carriage(art, tile * 2, step, gen.cannon.rotationSteps, r));
+      yield atlas.add(
+        KEY.barrel(step, r),
+        barrel(art, tile * 2, step, gen.cannon.rotationSteps, r),
+      );
+      yield atlas.add(
+        KEY.carriage(step, r),
+        carriage(art, tile * 2, step, gen.cannon.rotationSteps, r),
+      );
     }
   }
   // An inert gun's barrel, slumped: short, as a barrel tipped toward the ground looks
   // from above, and with no glow at the muzzle.
   const slump = Math.round(gen.cannon.barrelLengthPx * 0.45);
   for (let step = 0; step < gen.cannon.rotationSteps; step++) {
-    atlas.add(
+    yield atlas.add(
       KEY.droop(step),
       barrel(art, tile * 2, step, gen.cannon.rotationSteps, 0, slump, false),
     );
   }
-  atlas.add(KEY.shot, shot(art, 8));
+  yield atlas.add(KEY.shot, shot(art, 8));
   for (let v = 0; v < gen.fx.craterDecalVariants; v++)
-    atlas.add(KEY.crater(v), crater(art, rng, tile));
+    yield atlas.add(KEY.crater(v), crater(art, rng, tile));
   for (let f = 0; f < gen.fx.explosionFrames; f++) {
-    atlas.add(KEY.blast(f), blast(art, rng, tile * 2, f, gen.fx.explosionFrames));
+    yield atlas.add(KEY.blast(f), blast(art, rng, tile * 2, f, gen.fx.explosionFrames));
   }
-
-  return atlas.build(art.atlasSizePx);
 }

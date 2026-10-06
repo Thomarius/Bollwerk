@@ -1,6 +1,7 @@
 import type { MatchState } from '@bollwerk/sim';
 import { Container, Graphics } from 'pixi.js';
 
+import { release } from './release.js';
 import type { ViewTransform } from './theme.js';
 
 /**
@@ -123,6 +124,6 @@ export class IslandParts {
   }
 
   destroy(): void {
-    for (const c of this.containers) c.destroy({ children: true });
+    for (const c of this.containers) release(c);
   }
 }

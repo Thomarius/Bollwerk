@@ -15,7 +15,7 @@ import { stylePreview } from './stylePreview.js';
 
 /**
  * Choosing the two looks (ARCHIVE 12b): a style each for building and for combat, or
- * "random", drawn afresh from every style as each match starts. One gallery of every
+ * "random", a new style at every banner (PLAN 11.23). One gallery of every
  * style's picture serves both, a switch at its top saying which look is being chosen; the
  * menu keeps a picture of each with arrows to step through them without opening it, and
  * the pause menu opens the same gallery to change the looks mid-match.
@@ -67,22 +67,86 @@ export function chooseLook(
 }
 
 /**
- * The styles a match is drawn in: each choice as it is, and "random" drawn from every
- * style made for that look — never the other look's style while there is another to draw,
- * since one style for both makes the banners change nothing. Cosmetic, and the page's own,
- * so an ordinary random source.
+ * The styles a match is drawn in, look after look (PLAN 11.23): a chosen style stays as it
+ * is, and "random" brings a new one at every banner that shows its look, repeating none
+ * while any is left. The looks follow each other on screen as building, then combat at
+ * "Fire!", building again at "Rebuild" and so on, and they are drawn in that order — the
+ * build look's next at each "Rebuild", the combat look's at each "Fire!".
+ *
+ * Both random share one cycle of every style, so each shows once in it whichever look it
+ * falls to; one random cycles through every style but the other look's. A new cycle keeps
+ * the styles last shown to its end, so a look never comes back in the style it had, and
+ * two looks one after the other are never the same, so every banner changes something. Cosmetic, and the page's own, so an ordinary
+ * random source.
  */
-export function resolveLooks(choices: LookChoices, random: () => number = Math.random): ArtStyles {
-  const pick = (look: ArtLook, avoid: ArtStyle | null): ArtStyle => {
-    const all = stylesFor(look);
-    const pool = all.length > 1 && avoid !== null ? all.filter((s) => s !== avoid) : all;
-    return pool[Math.min(pool.length - 1, Math.floor(random() * pool.length))]!;
-  };
-  const fixedBuild = choices.build === RANDOM ? null : choices.build;
-  const fixedCombat = choices.combat === RANDOM ? null : choices.combat;
-  const build = fixedBuild ?? pick('build', fixedCombat);
-  const combat = fixedCombat ?? pick('combat', build);
-  return { build, combat };
+export class LookRotation {
+  /** What is left of the current cycle, in the order it will be drawn. */
+  private cycle: ArtStyle[] = [];
+  /** The style each look was last given, which a new cycle keeps to its end. */
+  private last: Partial<Record<ArtLook, ArtStyle>> = {};
+
+  constructor(
+    private readonly choices: LookChoices,
+    private readonly random: () => number = Math.random,
+  ) {}
+
+  /** Whether any look changes from banner to banner. */
+  get rotates(): boolean {
+    return this.isRandom('build') || this.isRandom('combat');
+  }
+
+  /** The two looks to open with: building's, then the combat look it gives way to. */
+  opening(): ArtStyles {
+    const build = this.next('build');
+    return { build, combat: this.next('combat') };
+  }
+
+  /** Whether `look` takes a new style at its banners. */
+  isRandom(look: ArtLook): boolean {
+    return this.choices[look] === RANDOM;
+  }
+
+  /**
+   * The style `look` takes when it next comes on screen; never `beside`, the other look's
+   * style it will follow, while there is another.
+   */
+  next(look: ArtLook, beside: ArtStyle | null = null): ArtStyle {
+    const choice = this.choices[look];
+    if (choice !== RANDOM) return choice;
+    const fits = (style: ArtStyle): boolean =>
+      styleServes(style, look) && style !== this.last[look] && style !== beside;
+    let at = this.cycle.findIndex(fits);
+    if (at < 0) {
+      this.cycle = this.shuffled();
+      at = this.cycle.findIndex(fits);
+    }
+    // Only with a single style to draw from does the last one have to come again.
+    if (at < 0) at = this.cycle.findIndex((style) => styleServes(style, look));
+    const style = at < 0 ? stylesFor(look)[0]! : this.cycle.splice(at, 1)[0]!;
+    this.last[look] = style;
+    return style;
+  }
+
+  /** A new cycle: every style a random look may take, but a chosen look's own. */
+  private shuffled(): ArtStyle[] {
+    const looks = (['build', 'combat'] as const).filter((look) => this.choices[look] === RANDOM);
+    const chosen = Object.values(this.choices);
+    const pool = ArtStyleSchema.options.filter(
+      (style) => !chosen.includes(style) && looks.some((look) => styleServes(style, look)),
+    );
+    for (let i = pool.length - 1; i > 0; i--) {
+      const j = Math.min(i, Math.floor(this.random() * (i + 1)));
+      [pool[i], pool[j]] = [pool[j]!, pool[i]!];
+    }
+    // The styles on screen last go to the back, so a new cycle never brings a look back
+    // in the style it had, nor in the other's: drawn anywhere, the combat look once came
+    // twice in one style across a cycle's end.
+    const recent = Object.values(this.last);
+    return [
+      ...pool.filter((style) => !recent.includes(style)),
+      ...pool.filter((style) => recent.includes(style)),
+    ];
+  }
 }
 
 /**
@@ -131,8 +195,10 @@ export function galleryMarkup(choices: LookChoices, active: ArtLook): string {
         )
         .join('');
       const chosen = choices[active] === choice ? ' chosen' : '';
+      // What random means is not obvious from a die: a new style at every round.
+      const hint = choice === RANDOM ? ` title="${escape(t('looks.randomHint'))}"` : '';
       return (
-        `<button class="card${chosen}" data-choice="${choice}">` +
+        `<button class="card${chosen}" data-choice="${choice}"${hint}>` +
         `<img alt="" data-preview="${choice}" />` +
         `<span class="name">${escape(lookName(choice))}</span>${badges}</button>`
       );
@@ -155,8 +221,6 @@ export interface GalleryOptions {
   choices: LookChoices;
   /** Which look the switch starts on: the one whose picture was clicked. */
   active: ArtLook;
-  /** Whether "random" is offered: mid-match there is nothing left to draw it for. */
-  random?: boolean;
   /** Every change, as it is made. */
   onChange(choices: LookChoices): void;
   /** Closed, by Done or a click outside the panel. */
@@ -200,7 +264,6 @@ export function openLookGallery(options: GalleryOptions): void {
     live.hide();
     hovered = null;
     root.innerHTML = galleryMarkup(choices, active);
-    if (options.random === false) root.querySelector(`[data-choice="${RANDOM}"]`)?.remove();
     for (const image of root.querySelectorAll<HTMLImageElement>('img[data-preview]')) {
       const choice = image.dataset.preview as LookChoice;
       void lookPicture(choice).then(

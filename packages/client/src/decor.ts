@@ -1006,9 +1006,38 @@ export function titleSweep(ms: number, span: number): TitleFrame {
   if (t <= 0 || t >= 1) return TITLE_AT_REST;
   const ease = (u: number): number => 1 - (1 - u) * (1 - u);
   // A fifth to clear the word, two fifths for each banner.
-  if (t < 0.2) return { split: 0.5 + (0.5 + BEYOND) * ease(t / 0.2), upper: 'build' };
-  if (t < 0.6) return { split: -BEYOND + (1 + 2 * BEYOND) * ((t - 0.2) / 0.4), upper: 'combat' };
-  return { split: -BEYOND + (0.5 + BEYOND) * ease((t - 0.6) / 0.4), upper: 'build' };
+  if (t < CLEARED) return { split: 0.5 + (0.5 + BEYOND) * ease(t / CLEARED), upper: 'build' };
+  if (t < CROSSED) {
+    return {
+      split: -BEYOND + (1 + 2 * BEYOND) * ((t - CLEARED) / (CROSSED - CLEARED)),
+      upper: 'combat',
+    };
+  }
+  return { split: -BEYOND + (0.5 + BEYOND) * ease((t - CROSSED) / (1 - CROSSED)), upper: 'build' };
+}
+
+/** How far into a sweep the word is all the build look, the combat half out of sight. */
+const CLEARED = 0.2;
+/** How far into a sweep the combat banner has crossed, the build half out of sight. */
+const CROSSED = 0.6;
+
+/**
+ * The half of the title a sweep may give a new style at `t` of the way through it, having
+ * been at `before`: each half while it is wholly out of sight, as a banner on the board
+ * changes a look it is about to reveal (PLAN 11.23) — the combat half once the line has
+ * left the word in the build look, the build half once the combat banner has crossed.
+ */
+export function titleTurn(before: number, t: number): ArtLook | null {
+  if (before < CLEARED && t >= CLEARED) return 'combat';
+  if (before < CROSSED && t >= CROSSED) return 'build';
+  return null;
+}
+
+/** Where the title's looks come from: `LookRotation`, the match's own. */
+export interface TitleRotation {
+  opening(): Record<ArtLook, ArtStyle>;
+  isRandom(look: ArtLook): boolean;
+  next(look: ArtLook, beside: ArtStyle | null): ArtStyle;
 }
 
 /**
@@ -1024,6 +1053,9 @@ export class SplitTitle {
   private shown: Partial<Record<ArtLook, ArtStyle>> = {};
   private same = false;
   private sweepStart: number | null = null;
+  /** How far the sweep under way had come at the last frame, as a fraction. */
+  private sweptTo = 0;
+  private rotation: TitleRotation | null = null;
   private timer: ReturnType<typeof setInterval> | null = null;
 
   constructor(
@@ -1047,25 +1079,33 @@ export class SplitTitle {
     this.frame(TITLE_AT_REST);
   }
 
-  /** Shows these two looks, sweeping the line across if either has changed. */
-  show(styles: Record<ArtLook, ArtStyle>): void {
+  /**
+   * Shows the looks a rotation opens with, sweeping the line across if either has changed,
+   * and gives a random half a new style at every sweep after.
+   */
+  use(rotation: TitleRotation): void {
+    this.rotation = rotation;
+    const styles = rotation.opening();
     const changed = styles.build !== this.shown.build || styles.combat !== this.shown.combat;
     const first = this.shown.build === undefined;
-    for (const look of ['build', 'combat'] as const) {
-      if (styles[look] === this.shown[look]) continue;
-      const title = titleFor(styles[look], this.art);
-      const { height, margin } = titleLayout(title);
-      const img = this.layers[look].querySelector('img')!;
-      img.src = title.src;
-      img.style.height = `${height}px`;
-      img.style.left = img.style.top = `${margin}px`;
-      img.style.imageRendering = title.smooth ? 'auto' : 'pixelated';
-      img.classList.toggle('flicker', title.flicker);
-    }
-    this.shown = { ...styles };
-    this.same = styles.build === styles.combat;
+    for (const look of ['build', 'combat'] as const) this.dress(look, styles[look]);
     this.frame(TITLE_AT_REST);
     if (changed && !first) this.sweep();
+  }
+
+  /** Draws one half in a style. */
+  private dress(look: ArtLook, style: ArtStyle): void {
+    if (style === this.shown[look]) return;
+    const title = titleFor(style, this.art);
+    const { height, margin } = titleLayout(title);
+    const img = this.layers[look].querySelector('img')!;
+    img.src = title.src;
+    img.style.height = `${height}px`;
+    img.style.left = img.style.top = `${margin}px`;
+    img.style.imageRendering = title.smooth ? 'auto' : 'pixelated';
+    img.classList.toggle('flicker', title.flicker);
+    this.shown = { ...this.shown, [look]: style };
+    this.same = this.shown.build === this.shown.combat;
   }
 
   /** Sweeps the line across once, unless motion is unwelcome or one style shows both. */
@@ -1073,6 +1113,7 @@ export class SplitTitle {
     if (this.same || motionReduced()) return;
     const already = this.sweepStart !== null;
     this.sweepStart = performance.now();
+    this.sweptTo = 0;
     if (!already) requestAnimationFrame(this.tick);
   }
 
@@ -1091,6 +1132,13 @@ export class SplitTitle {
   private readonly tick = (now: number): void => {
     if (this.sweepStart === null || !this.root.isConnected) return;
     const ms = now - this.sweepStart;
+    const t = ms / this.art.menu.titleSweepMs;
+    const turn = titleTurn(this.sweptTo, t);
+    this.sweptTo = t;
+    if (turn !== null && this.rotation?.isRandom(turn) === true) {
+      const other = turn === 'build' ? 'combat' : 'build';
+      this.dress(turn, this.rotation.next(turn, this.shown[other] ?? null));
+    }
     this.frame(titleSweep(ms, this.art.menu.titleSweepMs));
     if (ms < this.art.menu.titleSweepMs) requestAnimationFrame(this.tick);
     else this.sweepStart = null;

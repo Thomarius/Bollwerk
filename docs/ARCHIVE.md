@@ -5141,3 +5141,71 @@ on one tick (one slow tick in two matches).
 **No soak**, the user's decision: it does not matter that matches play out differently; the
 probe is enough to show the gain. Every hash changed, so recordings made before replay only
 against the commit that made them, as ever.
+
+## 12q. Random looks every round, and the leak in every swap of looks (PLAN 11.23, 2026-10-06)
+
+**The idea**, a play tester's: Random drew one style for the whole match. Instead it draws a
+new one at every banner that brings its look, repeating none while any is left, and every
+banner changes one style for a different one. **Agreed with the user**: the per-round Random
+replaces the old one; both looks on Random share one cycle; the pause menu offers Random; short
+hitches in the pauses between phases are acceptable; and the menu's title rotates its random
+halves too. The user asked for the frame-rate cost first, and would have dropped the idea had
+it been substantial.
+
+**Measured first**, by a script in headless Chrome on this machine's integrated GPU, in a
+watched eight-player match, swapping the hidden look through every style twice. Play is
+untouched — only two looks are ever alive, and the hidden one costs nothing between banners —
+but building a look in one frame was 75–295 ms: the theme's `init` 0–2 ms except Medieval and
+Night, 160–180 ms (their generated atlas); terrain 8–80 ms; territory and structures 2–45 ms;
+the warm-up 35–135 ms. After the warm-up a banner's reveal cost 3–25 ms, as before. All
+fourteen looks built up front took 1.9 s and **+437 MB** of heap: not that way.
+
+**A leak in every swap, already there** (the pause menu's Looks had it): forcing the
+collector, the heap grew about 13 MB a swap, 50 → 585 MB over 42. Two causes, both Pixi's:
+
+- **`destroy({ children: true })` hands its options down, and a `Graphics` destroyed with any
+  options keeps its own context**, still registered with the renderer, geometry and all: 255
+  contexts a pass through the styles. `release` (`render/release.ts`) destroys each one bare;
+  every `destroy({ children: true })` in the renderer uses it. Contexts held steady at 51.
+- **`BigPool` keeps what it is given back, with its last batcher's buffers** — several
+  megabytes each, and a look's drawing is larger than the next's reuse: still about 45 MB a
+  pass. `Scene.drop` empties it after throwing a look away; only free items go. Six passes then
+  stayed between 76 and 175 MB, wherever the collector happened to be.
+- And Medieval's and Night's frames share an atlas none of them owned, left uploaded: two
+  textures a pass, now destroyed with the theme.
+
+**Built** (`looks.ts`, `render/scene.ts`, `decor.ts`, `main.ts`):
+
+- **`LookRotation`**: the looks come on screen as building, combat at "Fire!", building at
+  "Rebuild" and so on, and are drawn in that order. One random: every style but the other
+  look's, shuffled, a cycle at a time. Both: one shuffled cycle of all fourteen drawn by turns,
+  seven rounds a cycle. A new cycle keeps the styles last on screen to its end: drawn anywhere,
+  the first watched match brought the combat look back in Parchment straight after Parchment.
+  The page's own `Math.random`, since no look reaches the sim, the server or a recording.
+- **`Scene.prepare`** makes a look hidden, in a slot of its own kept up to date like the
+  others, a frame's share (`SHARE_MS`, 8 ms) at a time: the theme — Medieval's and Night's atlas
+  drawn a sprite at a time between calls to `pace` (`buildAtlasPaced`) — each board layer, and
+  a first render of each thing in them, one at a time. **`promote`** puts it in place once the
+  look it replaces is out of sight; until then the old one shows again, so a look not ready in
+  time costs only the change. After each resolution the client prepares the combat look "Fire!"
+  will bring and the build look of the "Rebuild" after it; the first round's build look is
+  made at the start, behind "Preparing the board".
+- **The pause menu** offers Random, and a change starts a new rotation; **the title**
+  (`SplitTitle.use`, `titleTurn`) gives a random half its next style while it is out of sight in
+  the sweep — the combat half as the line leaves the word, the build half once the combat banner
+  has crossed — which is when a banner on the board would. Random's card and the menu's row say
+  "A new style every round" on hover.
+
+**After**, a watched eight-player match at double speed with both looks random: the looks
+followed one cycle of fourteen, then a new one. Building a look is spread over about a third of
+a second after each resolution; Medieval and Night now take half a second with no frame over
+67 ms, where one frame of 270 ms was. The frames left long: 100–133 ms at a resolution, which
+fixed looks show too (133 ms), and up to 133 ms when one first render cannot be split (Sakura's
+terrain, 113 ms); and **each banner's first frame is now 67–100 ms**, where fixed looks pay that
+only once, since every banner brings a style seen for the first time — about 25 ms of it the
+board brought up to date, the rest, as in 12n, the banner's restyled HTML rastered for the
+first time. With the pause menu, Office for building and combat switched to Random, the combat
+look went through eight styles, never Office, and the choice was saved.
+
+**Checked in play** by the user and testers (2026-10-06): the rotation works, the hitches are
+barely noticeable, and the title reads very well. PLAN 11.23 closed.

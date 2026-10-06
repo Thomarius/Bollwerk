@@ -1,4 +1,4 @@
-import { stylesFor } from '@bollwerk/config';
+import { ArtStyleSchema, stylesFor } from '@bollwerk/config';
 import { describe, expect, it } from 'vitest';
 
 import {
@@ -6,7 +6,7 @@ import {
   galleryMarkup,
   lookName,
   lookOptions,
-  resolveLooks,
+  LookRotation,
   stepLook,
 } from './looks.js';
 
@@ -35,38 +35,65 @@ describe('choosing a look', () => {
   });
 });
 
-describe('resolving random looks', () => {
-  it('keeps a chosen style as it is', () => {
-    expect(resolveLooks({ build: 'flat', combat: 'pixel' }, sequence(0.5))).toEqual({
-      build: 'flat',
-      combat: 'pixel',
-    });
+describe('random looks, round by round', () => {
+  /** The looks in the order they come on screen: the opening's two, then by turns. */
+  function onScreen(rotation: LookRotation, count: number): string[] {
+    const { build, combat } = rotation.opening();
+    const shown = [build, combat];
+    while (shown.length < count)
+      shown.push(rotation.next(shown.length % 2 === 0 ? 'build' : 'combat'));
+    return shown;
+  }
+
+  it('keeps chosen styles as they are, and says nothing rotates', () => {
+    const rotation = new LookRotation({ build: 'flat', combat: 'pixel' }, sequence(0.5));
+    expect(rotation.rotates).toBe(false);
+    expect(onScreen(rotation, 6)).toEqual(['flat', 'pixel', 'flat', 'pixel', 'flat', 'pixel']);
   });
 
-  it('draws from every style, and never the other look’s while another is left', () => {
-    const all = stylesFor('combat');
-    // The draw that would land on the build look's style lands on the next one instead.
-    const at = all.indexOf('glass');
-    const picked = resolveLooks({ build: 'glass', combat: 'random' }, sequence(at / all.length));
-    expect(picked.combat).not.toBe('glass');
-    // Two randoms come out different, whatever the source gives.
-    for (const v of [0, 0.3, 0.5, 0.99]) {
-      const both = resolveLooks({ build: 'random', combat: 'random' }, sequence(v));
-      expect(both.build).not.toBe(both.combat);
-    }
-  });
-
-  it('reaches every style over enough draws', () => {
-    const seen = new Set<string>();
-    const draws = stylesFor('build').length;
-    for (let k = 0; k < draws; k++) {
-      seen.add(
-        resolveLooks({ build: 'random', combat: 'flat' }, sequence((k + 0.5) / draws)).build,
+  it('with one random, cycles through every other style before any comes again', () => {
+    const others = stylesFor('combat').filter((s) => s !== 'office');
+    for (const v of [0, 0.3, 0.99]) {
+      const rotation = new LookRotation(
+        { build: 'office', combat: 'random' },
+        sequence(v, 0.7, 0.1),
       );
+      expect(rotation.rotates).toBe(true);
+      const combat = Array.from({ length: 3 * others.length }, () => rotation.next('combat'));
+      for (let k = 0; k < 3; k++) {
+        const cycle = combat.slice(k * others.length, (k + 1) * others.length);
+        expect(new Set(cycle)).toEqual(new Set(others));
+      }
+      // A new cycle never opens with the style the last one ended on.
+      for (let i = 1; i < combat.length; i++) expect(combat[i]).not.toBe(combat[i - 1]);
+      expect(combat).not.toContain('office');
     }
-    // Every style but the combat look's own.
-    expect(seen.size).toBe(stylesFor('build').length - 1);
-    expect(seen.has('flat')).toBe(false);
+  });
+
+  it('with both random, shares one cycle, and every banner changes the style', () => {
+    const all = ArtStyleSchema.options;
+    for (const v of [0, 0.42, 0.99]) {
+      const rotation = new LookRotation({ build: 'random', combat: 'random' }, sequence(v, 0.2));
+      const shown = onScreen(rotation, 4 * all.length);
+      for (let k = 0; k < 4; k++) {
+        expect(new Set(shown.slice(k * all.length, (k + 1) * all.length))).toEqual(new Set(all));
+      }
+      for (let i = 1; i < shown.length; i++) expect(shown[i]).not.toBe(shown[i - 1]);
+      // Nor a look in the style it had last, across a cycle's end as within one.
+      for (let i = 2; i < shown.length; i++) expect(shown[i]).not.toBe(shown[i - 2]);
+    }
+  });
+
+  it('shuffles: different sources give different orders', () => {
+    const a = onScreen(
+      new LookRotation({ build: 'random', combat: 'random' }, sequence(0.1, 0.8)),
+      14,
+    );
+    const b = onScreen(
+      new LookRotation({ build: 'random', combat: 'random' }, sequence(0.6, 0.3)),
+      14,
+    );
+    expect(a).not.toEqual(b);
   });
 });
 

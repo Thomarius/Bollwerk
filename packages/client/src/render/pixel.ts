@@ -7,9 +7,20 @@ import { bloomWanted, motionReduced } from '../motion.js';
 import { SEA_NE, SEA_NW, SEA_SE, SEA_SW, filletCorners } from './pixel/coast.js';
 import { daylight, shadowCast, weatherFor, type Weather } from './pixel/atmosphere.js';
 import { OceanLife } from './pixel/ocean.js';
+import { release } from './release.js';
 import { SceneryTracker } from './scenery.js';
 import { Discs, StampBook, Stamps } from './stamps.js';
-import { CASTLE_WINDOWS, E, FILLET_CORNERS, KEY, N, S, W, buildAtlas } from './pixel/generators.js';
+import {
+  CASTLE_WINDOWS,
+  E,
+  FILLET_CORNERS,
+  KEY,
+  N,
+  S,
+  W,
+  buildAtlas,
+  buildAtlasPaced,
+} from './pixel/generators.js';
 import {
   FlagHoist,
   GhostMotion,
@@ -38,6 +49,7 @@ import {
   type EffectFrame,
   type Ghost,
   type Theme,
+  type Pace,
   type ThemeLayers,
   type ViewTransform,
   shotLift,
@@ -296,9 +308,10 @@ export class PixelTheme implements Theme {
     this.id = id;
   }
 
-  init(layers: ThemeLayers, art: ArtConfig): Promise<void> {
+  async init(layers: ThemeLayers, art: ArtConfig, pace?: Pace): Promise<void> {
     this.art = art;
-    this.textures = buildAtlas(art, this.seed);
+    this.textures =
+      pace === undefined ? buildAtlas(art, this.seed) : await buildAtlasPaced(art, this.seed, pace);
 
     this.terrainLayer = layers.terrain;
     // A render group of its own, as the terrain's tiles are: thousands of wall sprites, which
@@ -329,17 +342,16 @@ export class PixelTheme implements Theme {
     }
     layers.effects.addChild(this.effectGfx);
     layers.overlay.addChild(this.ghostShadow, this.ghostLayer, this.overlayGfx);
-    return Promise.resolve();
   }
 
   destroy(): void {
     this.terrainLayer?.removeChildren();
-    this.tileLayer.destroy({ children: true });
-    this.structureLayer?.destroy({ children: true });
+    release(this.tileLayer);
+    if (this.structureLayer) release(this.structureLayer);
     this.effectLayer?.removeChildren();
     this.territoryGfx.destroy();
     this.overlayGfx.destroy();
-    this.ghostLayer.destroy({ children: true });
+    release(this.ghostLayer);
     this.effectGfx.destroy();
     this.groundLight.destroy();
     this.airLight.destroy();
@@ -349,10 +361,14 @@ export class PixelTheme implements Theme {
     this.ghostShadow.destroy();
     this.cloudStamps.destroy();
     this.cloudBook.destroy();
-    this.courtLayer.destroy({ children: true });
-    this.sceneryLayer.destroy({ children: true });
-    this.craterLayer.destroy({ children: true });
+    release(this.courtLayer);
+    release(this.sceneryLayer);
+    release(this.craterLayer);
+    // The frames share one atlas that none of them owns: released with them, or it stays
+    // uploaded for the page's life (PLAN 11.23).
+    const sources = new Set([...this.textures.values()].map((texture) => texture.source));
     for (const texture of this.textures.values()) texture.destroy();
+    for (const source of sources) source.destroy();
     this.textures.clear();
     this.waterSprites = [];
     this.waterVariants = [];

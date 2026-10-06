@@ -1,6 +1,6 @@
 import { defaultArtConfig, type ArtConfig, type ArtStyle } from '@bollwerk/config';
 import type { MatchState, Shot } from '@bollwerk/sim';
-import { Application, Container, Graphics, RenderTexture } from 'pixi.js';
+import { Application, BigPool, Container, Graphics, RenderTexture } from 'pixi.js';
 
 import type { CameraShot } from '../camera.js';
 import type { DrainWash, SealGlow } from '../seal.js';
@@ -13,6 +13,7 @@ import { HalloweenTheme } from './halloween.js';
 import { OktoberfestTheme } from './oktoberfest.js';
 import { OfficeTheme } from './office.js';
 import { OperaTheme } from './opera.js';
+import { release } from './release.js';
 import { SakuraTheme } from './sakura.js';
 import { GlassTheme } from './glass.js';
 import { CyberpunkTheme } from './cyberpunk.js';
@@ -26,6 +27,7 @@ import {
   type Cell,
   type Debris,
   type Ghost,
+  type Pace,
   type Theme,
   type ThemeLayers,
   type ViewTransform,
@@ -96,6 +98,22 @@ interface Slot {
   stale: Set<BoardLayer>;
 }
 
+/**
+ * A frame's share of a look made over frames: half of one at 60 Hz, the match's own drawing
+ * taking the rest.
+ */
+const SHARE_MS = 8;
+
+/** Waits for the next frame once `SHARE_MS` of work has been done in this one. */
+function pacer(): Pace {
+  let since = performance.now();
+  return async () => {
+    if (performance.now() - since < SHARE_MS) return;
+    await new Promise((done) => requestAnimationFrame(done));
+    since = performance.now();
+  };
+}
+
 /** The layers a look draws from the board, as against its effects drawn every frame. */
 const BOARD_LAYERS = ['terrain', 'territory', 'structures'] as const;
 type BoardLayer = (typeof BOARD_LAYERS)[number];
@@ -159,6 +177,10 @@ export class Scene {
     top: 0,
   };
   private shown: LookFrame = { from: 'build', to: 'build', lineY: null };
+  /** The looks being prepared for their next banners, and whether each is ready. */
+  private pending: Partial<Record<Look, { slot: Slot; ready: boolean }>> = {};
+  /** Counts changes of looks from the pause menu, which a preparation under way gives way to. */
+  private generation = 0;
 
   /**
    * Both looks' roots, under the camera (`camera.ts`): scaled and moved together as it
@@ -210,16 +232,18 @@ export class Scene {
    */
   async replaceLooks(looks: Record<Look, SceneLook>): Promise<void> {
     // The new looks are made before the old go, since frames go on being drawn while
-    // they are.
-    const old = this.all();
+    // they are. A look being prepared is for the old ones' rotation, and goes with them.
+    const generation = ++this.generation;
     const build = await this.slotFor(looks.build);
     const combat = looks.combat === looks.build ? build : await this.slotFor(looks.combat);
-    this.slots = { build, combat };
-    for (const slot of old) {
-      slot.theme.destroy();
-      slot.root.destroy({ children: true });
-      slot.mask.destroy();
+    if (generation !== this.generation) {
+      for (const slot of new Set([build, combat])) this.drop(slot);
+      return;
     }
+    const old = this.all();
+    this.pending = {};
+    this.slots = { build, combat };
+    for (const slot of old) this.drop(slot);
     for (const slot of this.all()) {
       this.paintBackdrop(slot);
       this.refresh(slot);
@@ -228,7 +252,74 @@ export class Scene {
     this.warmUp();
   }
 
-  private async slotFor({ theme, art }: SceneLook): Promise<Slot> {
+  /**
+   * Throws a look away, and what Pixi kept of it for reuse. Its pools of batches hold their
+   * last batcher's buffers until reused, several megabytes each, and a look's drawing is
+   * far larger than the next one's reuse: they grew about 45 MB a pass through the styles
+   * until emptied (PLAN 11.23). Only free items go, so whatever is still drawing keeps its.
+   */
+  private drop(slot: Slot): void {
+    slot.theme.destroy();
+    release(slot.root);
+    slot.mask.destroy();
+    BigPool.clear();
+  }
+
+  /**
+   * Makes the look `look` takes at its next banner (PLAN 11.23), hidden, over frames where
+   * `gradual` — the theme, each layer of the board, then a first render of each thing in
+   * them, a frame's share at a time (`pacer`) — since a look made in one frame is 75 to
+   * 295 ms at eight players. It goes on screen once the look it replaces is out of sight
+   * (`showLooks`); until then the old one is shown again, so a look not ready in time
+   * costs only the change.
+   */
+  async prepare(look: Look, next: SceneLook, gradual = true): Promise<void> {
+    const generation = this.generation;
+    const pace = gradual ? pacer() : undefined;
+    const slot = await this.slotFor(next, pace);
+    if (generation !== this.generation) {
+      this.drop(slot);
+      return;
+    }
+    const replaced = this.pending[look];
+    // Kept up to date from now on, as every slot is: a change marks a layer stale.
+    this.pending[look] = { slot, ready: false };
+    if (replaced !== undefined) this.drop(replaced.slot);
+    this.paintBackdrop(slot);
+    // Whether it is still wanted: a change of looks, or a newer preparation, drops it.
+    const wanted = async (): Promise<boolean> => {
+      await pace?.();
+      return generation === this.generation && this.pending[look]?.slot === slot;
+    };
+    for (const layer of BOARD_LAYERS) {
+      if (!(await wanted())) return;
+      this.refresh(slot, layer);
+    }
+    for (const layer of [slot.layers.terrain, slot.layers.territory, slot.layers.structures]) {
+      for (const part of [...layer.children]) {
+        if (!(await wanted())) return;
+        if (part.parent === layer) this.warm(slot, layer, part);
+      }
+    }
+    const entry = this.pending[look];
+    if (entry?.slot === slot) entry.ready = true;
+  }
+
+  /** Puts a prepared look in place of one out of sight, and throws the old away. */
+  private promote(): void {
+    for (const look of ['build', 'combat'] as const) {
+      const entry = this.pending[look];
+      if (entry === undefined || !entry.ready) continue;
+      const old = this.slots[look];
+      if (this.isVisible(old)) continue;
+      delete this.pending[look];
+      this.slots = { ...this.slots, [look]: entry.slot };
+      const other = look === 'build' ? 'combat' : 'build';
+      if (this.slots[other] !== old) this.drop(old);
+    }
+  }
+
+  private async slotFor({ theme, art }: SceneLook, pace?: Pace): Promise<Slot> {
     const layers = newLayers();
     const root = new Container();
     const backdrop = new Graphics();
@@ -240,12 +331,14 @@ export class Scene {
       layers.effects,
       layers.overlay,
     );
+    // Out of sight until shown: a look prepared over frames is on the stage meanwhile.
+    root.visible = false;
     const mask = new Graphics();
     // Masks live on the stage, so the shake moves them with the board, but outside the
     // camera, whose zoom must not move the banner's line.
     this.cameraRoot.addChild(root);
     this.app.stage.addChild(mask);
-    await theme.init(layers, art);
+    await theme.init(layers, art, pace);
     // A new look has drawn nothing yet.
     return { theme, art, root, backdrop, layers, mask, stale: new Set(BOARD_LAYERS) };
   }
@@ -266,11 +359,11 @@ export class Scene {
     return this.visible().includes(slot);
   }
 
-  /** Every distinct slot, whether shown or not. */
+  /** Every distinct slot, whether shown or not, and any being prepared. */
   private all(): Slot[] {
-    return this.slots.build === this.slots.combat
-      ? [this.slots.build]
-      : [this.slots.build, this.slots.combat];
+    const slots = new Set([this.slots.build, this.slots.combat]);
+    for (const entry of Object.values(this.pending)) slots.add(entry.slot);
+    return [...slots];
   }
 
   /**
@@ -280,6 +373,7 @@ export class Scene {
    */
   showLooks(frame: LookFrame): void {
     this.shown = frame;
+    this.promote();
     for (const slot of this.visible()) {
       if (slot.stale.size > 0) this.refresh(slot);
     }
@@ -309,15 +403,23 @@ export class Scene {
     }
   }
 
-  /** Brings a look up to date with the last board drawn. */
-  private refresh(slot: Slot): void {
+  /** Brings a look up to date with the last board drawn: every layer, or one. */
+  private refresh(slot: Slot, only?: BoardLayer): void {
     const { state, territory, structures } = this.board;
-    if (state !== null && slot.stale.has('terrain')) slot.theme.drawTerrain(state, this.view);
-    if (state !== null && territory !== null && slot.stale.has('territory'))
+    const due = (layer: BoardLayer): boolean =>
+      slot.stale.has(layer) && (only === undefined || only === layer);
+    if (state !== null && due('terrain')) {
+      slot.theme.drawTerrain(state, this.view);
+      slot.stale.delete('terrain');
+    }
+    if (state !== null && territory !== null && due('territory')) {
       slot.theme.drawTerritory({ ...state, territory: territory[this.lookOf(slot)] }, this.view);
-    if (structures !== null && slot.stale.has('structures'))
+      slot.stale.delete('territory');
+    }
+    if (structures !== null && due('structures')) {
       slot.theme.drawStructures(structures, this.view);
-    slot.stale.clear();
+      slot.stale.delete('structures');
+    }
   }
 
   /**
@@ -325,6 +427,8 @@ export class Scene {
    * each, so either answer serves it.
    */
   private lookOf(slot: Slot): Look {
+    if (slot === this.pending.combat?.slot) return 'combat';
+    if (slot === this.pending.build?.slot) return 'build';
     return slot === this.slots.combat && slot !== this.slots.build ? 'combat' : 'build';
   }
 
@@ -545,9 +649,31 @@ export class Scene {
       if (slot.stale.size > 0) this.refresh(slot);
       slot.root.visible = true;
     }
+    this.renderOffscreen();
+    this.applyVisibility();
+  }
+
+  /**
+   * One part of a look being prepared, rendered offscreen alone, so its first render is
+   * spread over frames as its drawing is: the whole look at once was 35 to 135 ms.
+   */
+  private warm(slot: Slot, layer: Container, part: Container): void {
+    const shown = this.all().map((s) => [s, s.root.visible] as const);
+    for (const [s] of shown) s.root.visible = s === slot;
+    const layers = slot.root.children.map((child) => [child, child.visible] as const);
+    for (const [child] of layers) child.visible = child === layer;
+    const parts = layer.children.map((child) => [child, child.visible] as const);
+    for (const [child] of parts) child.visible = child === part;
+    this.renderOffscreen();
+    for (const [child, visible] of parts) child.visible = visible;
+    for (const [child, visible] of layers) child.visible = visible;
+    for (const [s, visible] of shown) s.root.visible = visible;
+    this.applyVisibility();
+  }
+
+  private renderOffscreen(): void {
     const target = RenderTexture.create({ width: 64, height: 64 });
     this.app.renderer.render({ container: this.app.stage, target });
     target.destroy(true);
-    this.applyVisibility();
   }
 }

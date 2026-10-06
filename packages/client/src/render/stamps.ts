@@ -1,5 +1,7 @@
 import { Container, Graphics, GraphicsContext } from 'pixi.js';
 
+import { release } from './release.js';
+
 /**
  * Shapes built once and only moved (PLAN 11.22). Pixi cuts a `Graphics` into triangles on
  * the CPU, in JavaScript, every time it is rebuilt — and a style that clears and redraws its
@@ -61,7 +63,7 @@ export class Stamps {
 
   destroy(): void {
     // The contexts belong to their `StampBook`, which a `Graphics` given one never destroys.
-    this.container.destroy({ children: true });
+    release(this.container);
   }
 }
 
@@ -147,7 +149,7 @@ export class Memos {
 
   destroy(): void {
     this.entries.clear();
-    this.container.destroy({ children: true });
+    release(this.container);
   }
 }
 

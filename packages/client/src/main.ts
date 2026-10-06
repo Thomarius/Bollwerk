@@ -43,8 +43,8 @@ import {
   chooseLook,
   lookName,
   lookPicture,
+  LookRotation,
   openLookGallery,
-  resolveLooks,
   stepLook,
   type LookChoices,
 } from './looks.js';
@@ -515,12 +515,12 @@ function showMenu(notice: string | null = null): void {
   }
 
   // The title in both chosen looks at once, split by a banner's line that sweeps across
-  // as either choice changes — what the two choices mean, shown rather than said. Random
-  // shows a style drawn for the moment, as a match would draw one.
+  // as either choice changes — what the two choices mean, shown rather than said. A random
+  // half takes a new style at every sweep, as a match's look does at every banner.
   const titleRoot = document.querySelector<HTMLElement>('#title');
   const title = titleRoot ? new SplitTitle(titleRoot, defaultConfigBundle.art) : null;
   if (title) {
-    title.show(resolveLooks(styles));
+    title.use(new LookRotation(styles));
     title.sweep();
     title.repeat();
   }
@@ -535,6 +535,7 @@ function showMenu(notice: string | null = null): void {
     if (choice === undefined || row === null) return;
     const name = row.querySelector<HTMLElement>('.look-name');
     if (name) name.textContent = lookName(choice);
+    row.title = choice === 'random' ? t('looks.randomHint') : '';
     const image = row.querySelector<HTMLImageElement>('img');
     if (image === null || !picturesShown) return;
     image.classList.remove('ready');
@@ -555,7 +556,7 @@ function showMenu(notice: string | null = null): void {
     menuChoices = { ...next };
     saveStyles(next);
     for (const look of changed) showPicture(look);
-    if (changed.length > 0) title?.show(resolveLooks(next));
+    if (changed.length > 0) title?.use(new LookRotation(next));
   };
   for (const look of ['build', 'combat'] as const) {
     const row = document.querySelector<HTMLElement>(`.look[data-look="${look}"]`);
@@ -1192,8 +1193,10 @@ async function runSession(session: Session, setup: Setup): Promise<() => void> {
   const art = defaultConfigBundle.art;
   useMatchPalette(matchPalette(art, session.state));
   useMatchShapes(matchShapes(art, session.state));
-  // Random looks are drawn here, afresh for every match; the pause menu may change them.
-  let styles = resolveLooks(setup.styles);
+  // The looks as chosen, a new style at every banner for one that is random (PLAN 11.23);
+  // the pause menu may change them.
+  let lookChoices = setup.styles;
+  let rotation = new LookRotation(lookChoices);
   const lookFor = (style: ArtStyle): SceneLook => {
     const own = artForStyle(art, style);
     return {
@@ -1202,11 +1205,35 @@ async function runSession(session: Session, setup: Setup): Promise<() => void> {
     };
   };
   // One theme when both looks are the same style, so the wipe has nothing to change.
-  const looksFor = (chosen: typeof styles): Record<Look, SceneLook> => {
+  const looksFor = (chosen: Record<Look, ArtStyle>): Record<Look, SceneLook> => {
     const build = lookFor(chosen.build);
     return { build, combat: chosen.combat === chosen.build ? build : lookFor(chosen.combat) };
   };
-  await scene.init(canvas, looksFor(styles), art);
+  const opening = rotation.opening();
+  await scene.init(canvas, looksFor(opening), art);
+  // The build look the first "Rebuild" brings, made now behind "Preparing the board", since
+  // the first round has no resolution before it to make it in.
+  if (rotation.isRandom('build')) {
+    await scene.prepare('build', lookFor(rotation.next('build', opening.combat)), false);
+  }
+  /**
+   * The next round's random looks, made a step a frame after a resolution, where nothing is
+   * playable and no shot flies (PLAN 11.23): the combat look "Fire!" will bring, then the
+   * build look the "Rebuild" after it will. Each goes on screen once its old one is out
+   * of sight (`Scene.prepare`).
+   */
+  const prepareNextLooks = async (): Promise<void> => {
+    if (session.state.phase === 'game_over') return;
+    const turn = rotation;
+    let combat = scene.styles.combat;
+    if (turn.isRandom('combat')) {
+      combat = turn.next('combat', scene.styles.build);
+      await scene.prepare('combat', lookFor(combat));
+    }
+    if (turn.isRandom('build') && turn === rotation) {
+      await scene.prepare('build', lookFor(turn.next('build', combat)));
+    }
+  };
 
   const hud = new Hud(hudRoot, bannerRoot);
   // What the end of the match summarises, kept from the events as they come.
@@ -1371,7 +1398,7 @@ async function runSession(session: Session, setup: Setup): Promise<() => void> {
    */
   let held: ReturnType<typeof computeEnclosure> | null = null;
   /** One style for both looks: one set of layers, which shows the held board in combat. */
-  const oneLook = (): boolean => styles.build === styles.combat;
+  const oneLook = (): boolean => scene.styles.build === scene.styles.combat;
   /** The enclosure a look shows. */
   const enclosureFor = (look: Look): ReturnType<typeof computeEnclosure> =>
     held !== null && (look === 'combat' || oneLook()) ? held : live;
@@ -1457,21 +1484,21 @@ async function runSession(session: Session, setup: Setup): Promise<() => void> {
     },
     volumes: audio,
     click: () => audio.play('select'),
-    // The gallery over the pause menu, the looks on screen chosen; a change is drawn at
-    // once and saved as the menu's choice. No random here: the match is already drawn.
+    // The gallery over the pause menu, the looks as chosen; a change is drawn at once and
+    // saved as the menu's choice. Random starts a rotation of its own, from the next
+    // resolution on.
     looks: () =>
       openLookGallery({
-        choices: { ...styles },
+        choices: { ...lookChoices },
         active: 'build',
-        random: false,
         click: () => audio.play('select'),
         onChange: () => undefined,
         onClose: (chosen) => {
-          const next = resolveLooks(chosen);
-          if (next.build === styles.build && next.combat === styles.combat) return;
-          styles = next;
+          if (chosen.build === lookChoices.build && chosen.combat === lookChoices.combat) return;
+          lookChoices = chosen;
+          rotation = new LookRotation(chosen);
           saveStyles(chosen);
-          void scene.replaceLooks(looksFor(next));
+          void scene.replaceLooks(looksFor(rotation.opening()));
         },
       }),
   });
@@ -1530,7 +1557,7 @@ async function runSession(session: Session, setup: Setup): Promise<() => void> {
           choosing ? 'castle_select' : (state.pendingPhase ?? 'combat'),
           announcementLines(state),
           // Drawn in the look it brings, since it is where the look changes.
-          styles[after],
+          scene.styles[after],
           choosing ? null : announcementTitle(state),
           // The standings after a resolution, counted up from the round before's.
           resolvedSinceAnnounce ? ranking(state, matchLog.scores.at(-2)?.byPlayer ?? null) : [],
@@ -1539,7 +1566,7 @@ async function runSession(session: Session, setup: Setup): Promise<() => void> {
       }
       lineY = hud.placeAnnouncement(progress);
     }
-    hud.useSkin(styles[lineY === null ? before : after]);
+    hud.useSkin(scene.styles[lineY === null ? before : after]);
     scene.showLooks(
       lineY === null
         ? { from: before, to: before, lineY: null }
@@ -1710,6 +1737,7 @@ async function runSession(session: Session, setup: Setup): Promise<() => void> {
           break;
         }
         case 'round_resolved': {
+          if (rotation.rotates) void prepareNextLooks();
           const hold = Math.ceil(
             (defaultConfigBundle.art.hud.pointsBannerMs * session.state.ruleset.tickRateHz) / 1000,
           );
@@ -1857,7 +1885,7 @@ async function runSession(session: Session, setup: Setup): Promise<() => void> {
 
   perf.attach(scene.app.stage, scene.app.renderer, () => ({
     url: globalThis.location.search,
-    styles: `build ${styles.build}, combat ${styles.combat}`,
+    styles: `build ${scene.styles.build}, combat ${scene.styles.combat}`,
     players: String(session.state.players.length),
     effects: storedEffects(),
   }));

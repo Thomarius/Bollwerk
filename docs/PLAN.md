@@ -524,14 +524,20 @@ look is its picture and name between two arrows, which step through the styles i
 and the picture opens **the gallery** — every style's picture as a card, a switch at the
 top saying whether a click chooses the building or the combat look, each card badged with
 the look it is chosen for. The styles are in alphabetical order by name, so a new one finds
-its place, and **Random** comes last, a die for its picture: drawn afresh from
-every style as each match starts, never the other look's style while another is left.
+its place, and **Random** comes last, a die for its picture: **a new style at every
+banner that brings its look** (`LookRotation`, ARCHIVE 12q), repeating none until every
+style has been shown — both looks random share one cycle of all fourteen, one random cycles
+through all but the other look's — and never the style the banner takes away, nor the one a
+look last had across a cycle's end. Each next look is made a step a frame, hidden, in the
+intermission after the build phase (`Scene.prepare`), and goes on screen once the look it
+replaces is out of sight.
 **A hovered card plays** (`galleryLive.ts`, ARCHIVE 12m): the style itself runs over its
 still on the same island — the sea, the flags, and a shot from the gun every couple of
 seconds, at the wall and into the sea by turns — through one renderer for the whole
 gallery, its style swapped as the pointer moves; drawing only while a card is hovered, and
-not at all under reduced motion. The pause menu has **Looks**, the same gallery without Random, which changes the looks
-mid-match (`Scene.replaceLooks`) and saves the choice as the menu's. A picture made for the
+not at all under reduced motion. The pause menu has **Looks**, the same gallery, Random
+included, which changes the looks mid-match (`Scene.replaceLooks`), starts a rotation from
+the next resolution, and saves the choice as the menu's. A picture made for the
 gallery over a running match must not release what every renderer shares
 (`destroy(true)`): it took the match's pooled batches with it. One gallery for both looks
 is the first try; two separate ones if players find it confusing (decided with the user).
@@ -573,7 +579,9 @@ and the combat look's below, the letters coinciding, since `titleLayout` sizes e
 title so they stand in one place whatever room its glow needs. The line sweeps across as
 the menu opens, as either choice changes, and every `menu.titleSweepEveryMs` — a round in
 miniature, each banner bringing the arriving look above it as on the board: down out of
-the word, a combat banner across it, a build banner back to the middle. Still under
+the word, a combat banner across it, a build banner back to the middle. **A random half
+takes the rotation's next style while it is out of sight** (`titleTurn`): the combat half
+once the line has left the word, the build half once the combat banner has crossed. Still under
 reduced motion; one title and no line when both looks are one style. Behind the panel the pixel
 sea drifts. The lobby shows the map the table will play (`preview.ts`), alive — surf
 breathing along its coasts a little out of step tile to tile, the castles breathing
@@ -1217,7 +1225,7 @@ test-session feedback, in ARCHIVE 11w; 11.5 the small items and 11.6 the bots, i
 11.16 help for new players, the menu and the sea, and 11.17 the desktop app, in ARCHIVE
 11zt; 11.18 the fourth visual pass, in ARCHIVE 11zv; 11.19 every style to the edges, in
 ARCHIVE 11zz; 11.20 more languages, in ARCHIVE 12g; 11.21 UPnP, in ARCHIVE 12j; 11.2 points decide, 11.3 two players,
-11.4 measurements never taken and 11.13 the bots' loose ends, closed by the weekend soak, in ARCHIVE 12h; 11.22 rendering performance, in ARCHIVE 12n, its bots planning on the same ticks in ARCHIVE 12p — so the open sections keep theirs.
+11.4 measurements never taken and 11.13 the bots' loose ends, closed by the weekend soak, in ARCHIVE 12h; 11.22 rendering performance, in ARCHIVE 12n, its bots planning on the same ticks in ARCHIVE 12p; 11.23 random looks every round, in ARCHIVE 12q — so the open sections keep theirs.
 
 ## 12. Deferred (explicitly out of scope for v1)
 
