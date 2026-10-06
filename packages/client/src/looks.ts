@@ -43,6 +43,7 @@ const STYLE_NAMES: Record<LookChoice, TextKey> = {
   opera: 'style.opera',
   office: 'style.office',
   undersea: 'style.undersea',
+  electric: 'style.electric',
   random: 'style.random',
 };
 

@@ -52,7 +52,8 @@ export type PlayerPalette = z.infer<typeof PlayerPaletteSchema>;
  * `halloween` a haunted land round a bog, `sakura` an Edo castle town as a woodblock print,
  * `oktoberfest` the beer festival on an island in a sea of beer, `opera` a night at the opera
  * on a sea whose waves are staves, `office` an open-plan office at war with itself,
- * `undersea` a coral reef on the seabed, the deep all round it.
+ * `undersea` a coral reef on the seabed, the deep all round it, `electric` a storm
+ * laboratory under a thunderstorm.
  */
 export const ArtStyleSchema = z.enum([
   'flat',
@@ -70,6 +71,7 @@ export const ArtStyleSchema = z.enum([
   'opera',
   'office',
   'undersea',
+  'electric',
 ]);
 export type ArtStyle = z.infer<typeof ArtStyleSchema>;
 
@@ -586,6 +588,44 @@ export const UnderseaStyleSchema = z.strictObject({
 });
 export type UnderseaStyleConfig = z.infer<typeof UnderseaStyleSchema>;
 
+/**
+ * The Electric look: a storm laboratory on dark rock in a slate sea under a thunderstorm —
+ * walls of Faraday cage, castles plasma globes whose filaments dance while sealed, Tesla towers
+ * firing ball lightning, a charged floor for sealed ground, and a Jacob's ladder climbing in
+ * the corner.
+ */
+export const ElectricStyleSchema = z.strictObject({
+  /** Sealed ground's wash in the owner's colour, under its charged floor's grid. */
+  territoryAlpha: z.number().min(0).max(1),
+  /** How fast the charged floor's pulses run along its lines. */
+  pulseTilesPerSecond: z.number().positive(),
+  /** A crackle of current running along a player's walls, about so often for each. */
+  crackleEveryMs: z.number().int().positive(),
+  /** A bolt forking down onto the outer sea, about so often, and as the storm breaks. */
+  boltEveryMs: z.number().int().positive(),
+  stormBoltEveryMs: z.number().int().positive(),
+  /** How bright the sky's flicker over the whole screen goes with a bolt. */
+  flashAlpha: z.number().min(0).max(1),
+  /** Rain streaks at once in a rainy match, and hailstones in a "snowy" one. */
+  rainCount: z.number().int().nonnegative(),
+  hailCount: z.number().int().nonnegative(),
+  /** Banks of ionised mist in a foggy match, and how thick. */
+  mistBanks: z.number().int().nonnegative(),
+  mistAlpha: z.number().min(0).max(1),
+  /** One climb of the Jacob's ladder's arc, as a phase opens, and while the clock presses. */
+  ladderMs: z.number().int().positive(),
+  hurriedLadderMs: z.number().int().positive(),
+  /** An electric eel leaping from the outer sea now and then. */
+  eelEveryMs: z.number().int().positive(),
+  /** A ship with St. Elmo's fire on its masts crossing it now and then. */
+  shipEveryMs: z.number().int().positive(),
+  shipTilesPerSecond: z.number().positive(),
+  /** A gull blown across it by the storm now and then. */
+  gullEveryMs: z.number().int().positive(),
+  gullTilesPerSecond: z.number().positive(),
+});
+export type ElectricStyleConfig = z.infer<typeof ElectricStyleSchema>;
+
 /** One of the two looks a match is drawn in. */
 export type ArtLook = 'build' | 'combat';
 
@@ -633,6 +673,7 @@ export const STYLE_LOOKS: Record<ArtStyle, readonly ArtLook[]> = {
   opera: ['build', 'combat'],
   office: ['build', 'combat'],
   undersea: ['build', 'combat'],
+  electric: ['build', 'combat'],
 };
 
 export function styleServes(
@@ -759,6 +800,7 @@ export const ArtConfigSchema = z
     opera: OperaStyleSchema,
     office: OfficeStyleSchema,
     undersea: UnderseaStyleSchema,
+    electric: ElectricStyleSchema,
     scenery: ScenerySchema,
     /** Effects both styles draw alike, because they carry information. */
     effects: z.strictObject({

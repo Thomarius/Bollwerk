@@ -1077,6 +1077,31 @@
         "uiValid": "#8ff0b4",
         "uiInvalid": "#ff6a6a"
       }
+    },
+    "electric": {
+      "palette": {
+        "waterDeep": "#0b0f17",
+        "waterMid": "#151c28",
+        "waterShallow": "#243042",
+        "waterFoam": "#c9d6e8",
+        "sand": "#5c5e58",
+        "grassDark": "#33362f",
+        "grassMid": "#474b42",
+        "grassLight": "#5d6256",
+        "rockDark": "#2a2c30",
+        "rockMid": "#6a6e76",
+        "rockLight": "#c9ccd2",
+        "shadow": "#06080c",
+        "craterDark": "#0e0d0c",
+        "craterMid": "#24211e",
+        "emberHot": "#ffffff",
+        "emberMid": "#d6e6ff",
+        "emberCool": "#8ab0ff",
+        "uiInk": "#eef4ff",
+        "uiAccent": "#e8b04a",
+        "uiValid": "#9df0b0",
+        "uiInvalid": "#ff6a6a"
+      }
     }
   },
   "dither": {
@@ -1431,5 +1456,24 @@
     "turtleTilesPerSecond": 0.8,
     "mantaEveryMs": 26000,
     "mantaTilesPerSecond": 1.1
+  },
+  "electric": {
+    "territoryAlpha": 0.25,
+    "pulseTilesPerSecond": 4,
+    "crackleEveryMs": 2600,
+    "boltEveryMs": 9000,
+    "stormBoltEveryMs": 2600,
+    "flashAlpha": 0.07,
+    "rainCount": 140,
+    "hailCount": 70,
+    "mistBanks": 7,
+    "mistAlpha": 0.12,
+    "ladderMs": 2600,
+    "hurriedLadderMs": 900,
+    "eelEveryMs": 7000,
+    "shipEveryMs": 26000,
+    "shipTilesPerSecond": 0.6,
+    "gullEveryMs": 15000,
+    "gullTilesPerSecond": 3.2
   }
 }

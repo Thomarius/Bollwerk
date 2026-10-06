@@ -1000,6 +1000,71 @@ export function underseaTitle(text: string, _art: ArtConfig): Title {
   return { src: canvas.toDataURL(), ...title };
 }
 
+/**
+ * Electric's title: the word written in arcs, each stroke of a letter a jagged bolt from cell
+ * to cell — a wide cool halo, a band of pale blue and a white-hot core — and a copper
+ * electrode at every end of a stroke, where the current leaps from.
+ */
+export function electricTitle(text: string, _art: ArtConfig): Title {
+  const { canvas, ctx, cells, has } = drawnCanvas(text);
+  const title = { cellPx: DRAWN_CELL, padPx: DRAWN_PAD, tailPx: 0, smooth: true, flicker: true };
+  if (ctx === null) return { src: canvas.toDataURL(), ...title };
+  const at = (v: number): number => DRAWN_PAD + v * DRAWN_CELL + DRAWN_CELL / 2;
+  const rng = new Rng(0xe1ec7);
+  // Every join between two cells as a jagged arc, kept so each pass strokes the same bolt.
+  const arcs: [number, number][][] = [];
+  for (const { x, y } of cells) {
+    for (const [dx, dy] of [
+      [1, 0],
+      [0, 1],
+    ] as const) {
+      if (!has(x + dx, y + dy)) continue;
+      const points: [number, number][] = [[at(x), at(y)]];
+      for (let k = 1; k < 3; k++) {
+        const push = (rng.nextFloat() - 0.5) * DRAWN_CELL * 0.5;
+        points.push([
+          at(x) + dx * (k / 3) * DRAWN_CELL + dy * push,
+          at(y) + dy * (k / 3) * DRAWN_CELL + dx * push,
+        ]);
+      }
+      points.push([at(x + dx), at(y + dy)]);
+      arcs.push(points);
+    }
+  }
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  for (const [width, colour, blur] of [
+    [DRAWN_CELL * 0.9, 'rgba(138, 176, 255, 0.35)', 12],
+    [DRAWN_CELL * 0.45, '#a8c4ff', 6],
+    [DRAWN_CELL * 0.18, '#ffffff', 4],
+  ] as const) {
+    ctx.strokeStyle = colour;
+    ctx.lineWidth = width;
+    ctx.shadowColor = '#8ab0ff';
+    ctx.shadowBlur = blur;
+    ctx.beginPath();
+    for (const arc of arcs) {
+      ctx.moveTo(arc[0]![0], arc[0]![1]);
+      for (const [px, py] of arc.slice(1)) ctx.lineTo(px, py);
+    }
+    ctx.stroke();
+  }
+  ctx.shadowBlur = 0;
+  // The electrodes: copper studs where a stroke ends.
+  for (const { x, y } of cells) {
+    const joins = [has(x + 1, y), has(x - 1, y), has(x, y + 1), has(x, y - 1)].filter(Boolean);
+    if (joins.length > 1) continue;
+    ctx.beginPath();
+    ctx.arc(at(x), at(y), DRAWN_CELL * 0.32, 0, Math.PI * 2);
+    ctx.fillStyle = '#c87a3e';
+    ctx.fill();
+    ctx.strokeStyle = '#4a2a14';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+  }
+  return { src: canvas.toDataURL(), ...title };
+}
+
 const TITLES: Record<ArtStyle, (text: string, art: ArtConfig) => Title> = {
   flat: blockTitle,
   pixel: stoneTitle,
@@ -1016,6 +1081,7 @@ const TITLES: Record<ArtStyle, (text: string, art: ArtConfig) => Title> = {
   opera: operaTitle,
   office: officeTitle,
   undersea: underseaTitle,
+  electric: electricTitle,
 };
 
 export function titleFor(style: ArtStyle, art: ArtConfig): Title {

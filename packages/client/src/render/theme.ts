@@ -8,6 +8,7 @@ import { PETALS, drawPetal } from './ukiyo.js';
 import { drawLyre, drawRose } from './music.js';
 import { drawGingerHeart, drawPretzel } from './wiesn.js';
 import { drawBubble, drawFish } from './reef.js';
+import { COPPER, drawArc, jag } from './spark.js';
 
 /**
  * A visual style.
@@ -703,7 +704,8 @@ export interface FinishLook {
    * `pretzel` pretzels and gingerbread hearts iced in the owner's colours; `roses` roses and
    * flowers in the owner's colours thrown at a curtain call; `memo` sticky notes in the
    * owner's colours fluttering down among paper clips, from an office party's poppers;
-   * `bubbles` bubbles tinted in the owner's colours rising among little fish darting out.
+   * `bubbles` bubbles tinted in the owner's colours rising among little fish darting out;
+   * `bolts` forked lightning in the owner's colours crackling out from the burst.
    */
   spark:
     | 'square'
@@ -719,7 +721,8 @@ export interface FinishLook {
     | 'pretzel'
     | 'roses'
     | 'memo'
-    | 'bubbles';
+    | 'bubbles'
+    | 'bolts';
   /**
    * `swallowtail` a forked banner; `hologram` a flickering projection; `pennant` a flag in
    * plan; `brick` a square flag of bricks; `leaded` a banner of glass in its lead; `candy` a
@@ -727,7 +730,8 @@ export interface FinishLook {
    * a tall war banner hung from an arm at its top; `rauten` a flag in the Bavarian lozenges
    * on a maypole; `lyre` a pennant bearing a golden lyre on a gilded pole; `necktie` a
    * necktie in the owner's colour, knotted at the top of an aluminium pole, flying; `trident`
-   * a pennant flying under the head of a bronze trident.
+   * a pennant flying under the head of a bronze trident; `rod` a pennant cut like a bolt on a
+   * copper lightning rod, a spark crackling at its point.
    */
   flag:
     | 'swallowtail'
@@ -741,7 +745,8 @@ export interface FinishLook {
     | 'rauten'
     | 'lyre'
     | 'necktie'
-    | 'trident';
+    | 'trident'
+    | 'rod';
 }
 
 export const PLAIN_FINISH: FinishLook = { spark: 'square', flag: 'swallowtail' };
@@ -873,6 +878,41 @@ export class WinnerBanners {
             knot + half * 0.6,
           ]);
           g.fill({ color: dimmed(base, 0.25) });
+          continue;
+        }
+        if (flag === 'rod') {
+          // A pennant cut like a bolt, its fly a zigzag, a white bolt across it.
+          const head = up + clothH * 0.3;
+          const fly = x + clothW * 1.1;
+          g.poly([
+            x,
+            head,
+            fly,
+            head + clothH * 0.15 + wave,
+            fly - clothW * 0.25,
+            head + clothH * 0.45 + wave,
+            fly - clothW * 0.05,
+            head + clothH * 0.6 + wave,
+            x,
+            head + clothH,
+          ]);
+          g.fill({ color: base });
+          g.stroke({ width: rim, color: 0x06080c, alpha: 0.85, join: 'round' });
+          g.poly([
+            x + clothW * 0.32,
+            head + clothH * 0.15,
+            x + clothW * 0.18,
+            head + clothH * 0.55,
+            x + clothW * 0.34,
+            head + clothH * 0.5,
+            x + clothW * 0.22,
+            head + clothH * 0.88,
+            x + clothW * 0.5,
+            head + clothH * 0.4,
+            x + clothW * 0.36,
+            head + clothH * 0.45,
+          ]);
+          g.fill({ color: 0xf4f8ff });
           continue;
         }
         if (flag === 'trident') {
@@ -1016,6 +1056,26 @@ export class WinnerBanners {
       g.stroke({ width: width + 1, color: 0xe8c25a });
       g.circle(x, top, width + 1);
       g.fill({ color: 0xe8c25a });
+      return;
+    }
+    if (flag === 'rod') {
+      // A copper lightning rod, sharpened to a point, a spark crackling at it.
+      g.moveTo(x, foot).lineTo(x, top);
+      g.stroke({ width: width + 1, color: COPPER });
+      g.poly([x - width, top, x, top - width * 4, x + width, top]);
+      g.fill({ color: COPPER });
+      const tip = top - width * 4;
+      const reach = width * 5;
+      for (let k = 0; k < 2; k++) {
+        const a = -Math.PI / 2 + (Math.random() - 0.5) * 2;
+        drawArc(
+          g,
+          null,
+          jag(x, tip, x + Math.cos(a) * reach, tip + Math.sin(a) * reach, 3, reach * 0.3),
+          0xa8c4ff,
+          Math.max(1, width * 0.4),
+        );
+      }
       return;
     }
     if (flag === 'trident') {
@@ -1237,6 +1297,19 @@ export class Fireworks {
           g.circle(x, y, size * 0.22);
           g.fill({ color: 0xe8c25a, alpha });
         }
+      } else if (kind === 'bolts') {
+        // A short crackling streak along its flight, in the owner's colour round a white core.
+        const tail = 0.12;
+        const tx = tileX(view, spark.x - spark.vx * tail);
+        const ty = tileY(view, spark.y - spark.vy * tail);
+        drawArc(
+          g,
+          null,
+          jag(tx, ty, x, y, 3, size * 0.5),
+          spark.colour,
+          Math.max(1, size * 0.22),
+          alpha,
+        );
       } else if (kind === 'bubbles') {
         if (spark.spin > 0) {
           // A bubble tinted in the owner's colour, wobbling as it rises.

@@ -5343,3 +5343,59 @@ were lost on the menu's dark sea, and are lit and glowing; the lures read as gre
 manta as a kite.
 
 **Checked in play** by the user (2026-10-06): it looks great.
+
+## 12v. Electric, a sixteenth style (2026-10-06)
+
+The user's idea, and a personal one: they love electricity, lightning and thunderstorms — Tesla
+coils, chain lightning, plasma balls, "give me all electric and thunder-themed things". Pitched
+and agreed before building: **a storm laboratory**, the analogue force and the apparatus that
+tamed it, set apart from Cyberpunk's digital neon, with white lightning the storm's and a
+player's colour in an arc meaning it is theirs. Chosen by the user: the laboratory over a purely
+natural storm; **a Faraday cage** for the walls, over Leyden jars or insulators on a bus bar;
+**plasma globes** for the castles, "as the Tesla towers are cooler as guns"; **Lichtenberg
+figures** for sealed ground, over a charged field grid; **Tesla coils firing ball lightning**
+for the guns; and **a Jacob's ladder** for the corner piece, over Franklin's kite.
+
+What carries meaning: **sealed is the globe lit**, filaments dancing in the owner's colour
+(`FlagHoist`), a breach sputtering it out; **sealed ground is a Lichtenberg figure** glowing out
+from the castles (`lichtenberg` in `electric.ts`, seeded so a figure is the same at every
+redraw); **a silenced coil is grounded**, a cable slack from its torus, smoking; **a hit chains
+through the cage** to the blocks beside it. Kept to a rule PLAN §7 already held, that a flash at
+one spot is an impact: the storm's bolts strike only the outer sea, five tiles or more off the
+land so no branch swings over an island, and over the board the sky only flickers faintly;
+nothing of it under reduced motion. The finish gained `bolts`, forked streaks in the winners'
+colours, and `rod`, a bolt-cut pennant on a copper lightning rod sparking at its point. The arcs,
+bolts and ball lightning are `spark.ts`, shared by the theme, its sea life and the finish; the
+halos go in one added layer, bloomed under "Glowing" at half resolution as Cyberpunk's are.
+
+**Drawn cheaply from the start**, the lesson of Under the sea: walls, sealed ground and coils in
+straight strokes with plain caps (the coils, which never turn, drawn with the structures by
+island); the globes a `Memos` each, drawn anew only every 70 ms while lit — lightning jumps, it
+does not glide — and not at all while dark; ball lightning and rain stamps. In headless Chrome
+at eight players in combat: 45 000 vertices a frame against Office's 36 000, a wall redrawn at a
+hit about 10 000 at worst against Office's 8 500, render time alike.
+
+Seen in screenshots building, in combat at two, three and eight players, in the final round's
+storm, in fog, at game over with the lightning rods, the switchboard banner mid-wipe and the
+menu's title. What the first look changed: the cage's thick frames with brass rivets read as
+tartan, and are thin, the mesh leading; the mesh in copper made every player's walls one orange
+— walls are where ownership is read — and is in the owner's light, copper kept to the faces'
+bars; the Lichtenberg figures were too faint under the coils, and are thicker and brighter; the
+balls and the rain were too small. A bolt cannot be caught in headless Chrome at all: it draws a
+frame about every 700 ms, so a bolt of 380 ms is over before its first frame; it was seen by
+stretching its life for one run.
+
+**After the user's first look in play** (2026-10-06): "very cool", and three changes. **The
+guns became Tesla towers** built in levels, after the C&C towers the user likes, taken as
+inspiration rather than copied: a riveted drum in the owner's colour with lit vents, a brass
+collar, three copper rings on a rod and a steel sphere the arcs leap from; a wall redrawn at a
+hit rose from about 10 000 vertices at worst to 12 500, accepted. **Sealed ground became the
+charged floor** — the pitch's alternative — once the user found the Lichtenberg figures
+uninteresting: both were built behind a setting and compared in screenshots and in play, and
+the figures, which grew only from the castles, left much of the ground empty and vanished under
+the towers; the floor's plates, grid and pulses fill it evenly. The setting and the figures were
+removed; the burns a strike leaves on the rock keep their small Lichtenberg figure. **The piece
+in hand calmed down**: its pulses jumped a stretch of the wire every 45 ms, about twenty tiles a
+second, which the user found hectic and unnerving; they glide at 1.2 tiles a second now, on one
+lattice so they run on from stretch to stretch, and the short circuit's arcs change shape about
+six times a second rather than every frame.

@@ -2759,7 +2759,8 @@ body.hud-sakura,
 body.hud-wiesn,
 body.hud-opera,
 body.hud-office,
-body.hud-undersea {
+body.hud-undersea,
+body.hud-electric {
   --hud-panel: var(--hud-box);
 }
 
@@ -3715,6 +3716,131 @@ body.hud-undersea .final-stamp {
   font-family: Georgia, 'Times New Roman', serif;
   font-weight: 700;
   letter-spacing: 0.08em;
+  text-shadow: none;
+}
+
+/* Electric: the banner a marble switchboard, a brass knife switch at either end, lettered in
+   slate; the HUD a panel of black bakelite under a copper bus bar riveted in brass. */
+.phase-call.banner-electric {
+  border-top: 3px solid #b08a3e;
+  border-bottom: 3px solid #b08a3e;
+  background-color: #dcdad4;
+  background-image:
+    linear-gradient(90deg, #d8b060 0 6px, #7a5a2a 6px 8px, transparent 8px),
+    linear-gradient(270deg, #d8b060 0 6px, #7a5a2a 6px 8px, transparent 8px),
+    linear-gradient(115deg, transparent 0 30%, #9a98a033 31%, transparent 33%),
+    linear-gradient(160deg, transparent 0 55%, #8a889033 56%, transparent 58%),
+    linear-gradient(80deg, transparent 0 70%, #a8a6ae2a 71%, transparent 72.5%),
+    linear-gradient(#ffffff40, transparent 50%, #00000014);
+  background-size:
+    14px 60%,
+    14px 60%,
+    100% 100%,
+    100% 100%,
+    100% 100%,
+    100% 100%;
+  background-position:
+    18px 50%,
+    calc(100% - 18px) 50%,
+    0 0,
+    0 0,
+    0 0,
+    0 0;
+  background-repeat: no-repeat;
+  color: #1c2230;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-shadow: 0 1px 0 #ffffff99;
+}
+
+.phase-call.banner-electric small {
+  color: #3a4250;
+  font-family: Georgia, 'Times New Roman', serif;
+}
+
+.phase-call.banner-electric small.news {
+  color: #8a3e14;
+}
+
+body.hud-electric {
+  --hud-bar: #16140f;
+  --hud-rule: 6px solid transparent;
+  --hud-pad-top: 0.4rem;
+  --hud-ink: #eef4ff;
+  --hud-muted: #b0b8c8;
+  --hud-accent: #e8b04a;
+  --hud-box: #1a1813;
+  --hud-box-edge: 2px solid #c87a3e;
+  --hud-box-shadow: 0 3px 0 #000a, 0 0 10px #8ab0ff22;
+  --hud-track: #ffffff22;
+}
+
+/* Bakelite's sheen, and along its foot the copper bus bar, riveted in brass. */
+body.hud-electric #hud .bar {
+  background-image:
+    radial-gradient(circle at 50% 50%, #f0d080 0 1.5px, #7a5a2a 2px, transparent 2.5px),
+    linear-gradient(#e0a070, #c87a3e 45%, #7a4420), linear-gradient(#ffffff10, transparent 50%);
+  background-size:
+    24px 6px,
+    100% 6px,
+    100% 100%;
+  background-position:
+    0 100%,
+    0 100%,
+    0 0;
+  background-repeat: repeat-x, no-repeat, no-repeat;
+  background-origin: border-box;
+  background-clip: border-box;
+}
+
+/* The big timer as Nixie tubes: orange-glowing figures, a halo round each stroke. */
+body.hud-electric .big-timer {
+  color: rgb(255 150 70 / 85%);
+  font-family: 'Courier New', Courier, monospace;
+  font-weight: 700;
+  -webkit-text-stroke: 1px rgb(255 214 160 / 70%);
+  paint-order: stroke fill;
+  text-shadow:
+    0 0 6px rgb(255 120 40 / 80%),
+    0 0 18px rgb(255 90 20 / 45%);
+}
+
+body.hud-electric .big-timer.urgent {
+  color: rgb(255 80 50 / 92%);
+}
+
+/* Island banners an enamel plate, navy, rimmed in white and riveted at its corners; the
+   stamps a fuse label, scorched at its edges. */
+body.hud-electric .island-banner:not(.out),
+body.hud-electric .team-tag,
+body.hud-electric .you-are-here {
+  border-radius: 6px;
+  background:
+    radial-gradient(circle at 6px 6px, #d8dce4 0 2px, transparent 2.5px),
+    radial-gradient(circle at calc(100% - 6px) 6px, #d8dce4 0 2px, transparent 2.5px),
+    radial-gradient(circle at 6px calc(100% - 6px), #d8dce4 0 2px, transparent 2.5px),
+    radial-gradient(circle at calc(100% - 6px) calc(100% - 6px), #d8dce4 0 2px, transparent 2.5px),
+    #1d2a4a;
+  box-shadow:
+    inset 0 0 0 2px #1d2a4a,
+    inset 0 0 0 3px #eef2f8,
+    0 2px 6px #0008;
+  color: #eef2f8;
+  font-family: Georgia, 'Times New Roman', serif;
+  text-shadow: none;
+}
+
+body.hud-electric .island-banner.out,
+body.hud-electric .final-stamp {
+  border: 2px solid #1c1a16 !important;
+  border-radius: 3px;
+  background: radial-gradient(#f2ead8 55%, #b89a70 85%, #3a2a1a);
+  box-shadow: 0 3px 8px #0008;
+  color: #5a1e0e;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-weight: 700;
+  letter-spacing: 0.1em;
   text-shadow: none;
 }
 

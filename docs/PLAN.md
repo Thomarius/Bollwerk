@@ -388,9 +388,9 @@ sender's seat**, so a client cannot act for someone else.
 
 ## 7. `packages/client`
 
-Fifteen visual styles — Minimal (`flat`), Medieval (`pixel`: named Pixel art until the other
+Sixteen visual styles — Minimal (`flat`), Medieval (`pixel`: named Pixel art until the other
 styles made the name mean nothing), Night, Cyberpunk, Blueprint, Parchment, Toy bricks
-(`bricks`), Stained glass (`glass`), Chocolate (`chocolate`), Halloween (`halloween`), Sakura (`sakura`), Oktoberfest (`oktoberfest`), Opera (`opera`), Office (`office`) and Under the sea (`undersea`) — behind one `Theme` interface: the scene owns the camera, the layer stacks,
+(`bricks`), Stained glass (`glass`), Chocolate (`chocolate`), Halloween (`halloween`), Sakura (`sakura`), Oktoberfest (`oktoberfest`), Opera (`opera`), Office (`office`), Under the sea (`undersea`) and Electric (`electric`) — behind one `Theme` interface: the scene owns the camera, the layer stacks,
 dirty tracking and input mapping; a theme owns only what things look like. Adding a style
 is a name in `ArtStyleSchema`, the looks it is made for in `STYLE_LOOKS`, a `Theme`, a
 case in `createTheme`, a menu title in `decor.ts` and a banner class in `hud.ts`; the
@@ -484,12 +484,12 @@ Parchment, tumbling bricks, glass shards, candy sprinkles, in Halloween bats and
 ghosts flying up, in Sakura a chrysanthemum's bowed streaks among cherry petals, in
 Oktoberfest pretzels and gingerbread hearts, in Opera roses and flowers thrown at a
 curtain call, in Office sticky notes and paper clips from party poppers and in Under the sea
-bubbles and little fish, and the
+bubbles and little fish and in Electric forked lightning, and the
 winners' flag a swallowtail, a flickering hologram on a light-beam, a pennant in plan, a
 square flag of bricks, a leaded banner, a pennant on a candy-cane pole, a tattered pennant
 on a crooked branch, a tall war banner (_nobori_) hung from an arm, the Bavarian lozenges
-on a maypole, a pennant bearing a golden lyre, a necktie on an aluminium pole, or a pennant under a bronze
-trident. Minimal keeps the plain ones.
+on a maypole, a pennant bearing a golden lyre, a necktie on an aluminium pole, a pennant under a bronze
+trident, or a bolt-cut pennant on a copper lightning rod. Minimal keeps the plain ones.
 
 **Each banner is drawn in the look it brings** (`BANNER_CLASS` in `hud.ts`, a record
 over every style): flat gold for Minimal, a neon strip that flickers on for Cyberpunk, a
@@ -528,7 +528,7 @@ top saying whether a click chooses the building or the combat look, each card ba
 the look it is chosen for. The styles are in alphabetical order by name, so a new one finds
 its place, and **Random** comes last, a die for its picture: **a new style at every
 banner that brings its look** (`LookRotation`, ARCHIVE 12q), repeating none until every
-style has been shown — both looks random share one cycle of all fifteen, one random cycles
+style has been shown — both looks random share one cycle of all sixteen, one random cycles
 through all but the other look's — and never the style the banner takes away, nor the one a
 look last had across a cycle's end. Each next look is made a step a frame, hidden, in the
 intermission after the build phase (`Scene.prepare`), and goes on screen once the look it
@@ -639,7 +639,7 @@ styles. The menu's **Effects** setting, Glowing, Standard or
 Reduced (`motion.ts`; stored as high, full and reduced, the names until 2026-10-01, when
 "Full" read as more than "High"): reduced does what the system's reduced-motion setting does — no
 flicker, no beat, no slide, no title sweep, no rain — and also stops the board's shake;
-either one reduces. Glowing is Standard with the glow of Night and Cyberpunk bloomed by a real
+either one reduces. Glowing is Standard with the glow of Night, Cyberpunk and Electric bloomed by a real
 blur filter, asked for rather than given since it costs frame rate at eight players.
 
 **The roster** is kept across frames rather than rebuilt, so its entries can move:
@@ -1049,7 +1049,59 @@ pennant under a bronze **trident**. Named for the place, never the film the phra
 song of: no mermaid, no singing crab. The player colours are the shared ones; the octopus is
 taupe and the light white, so nothing on the board is a player's colour.
 
-The twelve shape-drawn styles share `walls.ts`: the wall geometry (tops, faces, rim), and
+**Electric** (`electric.ts`, `art.electric`, `spark.ts`), for either look: **a storm laboratory**
+— the user's own love of electricity, lightning and thunderstorms, and their choices, ARCHIVE
+12v. Where Cyberpunk is digital neon, this is the analogue force and the apparatus that tamed it:
+brass, copper, porcelain and glass on dark rock in a slate sea, under a thunderstorm. **White
+lightning is the storm's; lightning in a player's colour means it is theirs, and live.** The sea
+is near black, lighter where it breaks on the rock, whitecaps leaning on the wind; the land dark
+slate, flagged and cracked, surf white along it. Walls are **a Faraday cage**: a mesh in the
+owner's light over the owner's dark, each block framed thin in the owner's colour, the faces
+barred in copper, standing to the shared height; now and then **current crackles along a
+player's walls**, block to block; a player who is out has theirs green with verdigris. Castles
+are **plasma globes** on brass pedestals banded in the owner's colour, and **sealed is the globe
+lit** (`FlagHoist`), filaments dancing from the electrode to the glass in the owner's light, a
+halo round it; a breach makes it sputter out; a player's who is out is cracked. **Sealed ground
+is a charged floor**: deck plates washed in the owner's colour, a grid in the owner's light
+between them with a stud where four plates meet, and **pulses of current running along every
+other grid line**, each its own way (stamps, so they cost a placing each). Guns are **Tesla
+towers** built in levels, after the C&C towers the user likes without copying them: a squat drum
+of riveted plates in the owner's colour, a band of vents lit from inside, a brass collar, a rod
+through three copper rings smaller as they rise, and a steel sphere on top; **firing, an arc
+leaps from the sphere** toward the target, and a live tower throws a little crackle now and
+then; **a silenced one is grounded**, vents dark, rings and sphere dull, a cable hanging slack
+from it, smoking. Shots are **ball lightning** in the owner's colour,
+tendrils licking off it. **A hit on a wall chains through the cage** to the blocks beside it,
+sparks flying and smoke rising; on the rock a strike leaves a dark Lichtenberg burn that fades
+over `fx.craterRounds` — soot, never the owner's glow, so it is not taken for sealed ground; in
+the sea a ball fizzes out with a ring, sparks skating and steam. Every strike flashes white
+where it lands, the one flash at a spot there is. The sweep shorts its blocks out with a pop; a
+piece set down is **welded in** with a flash and sparks; the piece in hand is **a live wire**,
+pulses of current gliding round it calmly, and where it does not fit **a short circuit**, the
+wire broken and arcs jumping the gaps, changing shape a few times a second rather than every
+frame — faster, the user found it hectic and unnerving. **A Jacob's ladder** stands in the corner Parchment gives its compass
+rose, the arc climbing between its rods and snapping at the top, quicker while the clock
+presses. **The storm overhead**: now and then a bolt forks down onto the outer sea in three
+strokes, the sky flickering faintly over the whole screen with it — **only on outer sea at
+least five tiles off the land**, so neither the bolt nor a branch crosses an island, where a
+flash at a spot is an impact; none under reduced motion. As **the storm breaks** — overtime and
+the final round — the bolts come far more often and the rain thickens. Weather from the seed:
+rain slants on the wind, overcast is a drizzle, "snow" is hail bouncing, fog an ionised mist with
+St. Elmo's fire on the towers, and a clear match has only heat lightning's flicker until the storm
+breaks. Scenery is trees split and charred by lightning, telegraph poles with porcelain
+insulators, fulgurites, lightning rods on stones, slate, and one boulder in three a Wimshurst
+machine on its crate; on the outer sea electric eels leap, crackling as they arc out and strike
+the water, a ship crosses with St. Elmo's fire on its masts, and a gull is blown past, all hidden
+behind the ladder. Its banner is a marble switchboard, a brass knife switch at each end; its HUD
+black bakelite over a copper bus bar riveted in brass; its timer **Nixie tubes**; its island
+banners navy enamel plates and its stamps a scorched fuse label; its title the word written in
+arcs between copper electrodes, flickering on; and its finish forked lightning in the winners'
+colours, the winners' flag a bolt-cut pennant on a copper lightning rod, sparking at its point.
+Under "Glowing" the arcs' halos are bloomed, at half resolution as Cyberpunk's are. The player
+colours are the shared ones; the storm's lightning is white with a cool halo, and nothing else
+on the board is a player's colour.
+
+The thirteen shape-drawn styles share `walls.ts`: the wall geometry (tops, faces, rim), and
 hatching laid on one lattice so neighbouring tiles hatch as one fill.
 
 **Scenery on open land** (`scenery.ts`, `art.scenery`), in every style: copses of trees and
@@ -1063,7 +1115,8 @@ lanterns in Sakura, chestnut trees, beer-garden tables, gingerbread hearts, drop
 mugs and sleeping revellers in Oktoberfest, harps, music stands, choir singers, metronomes
 and grand pianos in Opera, potted plants, open-plan desks, cacti on filing cabinets, swivel chairs, archive boxes and
 jammed printers in Office, kelp, tube sponges, starfish, scallop shells, barnacled rocks,
-anemones, anchors and bottles in Under the sea, a faint dot in Minimal. **It must never read as wall**, nor as a gun or a
+anemones, anchors and bottles in Under the sea, split trees, telegraph poles, fulgurites,
+lightning rods and Wimshurst machines in Electric, a faint dot in Minimal. **It must never read as wall**, nor as a gun or a
 shot: Blueprint's trees were first a circle with a cross, a gun's survey mark in small,
 and Medieval's boulders a round grey rock, a cannonball's double. A tile once built on or
 sealed is cleared for the rest of the match, so nothing grows back through a breach; a
@@ -1083,7 +1136,8 @@ hidden behind Mount Fuji as they pass it; in Oktoberfest a floating Maß, a reve
 on a lilo and a Weißwurst swimming circles, hidden behind the Ferris wheel; in Opera swans, a singing gondolier and the Flying
 Dutchman, hidden behind the conductor; in Office robot vacuums, a stray paper plane and a
 colleague racing past on an office chair; in Under the sea schools of fish, jellyfish, a sea
-turtle and a manta ray, hidden behind the wreck; in Minimal a plain boat's silhouette. Anything tall keeps
+turtle and a manta ray, hidden behind the wreck; in Electric electric eels leaping, a ship with
+St. Elmo's fire on its masts and a gull blown past; in Minimal a plain boat's silhouette. Anything tall keeps
 to rows whose top is clear of the HUD bar.
 
 **A piece in the corner, in every style** (`corner.ts`, PLAN 11.24, ARCHIVE 12t): in the
@@ -1091,7 +1145,7 @@ sea's bottom-right corner, the one the HUD leaves alone and clear of the big tim
 `cornerSpot`), each style stands something of its own — Parchment's compass rose, Chocolate's
 chocolate fall, Halloween's moon and bats, Sakura's Mount Fuji, Oktoberfest's Ferris wheel,
 Opera's conductor, Office's water cooler and its gossips, Under the sea's shipwreck with an
-octopus draped over its bow (ARCHIVE 12u); Minimal's signal buoy, bobbing, its
+octopus draped over its bow (ARCHIVE 12u), Electric's Jacob's ladder (ARCHIVE 12v); Minimal's signal buoy, bobbing, its
 gold light blinking; Medieval's windmill on a rocky islet, sails turning, quicker in rain, in
 the day's light and mirrored in the sea; Night's fishing boat at anchor, its lanterns swaying
 and lighting the water, flaring in the final round; Cyberpunk's holographic billboard, a
@@ -1269,6 +1323,9 @@ French is not to be done (the user's decision, 2026-10-06). Still open:
 1. **The user's manual test of UPnP**, reported back: switch on Open to the internet in the
    app, or `npm start -- --upnp`, and open the invite link from a phone on mobile data
    (ARCHIVE 12j). Whatever they find is triaged with them first.
+2. **Electric's calmer piece in hand, seen in play** (ARCHIVE 12v): the live wire's pulses
+   slowed and the short circuit's arcs steadied after the user found them hectic; the rest of
+   the style has been checked in play.
 
 Only open work is kept here. Finished packages move to `ARCHIVE.md` under their old
 numbers — 11.1 scoring, 11.7 team mode, 11.8 the visual pass, 11.9 the themes, 11.10 the

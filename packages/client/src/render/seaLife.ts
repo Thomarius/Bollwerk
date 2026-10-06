@@ -20,6 +20,7 @@ import { drawCrest } from './ukiyo.js';
 import { GOLD, drawQuaver, drawSwan } from './music.js';
 import { FOAM, drawMass, drawReveller } from './wiesn.js';
 import { drawFish } from './reef.js';
+import { ARC_HALO, drawArc, jag } from './spark.js';
 
 /**
  * Life on the outer ocean in the styles drawn from shapes (PLAN 11.16 O1), as Medieval and
@@ -1395,6 +1396,164 @@ export class UnderseaSeaLife extends OceanDrawn {
         );
       }
       g.stroke({ width: Math.max(1, t * 0.06), color: 0x2a3a48, cap: 'round' });
+    }
+  }
+}
+
+/** How long an electric eel takes to leap out of the sea and back in. */
+const EEL_MS = 1500;
+
+/**
+ * Electric: electric eels leaping from the outer sea, crackling as they arc out and as they
+ * strike the water again; now and then a ship crossing, St. Elmo's fire burning pale on its
+ * masts; and a gull blown across by the storm, tumbling — slate, grey and white, the arcs the
+ * storm's white, nothing of any player's colour.
+ */
+export class ElectricSeaLife extends OceanDrawn {
+  private readonly eels = new Surfacings();
+  private readonly ships = new Crossings();
+  private readonly gulls = new Crossings();
+
+  override layout(state: MatchState, view: ViewTransform, art: ArtConfig): void {
+    super.layout(state, view, art);
+    this.ships.layout(this.ocean, art.electric.shipEveryMs);
+    this.gulls.layout(this.ocean, art.electric.gullEveryMs);
+  }
+
+  protected frame(
+    g: Graphics,
+    view: ViewTransform,
+    art: ArtConfig,
+    deltaMs: number,
+    glow?: Graphics,
+  ): void {
+    const s = art.electric;
+    const t = view.tile;
+    const halo = glow ?? null;
+
+    this.eels.step(this.ocean, deltaMs, s.eelEveryMs, EEL_MS, (c) => !this.behind(c.x, c.y));
+    for (const eel of this.eels.items) {
+      const k = eel.ageMs / EEL_MS;
+      // Its body along a leap: out of the water, over, and back in a tile and a half on.
+      const at = (f: number): [number, number] => {
+        const u = Math.min(1, Math.max(0, f));
+        return [
+          tileX(view, eel.x + eel.dir * (u - 0.5) * 1.6),
+          tileY(view, eel.y) - Math.sin(u * Math.PI) * t * 1.1,
+        ];
+      };
+      const body: number[] = [];
+      for (let n = 0; n <= 6; n++) {
+        const f = k * 1.3 - n * 0.06;
+        if (f < 0 || f > 1) continue;
+        const [x, y] = at(f);
+        body.push(x, y + Math.sin(n * 1.4 + k * 12) * t * 0.05);
+      }
+      if (body.length >= 4) {
+        g.moveTo(body[0]!, body[1]!);
+        for (let i = 2; i < body.length; i += 2) g.lineTo(body[i]!, body[i + 1]!);
+        g.stroke({ width: Math.max(2, t * 0.16), color: 0x3a4a3e, cap: 'round', join: 'round' });
+        g.circle(body[0]!, body[1]!, Math.max(1.5, t * 0.1));
+        g.fill({ color: 0x4a5a4c });
+        // Crackling along it while it is out of the water.
+        if (k < 0.8)
+          drawArc(
+            g,
+            halo,
+            jag(body[0]!, body[1]!, body[body.length - 2]!, body[body.length - 1]!, 4, t * 0.15),
+            ARC_HALO,
+            Math.max(1, t * 0.04),
+            0.8,
+          );
+      }
+      for (const [f, from] of [
+        [0, 0],
+        [1, 0.7],
+      ] as const) {
+        if (k < from || k > from + 0.3) continue;
+        // The splash, out and in, with a ring of sparks off the water.
+        const q = (k - from) / 0.3;
+        const [x] = at(f);
+        const y = tileY(view, eel.y);
+        g.ellipse(x, y, t * (0.2 + 0.5 * q), t * (0.1 + 0.25 * q));
+        g.stroke({ width: Math.max(1, t * 0.05), color: 0xdfe8f4, alpha: 0.7 * (1 - q) });
+        if (from > 0) {
+          for (let n = 0; n < 4; n++) {
+            const a = -Math.PI * (0.15 + 0.7 * (n / 3));
+            const r = t * (0.3 + 0.5 * q);
+            drawArc(
+              g,
+              halo,
+              jag(x, y, x + Math.cos(a) * r, y + Math.sin(a) * r, 3, t * 0.1),
+              ARC_HALO,
+              Math.max(1, t * 0.035),
+              1 - q,
+            );
+          }
+        }
+      }
+    }
+
+    this.ships.step(this.ocean, deltaMs, s.shipEveryMs, s.shipTilesPerSecond, 1.6);
+    for (const ship of this.ships.items) {
+      if (this.behind(ship.x, ship.y)) continue;
+      const roll = Math.sin(this.clock / 700) * 0.06;
+      const hull = [
+        [-0.9, 0.05],
+        [0.95, 0.05],
+        [0.7, 0.35],
+        [-0.75, 0.35],
+      ] as const;
+      g.poly(
+        hull.flatMap(([u, v]) => [
+          tileX(view, ship.x + ship.dir * u),
+          tileY(view, ship.y + v + u * roll),
+        ]),
+      );
+      g.fill({ color: 0x1e2430 });
+      g.stroke({ width: 1, color: 0x5a6270 });
+      for (const [u, h] of [
+        [-0.35, 1.2],
+        [0.3, 1.45],
+      ] as const) {
+        const mx = tileX(view, ship.x + ship.dir * u);
+        const foot = tileY(view, ship.y + u * roll);
+        const top = foot - h * t;
+        g.moveTo(mx, foot).lineTo(mx, top);
+        g.moveTo(mx - t * 0.35, top + t * 0.35).lineTo(mx + t * 0.35, top + t * 0.35);
+        g.stroke({ width: Math.max(1, t * 0.05), color: 0x3a4250 });
+        // St. Elmo's fire at the masthead, a pale flame flickering.
+        const flicker = 0.6 + 0.4 * Math.sin(this.clock / 90 + u * 7);
+        g.circle(mx, top - t * 0.05, t * 0.18 * flicker);
+        g.fill({ color: 0xcfe0ff, alpha: 0.35 });
+        g.circle(mx, top - t * 0.05, t * 0.07);
+        g.fill({ color: 0xf4f8ff, alpha: 0.9 });
+        if (halo !== null) {
+          halo.circle(mx, top - t * 0.05, t * 0.45);
+          halo.fill({ color: ARC_HALO, alpha: 0.12 * flicker });
+        }
+      }
+    }
+
+    this.gulls.step(this.ocean, deltaMs, s.gullEveryMs, s.gullTilesPerSecond, 0.5);
+    for (const gull of this.gulls.items) {
+      if (this.behind(gull.x, gull.y)) continue;
+      const x = tileX(view, gull.x);
+      const y = tileY(view, gull.y) + Math.sin(this.clock / 160) * t * 0.3;
+      const tilt = Math.sin(this.clock / 230) * 0.5;
+      const flap = Math.sin(this.clock / 70) * t * 0.2;
+      const c = Math.cos(tilt);
+      const sn = Math.sin(tilt);
+      const at = (u: number, v: number): [number, number] => [
+        x + (c * u - sn * v) * t,
+        y + (sn * u + c * v) * t,
+      ];
+      g.moveTo(...at(-0.5, -flap / t))
+        .lineTo(...at(-0.2, 0))
+        .lineTo(...at(0, 0.08))
+        .lineTo(...at(0.2, 0))
+        .lineTo(...at(0.5, -flap / t));
+      g.stroke({ width: Math.max(1.5, t * 0.07), color: 0xe8ecf0, join: 'round' });
     }
   }
 }
