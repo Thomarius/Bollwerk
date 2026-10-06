@@ -5209,3 +5209,31 @@ look went through eight styles, never Office, and the choice was saved.
 
 **Checked in play** by the user and testers (2026-10-06): the rotation works, the hitches are
 barely noticeable, and the title reads very well. PLAN 11.23 closed.
+
+## 12r. Cyberpunk under "Glowing": sharp cores, and the blur at half resolution (2026-10-06)
+
+**Reported by testers**: under Glowing, Cyberpunk's banners stuttered at the phase changes and
+combat dropped frames badly, with fixed looks as well as random ones. Night, the other bloomed
+style, did not.
+
+**Why**: Cyberpunk's glow was five layers, each spanning the board and each under its own
+`BlurFilter` (strength 5, quality 2): a texture the size of the screen and four passes over it
+apiece, about 2 ms of GPU each whatever was in it. Night has two. Measured with the match
+paused at eight players, 1600x900, on this machine's integrated GPU, the variants switched live
+and alternated three times: Standard 57 fps and 6.6 ms of GPU a frame, Glowing 39.5 fps and
+15.1 ms. The cost grows with the screen's pixels, so the user's 2341x1160 paid nearly twice
+that. Half resolution brought it to 8.5 ms; one blur alone cost 1–3 ms, whichever.
+
+**And a fault the pictures showed**: the glow layers held the sharp cores as well as the glow —
+the shots' white-hot heads and inner lines, the castles' cores, muzzle flashes, the power-down
+rings, the holograms' flags, impact rings and glitch bars, arcs, fade outlines, sparks, and the
+lit grid of sealed ground. Unbloomed, an added layer draws them sharp; bloomed, the blur took
+them too, and shots flew as coloured smudges with the cores put out.
+
+**Done, the user's approval of both**: the cores are drawn in `effectCore`, added like the glow
+but never bloomed, above it; the grid of sealed ground is a layer of its own, added and never
+bloomed, which leaves its glow layer empty, so four blurs rather than five; and the four run at
+half resolution, which looked nearly alike side by side. Measured the same way: GPU 7.9 ms a
+frame under Standard, 14.6 under Glowing before, 9.7 now — the blur's own cost 6.7 → 1.8 ms;
+46.7 fps against 40.9, Standard 54.2 in that run. Under Glowing a shot's coloured trail and halo
+are glow alone, so they read as a soft haze of the owner's colour round a sharp white head.

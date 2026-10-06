@@ -239,6 +239,12 @@ export class CyberpunkTheme implements Theme {
   /** What lies over the guns: shots, splashes, the finish. */
   private readonly lateGfx = new Graphics();
   private readonly effectGlow = new Graphics();
+  /**
+   * The bright cores the glow lies round — a shot's white-hot head, a castle's core, a
+   * muzzle flash, sparks and arcs — added like the glow but never bloomed: under
+   * "Glowing" the blur took them with it, and shots flew as smudges (PLAN 11.24).
+   */
+  private readonly effectCore = new Graphics();
   private readonly overlayGfx = new Graphics();
   private readonly overlayGlow = new Graphics();
 
@@ -273,15 +279,23 @@ export class CyberpunkTheme implements Theme {
     this.art = art;
     this.style = art.cyberpunk;
     for (const glow of [
-      this.territory.containers[1] as Container,
       this.structures.containers[0] as Container,
       this.effectGlow,
       this.gunGlow.container,
       this.overlayGlow,
     ]) {
       glow.blendMode = 'add';
-      // High effects: the glow bloomed by a real blur, not only a wider shape under it.
-      if (bloomWanted()) glow.filters = [new BlurFilter({ strength: 5, quality: 2 })];
+      // High effects: the glow bloomed by a real blur, not only a wider shape under it. At
+      // half resolution, where a blur loses nothing to the eye: each is a texture the size
+      // of the screen and four passes over it, and the five at full resolution took the GPU
+      // from 6.6 to 15.1 ms a frame at eight players, 57 to 39.5 fps; at half, 8.5 ms.
+      if (bloomWanted()) {
+        glow.filters = [new BlurFilter({ strength: 5, quality: 2, resolution: 0.5 })];
+      }
+    }
+    // The lit grid of sealed ground, and the cores: added, never bloomed.
+    for (const lit of [this.territory.containers[1] as Container, this.effectCore]) {
+      lit.blendMode = 'add';
     }
     layers.terrain.addChild(this.terrainGfx);
     layers.territory.addChild(this.scenery.gfx, ...this.territory.containers);
@@ -292,6 +306,7 @@ export class CyberpunkTheme implements Theme {
       this.lateGfx,
       this.effectGlow,
       this.gunGlow.container,
+      this.effectCore,
     );
     layers.overlay.addChild(this.overlayGlow, this.overlayGfx);
     return Promise.resolve();
@@ -308,6 +323,7 @@ export class CyberpunkTheme implements Theme {
       this.terrainGfx,
       this.effectGfx,
       this.effectGlow,
+      this.effectCore,
       this.overlayGfx,
       this.overlayGlow,
     ]) {
@@ -446,13 +462,14 @@ export class CyberpunkTheme implements Theme {
   /** Sealed ground as a lit floor: the owner's colour under a bright grid. */
   drawTerritory(state: MatchState, view: ViewTransform): void {
     this.scenery.refresh(state, view, this.art);
-    this.territory.draw(state, view, (g, island, [, glow]) =>
-      this.drawSealed(g, glow as Graphics, island, view),
+    this.territory.draw(state, view, (g, island, [, grid]) =>
+      this.drawSealed(g, grid as Graphics, island, view),
     );
   }
 
   /** One island's sealed ground and its grid, for `IslandParts`. */
-  private drawSealed(g: Graphics, glow: Graphics, state: MatchState, view: ViewTransform): void {
+  /** Sealed ground: a wash of the owner's colour, and over it the grid lit, added. */
+  private drawSealed(g: Graphics, grid: Graphics, state: MatchState, view: ViewTransform): void {
     for (let player = 0; player < state.players.length; player++) {
       let any = false;
       for (let i = 0; i < state.territory.length; i++) {
@@ -462,7 +479,7 @@ export class CyberpunkTheme implements Theme {
         g.rect(tileX(view, x), tileY(view, y), view.tile, view.tile);
         const left = tileX(view, x);
         const top = tileY(view, y);
-        glow
+        grid
           .moveTo(left, top + view.tile)
           .lineTo(left, top)
           .lineTo(left + view.tile, top);
@@ -470,7 +487,7 @@ export class CyberpunkTheme implements Theme {
       }
       if (!any) continue;
       g.fill({ color: this.colour(player, 'base'), alpha: this.style.territoryAlpha });
-      glow.stroke({ width: 1, color: this.colour(player, 'base'), alpha: this.style.gridAlpha });
+      grid.stroke({ width: 1, color: this.colour(player, 'base'), alpha: this.style.gridAlpha });
     }
     dimEliminated(g, state, view, hex(this.art.palette.shadow));
   }
@@ -887,6 +904,7 @@ export class CyberpunkTheme implements Theme {
     const glow = this.effectGlow;
     g.clear();
     glow.clear();
+    this.effectCore.clear();
     this.lateGfx.clear();
     this.seaLife.draw(g, view, this.art, frame.deltaMs, glow);
     this.clock += frame.deltaMs;
@@ -938,8 +956,8 @@ export class CyberpunkTheme implements Theme {
       glow.moveTo(tileX(view, tail.x + 0.5), tileY(view, tail.y + 0.5));
       glow.lineTo(tileX(view, head.x + 0.5), tileY(view, head.y + 0.5));
       glow.stroke({ width: size, color: colour, alpha: 0.5 * alpha });
-      glow.circle(tileX(view, head.x + 0.5), tileY(view, head.y + 0.5), size);
-      glow.fill({ color: colour, alpha });
+      this.effectCore.circle(tileX(view, head.x + 0.5), tileY(view, head.y + 0.5), size);
+      this.effectCore.fill({ color: colour, alpha });
     }
   }
 
@@ -955,14 +973,15 @@ export class CyberpunkTheme implements Theme {
       const r = view.tile * (sealed ? 0.34 + 0.06 * breath : 0.26);
       glow.circle(cx, cy, r * 2.1);
       glow.fill({ color: this.colour(owner, 'base'), alpha: sealed ? 0.25 + 0.15 * breath : 0.1 });
-      glow.circle(cx, cy, r);
-      glow.fill({
+      const core = this.effectCore;
+      core.circle(cx, cy, r);
+      core.fill({
         color: this.colour(owner, sealed ? 'light' : 'base'),
         alpha: sealed ? 0.9 : 0.35,
       });
       if (!sealed) continue;
-      glow.circle(cx, cy, r * 0.45);
-      glow.fill({ color: hex(this.art.palette.uiInk), alpha: 0.9 });
+      core.circle(cx, cy, r * 0.45);
+      core.fill({ color: hex(this.art.palette.uiInk), alpha: 0.9 });
     }
   }
 
@@ -1003,11 +1022,11 @@ export class CyberpunkTheme implements Theme {
           alpha: 0.35,
           cap: 'round',
         });
-        if (kick > 0) {
-          glow.circle(tileX(view, ex), tileY(view, ey), view.tile * (0.2 + 0.35 * kick));
-          glow.fill({ color: hex(this.art.palette.uiInk), alpha: 0.8 * kick });
-        }
       });
+      if (cannon.active && kick > 0) {
+        this.effectCore.circle(tileX(view, ex), tileY(view, ey), view.tile * (0.2 + 0.35 * kick));
+        this.effectCore.fill({ color: hex(this.art.palette.uiInk), alpha: 0.8 * kick });
+      }
     }
     memo.end();
     glows.end();
@@ -1019,7 +1038,7 @@ export class CyberpunkTheme implements Theme {
    * as it settles — the breach that silenced it, said without a struck-through mark.
    */
   private drawPowerDowns(state: MatchState, view: ViewTransform): void {
-    const glow = this.effectGlow;
+    const core = this.effectCore;
     const span = this.style.powerDownMs;
     for (const cannon of state.cannons) {
       const known = this.power.get(cannon.id);
@@ -1038,8 +1057,8 @@ export class CyberpunkTheme implements Theme {
       const cx = tileX(view, cannon.x + cannon.w / 2);
       const cy = tileY(view, cannon.y + cannon.h / 2);
       const r = (Math.min(cannon.w, cannon.h) * view.tile) / 2 - view.tile * 0.15;
-      glow.circle(cx, cy, r);
-      glow.stroke({
+      core.circle(cx, cy, r);
+      core.stroke({
         width: this.style.wallLinePx * 2,
         color: this.colour(cannon.owner, 'light'),
         alpha: 0.9,
@@ -1092,16 +1111,17 @@ export class CyberpunkTheme implements Theme {
         top + flagH,
       ]);
       glow.fill({ color: colour, alpha: 0.12 * alpha });
-      glow.rect(beamX - flagW / 2, top, flagW, flagH);
-      glow.fill({ color: colour, alpha: 0.5 * alpha });
-      glow.stroke({ width: 1, color: this.colour(owner, 'light'), alpha: alpha });
+      const core = this.effectCore;
+      core.rect(beamX - flagW / 2, top, flagW, flagH);
+      core.fill({ color: colour, alpha: 0.5 * alpha });
+      core.stroke({ width: 1, color: this.colour(owner, 'light'), alpha: alpha });
       // Scanlines, drifting up through it.
       const lines = 3;
       for (let k = 0; k < lines; k++) {
         const y = top + ((k / lines + this.clock / 1600) % 1) * flagH;
-        glow.moveTo(beamX - flagW / 2, y).lineTo(beamX + flagW / 2, y);
+        core.moveTo(beamX - flagW / 2, y).lineTo(beamX + flagW / 2, y);
       }
-      glow.stroke({ width: 1, color: this.colour(owner, 'light'), alpha: 0.5 * alpha });
+      core.stroke({ width: 1, color: this.colour(owner, 'light'), alpha: 0.5 * alpha });
     }
   }
 
@@ -1144,21 +1164,22 @@ export class CyberpunkTheme implements Theme {
         cap: 'round',
         join: 'round',
       });
-      glow.moveTo(head.x, head.y);
+      const size = view.tile * (0.16 + 0.08 * height);
+      glow.circle(head.x, head.y, size * 2.2);
+      glow.fill({ color: colour, alpha: 0.4 });
+      const core = this.effectCore;
+      core.moveTo(head.x, head.y);
       for (let k = 1; k <= 2; k++) {
         const p = at(t - (back * k) / 4);
-        glow.lineTo(p.x, p.y);
+        core.lineTo(p.x, p.y);
       }
-      glow.stroke({
+      core.stroke({
         width: Math.max(1, view.tile * 0.1),
         color: this.colour(shot.owner, 'light'),
         cap: 'round',
       });
-      const size = view.tile * (0.16 + 0.08 * height);
-      glow.circle(head.x, head.y, size * 2.2);
-      glow.fill({ color: colour, alpha: 0.4 });
-      glow.circle(head.x, head.y, size);
-      glow.fill({ color: hex(this.art.palette.uiInk) });
+      core.circle(head.x, head.y, size);
+      core.fill({ color: hex(this.art.palette.uiInk) });
 
       drawShotTarget(g, view, shot, t, this.art, frame.humanPlayer);
     }
@@ -1176,8 +1197,9 @@ export class CyberpunkTheme implements Theme {
       const cy = tileY(view, burst.y + 0.5);
       glow.circle(cx, cy, view.tile * (0.5 + 0.4 * t) * (burst.onWall ? 1.4 : 1));
       glow.fill({ color: hex(this.art.palette.uiInk), alpha: 0.7 * (1 - t) * (1 - t) });
-      glow.circle(cx, cy, view.tile * (0.4 + 2 * t));
-      glow.stroke({ width: Math.max(2, view.tile / 6), color: burst.colour, alpha: 1 - t });
+      const core = this.effectCore;
+      core.circle(cx, cy, view.tile * (0.4 + 2 * t));
+      core.stroke({ width: Math.max(2, view.tile / 6), color: burst.colour, alpha: 1 - t });
       if (burst.onWall && t < 0.5) {
         // A wall hit splits the light into its colours for a moment, as a lens does.
         const split = this.style.splitPx * (1 - t * 2);
@@ -1185,8 +1207,8 @@ export class CyberpunkTheme implements Theme {
           [-split, hex(this.art.palette.emberMid)],
           [split, hex(this.art.palette.waterFoam)],
         ] as const) {
-          glow.circle(cx + dx, cy, view.tile * (0.4 + 2 * t));
-          glow.stroke({
+          core.circle(cx + dx, cy, view.tile * (0.4 + 2 * t));
+          core.stroke({
             width: Math.max(1, view.tile / 10),
             color: colour,
             alpha: 0.7 * (1 - t * 2),
@@ -1205,8 +1227,8 @@ export class CyberpunkTheme implements Theme {
         const f = r - Math.floor(r);
         const w = view.tile * (0.8 + 1.8 * f);
         const y = cy + view.tile * (f - 0.5) * 1.4;
-        glow.rect(cx - w / 2 + view.tile * (f - 0.5), y, w, Math.max(1, view.tile * 0.12));
-        glow.fill({ color: colours[k]!, alpha: 0.8 * (1 - t) });
+        core.rect(cx - w / 2 + view.tile * (f - 0.5), y, w, Math.max(1, view.tile * 0.12));
+        core.fill({ color: colours[k]!, alpha: 0.8 * (1 - t) });
       }
     }
     this.bursts = this.bursts.filter((burst) => burst.age < span);
@@ -1214,7 +1236,7 @@ export class CyberpunkTheme implements Theme {
 
   /** A breach shorting out: arcs jumping across the gap, dying away until it is dark. */
   private drawShorts(view: ViewTransform, deltaMs: number): void {
-    const glow = this.effectGlow;
+    const core = this.effectCore;
     const span = this.art.generators.fx.smoulderMs;
     for (const s of this.shorts) {
       s.age += deltaMs;
@@ -1230,30 +1252,30 @@ export class CyberpunkTheme implements Theme {
         const v = Math.sin((jump + k) * 12.9898 + s.seed * 78.233) * 43758.5453;
         return v - Math.floor(v);
       };
-      glow.moveTo(x0 + view.tile * r(1), y0 + view.tile * 0.15);
-      glow.lineTo(x0 + view.tile * r(2), y0 + view.tile * 0.5);
-      glow.lineTo(x0 + view.tile * r(3), y0 + view.tile * 0.85);
-      glow.stroke({ width: Math.max(1, view.tile / 12), color: s.colour, alpha: life });
+      core.moveTo(x0 + view.tile * r(1), y0 + view.tile * 0.15);
+      core.lineTo(x0 + view.tile * r(2), y0 + view.tile * 0.5);
+      core.lineTo(x0 + view.tile * r(3), y0 + view.tile * 0.85);
+      core.stroke({ width: Math.max(1, view.tile / 12), color: s.colour, alpha: life });
     }
     this.shorts = this.shorts.filter((s) => s.age < span);
   }
 
   /** A block the sweep took, its outline flickering out. */
   private drawFades(view: ViewTransform, deltaMs: number): void {
-    const glow = this.effectGlow;
+    const core = this.effectCore;
     const span = this.style.powerDownMs;
     for (const fade of this.fades) {
       fade.age += deltaMs;
       const t = fade.age / span;
       if (t >= 1 || Math.sin(fade.age / 25 + fade.x) < t * 1.5 - 0.5) continue;
-      glow.rect(tileX(view, fade.x) + 1, tileY(view, fade.y) + 1, view.tile - 2, view.tile - 2);
-      glow.stroke({ width: this.style.wallLinePx, color: fade.colour, alpha: 1 - t });
+      core.rect(tileX(view, fade.x) + 1, tileY(view, fade.y) + 1, view.tile - 2, view.tile - 2);
+      core.stroke({ width: this.style.wallLinePx, color: fade.colour, alpha: 1 - t });
     }
     this.fades = this.fades.filter((fade) => fade.age < span);
   }
 
   private drawSparks(view: ViewTransform, deltaMs: number): void {
-    const glow = this.effectGlow;
+    const core = this.effectCore;
     const dt = deltaMs / 1000;
     for (const spark of this.sparks) {
       spark.age += deltaMs;
@@ -1265,8 +1287,8 @@ export class CyberpunkTheme implements Theme {
       const t = spark.age / spark.life;
       if (t >= 1) continue;
       const size = Math.max(1.5, view.tile * 0.1);
-      glow.rect(tileX(view, spark.x) - size / 2, tileY(view, spark.y) - size / 2, size, size);
-      glow.fill({ color: spark.colour, alpha: 1 - t });
+      core.rect(tileX(view, spark.x) - size / 2, tileY(view, spark.y) - size / 2, size, size);
+      core.fill({ color: spark.colour, alpha: 1 - t });
     }
     this.sparks = this.sparks.filter((spark) => spark.age < spark.life);
   }

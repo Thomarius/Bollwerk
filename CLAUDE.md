@@ -336,6 +336,9 @@ its header but the simulation does not — so the server stamps each header with
   options down, and a `Graphics` destroyed with any keeps its context, registered with the
   renderer for good. Use `release` (`render/release.ts`); a look thrown away also empties
   Pixi's `BigPool`, whose free batches hold old buffers (`Scene.drop`, ARCHIVE 12q).
+- **A bloomed layer blurs everything in it**, and each `BlurFilter` costs a screen-sized
+  texture and its passes whatever it holds. Sharp cores go in an added layer never bloomed
+  (Cyberpunk's `effectCore`), and blurs run at half resolution (ARCHIVE 12r).
 - **`motionReduced()` is called per particle and per point**: it once read storage and built
   a media query at every call, 48 ms a frame in Opera. It is cached in `motion.ts`; anything
   else read that often must be too.
