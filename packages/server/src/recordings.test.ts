@@ -5,6 +5,7 @@ import { join } from 'node:path';
 import { dealPersonalities } from '@bollwerk/ai';
 import { defaultConfigBundle } from '@bollwerk/config';
 import { parseRecording, replayRecording, type RecordingLine } from '@bollwerk/protocol';
+import { hashMatchState } from '@bollwerk/sim';
 import { describe, expect, it } from 'vitest';
 
 import { Room, type Connection } from './room.js';
@@ -47,6 +48,50 @@ describe('recording a room’s match', () => {
     expect(replay.refused).toBe(0);
     expect(replay.mismatches).toEqual([]);
     expect(lines.filter((l) => l.kind === 'tick' && l.h !== undefined).length).toBeGreaterThan(50);
+  });
+
+  it('replays one recorded before fingerprint version 2, retired rules and all, exactly', () => {
+    const lines: RecordingLine[] = [];
+    const r = room((line) => lines.push(line));
+    r.join(silent, 'Ada');
+    r.start();
+    const tickMs = 1000 / defaultConfigBundle.ruleset.tickRateHz;
+    for (let i = 0; i < 1500; i++) r.update(tickMs);
+
+    // The same match as format 1 wrote it: version 1 fingerprints, and a ruleset still
+    // holding the keys retired since. Version 1 is taken from the state after each step.
+    const v1 = new Map<number, string>();
+    replayRecording(lines, (state) => v1.set(state.tick, hashMatchState(state, 1)));
+    const old = lines.map((line): unknown => {
+      if (line.kind === 'header') {
+        const { ruleset } = line;
+        return {
+          ...line,
+          format: 1,
+          ruleset: {
+            ...ruleset,
+            shots: { ...ruleset.shots, damagesCastles: false, damagesCannons: false },
+            build: { ...ruleset.build, previewCount: 1, allowSkip: false },
+            enclosure: {
+              ...ruleset.enclosure,
+              shorelineCountsAsWall: false,
+              sharedRegionCountsAllCastles: true,
+            },
+          },
+        };
+      }
+      if (line.kind === 'tick' && line.h !== undefined) return { ...line, h: v1.get(line.t + 1) };
+      return line;
+    });
+    const parsed = parseRecording(old.map((line) => JSON.stringify(line)).join('\n'));
+    expect(parsed[0]?.kind === 'header' && parsed[0].format).toBe(1);
+    const replay = replayRecording(parsed);
+    expect(replay.refused).toBe(0);
+    expect(replay.mismatches).toEqual([]);
+    // Checked often enough to mean something, and the match as written today replays too.
+    const checked = old.filter((l) => (l as { h?: string }).h !== undefined).length;
+    expect(checked).toBeGreaterThan(20);
+    expect(replayRecording(lines).mismatches).toEqual([]);
   });
 
   it('records nothing before the match starts, and nothing without a writer', () => {

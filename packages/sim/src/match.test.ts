@@ -357,6 +357,27 @@ describe('determinism', () => {
   });
 });
 
+describe('the state fingerprint', () => {
+  it('takes in the piece schedule from version 2, and version 1 is as it was', () => {
+    const state = createMatch({
+      seed: 3,
+      ruleset: defaultRuleset,
+      terrainConfig: defaultTerrainConfig,
+      players: [
+        { name: 'a', isBot: true },
+        { name: 'b', isBot: true },
+      ],
+    });
+    const v1 = hashMatchState(state, 1);
+    const v2 = hashMatchState(state);
+    expect(v2).not.toBe(v1);
+    // A schedule rewound by a continue, and nothing else changed: only version 2 sees it.
+    state.players[0]!.pieceRound += 1;
+    expect(hashMatchState(state, 1)).toBe(v1);
+    expect(hashMatchState(state)).not.toBe(v2);
+  });
+});
+
 describe('full match', () => {
   it('plays to a conclusion', () => {
     const { state } = recordRandomPlayout(options(3, 5), 5, 60_000);

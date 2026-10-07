@@ -783,13 +783,20 @@ export function runLog(state: MatchState, log: readonly LoggedAction[], untilTic
 }
 
 /**
+ * Which fingerprint `hashMatchState` takes. Version 1 left out each player's piece
+ * schedule and a few counters; recordings made with it name it in their format, and are
+ * checked against it still (`replayRecording`).
+ */
+export const HASH_VERSION = 2;
+
+/**
  * A fingerprint of everything that affects play. Two simulations fed the same seed,
  * ruleset and inputs must agree on this at every tick — that property is what makes
  * the client safe to run the same code as the server.
  *
  * Deliberately excludes `events`, which are a transport concern.
  */
-export function hashMatchState(state: MatchState): string {
+export function hashMatchState(state: MatchState, version = HASH_VERSION): string {
   const h = new Hasher();
   h.u32(state.seed);
   h.i32(state.tick);
@@ -844,5 +851,16 @@ export function hashMatchState(state: MatchState): string {
   for (const id of state.winners) h.i32(id);
   h.bool(state.draw);
   h.u32(state.endedBy === null ? 0 : state.endedBy === 'elimination' ? 1 : 2);
+  if (version < 2) return h.hex;
+
+  // Version 2: what version 1 left out, after all of it, so version 1 is exactly as it
+  // was. Above all each player's piece schedule, which a continue rewinds: wrong after
+  // one, it showed only once a piece placed differed.
+  for (const p of state.players) h.i32(p.pieceRound);
+  for (const team of state.teams) h.i32(team.continuesAtStart);
+  h.i32(state.nextCannonId).i32(state.nextShotId);
+  for (const c of state.castles) h.i32(c.w).i32(c.h);
+  for (const c of state.cannons) h.i32(c.w).i32(c.h);
+  for (const s of state.shots) h.i32(s.fromX).i32(s.fromY);
   return h.hex;
 }

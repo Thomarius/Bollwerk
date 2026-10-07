@@ -41,13 +41,6 @@ describe('shipped config files', () => {
   });
 
   it('encode the agreed design decisions', () => {
-    // A complete wall loop on land is required; the coastline gives you nothing.
-    expect(defaultRuleset.enclosure.shorelineCountsAsWall).toBe(false);
-    // One sealed region holding K castles counts as K.
-    expect(defaultRuleset.enclosure.sharedRegionCountsAllCastles).toBe(true);
-    // Only walls are damageable.
-    expect(defaultRuleset.shots.damagesCastles).toBe(false);
-    expect(defaultRuleset.shots.damagesCannons).toBe(false);
     // The one self-correcting force in the game.
     expect(defaultRuleset.cannons.inertWhenNotEnclosed).toBe(true);
     // 1 castle -> 2 cannons, each further castle -> +1.

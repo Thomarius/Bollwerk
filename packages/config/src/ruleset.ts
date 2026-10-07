@@ -67,8 +67,6 @@ export const RulesetSchema = z
       maxRangeTiles: z.number().int().positive().nullable(),
       craterPattern: CraterPatternSchema,
       damagesWalls: z.boolean(),
-      damagesCastles: z.boolean(),
-      damagesCannons: z.boolean(),
       /**
        * Whether a shot may destroy wall its own player built. Off, a target on your own
        * island is refused outright and only a live opponent's wall is ever cleared —
@@ -88,8 +86,6 @@ export const RulesetSchema = z
       overtimeMs: z.number().int().nonnegative(),
       /** All players draw from one seeded sequence, so luck is never a factor. */
       sharedPieceSequence: z.boolean(),
-      previewCount: z.number().int().nonnegative().max(5),
-      allowSkip: z.boolean(),
       restrictToOwnIsland: z.boolean(),
       /** Piece names must exist in the simulation's catalogue. Weights are relative. */
       pieces: z
@@ -122,16 +118,12 @@ export const RulesetSchema = z
     }),
 
     enclosure: z.strictObject({
-      /** False: the coastline gives you nothing, a full wall loop on land is required. */
-      shorelineCountsAsWall: z.boolean(),
       /**
        * Connectivity of the escape flood, not of the wall. 8 means the sea slips
        * through a diagonal join, so a sealing wall must be a 4-connected loop and
        * has to include its corners. 4 would let a diagonal step stand in for one.
        */
       connectivity: z.union([z.literal(4), z.literal(8)]),
-      /** One sealed region holding K castles counts as K. */
-      sharedRegionCountsAllCastles: z.boolean(),
       /**
        * A sealed region on a player's island holding no castle — a pocket — is their
        * territory for every purpose (guns, points) while they hold a sealed castle
@@ -228,3 +220,34 @@ export const RulesetSchema = z
   });
 
 export type Ruleset = z.infer<typeof RulesetSchema>;
+
+/**
+ * Keys the ruleset once had and no code ever read, removed 2026-10-07: rules that looked
+ * configurable and were not (the coastline never counts, a shared region always counts
+ * every castle, only walls are ever damaged) and settings for things that never existed
+ * (a piece preview count, skipping a piece). Old recordings carry them in their headers.
+ */
+export const RETIRED_RULESET_KEYS: readonly (readonly [string, string])[] = [
+  ['shots', 'damagesCastles'],
+  ['shots', 'damagesCannons'],
+  ['build', 'previewCount'],
+  ['build', 'allowSkip'],
+  ['enclosure', 'shorelineCountsAsWall'],
+  ['enclosure', 'sharedRegionCountsAllCastles'],
+];
+
+/**
+ * A ruleset as an older recording holds it, without the retired keys, so it reads under
+ * today's schema — which still refuses every other key it does not know.
+ */
+export function withoutRetiredKeys(raw: unknown): unknown {
+  if (typeof raw !== 'object' || raw === null) return raw;
+  const ruleset: Record<string, unknown> = { ...(raw as Record<string, unknown>) };
+  for (const [section, key] of RETIRED_RULESET_KEYS) {
+    const part = ruleset[section];
+    if (typeof part !== 'object' || part === null || !(key in part)) continue;
+    const { [key]: _retired, ...rest } = part as Record<string, unknown>;
+    ruleset[section] = rest;
+  }
+  return ruleset;
+}

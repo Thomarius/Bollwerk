@@ -4,7 +4,7 @@ import { z } from 'zod';
 import { SnapshotSchema } from './snapshot.js';
 
 /** Bumped on any breaking change to the message set; mismatched clients are rejected. */
-export const PROTOCOL_VERSION = 16;
+export const PROTOCOL_VERSION = 17;
 
 /**
  * A player's intent. The server overwrites `player` with the sender's own seat before

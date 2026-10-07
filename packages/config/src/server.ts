@@ -30,11 +30,9 @@ export const ServerConfigSchema = z.strictObject({
   limits: z.strictObject({
     maxMessagesPerSecond: z.number().int().positive(),
     maxMessageBytes: z.number().int().positive(),
-    maxNameLength: z.number().int().positive(),
   }),
 
   reconnect: z.strictObject({
-    graceMs: z.number().int().nonnegative(),
     botTakeoverDelayMs: z.number().int().nonnegative(),
   }),
 
@@ -43,11 +41,6 @@ export const ServerConfigSchema = z.strictObject({
 
   /** What a host may change in the lobby, and within what bounds. */
   lobbySettings: SettingBoundsSchema,
-
-  snapshot: z.strictObject({
-    onPhaseChange: z.boolean(),
-    keepaliveIntervalMs: z.number().int().positive(),
-  }),
 
   /**
    * Match recordings for tuning against human play: every match the server runs, and

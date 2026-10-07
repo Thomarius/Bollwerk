@@ -6,6 +6,7 @@ import {
   RulesetSchema,
   TerrainConfigSchema,
   tierSetup,
+  withoutRetiredKeys,
   type BotSetup,
 } from '@bollwerk/config';
 import {
@@ -37,11 +38,21 @@ import { ActionSchema } from './messages.js';
  * The same format whether the server recorded it or a browser playing locally did.
  */
 
-export const RECORDING_FORMAT = 1;
+/**
+ * The format a recording is written in, which names the state fingerprint on its lines:
+ * 1 took version 1 (before 2026-10-07), 2 takes version 2 (`HASH_VERSION`). Both read and
+ * replay exactly, each checked against its own fingerprint.
+ */
+export const RECORDING_FORMAT = 2;
+
+/** The fingerprint a recording of this format carries. */
+export function hashVersionOf(format: 1 | 2): number {
+  return format;
+}
 
 export const RecordingHeaderSchema = z.strictObject({
   kind: z.literal('header'),
-  format: z.literal(RECORDING_FORMAT),
+  format: z.union([z.literal(1), z.literal(RECORDING_FORMAT)]),
   /** Also the file's name. */
   id: z.string().regex(/^[A-Za-z0-9-]{8,64}$/),
   source: z.enum(['server', 'local']),
@@ -57,7 +68,8 @@ export const RecordingHeaderSchema = z.strictObject({
   /** The room's code, for a match played through the server. */
   code: z.string().nullable(),
   seed: z.number().int().nonnegative(),
-  ruleset: RulesetSchema,
+  /** Without the keys the ruleset no longer has, which older recordings carry. */
+  ruleset: z.preprocess(withoutRetiredKeys, RulesetSchema),
   terrain: TerrainConfigSchema,
   /**
    * By player id, as the match was created: name, team label, and who played the seat
@@ -226,6 +238,7 @@ export function replayRecording(
   if (header?.kind !== 'header') throw new Error('a recording starts with its header');
   const state = createMatch(matchOptionsOf(header));
   drainEvents(state);
+  const hash = (): string => hashMatchState(state, hashVersionOf(header.format));
   const mismatches: number[] = [];
   let refused = 0;
   let end: RecordingEnd | null = null;
@@ -239,7 +252,7 @@ export function replayRecording(
     if (line.kind === 'end') {
       end = line;
       while (state.tick < line.t && state.phase !== 'game_over') stepOnce();
-      if (hashMatchState(state) !== line.hash) mismatches.push(line.t);
+      if (hash() !== line.hash) mismatches.push(line.t);
       break;
     }
     if (line.kind !== 'tick') continue;
@@ -248,7 +261,7 @@ export function replayRecording(
       if (applyAction(state, action) !== null) refused++;
     }
     stepOnce();
-    if (line.h !== undefined && hashMatchState(state) !== line.h) mismatches.push(line.t);
+    if (line.h !== undefined && hash() !== line.h) mismatches.push(line.t);
   }
   return { header, state, end, mismatches, refused };
 }

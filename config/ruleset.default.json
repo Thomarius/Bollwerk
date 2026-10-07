@@ -28,14 +28,10 @@
     "maxRangeTiles": null,
     "craterPattern": "single",
     "damagesWalls": true,
-    "damagesCastles": false,
-    "damagesCannons": false,
     "damagesOwnWalls": false
   },
   "build": {
     "sharedPieceSequence": false,
-    "previewCount": 1,
-    "allowSkip": false,
     "restrictToOwnIsland": true,
     "pieces": [
       {
@@ -152,9 +148,7 @@
     "overtimeMs": 3000
   },
   "enclosure": {
-    "shorelineCountsAsWall": false,
     "connectivity": 8,
-    "sharedRegionCountsAllCastles": true,
     "castlelessRegionsCount": true,
     "sweepOrphanedWalls": true
   },

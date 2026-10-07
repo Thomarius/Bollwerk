@@ -281,7 +281,7 @@ snapshot, because a client on different rules would desync rather than merely lo
 | `ai.default.json`      | Bot skill as a table of levels (pace, aim, judgement, sloppiness, carelessness) interpolated between anchors, and the personality traits: risk, targeting, cannon space               |
 | `art.default.json`     | Palettes, per-player colour ramps and each style's own over them, sprite generator parameters                                                                                         |
 | `audio.manifest.json`  | Cue names to files, and a credit for every file; see `assets/audio/README.md` for what fires each one                                                                                 |
-| `server.default.json`  | Ports, room limits, rate limits, reconnect grace, and the bounds of what a host may set in the lobby                                                                                  |
+| `server.default.json`  | Ports, room limits, rate limits, the delay before a bot takes a dropped seat, and the bounds of what a host may set in the lobby                                                      |
 
 `validateConfigBundle` checks what a single file cannot: that there are at least as many
 player palettes as allowed players, that every playable count has a pattern, that a cannon
@@ -341,11 +341,13 @@ sender's seat**, so a client cannot act for someone else.
   word, green "Online" with the round trip, amber for a slow one or a page falling behind,
   red for a bad one or "Out of sync" (`art.hud.network`). It was 11 px of grey in the
   HUD's far corner, and nobody saw it say the hosts were behind.
-- A dropped seat is handed to a bot so the match does not stall; the player gets their seat
-  back on reconnect within the grace period.
+- A dropped seat is handed to a bot after a few seconds (`reconnect.botTakeoverDelayMs`), so
+  the match does not stall; the player gets their seat back whenever they reconnect, for the
+  rest of the match. A two-minute limit on that was configured and never applied, and was
+  removed rather than enforced (2026-10-07).
 - **Anyone at the table may pause a running match, and anyone resume it** — Esc, or the
   button beside the Sound switch; an overlay names who paused. Every timer is in ticks, so
-  a paused room simply steps none: bots, phase clocks and reconnect grace all wait, and a
+  a paused room simply steps none: bots, phase clocks and a bot's takeover of a dropped seat all wait, and a
   recording gains nothing. Moves sent while paused are dropped, not queued. A pause made
   by somebody who then drops holds until anyone resumes. Offline, the local match is not
   advanced.
@@ -1277,6 +1279,11 @@ from before 10l are historical.
   commit** (`-dirty` with uncommitted changes; `BOLLWERK_COMMIT` in the image, which has no
   repository), and `--replay` names it, and says to check it out when a replay diverges.
   A person's seat has no pieces budget, and its cell in the table is left empty.
+  **A recording's format names its fingerprint**: format 1 (before 2026-10-07) carries
+  version 1 of `hashMatchState`, which left out each player's piece schedule and a few
+  counters; format 2 carries version 2. Each is checked against its own, and the ruleset
+  keys removed since (`RETIRED_RULESET_KEYS`) are dropped from an old header as it is read,
+  so every recording still replays exactly against the code that made it.
 
 Tests state expectations as ASCII pictures where the subject is geometric
 (`stateFromAscii`, with an optional island overlay for walls and castles that belong to
