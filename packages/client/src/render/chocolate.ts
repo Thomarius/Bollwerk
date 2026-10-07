@@ -1,17 +1,9 @@
 import type { ArtConfig, ChocolateStyleConfig } from '@bollwerk/config';
-import {
-  Structure,
-  Terrain,
-  type Cannon,
-  type Castle,
-  type MatchState,
-  type Shot,
-} from '@bollwerk/sim';
+import { Structure, type Cannon, type Castle, type MatchState, type Shot } from '@bollwerk/sim';
 import { Graphics } from 'pixi.js';
 
 import { motionReduced } from '../motion.js';
 import { perf } from '../perf.js';
-import { inFinalRound } from '../scores.js';
 import { timerSpot, type TimerSpot } from '../timerSpot.js';
 
 import { IslandParts } from './islandParts.js';
@@ -37,7 +29,6 @@ import {
   drawMainCastles,
   drawShotTarget,
   hex,
-  playerColour,
   shotLift,
   tileX,
   tileY,
@@ -50,15 +41,17 @@ import {
   type ViewTransform,
   type FinishLook,
   mixed,
+  shotProgress,
 } from './theme.js';
 import { hash } from './noise.js';
 import { weatherFor } from './pixel/atmosphere.js';
-import { roseSpot } from './corner.js';
+import { climax, roseSpot } from './corner.js';
 import { ChocolateSeaLife } from './seaLife.js';
 import type { SceneryItem } from './scenery.js';
 import { SceneryLayer } from './sceneryLayer.js';
 import { outline, trace, wallGeometry } from './walls.js';
 import { cannonBase } from './cannonBase.js';
+import { ShapeTheme } from './shapeTheme.js';
 
 /** A swirl on the river, carried along by the current, melting back in as it ages. */
 interface Swirl {
@@ -191,10 +184,9 @@ const FINISH: FinishLook = { spark: 'sprinkle', flag: 'candy' };
  * as it goes down. Sealed ground is iced, edged with piped icing and sprinkled. The player
  * colours are the shared ones, bright as candy already.
  */
-export class ChocolateTheme implements Theme {
+export class ChocolateTheme extends ShapeTheme implements Theme {
   readonly id = 'chocolate' as const;
 
-  private art!: ArtConfig;
   private style!: ChocolateStyleConfig;
   /** Life on the outer river (`seaLife.ts`). */
   private readonly seaLife = new ChocolateSeaLife();
@@ -231,9 +223,6 @@ export class ChocolateTheme implements Theme {
   private readonly lateGfx = new Graphics();
   private readonly overlayGfx = new Graphics();
 
-  private terrain: Uint8Array | null = null;
-  private width = 0;
-  private height = 0;
   private round = 0;
   /** Sea tiles a swirl may set out from: not against a coast. */
   private seaCells: Cell[] = [];
@@ -258,7 +247,9 @@ export class ChocolateTheme implements Theme {
   private snowy = false;
   private clock = 0;
 
-  constructor(private readonly seed = 1) {}
+  constructor(private readonly seed = 1) {
+    super();
+  }
 
   init(layers: ThemeLayers, art: ArtConfig): Promise<void> {
     this.art = art;
@@ -289,29 +280,6 @@ export class ChocolateTheme implements Theme {
     for (const g of [this.terrainGfx, this.flowGfx, this.effectGfx, this.overlayGfx]) {
       g.destroy();
     }
-  }
-
-  private colour(player: number, shade: 'base' | 'light' | 'dark'): number {
-    return playerColour(this.art, player, shade);
-  }
-
-  private faceFraction(): number {
-    return this.art.generators.wall.frontFacePx / this.art.tileSizePx;
-  }
-
-  private ink(view: ViewTransform): number {
-    return Math.max(1, view.tile * 0.07);
-  }
-
-  private land(x: number, y: number): boolean {
-    return (
-      this.terrain !== null &&
-      x >= 0 &&
-      y >= 0 &&
-      x < this.width &&
-      y < this.height &&
-      this.terrain[y * this.width + x] === Terrain.Land
-    );
   }
 
   // ------------------------------------------------------------------ terrain
@@ -1374,8 +1342,7 @@ export class ChocolateTheme implements Theme {
     const t = view.tile;
     const now = state.tick + frame.tickFraction;
     for (const shot of state.shots) {
-      const span = shot.impactTick - shot.launchTick;
-      const p = span <= 0 ? 1 : Math.min(1, Math.max(0, (now - shot.launchTick) / span));
+      const p = shotProgress(shot, now);
       const gx = tileX(view, shot.fromX + (shot.toX - shot.fromX) * p + 0.5);
       const gy = tileY(view, shot.fromY + (shot.toY - shot.fromY) * p + 0.5);
       const lift = shotLift(shot, p);
@@ -1529,7 +1496,7 @@ export class ChocolateTheme implements Theme {
    * board, drips gathering and falling, while the shared border and dusk carry the meaning.
    */
   private drawHeat(state: MatchState, view: ViewTransform): void {
-    const hot = (state.phase === 'build' && state.overtime) || inFinalRound(state);
+    const hot = climax(state);
     if (!hot) return;
     const g = this.lateGfx;
     const t = view.tile;

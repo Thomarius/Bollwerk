@@ -1,5 +1,6 @@
 import { Terrain, type MatchState } from '@bollwerk/sim';
 
+import { inFinalRound } from '../scores.js';
 import { timerSpot, type TimerSpot } from '../timerSpot.js';
 
 import type { ViewTransform } from './theme.js';
@@ -15,6 +16,14 @@ export function cornerSpot(state: MatchState, view: ViewTransform): TimerSpot | 
   const right = Math.floor((view.width - view.originX) / view.tile) - state.width;
   const bottom = Math.floor((view.height - view.originY) / view.tile) - state.height;
   return roseSpot(state, right, bottom, timerSpot(state));
+}
+
+/**
+ * The match's climax — overtime, and the final round — when a style turns up its weather
+ * or its music: the storm breaking, the deadline, the deep coming up, the season turning.
+ */
+export function climax(state: MatchState): boolean {
+  return (state.phase === 'build' && state.overtime) || inFinalRound(state);
 }
 
 /**

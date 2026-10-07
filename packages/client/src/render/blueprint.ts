@@ -42,6 +42,7 @@ import {
   type ThemeLayers,
   type ViewTransform,
   type FinishLook,
+  shotProgress,
 } from './theme.js';
 import { BlueprintSeaLife } from './seaLife.js';
 import type { SceneryItem } from './scenery.js';
@@ -643,8 +644,7 @@ export class BlueprintTheme implements Theme {
     const now = state.tick + frame.tickFraction;
     drawMainCastles(g, view, state, this.art, frame.castleSealed);
     for (const shot of state.shots) {
-      const span = shot.impactTick - shot.launchTick;
-      const p = span <= 0 ? 1 : Math.min(1, Math.max(0, (now - shot.launchTick) / span));
+      const p = shotProgress(shot, now);
       const at = (tk: number): { x: number; y: number } => ({
         x: tileX(view, shot.fromX + (shot.toX - shot.fromX) * tk + 0.5),
         y: tileY(view, shot.fromY + (shot.toY - shot.fromY) * tk + 0.5 - shotLift(shot, tk)),

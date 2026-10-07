@@ -60,6 +60,7 @@ import {
   type FinishLook,
   GunAims,
   mixed,
+  shotProgress,
 } from './theme.js';
 
 interface Blast {
@@ -1025,8 +1026,7 @@ export class PixelTheme implements Theme {
     const trail = this.art.generators.fx.shotTrailLengthPx / this.art.tileSizePx;
     drawMainCastles(g, view, state, this.art, frame.castleSealed);
     for (const shot of state.shots) {
-      const span = shot.impactTick - shot.launchTick;
-      const t = span <= 0 ? 1 : Math.min(1, Math.max(0, (now - shot.launchTick) / span));
+      const t = shotProgress(shot, now);
       const x = shot.fromX + (shot.toX - shot.fromX) * t;
       const y = shot.fromY + (shot.toY - shot.fromY) * t;
       // A parabolic lift sells the lob. The shot still lands exactly on impactTick.

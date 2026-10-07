@@ -1,15 +1,14 @@
 import type { ArtConfig, OperaStyleConfig } from '@bollwerk/config';
-import { Structure, Terrain, type Castle, type MatchState, type Shot } from '@bollwerk/sim';
+import { Structure, type Castle, type MatchState, type Shot } from '@bollwerk/sim';
 import { Container, Graphics } from 'pixi.js';
 
 import { motionReduced } from '../motion.js';
 import { perf } from '../perf.js';
-import { inFinalRound } from '../scores.js';
 import { timerSpot, type TimerSpot } from '../timerSpot.js';
 
 import { hash } from './noise.js';
 import { GOLD, drawLyre, drawQuaver, drawRest } from './music.js';
-import { roseSpot } from './corner.js';
+import { climax, roseSpot } from './corner.js';
 import { IslandParts } from './islandParts.js';
 import { release } from './release.js';
 import { OperaSeaLife } from './seaLife.js';
@@ -36,7 +35,6 @@ import {
   drawMainCastles,
   drawShotTarget,
   hex,
-  playerColour,
   shotLift,
   tileX,
   tileY,
@@ -49,9 +47,11 @@ import {
   type ThemeLayers,
   type ViewTransform,
   mixed,
+  shotProgress,
 } from './theme.js';
 import { outline, trace, wallGeometry } from './walls.js';
 import { cannonBase } from './cannonBase.js';
+import { ShapeTheme } from './shapeTheme.js';
 
 /** Something with a place and an age: rings of sound, a sour note, a chord, a glissando. */
 interface Aged {
@@ -150,10 +150,9 @@ function blackAfter(n: number): boolean {
  * chord. In the finale — overtime and the final round — the staves swell and spotlights
  * sweep the board.
  */
-export class OperaTheme implements Theme {
+export class OperaTheme extends ShapeTheme implements Theme {
   readonly id = 'opera' as const;
 
-  private art!: ArtConfig;
   private style!: OperaStyleConfig;
   /** Life on the outer sea (`seaLife.ts`). */
   private readonly seaLife = new OperaSeaLife();
@@ -200,9 +199,6 @@ export class OperaTheme implements Theme {
   private readonly lateGfx = new Graphics();
   private readonly overlayGfx = new Graphics();
 
-  private terrain: Uint8Array | null = null;
-  private width = 0;
-  private height = 0;
   private round = 0;
   /** How far each tile of the sheet is from land, for keeping the staves off the coast. */
   private depth: Int8Array = new Int8Array(0);
@@ -226,7 +222,9 @@ export class OperaTheme implements Theme {
   private readonly playing = new FlagHoist();
   private clock = 0;
 
-  constructor(private readonly seed = 1) {}
+  constructor(private readonly seed = 1) {
+    super();
+  }
 
   init(layers: ThemeLayers, art: ArtConfig): Promise<void> {
     this.art = art;
@@ -273,31 +271,8 @@ export class OperaTheme implements Theme {
     }
   }
 
-  private colour(player: number, shade: 'base' | 'light' | 'dark'): number {
-    return playerColour(this.art, player, shade);
-  }
-
-  private faceFraction(): number {
-    return this.art.generators.wall.frontFacePx / this.art.tileSizePx;
-  }
-
-  private ink(view: ViewTransform): number {
-    return Math.max(1, view.tile * 0.07);
-  }
-
   private get dark(): number {
     return hex(this.art.palette.shadow);
-  }
-
-  private land(x: number, y: number): boolean {
-    return (
-      this.terrain !== null &&
-      x >= 0 &&
-      y >= 0 &&
-      x < this.width &&
-      y < this.height &&
-      this.terrain[y * this.width + x] === Terrain.Land
-    );
   }
 
   /** Open water, well off any coast, where a stave may run. */
@@ -564,7 +539,7 @@ export class OperaTheme implements Theme {
     const t = view.tile;
     const { palette } = this.art;
     const still = motionReduced();
-    const finale = (state.phase === 'build' && state.overtime) || inFinalRound(state);
+    const finale = climax(state);
 
     // Ink where a shot came down on the stage, fading over the rounds after.
     this.drawBlots(state, view);
@@ -1218,8 +1193,7 @@ export class OperaTheme implements Theme {
     const now = state.tick + frame.tickFraction;
     this.noteStamps.begin();
     for (const shot of state.shots) {
-      const span = shot.impactTick - shot.launchTick;
-      const p = span <= 0 ? 1 : Math.min(1, Math.max(0, (now - shot.launchTick) / span));
+      const p = shotProgress(shot, now);
       const lift = shotLift(shot, p);
       const gx = tileX(view, shot.fromX + (shot.toX - shot.fromX) * p + 0.5);
       const gy = tileY(view, shot.fromY + (shot.toY - shot.fromY) * p + 0.5);
@@ -1370,7 +1344,7 @@ export class OperaTheme implements Theme {
 
   /** The finale — overtime and the final round: spotlights sweeping across the board. */
   private drawSpotlights(state: MatchState, view: ViewTransform): void {
-    const finale = (state.phase === 'build' && state.overtime) || inFinalRound(state);
+    const finale = climax(state);
     if (!finale) return;
     const g = this.lateGfx;
     const t = view.tile;

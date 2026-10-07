@@ -42,6 +42,7 @@ import {
   type ViewTransform,
   type FinishLook,
   mixed,
+  shotProgress,
 } from './theme.js';
 import { GlassSeaLife } from './seaLife.js';
 import type { SceneryItem } from './scenery.js';
@@ -782,8 +783,7 @@ export class GlassTheme implements Theme {
     const now = state.tick + frame.tickFraction;
     drawMainCastles(g, view, state, this.art, frame.castleSealed);
     for (const shot of state.shots) {
-      const span = shot.impactTick - shot.launchTick;
-      const p = span <= 0 ? 1 : Math.min(1, Math.max(0, (now - shot.launchTick) / span));
+      const p = shotProgress(shot, now);
       const gx = tileX(view, shot.fromX + (shot.toX - shot.fromX) * p + 0.5);
       const gy = tileY(view, shot.fromY + (shot.toY - shot.fromY) * p + 0.5);
       const lift = shotLift(shot, p);

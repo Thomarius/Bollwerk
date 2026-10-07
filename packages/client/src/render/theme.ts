@@ -1685,6 +1685,15 @@ const ARC_RISE = 0.22;
  */
 const ARC_MAX_TILES = 5;
 
+/**
+ * How far through its flight a shot is at `now`, in ticks and fractions of one: 0 as it
+ * leaves the gun, 1 as it lands.
+ */
+export function shotProgress(shot: Pick<Shot, 'launchTick' | 'impactTick'>, now: number): number {
+  const span = shot.impactTick - shot.launchTick;
+  return span <= 0 ? 1 : Math.min(1, Math.max(0, (now - shot.launchTick) / span));
+}
+
 /** How far above the ground a shot rides, in tiles, at progress `t` through its flight. */
 export function shotLift(shot: Pick<Shot, 'fromX' | 'fromY' | 'toX' | 'toY'>, t: number): number {
   const dx = shot.toX - shot.fromX;

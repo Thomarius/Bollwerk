@@ -1,16 +1,15 @@
 import type { ArtConfig, OfficeStyleConfig } from '@bollwerk/config';
-import { Structure, Terrain, type Castle, type MatchState, type Shot } from '@bollwerk/sim';
+import { Structure, type Castle, type MatchState, type Shot } from '@bollwerk/sim';
 import { Graphics } from 'pixi.js';
 
 import { motionReduced } from '../motion.js';
 import { perf } from '../perf.js';
-import { inFinalRound } from '../scores.js';
 import { timerSpot, type TimerSpot } from '../timerSpot.js';
 
 import { cannonBase } from './cannonBase.js';
 import { hash } from './noise.js';
 import { IslandParts } from './islandParts.js';
-import { roseSpot } from './corner.js';
+import { climax, roseSpot } from './corner.js';
 import { weatherFor, type Weather } from './pixel/atmosphere.js';
 import type { SceneryItem } from './scenery.js';
 import { SceneryLayer } from './sceneryLayer.js';
@@ -36,7 +35,6 @@ import {
   drawMainCastles,
   drawShotTarget,
   hex,
-  playerColour,
   shotLift,
   tileX,
   tileY,
@@ -48,8 +46,10 @@ import {
   type Theme,
   type ThemeLayers,
   type ViewTransform,
+  shotProgress,
 } from './theme.js';
 import { outline, trace, wallGeometry, type Segment } from './walls.js';
+import { ShapeTheme } from './shapeTheme.js';
 
 /** Something with a place and an age: a crashed plane, shreds, a flat-pack unfolding. */
 interface Aged {
@@ -151,10 +151,9 @@ const FINISH: FinishLook = { spark: 'memo', flag: 'necktie' };
  * colleagues gossiping beside it; in the deadline — overtime and the final round — the
  * fluorescent tubes flicker and the phones on every desk ring.
  */
-export class OfficeTheme implements Theme {
+export class OfficeTheme extends ShapeTheme implements Theme {
   readonly id = 'office' as const;
 
-  private art!: ArtConfig;
   private style!: OfficeStyleConfig;
   private weather: Weather = 'clear';
   /** Life on the outer carpet (`seaLife.ts`). */
@@ -190,9 +189,6 @@ export class OfficeTheme implements Theme {
   private readonly haze = new Discs();
   private readonly overlayGfx = new Graphics();
 
-  private terrain: Uint8Array | null = null;
-  private width = 0;
-  private height = 0;
   private round = 0;
   private cooler: TimerSpot | null = null;
   /** Buckets under the leaks, in a rainy match: tiles of open carpet. */
@@ -211,7 +207,9 @@ export class OfficeTheme implements Theme {
   private readonly working = new FlagHoist();
   private clock = 0;
 
-  constructor(private readonly seed = 1) {}
+  constructor(private readonly seed = 1) {
+    super();
+  }
 
   init(layers: ThemeLayers, art: ArtConfig): Promise<void> {
     this.art = art;
@@ -253,36 +251,13 @@ export class OfficeTheme implements Theme {
     }
   }
 
-  private colour(player: number, shade: 'base' | 'light' | 'dark'): number {
-    return playerColour(this.art, player, shade);
-  }
-
-  private faceFraction(): number {
-    return this.art.generators.wall.frontFacePx / this.art.tileSizePx;
-  }
-
-  private ink(view: ViewTransform): number {
-    return Math.max(1, view.tile * 0.07);
-  }
-
   private get dark(): number {
     return hex(this.art.palette.shadow);
   }
 
-  private land(x: number, y: number): boolean {
-    return (
-      this.terrain !== null &&
-      x >= 0 &&
-      y >= 0 &&
-      x < this.width &&
-      y < this.height &&
-      this.terrain[y * this.width + x] === Terrain.Land
-    );
-  }
-
   /** In the deadline: overtime, and the final round. */
   private deadline(state: MatchState): boolean {
-    return (state.phase === 'build' && state.overtime) || inFinalRound(state);
+    return climax(state);
   }
 
   // ------------------------------------------------------------------ terrain
@@ -1089,8 +1064,7 @@ export class OfficeTheme implements Theme {
     };
     this.planeStamps.begin();
     for (const shot of state.shots) {
-      const span = shot.impactTick - shot.launchTick;
-      const p = span <= 0 ? 1 : Math.min(1, Math.max(0, (now - shot.launchTick) / span));
+      const p = shotProgress(shot, now);
       const here = at(shot, p);
       const ahead = at(shot, Math.min(1, p + 0.02));
       const behind = at(shot, Math.max(0, p - 0.02));

@@ -38,6 +38,7 @@ import {
   shotLift,
   type Cell,
   type Debris,
+  shotProgress,
 } from './theme.js';
 import { FlatSeaLife } from './seaLife.js';
 import type { SceneryItem } from './scenery.js';
@@ -351,8 +352,7 @@ export class FlatTheme implements Theme {
 
     drawMainCastles(g, view, state, this.art, frame.castleSealed);
     for (const shot of state.shots) {
-      const span = shot.impactTick - shot.launchTick;
-      const t = span <= 0 ? 1 : Math.min(1, Math.max(0, (now - shot.launchTick) / span));
+      const t = shotProgress(shot, now);
       const x = shot.fromX + (shot.toX - shot.fromX) * t;
       const y = shot.fromY + (shot.toY - shot.fromY) * t;
       // A parabolic lift sells the lob. The shot still lands exactly on impactTick.

@@ -1,15 +1,14 @@
 import type { ArtConfig, ElectricStyleConfig } from '@bollwerk/config';
-import { Structure, Terrain, type Castle, type MatchState, type Shot } from '@bollwerk/sim';
+import { Structure, type Castle, type MatchState, type Shot } from '@bollwerk/sim';
 import { BlurFilter, Graphics } from 'pixi.js';
 
 import { bloomWanted, motionReduced } from '../motion.js';
 import { perf } from '../perf.js';
-import { inFinalRound } from '../scores.js';
 import type { TimerSpot } from '../timerSpot.js';
 
 import { cannonBase } from './cannonBase.js';
 import { hash } from './noise.js';
-import { cornerSpot, pressing } from './corner.js';
+import { climax, cornerSpot, pressing } from './corner.js';
 import { IslandParts } from './islandParts.js';
 import { outerOcean } from './ocean.js';
 import { weatherFor, type Weather } from './pixel/atmosphere.js';
@@ -49,7 +48,6 @@ import {
   drawShotTarget,
   hex,
   mixed,
-  playerColour,
   shotLift,
   tileX,
   tileY,
@@ -61,8 +59,10 @@ import {
   type Theme,
   type ThemeLayers,
   type ViewTransform,
+  shotProgress,
 } from './theme.js';
 import { hatch, outline, trace, wallGeometry, type Segment } from './walls.js';
+import { ShapeTheme } from './shapeTheme.js';
 
 /** Something with a place and an age: a flash, a fizz, a short, a puff of smoke. */
 interface Aged {
@@ -179,10 +179,9 @@ const FINISH: FinishLook = { spark: 'bolts', flag: 'rod' };
  * final round — bolts fork down onto the outer sea, and the sky flickers. The storm's own
  * lightning is white: a player's colour in an arc means it is theirs, and live.
  */
-export class ElectricTheme implements Theme {
+export class ElectricTheme extends ShapeTheme implements Theme {
   readonly id = 'electric' as const;
 
-  private art!: ArtConfig;
   private style!: ElectricStyleConfig;
   private weather: Weather = 'clear';
   /** Life on the outer sea (`seaLife.ts`). */
@@ -225,9 +224,6 @@ export class ElectricTheme implements Theme {
   private readonly flashGfx = new Graphics();
   private readonly overlayGfx = new Graphics();
 
-  private terrain: Uint8Array | null = null;
-  private width = 0;
-  private height = 0;
   private round = 0;
   private ladder: TimerSpot | null = null;
   /** Tiles of outer sea a bolt may strike without crossing the board on its way down. */
@@ -252,7 +248,9 @@ export class ElectricTheme implements Theme {
   private readonly globes = new FlagHoist();
   private clock = 0;
 
-  constructor(private readonly seed = 1) {}
+  constructor(private readonly seed = 1) {
+    super();
+  }
 
   init(layers: ThemeLayers, art: ArtConfig): Promise<void> {
     this.art = art;
@@ -308,32 +306,13 @@ export class ElectricTheme implements Theme {
     }
   }
 
-  private colour(player: number, shade: 'base' | 'light' | 'dark'): number {
-    return playerColour(this.art, player, shade);
-  }
-
-  private faceFraction(): number {
-    return this.art.generators.wall.frontFacePx / this.art.tileSizePx;
-  }
-
   private get dark(): number {
     return hex(this.art.palette.shadow);
   }
 
-  private land(x: number, y: number): boolean {
-    return (
-      this.terrain !== null &&
-      x >= 0 &&
-      y >= 0 &&
-      x < this.width &&
-      y < this.height &&
-      this.terrain[y * this.width + x] === Terrain.Land
-    );
-  }
-
   /** As the storm breaks: overtime, and the final round. */
   private storm(state: MatchState): boolean {
-    return (state.phase === 'build' && state.overtime) || inFinalRound(state);
+    return climax(state);
   }
 
   // ------------------------------------------------------------------ terrain
@@ -1267,8 +1246,7 @@ export class ElectricTheme implements Theme {
     const still = motionReduced();
     this.ballStamps.begin();
     for (const shot of state.shots) {
-      const span = shot.impactTick - shot.launchTick;
-      const p = span <= 0 ? 1 : Math.min(1, Math.max(0, (now - shot.launchTick) / span));
+      const p = shotProgress(shot, now);
       const gx = tileX(view, shot.fromX + (shot.toX - shot.fromX) * p + 0.5);
       const gy = tileY(view, shot.fromY + (shot.toY - shot.fromY) * p + 0.5);
       const x = gx;

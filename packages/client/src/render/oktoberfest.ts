@@ -1,14 +1,13 @@
 import type { ArtConfig, OktoberfestStyleConfig } from '@bollwerk/config';
-import { Structure, Terrain, type Castle, type MatchState, type Shot } from '@bollwerk/sim';
+import { Structure, type Castle, type MatchState, type Shot } from '@bollwerk/sim';
 import { Graphics } from 'pixi.js';
 
 import { motionReduced } from '../motion.js';
 import { perf } from '../perf.js';
-import { inFinalRound } from '../scores.js';
 import { timerSpot, type TimerSpot } from '../timerSpot.js';
 
 import { hash } from './noise.js';
-import { roseSpot } from './corner.js';
+import { climax, roseSpot } from './corner.js';
 import { weatherFor, type Weather } from './pixel/atmosphere.js';
 import { OktoberfestSeaLife } from './seaLife.js';
 import type { SceneryItem } from './scenery.js';
@@ -35,7 +34,6 @@ import {
   drawMainCastles,
   drawShotTarget,
   hex,
-  playerColour,
   shotLift,
   tileX,
   tileY,
@@ -61,6 +59,7 @@ import {
   drawReveller,
 } from './wiesn.js';
 import { cannonBase } from './cannonBase.js';
+import { ShapeTheme } from './shapeTheme.js';
 
 /** Something with a place and an age: a ring on the beer, a burst of foam, a coin, a clink. */
 interface Aged {
@@ -163,10 +162,9 @@ const FINISH: FinishLook = { spark: 'pretzel', flag: 'rauten' };
  * trees, beer-garden tables, gingerbread hearts, a dropped Maß and now and then a reveller
  * asleep in the grass.
  */
-export class OktoberfestTheme implements Theme {
+export class OktoberfestTheme extends ShapeTheme implements Theme {
   readonly id = 'oktoberfest' as const;
 
-  private art!: ArtConfig;
   private style!: OktoberfestStyleConfig;
   /** Life on the outer sea (`seaLife.ts`). */
   private readonly seaLife = new OktoberfestSeaLife();
@@ -207,9 +205,6 @@ export class OktoberfestTheme implements Theme {
   private readonly book = new StampBook();
   private readonly overlayGfx = new Graphics();
 
-  private terrain: Uint8Array | null = null;
-  private width = 0;
-  private height = 0;
   private round = 0;
   /** Beer a bubble may rise in: not against a coast, where the foam is. */
   private beerCells: Cell[] = [];
@@ -233,7 +228,9 @@ export class OktoberfestTheme implements Theme {
   private weather: Weather = 'clear';
   private clock = 0;
 
-  constructor(private readonly seed = 1) {}
+  constructor(private readonly seed = 1) {
+    super();
+  }
 
   init(layers: ThemeLayers, art: ArtConfig): Promise<void> {
     this.art = art;
@@ -275,31 +272,8 @@ export class OktoberfestTheme implements Theme {
     }
   }
 
-  private colour(player: number, shade: 'base' | 'light' | 'dark'): number {
-    return playerColour(this.art, player, shade);
-  }
-
-  private faceFraction(): number {
-    return this.art.generators.wall.frontFacePx / this.art.tileSizePx;
-  }
-
-  private ink(view: ViewTransform): number {
-    return Math.max(1, view.tile * 0.07);
-  }
-
   private get brown(): number {
     return hex(this.art.palette.shadow);
-  }
-
-  private land(x: number, y: number): boolean {
-    return (
-      this.terrain !== null &&
-      x >= 0 &&
-      y >= 0 &&
-      x < this.width &&
-      y < this.height &&
-      this.terrain[y * this.width + x] === Terrain.Land
-    );
   }
 
   // ------------------------------------------------------------------ terrain
@@ -1285,7 +1259,7 @@ export class OktoberfestTheme implements Theme {
   private drawBand(state: MatchState, view: ViewTransform, frame: EffectFrame): void {
     const g = this.lateGfx;
     const t = view.tile;
-    const playing = (state.phase === 'build' && state.overtime) || inFinalRound(state);
+    const playing = climax(state);
     if (playing && !motionReduced()) {
       for (const castle of state.castles) {
         if (frame.castleSealed[castle.id] !== true) continue;

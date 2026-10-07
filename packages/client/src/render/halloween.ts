@@ -1,14 +1,13 @@
 import type { ArtConfig, HalloweenStyleConfig } from '@bollwerk/config';
-import { Structure, Terrain, type Castle, type MatchState, type Shot } from '@bollwerk/sim';
+import { Structure, type Castle, type MatchState, type Shot } from '@bollwerk/sim';
 import { Graphics } from 'pixi.js';
 
 import { motionReduced } from '../motion.js';
 import { perf } from '../perf.js';
-import { inFinalRound } from '../scores.js';
 import { timerSpot, type TimerSpot } from '../timerSpot.js';
 
 import { hash } from './noise.js';
-import { roseSpot } from './corner.js';
+import { climax, roseSpot } from './corner.js';
 import { weatherFor, type Weather } from './pixel/atmosphere.js';
 import { HalloweenSeaLife } from './seaLife.js';
 import type { SceneryItem } from './scenery.js';
@@ -36,7 +35,6 @@ import {
   drawMainCastles,
   drawShotTarget,
   hex,
-  playerColour,
   shotLift,
   tileX,
   tileY,
@@ -52,6 +50,7 @@ import {
 } from './theme.js';
 import { outline, trace, wallGeometry } from './walls.js';
 import { cannonBase } from './cannonBase.js';
+import { ShapeTheme } from './shapeTheme.js';
 
 /** Something with a place and an age: a ghost set free, a ring on the bog, a sinking block. */
 interface Aged {
@@ -160,10 +159,9 @@ const FINISH: FinishLook = { spark: 'spirits', flag: 'tattered' };
  * materialises as it goes down. Sealed ground is tinted and warded by candles round its edge.
  * In the witching hour — overtime and the final round — eyes open in the dark at the edges.
  */
-export class HalloweenTheme implements Theme {
+export class HalloweenTheme extends ShapeTheme implements Theme {
   readonly id = 'halloween' as const;
 
-  private art!: ArtConfig;
   private style!: HalloweenStyleConfig;
   /** Life on the outer sea (`seaLife.ts`). */
   private readonly seaLife = new HalloweenSeaLife();
@@ -191,9 +189,6 @@ export class HalloweenTheme implements Theme {
   private readonly lateGfx = new Graphics();
   private readonly overlayGfx = new Graphics();
 
-  private terrain: Uint8Array | null = null;
-  private width = 0;
-  private height = 0;
   private round = 0;
   /** Bog tiles a bubble may rise from: not against a coast. */
   private bogCells: Cell[] = [];
@@ -227,7 +222,9 @@ export class HalloweenTheme implements Theme {
   private weather: Weather = 'clear';
   private clock = 0;
 
-  constructor(private readonly seed = 1) {}
+  constructor(private readonly seed = 1) {
+    super();
+  }
 
   init(layers: ThemeLayers, art: ArtConfig): Promise<void> {
     this.art = art;
@@ -270,29 +267,6 @@ export class HalloweenTheme implements Theme {
     ]) {
       g.destroy();
     }
-  }
-
-  private colour(player: number, shade: 'base' | 'light' | 'dark'): number {
-    return playerColour(this.art, player, shade);
-  }
-
-  private faceFraction(): number {
-    return this.art.generators.wall.frontFacePx / this.art.tileSizePx;
-  }
-
-  private ink(view: ViewTransform): number {
-    return Math.max(1, view.tile * 0.07);
-  }
-
-  private land(x: number, y: number): boolean {
-    return (
-      this.terrain !== null &&
-      x >= 0 &&
-      y >= 0 &&
-      x < this.width &&
-      y < this.height &&
-      this.terrain[y * this.width + x] === Terrain.Land
-    );
   }
 
   // ------------------------------------------------------------------ terrain
@@ -1392,7 +1366,7 @@ export class HalloweenTheme implements Theme {
    * meaning; this is the mood.
    */
   private drawWitchingHour(state: MatchState, view: ViewTransform): void {
-    const hot = (state.phase === 'build' && state.overtime) || inFinalRound(state);
+    const hot = climax(state);
     if (!hot) return;
     const g = this.lateGfx;
     const t = view.tile;

@@ -1,15 +1,14 @@
 import type { ArtConfig, UnderseaStyleConfig } from '@bollwerk/config';
-import { Structure, Terrain, type Castle, type MatchState, type Shot } from '@bollwerk/sim';
+import { Structure, type Castle, type MatchState, type Shot } from '@bollwerk/sim';
 import { Container, Graphics } from 'pixi.js';
 
 import { motionReduced } from '../motion.js';
 import { perf } from '../perf.js';
-import { inFinalRound } from '../scores.js';
 import type { TimerSpot } from '../timerSpot.js';
 
 import { cannonBase } from './cannonBase.js';
 import { hash } from './noise.js';
-import { cornerSpot, pressing } from './corner.js';
+import { climax, cornerSpot, pressing } from './corner.js';
 import { IslandParts } from './islandParts.js';
 import { weatherFor, type Weather } from './pixel/atmosphere.js';
 import {
@@ -48,7 +47,6 @@ import {
   drawShotTarget,
   hex,
   mixed,
-  playerColour,
   shotLift,
   tileX,
   tileY,
@@ -60,8 +58,10 @@ import {
   type Theme,
   type ThemeLayers,
   type ViewTransform,
+  shotProgress,
 } from './theme.js';
 import { outline, trace, wallGeometry, type Segment } from './walls.js';
+import { ShapeTheme } from './shapeTheme.js';
 
 /** Something with a place and an age: a column of bubbles, a cloud of silt, a crumble. */
 interface Aged {
@@ -161,10 +161,9 @@ const FINISH: FinishLook = { spark: 'bubbles', flag: 'trident' };
  * corner; as the deep comes up — overtime and the final round — the light dims, anglerfish
  * lures glow at the edges and now and then a whale's shadow passes over.
  */
-export class UnderseaTheme implements Theme {
+export class UnderseaTheme extends ShapeTheme implements Theme {
   readonly id = 'undersea' as const;
 
-  private art!: ArtConfig;
   private style!: UnderseaStyleConfig;
   private weather: Weather = 'clear';
   /** Life on the outer deep (`seaLife.ts`). */
@@ -215,9 +214,6 @@ export class UnderseaTheme implements Theme {
   private readonly shaftGfx = new Graphics();
   private readonly overlayGfx = new Graphics();
 
-  private terrain: Uint8Array | null = null;
-  private width = 0;
-  private height = 0;
   private round = 0;
   private wreck: TimerSpot | null = null;
   private dimples: Dimple[] = [];
@@ -238,7 +234,9 @@ export class UnderseaTheme implements Theme {
   private readonly pearls = new FlagHoist();
   private clock = 0;
 
-  constructor(private readonly seed = 1) {}
+  constructor(private readonly seed = 1) {
+    super();
+  }
 
   init(layers: ThemeLayers, art: ArtConfig): Promise<void> {
     this.art = art;
@@ -289,36 +287,13 @@ export class UnderseaTheme implements Theme {
     }
   }
 
-  private colour(player: number, shade: 'base' | 'light' | 'dark'): number {
-    return playerColour(this.art, player, shade);
-  }
-
-  private faceFraction(): number {
-    return this.art.generators.wall.frontFacePx / this.art.tileSizePx;
-  }
-
-  private ink(view: ViewTransform): number {
-    return Math.max(1, view.tile * 0.07);
-  }
-
   private get dark(): number {
     return hex(this.art.palette.shadow);
   }
 
-  private land(x: number, y: number): boolean {
-    return (
-      this.terrain !== null &&
-      x >= 0 &&
-      y >= 0 &&
-      x < this.width &&
-      y < this.height &&
-      this.terrain[y * this.width + x] === Terrain.Land
-    );
-  }
-
   /** As the deep comes up: overtime, and the final round. */
   private deep(state: MatchState): boolean {
-    return (state.phase === 'build' && state.overtime) || inFinalRound(state);
+    return climax(state);
   }
 
   // ------------------------------------------------------------------ terrain
@@ -1178,8 +1153,7 @@ export class UnderseaTheme implements Theme {
     };
     this.urchinStamps.begin();
     for (const shot of state.shots) {
-      const span = shot.impactTick - shot.launchTick;
-      const p = span <= 0 ? 1 : Math.min(1, Math.max(0, (now - shot.launchTick) / span));
+      const p = shotProgress(shot, now);
       const here = at(shot, p);
       const high = Math.min(1, shotLift(shot, p) / 3);
       g.ellipse(here.gx, here.gy, t * 0.2, t * 0.07);
