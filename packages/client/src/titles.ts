@@ -1152,6 +1152,110 @@ export function cartoonTitle(text: string, _art: ArtConfig): Title {
   return { src: canvas.toDataURL(), ...title };
 }
 
+/**
+ * Christmas's title: the word as a fir garland, each stroke of a letter a bough, bristling;
+ * snow lying along the tops of the letters, fairy lights strung along them glowing in many
+ * colours, and a gold star over the first letter.
+ */
+export function christmasTitle(text: string, _art: ArtConfig): Title {
+  const { canvas, ctx, cells, has } = drawnCanvas(text);
+  const title = { cellPx: DRAWN_CELL, padPx: DRAWN_PAD, tailPx: 0, smooth: true, flicker: false };
+  if (ctx === null) return { src: canvas.toDataURL(), ...title };
+  const at = (v: number): number => DRAWN_PAD + v * DRAWN_CELL + DRAWN_CELL / 2;
+  const rng = new Rng(0xc4415);
+  const strokes: [number, number, number, number][] = [];
+  for (const { x, y } of cells) {
+    for (const [dx, dy] of [
+      [1, 0],
+      [0, 1],
+      [1, 1],
+      [-1, 1],
+    ] as const) {
+      if (!has(x + dx, y + dy)) continue;
+      if (dx !== 0 && dy !== 0 && (has(x + dx, y) || has(x, y + dy))) continue;
+      strokes.push([at(x), at(y), at(x + dx), at(y + dy)]);
+    }
+  }
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  for (const [width, colour] of [
+    [DRAWN_CELL * 1.15, '#0c2416'],
+    [DRAWN_CELL * 0.85, '#1d4a35'],
+  ] as const) {
+    ctx.strokeStyle = colour;
+    ctx.fillStyle = colour;
+    ctx.lineWidth = width;
+    ctx.beginPath();
+    for (const [x1, y1, x2, y2] of strokes) {
+      ctx.moveTo(x1, y1);
+      ctx.lineTo(x2, y2);
+    }
+    ctx.stroke();
+    for (const { x, y } of cells) {
+      ctx.beginPath();
+      ctx.arc(at(x), at(y), width / 2, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+  // Needles bristling off every bough.
+  ctx.strokeStyle = '#3a7a52';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  for (const { x, y } of cells) {
+    for (let k = 0; k < 7; k++) {
+      const a = rng.nextFloat() * Math.PI * 2;
+      const r = DRAWN_CELL * (0.15 + rng.nextFloat() * 0.3);
+      ctx.moveTo(at(x) + Math.cos(a) * r, at(y) + Math.sin(a) * r);
+      ctx.lineTo(at(x) + Math.cos(a) * (r + 3), at(y) + Math.sin(a) * (r + 3));
+    }
+  }
+  ctx.stroke();
+  // Snow along the tops.
+  ctx.fillStyle = '#f6faff';
+  for (const { x, y } of cells) {
+    if (has(x, y - 1)) continue;
+    ctx.beginPath();
+    ctx.ellipse(
+      at(x),
+      at(y) - DRAWN_CELL * 0.38,
+      DRAWN_CELL * 0.62,
+      DRAWN_CELL * 0.26,
+      0,
+      0,
+      Math.PI * 2,
+    );
+    ctx.fill();
+  }
+  // The fairy lights, glowing, on every other cell.
+  const bulbs = ['#ff6a6a', '#ffd24a', '#6ab8ff', '#8ae08a', '#fff4d0'];
+  cells.forEach(({ x, y }, n) => {
+    if ((x + y) % 2 === 1) return;
+    ctx.beginPath();
+    ctx.arc(at(x) + DRAWN_CELL * 0.15, at(y) + DRAWN_CELL * 0.2, 2.6, 0, Math.PI * 2);
+    ctx.fillStyle = bulbs[n % bulbs.length]!;
+    ctx.shadowColor = bulbs[n % bulbs.length]!;
+    ctx.shadowBlur = 8;
+    ctx.fill();
+  });
+  ctx.shadowBlur = 0;
+  // A gold star over the first letter.
+  const sx = DRAWN_PAD + DRAWN_CELL * 0.5;
+  const sy = DRAWN_PAD - 6;
+  ctx.beginPath();
+  for (let k = 0; k < 10; k++) {
+    const a = -Math.PI / 2 + (k * Math.PI) / 5;
+    const d = k % 2 === 0 ? 9 : 4;
+    ctx.lineTo(sx + Math.cos(a) * d, sy + Math.sin(a) * d);
+  }
+  ctx.closePath();
+  ctx.fillStyle = '#e8c25a';
+  ctx.shadowColor = '#ffe9a0';
+  ctx.shadowBlur = 10;
+  ctx.fill();
+  ctx.shadowBlur = 0;
+  return { src: canvas.toDataURL(), ...title };
+}
+
 const TITLES: Record<ArtStyle, (text: string, art: ArtConfig) => Title> = {
   flat: blockTitle,
   pixel: stoneTitle,
@@ -1170,6 +1274,7 @@ const TITLES: Record<ArtStyle, (text: string, art: ArtConfig) => Title> = {
   undersea: underseaTitle,
   electric: electricTitle,
   cartoon: cartoonTitle,
+  christmas: christmasTitle,
 };
 
 /**

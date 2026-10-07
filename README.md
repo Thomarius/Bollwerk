@@ -12,8 +12,8 @@ score among those still standing wins.
 
 - 2–8 players, free-for-all or in equal teams; bots of ten skill levels fill any empty seat
 - Play alone on your own computer, with friends on your home network, or over the internet
-- Seventeen visual styles — Medieval, Minimal, Night, Cyberpunk, Blueprint, Parchment, Toy
-  bricks, Stained glass, Chocolate, Halloween, Sakura, Oktoberfest, Opera, Office, Under the sea, Electric and Cartoon — one for building and one for combat, swapped by the
+- Eighteen visual styles — Medieval, Minimal, Night, Cyberpunk, Blueprint, Parchment, Toy
+  bricks, Stained glass, Chocolate, Halloween, Sakura, Oktoberfest, Opera, Office, Under the sea, Electric, Cartoon and Christmas — one for building and one for combat, swapped by the
   banners as in Rampart
 - In English and German, chosen in the menu
 - Awards at the end of every match, and a rematch in one click

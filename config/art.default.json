@@ -1127,6 +1127,31 @@
         "uiValid": "#8fe08a",
         "uiInvalid": "#ff5050"
       }
+    },
+    "christmas": {
+      "palette": {
+        "waterDeep": "#081430",
+        "waterMid": "#0f2048",
+        "waterShallow": "#1c3866",
+        "waterFoam": "#dcecff",
+        "sand": "#cfe3f4",
+        "grassDark": "#b4c8de",
+        "grassMid": "#e6eef7",
+        "grassLight": "#f8fbff",
+        "rockDark": "#3a4458",
+        "rockMid": "#8a96aa",
+        "rockLight": "#e0e8f0",
+        "shadow": "#0a1226",
+        "craterDark": "#7a8aa6",
+        "craterMid": "#a6b6cc",
+        "emberHot": "#fff8e0",
+        "emberMid": "#ffe2a0",
+        "emberCool": "#f0b060",
+        "uiInk": "#ffffff",
+        "uiAccent": "#f0d070",
+        "uiValid": "#8fe08a",
+        "uiInvalid": "#ff5a5a"
+      }
     }
   },
   "dither": {
@@ -1521,5 +1546,19 @@
     "whaleEveryMs": 22000,
     "boatEveryMs": 24000,
     "boatTilesPerSecond": 0.7
+  },
+  "christmas": {
+    "floorAlpha": 0.42,
+    "twinkleMs": 260,
+    "glowAlpha": 0.4,
+    "snowCount": 90,
+    "blizzardCount": 260,
+    "mistBanks": 7,
+    "mistAlpha": 0.16,
+    "globeFlakes": 26,
+    "sleighEveryMs": 26000,
+    "sleighTilesPerSecond": 4.5,
+    "floeEveryMs": 16000,
+    "floeTilesPerSecond": 0.4
   }
 }

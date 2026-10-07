@@ -22,6 +22,7 @@ import { FOAM, drawMass, drawReveller } from './wiesn.js';
 import { drawFish } from './reef.js';
 import { ARC_HALO, drawArc, jag } from './spark.js';
 import { INK, PAPER, drawPieEye } from './toon.js';
+import { GOLD as YULE_GOLD, NIGHT, SNOW, SNOW_SHADE } from './yule.js';
 
 /**
  * Life on the outer ocean in the styles drawn from shapes (PLAN 11.16 O1), as Medieval and
@@ -1690,6 +1691,119 @@ export class CartoonSeaLife extends OceanDrawn {
       g.fill({ color: INK });
       g.circle(x + boat.dir * t * 0.07, y - t * 0.4, Math.max(1, t * 0.035));
       g.fill({ color: INK });
+    }
+  }
+}
+
+/**
+ * Christmas: now and then Santa's sleigh flies across the outer sea, high, four reindeer before
+ * it and a trail of gold sparkles behind; and ice floes drift by, a seal or a polar bear on
+ * each, rocking. Browns, snow and gold — the sleigh's driver in a wine darker than any
+ * player's red.
+ */
+export class ChristmasSeaLife extends OceanDrawn {
+  private readonly sleighs = new Crossings();
+  private readonly floes = new Crossings();
+
+  override layout(state: MatchState, view: ViewTransform, art: ArtConfig): void {
+    super.layout(state, view, art);
+    this.sleighs.layout(this.ocean, art.christmas.sleighEveryMs);
+    this.floes.layout(this.ocean, art.christmas.floeEveryMs);
+  }
+
+  protected frame(g: Graphics, view: ViewTransform, art: ArtConfig, deltaMs: number): void {
+    const s = art.christmas;
+    const t = view.tile;
+    const ink = Math.max(1, t * 0.05);
+
+    this.floes.step(this.ocean, deltaMs, s.floeEveryMs, s.floeTilesPerSecond);
+    for (const floe of this.floes.items) {
+      if (this.behind(floe.x, floe.y)) continue;
+      const x = tileX(view, floe.x);
+      const y = tileY(view, floe.y);
+      const rock = Math.sin(this.clock / 900 + floe.y) * t * 0.04;
+      const shape = [
+        -0.9, 0.1, -0.6, -0.25, 0.1, -0.32, 0.8, -0.15, 0.95, 0.15, 0.3, 0.3, -0.5, 0.28,
+      ];
+      g.poly(shape.map((v, k) => (k % 2 === 0 ? x + v * t : y + v * t + rock)));
+      g.fill({ color: SNOW });
+      g.stroke({ width: ink, color: SNOW_SHADE });
+      g.ellipse(x, y + t * 0.3 + rock, t * 0.9, t * 0.08);
+      g.fill({ color: SNOW_SHADE, alpha: 0.5 });
+      if (Math.floor(floe.y) % 2 === 0) {
+        // A seal, lying on it, its head up.
+        g.ellipse(x - floe.dir * t * 0.05, y - t * 0.1 + rock, t * 0.36, t * 0.13);
+        g.circle(x + floe.dir * t * 0.3, y - t * 0.24 + rock, t * 0.11);
+        g.fill({ color: 0x7a8494 });
+        g.circle(x + floe.dir * t * 0.34, y - t * 0.26 + rock, Math.max(1, t * 0.025));
+        g.fill({ color: NIGHT });
+      } else {
+        // A polar bear, sitting up, looking out to sea.
+        g.ellipse(x, y - t * 0.25 + rock, t * 0.24, t * 0.28);
+        g.circle(x + floe.dir * t * 0.14, y - t * 0.58 + rock, t * 0.15);
+        g.circle(x + floe.dir * t * 0.06, y - t * 0.7 + rock, t * 0.05);
+        g.circle(x + floe.dir * t * 0.22, y - t * 0.7 + rock, t * 0.05);
+        g.fill({ color: 0xf2ead8 });
+        g.circle(x + floe.dir * t * 0.27, y - t * 0.56 + rock, Math.max(1, t * 0.03));
+        g.fill({ color: NIGHT });
+      }
+    }
+
+    this.sleighs.step(this.ocean, deltaMs, s.sleighEveryMs, s.sleighTilesPerSecond, 2);
+    for (const sleigh of this.sleighs.items) {
+      const d = sleigh.dir;
+      const bob = Math.sin(this.clock / 260) * t * 0.12;
+      const x = tileX(view, sleigh.x);
+      const y = tileY(view, sleigh.y) - t * 1.2 + bob;
+      // The trail of sparkles behind it.
+      for (let k = 1; k <= 8; k++) {
+        const tx = x - d * t * (0.9 + k * 0.45);
+        const ty = y + t * 0.1 + Math.sin(this.clock / 200 + k) * t * 0.1;
+        g.circle(tx, ty, Math.max(1, t * (0.09 - k * 0.008)));
+      }
+      g.fill({ color: YULE_GOLD, alpha: 0.8 });
+      if (this.behind(sleigh.x, sleigh.y)) continue;
+      // The reindeer, two pairs, legs galloping, harnessed to the sleigh.
+      for (let k = 0; k < 2; k++) {
+        const rx = x + d * t * (1.0 + k * 0.85);
+        const ry = y - t * 0.05 + Math.sin(this.clock / 140 + k) * t * 0.05;
+        const leg = Math.sin(this.clock / 90 + k * 2) * t * 0.12;
+        g.moveTo(rx - d * t * 0.2, ry + t * 0.08).lineTo(rx - d * t * 0.2 - leg, ry + t * 0.3);
+        g.moveTo(rx + d * t * 0.2, ry + t * 0.08).lineTo(rx + d * t * 0.2 + leg, ry + t * 0.3);
+        g.moveTo(rx + d * t * 0.32, ry - t * 0.22).lineTo(rx + d * t * 0.25, ry - t * 0.42);
+        g.moveTo(rx + d * t * 0.27, ry - t * 0.34).lineTo(rx + d * t * 0.16, ry - t * 0.4);
+        g.stroke({ width: Math.max(1, t * 0.05), color: 0x5a3a22, cap: 'round' });
+        g.ellipse(rx, ry, t * 0.3, t * 0.12);
+        g.circle(rx + d * t * 0.34, ry - t * 0.16, t * 0.09);
+        g.fill({ color: 0x8a6240 });
+      }
+      g.moveTo(x + d * t * 0.45, y).lineTo(x + d * t * 1.7, y);
+      g.stroke({ width: 1, color: YULE_GOLD });
+      // The sleigh: its body curling up at the front, gold runners, a sack and its driver.
+      g.circle(x - d * t * 0.25, y - t * 0.3, t * 0.22);
+      g.fill({ color: 0xc8b088 });
+      g.circle(x + d * t * 0.12, y - t * 0.38, t * 0.13);
+      g.fill({ color: 0x5a1820 });
+      g.circle(x + d * t * 0.14, y - t * 0.55, t * 0.08);
+      g.fill({ color: SNOW });
+      g.poly([
+        x - d * t * 0.55,
+        y - t * 0.25,
+        x + d * t * 0.35,
+        y - t * 0.2,
+        x + d * t * 0.5,
+        y - t * 0.38,
+        x + d * t * 0.4,
+        y + t * 0.05,
+        x - d * t * 0.5,
+        y + t * 0.05,
+      ]);
+      g.fill({ color: 0x4a2414 });
+      g.stroke({ width: ink, color: YULE_GOLD, join: 'round' });
+      g.moveTo(x - d * t * 0.6, y + t * 0.16)
+        .lineTo(x + d * t * 0.45, y + t * 0.16)
+        .quadraticCurveTo(x + d * t * 0.62, y + t * 0.12, x + d * t * 0.55, y - t * 0.02);
+      g.stroke({ width: Math.max(1, t * 0.05), color: YULE_GOLD, cap: 'round' });
     }
   }
 }

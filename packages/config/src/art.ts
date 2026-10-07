@@ -53,7 +53,7 @@ export type PlayerPalette = z.infer<typeof PlayerPaletteSchema>;
  * `oktoberfest` the beer festival on an island in a sea of beer, `opera` a night at the opera
  * on a sea whose waves are staves, `office` an open-plan office at war with itself,
  * `undersea` a coral reef on the seabed, the deep all round it, `electric` a storm
- * laboratory under a thunderstorm, `cartoon` a 1930s rubber-hose cartoon in black and white.
+ * laboratory under a thunderstorm, `cartoon` a 1930s rubber-hose cartoon in black and white, `christmas` a snowy island on Christmas Eve.
  */
 export const ArtStyleSchema = z.enum([
   'flat',
@@ -73,6 +73,7 @@ export const ArtStyleSchema = z.enum([
   'undersea',
   'electric',
   'cartoon',
+  'christmas',
 ]);
 export type ArtStyle = z.infer<typeof ArtStyleSchema>;
 
@@ -665,6 +666,35 @@ export const CartoonStyleSchema = z.strictObject({
 });
 export type CartoonStyleConfig = z.infer<typeof CartoonStyleSchema>;
 
+/**
+ * The Christmas look: a snowy island on Christmas Eve in a midnight sea — walls of wrapped
+ * presents, castles Christmas trees whose lights and star shine while sealed, snowmen throwing
+ * snowballs for guns, a tartan for sealed ground, and a snow globe in the corner.
+ */
+export const ChristmasStyleSchema = z.strictObject({
+  /** Sealed ground's tartan, the owner's colour washed over the snow under its stripes. */
+  floorAlpha: z.number().min(0).max(1),
+  /** How long the fairy lights hold before they twinkle to new brightnesses. */
+  twinkleMs: z.number().int().positive(),
+  /** How bright the lights' and stars' halos glow. */
+  glowAlpha: z.number().min(0).max(1),
+  /** Snowflakes falling at once in any match, and in a blizzard: snowy weather and the climax. */
+  snowCount: z.number().int().nonnegative(),
+  blizzardCount: z.number().int().nonnegative(),
+  /** Banks of snow mist in a foggy match, and how thick. */
+  mistBanks: z.number().int().nonnegative(),
+  mistAlpha: z.number().min(0).max(1),
+  /** Flakes in the snow globe in the corner. */
+  globeFlakes: z.number().int().nonnegative(),
+  /** Santa's sleigh flying across the outer sea now and then, and how fast. */
+  sleighEveryMs: z.number().int().positive(),
+  sleighTilesPerSecond: z.number().positive(),
+  /** An ice floe drifting by with a seal or a polar bear on it, and how fast. */
+  floeEveryMs: z.number().int().positive(),
+  floeTilesPerSecond: z.number().positive(),
+});
+export type ChristmasStyleConfig = z.infer<typeof ChristmasStyleSchema>;
+
 /** One of the two looks a match is drawn in. */
 export type ArtLook = 'build' | 'combat';
 
@@ -714,6 +744,7 @@ export const STYLE_LOOKS: Record<ArtStyle, readonly ArtLook[]> = {
   undersea: ['build', 'combat'],
   electric: ['build', 'combat'],
   cartoon: ['build', 'combat'],
+  christmas: ['build', 'combat'],
 };
 
 export function styleServes(
@@ -842,6 +873,7 @@ export const ArtConfigSchema = z
     undersea: UnderseaStyleSchema,
     electric: ElectricStyleSchema,
     cartoon: CartoonStyleSchema,
+    christmas: ChristmasStyleSchema,
     scenery: ScenerySchema,
     /** Effects both styles draw alike, because they carry information. */
     effects: z.strictObject({

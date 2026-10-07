@@ -5595,3 +5595,33 @@ trees sway**, leaning one way and then the other on the beat from their foot, th
 as it lands, neighbours a little out of step — stamps placed again at each step, the shadow left
 in the scenery's drawing; at eight players the cost unchanged within the measurement's noise.
 Approved as it stands; line boil not taken up.
+
+## 12zc. Christmas, an eighteenth style (2026-10-07)
+
+The user's idea, its design left to us — "be creative, make it unique", no pitch, only the
+result. Made to stand apart from the styles already there: Chocolate's sweets, Oktoberfest's
+gingerbread, Medieval's snowy weather. **Christmas Eve on snowy islands in a midnight sea**: walls
+of wrapped presents, castles Christmas trees, guns snowmen, sealed ground a tartan, a snow globe in
+the corner, Santa's sleigh and ice floes on the sea — PLAN §7's Christmas.
+
+What carries meaning: **sealed is the tree lit**, fairy lights and star, a breach sputtering them
+out, a bare brown tree for a player who is out; **a silenced gun is a snowman half melted**; the
+owner's colour on the presents, the tartan, the baubles and the tree's present, the scarves, the
+sparkles a snowball trails and the scraps a hit throws. The lights are warm white, so nothing on
+the board is a player's colour but theirs; Santa's coat a wine darker than any player's red. The
+shared finish gained `flakes` and the flag `stocking`; the snowflake, stocking and bow are
+`yule.ts`.
+
+**Drawn cheaply from the start.** Presents and tartan in straight strokes by island; the trees,
+their lights and stars, the snowmen, snowballs, sparkles, scraps, puffs and snow all stamps, the
+halos `Discs` in an added layer. At eight players in headless Chrome: about 19 500 vertices a frame
+against Office's 30 000, render 6.9 ms against 8.1, a wall redrawn at a hit about 5 000 vertices at
+worst against Office's 9 000.
+
+Seen in screenshots building, in combat at two, three and eight players (fog at eight), in the
+final round's blizzard, at game over with the stockings, the menu's title, and the banner and
+stamp set on the page by hand. What the first look changed: the presents' ribbons ran on from box
+to box into a grid, so each box has a dark seam, a narrower ribbon and one in three a bow; a
+snowman north of a tree hid its top, so trees and snowmen are stamped in one, nearest last.
+
+**Checked in play** by the user (2026-10-07): "absolutely awesome".

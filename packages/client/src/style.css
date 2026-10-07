@@ -2761,7 +2761,8 @@ body.hud-opera,
 body.hud-office,
 body.hud-undersea,
 body.hud-electric,
-body.hud-cartoon {
+body.hud-cartoon,
+body.hud-christmas {
   --hud-panel: var(--hud-box);
 }
 
@@ -3959,6 +3960,146 @@ body.hud-cartoon #banner.final-round::before {
 body.hud-cartoon .embers i {
   background: #fafaf8;
   box-shadow: 0 0 4px 1px rgb(255 255 255 / 45%);
+}
+
+/* Christmas: the banner a band of green velvet edged in gold, snow lying along its top and
+   fairy lights strung along its foot, lettered in cream; the HUD the same velvet over a
+   string of fairy lights. */
+.phase-call.banner-christmas {
+  border-top: 3px solid #e8c25a;
+  border-bottom: 3px solid #e8c25a;
+  background-color: #17402c;
+  background-image:
+    radial-gradient(ellipse 18px 9px at 50% 0, #f6faff 0 98%, transparent 100%),
+    radial-gradient(circle at 10px 50%, #ff6a6a 0 3px, #ff6a6a55 4px, transparent 6px),
+    radial-gradient(circle at 34px 50%, #ffd24a 0 3px, #ffd24a55 4px, transparent 6px),
+    radial-gradient(circle at 58px 50%, #6ab8ff 0 3px, #6ab8ff55 4px, transparent 6px),
+    radial-gradient(circle at 82px 50%, #8ae08a 0 3px, #8ae08a55 4px, transparent 6px),
+    radial-gradient(circle at 106px 50%, #fff4d0 0 3px, #fff4d077 4px, transparent 6px),
+    linear-gradient(#ffffff14, transparent 40%, #0000002a);
+  background-size:
+    30px 12px,
+    120px 14px,
+    120px 14px,
+    120px 14px,
+    120px 14px,
+    120px 14px,
+    100% 100%;
+  background-position:
+    0 0,
+    0 100%,
+    0 100%,
+    0 100%,
+    0 100%,
+    0 100%,
+    0 0;
+  background-repeat: repeat-x, repeat-x, repeat-x, repeat-x, repeat-x, repeat-x, no-repeat;
+  color: #fbf4e0;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-shadow:
+    0 2px 0 #0a2014,
+    0 0 12px #ffe9a066;
+}
+
+.phase-call.banner-christmas small {
+  color: #e8dcc0;
+  font-family: Georgia, 'Times New Roman', serif;
+}
+
+.phase-call.banner-christmas small.news {
+  color: #f0d070;
+}
+
+body.hud-christmas {
+  --hud-bar: #123222;
+  --hud-rule: 14px solid transparent;
+  --hud-pad-top: 0.4rem;
+  --hud-ink: #fbf4e0;
+  --hud-muted: #b8cbbf;
+  --hud-accent: #f0d070;
+  --hud-box: #0f2a1c;
+  --hud-box-edge: 2px solid #e8c25a;
+  --hud-box-shadow: 0 3px 0 #000a;
+  --hud-track: #ffffff22;
+}
+
+/* The fairy lights along the bar's foot, on their green wire. */
+body.hud-christmas #hud .bar {
+  background-image:
+    radial-gradient(circle at 10px 50%, #ff6a6a 0 3px, #ff6a6a55 4px, transparent 6px),
+    radial-gradient(circle at 34px 50%, #ffd24a 0 3px, #ffd24a55 4px, transparent 6px),
+    radial-gradient(circle at 58px 50%, #6ab8ff 0 3px, #6ab8ff55 4px, transparent 6px),
+    radial-gradient(circle at 82px 50%, #8ae08a 0 3px, #8ae08a55 4px, transparent 6px),
+    radial-gradient(circle at 106px 50%, #fff4d0 0 3px, #fff4d077 4px, transparent 6px),
+    linear-gradient(#0a1e12, #0a1e12), linear-gradient(#ffffff10, transparent 50%);
+  background-size:
+    120px 14px,
+    120px 14px,
+    120px 14px,
+    120px 14px,
+    120px 14px,
+    100% 2px,
+    100% 100%;
+  background-position:
+    0 100%,
+    0 100%,
+    0 100%,
+    0 100%,
+    0 100%,
+    0 calc(100% - 6px),
+    0 0;
+  background-repeat: repeat-x, repeat-x, repeat-x, repeat-x, repeat-x, no-repeat, no-repeat;
+  background-origin: border-box;
+  background-clip: border-box;
+}
+
+/* The big timer in frosted figures: white, rimmed in ice blue, glowing cold. */
+body.hud-christmas .big-timer {
+  color: rgb(246 250 255 / 85%);
+  font-family: Georgia, 'Times New Roman', serif;
+  font-weight: 700;
+  -webkit-text-stroke: 2px rgb(140 190 230 / 85%);
+  paint-order: stroke fill;
+  text-shadow:
+    0 0 10px rgb(190 225 255 / 60%),
+    0 3px 0 rgb(10 20 40 / 50%);
+}
+
+body.hud-christmas .big-timer.urgent {
+  color: rgb(255 110 110 / 90%);
+}
+
+/* Island banners a gift tag — cream card, a hole punched at its left with a gold string
+   through it; the stamps a red ribbon edged in gold, as round a present. */
+body.hud-christmas .island-banner:not(.out),
+body.hud-christmas .team-tag,
+body.hud-christmas .you-are-here {
+  border-radius: 4px 12px 12px 4px;
+  padding-left: 1.4rem;
+  background:
+    radial-gradient(circle at 0.55rem 50%, #123222 0 3px, #e8c25a 3.5px 5px, transparent 5.5px),
+    #f8f0dc;
+  box-shadow:
+    inset 0 0 0 1px #c9b48a,
+    0 2px 6px #0007;
+  color: #2a1a10;
+  font-family: Georgia, 'Times New Roman', serif;
+  text-shadow: none;
+}
+
+body.hud-christmas .island-banner.out,
+body.hud-christmas .final-stamp {
+  border: 3px solid #e8c25a !important;
+  border-radius: 4px;
+  background: linear-gradient(#a8202c, #7a141e);
+  box-shadow: 0 3px 8px #0008;
+  color: #fbf4e0;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-shadow: 0 1px 0 #0006;
 }
 
 /* ---------- the gallery of looks (ARCHIVE 12b) ---------- */
