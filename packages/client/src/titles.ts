@@ -1010,24 +1010,38 @@ export function electricTitle(text: string, _art: ArtConfig): Title {
   if (ctx === null) return { src: canvas.toDataURL(), ...title };
   const at = (v: number): number => DRAWN_PAD + v * DRAWN_CELL + DRAWN_CELL / 2;
   const rng = new Rng(0xe1ec7);
-  // Every join between two cells as a jagged arc, kept so each pass strokes the same bolt.
+  // Every join between two cells as a jagged arc, kept so each pass strokes the same bolt:
+  // side by side, and corner to corner where no cell beside both joins them already — the
+  // diagonal strokes of R, K and W and the rounded corners of B and O, which stood apart
+  // with an electrode each when only cells side by side were joined.
   const arcs: [number, number][][] = [];
+  const joins = new Map<string, number>();
+  const join = (x: number, y: number): void => {
+    joins.set(`${x},${y}`, (joins.get(`${x},${y}`) ?? 0) + 1);
+  };
   for (const { x, y } of cells) {
     for (const [dx, dy] of [
       [1, 0],
       [0, 1],
+      [1, 1],
+      [-1, 1],
     ] as const) {
       if (!has(x + dx, y + dy)) continue;
+      if (dx !== 0 && dy !== 0 && (has(x + dx, y) || has(x, y + dy))) continue;
+      const length = Math.hypot(dx, dy);
       const points: [number, number][] = [[at(x), at(y)]];
       for (let k = 1; k < 3; k++) {
-        const push = (rng.nextFloat() - 0.5) * DRAWN_CELL * 0.5;
+        // Pushed across the stroke, whichever way it runs.
+        const push = ((rng.nextFloat() - 0.5) * DRAWN_CELL * 0.5) / length;
         points.push([
-          at(x) + dx * (k / 3) * DRAWN_CELL + dy * push,
+          at(x) + dx * (k / 3) * DRAWN_CELL - dy * push,
           at(y) + dy * (k / 3) * DRAWN_CELL + dx * push,
         ]);
       }
       points.push([at(x + dx), at(y + dy)]);
       arcs.push(points);
+      join(x, y);
+      join(x + dx, y + dy);
     }
   }
   ctx.lineCap = 'round';
@@ -1051,8 +1065,7 @@ export function electricTitle(text: string, _art: ArtConfig): Title {
   ctx.shadowBlur = 0;
   // The electrodes: copper studs where a stroke ends.
   for (const { x, y } of cells) {
-    const joins = [has(x + 1, y), has(x - 1, y), has(x, y + 1), has(x, y - 1)].filter(Boolean);
-    if (joins.length > 1) continue;
+    if ((joins.get(`${x},${y}`) ?? 0) > 1) continue;
     ctx.beginPath();
     ctx.arc(at(x), at(y), DRAWN_CELL * 0.32, 0, Math.PI * 2);
     ctx.fillStyle = '#c87a3e';

@@ -70,13 +70,14 @@
     "music_admin": {
       "file": "music/music_admin.mp3",
       "volume": 0.5,
-      "variants": 3,
+      "variants": 4,
       "loop": true
     },
     "music_battle": {
       "file": "music/music_battle.ogg",
       "volume": 0.5,
-      "loop": true
+      "loop": true,
+      "variants": 2
     },
     "music_victory": {
       "file": "music/music_victory.mp3",
@@ -114,17 +115,30 @@
       "licence": "CC-BY 3.0",
       "source": "https://opengameart.org/content/unused-music"
     },
+    "music/music_admin.4.mp3": {
+      "title": "Medieval Waltz Music",
+      "author": "Tunetank",
+      "licence": "Pixabay Content License",
+      "source": "https://pixabay.com/users/tunetank-50201703/?utm_source=link-attribution&utm_medium=referral&utm_campaign=music&utm_content=412748"
+    },
     "music/music_battle.ogg": {
       "title": "Tiny Swords Duel",
       "author": "Alexandr Zhelanov",
       "licence": "CC-BY 4.0",
       "source": "https://opengameart.org/content/tiny-swords-duel"
     },
+    "music/music_battle.2.ogg": {
+      "title": "The Tournament",
+      "author": "Emmraan",
+      "licence": "Pixabay Content License",
+      "source": "https://pixabay.com/users/emmraan-24732583/?utm_source=link-attribution&utm_medium=referral&utm_campaign=music&utm_content=280277",
+      "changes": "converted from MP3 to Ogg Vorbis"
+    },
     "music/music_victory.mp3": {
-      "title": "Lively Meadow (Victory Fanfare and Song)",
-      "author": "Matthew Pablo",
-      "licence": "CC-BY 3.0",
-      "source": "https://opengameart.org/content/lively-meadow-victory-fanfare-and-song"
+      "title": "Majestic Brass Fanfare",
+      "author": "Luis Humanoide",
+      "licence": "Pixabay Content License",
+      "source": "https://pixabay.com/users/luis_humanoide-12661853/?utm_source=link-attribution&utm_medium=referral&utm_campaign=music&utm_content=293125"
     },
     "music/music_defeat.ogg": {
       "title": "Medieval Rondo",

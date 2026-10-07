@@ -1,4 +1,4 @@
-import { artForStyle, defaultConfigBundle, type ArtStyle } from '@bollwerk/config';
+import { artForStyle, defaultConfigBundle, type ArtStyle, type Ruleset } from '@bollwerk/config';
 import { owesCastleChoice, type MatchEvent, type Phase } from '@bollwerk/sim';
 
 import { countdownBeat, showsClock } from './clock.js';
@@ -203,7 +203,7 @@ export async function runSession(session: Session, setup: Setup): Promise<() => 
       if (centre === undefined) continue;
       banners.push({
         ...banner,
-        holdMs: defaultConfigBundle.art.hud.pointsBannerMs,
+        holdMs: pointsHoldMs(session.state.ruleset),
         colour: playerCssColour(banner.player),
         ...scene.screenAt(centre.x, centre.y),
       });
@@ -447,7 +447,7 @@ export async function runSession(session: Session, setup: Setup): Promise<() => 
         case 'round_resolved': {
           if (rotation.rotates) void prepareNextLooks();
           const hold = Math.ceil(
-            (defaultConfigBundle.art.hud.pointsBannerMs * session.state.ruleset.tickRateHz) / 1000,
+            (pointsHoldMs(session.state.ruleset) * session.state.ruleset.tickRateHz) / 1000,
           );
           const { tallyMs } = defaultConfigBundle.art.effects;
           const count = Math.ceil((tallyMs * session.state.ruleset.tickRateHz) / 1000);
@@ -540,12 +540,30 @@ export async function runSession(session: Session, setup: Setup): Promise<() => 
       state.round === 0 &&
       (state.phase === 'castle_select' ||
         (state.phase === 'intermission' && state.pendingPhase === 'castle_select'));
+    // Then faded a few seconds into the choice, by the sim's clock: over the island's middle
+    // it often stood on a castle, just when the castles are what to look at.
+    const { youAreHereMs, youAreHereFadeMs } = defaultConfigBundle.art.hud;
+    const rate = state.ruleset.tickRateHz;
+    const choosingMs =
+      state.phase === 'castle_select'
+        ? state.ruleset.phases.castleSelectMs -
+          ((state.phaseEndTick - state.tick - session.tickFraction) * 1000) / rate
+        : 0;
+    const hereOpacity = Math.max(
+      0,
+      Math.min(1, 1 - (choosingMs - youAreHereMs) / youAreHereFadeMs),
+    );
     hud.labels.showYouAreHere(
-      me !== undefined && centre !== undefined && opening && me.startingCastleId === null
+      me !== undefined &&
+        centre !== undefined &&
+        opening &&
+        me.startingCastleId === null &&
+        hereOpacity > 0
         ? {
             ...scene.screenAt(centre.x, centre.y),
             colour: playerCssColour(me.id),
             shape: playerShape(me.id),
+            opacity: hereOpacity,
           }
         : null,
     );
@@ -633,4 +651,18 @@ export async function runSession(session: Session, setup: Setup): Promise<() => 
   };
   frame = requestAnimationFrame(loop);
   return cleanup;
+}
+
+/**
+ * How long an island's banked points stay over it: `pointsBannerMs`, but never past the
+ * intermission after the build phase, so they are gone as the cannon phase opens. Held the
+ * full eight seconds they covered the island for the first three of placing guns, its clock
+ * already running (the user's report, 2026-10-07).
+ */
+export function pointsHoldMs(ruleset: Ruleset): number {
+  const { endOfPhasePauseMs, transitionBannerMs } = ruleset.phases;
+  return Math.min(
+    defaultConfigBundle.art.hud.pointsBannerMs,
+    endOfPhasePauseMs + transitionBannerMs,
+  );
 }

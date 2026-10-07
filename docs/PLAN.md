@@ -1331,16 +1331,16 @@ every resolution against an independent search, not only on unit pictures.
 
 ## 11. Open work
 
-**Where to start (2026-10-07).** Next: the bot learning work, item 3 and
-[`BOT_LEARNING.md`](./BOT_LEARNING.md), steps 1 and 2 done — the unfillable last gaps and widening once sealed (ARCHIVE 12x, 12y); step 3 had a first run (ARCHIVE 12z) and the work is paused, its next steps in BOT_LEARNING.md §6. The refactoring of 2026-10-07
-(ARCHIVE 12w) left the game as it was, apart from protocol 17. Everything planned before
-that is done and in **v0.8.1**, the latest
-release: the game and online play, bots as skill levels and personalities, sixteen styles —
-Under the sea and Electric the newest (ARCHIVE 12u, 12v) — each with its piece in the corner,
-random looks every round, English and German, the desktop app, UPnP, the balance soak and the
-rendering work (ARCHIVE 12h–12v). More test games come first, towards a first feature-ready
-version; a big new feature may follow, not yet decided. French is not to be done (the user's
-decision, 2026-10-06). Still open:
+**Where to start (2026-10-07).** Everything planned is done and in **v0.8.2**, the latest
+release: the game and online play, bots as skill levels and personalities, sixteen styles
+each with its piece in the corner, random looks every round, English and German, the desktop
+app, UPnP, the balance soak and the rendering work (ARCHIVE 12h–12v); the refactoring of
+2026-10-07 (ARCHIVE 12w, protocol 17); and stronger bots — they route round holes no piece
+can fill and widen their walls once sealed (ARCHIVE 12x, 12y). The bot learning work, item
+3, is **paused** after a first learned fit (ARCHIVE 12z), its next steps in
+[`BOT_LEARNING.md`](./BOT_LEARNING.md) §6. More test games come first, towards a first
+feature-ready version; a big new feature may follow, not yet decided. French is not to be
+done (the user's decision, 2026-10-06). Still open:
 
 1. **The user's manual test of UPnP**, reported back: switch on Open to the internet in the
    app, or `npm start -- --upnp`, and open the invite link from a phone on mobile data

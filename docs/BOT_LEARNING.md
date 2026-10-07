@@ -6,6 +6,9 @@ are left out for now; the user may come back to them once the steps below have p
 useful. This file is the plan and its progress; when a step is done, record the result
 here (and summarise it into ARCHIVE.md as usual).
 
+**Paused on 2026-10-07** after steps 1 and 2 and a first run of step 3: to resume, start at
+§6, which says what is next and how to run what exists.
+
 Read first: PLAN §8 (how the bots play), ARCHIVE 10d, 10h, 10s, 11zb and 12h (how the
 bots were tuned and what failed), CLAUDE.md "Measuring the bots" and "What has already
 been tried".

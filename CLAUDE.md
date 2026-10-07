@@ -15,7 +15,8 @@ original" means Rampart. Nothing of the original is used — no code, graphics o
 title where known, author, licence, source, changes), or by its folder's credit — a key
 ending in `/`, which is how the sound effects, all CC0, are one line (`sfx/`). `npm run
 credits` writes `CREDITS.md` from it, and a test fails when that file is stale or any file
-is uncredited. Every sound is from OpenGameArt.org.
+is uncredited. Every sound is from OpenGameArt.org, but three music tracks from Pixabay (Pixabay Content
+License, credited to their authors as they ask).
 
 **`docs/PLAN.md` is the design and the open work** — read it before changing rules,
 terrain or bots. **`docs/ARCHIVE.md`** records how each decision was reached, with the
@@ -145,7 +146,7 @@ Full detail in PLAN.md §1. The parts that surprise people:
 
 ## Status
 
-**Done** (2026-10-07; the latest release **v0.8.1**, 2026-10-06; protocol 17 since):
+**Done** (2026-10-07; the latest release **v0.8.2**, 2026-10-07; protocol 17):
 
 - **A refactoring** (2026-10-07, ARCHIVE 12w), the game unchanged: bots plan in a third
   less time (`SealPlanner`, `Look`, typed max-flow); the client stops redoing per frame what
@@ -156,6 +157,13 @@ Full detail in PLAN.md §1. The parts that surprise people:
   extend `ShapeTheme`; seats are dealt by `dealSeats` and bots driven by `takeBotTurns`.
   Protocol 17: the state hash takes in the piece schedule (`HASH_VERSION` 2), and
   recordings name theirs by format. `npm run check` runs its four steps at once.
+- **Stronger bots** (2026-10-07, ARCHIVE 12x–12z; `docs/BOT_LEARNING.md`): the testers'
+  recordings measured piece by piece (`tools/headless/src/placements.ts`); bots plan round
+  tiles no piece can cover (`coverable`, `markUncoverable`), and once sealed widen their
+  wall to another castle or a stretch of land beside it (`widensWhenSealed`, `widen`) —
+  such a bot won 65 of 96 against two of the old. A learned fit (`fitWeights`, null by
+  default) and its trainer (`tools/headless/src/cem.ts`, `fitEval.ts`) matched the hand-made
+  fit; the learning work is paused.
 - **The game**: its rules, online play with rooms, a games browser, pause, and recording
   of every match (ARCHIVE 11e, each header stamped with the server's commit); team mode
   (ARCHIVE 10u); bots as a skill level 1–10 chosen in the lobby and a personality dealt
@@ -196,16 +204,12 @@ Full detail in PLAN.md §1. The parts that surprise people:
   (ARCHIVE 12q); Cyberpunk's "Glowing" cheap and its cores sharp (ARCHIVE 12r). Every look,
   every corner piece and German were checked in play by the user (ARCHIVE 12n–12t).
 
-**Next** — **the bot learning work**: stronger bots by valuing the options still open
-rather than the gaps left, then a scoring function whose weights are learned
-(**`docs/BOT_LEARNING.md`**: the plan, its steps, its progress and findings; step 1, the
-testers' recordings, and step 2 are done: bots route round holes no piece can fill and widen their walls
-once sealed; step 3, a learned scoring function, had a first run that matched the hand-made
-fit, and the work is paused — its next steps are BOT_LEARNING.md §6). Beside it, PLAN §11: more test games towards a first
-feature-ready version, the user's manual test of UPnP, and bots that miss as people do
-(combat accuracy, measured against the testers' recordings; how is not yet decided).
-French is not to be done. Signing the Windows app was explained (PLAN §12) and is not
-pursued for now.
+**Next** — PLAN §11: more test games towards a first feature-ready version, the user's
+manual test of UPnP, and bots that miss as people do (combat accuracy, measured against the
+testers' recordings; how is not yet decided). **The bot learning work is paused**; when it
+resumes, `docs/BOT_LEARNING.md` §6 says where — first, learning the choice of wall rather
+than only the cell. French is not to be done. Signing the Windows app was explained (PLAN
+§12) and is not pursued for now.
 
 **Declined for budget** (PLAN §12): macOS builds (Apple's paid signing) and a hosted public
 server. This is a fan project with no budget: propose nothing that costs money to run.

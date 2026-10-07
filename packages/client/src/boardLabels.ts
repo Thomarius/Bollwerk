@@ -34,7 +34,9 @@ export class BoardLabels {
   private youAreHere: HTMLElement | null = null;
 
   /** The "You are here" marker over the viewer's island, or null to take it down. */
-  showYouAreHere(at: { x: number; y: number; colour: string; shape: PlayerShape } | null): void {
+  showYouAreHere(
+    at: { x: number; y: number; colour: string; shape: PlayerShape; opacity: number } | null,
+  ): void {
     if (at === null) {
       this.youAreHere?.remove();
       this.youAreHere = null;
@@ -52,6 +54,7 @@ export class BoardLabels {
     this.youAreHere.style.setProperty('--who', at.colour);
     this.youAreHere.style.left = `${at.x.toFixed(1)}px`;
     this.youAreHere.style.top = `${at.y.toFixed(1)}px`;
+    this.youAreHere.style.opacity = at.opacity.toFixed(2);
   }
 
   /** A team's letter over each of its islands, for the whole of a team match. */

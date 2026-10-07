@@ -1314,6 +1314,8 @@
   },
   "hud": {
     "pointsBannerMs": 8000,
+    "youAreHereMs": 3000,
+    "youAreHereFadeMs": 600,
     "network": {
       "slowPingMs": 150,
       "badPingMs": 400,

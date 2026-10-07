@@ -77,6 +77,7 @@ export const AUDIO_LICENCES = {
   'GPL 3.0': 'https://www.gnu.org/licenses/gpl-3.0.html',
   'LGPL 2.1': 'https://www.gnu.org/licenses/old-licenses/lgpl-2.1.html',
   'LGPL 3.0': 'https://www.gnu.org/licenses/lgpl-3.0.html',
+  'Pixabay Content License': 'https://pixabay.com/service/license-summary/',
 } as const;
 export type AudioLicence = keyof typeof AUDIO_LICENCES;
 

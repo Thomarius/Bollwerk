@@ -865,8 +865,18 @@ export const ArtConfigSchema = z
     }),
     /** How long the HUD holds its news. */
     hud: z.strictObject({
-      /** The points an island banked, over it, after each resolution. */
+      /**
+       * The points an island banked, over it, after each resolution — never past the
+       * intermission, so they are gone as the cannon phase opens.
+       */
       pointsBannerMs: z.number().int().positive(),
+      /**
+       * "You are here" over the viewer's island: through the opening announcement and this
+       * long into choosing a castle, then faded over `youAreHereFadeMs` — it stood over the
+       * island's middle, often on a castle, until one was chosen.
+       */
+      youAreHereMs: z.number().int().nonnegative(),
+      youAreHereFadeMs: z.number().int().positive(),
       /**
        * When the badge beside Pause warns about the connection, online only: amber for a
        * slow round trip or a page falling behind the server, red for a bad one. Behind is

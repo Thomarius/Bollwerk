@@ -23,7 +23,7 @@
   "network.onlinePing": "Online · {ms} ms",
   "network.title": "Round trip to the server, and whether this page keeps up with it",
   "credits.inspiredBy": "Inspired by Atari’s Rampart (1990)",
-  "credits.disclaimer": "Bollwerk is an unofficial fan game inspired by Rampart (Atari Games, 1990). It is not affiliated with or endorsed by Warner Bros. Entertainment, which owns the Rampart trademark. It uses no code, graphics or sound from the original; the audio is from OpenGameArt.org, under the licences listed below.",
+  "credits.disclaimer": "Bollwerk is an unofficial fan game inspired by Rampart (Atari Games, 1990). It is not affiliated with or endorsed by Warner Bros. Entertainment, which owns the Rampart trademark. It uses no code, graphics or sound from the original; the audio is from OpenGameArt.org and Pixabay, under the licences listed below.",
   "credits.title": "Credits",
   "credits.mit": "The code is under the MIT licence.",
   "credits.music": "Music",

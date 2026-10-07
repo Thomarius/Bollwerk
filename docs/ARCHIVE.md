@@ -5532,3 +5532,22 @@ fit: relative score +0.19 against today's +0.09 at Level 5 (wins 35 and 32), non
 give. Paused there by the user's decision, the pipeline kept for later; the next steps —
 learning the choice of wall, better training, a straighter objective, levels from a
 learned bot — are BOT_LEARNING.md §6.
+
+## 12za. Small fixes and new music, and v0.8.2 (2026-10-07)
+
+From the user's list at the end of the bot session. **Electric's title** joins cells that
+meet only at a corner when no cell beside both joins them already: the diagonal strokes of
+R, K and W ran as loose dots, each with an electrode, and B's and O's corners stood apart;
+now every letter is one charged stroke, electrodes only at its ends (checked in a
+screenshot). **"You are here"** stood over the island's middle, often on a castle, until a
+castle was chosen: it now holds through the opening announcement and three seconds into
+the choice, then fades over 0.6 s (`hud.youAreHereMs`, `youAreHereFadeMs`; seen gone nine
+seconds in). **The points an island banked** held eight seconds, three of them into the
+cannon phase with its clock running: held no longer than the intermission now
+(`pointsHoldMs`), the fade timed to it. **Music**: three tracks from Pixabay (Pixabay
+Content License, credited to their authors with the links they ask for) — a waltz as the
+fourth building track (`music_admin.4.mp3`), a tournament as the second battle track
+(`music_battle.2.ogg`, converted from MP3, since a cue's variants share its extension) and
+a brass fanfare replacing the victory music; loudness within 1.5 LU of their neighbours,
+so the volumes stand. The credits disclaimer, the README and CLAUDE.md now name Pixabay.
+Released with the bot work of 12x–12z as **v0.8.2**.

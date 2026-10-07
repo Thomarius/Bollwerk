@@ -8,7 +8,7 @@ score among those still standing wins.
 > _Bollwerk_ is an unofficial fan game inspired by _Rampart_ (Atari Games, 1990). It is not
 > affiliated with or endorsed by Warner Bros. Entertainment, which owns the _Rampart_
 > trademark. It uses no code, graphics or sound from the original; the audio is from
-> OpenGameArt.org under the licences listed in [`CREDITS.md`](CREDITS.md).
+> OpenGameArt.org and Pixabay under the licences listed in [`CREDITS.md`](CREDITS.md).
 
 - 2–8 players, free-for-all or in equal teams; bots of ten skill levels fill any empty seat
 - Play alone on your own computer, with friends on your home network, or over the internet
