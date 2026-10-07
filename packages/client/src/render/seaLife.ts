@@ -21,6 +21,7 @@ import { GOLD, drawQuaver, drawSwan } from './music.js';
 import { FOAM, drawMass, drawReveller } from './wiesn.js';
 import { drawFish } from './reef.js';
 import { ARC_HALO, drawArc, jag } from './spark.js';
+import { INK, PAPER, drawPieEye } from './toon.js';
 
 /**
  * Life on the outer ocean in the styles drawn from shapes (PLAN 11.16 O1), as Medieval and
@@ -1554,6 +1555,141 @@ export class ElectricSeaLife extends OceanDrawn {
         .lineTo(...at(0.2, 0))
         .lineTo(...at(0.5, -flap / t));
       g.stroke({ width: Math.max(1.5, t * 0.07), color: 0xe8ecf0, join: 'round' });
+    }
+  }
+}
+
+/** How long a fish takes to hop out of the sea and back in, and a whale to surface and spout. */
+const HOP_MS = 1100;
+const WHALE_MS = 4200;
+
+/**
+ * Cartoon: a fish hopping out of the outer sea in an arc, grinning; now and then a whale's
+ * back surfacing to blow a fountain, and a rowing boat crossing, its oars pulling on twos —
+ * white and grey, inked round, nothing of any player's colour. Everything moves in steps of
+ * the film, as the board does.
+ */
+export class CartoonSeaLife extends OceanDrawn {
+  private readonly fish = new Surfacings();
+  private readonly whales = new Surfacings();
+  private readonly boats = new Crossings();
+
+  override layout(state: MatchState, view: ViewTransform, art: ArtConfig): void {
+    super.layout(state, view, art);
+    this.boats.layout(this.ocean, art.cartoon.boatEveryMs);
+  }
+
+  protected frame(g: Graphics, view: ViewTransform, art: ArtConfig, deltaMs: number): void {
+    const s = art.cartoon;
+    const t = view.tile;
+    const ink = Math.max(1.5, t * 0.08);
+    const stepMs = 1000 / s.framesPerSecond;
+    const stepped = (ms: number): number => Math.floor(ms / stepMs) * stepMs;
+    const allowed = (c: { x: number; y: number }): boolean => !this.behind(c.x, c.y);
+
+    this.fish.step(this.ocean, deltaMs, s.fishEveryMs, HOP_MS, allowed);
+    for (const f of this.fish.items) {
+      const k = stepped(f.ageMs) / HOP_MS;
+      const x = tileX(view, f.x + f.dir * (k - 0.5) * 1.6);
+      const y = tileY(view, f.y) - Math.sin(k * Math.PI) * t * 1.2;
+      const angle = Math.atan2(-Math.cos(k * Math.PI) * 1.2, f.dir * 1.6) * 0.8;
+      const c = Math.cos(angle);
+      const sn = Math.sin(angle);
+      const at = (u: number, v: number): [number, number] => [
+        x + (c * u * f.dir - sn * v) * t,
+        y + (sn * u * f.dir + c * v) * t,
+      ];
+      if (k > 0.08 && k < 0.92) {
+        g.ellipse(...at(0, 0), t * 0.3, t * 0.17);
+        g.poly([...at(-0.25, 0), ...at(-0.48, -0.16), ...at(-0.48, 0.16)]);
+        g.fill({ color: PAPER });
+        g.ellipse(...at(0, 0), t * 0.3, t * 0.17);
+        g.poly([...at(-0.25, 0), ...at(-0.48, -0.16), ...at(-0.48, 0.16)]);
+        g.stroke({ width: ink, color: INK, join: 'round' });
+        drawPieEye(g, ...at(0.14, -0.03), t * 0.05, t * 0.07, f.dir, 0);
+      }
+      for (const from of [0, 0.85]) {
+        if (k < from || k > from + 0.15) continue;
+        const q = (k - from) / 0.15;
+        const [sx] = at(0, 0);
+        g.ellipse(sx, tileY(view, f.y), t * (0.2 + 0.4 * q), t * (0.08 + 0.15 * q));
+        g.stroke({ width: Math.max(1, t * 0.05), color: PAPER, alpha: 1 - q });
+      }
+    }
+
+    this.whales.step(
+      this.ocean,
+      deltaMs,
+      s.whaleEveryMs,
+      WHALE_MS,
+      (c) => allowed(c) && !this.behind(c.x + 1, c.y) && !this.behind(c.x - 1, c.y),
+    );
+    for (const w of this.whales.items) {
+      const k = stepped(w.ageMs) / WHALE_MS;
+      const rise = Math.min(1, k / 0.15, (1 - k) / 0.15);
+      const x = tileX(view, w.x);
+      const y = tileY(view, w.y);
+      const h = t * 0.6 * rise;
+      // Its back, a grey hump with a smiling eye, the sea cutting across its foot.
+      g.moveTo(x - t * 1.1, y).quadraticCurveTo(x - t * 0.2, y - h * 1.6, x + t * 1.1, y);
+      g.closePath();
+      g.fill({ color: 0x6a6a6a });
+      g.stroke({ width: ink, color: INK, join: 'round' });
+      if (rise > 0.6) {
+        drawPieEye(g, x + w.dir * t * 0.55, y - h * 0.45, t * 0.06, t * 0.09, w.dir, 0);
+        // The spout: a fountain of drops, rising and falling, white.
+        const spout = Math.sin(((k - 0.2) / 0.6) * Math.PI);
+        if (k > 0.2 && k < 0.8) {
+          const sx = x - w.dir * t * 0.1;
+          const top = y - h * 0.8 - spout * t * 1.4;
+          g.moveTo(sx, y - h * 0.8).lineTo(sx, top);
+          g.stroke({ width: Math.max(2, t * 0.12), color: PAPER, cap: 'round' });
+          for (const side of [-1, 1]) {
+            for (let n = 1; n <= 3; n++) {
+              g.circle(sx + side * n * t * 0.18, top + n * n * t * 0.06, t * 0.08);
+            }
+          }
+          g.fill({ color: PAPER });
+          g.stroke({ width: 1, color: INK, alpha: 0.8 });
+        }
+      }
+      g.moveTo(x - t * 1.3, y).lineTo(x + t * 1.3, y);
+      g.stroke({ width: Math.max(1, t * 0.06), color: PAPER, alpha: 0.9, cap: 'round' });
+    }
+
+    this.boats.step(this.ocean, deltaMs, s.boatEveryMs, s.boatTilesPerSecond, 1);
+    for (const boat of this.boats.items) {
+      if (this.behind(boat.x, boat.y)) continue;
+      const pull = Math.floor(this.clock / (stepMs * 3)) % 2;
+      const x = tileX(view, boat.x);
+      const y = tileY(view, boat.y);
+      // The oars, back and forward by turns.
+      for (const side of [-1, 1]) {
+        const reach = pull === 0 ? 0.35 : -0.25;
+        g.moveTo(x, y - t * 0.15).lineTo(x + boat.dir * reach * t, y + side * t * 0.05 + t * 0.15);
+      }
+      g.stroke({ width: Math.max(1, t * 0.05), color: INK, cap: 'round' });
+      g.poly([
+        x - t * 0.6,
+        y - t * 0.15,
+        x + t * 0.6,
+        y - t * 0.15,
+        x + t * 0.42,
+        y + t * 0.12,
+        x - t * 0.42,
+        y + t * 0.12,
+      ]);
+      g.fill({ color: PAPER });
+      g.stroke({ width: ink, color: INK, join: 'round' });
+      // The rower: a round head in a boater, looking ahead.
+      g.circle(x, y - t * 0.38, t * 0.17);
+      g.fill({ color: PAPER });
+      g.stroke({ width: ink * 0.8, color: INK });
+      g.rect(x - t * 0.22, y - t * 0.58, t * 0.44, t * 0.05);
+      g.rect(x - t * 0.13, y - t * 0.7, t * 0.26, t * 0.12);
+      g.fill({ color: INK });
+      g.circle(x + boat.dir * t * 0.07, y - t * 0.4, Math.max(1, t * 0.035));
+      g.fill({ color: INK });
     }
   }
 }

@@ -44,6 +44,7 @@ const BANNER_CLASS: Record<ArtStyle, string> = {
   office: 'banner-office',
   undersea: 'banner-undersea',
   electric: 'banner-electric',
+  cartoon: 'banner-cartoon',
 };
 
 /**
@@ -68,6 +69,7 @@ const HUD_SKIN: Record<ArtStyle, string> = {
   office: 'hud-office',
   undersea: 'hud-undersea',
   electric: 'hud-electric',
+  cartoon: 'hud-cartoon',
 };
 
 const PHASE_LABEL: Record<Phase, TextKey> = {

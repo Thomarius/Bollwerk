@@ -9,6 +9,7 @@ import { drawLyre, drawRose } from './music.js';
 import { drawGingerHeart, drawPretzel } from './wiesn.js';
 import { drawBubble, drawFish } from './reef.js';
 import { COPPER, drawArc, jag } from './spark.js';
+import { INK, PAPER, drawGlove, drawStar } from './toon.js';
 
 /**
  * A visual style.
@@ -705,7 +706,8 @@ export interface FinishLook {
    * flowers in the owner's colours thrown at a curtain call; `memo` sticky notes in the
    * owner's colours fluttering down among paper clips, from an office party's poppers;
    * `bubbles` bubbles tinted in the owner's colours rising among little fish darting out;
-   * `bolts` forked lightning in the owner's colours crackling out from the burst.
+   * `bolts` forked lightning in the owner's colours crackling out from the burst; `stars`
+   * cartoon stars in the owner's colours, inked round, tumbling out.
    */
   spark:
     | 'square'
@@ -722,7 +724,8 @@ export interface FinishLook {
     | 'roses'
     | 'memo'
     | 'bubbles'
-    | 'bolts';
+    | 'bolts'
+    | 'stars';
   /**
    * `swallowtail` a forked banner; `hologram` a flickering projection; `pennant` a flag in
    * plan; `brick` a square flag of bricks; `leaded` a banner of glass in its lead; `candy` a
@@ -731,7 +734,8 @@ export interface FinishLook {
    * on a maypole; `lyre` a pennant bearing a golden lyre on a gilded pole; `necktie` a
    * necktie in the owner's colour, knotted at the top of an aluminium pole, flying; `trident`
    * a pennant flying under the head of a bronze trident; `rod` a pennant cut like a bolt on a
-   * copper lightning rod, a spark crackling at its point.
+   * copper lightning rod, a spark crackling at its point; `glove` a pennant inked round, a
+   * white star on it, on a black pole held up by a white glove.
    */
   flag:
     | 'swallowtail'
@@ -746,7 +750,8 @@ export interface FinishLook {
     | 'lyre'
     | 'necktie'
     | 'trident'
-    | 'rod';
+    | 'rod'
+    | 'glove';
 }
 
 const PLAIN_FINISH: FinishLook = { spark: 'square', flag: 'swallowtail' };
@@ -915,6 +920,15 @@ export class WinnerBanners {
           g.fill({ color: 0xf4f8ff });
           continue;
         }
+        if (flag === 'glove') {
+          // A pennant in the owner's colour, inked round thick, a white star on it.
+          const head = up + clothH * 0.3;
+          g.poly([x, head, x + clothW * 1.1, head + clothH / 2 + wave, x, head + clothH]);
+          g.fill({ color: base });
+          g.stroke({ width: rim * 1.6, color: INK, join: 'round' });
+          drawStar(g, x + clothW * 0.36, head + clothH / 2 + wave * 0.3, clothH * 0.26, 0, PAPER);
+          continue;
+        }
         if (flag === 'trident') {
           // A pennant in the owner's colour under the trident's head, a wave along it.
           const head = up + clothH * 0.35;
@@ -1078,6 +1092,15 @@ export class WinnerBanners {
       }
       return;
     }
+    if (flag === 'glove') {
+      // A black pole, held up from below by a white glove, the era's hand.
+      g.moveTo(x, foot).lineTo(x, top);
+      g.stroke({ width: width + 1, color: INK });
+      g.circle(x, top, width + 1);
+      g.fill({ color: INK });
+      drawGlove(g, x, foot - (foot - top) * 0.22, (foot - top) * 0.09, Math.PI / 2);
+      return;
+    }
     if (flag === 'trident') {
       // A bronze shaft, and the trident's head: three prongs, barbed, over a crossbar.
       const bronze = 0xc9a24a;
@@ -1217,7 +1240,8 @@ export class Fireworks {
               playerColour(art, rocket.owner, 'base'),
               hex(art.palette.uiInk),
             ];
-      const count = kind === 'brick' || kind === 'blot' ? 22 : kind === 'spirits' ? 16 : 40;
+      const count =
+        kind === 'brick' || kind === 'blot' || kind === 'stars' ? 22 : kind === 'spirits' ? 16 : 40;
       for (let k = 0; k < count; k++) {
         const angle = (k / count) * Math.PI * 2 + Math.random() * 0.2;
         const speed = 3.5 + Math.random() * 3.5;
@@ -1297,6 +1321,8 @@ export class Fireworks {
           g.circle(x, y, size * 0.22);
           g.fill({ color: 0xe8c25a, alpha });
         }
+      } else if (kind === 'stars') {
+        drawStar(g, x, y, size * 0.75, spark.angle, spark.colour, alpha);
       } else if (kind === 'bolts') {
         // A short crackling streak along its flight, in the owner's colour round a white core.
         const tail = 0.12;

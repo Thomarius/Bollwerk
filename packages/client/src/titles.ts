@@ -1077,6 +1077,81 @@ export function electricTitle(text: string, _art: ArtConfig): Title {
   return { src: canvas.toDataURL(), ...title };
 }
 
+/**
+ * Cartoon's title: the word in fat white letters inked round thick, each stroke a rounded
+ * tube from cell to cell, a black shadow falling behind; the letters bounce, up and down by
+ * turns, and the O looks out with pie-cut eyes.
+ */
+export function cartoonTitle(text: string, _art: ArtConfig): Title {
+  const { canvas, ctx, cells, has } = drawnCanvas(text);
+  const title = { cellPx: DRAWN_CELL, padPx: DRAWN_PAD, tailPx: 0, smooth: true, flicker: false };
+  if (ctx === null) return { src: canvas.toDataURL(), ...title };
+  const lift = (x: number): number => (Math.floor(x / 6) % 2 === 0 ? -3 : 3);
+  const at = (v: number): number => DRAWN_PAD + v * DRAWN_CELL + DRAWN_CELL / 2;
+  const strokes: [number, number, number, number][] = [];
+  for (const { x, y } of cells) {
+    for (const [dx, dy] of [
+      [1, 0],
+      [0, 1],
+      [1, 1],
+      [-1, 1],
+    ] as const) {
+      if (!has(x + dx, y + dy)) continue;
+      if (dx !== 0 && dy !== 0 && (has(x + dx, y) || has(x, y + dy))) continue;
+      strokes.push([at(x), at(y) + lift(x), at(x + dx), at(y + dy) + lift(x)]);
+    }
+  }
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  for (const [width, colour, shift] of [
+    [DRAWN_CELL * 1.25, '#111111', 3],
+    [DRAWN_CELL * 1.25, '#111111', 0],
+    [DRAWN_CELL * 0.75, '#fafaf8', 0],
+  ] as const) {
+    ctx.strokeStyle = colour;
+    ctx.fillStyle = colour;
+    ctx.lineWidth = width;
+    ctx.beginPath();
+    for (const [x1, y1, x2, y2] of strokes) {
+      ctx.moveTo(x1 + shift, y1 + shift);
+      ctx.lineTo(x2 + shift, y2 + shift);
+    }
+    ctx.stroke();
+    for (const { x, y } of cells) {
+      ctx.beginPath();
+      ctx.arc(at(x) + shift, at(y) + lift(x) + shift, width / 2, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+  // The O's eyes: white ovals inked round, pupils cut like a pie.
+  const letters = [...text.toUpperCase()].filter((c) => GLYPHS[c] !== undefined);
+  letters.forEach((letter, n) => {
+    if (letter !== 'O') return;
+    for (const ex of [1.95, 3.05]) {
+      const x = DRAWN_PAD + (n * 6 + ex) * DRAWN_CELL;
+      const y = DRAWN_PAD + 3.3 * DRAWN_CELL + lift(n * 6);
+      ctx.beginPath();
+      ctx.ellipse(x, y, 4, 7, 0, 0, Math.PI * 2);
+      ctx.fillStyle = '#fafaf8';
+      ctx.fill();
+      ctx.lineWidth = 1.5;
+      ctx.strokeStyle = '#111111';
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.ellipse(x + 1, y + 1.5, 2.4, 4.4, 0, 0, Math.PI * 2);
+      ctx.fillStyle = '#111111';
+      ctx.fill();
+      ctx.beginPath();
+      ctx.moveTo(x + 1.2, y);
+      ctx.lineTo(x + 3.5, y - 2.5);
+      ctx.lineTo(x + 1.8, y - 3.5);
+      ctx.fillStyle = '#fafaf8';
+      ctx.fill();
+    }
+  });
+  return { src: canvas.toDataURL(), ...title };
+}
+
 const TITLES: Record<ArtStyle, (text: string, art: ArtConfig) => Title> = {
   flat: blockTitle,
   pixel: stoneTitle,
@@ -1094,6 +1169,7 @@ const TITLES: Record<ArtStyle, (text: string, art: ArtConfig) => Title> = {
   office: officeTitle,
   undersea: underseaTitle,
   electric: electricTitle,
+  cartoon: cartoonTitle,
 };
 
 /**

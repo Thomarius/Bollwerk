@@ -390,9 +390,9 @@ sender's seat**, so a client cannot act for someone else.
 
 ## 7. `packages/client`
 
-Sixteen visual styles — Minimal (`flat`), Medieval (`pixel`: named Pixel art until the other
+Seventeen visual styles — Minimal (`flat`), Medieval (`pixel`: named Pixel art until the other
 styles made the name mean nothing), Night, Cyberpunk, Blueprint, Parchment, Toy bricks
-(`bricks`), Stained glass (`glass`), Chocolate (`chocolate`), Halloween (`halloween`), Sakura (`sakura`), Oktoberfest (`oktoberfest`), Opera (`opera`), Office (`office`), Under the sea (`undersea`) and Electric (`electric`) — behind one `Theme` interface: the scene owns the camera, the layer stacks,
+(`bricks`), Stained glass (`glass`), Chocolate (`chocolate`), Halloween (`halloween`), Sakura (`sakura`), Oktoberfest (`oktoberfest`), Opera (`opera`), Office (`office`), Under the sea (`undersea`), Electric (`electric`) and Cartoon (`cartoon`) — behind one `Theme` interface: the scene owns the camera, the layer stacks,
 dirty tracking and input mapping; a theme owns only what things look like. Adding a style
 is a name in `ArtStyleSchema`, the looks it is made for in `STYLE_LOOKS`, a `Theme`, a
 case in `createTheme`, a menu title in `titles.ts` and a banner class in `hud.ts`; the
@@ -486,12 +486,12 @@ Parchment, tumbling bricks, glass shards, candy sprinkles, in Halloween bats and
 ghosts flying up, in Sakura a chrysanthemum's bowed streaks among cherry petals, in
 Oktoberfest pretzels and gingerbread hearts, in Opera roses and flowers thrown at a
 curtain call, in Office sticky notes and paper clips from party poppers and in Under the sea
-bubbles and little fish and in Electric forked lightning, and the
+bubbles and little fish, in Electric forked lightning and in Cartoon stars, and the
 winners' flag a swallowtail, a flickering hologram on a light-beam, a pennant in plan, a
 square flag of bricks, a leaded banner, a pennant on a candy-cane pole, a tattered pennant
 on a crooked branch, a tall war banner (_nobori_) hung from an arm, the Bavarian lozenges
 on a maypole, a pennant bearing a golden lyre, a necktie on an aluminium pole, a pennant under a bronze
-trident, or a bolt-cut pennant on a copper lightning rod. Minimal keeps the plain ones.
+trident, a bolt-cut pennant on a copper lightning rod, or a pennant on a pole held up by a white glove. Minimal keeps the plain ones.
 
 **Each banner is drawn in the look it brings** (`BANNER_CLASS` in `hud.ts`, a record
 over every style): flat gold for Minimal, a neon strip that flickers on for Cyberpunk, a
@@ -530,7 +530,7 @@ top saying whether a click chooses the building or the combat look, each card ba
 the look it is chosen for. The styles are in alphabetical order by name, so a new one finds
 its place, and **Random** comes last, a die for its picture: **a new style at every
 banner that brings its look** (`LookRotation`, ARCHIVE 12q), repeating none until every
-style has been shown — both looks random share one cycle of all sixteen, one random cycles
+style has been shown — both looks random share one cycle of all seventeen, one random cycles
 through all but the other look's — and never the style the banner takes away, nor the one a
 look last had across a cycle's end. Each next look is made a step a frame, hidden, in the
 intermission after the build phase (`Scene.prepare`), and goes on screen once the look it
@@ -1103,6 +1103,53 @@ Under "Glowing" the arcs' halos are bloomed, at half resolution as Cyberpunk's a
 colours are the shared ones; the storm's lightning is white with a cool halo, and nothing else
 on the board is a player's colour.
 
+**Cartoon** (`cartoon.ts`, `art.cartoon`, `toon.ts`), for either look: **a 1930s rubber-hose
+cartoon reel** — the user's idea, after the old cartoons and the games drawn like them, and their
+choices, ARCHIVE 12zb. **Black ink on paper white, and the only colour a player's**: whatever
+has colour is someone's. Named for the era's conventions alone — pie-cut eyes, white
+four-fingered gloves, hose limbs, squash and stretch — and no character of any studio's.
+**Everything alive moves on one beat** (`beatMs`, quicker while the clock presses,
+`hurriedBeatMs`) **and in steps**, twelve drawings a second (`framesPerSecond`), "on twos", as
+the cartoons did: a figure hops between beats and lands squashed. The sea is grey, lighter
+along the coast, white wave crests bobbing on it, half up as half go down; the land paper white,
+inked round thick, its shadow cast on the sea. Walls are **cartoon bricks** in the owner's
+colour, two courses a block, the face a shade darker, a white shine on each, inked round; a
+player's who is out, and rubble, grey. **Sealed ground is a dance floor**, the owner's colour
+and white checkered. **Castles live**, figures stamped for each owner and mood: sealed, one
+grins and dances — hops, sways, its gloved arms swapping each beat, a pennant flying and now and
+then a note rising from it; unsealed it frets, brows up, arms hanging; **breached it panics**
+for 2.4 s, eyes wide, sweating, arms flung up, shaking — the hoist's lowering, 550 ms, was
+over before it read; a player's who is out stands grey and X-eyed, stars circling. Its face is
+high on the keep, since a main castle's crown sits on its middle. Guns are **cannons with
+faces**, the muzzle the mouth, on a carriage with a spoked wheel, facing their target: a live
+one bounces on its wheels; firing, it squashes back, stretches out and settles, eyes screwed
+shut, a puff of smoke from its muzzle; **a silenced one sleeps**, barrel drooping, Zs rising —
+in a build phase a gun outside sealed ground visibly dozes until its wall is closed. Shots are
+**black bombs**, turning as they fly, the fuse sparking a star in the owner's colour. A hit is a
+white starburst — the one flash at a spot there is — bricks flying in the owner's colour, dust
+and stars circling the hole; on the ground a crater fading over `fx.craterRounds`; in the sea a
+splash. The sweep pops a block in a puff; a piece set down lands with dust puffing out under it.
+**The piece in hand is carried in two white gloves**, bobbing on the beat; where it does not fit
+it turns grey and shakes, and a glove wags a finger — in form, since red is a player's. **An
+alarm clock on legs** dances in the corner, its hands ticking round a step each beat, and rings
+wildly at the climax, overtime and the final round, hammer hammering, mouth wide. **The film**:
+grain new at each step, a faint flicker, a hair now and then and scratches running down it, all
+none under reduced motion, and a vignette drawn once on a small canvas and stretched over the
+window (a Pixi radial gradient lost its stops' alpha). Weather from the seed: rain in short
+slanting dashes of ink, snow in white flakes inked round, fog pale banks. Scenery is puffy trees
+on bendy trunks, one in four with a face, **swaying on the beat from their foot**, neighbours a
+little out of step (stamps, placed again at each step); toadstools, daisies with faces, tufts of
+grass, rocks and haystacks — nothing round and black, which is a bomb; on the outer sea a fish
+hops out grinning, a whale surfaces to spout and a rowing boat crosses, its oars pulling on
+twos, hidden behind the clock. Its banner is a title card, grey rays bursting from its middle,
+a white double rule along it, lettered fat and white, inked; its HUD a strip of film with its
+sprocket holes; its timer fat white figures inked thick; its island banners white lozenges and
+its stamps a black title card in a double rule, in italics, as "The End" was; under it the final
+round's dusk is the film darkening and its embers white dust. Its title is the word in fat white
+letters, bouncing by turns, the O looking out with pie-cut eyes; its finish stars in the
+winners' colours, the winners' flag a pennant with a white star on a black pole held up by a
+white glove. The player colours are the shared ones; nothing else on the board has colour.
+
 The thirteen shape-drawn styles share `walls.ts`: the wall geometry (tops, faces, rim), and
 hatching laid on one lattice so neighbouring tiles hatch as one fill.
 
@@ -1118,7 +1165,8 @@ mugs and sleeping revellers in Oktoberfest, harps, music stands, choir singers, 
 and grand pianos in Opera, potted plants, open-plan desks, cacti on filing cabinets, swivel chairs, archive boxes and
 jammed printers in Office, kelp, tube sponges, starfish, scallop shells, barnacled rocks,
 anemones, anchors and bottles in Under the sea, split trees, telegraph poles, fulgurites,
-lightning rods and Wimshurst machines in Electric, a faint dot in Minimal. **It must never read as wall**, nor as a gun or a
+lightning rods and Wimshurst machines in Electric, swaying trees, toadstools, daisies with
+faces, haystacks and rocks in Cartoon, a faint dot in Minimal. **It must never read as wall**, nor as a gun or a
 shot: Blueprint's trees were first a circle with a cross, a gun's survey mark in small,
 and Medieval's boulders a round grey rock, a cannonball's double. A tile once built on or
 sealed is cleared for the rest of the match, so nothing grows back through a breach; a
@@ -1139,7 +1187,8 @@ on a lilo and a Weißwurst swimming circles, hidden behind the Ferris wheel; in 
 Dutchman, hidden behind the conductor; in Office robot vacuums, a stray paper plane and a
 colleague racing past on an office chair; in Under the sea schools of fish, jellyfish, a sea
 turtle and a manta ray, hidden behind the wreck; in Electric electric eels leaping, a ship with
-St. Elmo's fire on its masts and a gull blown past; in Minimal a plain boat's silhouette. Anything tall keeps
+St. Elmo's fire on its masts and a gull blown past; in Cartoon a fish hopping, a whale spouting and
+a rowing boat; in Minimal a plain boat's silhouette. Anything tall keeps
 to rows whose top is clear of the HUD bar.
 
 **A piece in the corner, in every style** (`corner.ts`, PLAN 11.24, ARCHIVE 12t): in the
@@ -1147,7 +1196,7 @@ sea's bottom-right corner, the one the HUD leaves alone and clear of the big tim
 `cornerSpot`), each style stands something of its own — Parchment's compass rose, Chocolate's
 chocolate fall, Halloween's moon and bats, Sakura's Mount Fuji, Oktoberfest's Ferris wheel,
 Opera's conductor, Office's water cooler and its gossips, Under the sea's shipwreck with an
-octopus draped over its bow (ARCHIVE 12u), Electric's Jacob's ladder (ARCHIVE 12v); Minimal's signal buoy, bobbing, its
+octopus draped over its bow (ARCHIVE 12u), Electric's Jacob's ladder (ARCHIVE 12v), Cartoon's alarm clock on legs (ARCHIVE 12zb); Minimal's signal buoy, bobbing, its
 gold light blinking; Medieval's windmill on a rocky islet, sails turning, quicker in rain, in
 the day's light and mirrored in the sea; Night's fishing boat at anchor, its lanterns swaying
 and lighting the water, flaring in the final round; Cyberpunk's holographic billboard, a
@@ -1332,7 +1381,7 @@ every resolution against an independent search, not only on unit pictures.
 ## 11. Open work
 
 **Where to start (2026-10-07).** Everything planned is done and in **v0.8.2**, the latest
-release: the game and online play, bots as skill levels and personalities, sixteen styles
+release: the game and online play, bots as skill levels and personalities, sixteen styles (seventeen since Cartoon, ARCHIVE 12zb)
 each with its piece in the corner, random looks every round, English and German, the desktop
 app, UPnP, the balance soak and the rendering work (ARCHIVE 12h–12v); the refactoring of
 2026-10-07 (ARCHIVE 12w, protocol 17); and stronger bots — they route round holes no piece
@@ -1398,7 +1447,7 @@ test-session feedback, in ARCHIVE 11w; 11.5 the small items and 11.6 the bots, i
 11.16 help for new players, the menu and the sea, and 11.17 the desktop app, in ARCHIVE
 11zt; 11.18 the fourth visual pass, in ARCHIVE 11zv; 11.19 every style to the edges, in
 ARCHIVE 11zz; 11.20 more languages, in ARCHIVE 12g; 11.21 UPnP, in ARCHIVE 12j; 11.2 points decide, 11.3 two players,
-11.4 measurements never taken and 11.13 the bots' loose ends, closed by the weekend soak, in ARCHIVE 12h; 11.22 rendering performance, in ARCHIVE 12n, its bots planning on the same ticks in ARCHIVE 12p; 11.23 random looks every round, in ARCHIVE 12q; Cyberpunk under Glowing, in ARCHIVE 12r; the slow plan late in a build phase, in ARCHIVE 12s; 11.24 a piece in the corner for every style, in ARCHIVE 12t; Under the sea and Electric, in ARCHIVE 12u and 12v; the refactoring of 2026-10-07, in ARCHIVE 12w — so the open sections keep theirs.
+11.4 measurements never taken and 11.13 the bots' loose ends, closed by the weekend soak, in ARCHIVE 12h; 11.22 rendering performance, in ARCHIVE 12n, its bots planning on the same ticks in ARCHIVE 12p; 11.23 random looks every round, in ARCHIVE 12q; Cyberpunk under Glowing, in ARCHIVE 12r; the slow plan late in a build phase, in ARCHIVE 12s; 11.24 a piece in the corner for every style, in ARCHIVE 12t; Under the sea and Electric, in ARCHIVE 12u and 12v; Cartoon, in ARCHIVE 12zb; the refactoring of 2026-10-07, in ARCHIVE 12w — so the open sections keep theirs.
 
 ## 12. Deferred (explicitly out of scope for v1)
 

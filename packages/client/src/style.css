@@ -2760,7 +2760,8 @@ body.hud-wiesn,
 body.hud-opera,
 body.hud-office,
 body.hud-undersea,
-body.hud-electric {
+body.hud-electric,
+body.hud-cartoon {
   --hud-panel: var(--hud-box);
 }
 
@@ -3842,6 +3843,122 @@ body.hud-electric .final-stamp {
   font-weight: 700;
   letter-spacing: 0.1em;
   text-shadow: none;
+}
+
+/* Cartoon: the banner a title card — rays bursting from its middle in greys, a white double
+   rule along it, lettered fat and white, inked round; the HUD a strip of film, its sprocket
+   holes along the top and the foot. Black and white, as the board is. */
+.phase-call.banner-cartoon {
+  border-top: 5px double #fafaf8;
+  border-bottom: 5px double #fafaf8;
+  background-color: #1a1a1a;
+  background-image:
+    radial-gradient(ellipse at 50% 50%, transparent 25%, #000b 100%),
+    repeating-conic-gradient(from 0deg at 50% 50%, #303030 0 5deg, #1a1a1a 5deg 10deg);
+  color: #fafaf8;
+  font-family: 'Arial Rounded MT Bold', 'Trebuchet MS', Verdana, system-ui, sans-serif;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  -webkit-text-stroke: 2px #111;
+  paint-order: stroke fill;
+  text-shadow: 3px 3px 0 #000;
+}
+
+.phase-call.banner-cartoon small {
+  color: #dcdcdc;
+  -webkit-text-stroke: 0;
+  text-shadow: 1px 1px 0 #000;
+}
+
+.phase-call.banner-cartoon small.news {
+  color: #ffffff;
+  font-style: italic;
+}
+
+body.hud-cartoon {
+  --hud-bar: #141414;
+  --hud-rule: 6px solid transparent;
+  --hud-pad-top: 0.5rem;
+  --hud-ink: #fafaf8;
+  --hud-muted: #b4b4b4;
+  --hud-accent: #ffffff;
+  --hud-box: #1c1c1c;
+  --hud-box-edge: 2px solid #fafaf8;
+  --hud-box-shadow: 3px 3px 0 #000;
+  --hud-track: #ffffff22;
+}
+
+/* The film's sprocket holes, a row along its top and its foot. */
+body.hud-cartoon #hud .bar {
+  background-image:
+    repeating-linear-gradient(90deg, #e4e4e4 0 9px, transparent 9px 22px),
+    repeating-linear-gradient(90deg, #e4e4e4 0 9px, transparent 9px 22px);
+  background-size:
+    100% 4px,
+    100% 4px;
+  background-position:
+    0 3px,
+    0 calc(100% - 3px);
+  background-repeat: no-repeat;
+  background-origin: border-box;
+  background-clip: border-box;
+}
+
+/* The big timer in fat white figures, inked round thick, a hard shadow behind. */
+body.hud-cartoon .big-timer {
+  color: rgb(250 250 248 / 85%);
+  font-family: 'Arial Rounded MT Bold', 'Trebuchet MS', Verdana, system-ui, sans-serif;
+  font-weight: 900;
+  -webkit-text-stroke: 4px #111;
+  paint-order: stroke fill;
+  text-shadow: 5px 5px 0 rgb(0 0 0 / 60%);
+}
+
+body.hud-cartoon .big-timer.urgent {
+  color: rgb(255 90 90 / 90%);
+}
+
+/* Island banners a white lozenge inked round, a hard shadow under it; the stamps a black
+   title card in a double white rule, lettered in italics, as "The End" was. */
+body.hud-cartoon .island-banner:not(.out),
+body.hud-cartoon .team-tag,
+body.hud-cartoon .you-are-here {
+  border-radius: 999px;
+  background: #fafaf8;
+  box-shadow:
+    inset 0 0 0 2px #111,
+    3px 3px 0 #000;
+  color: #111;
+  font-family: 'Arial Rounded MT Bold', 'Trebuchet MS', Verdana, system-ui, sans-serif;
+  font-weight: 800;
+  text-shadow: none;
+}
+
+body.hud-cartoon .island-banner.out,
+body.hud-cartoon .final-stamp {
+  border: 4px double #fafaf8 !important;
+  border-radius: 4px;
+  background: radial-gradient(ellipse at 50% 50%, #2a2a2a, #0a0a0a);
+  box-shadow:
+    0 0 0 3px #111,
+    4px 4px 0 #000;
+  color: #fafaf8;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-style: italic;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-shadow: none;
+}
+
+/* In black and white the last round's dusk is the film darkening at its edges, and its
+   embers are white specks of dust: orange was the one colour on the screen not a player's. */
+body.hud-cartoon #banner.final-round::before {
+  box-shadow: inset 0 0 18vmin rgb(0 0 0 / 40%);
+}
+
+body.hud-cartoon .embers i {
+  background: #fafaf8;
+  box-shadow: 0 0 4px 1px rgb(255 255 255 / 45%);
 }
 
 /* ---------- the gallery of looks (ARCHIVE 12b) ---------- */

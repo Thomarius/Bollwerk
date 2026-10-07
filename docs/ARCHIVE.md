@@ -5551,3 +5551,47 @@ fourth building track (`music_admin.4.mp3`), a tournament as the second battle t
 a brass fanfare replacing the victory music; loudness within 1.5 LU of their neighbours,
 so the volumes stand. The credits disclaimer, the README and CLAUDE.md now name Pixabay.
 Released with the bot work of 12x–12z as **v0.8.2**.
+
+## 12zb. Cartoon, a seventeenth style (2026-10-07)
+
+The user's idea: the "rubber hose" style of the old cartoons, and of modern games drawn like
+them — mostly black and white, only the player colours popping out. Pitched and agreed before
+building: **a 1930s cartoon reel**, the era's conventions (pie-cut eyes, white gloves, hose
+limbs, squash and stretch, one beat for everything) and no studio's characters. Chosen by the
+user: **a grey sea** with white land, over a black one; **living castles**, over a circus tent or
+a dancing cottage; **cannons with faces**, over gloved hands striking a match or a catapult; **a
+dance floor** for sealed ground, over a halftone wash or flowers with faces; **an alarm clock on
+legs** for the corner piece, over a gramophone or a sun with a face; **pure black and white**
+film, over a warm paper tone, line boil left undecided; named **Cartoon** / **Zeichentrick**
+("Inkwell" was too near a studio's series). The style is PLAN §7's Cartoon.
+
+What carries meaning: **colour is ownership** — the walls, the dance floor, the castles and guns,
+a bomb's fuse spark and the bricks a hit throws; **sealed is a castle dancing**, unsealed one
+fretting, **a breach a castle panicking** for 2.4 s (the shared hoist lowers in 550 ms, gone
+before it read), out a castle grey and X-eyed; **a silenced gun sleeps**. A hit's starburst is
+the one flash at a spot. The final round's dusk and embers, HTML over every style and orange,
+were the one colour on the screen not a player's: under Cartoon's HUD they are the film
+darkening and white dust. The shared finish gained `stars` and the flag `glove`; the glove, star,
+cloud and pie-cut eye are `toon.ts`, shared by the theme, its sea life and the finish.
+
+**Drawn cheaply from the start.** Walls and the floor in straight strokes by island; the castles,
+guns, bombs, puffs, bricks, stars, notes, Zs, wave crests, grain and rain all stamps — a figure's
+dance is a stamp's scale, turn and place, so it costs a placing; the waves and the grain are
+placed again only at each of the twelve steps a second; the clock a `Memos` redrawn at each step.
+In headless Chrome at eight players in combat: about 18 000 vertices a frame against Office's
+30 000 measured the same way, one after the other, render time alike (8.6 ms against 8.1); a
+wall redrawn at a hit about 4 200 vertices at worst against Office's 9 000.
+
+Seen in screenshots building, in combat at two, three and eight players, in the final round, at
+game over with the gloves' pennants, the menu's title, and the banner and stamp set on the page
+by hand, since headless Chrome could not be caught mid-wipe. What the first look changed: the
+gloves stood off their arms — Pixi's `rotateTransform` turns the translation before it too, so a
+shape is turned first and moved after; a vignette of stroked rounded rectangles showed its bands,
+and a Pixi radial gradient darkened the whole screen, losing its stops' alpha, so it is a canvas
+drawn once and stretched; the castles' gloves were enlarged.
+
+**After the user's look in play** (2026-10-07): "super cool", and one change asked for: **the
+trees sway**, leaning one way and then the other on the beat from their foot, the canopy squashing
+as it lands, neighbours a little out of step — stamps placed again at each step, the shadow left
+in the scenery's drawing; at eight players the cost unchanged within the measurement's noise.
+Approved as it stands; line boil not taken up.

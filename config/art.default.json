@@ -1102,6 +1102,31 @@
         "uiValid": "#9df0b0",
         "uiInvalid": "#ff6a6a"
       }
+    },
+    "cartoon": {
+      "palette": {
+        "waterDeep": "#7a7a7a",
+        "waterMid": "#8c8c8c",
+        "waterShallow": "#a2a2a2",
+        "waterFoam": "#f4f4f4",
+        "sand": "#d6d6d6",
+        "grassDark": "#a8a8a8",
+        "grassMid": "#ebebe8",
+        "grassLight": "#f8f8f6",
+        "rockDark": "#3a3a3a",
+        "rockMid": "#8a8a8a",
+        "rockLight": "#dadada",
+        "shadow": "#111111",
+        "craterDark": "#1c1c1c",
+        "craterMid": "#4a4a4a",
+        "emberHot": "#ffffff",
+        "emberMid": "#e4e4e4",
+        "emberCool": "#9a9a9a",
+        "uiInk": "#ffffff",
+        "uiAccent": "#f4f4f4",
+        "uiValid": "#8fe08a",
+        "uiInvalid": "#ff5050"
+      }
     }
   },
   "dither": {
@@ -1477,5 +1502,24 @@
     "shipTilesPerSecond": 0.6,
     "gullEveryMs": 15000,
     "gullTilesPerSecond": 3.2
+  },
+  "cartoon": {
+    "floorAlpha": 0.8,
+    "framesPerSecond": 12,
+    "beatMs": 520,
+    "hurriedBeatMs": 300,
+    "noteEveryMs": 2400,
+    "grainCount": 90,
+    "flickerAlpha": 0.05,
+    "scratchEveryMs": 2600,
+    "vignetteAlpha": 0.35,
+    "rainCount": 120,
+    "snowCount": 110,
+    "fogBanks": 7,
+    "fogAlpha": 0.14,
+    "fishEveryMs": 5000,
+    "whaleEveryMs": 22000,
+    "boatEveryMs": 24000,
+    "boatTilesPerSecond": 0.7
   }
 }

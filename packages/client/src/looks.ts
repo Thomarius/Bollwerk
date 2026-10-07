@@ -44,6 +44,7 @@ const STYLE_NAMES: Record<LookChoice, TextKey> = {
   office: 'style.office',
   undersea: 'style.undersea',
   electric: 'style.electric',
+  cartoon: 'style.cartoon',
   random: 'style.random',
 };
 

@@ -69,7 +69,7 @@ rounds.
 | `ai`             | Bots: min-cut sealing, 0-1 BFS attack, skill levels and personalities.     |
 | `analysis`       | Per-round match statistics, for bot soaks and recorded human play alike.   |
 | `server`         | Authoritative match server, rooms, WebSocket, match recordings.            |
-| `client`         | Pixi renderer, sixteen visual styles, controls, HUD, netcode client.       |
+| `client`         | Pixi renderer, seventeen visual styles, controls, HUD, netcode client.     |
 | `desktop`        | Electron app for releases: the server behind a minimal window (M14).       |
 | `tools/headless` | Bot-vs-bot soak runs and map dumps.                                        |
 
@@ -169,10 +169,11 @@ Full detail in PLAN.md §1. The parts that surprise people:
   (ARCHIVE 10u); bots as a skill level 1–10 chosen in the lobby and a personality dealt
   from the seed, revealed at game over (M13, ARCHIVE 11x–11zb); bots sharing a few plans a
   tick (ARCHIVE 12p) and skipping searches that cannot fit (ARCHIVE 12s).
-- **The looks**: sixteen styles for either look — Minimal, Medieval, Night, Cyberpunk,
+- **The looks**: seventeen styles for either look — Minimal, Medieval, Night, Cyberpunk,
   Blueprint, Parchment, Toy bricks, Stained glass, Chocolate (ARCHIVE 11zy), Halloween
   (ARCHIVE 12a), Sakura (ARCHIVE 12d), Oktoberfest (ARCHIVE 12e), Opera (ARCHIVE 12f),
-  Office (ARCHIVE 12l), Under the sea (ARCHIVE 12u) and Electric (ARCHIVE 12v) — over four
+  Office (ARCHIVE 12l), Under the sea (ARCHIVE 12u), Electric (ARCHIVE 12v) and Cartoon, a
+  rubber-hose reel in black and white, only the players in colour (ARCHIVE 12zb) — over four
   visual passes (M9–M12); every style carried to the panels, the big timer, the island
   banners and the finish (ARCHIVE 11zz), and each with a piece of its own in the sea's corner
   (`corner.ts`, ARCHIVE 12t); chosen from a gallery with Random — a new style every round, in

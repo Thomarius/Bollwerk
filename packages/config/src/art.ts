@@ -53,7 +53,7 @@ export type PlayerPalette = z.infer<typeof PlayerPaletteSchema>;
  * `oktoberfest` the beer festival on an island in a sea of beer, `opera` a night at the opera
  * on a sea whose waves are staves, `office` an open-plan office at war with itself,
  * `undersea` a coral reef on the seabed, the deep all round it, `electric` a storm
- * laboratory under a thunderstorm.
+ * laboratory under a thunderstorm, `cartoon` a 1930s rubber-hose cartoon in black and white.
  */
 export const ArtStyleSchema = z.enum([
   'flat',
@@ -72,6 +72,7 @@ export const ArtStyleSchema = z.enum([
   'office',
   'undersea',
   'electric',
+  'cartoon',
 ]);
 export type ArtStyle = z.infer<typeof ArtStyleSchema>;
 
@@ -626,6 +627,44 @@ export const ElectricStyleSchema = z.strictObject({
 });
 export type ElectricStyleConfig = z.infer<typeof ElectricStyleSchema>;
 
+/**
+ * The Cartoon look: a 1930s rubber-hose cartoon reel, black ink on white under film grain,
+ * the only colour a player's — living castles that dance while sealed, cannons with faces
+ * firing bombs, a checkered dance floor for sealed ground, and an alarm clock on legs
+ * dancing in the corner.
+ */
+export const CartoonStyleSchema = z.strictObject({
+  /** The coloured squares of the dance floor, sealed ground, over the white ones. */
+  floorAlpha: z.number().min(0).max(1),
+  /** Drawings a second for everything that moves: a cartoon of the era moved "on twos". */
+  framesPerSecond: z.number().positive(),
+  /** One beat everything alive bounces to, and the beat while the clock presses. */
+  beatMs: z.number().int().positive(),
+  hurriedBeatMs: z.number().int().positive(),
+  /** A note rising from each sealed castle, about so often. */
+  noteEveryMs: z.number().int().positive(),
+  /** Specks of film grain on screen at once, and how dark the flicker of the film goes. */
+  grainCount: z.number().int().nonnegative(),
+  flickerAlpha: z.number().min(0).max(1),
+  /** A scratch running down the film now and then. */
+  scratchEveryMs: z.number().int().positive(),
+  /** How dark the vignette's corners go. */
+  vignetteAlpha: z.number().min(0).max(1),
+  /** Raindrops and snowflakes at once, in a match with that weather. */
+  rainCount: z.number().int().nonnegative(),
+  snowCount: z.number().int().nonnegative(),
+  /** Banks of fog drifting over the board in a foggy match, and how thick. */
+  fogBanks: z.number().int().nonnegative(),
+  fogAlpha: z.number().min(0).max(1),
+  /** A fish hopping out of the outer sea now and then, and a whale surfacing to spout. */
+  fishEveryMs: z.number().int().positive(),
+  whaleEveryMs: z.number().int().positive(),
+  /** A rowing boat crossing the outer sea now and then. */
+  boatEveryMs: z.number().int().positive(),
+  boatTilesPerSecond: z.number().positive(),
+});
+export type CartoonStyleConfig = z.infer<typeof CartoonStyleSchema>;
+
 /** One of the two looks a match is drawn in. */
 export type ArtLook = 'build' | 'combat';
 
@@ -674,6 +713,7 @@ export const STYLE_LOOKS: Record<ArtStyle, readonly ArtLook[]> = {
   office: ['build', 'combat'],
   undersea: ['build', 'combat'],
   electric: ['build', 'combat'],
+  cartoon: ['build', 'combat'],
 };
 
 export function styleServes(
@@ -801,6 +841,7 @@ export const ArtConfigSchema = z
     office: OfficeStyleSchema,
     undersea: UnderseaStyleSchema,
     electric: ElectricStyleSchema,
+    cartoon: CartoonStyleSchema,
     scenery: ScenerySchema,
     /** Effects both styles draw alike, because they carry information. */
     effects: z.strictObject({
