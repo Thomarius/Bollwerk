@@ -553,14 +553,25 @@ export class Builder {
     if (player === undefined || buildRefusal(state, this.playerId) !== null) return null;
     const islandId = player.islandId;
 
+    // Each placement once. A square tried at four turns, or one anchor reached from two
+    // wanted tiles, was the same placement again, scored the same - never the best, which
+    // is the first to score highest, but often the second: a sloppy bot "settling for a
+    // worse fit" then laid exactly the fit it had chosen. A piece's distinct turns only,
+    // and each anchor once (the key allows anchors a piece's size off the board).
+    const rotations = pieceById(pieceId).rotations.length;
+    const span = state.width + 16;
+    const tried = new Set<number>();
     for (const tile of wanted) {
       const tx = tile % state.width;
       const ty = (tile - tx) / state.width;
-      for (let rotation = 0; rotation < 4; rotation++) {
+      for (let rotation = 0; rotation < rotations; rotation++) {
         const cells = pieceCells(pieceId, rotation);
         for (const [ox, oy] of cells) {
           const x = tx - ox;
           const y = ty - oy;
+          const key = ((y + 8) * span + (x + 8)) * 4 + rotation;
+          if (tried.has(key)) continue;
+          tried.add(key);
           if (cellsRefusal(state, player, cells, x, y) !== null) continue;
           let covered = 0;
           let indoors = 0;

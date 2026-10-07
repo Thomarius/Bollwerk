@@ -1341,6 +1341,9 @@ decision, 2026-10-06). Still open:
    players grow into. The task is an execution error beside `aimJitter` — say a share of
    shots landing a tile or two off, or a second shot at the block just fired at — scaled by
    level, then a soak to keep the ladder in order, since it weakens every level it touches.
+   That soak covers one change already made without one (2026-10-07): a sloppy bot's
+   "worse fit" was often the very placement it had chosen, a square's four turns or one
+   anchor reached twice counting as alternatives, so Levels 1–4 now slip for real.
 
    **The yardstick** is the recordings of 2026-09-30 to 10-05 (five team matches of the two
    testers against L3–L5 bots, replayed exactly; sparse, so tendencies only). **Thomas is a
