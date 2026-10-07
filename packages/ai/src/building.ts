@@ -1,4 +1,4 @@
-import { type BotProfile } from '@bollwerk/config';
+import { type BotProfile, type FitWeights } from '@bollwerk/config';
 import {
   Structure,
   cannonReward,
@@ -137,6 +137,9 @@ export class Builder {
 
   private nextPlacementTick = 0;
 
+  /** The tightest repair as the plan was made, for a learned fit to weigh (`fitWeights`). */
+  private tight: number[] = [];
+
   /**
    * Rules out every tile of the island no piece the bag can deal could cover, so a plan
    * routes round it from the start rather than meeting it with the phase spent. A build
@@ -211,6 +214,10 @@ export class Builder {
       this.markUncoverable(state);
       this.plan = this.decide(state, look);
       this.plannedAt = state.tick;
+    }
+
+    if (this.profile.fitWeights !== null) {
+      return this.buildScored(state, pieceId, look, rng, this.profile.fitWeights);
     }
 
     // What to build, most urgent first, tried in turn until a piece fits one of them.
@@ -348,6 +355,9 @@ export class Builder {
     if (!player) return [];
     // One graph for every wall this plan weighs, and each wall weighed once.
     const seal = new SealPlanner(state, this.playerId, this.unreachable);
+    if (this.profile.fitWeights !== null) {
+      this.tight = seal.cheapest(1, this.profile.maxCastles, true, 0)?.tiles ?? [];
+    }
     // Counted afresh rather than read from `enclosedCastles`, which placements and
     // resolutions refresh but landing shots do not: as a breached build phase opens it
     // still says sealed, and the first plan of the phase was made for a wall that stood.
@@ -804,6 +814,138 @@ export class Builder {
     return best;
   }
 
+  /**
+   * A piece laid by a learned score rather than the ladder's order (`fitWeights`,
+   * BOT_LEARNING step 3): every legal placement reaching the plan, the tightest repair,
+   * the thickening targets or the outer skin, weighed at once.
+   */
+  private buildScored(
+    state: MatchState,
+    pieceId: number,
+    look: Look,
+    rng: Rng,
+    weights: FitWeights,
+  ): Action | null {
+    const open = (tiles: readonly number[]): number[] =>
+      tiles.filter((i) => state.structure[i] === Structure.Empty && !this.unreachable.has(i));
+    let plan = open(this.plan);
+    if (plan.length === 0) {
+      // The plan is built: the next castle or more room, as the ladder's spare work.
+      if (!this.slots.take(state.tick)) return null;
+      plan = open(this.spareWork(state));
+    }
+    const thickens = this.profile.thickens;
+    const targets: Targets = {
+      plan,
+      tight: open(this.tight),
+      thicken: thickens ? open(look.thickenTargets()) : [],
+      skin: thickens ? open(outerSkin(state, this.playerId)) : [],
+    };
+    const placement = this.scoredFit(state, pieceId, targets, rng, look, weights);
+    if (placement === null) {
+      this.pause(state);
+      return null;
+    }
+    this.nextPlacementTick =
+      state.tick + ticksFor(this.placementMs(pieceById(pieceId).size), state);
+    return { kind: 'place_piece', player: this.playerId, ...placement };
+  }
+
+  /** The placement scoring highest by `weights` — or, for a sloppy bot now and then, the next. */
+  private scoredFit(
+    state: MatchState,
+    pieceId: number,
+    targets: Targets,
+    rng: Rng,
+    look: Look,
+    weights: FitWeights,
+  ): { x: number; y: number; rotation: number } | null {
+    const player = state.players[this.playerId];
+    if (player === undefined || buildRefusal(state, this.playerId) !== null) return null;
+    const islandId = player.islandId;
+    const inside = this.insideOf(state, look);
+    const plan = new Set(targets.plan);
+    const tight = new Set(targets.tight);
+    const thicken = new Set(targets.thicken);
+    const skin = new Set(targets.skin);
+    const anchors = [
+      ...new Set([...targets.plan, ...targets.tight, ...targets.thicken, ...targets.skin]),
+    ];
+    // The repair's cost over what the phase can still lay, at repair efficiency (0.45 blocks
+    // a cell, BOT_LEARNING step 1): about 1 where the repair would take the whole phase.
+    const urgency = Math.min(
+      2,
+      targets.tight.length / Math.max(1, this.cellsAffordable(state) * 0.45),
+    );
+
+    const rotations = pieceById(pieceId).rotations.length;
+    const span = state.width + 16;
+    const tried = new Set<number>();
+    let best: { x: number; y: number; rotation: number } | null = null;
+    let bestScore = Number.NEGATIVE_INFINITY;
+    let second: { x: number; y: number; rotation: number } | null = null;
+    let secondScore = Number.NEGATIVE_INFINITY;
+    for (const tile of anchors) {
+      const tx = tile % state.width;
+      const ty = (tile - tx) / state.width;
+      for (let rotation = 0; rotation < rotations; rotation++) {
+        const cells = pieceCells(pieceId, rotation);
+        for (const [ox, oy] of cells) {
+          const x = tx - ox;
+          const y = ty - oy;
+          const key = ((y + 8) * span + (x + 8)) * 4 + rotation;
+          if (tried.has(key)) continue;
+          tried.add(key);
+          if (cellsRefusal(state, player, cells, x, y) !== null) continue;
+          let onPlan = 0;
+          let onTight = 0;
+          let onThicken = 0;
+          let onSkin = 0;
+          let indoors = 0;
+          let waste = 0;
+          for (const [cx, cy] of cells) {
+            const i = (y + cy) * state.width + x + cx;
+            const p = plan.has(i);
+            const t = tight.has(i);
+            const h = thicken.has(i);
+            const k = skin.has(i);
+            if (p) onPlan++;
+            if (t) onTight++;
+            if (h) onThicken++;
+            if (k) onSkin++;
+            if (!p && !t && !h && !k) {
+              if (inside[i] === islandId) indoors++;
+              else waste++;
+            }
+          }
+          const score =
+            weights.plan * onPlan +
+            weights.planUrgent * onPlan * urgency +
+            (plan.size > 0 && onPlan === plan.size ? weights.planCompletes : 0) +
+            weights.tight * onTight +
+            weights.tightUrgent * onTight * urgency +
+            (tight.size > 0 && onTight === tight.size ? weights.tightCompletes : 0) +
+            weights.thicken * onThicken +
+            weights.skin * onSkin +
+            weights.indoors * indoors +
+            weights.waste * waste;
+          if (score > bestScore) {
+            second = best;
+            secondScore = bestScore;
+            bestScore = score;
+            best = { x, y, rotation };
+          } else if (score > secondScore) {
+            secondScore = score;
+            second = { x, y, rotation };
+          }
+        }
+      }
+    }
+    const slip = this.profile.sloppiness;
+    if (slip > 0 && second !== null && rng.nextFloat() < slip) return second;
+    return best;
+  }
+
   /** Last round's plan described an island that no longer exists: a continue wipes it. */
   forget(): void {
     this.plan = [];
@@ -856,4 +998,12 @@ function patchRound(state: MatchState, island: number, centre: number, radius: n
     }
   }
   return out;
+}
+
+/** What a learned fit weighs a placement against: tiles still wanted, by kind. */
+interface Targets {
+  plan: number[];
+  tight: number[];
+  thicken: number[];
+  skin: number[];
 }

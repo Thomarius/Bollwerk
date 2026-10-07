@@ -1332,7 +1332,7 @@ every resolution against an independent search, not only on unit pictures.
 ## 11. Open work
 
 **Where to start (2026-10-07).** Next: the bot learning work, item 3 and
-[`BOT_LEARNING.md`](./BOT_LEARNING.md), steps 1 and 2 done — the unfillable last gaps and widening once sealed (ARCHIVE 12x, 12y); step 3 next. The refactoring of 2026-10-07
+[`BOT_LEARNING.md`](./BOT_LEARNING.md), steps 1 and 2 done — the unfillable last gaps and widening once sealed (ARCHIVE 12x, 12y); step 3 had a first run (ARCHIVE 12z) and the work is paused, its next steps in BOT_LEARNING.md §6. The refactoring of 2026-10-07
 (ARCHIVE 12w) left the game as it was, apart from protocol 17. Everything planned before
 that is done and in **v0.8.1**, the latest
 release: the game and online play, bots as skill levels and personalities, sixteen styles —
@@ -1386,7 +1386,9 @@ decision, 2026-10-06). Still open:
    2026-10-07; also to learn how ML fits a game): the plan, its steps and its progress are
    in [`BOT_LEARNING.md`](./BOT_LEARNING.md) — first the testers' recordings, then a "go big
    while a bail-out remains" rule, then a scoring function trained by the cross-entropy
-   method. Read it before changing how bots build.
+   method. Read it before changing how bots build. Steps 1 and 2 are done (ARCHIVE 12x,
+   12y); step 3's first run learned a fit about as good as the hand-made one (ARCHIVE 12z),
+   and the work is **paused** (2026-10-07), its next steps in BOT_LEARNING.md §6.
 
 Only open work is kept here. Finished packages move to `ARCHIVE.md` under their old
 numbers — 11.1 scoring, 11.7 team mode, 11.8 the visual pass, 11.9 the themes, 11.10 the

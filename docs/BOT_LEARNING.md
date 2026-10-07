@@ -185,6 +185,14 @@ score by the average outcome), or a neural value function trained in Python. Not
   round were measured and dropped; **widening once sealed — pushing the standing wall out
   to another castle, or a stretch of land beside it — is kept for every bot**: one such
   bot against two of the old won 65 of 96 at Levels 5 and 8. Next: step 3.
+- 2026-10-07: step 3 started: a learned fit (`fitWeights` in `ai.default.json`, null =
+  the hand-made fit; `buildScored` in `building.ts`) scoring every legal placement near the
+  plan, the tightest repair, the thickening targets and the outer skin by ten features;
+  trained by `tools/headless/src/cem.ts` (each candidate head to head against two of
+  today's bots, `fitEval.ts`).
+- 2026-10-07: step 3's first run done (findings below): the learned fit about equals the
+  hand-made one — a small gain at Level 5, none at Level 8. **Paused here by the user's
+  decision**; the pipeline is committed with `fitWeights` null, and the work left is §6.
 
 ## 5. Findings
 
@@ -469,3 +477,87 @@ The ladder, all widening, one bot against two Level 5s, 96 matches: Level 4 won 
 errors. **Time**: a build plan's mean 7.3 -> 7.8 ms at three players (Level 5) and 5.0 ->
 6.1 ms at eight (Level 8), the worst 82 -> 93 and 47 -> 67 ms (four runs at once on this
 machine, so for comparison only).
+
+### Step 3, first run: a learned fit (2026-10-07)
+
+**What is learned**: only where the piece in hand goes. The ladder still decides which
+walls matter; a learned score then weighs every legal placement near any of them — the
+plan, the tightest repair, the thickening targets, the outer skin — by ten features
+(`FIT_FEATURES` in `config/src/ai.ts`): cells on each, cells spilt inside, cells wasted,
+the plan's and the repair's cells times urgency (the repair's cost over what the phase can
+still lay), and whether the placement finishes the plan or the repair. `fitWeights` in
+`ai.default.json`, null by default (the hand-made fit), so the game is unchanged.
+
+**Training** (`cem.ts`, `fitEval.ts`): ten iterations of sixteen candidates and the
+current mean, each 24 matches head to head against two of today's bots at Level 5, the
+same seeds within an iteration; the best four refit the Gaussian; `plan` held at 4 for
+scale. Seventy minutes on this machine. The mean, by iteration: −0.08, −0.06, −0.12,
++0.06, +0.06, +0.33, +0.07, +0.10, +0.16, +0.33 (relative score: its points minus the
+opponents' mean, over that mean, a match each).
+
+**Learned** (plan 4): finishes the repair 8.3, the repair's cells 1.9 plus 2.3 × urgency,
+spilt inside −4.2, skin 1.7, thicken 0.9, finishes the plan 0.3, the plan's cells −0.2 ×
+urgency, waste −0.2. It learned what step 1 found by hand: rounds are lost in the last
+blocks, so a placement that closes the repair is worth most.
+
+**Checked on 96 fresh seeds** (900001–900096), today's bot in the same seat as the noise
+— the measure sits above zero even then, since a mean of ratios leans upward:
+
+| Level | relative, today / learned | wins, today / learned | failed rounds, today / learned |
+| ----- | ------------------------- | --------------------- | ------------------------------ |
+| 5     | +0.086 / +0.193           | 32 / 35               | 97 / 102                       |
+| 8     | +0.088 / +0.074           | 35 / 30               | 118 / 114                      |
+
+A small gain at Level 5, where it was trained (about two standard errors on the relative
+score, nothing in wins), and none at Level 8. **The learned fit about equals the hand-made
+one**: with the ladder choosing the walls, where a piece goes has little left to give.
+What could: features for the choice of wall itself, training at more levels than one, and
+more matches a candidate (24 leave one iteration's figure noisy by ±0.1).
+
+---
+
+## 6. Next steps (for future work)
+
+Paused on 2026-10-07 after step 3's first run. Where to pick it up, most promising first.
+Nothing below is decided; each is to be agreed with the user before it is built.
+
+1. **Learn the choice of wall, not only the cell.** The big gains of this session came
+   from which wall a bot builds (castles: 65 of 96 wins, B); the learned fit, which only
+   places the piece once the ladder has chosen, gave little. Score each candidate wall
+   the ladder and `widen` already produce — the tight repair, the plan, each castle reach,
+   each bulge, the castle walls with room, thickening — by features of the wall: its value
+   (tiles × castles, stood in), its cost against the cells left (`cellsAffordable`),
+   castles gained, guns kept and room for the guns about to be earned, how much of it is
+   wall already standing, the tight repair's slack after it. Learn the weights with the
+   same CEM runner; the fit below it stays hand-made or uses the learned `fitWeights`.
+   Mind the plan's time (~5 ms; `widen` already costs 7–21% more).
+2. **Train better.** Levels 5 and 8 together (one candidate's score the mean of both), 48
+   matches a candidate rather than 24 (24 left an iteration noisy by ±0.1), dealt
+   personalities, and a check on fresh seeds after every few iterations rather than only
+   at the end. About twice the seventy minutes a run.
+3. **A better objective.** The relative score is a mean of ratios, which leans upward
+   (+0.09 for today's bot against itself); the difference of points a round, or the win
+   share against a fixed field, would read straighter. Penalise failed rounds directly if
+   a learned bot starts trading safety for points.
+4. **Levels from the learned bot** (step 3's plan): strength from noise — choosing among
+   the top few by a temperature — besides pace and sloppiness; the soak must show the
+   ladder in order (ARCHIVE 12h). Re-measure the ladder in any case: since widening, Level
+   6 won 33 of 96 against two Level 5s, where it won 42% before (B).
+5. **Lookahead or a neural value function** (step 4): only if the above stall.
+
+Also open from this session, outside the learning work:
+
+- **The testers' gap-neutral play while breached** is still not matched: going big while
+  breached under a bail-out (B, first version) found too little room at a bot's pace. A
+  learned choice of wall (item 1) is where it would be tried again, with the slack after
+  the big wall as a feature rather than a fixed share.
+- **Plan time**: `widen` weighs eight bulges at two radii and every castle each plan while
+  sealed; fewer seeds, or weighing only when the last choice is built or blocked, would
+  trim it, measured against the head-to-head result.
+
+**How to run what exists**: `npx tsx src/fitEval.ts --weights '{...}' --seeds 1,2,3
+[--level 5]` in `tools/headless` plays one weight vector head to head (`--weights null`
+measures today's bot against itself); `npx tsx src/cem.ts [--iterations 10] [--population
+16] [--elite 4] [--matches 24] [--level 5] [--out DIR] [--resume]` trains, writing
+`state.json` (the mean and spread) and `log.jsonl` (every candidate) to `DIR`. The first
+run's mean is in §5; to try it, put it in `fitWeights`.

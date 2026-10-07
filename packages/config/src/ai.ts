@@ -144,6 +144,32 @@ export const CannonTraitSchema = z.strictObject({
 });
 export type CannonTrait = z.infer<typeof CannonTraitSchema>;
 
+/**
+ * The features a placement is scored by, each a count of the piece's cells unless said:
+ * on the plan, on the tightest repair, on the thickening targets, on the outer skin,
+ * spilt inside the wall, on none of them; the plan's and the repair's cells again times
+ * the urgency (the repair's cost over what the phase can still lay); and 1 when the
+ * placement finishes the plan or the repair.
+ */
+export const FIT_FEATURES = [
+  'plan',
+  'planUrgent',
+  'planCompletes',
+  'tight',
+  'tightUrgent',
+  'tightCompletes',
+  'thicken',
+  'skin',
+  'indoors',
+  'waste',
+] as const;
+export type FitFeature = (typeof FIT_FEATURES)[number];
+
+export const FitWeightsSchema = z.strictObject(
+  Object.fromEntries(FIT_FEATURES.map((f) => [f, z.number()])) as Record<FitFeature, z.ZodNumber>,
+);
+export type FitWeights = Record<FitFeature, number>;
+
 /** How a bot plays, which it is dealt rather than chosen: one value of each trait. */
 export interface Personality {
   risk: Risk;
@@ -223,6 +249,12 @@ export const AiConfigSchema = z
      * left waits a tick.
      */
     plansPerTick: z.number().int().positive(),
+    /**
+     * A learned scoring of where to lay the piece in hand (docs/BOT_LEARNING.md, step 3):
+     * a weight per feature of a placement, summed. Null: the hand-made fit, which covers
+     * the first wall in the ladder's order that a piece reaches.
+     */
+    fitWeights: FitWeightsSchema.nullable(),
   })
   .refine(
     (ai) =>
@@ -281,6 +313,7 @@ export interface BotProfile extends Skill {
   widensWhileRepairing: boolean;
   castleChoice: RiskTrait['castleChoice'];
   widensWhenSealed: boolean;
+  fitWeights: FitWeights | null;
   roomRadius: number;
   roomMargin: number;
   thickenFirst: boolean;
@@ -300,6 +333,7 @@ export function botProfile(ai: AiConfig, setup: BotSetup): BotProfile {
     widensWhileRepairing: risk.widensWhileRepairing,
     castleChoice: risk.castleChoice,
     widensWhenSealed: risk.widensWhenSealed,
+    fitWeights: ai.fitWeights,
     picksTarget: true,
     targeting: setup.personality.targeting,
     targetShare: ai.targeting[setup.personality.targeting].share,

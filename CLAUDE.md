@@ -200,7 +200,8 @@ Full detail in PLAN.md §1. The parts that surprise people:
 rather than the gaps left, then a scoring function whose weights are learned
 (**`docs/BOT_LEARNING.md`**: the plan, its steps, its progress and findings; step 1, the
 testers' recordings, and step 2 are done: bots route round holes no piece can fill and widen their walls
-once sealed; step 3, the learned scoring function, is next). Beside it, PLAN §11: more test games towards a first
+once sealed; step 3, a learned scoring function, had a first run that matched the hand-made
+fit, and the work is paused — its next steps are BOT_LEARNING.md §6). Beside it, PLAN §11: more test games towards a first
 feature-ready version, the user's manual test of UPnP, and bots that miss as people do
 (combat accuracy, measured against the testers' recordings; how is not yet decided).
 French is not to be done. Signing the Windows app was explained (PLAN §12) and is not

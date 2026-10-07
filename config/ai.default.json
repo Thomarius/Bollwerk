@@ -122,5 +122,6 @@
       "share": 0.5
     }
   },
-  "plansPerTick": 2
+  "plansPerTick": 2,
+  "fitWeights": null
 }

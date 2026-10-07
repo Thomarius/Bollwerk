@@ -5516,3 +5516,19 @@ two without, 96 matches a level: 65 wins at Level 5 and at Level 8, fair share 3
 bot widening: failed rounds 11.5% -> 11.6% at Level 5 and 11.7% -> 12.7% at 8, points up
 5–9%, every match at the cap; the ladder in order, Level 6's edge over 5 smaller (33 of 96
 against 12h's 42%). Plans cost 7–21% more on average.
+
+## 12z. A learned fit, and the learning work paused (2026-10-07)
+
+Step 3 of the bot learning work, a first run (`docs/BOT_LEARNING.md`, where the tables
+are). A bot may lay its piece by a learned score (`fitWeights`, null by default) instead of
+the hand-made fit: every legal placement near the plan, the tightest repair, the thickening
+targets and the outer skin, weighed by ten features. Trained by the cross-entropy method
+(`tools/headless/src/cem.ts`, `fitEval.ts`): ten iterations of sixteen candidates, 24
+matches each head to head against two of today's bots at Level 5, seventy minutes. It
+learned what step 1 found by hand — a placement finishing the tight repair weighs most,
+repair counts more as time runs short. On 96 fresh seeds it about equals the hand-made
+fit: relative score +0.19 against today's +0.09 at Level 5 (wins 35 and 32), none at Level
+8 (30 and 35). With the ladder choosing the walls, where a piece goes has little left to
+give. Paused there by the user's decision, the pipeline kept for later; the next steps —
+learning the choice of wall, better training, a straighter objective, levels from a
+learned bot — are BOT_LEARNING.md §6.
