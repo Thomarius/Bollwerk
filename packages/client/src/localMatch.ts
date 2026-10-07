@@ -7,7 +7,7 @@ import {
   type Personality,
   type Ruleset,
 } from '@bollwerk/config';
-import { Bot, PlanningSlots, dealPersonalities, turnOrder } from '@bollwerk/ai';
+import { Bot, PlanningSlots, dealSeats, takeBotTurns, turnOrder } from '@bollwerk/ai';
 import { MatchRecorder, recordingId, type RecordingLine } from '@bollwerk/protocol';
 
 import {
@@ -15,7 +15,6 @@ import {
   applyAction,
   createMatch,
   drainEvents,
-  seatOrder,
   step,
   type Action,
   type MatchEvent,
@@ -87,9 +86,13 @@ export class LocalMatch {
   constructor(options: LocalMatchOptions) {
     const ruleset = options.ruleset ?? defaultRuleset;
     const seats = options.seats;
-    // Which player — so which island — each seat becomes, shuffled exactly as the server
-    // does it, so an offline match seats people as an online one would.
-    const order = seatOrder(options.seed, seats.length);
+    // Which player — so which island — each seat becomes, and each bot's level with a
+    // personality dealt from the seed: exactly as a room deals them, so an offline match
+    // seats people as an online one would.
+    const { playerOfSeat: order, setups: dealt } = dealSeats(
+      options.seed,
+      seats.map((level) => ({ level, bot: level !== null })),
+    );
     const humanSeat = seats.findIndex((seat) => seat === null);
     this.humanPlayer = humanSeat < 0 ? -1 : (order[humanSeat] as number);
 
@@ -109,20 +112,11 @@ export class LocalMatch {
       players,
     });
 
-    // Each bot's level, and a personality dealt from the seed as a room deals it.
-    const isBot = new Array<boolean>(seats.length);
-    seats.forEach((seat, index) => {
-      isBot[order[index] as number] = seat !== null;
-    });
-    const dealt = dealPersonalities(options.seed, isBot);
     const setups = new Map<number, BotSetup>();
-    seats.forEach((seat, index) => {
-      const id = order[index] as number;
-      if (seat === null) return;
-      const setup = {
-        level: seat,
-        personality: options.personality ?? (dealt[id] as Personality),
-      };
+    dealt.forEach((given, id) => {
+      if (given === null) return;
+      // `?personality=` fixes every bot's, for testing.
+      const setup = { ...given, personality: options.personality ?? given.personality };
       setups.set(id, setup);
       this.bots.set(id, new Bot(id, setup, defaultAiConfig, this.slots));
     });
@@ -221,14 +215,14 @@ export class LocalMatch {
     this.recorder = null;
     const arrived = (): boolean => this.state.phase === phase && this.state.round >= fromRound;
     while (!arrived() && this.state.tick < maxTicks && !this.finished) {
-      for (const player of turnOrder(this.state.players, this.state.round)) {
-        if (player.eliminated) continue;
-        // Left to itself, the person's seat builds nothing and is soon knocked out,
-        // which is the quickest way to put a mid-match elimination on screen.
-        if (humanIdle && player.id === this.humanPlayer) continue;
-        const action = this.botFor(player.id).think(this.state, this.rng);
-        if (action !== null) applyAction(this.state, action);
-      }
+      // Left to itself, the person's seat builds nothing and is soon knocked out, which
+      // is the quickest way to put a mid-match elimination on screen.
+      takeBotTurns(this.state, this.rng, (player) =>
+        this.state.players[player]?.eliminated === true ||
+        (humanIdle && player === this.humanPlayer)
+          ? null
+          : this.botFor(player),
+      );
       step(this.state);
       drainEvents(this.state);
     }

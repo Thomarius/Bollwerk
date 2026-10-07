@@ -1,16 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
-import {
-  TITLE_AT_REST,
-  TITLE_LETTERS_PX,
-  neonTubes,
-  titleLayout,
-  titleSweep,
-  titleTurn,
-  type Title,
-  type TitleFrame,
-  type Tube,
-} from './decor.js';
+import { TITLE_AT_REST, titleSweep, titleTurn, type TitleFrame } from './decor.js';
+import { TITLE_LETTERS_PX, neonTubes, titleLayout, type Title, type Tube } from './titles.js';
 
 const diagonal = (t: Tube): boolean => t.x1 !== t.x2 && t.y1 !== t.y2;
 

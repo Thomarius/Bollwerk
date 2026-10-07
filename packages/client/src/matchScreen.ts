@@ -1,5 +1,5 @@
 import { artForStyle, defaultConfigBundle, type ArtStyle } from '@bollwerk/config';
-import { computeEnclosure, owesCastleChoice, type MatchEvent, type Phase } from '@bollwerk/sim';
+import { owesCastleChoice, type MatchEvent, type Phase } from '@bollwerk/sim';
 
 import { countdownBeat, showsClock } from './clock.js';
 import { Controls, inputMode, readyCannons } from './controls.js';
@@ -10,7 +10,8 @@ import { NetworkBadge } from './network.js';
 import { WatchingStrip } from './watching.js';
 import { LookRotation, openLookGallery } from './looks.js';
 import { t } from './i18n.js';
-import { Hud, type IslandBanner } from './hud.js';
+import { Hud } from './hud.js';
+import type { IslandBanner } from './boardLabels.js';
 import { MatchAudio } from './matchAudio.js';
 import {
   announcementLines,
@@ -26,35 +27,13 @@ import { motionReduced, storedEffects } from './motion.js';
 import { PauseControls } from './pause.js';
 import { openingShot, winnerShot } from './camera.js';
 import { perf } from './perf.js';
-import {
-  floodFrom,
-  floodOver,
-  sealGlow,
-  drainWash,
-  drainsFrom,
-  releaseDrains,
-  territoryDuring,
-  type Flood,
-  type SealGlow,
-} from './seal.js';
-import {
-  bannerProgress,
-  boardWithStanding,
-  crumbleOutward,
-  looksAround,
-  lostWalls,
-  holdsCombatEnclosure,
-  stillStanding,
-  type Look,
-  type Ruin,
-  type SweptWall,
-} from './transition.js';
+import { bannerProgress, looksAround, type Look } from './transition.js';
 import { Scene, createTheme, type Ghost, type SceneLook } from './render/scene.js';
-import { type Choice } from './render/theme.js';
 import { app, audio, showSoundButton } from './app.js';
 import { saveStyles } from './prefs.js';
 import type { Session, Setup } from './session.js';
 import { showMenu } from './menu.js';
+import { BoardEffects } from './boardEffects.js';
 
 /** A match on screen: the board, the HUD, the sound and the controls, frame by frame. */
 
@@ -139,8 +118,8 @@ export async function runSession(session: Session, setup: Setup): Promise<() => 
   const hud = new Hud(hudRoot, bannerRoot);
   // What the end of the match summarises, kept from the events as they come.
   const matchLog = new MatchLog();
-  hud.useLog(matchLog);
-  hud.useReveal(revealLines(session.state, session.setups));
+  hud.endScreen.useLog(matchLog);
+  hud.endScreen.useReveal(revealLines(session.state, session.setups));
   const matchAudio = new MatchAudio(audio, session.humanPlayer);
 
   /**
@@ -210,7 +189,7 @@ export async function runSession(session: Session, setup: Setup): Promise<() => 
   }
 
   function drawIslandBanners(): void {
-    hud.showTeamTags(
+    hud.labels.showTeamTags(
       [...islandTops].map(([player, at]) => ({
         player,
         text: t('team.name', { letter: teamLetter(session.state.players[player]?.team ?? 0) }),
@@ -229,7 +208,7 @@ export async function runSession(session: Session, setup: Setup): Promise<() => 
         ...scene.screenAt(centre.x, centre.y),
       });
     }
-    hud.showIslandBanners(banners);
+    hud.labels.showIslandBanners(banners);
   }
   const controls = new Controls(
     canvas,
@@ -246,110 +225,14 @@ export async function runSession(session: Session, setup: Setup): Promise<() => 
   // Nobody at the keyboard in a watched match, so there is nothing to listen for.
   if (session.humanPlayer >= 0) controls.attach();
 
-  /**
-   * Walls the sim swept at the last resolution that the banner has not yet reached; see
-   * `transition.ts`. Owners are read from the board as last drawn, because the sweep
-   * has already zeroed them in the state.
-   */
-  let swept: SweptWall[] = [];
-  /** The owner layer as last drawn, for exactly that. */
-  let drawnOwner = session.state.owner.slice();
-
-  /** Walls, castles and cannons, with any swept wall still standing put back. */
-  /**
-   * Walls lost with a life, crumbling outward from the middle of the island; see
-   * `crumbleOutward`. Drawn standing until each one's moment comes.
-   */
-  let ruins: Ruin[] = [];
-  /** The structure layer as last drawn, beside the owners, to find what a wipe took. */
-  let drawnStructure = session.state.structure.slice();
-
-  /** Walls, castles and cannons, with any swept or ruined wall still standing put back. */
-  function drawBoard(): void {
-    const board = boardWithStanding(session.state, [...swept, ...ruins]);
-    scene.drawStructures({ ...session.state, ...board });
-    drawnOwner = board.owner.slice();
-    drawnStructure = board.structure.slice();
-  }
-
-  /** Takes down each ruined block as its moment comes. */
-  function crumbleRuins(): void {
-    if (ruins.length === 0) return;
-    const now = performance.now();
-    const falling = ruins.filter((ruin) => ruin.dueMs <= now);
-    if (falling.length === 0) return;
-    const width = session.state.width;
-    for (const ruin of falling) {
-      const x = ruin.index % width;
-      scene.noteCrumble({ x, y: (ruin.index - x) / width, owner: ruin.owner - 1 });
-    }
-    ruins = ruins.filter((ruin) => ruin.dueMs > now);
-    drawBoard();
-  }
-
-  /** Castles chosen lately, for the burst each choice sets off; see `drawChoices`. */
-  let choices: { castleId: number; owner: number; at: number }[] = [];
-
-  /** The board's enclosure as it stands, for display; see `Scene.drawTerritory`. */
-  let live = computeEnclosure(session.state);
-  /**
-   * The enclosure as combat began, held for the combat look and the HUD until building
-   * begins (`holdsCombatEnclosure`); null outside that. A breach counts for nothing until
-   * then, so nothing that says "sealed" should come down with the wall.
-   */
-  let held: ReturnType<typeof computeEnclosure> | null = null;
-  /** One style for both looks: one set of layers, which shows the held board in combat. */
-  const oneLook = (): boolean => scene.styles.build === scene.styles.combat;
-  /** The enclosure a look shows. */
-  const enclosureFor = (look: Look): ReturnType<typeof computeEnclosure> =>
-    held !== null && (look === 'combat' || oneLook()) ? held : live;
-
-  /**
-   * Newly sealed ground flooding out from its castle; see `seal.ts`. Started whenever
-   * the enclosure gains territory — a breach closed, a castle chosen, a loop widened —
-   * and drawn in both looks, since it shows exactly what was sealed.
-   */
-  let floods: Flood[] = [];
-  const { sealFloodTilesPerSecond, sealGlowTiles, drainTilesPerSecond } =
-    defaultConfigBundle.art.effects;
-
-  /**
-   * Ground lost to breaches draining away (`drainsFrom`), in the build look — the
-   * enclosure combat began with against the board as it stands. Each island's drain
-   * starts as the "Rebuild" banner's line reaches it (`releaseDrains`). With one style
-   * for both looks the held board stays up until building begins, so the drains wait for
-   * that: `drainDue` keeps the held enclosure until then.
-   */
-  let drains: Flood[] = [];
-  let drainDue: ReturnType<typeof computeEnclosure> | null = null;
-  function startDrain(from: ReturnType<typeof computeEnclosure>): void {
-    drains.push(...drainsFrom(from.territory, live.territory, live.outside, session.state.width));
-  }
-  function advanceDrains(now: number) {
-    if (drainDue !== null && session.state.phase === 'build') {
-      startDrain(drainDue);
-      drainDue = null;
-      releaseDrains(drains, Number.POSITIVE_INFINITY, session.state.width, now);
-    }
-    if (drains.length === 0) return [];
-    drains = drains.filter((drain) => !floodOver(drain, now, drainTilesPerSecond, 1));
-    return drainWash(drains, now, session.state.width, drainTilesPerSecond);
-  }
-
-  /** Territory as each look shows it; the live board less what the floods have not reached. */
-  function drawFloodedTerritory(now: number): void {
-    const flooded = territoryDuring(live.territory, floods, now, sealFloodTilesPerSecond);
-    scene.drawTerritory(session.state, {
-      build: enclosureFor('build') === live ? flooded : enclosureFor('build').territory,
-      combat: enclosureFor('combat') === live ? flooded : enclosureFor('combat').territory,
-    });
-  }
+  /** The board as drawn: swept and crumbling walls, the held enclosure, floods and drains. */
+  const board = new BoardEffects(scene, session);
 
   const fit = (): void => {
     scene.resize(session.state, globalThis.innerWidth, globalThis.innerHeight, HUD_BAR_PX);
     scene.drawTerrain(session.state);
-    drawFloodedTerritory(performance.now());
-    drawBoard();
+    board.drawFloodedTerritory(performance.now());
+    board.drawBoard();
   };
   fit();
   globalThis.addEventListener('resize', fit);
@@ -363,11 +246,11 @@ export async function runSession(session: Session, setup: Setup): Promise<() => 
     cleanup();
     showMenu();
   };
-  hud.onLeave(leaveMatch);
+  hud.endScreen.onLeave(leaveMatch);
   // Locally the table opens at once; online the host asks, and the room's answer brings
   // every page back to the lobby, this one included.
-  hud.useRematch(session.rematch);
-  hud.onRematch(() => {
+  hud.endScreen.useRematch(session.rematch);
+  hud.endScreen.onRematch(() => {
     audio.play('select');
     if (session.network() === null) cleanup();
     session.requestRematch();
@@ -445,10 +328,7 @@ export async function runSession(session: Session, setup: Setup): Promise<() => 
         // "Rebuild": the barrage is over, and what it took drains away as the banner
         // reveals the board — at once in the build look, or as building begins when one
         // style draws both looks and holds the old board until then.
-        if (state.pendingPhase === 'build' && held !== null) {
-          if (oneLook()) drainDue = held;
-          else startDrain(held);
-        }
+        if (state.pendingPhase === 'build') board.startRebuild();
         // After a continue the cannon phase opens with a castle to choose, and the
         // announcement should say so rather than tell them to place guns they cannot.
         const human = state.players[session.humanPlayer];
@@ -473,43 +353,8 @@ export async function runSession(session: Session, setup: Setup): Promise<() => 
         ? { from: before, to: before, lineY: null }
         : { from: before, to: after, lineY },
     );
-    sweepUnderBanner(lineY);
-    // Each island's lost ground drains as the line reaches it; all of it once the
-    // banner has gone.
-    if (drains.length > 0 && !oneLook()) {
-      releaseDrains(
-        drains,
-        state.phase !== 'intermission' || lineY === null
-          ? Number.POSITIVE_INFINITY
-          : scene.rowAt(lineY),
-        state.width,
-        performance.now(),
-      );
-    }
-  }
-
-  /** Takes away each swept wall as the banner's line passes it. */
-  function sweepUnderBanner(lineY: number | null): void {
-    if (swept.length === 0) return;
-    // Any banner will do — normally "Place cannons", but "Fire!" when nobody had guns
-    // to place — and once the intermission is over, whatever is left goes.
-    const over = session.state.phase !== 'intermission';
-    const lineRow = over
-      ? Number.POSITIVE_INFINITY
-      : lineY === null
-        ? Number.NEGATIVE_INFINITY
-        : scene.rowAt(lineY);
-    const standing = stillStanding(swept, session.state.width, lineRow);
-    if (standing.length === swept.length) return;
-    const width = session.state.width;
-    const kept = new Set(standing.map((wall) => wall.index));
-    for (const wall of swept) {
-      if (kept.has(wall.index)) continue;
-      const x = wall.index % width;
-      scene.noteCrumble({ x, y: (wall.index - x) / width, owner: wall.owner - 1 });
-    }
-    swept = standing;
-    drawBoard();
+    // Swept walls go as the line passes them, and lost ground drains as it reaches it.
+    board.underBanner(lineY);
   }
 
   /** Open water near the middle, for the big timer. Terrain is fixed, so asked once. */
@@ -526,9 +371,9 @@ export async function runSession(session: Session, setup: Setup): Promise<() => 
         0,
         Math.ceil((state.phaseEndTick - state.tick) / state.ruleset.tickRateHz),
       );
-      hud.showBigTimer({ ...centre, sizePx: edge.x - centre.x }, seconds);
+      hud.labels.showBigTimer({ ...centre, sizePx: edge.x - centre.x }, seconds);
     } else {
-      hud.showBigTimer(null, 0);
+      hud.labels.showBigTimer(null, 0);
     }
     // Beside the cursor, the number that decides the next click: guns ready when
     // aiming, guns still to place when placing them.
@@ -539,50 +384,12 @@ export async function runSession(session: Session, setup: Setup): Promise<() => 
         : mode === 'cannon'
           ? (state.players[session.humanPlayer]?.cannonsToPlace ?? 0)
           : null;
-    hud.showReadyCount(
+    hud.labels.showReadyCount(
       ghost.tile !== null && count !== null
         ? scene.screenAt(ghost.tile.x + 1.4, ghost.tile.y - 1.1)
         : null,
       count ?? 0,
     );
-  }
-
-  /**
-   * The tally at a resolution: a glow sweeping each scoring island's territory outward
-   * from its castles while its points count up, timed to finish together (`tallyMs`).
-   * Glow only — the ground is already held, so nothing is hidden.
-   */
-  let tallies: { flood: Flood; speed: number }[] = [];
-  /** Players whose points were just banked, tallied once the enclosure is refreshed. */
-  const tallyDue: number[] = [];
-
-  function startTallies(now: number): void {
-    const { width, castles } = session.state;
-    const empty = new Uint8Array(live.territory.length);
-    for (const player of tallyDue.splice(0)) {
-      const theirs = live.territory.map((owner) => (owner === player + 1 ? owner : 0));
-      const flood = floodFrom(empty, theirs, width, castles, now);
-      if (flood === null) continue;
-      const tallyMs = defaultConfigBundle.art.effects.tallyMs;
-      tallies.push({ flood, speed: ((flood.maxDist + sealGlowTiles) * 1000) / tallyMs });
-    }
-  }
-
-  /** Advances the floods and tallies by a frame, and returns the glow at their fronts. */
-  function advanceFloods(): SealGlow[] {
-    if (floods.length === 0 && tallies.length === 0) return [];
-    const now = performance.now();
-    const width = session.state.width;
-    tallies = tallies.filter(({ flood, speed }) => !floodOver(flood, now, speed, sealGlowTiles));
-    const tallied = tallies.flatMap(({ flood, speed }) =>
-      sealGlow([flood], now, width, speed, sealGlowTiles),
-    );
-    if (floods.length === 0) return tallied;
-    floods = floods.filter(
-      (flood) => !floodOver(flood, now, sealFloodTilesPerSecond, sealGlowTiles),
-    );
-    drawFloodedTerritory(now);
-    return [...sealGlow(floods, now, width, sealFloodTilesPerSecond, sealGlowTiles), ...tallied];
   }
 
   function applyEvents(events: readonly MatchEvent[]): void {
@@ -621,7 +428,7 @@ export async function runSession(session: Session, setup: Setup): Promise<() => 
           break;
         }
         case 'castle_selected':
-          choices.push({ castleId: event.castleId, owner: event.player, at: performance.now() });
+          board.noteChoice(event.castleId, event.player);
           structuresChanged = true;
           territoryChanged = true;
           break;
@@ -653,7 +460,7 @@ export async function runSession(session: Session, setup: Setup): Promise<() => 
               countTicks: count,
               guns: result.cannonsAwarded,
             });
-            if (result.territoryPoints > 0) tallyDue.push(result.player);
+            if (result.territoryPoints > 0) board.noteTally(result.player);
           }
           resolvedSinceAnnounce = true;
           structuresChanged = true;
@@ -679,29 +486,14 @@ export async function runSession(session: Session, setup: Setup): Promise<() => 
           // The wipe took the island's wall in one step; take it down outward instead.
           const island = session.state.players[event.player]?.islandId ?? event.player + 1;
           const centre = islandCentre.get(event.player);
-          if (centre !== undefined) {
-            const lost = lostWalls(drawnStructure, drawnOwner, session.state.structure, island);
-            ruins.push(
-              ...crumbleOutward(
-                lost,
-                session.state.width,
-                centre,
-                performance.now(),
-                defaultConfigBundle.art.effects.lifeCrumbleMs,
-              ),
-            );
-          }
+          if (centre !== undefined) board.noteWipe(island, centre);
           structuresChanged = true;
           territoryChanged = true;
           break;
         }
         case 'walls_swept':
-          // Drawn away by the next banner rather than now; see `sweepUnderBanner`. A
-          // block placed in this same step was never drawn, so its island says whose.
-          swept = event.tiles.map((index) => ({
-            index,
-            owner: (drawnOwner[index] as number) || (session.state.islandId[index] as number),
-          }));
+          // Drawn away by the next banner rather than now.
+          board.noteSwept(event.tiles);
           structuresChanged = true;
           break;
         case 'phase_changed':
@@ -713,36 +505,11 @@ export async function runSession(session: Session, setup: Setup): Promise<() => 
           break;
       }
     }
-    if (structuresChanged) drawBoard();
-    if (territoryChanged || structuresChanged) {
-      // Taken before this batch's shots are counted, so it is the board combat began on.
-      held = holdsCombatEnclosure(session.state) ? (held ?? live) : null;
-      const before = live.territory;
-      const sealedBefore = live.castleEnclosed;
-      live = computeEnclosure(session.state);
-      matchAudio.sealed(session.state, sealedBefore, live.castleEnclosed);
-      const now = performance.now();
-      const flood = floodFrom(
-        before,
-        live.territory,
-        session.state.width,
-        session.state.castles,
-        now,
-      );
-      if (flood !== null) floods.push(flood);
-      drawFloodedTerritory(now);
-      startTallies(now);
-      hints = buildHints(session.state, session.humanPlayer, live);
+    const sealing = board.refresh(structuresChanged, territoryChanged);
+    if (sealing !== null) {
+      matchAudio.sealed(session.state, sealing.sealedBefore, sealing.sealedAfter);
+      hints = buildHints(session.state, session.humanPlayer, board.live);
     }
-  }
-
-  function recentChoices(now: number): Choice[] {
-    const span = defaultConfigBundle.art.effects.choiceBurstMs;
-    choices = choices.filter((c) => now - c.at < span);
-    return choices.flatMap((c) => {
-      const castle = session.state.castles.find((k) => k.id === c.castleId);
-      return castle === undefined ? [] : [{ castle, owner: c.owner, ageMs: now - c.at }];
-    });
   }
 
   /** When this client first saw the match over, for the push onto the winner. */
@@ -773,7 +540,7 @@ export async function runSession(session: Session, setup: Setup): Promise<() => 
       state.round === 0 &&
       (state.phase === 'castle_select' ||
         (state.phase === 'intermission' && state.pendingPhase === 'castle_select'));
-    hud.showYouAreHere(
+    hud.labels.showYouAreHere(
       me !== undefined && centre !== undefined && opening && me.startingCastleId === null
         ? {
             ...scene.screenAt(centre.x, centre.y),
@@ -820,7 +587,7 @@ export async function runSession(session: Session, setup: Setup): Promise<() => 
     const reading = session.network();
     if (reading !== null) badge?.update(reading, session.state.ruleset.tickRateHz);
 
-    crumbleRuins();
+    board.crumbleRuins();
     perf.end('hud');
     // Once the match is over, fireworks over whoever won it.
     const celebrate =
@@ -836,14 +603,14 @@ export async function runSession(session: Session, setup: Setup): Promise<() => 
       session.tickFraction,
       delta,
       {
-        build: enclosureFor('build').castleEnclosed,
-        combat: enclosureFor('combat').castleEnclosed,
+        build: board.enclosureFor('build').castleEnclosed,
+        combat: board.enclosureFor('combat').castleEnclosed,
       },
-      advanceFloods(),
+      board.advanceFloods(),
       session.humanPlayer,
       celebrate,
-      recentChoices(now),
-      advanceDrains(now),
+      board.recentChoices(now),
+      board.advanceDrains(now),
     );
     perf.end('effects');
     perf.begin('overlay');

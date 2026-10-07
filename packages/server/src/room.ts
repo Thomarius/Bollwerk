@@ -13,31 +13,20 @@ import {
   type ServerConfig,
   type TerrainConfig,
 } from '@bollwerk/config';
-import { Bot, PlanningSlots, dealPersonalities, turnOrder } from '@bollwerk/ai';
+import { Bot, PlanningSlots, dealSeats } from '@bollwerk/ai';
 import {
   ActionSchema,
-  HASH_EVERY_TICKS,
   MatchRecorder,
   PROTOCOL_VERSION,
-  captureSnapshot,
   recordingId,
   type RecordingLine,
   type RoomListing,
   type ClientMessage,
-  type Seat as WireSeat,
   type ServerMessage,
+  type Seat as WireSeat,
 } from '@bollwerk/protocol';
-import {
-  Rng,
-  applyAction,
-  createMatch,
-  drainEvents,
-  hashMatchState,
-  seatOrder,
-  step,
-  type Action,
-  type MatchState,
-} from '@bollwerk/sim';
+import { MatchRunner } from './matchRunner.js';
+import { Rng, createMatch } from '@bollwerk/sim';
 
 /**
  * A client, abstracted away from WebSockets so a room can be driven directly in
@@ -50,7 +39,7 @@ export interface Connection {
   close(reason: string): void;
 }
 
-interface Seat {
+export interface Seat {
   playerId: number;
   name: string;
   /** Null while nobody is holding the seat: a bot plays it until someone returns. */
@@ -99,13 +88,8 @@ export class Room {
   private readonly options: RoomOptions;
   private readonly rng: Rng;
 
-  private state: MatchState | null = null;
-  /** One per seat, created when the match starts: a bot keeps a plan between ticks. */
-  private bots = new Map<number, Bot>();
-  /** The plans the bots may make on one tick between them, a fresh set each match. */
-  private slots = new PlanningSlots();
-  private accumulatorMs = 0;
-  private pending: { seat: Seat; action: Action }[] = [];
+  /** The match once it has started, until a rematch brings the table back. */
+  private match: MatchRunner | null = null;
   private hostId = 0;
   /** Skill of the bot in each seat, which the host may change before the match starts. */
   private readonly botLevels: number[];
@@ -124,13 +108,6 @@ export class Room {
   /** A bot the host has put in their own seat, to watch rather than play. */
   private hostBot: number | null = null;
   private idle = 0;
-  private recorder: MatchRecorder | null = null;
-  /**
-   * The player who paused the match, or null while it runs. Every timer in the match is
-   * counted in ticks, so a paused room simply steps none — bots, phase clocks and
-   * reconnect grace all wait — and adds nothing to the recording.
-   */
-  private pausedBy: number | null = null;
   /**
    * Where each person sat in the lobby, by token, as the match started: the start deals
    * seats onto islands and renumbers them, and a rematch puts everyone back.
@@ -150,15 +127,15 @@ export class Room {
   }
 
   get started(): boolean {
-    return this.state !== null;
+    return this.match !== null;
   }
 
   get finished(): boolean {
-    return this.state?.phase === 'game_over';
+    return this.match?.finished === true;
   }
 
   get paused(): boolean {
-    return this.pausedBy !== null;
+    return (this.match?.pausedBy ?? null) !== null;
   }
 
   /**
@@ -167,7 +144,7 @@ export class Room {
    * the host, as the lobby does.
    */
   listing(): RoomListing | null {
-    if (this.options.public === false || this.state !== null) return null;
+    if (this.options.public === false || this.match !== null) return null;
     if (this.seats.length === 0 || this.seats.length >= this.playerCount) return null;
     const host = this.seats.find((s) => s.playerId === this.hostId) ?? this.seats[0]!;
     return {
@@ -199,20 +176,19 @@ export class Room {
         // gave to a bot on purpose, which stays the bot's: they came back to watch.
         seat.connection = connection;
         const watching =
-          this.state !== null && seat.playerId === this.hostId && this.hostBot !== null;
+          this.match !== null && seat.playerId === this.hostId && this.hostBot !== null;
         seat.bot = watching;
         seat.graceTicks = 0;
         this.sendWelcome(seat);
-        if (this.state) this.sendSnapshot(seat);
-        if (this.pausedBy !== null) {
-          connection.send({ type: 'paused', paused: true, by: this.pausedBy });
-        }
+        this.match?.sendSnapshot(seat);
+        const pausedBy = this.match?.pausedBy ?? null;
+        if (pausedBy !== null) connection.send({ type: 'paused', paused: true, by: pausedBy });
         this.broadcastRoom();
         return seat.playerId;
       }
     }
 
-    if (this.state !== null) return null; // no new seats once a match is running
+    if (this.match !== null) return null; // no new seats once a match is running
     if (this.seats.length >= this.playerCount) return null;
 
     const seat: Seat = {
@@ -237,7 +213,7 @@ export class Room {
     const seat = this.seats.find((s) => s.connection?.id === connection.id);
     if (!seat) return;
     seat.connection = null;
-    if (this.state === null) {
+    if (this.match === null) {
       // Nothing has started: drop the seat, and leave everybody else where they sit — the
       // host may have put them there. It used to renumber everyone, which undid the
       // seating and never told the renumbered who they had become.
@@ -270,7 +246,7 @@ export class Room {
         return;
       case 'configure': {
         // Only the host, and only while the table is still being set.
-        if (seat.playerId !== this.hostId || this.state !== null) return;
+        if (seat.playerId !== this.hostId || this.match !== null) return;
         for (let i = 0; i < this.botLevels.length; i++) {
           const wanted = message.bots?.[i];
           if (wanted !== undefined) this.botLevels[i] = wanted;
@@ -294,29 +270,25 @@ export class Room {
       case 'pause': {
         // Anyone at the table, watching or playing, and without limit: for the test
         // sessions, trust the table. Only a match under way can be paused.
-        if (this.state === null || this.finished) return;
-        const wanted = message.paused ? seat.playerId : null;
-        if ((wanted === null) === (this.pausedBy === null)) return; // already so
-        this.pausedBy = wanted;
-        // Resuming starts the clock afresh rather than paying out the pause as a burst.
-        this.accumulatorMs = 0;
+        if (this.match === null || this.match.finished) return;
+        if (!this.match.setPaused(message.paused ? seat.playerId : null)) return; // already so
         this.broadcast({ type: 'paused', paused: message.paused, by: seat.playerId });
         return;
       }
       case 'action': {
         // A seat its bot is playing — the host who chose to watch — acts only through it.
-        if (seat.bot) return;
+        if (seat.bot || this.match === null) return;
         // Nothing moves while paused, and a move queued now would land on resuming,
         // planned with the board frozen: dropped instead.
-        if (this.pausedBy !== null) return;
+        if (this.match.pausedBy !== null) return;
         // The seat decides who acted, never the message: otherwise a client could
         // move on another player's behalf simply by writing a different id.
         const action = ActionSchema.parse({ ...message.action, player: seat.playerId });
-        this.pending.push({ seat, action });
+        this.match.queue(seat, action);
         return;
       }
       case 'ping':
-        connection.send({ type: 'pong', t: message.t, serverTick: this.state?.tick ?? 0 });
+        connection.send({ type: 'pong', t: message.t, serverTick: this.match?.state.tick ?? 0 });
         return;
       default:
         return;
@@ -394,7 +366,7 @@ export class Room {
   // --------------------------------------------------------------------- match
 
   start(): void {
-    if (this.state !== null) return;
+    if (this.match !== null) return;
     // Unequal teams cannot start. The host's controls never produce them, so this only
     // turns away a crafted message.
     if (!teamsBalanced(this.teams, this.settings.teamSize)) return;
@@ -427,7 +399,6 @@ export class Room {
     // Which player, and so which island, each seat becomes — shuffled, so no seat is
     // always the one with the awkward neighbours.
     const seed = this.seed;
-    const order = seatOrder(seed, this.seats.length);
     const players = new Array<{ name: string; isBot: boolean; team: number }>(this.seats.length);
     const levels = this.seats.map(
       (_, index) => this.botLevels[index] ?? this.options.server.botLevel,
@@ -440,27 +411,22 @@ export class Room {
       hosting.bot = true;
       levels[hostSeat] = this.hostBot;
     }
-    // Each seat's bot, by player once the seats are dealt their islands: its level, and a
-    // personality dealt from the seed (PLAN 11.6) — a person's seat gets one too, for the
-    // bot that covers them if they drop. For the recording, a person is nulls.
-    const isBot = new Array<boolean>(this.seats.length);
-    this.seats.forEach((seat, index) => {
-      isBot[order[index] as number] = seat.bot;
-    });
-    const personalities = dealPersonalities(seed, isBot);
-    const setups = new Array<BotSetup>(this.seats.length);
+    // Each seat's bot, by player once the seats are dealt their islands (PLAN 11.6) — a
+    // person's seat gets one too, for the bot that covers them if they drop. For the
+    // recording, a person is nulls.
+    const { playerOfSeat, setups } = dealSeats(
+      seed,
+      this.seats.map((seat, index) => ({ level: levels[index] as number, bot: seat.bot })),
+    );
     const recorded = new Array<{ level: number | null; personality: Personality | null }>(
       this.seats.length,
     );
     this.seats.forEach((seat, index) => {
-      const player = order[index] as number;
+      const player = playerOfSeat[index] as number;
       players[player] = { name: seat.name, isBot: seat.bot, team: this.teams[index] ?? index };
-      const setup = {
-        level: levels[index] as number,
-        personality: personalities[player] as Personality,
-      };
-      setups[player] = setup;
-      recorded[player] = seat.bot ? setup : { level: null, personality: null };
+      recorded[player] = seat.bot
+        ? (setups[player] as BotSetup)
+        : { level: null, personality: null };
       seat.playerId = player;
     });
     this.hostId = this.seats[hostSeat]?.playerId ?? 0;
@@ -468,16 +434,17 @@ export class Room {
     // The server's rules with the host's settings over them. It travels in the snapshot
     // like any ruleset, so every client runs exactly these.
     const ruleset = applySettings(this.options.ruleset, this.settings);
-    this.state = createMatch({
+    const state = createMatch({
       seed,
       ruleset,
       terrainConfig: this.options.terrain,
       players,
     });
 
+    let recorder: MatchRecorder | null = null;
     if (this.options.record !== undefined) {
       const startedAt = new Date();
-      this.recorder = new MatchRecorder(this.options.record, {
+      recorder = new MatchRecorder(this.options.record, {
         id: recordingId('server', startedAt, this.code),
         source: 'server',
         startedAt: startedAt.toISOString(),
@@ -492,17 +459,23 @@ export class Room {
       });
     }
 
-    this.slots = new PlanningSlots(this.options.ai.plansPerTick);
+    // The plans the bots may make on one tick between them, a fresh set each match. A seat
+    // a person holds still gets a bot, ready to cover them if they drop.
+    const slots = new PlanningSlots(this.options.ai.plansPerTick);
+    const bots = new Map<number, Bot>();
     for (const seat of this.seats) {
-      // A seat a person holds still gets a bot, ready to cover them if they drop.
       const setup = setups[seat.playerId] as BotSetup;
-      this.bots.set(seat.playerId, new Bot(seat.playerId, setup, this.options.ai, this.slots));
+      bots.set(seat.playerId, new Bot(seat.playerId, setup, this.options.ai, slots));
     }
+    const match = new MatchRunner(state, bots, recorder, this.rng, this.seats, (message) =>
+      this.broadcast(message),
+    );
+    this.match = match;
 
     // Every connection learns the player it has become before the match reaches it.
     for (const seat of this.seats) this.sendWelcome(seat);
     this.broadcastRoom();
-    for (const seat of this.seats) this.sendSnapshot(seat);
+    for (const seat of this.seats) match.sendSnapshot(seat);
   }
 
   /**
@@ -512,13 +485,8 @@ export class Room {
    * again, then the room, which their page reads as the lobby; the host starts as ever.
    */
   rematch(): void {
-    if (this.state === null || this.state.phase !== 'game_over') return;
-    this.state = null;
-    this.bots.clear();
-    this.recorder = null;
-    this.pausedBy = null;
-    this.pending = [];
-    this.accumulatorMs = 0;
+    if (this.match === null || !this.match.finished) return;
+    this.match = null;
     this.seats.splice(
       0,
       this.seats.length,
@@ -543,56 +511,7 @@ export class Room {
   update(elapsedMs: number): void {
     if (this.empty) this.idle += elapsedMs;
     else this.idle = 0;
-
-    const state = this.state;
-    if (state === null || state.phase === 'game_over' || this.pausedBy !== null) return;
-
-    const tickMs = 1000 / state.ruleset.tickRateHz;
-    this.accumulatorMs += Math.min(elapsedMs, 1000);
-    while (this.accumulatorMs >= tickMs) {
-      this.accumulatorMs -= tickMs;
-      this.tick(state);
-      if (this.finished) break;
-    }
-  }
-
-  private tick(state: MatchState): void {
-    const applied: Action[] = [];
-
-    for (const seat of this.seats) {
-      if (seat.connection !== null || seat.bot) continue;
-      // A dropped player is played by a bot once the grace period lapses, so the
-      // rest of the table is not held hostage by one dead connection.
-      if (seat.graceTicks > 0) seat.graceTicks--;
-    }
-
-    // In player order rotated by the round, so the bots waiting for a plan as a phase opens
-    // are not the same ones every round (`PlanningSlots`).
-    const byPlayer = [...this.seats].sort((a, b) => a.playerId - b.playerId);
-    for (const seat of turnOrder(byPlayer, state.round)) {
-      const playsItself = seat.bot || (seat.connection === null && seat.graceTicks === 0);
-      if (!playsItself) continue;
-      const action = this.bots.get(seat.playerId)?.think(state, this.rng) ?? null;
-      if (action !== null && applyAction(state, action) === null) applied.push(action);
-    }
-
-    for (const { seat, action } of this.pending) {
-      if (seat.connection === null) continue;
-      const rejection = applyAction(state, action);
-      if (rejection === null) applied.push(action);
-      else seat.connection.send({ type: 'rejected', action, reason: rejection });
-    }
-    this.pending = [];
-
-    const tick = state.tick;
-    step(state);
-    drainEvents(state);
-    // The recorder fingerprints the state on the ticks the commit carries one.
-    const recorded = this.recorder?.stepped(tick, applied, state);
-
-    const commit: ServerMessage = { type: 'commit', tick, actions: applied };
-    if (tick % HASH_EVERY_TICKS === 0) commit.hash = recorded ?? hashMatchState(state);
-    this.broadcast(commit);
+    this.match?.update(elapsedMs);
   }
 
   // ------------------------------------------------------------------ plumbing
@@ -624,11 +543,6 @@ export class Room {
       token: seat.token,
       hostId: this.hostId,
     });
-  }
-
-  private sendSnapshot(seat: Seat): void {
-    if (this.state === null) return;
-    seat.connection?.send({ type: 'snapshot', snapshot: captureSnapshot(this.state) });
   }
 
   private broadcastRoom(): void {

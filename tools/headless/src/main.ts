@@ -12,10 +12,9 @@ import {
   type Personality,
 } from '@bollwerk/config';
 import { loadConfigBundle } from '@bollwerk/config/node';
-import { Bot, PlanningSlots, dealPersonalities, turnOrder } from '@bollwerk/ai';
+import { Bot, PlanningSlots, dealPersonalities, takeBotTurns } from '@bollwerk/ai';
 import {
   Rng,
-  applyAction,
   createMatch,
   drainEvents,
   generateTerrain,
@@ -378,9 +377,8 @@ for (let i = 0; i < args.matches; i++) {
   const sampler = new RoundStats(bundle, `sim-${seed}`, seed, (p) => seatSetup(p, seed));
 
   while (state.phase !== 'game_over' && state.tick < args.maxTicks) {
-    for (const player of turnOrder(state.players, state.round)) {
-      const action = bots[player.id]?.think(state, rng) ?? null;
-      if (action !== null && applyAction(state, action) !== null) refused++;
+    for (const turn of takeBotTurns(state, rng, (player) => bots[player])) {
+      if (turn.rejection !== null) refused++;
     }
     step(state);
     const events = drainEvents(state);

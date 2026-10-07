@@ -1,6 +1,6 @@
-import { dealPersonalities } from '@bollwerk/ai';
-import type { BotSetup, Personality } from '@bollwerk/config';
-import { seatOrder, type MatchEvent, type MatchState } from '@bollwerk/sim';
+import { dealSeats } from '@bollwerk/ai';
+import type { BotSetup } from '@bollwerk/config';
+import type { MatchEvent, MatchState } from '@bollwerk/sim';
 
 import { t } from './i18n.js';
 
@@ -141,19 +141,15 @@ export function botSetupsFromSeats(
   seed: number,
   seats: readonly (number | null)[],
 ): Map<number, BotSetup> {
-  const order = seatOrder(seed, seats.length);
-  const isBot = new Array<boolean>(seats.length);
-  seats.forEach((level, seat) => {
-    isBot[order[seat] as number] = level !== null;
+  const { setups } = dealSeats(
+    seed,
+    seats.map((level) => ({ level, bot: level !== null })),
+  );
+  const byPlayer = new Map<number, BotSetup>();
+  setups.forEach((setup, player) => {
+    if (setup !== null) byPlayer.set(player, setup);
   });
-  const dealt = dealPersonalities(seed, isBot);
-  const setups = new Map<number, BotSetup>();
-  seats.forEach((level, seat) => {
-    if (level === null) return;
-    const player = order[seat] as number;
-    setups.set(player, { level, personality: dealt[player] as Personality });
-  });
-  return setups;
+  return byPlayer;
 }
 
 /** One bot revealed at the end: who, and how it played. */

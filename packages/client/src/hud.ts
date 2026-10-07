@@ -1,28 +1,25 @@
 import { playerCssColour } from './colours.js';
-import { SHAPE_PATHS, playerShape, shapeSvg } from './shapes.js';
-import { awardCandidates, drawAwards, type Award } from './awards.js';
-import type { BannerKind } from './banners.js';
+import { playerShape, shapeSvg } from './shapes.js';
 import { formatNumber, t } from './i18n.js';
 import { escape } from './html.js';
-import { defaultArtConfig, type ArtStyle, type PlayerShape, type TextKey } from '@bollwerk/config';
+import { defaultArtConfig, type ArtStyle, type TextKey } from '@bollwerk/config';
 
 import { showsClock } from './clock.js';
 import { motionReduced } from './motion.js';
-import { mostCastlesOf, scoreChart, type MatchLog, type Reveal } from './summary.js';
 
 import {
   countUp,
-  endOfMatchText,
   inFinalRound,
   isTeamMatch,
   roundLabel,
   standings,
   teamLetter,
-  teamStandings,
   type AnnouncementLine,
   type RankEntry,
 } from './scores.js';
 import { owesCastleChoice, teamScore, type MatchState, type Phase } from '@bollwerk/sim';
+import { BoardLabels } from './boardLabels.js';
+import { EndScreen } from './endScreen.js';
 
 /**
  * The phase banner each style draws, as a class of `.phase-call`: a record over every
@@ -83,21 +80,6 @@ const PHASE_LABEL: Record<Phase, TextKey> = {
   game_over: 'phase.gameOver',
 };
 
-/** One banner over one island. */
-export interface IslandBanner {
-  player: number;
-  colour: string;
-  /** How long a banner of news that expires is held, so its fade can match. */
-  holdMs: number;
-  kind: BannerKind;
-  title: string;
-  detail: string;
-  urgent: boolean;
-  /** Screen pixels, from `Scene.screenAt`. */
-  x: number;
-  y: number;
-}
-
 /** Short, shouted names for the sweeping phase announcement. */
 const PHASE_CALL: Record<Phase, TextKey | null> = {
   lobby: null,
@@ -116,52 +98,26 @@ const LONG_PHASE_LABEL = 22;
 const RANK_COUNT_DELAY_MS = 450;
 
 export class Hud {
+  /** What stands over the board: the marker, team tags, big timer, count and banners. */
+  readonly labels: BoardLabels;
+  /** The summary at the end of a match, its awards, chart, reveal and buttons. */
+  readonly endScreen: EndScreen;
+
   constructor(
     private readonly root: HTMLElement,
     private readonly bannerRoot: HTMLElement,
-  ) {}
+  ) {
+    this.labels = new BoardLabels(root, bannerRoot);
+    this.endScreen = new EndScreen(root);
+  }
 
   /** When the phase on screen began, so the time bar knows its whole length. */
   private phaseKey = '';
+
   private phaseStartTick = 0;
 
   /** The announcement crossing the screen, if one is. */
   private phaseCall: HTMLElement | null = null;
-
-  /**
-   * The end-of-match screen, kept apart from the markup rewritten every frame: a button
-   * replaced between a press and its release never receives the click.
-   */
-  private endScreen: HTMLElement | null = null;
-  private endScreenHtml = '';
-  /** When the match was first seen over, for holding the summary back (`showEndScreen`). */
-  private gameOverAt: number | null = null;
-  private leave: (() => void) | null = null;
-  private rematch: (() => void) | null = null;
-  private rematchBy: 'mine' | 'host' | null = null;
-
-  private youAreHere: HTMLElement | null = null;
-
-  /** The "You are here" marker over the viewer's island, or null to take it down. */
-  showYouAreHere(at: { x: number; y: number; colour: string; shape: PlayerShape } | null): void {
-    if (at === null) {
-      this.youAreHere?.remove();
-      this.youAreHere = null;
-      return;
-    }
-    if (this.youAreHere === null || !this.youAreHere.isConnected) {
-      this.youAreHere = document.createElement('div');
-      this.youAreHere.className = 'you-are-here';
-      // With the player's shape, so the opening is where they learn it.
-      this.youAreHere.innerHTML = `${shapeSvg(at.shape, at.colour)}${t('hud.youAreHere')}`;
-      this.bannerRoot.append(this.youAreHere);
-    }
-    // Light text in a border of the player's colour: crimson text on the dark box did
-    // not read.
-    this.youAreHere.style.setProperty('--who', at.colour);
-    this.youAreHere.style.left = `${at.x.toFixed(1)}px`;
-    this.youAreHere.style.top = `${at.y.toFixed(1)}px`;
-  }
 
   private skin: string | null = null;
 
@@ -238,152 +194,6 @@ export class Hud {
     }
     this.bannerRoot.append(this.embers);
   }
-
-  /** What the end screen's button does: back to the menu, whether played or watched. */
-  onLeave(handler: () => void): void {
-    this.leave = handler;
-  }
-
-  /** The end screen's Rematch: the player's to press, the host's to press, or not there. */
-  useRematch(by: 'mine' | 'host' | null): void {
-    this.rematchBy = by;
-  }
-
-  onRematch(handler: () => void): void {
-    this.rematch = handler;
-  }
-
-  private showEndScreen(html: string): void {
-    if (this.endScreen === null || !this.endScreen.isConnected) {
-      this.endScreen = document.createElement('div');
-      this.endScreen.className = 'end-screen';
-      this.endScreen.addEventListener('click', (event) => {
-        const target = event.target as HTMLElement;
-        if (target.closest('.leave')) this.leave?.();
-        const rematch = target.closest<HTMLButtonElement>('.rematch');
-        if (rematch !== null && !rematch.disabled) this.rematch?.();
-      });
-      this.root.append(this.endScreen);
-      this.endScreenHtml = '';
-    }
-    if (html !== this.endScreenHtml) {
-      this.endScreen.innerHTML = html;
-      this.endScreenHtml = html;
-    }
-    // Held back while the fireworks and the camera's push have the screen to themselves:
-    // shown at once, the summary covered the celebration it followed. Timed here rather
-    // than by a CSS delay, which would start again whenever the markup was rewritten.
-    const now = performance.now();
-    if (html === '') this.gameOverAt = null;
-    else this.gameOverAt ??= now;
-    const held =
-      this.gameOverAt !== null && now - this.gameOverAt < defaultArtConfig.summary.delayMs;
-    this.endScreen.classList.toggle('held', held);
-  }
-
-  /** A team's letter over each of its islands, for the whole of a team match. */
-  private teamTags = new Map<number, HTMLElement>();
-
-  showTeamTags(
-    tags: readonly { player: number; text: string; colour: string; x: number; y: number }[],
-  ): void {
-    const nodes = tags.map((tag) => {
-      let node = this.teamTags.get(tag.player);
-      if (node === undefined) {
-        node = document.createElement('div');
-        node.className = 'team-tag';
-        node.textContent = tag.text;
-        this.bannerRoot.append(node);
-        this.teamTags.set(tag.player, node);
-      }
-      return node;
-    });
-    // Every size read before any position is written: a read after a write lays the page
-    // out again, and that was once a tag, every frame of a team match.
-    const margin = 4;
-    const bar = this.barBottom();
-    const width = this.bannerRoot.clientWidth;
-    const sizes = nodes.map((node) => ({ half: node.offsetWidth / 2, high: node.offsetHeight }));
-    tags.forEach((tag, k) => {
-      const node = nodes[k] as HTMLElement;
-      const { half, high } = sizes[k] as { half: number; high: number };
-      // Kept on screen and below the bar: the tags grew (testers missed the small ones),
-      // and over an island at the window's edge or in the top row they ran off it or
-      // under the roster. Hung from their bottom middle, as the stylesheet places them.
-      const x = Math.min(Math.max(tag.x, half + margin), width - half - margin);
-      setStyle(node, 'borderColor', tag.colour);
-      setStyle(node, 'left', `${x}px`);
-      setStyle(node, 'top', `${Math.max(tag.y, bar + high + margin)}px`);
-    });
-  }
-
-  /** Where the HUD's bar ends, in the banner layer's pixels. */
-  private barBottom(): number {
-    const bar = this.root.querySelector<HTMLElement>('.bar');
-    return bar === null
-      ? 0
-      : bar.getBoundingClientRect().bottom - this.bannerRoot.getBoundingClientRect().top;
-  }
-
-  /** Kept across frames, like the island banners, rather than rebuilt from markup. */
-  private bigTimer: HTMLElement | null = null;
-  private readyCount: HTMLElement | null = null;
-
-  /**
-   * The time left in large figures, in open water near the middle of the map — see
-   * `timerSpot`. Null hides it. Red for the last three seconds, like the bar.
-   */
-  showBigTimer(at: { x: number; y: number; sizePx: number } | null, seconds: number): void {
-    if (at === null) {
-      this.bigTimer?.remove();
-      this.bigTimer = null;
-      return;
-    }
-    if (this.bigTimer === null) {
-      this.bigTimer = document.createElement('div');
-      this.bigTimer.className = 'big-timer';
-      this.bannerRoot.append(this.bigTimer);
-    }
-    const text = String(seconds);
-    const urgent = seconds <= 3;
-    if (this.bigTimer.textContent !== text) {
-      this.bigTimer.textContent = text;
-      // A beat on every second of the last three, with the clock's tick — which starts at
-      // five (`COUNTDOWN_FROM`), so the end is heard before it is seen. Restarted by
-      // taking the class off and putting it back once the change has been seen.
-      this.bigTimer.classList.remove('beat');
-      if (urgent) {
-        void this.bigTimer.offsetWidth;
-        this.bigTimer.classList.add('beat');
-      }
-    }
-    this.bigTimer.classList.toggle('urgent', urgent);
-    this.bigTimer.style.left = `${at.x}px`;
-    this.bigTimer.style.top = `${at.y}px`;
-    this.bigTimer.style.fontSize = `${Math.round(at.sizePx * 0.75)}px`;
-  }
-
-  /** How many cannons are ready, beside the aiming cursor. Null hides it. */
-  showReadyCount(at: { x: number; y: number } | null, count: number): void {
-    if (at === null) {
-      this.readyCount?.remove();
-      this.readyCount = null;
-      return;
-    }
-    if (this.readyCount === null) {
-      this.readyCount = document.createElement('div');
-      this.readyCount.className = 'ready-count';
-      this.bannerRoot.append(this.readyCount);
-    }
-    const text = String(count);
-    if (this.readyCount.textContent !== text) this.readyCount.textContent = text;
-    this.readyCount.classList.toggle('none', count === 0);
-    this.readyCount.style.left = `${at.x}px`;
-    this.readyCount.style.top = `${at.y}px`;
-  }
-
-  /** Live banner nodes by player, kept across frames so their animation survives. */
-  private readonly islandBanners = new Map<number, HTMLElement>();
 
   /**
    * Announces a phase with a banner that sweeps down the screen, as the original
@@ -504,57 +314,6 @@ export class Hud {
   }
 
   /**
-   * Banners sitting over the islands themselves: a life lost, or a player out.
-   *
-   * Placed rather than templated, because they move with the camera and rebuilding
-   * them from a string every frame would restart their animation on every frame.
-   */
-  showIslandBanners(banners: IslandBanner[]): void {
-    const wanted = new Map(banners.map((b) => [b.player, b]));
-
-    for (const [player, node] of this.islandBanners) {
-      if (wanted.has(player)) continue;
-      node.remove();
-      this.islandBanners.delete(player);
-    }
-
-    for (const banner of banners) {
-      let node = this.islandBanners.get(banner.player);
-      if (node === undefined) {
-        node = document.createElement('div');
-        node.className = 'island-banner';
-        this.bannerRoot.append(node);
-        this.islandBanners.set(banner.player, node);
-      }
-      const text = `${banner.title}|${banner.detail}`;
-      if (node.dataset.text !== text) {
-        node.dataset.text = text;
-        const title = document.createElement('strong');
-        title.textContent = banner.title;
-        title.insertAdjacentHTML('afterbegin', shapeSvg(playerShape(banner.player), banner.colour));
-        node.replaceChildren(title);
-        if (banner.detail !== '') {
-          const detail = document.createElement('small');
-          detail.textContent = banner.detail;
-          node.append(detail);
-        }
-      }
-      // A new kind of news restarts the entrance, so a life lost after points were shown
-      // lands as hard as one on its own. Only a new kind: points counting up change the
-      // text every frame, and restarting then would replay the entrance every frame.
-      if (node.dataset.kind !== banner.kind) {
-        node.dataset.kind = banner.kind;
-        node.className = `island-banner ${banner.kind}`;
-        node.style.animationDuration = banner.kind === 'gain' ? `${banner.holdMs}ms` : '';
-      }
-      node.classList.toggle('urgent', banner.urgent);
-      node.style.borderColor = banner.colour;
-      node.style.left = `${banner.x}px`;
-      node.style.top = `${banner.y}px`;
-    }
-  }
-
-  /**
    * The HUD's frame, built once: the phase and the rest are rewritten when their markup
    * changes, the roster is kept, so its entries can count up and slide rather than being
    * replaced. Rewritten every frame, as they once were, they had the page restyled, laid out
@@ -572,76 +331,13 @@ export class Hud {
     fill: HTMLElement | null;
     fillWidth: string;
   } | null = null;
+
   /** Roster entries by key — `p<player>` or `t<team>` — and the markup each last had. */
   private readonly entries = new Map<string, { node: HTMLElement; html: string }>();
-  /** The match's log, for the summary at its end; see `summary.ts`. */
-  private log: MatchLog | null = null;
-
-  useLog(log: MatchLog): void {
-    this.log = log;
-  }
-
-  /** The bots revealed at game over: their levels and the personalities they were dealt. */
-  private reveal: readonly Reveal[] = [];
-
-  useReveal(reveal: readonly Reveal[]): void {
-    this.reveal = reveal;
-  }
-
-  /**
-   * The surprise at the end (PLAN 11.6): one line per bot, its colour, name, level and
-   * personality in plain words.
-   */
-  /** The awards drawn for this match, once it is over: drawn once, so they hold still. */
-  private awards: readonly Award[] | null = null;
-
-  /**
-   * Up to three awards (PLAN 11.18 Y5), each a card: its title, the player in their colour
-   * and shape, and what earned it. Judged from the log, so a client that heard no
-   * resolution — a jump straight to the end — shows none rather than awards it cannot know.
-   */
-  private awardsMarkup(state: MatchState, humanPlayer: number): string {
-    const log = this.log;
-    if (log === null || log.scores.length === 0) return '';
-    this.awards ??= drawAwards(awardCandidates(log, state), state.seed);
-    if (this.awards.length === 0) return '';
-    const cards = this.awards
-      .map((award) => {
-        const colour = playerCssColour(award.player);
-        const name =
-          award.player === humanPlayer ? t('hud.you') : (state.players[award.player]?.name ?? '');
-        return (
-          `<li class="award" style="--who:${colour}"><strong>${escape(award.title)}</strong>` +
-          `<span class="who">${shapeSvg(playerShape(award.player), colour)}${escape(name)}</span>` +
-          `<small>${escape(award.detail)}</small></li>`
-        );
-      })
-      .join('');
-    return `<ul class="awards">${cards}</ul>`;
-  }
-
-  /** Rematch, for whoever may call it; for the others online, the host's to call. */
-  private rematchButton(): string {
-    if (this.rematchBy === 'mine') return `<button class="rematch">${t('hud.rematch')}</button>`;
-    if (this.rematchBy === 'host') {
-      return `<button class="rematch" disabled>${t('hud.rematchHost')}</button>`;
-    }
-    return '';
-  }
-
-  private revealMarkup(): string {
-    if (this.reveal.length === 0) return '';
-    const lines = this.reveal
-      .map(
-        (r) =>
-          `<li><b style="background:${playerCssColour(r.player)}"></b>${escape(r.name)} <span>${escape(r.text)}</span></li>`,
-      )
-      .join('');
-    return `<div class="reveal"><small>${t('hud.revealTitle')}</small><ul>${lines}</ul></div>`;
-  }
 
   /** Scores counting up, by the same keys. */
   private readonly counts = new Map<string, { from: number; to: number; since: number }>();
+
   /** The phase label's width as last measured, so the roster is told only of a change. */
   private phaseWidth = 0;
 
@@ -726,54 +422,6 @@ export class Hud {
     entry.node.title = built.title;
     entry.node.style.cssText = built.style.cssText;
     entry.node.replaceChildren(...built.childNodes);
-  }
-
-  /**
-   * Every score round by round, one line per player — per team in a team match — so the
-   * end of a match shows where it was won. The viewer's own line is drawn heaviest.
-   */
-  private chart(state: MatchState, humanPlayer: number): string {
-    const log = this.log;
-    if (log === null || log.scores.length < 2) return '';
-    const width = 360;
-    const height = 110;
-    const teamed = isTeamMatch(state);
-    const groups = teamed
-      ? [...new Set(state.players.map((p) => p.team))]
-          .sort((a, b) => a - b)
-          .map((team) => state.players.filter((p) => p.team === team).map((p) => p.id))
-      : state.players.map((p) => [p.id]);
-    const series = groups.map((ids, key) => ({
-      key,
-      scores: log.scores.map((round) =>
-        ids.reduce((sum, id) => sum + (round.byPlayer[id] ?? 0), 0),
-      ),
-    }));
-    const lines = scoreChart(series, log.scores.length, width, height)
-      .map((line) => {
-        const ids = groups[line.key] ?? [];
-        const mine = ids.includes(humanPlayer);
-        const d = line.points.map((pt, i) => `${i === 0 ? 'M' : 'L'}${pt.x} ${pt.y}`).join(' ');
-        const colour = playerCssColour(ids[0] ?? 0);
-        const end = line.points.at(-1);
-        const marker =
-          end === undefined
-            ? ''
-            : `<path class="end" transform="translate(${end.x - 6} ${end.y - 6}) scale(0.5)" d="${SHAPE_PATHS[playerShape(ids[0] ?? 0)]}" fill="${colour}"/>`;
-        return `<path d="${d}" stroke="${colour}" stroke-width="${mine ? 3 : 1.5}" fill="none" stroke-linejoin="round"/>${marker}`;
-      })
-      .join('');
-    // The lines start from nought, before the first round seen: the start of the match,
-    // or where a client that joined part-way came in.
-    const first = log.scores[0]?.round ?? 1;
-    const last = log.scores.at(-1)?.round ?? first;
-    const start = first === 1 ? t('hud.chartStart') : t('round.label', { round: first - 1 });
-    return (
-      `<figure class="score-chart"><svg viewBox="-8 -8 ${width + 16} ${height + 16}" width="${width}" height="${height}">` +
-      `<line x1="0" y1="${height}" x2="${width}" y2="${height}" class="axis"/>${lines}</svg>` +
-      `<figcaption><span>${start}</span><span>${t('hud.chartCaption')}</span>` +
-      `<span>${t('round.label', { round: last })}</span></figcaption></figure>`
-    );
   }
 
   update(state: MatchState, humanPlayer: number, status = ''): void {
@@ -891,65 +539,7 @@ export class Hud {
     // The labels over the islands live in the layer above this one, and at the end of a
     // match they sat on top of the summary; it says who was out, so they step aside.
     this.bannerRoot.classList.toggle('game-over', state.phase === 'game_over');
-    let banner = '';
-    if (state.phase === 'game_over') {
-      const text = escape(endOfMatchText(state, humanPlayer));
-      // Only a log that saw the match: one that heard no resolution — a jump straight to
-      // the end — would claim noughts it does not know.
-      const log = this.log !== null && this.log.scores.length > 0 ? this.log : null;
-      const sum = (map: ReadonlyMap<number, number> | undefined, ids: readonly number[]): number =>
-        ids.reduce((total, id) => total + (map?.get(id) ?? 0), 0);
-      // What each row did as well as where it finished: the wall it knocked down, the
-      // most castles it held at once, and the lives it has left — counted as the roster's
-      // pips are, the pool and the life being played, none once out. Lives *lost* read
-      // wrong: the failure that puts a player out spends no continue, so a player out
-      // after three failures showed two.
-      const livesLeft = (team: number, out: boolean): number =>
-        out ? 0 : (state.teams[team]?.continuesRemaining ?? 0) + 1;
-      const stats = (ids: readonly number[], team: number, out: boolean): string =>
-        log === null
-          ? ''
-          : `<td>${sum(log.destroyed, ids)}</td><td>${mostCastlesOf(log, ids)}</td>` +
-            `<td>${livesLeft(team, out)}</td>`;
-      const head =
-        log === null
-          ? ''
-          : `<tr class="head"><td></td><td></td><td>${t('hud.colPoints')}</td>` +
-            `<td>${t('hud.colWall')}</td><td>${t('hud.colCastles')}</td>` +
-            `<td>${t('hud.colLives')}</td><td></td></tr>`;
-      // A table rather than a line: with more than three players a single line of
-      // names and numbers could not be read at a glance.
-      const rows = teamed
-        ? teamStandings(state)
-            .map((s, rank) => {
-              const mine = s.members.includes(humanPlayer);
-              const members = s.members
-                .map(
-                  (id) =>
-                    `<b style="background:${playerCssColour(id)}"></b>${escape(state.players[id]?.name ?? '')}`,
-                )
-                .join(' ');
-              return (
-                `<tr class="${s.eliminated ? 'out' : ''}${mine ? ' you' : ''}">` +
-                `<td>${rank + 1}</td><td>${shapeSvg(playerShape(s.members[0] ?? 0), playerCssColour(s.members[0] ?? 0))}${t('hud.teamRow', { letter: teamLetter(s.team), members })}</td>` +
-                `<td>${s.score}</td>${stats(s.members, s.team, s.eliminated)}<td>${s.eliminated ? t('hud.out') : ''}</td></tr>`
-              );
-            })
-            .join('')
-        : standings(state)
-            .map(
-              (s, rank) =>
-                `<tr class="${s.eliminated ? 'out' : ''}${s.player === humanPlayer ? ' you' : ''}">` +
-                `<td>${rank + 1}</td><td>${shapeSvg(playerShape(s.player), playerCssColour(s.player))}${escape(s.name)}</td>` +
-                `<td>${s.score}</td>${stats([s.player], state.players[s.player]?.team ?? s.player, s.eliminated)}<td>${s.eliminated ? t('hud.out') : ''}</td></tr>`,
-            )
-            .join('');
-      const table = `<table class="final">${head}${rows}</table>`;
-      // A button, not a key: everything else in the game is the mouse, and a key that
-      // does something unannounced is the kind of surprise players dislike.
-      banner = `<div class="banner summary">${text}${table}${this.awardsMarkup(state, humanPlayer)}${this.chart(state, humanPlayer)}${this.revealMarkup()}<div class="end-buttons">${this.rematchButton()}<button class="leave">${t('watching.back')}</button></div></div>`;
-    }
-    this.showEndScreen(banner);
+    this.endScreen.update(state, humanPlayer, teamed);
     const seconds = t('hud.seconds', { seconds: formatNumber(secondsLeft, 1) });
     const heading = waiting ? t('hud.next', { label }) : label;
     // A long label — German's run half as long again as English's — is set smaller and
@@ -1004,21 +594,4 @@ export class Hud {
       frame.fill.style.width = fillWidth;
     }
   }
-}
-
-/**
- * Writes a style only when it changes: the labels over the board are placed every frame.
- * Compared with what was last written, not read back, which the browser normalises.
- */
-const written = new WeakMap<HTMLElement, Map<string, string>>();
-function setStyle(
-  node: HTMLElement,
-  property: 'borderColor' | 'left' | 'top',
-  value: string,
-): void {
-  let last = written.get(node);
-  if (last === undefined) written.set(node, (last = new Map()));
-  if (last.get(property) === value) return;
-  last.set(property, value);
-  node.style[property] = value;
 }
