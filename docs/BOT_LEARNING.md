@@ -180,7 +180,11 @@ score by the average outcome), or a neural value function trained in Python. Not
   Decided with the user: A, the unfillable last gaps, then B, step 2 adjusted by the
   findings.
 - 2026-10-07: A done (below): plans route round tiles no piece can cover; failed rounds
-  down about a point at every level measured.
+  down about a point at every level measured. Step 2 (B) started.
+- 2026-10-07: B done (below). Going big while breached and widening the territory all
+  round were measured and dropped; **widening once sealed — pushing the standing wall out
+  to another castle, or a stretch of land beside it — is kept for every bot**: one such
+  bot against two of the old won 65 of 96 at Levels 5 and 8. Next: step 3.
 
 ## 5. Findings
 
@@ -353,3 +357,115 @@ The routing does the work; a guard in `fit` against placements that leave a plan
 uncoverable (penalised as one covered tile) added nothing beside it and was dropped. No
 cost in time (the soaks ran as long). The final code reproduces the routing variant's
 hashes. Every level gains, the low ones most; the ladder is not re-measured.
+
+### B, first version: going big while breached (2026-10-07)
+
+**As built** (measured behind a temporary switch, then dropped): breached, a bot builds the most valuable wall it can finish — the
+ground it held as combat began (remembered during combat, since the first placement of
+a build phase refreshes territory for everyone), that ground widened by 1–3 tiles, or a
+castle wall with room — while the tightest repair costs at most `bailoutShare` of the
+cells it can still lay, priced at repair efficiency (0.45 blocks a cell); a big wall is
+finishable at 0.55 blocks a cell (the bots' sealing share), must be worth 1.25× the tight
+one, and a chosen one is kept unless another is worth 1.15× more. Checked at every plan.
+
+**Measured**, every bot balanced at Level 5, three players, 96 matches, seeds 1001–1096:
+
+| bailoutShare | failed rounds | points a round | castles | room | knockouts | time  |
+| ------------ | ------------- | -------------- | ------- | ---- | --------- | ----- |
+| off          | 11.9%         | 103.1          | 1.09    | 2.88 | 5         | 251 s |
+| 0.33         | 11.4%         | 106.9          | 1.10    | 2.94 | 2         | 297 s |
+| 0.5          | 11.9%         | 105.6          | 1.09    | 2.99 | 2         | 331 s |
+| 0.7          | 12.3%         | 106.0          | 1.09    | 3.03 | 2         | 354 s |
+
+Points +3–4% and no rise in forfeits, but within noise, castles unchanged, and planning
+18–40% slower. Counted over four matches at 0.33: of ~920 breached plans the bail-out
+held 628 back, the tight repair was the most valuable affordable wall in 263, and a big
+wall was chosen 27 times. At a bot's pace a third of the budget is ~8 blocks as a phase
+opens, against a median tight repair of 7, and it shrinks as the phase runs. **Breached is
+not where the testers' value comes from**: it is castles — Thomas ends a phase with +1.8
+castles, and value is tiles × castles — and 45% of his cells once sealed go into a wider
+wall where the bots thicken (step 1, finding 2). Once sealed, the wall standing is the
+bail-out.
+
+### B, second version: going big once sealed (2026-10-07)
+
+**Widening the whole territory does not work**: sealed, the candidate "territory widened
+by 1–3 tiles" asks for a new perimeter outside the old wall, beyond any phase's budget.
+Counted over four matches, the best wall within reach was the territory already held in
+479 of ~530 plans. People push a **bulge** out from the wall they have. So sealed, the
+candidates are the territory plus a patch of land of radius 2 or 4 round eight points
+spread along the outside of the wall (the cut reuses the standing wall), and the castle
+walls with room; the ground chosen is remembered, so the same bulge is built from plan
+to plan. Bulges then won 100 of ~580 sealed plans at a gain threshold of 1.25×, and many
+more gained 10–25%.
+
+**Every bot changed**, balanced, three players, 96 matches, seeds 1001–1096:
+
+| Variant              | failed rounds | points a round | castles | active guns | knockouts | time  |
+| -------------------- | ------------- | -------------- | ------- | ----------- | --------- | ----- |
+| L5 off               | 11.9%         | 103.1          | 1.09    | 5.45        | 5         | 251 s |
+| L5 sealed, widening  | 11.7%         | 104.0          | 1.09    | 5.46        | 5         | 285 s |
+| L5 bulges, gain 1.25 | 11.6%         | 102.4          | 1.08    | 5.54        | 1         | 363 s |
+| L5 bulges, gain 1.1  | 11.6%         | 100.7          | 1.04    | 5.59        | 0         | 356 s |
+| L8 off               | 14.7%         | 128.6          | 1.29    | 5.21        | 11        | 260 s |
+| L8 bulges, gain 1.25 | 13.5%         | 132.4          | 1.27    | 5.67        | 3         | 380 s |
+| L8 bulges, gain 1.1  | 13.2%         | 134.9          | 1.24    | 5.81        | 4         | 383 s |
+
+**Head to head**, one bot with bulges at 1.1 and the breached rule at 0.33 against two of
+today's, rotated through the three seats, 96 matches a level (seeds 2001–2096, fair
+share 32, one standard error about 4.6):
+
+| Level | wins     | failed rounds, it / today's | points a round, it / today's | active guns, it / today's |
+| ----- | -------- | --------------------------- | ---------------------------- | ------------------------- |
+| 5     | 32 (33%) | 11.5% / 11.6%               | 108.4 / 105.7                | 5.61 / 5.54               |
+| 8     | 39 (41%) | 12.3% / 14.3%               | 137.7 / 131.9                | 5.75 / 5.34               |
+
+A small gain at Level 8, about one and a half standard errors, and none at Level 5, for
+planning about 45% slower. Castles do not rise: the bulges buy ground and gun room, not
+the second castle that makes the testers' value.
+
+### B, third version: reaching for castles — kept (2026-10-07)
+
+**The candidates added**: for each castle outside the territory, the territory and that
+castle with a band of 0 or 2 tiles, so the cut reuses the standing wall and only bridges to
+the castle; reaching for every castle on the island, as spare work already did. Head to
+head as above (one changed bot, balanced, against two of today's, 96 matches a level):
+
+| Changed bot                                 | L5 wins | L8 wins |
+| ------------------------------------------- | ------- | ------- |
+| bulges and the breached rule, no castles    | 32      | 39      |
+| castles only                                | 41      | 46      |
+| castles and the breached rule               | 51      | 47      |
+| castles, bulges and the breached rule       | 49      | 47      |
+| castles and bulges                          | 48      | 54      |
+| castles and bulges, reach 0.8 blocks a cell | **65**  | **65**  |
+| castles and bulges, reach 1.0               | 67      | 64      |
+
+Castles carry most of it; the breached rule adds nothing reliable and was dropped, with
+its memory of the ground held. **Reach** was what held it back: at 0.55 blocks a cell (the
+bots' measured wall efficiency) a castle the old ladder would have tried was out of reach,
+and a cheaper bulge was built first — found by a test board where widening sealed one
+castle where the old ladder sealed two. At 0.8: castles a round 1.39 against 1.06 at Level
+5 and 1.74 against 1.29 at Level 8, points 23–33% more, failed rounds 12.9% / 12.1% and
+14.1% / 14.8% (it / today's).
+
+**As kept** (`widensWhenSealed` in each risk trait, true for all three; `widen` in
+`building.ts`; `SealPlanner.around` cuts round given ground): sealed, after the guns are
+recovered, a pocket is taken when short of room, and a thin wall is thickened for the
+secondary and defensive traits, the bot weighs the wall it chose last, eight bulges at radii
+2 and 4, the castles, and the castle walls with room; builds the most valuable it can
+finish (cost at most cells left × 0.8 × the level's risk margin) if worth 1.1× what it
+holds; keeps its choice unless another is worth 1.15× more; else the ladder as before.
+
+**Every bot widening**, dealt personalities, three players, 96 matches (seeds 1001–1096):
+
+| Level      | failed rounds | points a round | castles     | knockouts | at the cap |
+| ---------- | ------------- | -------------- | ----------- | --------- | ---------- |
+| 5 off / on | 11.5% / 11.6% | 108.6 / 113.8  | 1.13 / 1.20 | 11 / 12   | all / all  |
+| 8 off / on | 11.7% / 12.7% | 136.5 / 148.4  | 1.28 / 1.38 | 13 / 18   | all / all  |
+
+The ladder, all widening, one bot against two Level 5s, 96 matches: Level 4 won 12 (12h:
+15%), Level 6 won 33 (12h: 42%) — in order, Level 6's edge smaller, about 1.7 standard
+errors. **Time**: a build plan's mean 7.3 -> 7.8 ms at three players (Level 5) and 5.0 ->
+6.1 ms at eight (Level 8), the worst 82 -> 93 and 47 -> 67 ms (four runs at once on this
+machine, so for comparison only).

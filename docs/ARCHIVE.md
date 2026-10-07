@@ -5499,3 +5499,20 @@ matches a variant at three players: rounds failed 12.8% -> 11.5% at Level 5, 12.
 11.4% at 8, 13.9% -> 11.8% at 3, failures on an unfillable gap halved, points up 2–5%, no
 cost in time. A guard in the fit against boxing a planned tile in added nothing and was
 dropped. The final code reproduces the measured variant's hashes.
+
+## 12y. Bots widen their walls once sealed (2026-10-07)
+
+Step 2 of the bot learning work (`docs/BOT_LEARNING.md`, B, where the tables are), as
+adjusted by step 1's findings. **Tried and dropped**: going big while breached for as
+long as the tight repair costs at most a share of the budget (a third, measured from the
+recordings) — the bail-out held it back in two thirds of breached plans and it changed
+nothing measurable; and widening the territory all round once sealed, which asks for a new
+perimeter past any phase's budget. **Kept**: once sealed, the bot builds the most valuable
+wall it can finish this phase — the standing wall pushed out to take in another castle,
+or a stretch of land beside it — if worth 1.1× what it holds, valued as the scoring does.
+Castles carry the gain; the reach (0.8 blocks for each cell left) was tuned against a
+measured 0.55 that left castles the old ladder would try out of reach. One such bot against
+two without, 96 matches a level: 65 wins at Level 5 and at Level 8, fair share 32. Every
+bot widening: failed rounds 11.5% -> 11.6% at Level 5 and 11.7% -> 12.7% at 8, points up
+5–9%, every match at the cap; the ladder in order, Level 6's edge over 5 smaller (33 of 96
+against 12h's 42%). Plans cost 7–21% more on average.

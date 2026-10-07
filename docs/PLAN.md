@@ -1218,6 +1218,11 @@ construction, and the soak asserts they never ask for a move the rules refuse.
   `coverable`): a shot's hole between wall and sea or gun takes no piece once one-cell
   pieces stop, and a third of failed rounds ended on one; the plan routes round it from the
   start (BOT_LEARNING.md, A).
+- **Once sealed, the wall is widened before it is thickened** (`widensWhenSealed`, `widen`):
+  the most valuable wall the phase can finish — the standing wall pushed out to take in
+  another castle, or a stretch of land beside it — if worth 1.1× what is held. Building
+  outside a sealed wall leaves it whole, so it needs no bail-out. One such bot against two
+  without won 65 of 96 at Levels 5 and 8 (BOT_LEARNING.md, B).
 - **Cannons are never pinned when there is any alternative**: a spot beside a wall block
   with nothing buildable beyond it is where one shot makes a hole only a one-cell piece
   fits. Then clearance from wall and shore, then range.
@@ -1327,7 +1332,7 @@ every resolution against an independent search, not only on unit pictures.
 ## 11. Open work
 
 **Where to start (2026-10-07).** Next: the bot learning work, item 3 and
-[`BOT_LEARNING.md`](./BOT_LEARNING.md), step 1 done, and the unfillable last gaps fixed (ARCHIVE 12x); step 2 next. The refactoring of 2026-10-07
+[`BOT_LEARNING.md`](./BOT_LEARNING.md), steps 1 and 2 done — the unfillable last gaps and widening once sealed (ARCHIVE 12x, 12y); step 3 next. The refactoring of 2026-10-07
 (ARCHIVE 12w) left the game as it was, apart from protocol 17. Everything planned before
 that is done and in **v0.8.1**, the latest
 release: the game and online play, bots as skill levels and personalities, sixteen styles —

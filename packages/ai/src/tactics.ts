@@ -150,8 +150,17 @@ export class SealGraph {
     this.bare = flow.mark();
   }
 
-  /** The smallest wall around these castles, as `planSeal` describes. */
-  plan(castles: readonly Castle[], keepCannons = false, roomRadius = 0): SealPlan | null {
+  /**
+   * The smallest wall around these castles, as `planSeal` describes — and round every tile
+   * of `ground` too, when given: the ground a player held, say, which no band round the
+   * castles describes.
+   */
+  plan(
+    castles: readonly Castle[],
+    keepCannons = false,
+    roomRadius = 0,
+    ground?: readonly number[],
+  ): SealPlan | null {
     const { state, playerId, blocked, node, tiles, flow } = this;
     if (castles.length === 0 || this.islandId === undefined || tiles.length === 0) return null;
     flow.reset(this.bare);
@@ -176,6 +185,8 @@ export class SealGraph {
         for (let x = x0; x <= x1; x++) sinkTile(y * state.width + x);
       }
     }
+
+    if (ground !== undefined) for (const i of ground) sinkTile(i);
 
     if (keepCannons) {
       for (const cannon of state.cannons) {
@@ -242,6 +253,7 @@ export class SealPlanner {
   private graph: SealGraph | null = null;
   private readonly cuts = new Map<string, Cuts>();
   private readonly answers = new Map<string, SealPlan[]>();
+  private readonly grounds = new Map<string, SealPlan | null>();
   private readonly mine: Castle[];
 
   constructor(
@@ -284,6 +296,20 @@ export class SealPlanner {
       }
     }
     return best;
+  }
+
+  /**
+   * The smallest wall round these castles and this ground, keeping the guns, remembered by
+   * `key` — which must name the ground, since the planner cannot compare tile lists.
+   */
+  around(key: string, castles: readonly Castle[], ground: readonly number[]): SealPlan | null {
+    let plan = this.grounds.get(key);
+    if (plan === undefined) {
+      const graph = (this.graph ??= new SealGraph(this.state, this.playerId, this.blocked));
+      plan = castles.length === 0 ? null : graph.plan(castles, true, 0, ground);
+      this.grounds.set(key, plan);
+    }
+    return plan;
   }
 
   /** The plans `options` would hold that could take in this many castles, as made. */

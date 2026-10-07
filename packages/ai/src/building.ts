@@ -8,7 +8,9 @@ import {
   currentPieceId,
   pieceById,
   pieceCells,
+  poolForRound,
   type Action,
+  type Castle,
   type EnclosureResult,
   type MatchState,
   type Rng,
@@ -40,6 +42,40 @@ const GUN_REACH = 12;
  * tightest repair, in blocks, at most this. Agreed with the user as the start.
  */
 const SMALL_REPAIR = 4;
+
+/**
+ * Widening once sealed (`widensWhenSealed`, BOT_LEARNING.md B): what it can still finish,
+ * in blocks for each cell it can still lay this phase. Tuned head to head, one bot against
+ * two of today's, 96 matches each at Levels 5 and 8 (fair share 32): 0.55 — the share of a
+ * bot's repairing cells that ends in the final wall, in the testers' recordings — won 48
+ * and 54, too short to reach a castle the ladder below would have tried; 0.8 won 65 and
+ * 65; 1.0, 67 and 64.
+ */
+const WIDEN_REACH = 0.8;
+
+/**
+ * How much more than the ground held a wider wall must be worth to be built: 1.1 against
+ * 1.25, head to head, won 54 of 96 at Level 8 against 39 (with the castles below absent).
+ */
+const WIDEN_GAIN = 1.1;
+
+/** A wall chosen is kept unless another is worth this much more: a switch wastes pieces. */
+const KEEP_WIDER = 1.15;
+
+/**
+ * A wall widened where it stands, as people push one out, rather than all round: the
+ * territory and a patch of land this far round a point beside the wall, at this many points
+ * spread along it. The whole territory widened by a tile asked for a new perimeter outside
+ * the old one, past any phase's budget, and was the best of ~530 plans in none.
+ */
+const BULGE_RADII = [2, 4];
+const BULGE_SEEDS = 8;
+
+/**
+ * A wall reaching for another castle: the territory and the castle with this much band
+ * round it, so the cut reuses the standing wall and only bridges to the castle.
+ */
+const CASTLE_BANDS = [0, 2];
 
 /**
  * What one turn works out about the board, for everything the turn decides: the board
@@ -79,6 +115,13 @@ export class Builder {
     private readonly profile: BotProfile,
     private readonly slots: PlanningSlots,
   ) {}
+
+  /**
+   * The wider wall it is building, by `widen`'s key and the ground it was asked to take in,
+   * so it is kept from plan to plan rather than redrawn.
+   */
+  private widerKey: string | null = null;
+  private widerGround: number[] | null = null;
 
   private plan: number[] = [];
 
@@ -158,6 +201,8 @@ export class Builder {
       this.unreachable.clear();
       this.plan = [];
       this.plannedAt = -1;
+      this.widerKey = null;
+      this.widerGround = null;
     }
 
     if (this.plannedAt < 0 || state.tick - this.plannedAt > this.profile.replanTicks) {
@@ -398,6 +443,17 @@ export class Builder {
       if (thicken.length > 0) return thicken;
     }
 
+    // A defensive bot's castle is made safe before anything is widened (below).
+    if (this.profile.expandsWhenSafe && wantsMore && look.weakestWall().length < 2) {
+      const thicken = look.thickenTargets().filter((i) => !this.unreachable.has(i));
+      if (thicken.length > 0) return thicken;
+    }
+
+    if (this.profile.widensWhenSealed) {
+      const wider = this.widen(state, seal, look);
+      if (wider !== null) return wider.tiles;
+    }
+
     // A defensive bot makes its castle safe first — thickened until no way in takes fewer
     // than two shots, or until no piece can thicken it further — and then reaches for the
     // next castle straight away, whether or not this phase can close it: castles are a
@@ -405,10 +461,6 @@ export class Builder {
     // judged as the phase goes, not at its start, which follows a barrage and would
     // almost never find the wall whole.
     if (this.profile.expandsWhenSafe && wantsMore) {
-      if (look.weakestWall().length < 2) {
-        const thicken = look.thickenTargets().filter((i) => !this.unreachable.has(i));
-        if (thicken.length > 0) return thicken;
-      }
       const next = seal.cheapest(
         sealed + 1,
         this.profile.maxCastles,
@@ -460,6 +512,124 @@ export class Builder {
     const hold =
       this.widestAffordable(seal, 1, true, budget) ?? seal.cheapest(1, this.profile.maxCastles);
     return hold?.tiles ?? [];
+  }
+
+  /** Cells it could still lay this phase, at its pace, with the bag's average piece. */
+  private cellsAffordable(state: MatchState): number {
+    const player = state.players[this.playerId];
+    if (player === undefined) return 0;
+    const pool = poolForRound(state.ruleset, player.pieceRound);
+    let weight = 0;
+    let cells = 0;
+    pool.ids.forEach((id, k) => {
+      const w = pool.weights[k] as number;
+      weight += w;
+      cells += w * pieceById(id).size;
+    });
+    const size = cells / Math.max(1, weight);
+    const ticksLeft = Math.max(0, state.phaseEndTick - state.tick);
+    const msLeft = (ticksLeft * 1000) / state.ruleset.tickRateHz;
+    return (msLeft / this.placementMs(size)) * size;
+  }
+
+  /**
+   * Sealed, the most valuable wall it can finish this phase, as the testers built (BOT_LEARNING
+   * step 1: they end a phase with more castles, and spend 45% of their cells once sealed on
+   * a wider wall where the bots thickened). Weighed: the wall it chose last; the standing
+   * wall pushed out to take in each castle outside it; a stretch of land beside the wall;
+   * and the castle walls with room. Valued as the scoring does, tiles times castles, with
+   * the wall stood in; built if worth `WIDEN_GAIN` times what it holds. The wall standing
+   * is the bail-out: building outside it leaves it whole, and a part-built extension
+   * touching territory outlasts the sweep. Null to go on down the ladder.
+   *
+   * Head to head, one bot against two of today's, three players, Level 5 and Level 8,
+   * 96 matches each (fair share 32): this won 48 and 54. The castles alone won 41 and 46,
+   * the stretches alone (with a rule for going big while breached, since dropped) 32 and 39.
+   */
+  private widen(state: MatchState, seal: SealPlanner, look: Look): SealPlan | null {
+    const player = state.players[this.playerId];
+    if (player === undefined) return null;
+    const island = player.islandId;
+    const { width, height } = state;
+    const territory = look.enclosure().territory;
+    const held: number[] = [];
+    for (let i = 0; i < territory.length; i++) if (territory[i] === island) held.push(i);
+    if (held.length === 0) return null;
+    const inside = new Set(held);
+    const mine = state.castles.filter((c) => c.islandId === island);
+    const castlesIn = (ground: ReadonlySet<number>): Castle[] =>
+      mine.filter((c) => ground.has(c.y * width + c.x));
+    const sealedCastles = castlesIn(inside);
+
+    const options: { key: string; plan: SealPlan; ground: number[] | null }[] = [];
+    const offer = (key: string, castles: readonly Castle[], ground: number[]): void => {
+      const plan = seal.around(key, castles, ground);
+      if (plan !== null) options.push({ key, plan, ground });
+    };
+    // The wall it chose last, round the same ground, whatever has been built since.
+    if (this.widerGround !== null && this.widerKey !== null) {
+      const ground = this.widerGround;
+      offer(`kept:${this.widerKey}`, castlesIn(new Set(ground)), ground);
+      const last = options.at(-1);
+      if (last !== undefined) last.key = this.widerKey;
+    }
+    for (const seed of spreadAlong(state, outerSkin(state, this.playerId), BULGE_SEEDS)) {
+      for (const radius of BULGE_RADII) {
+        const key = `bulge${seed}r${radius}`;
+        if (key === this.widerKey) continue;
+        offer(key, sealedCastles, [...held, ...patchRound(state, island, seed, radius)]);
+      }
+    }
+    for (const castle of mine) {
+      if (inside.has(castle.y * width + castle.x)) continue;
+      for (const band of CASTLE_BANDS) {
+        const key = `castle${castle.id}r${band}`;
+        if (key === this.widerKey) continue;
+        const box: number[] = [];
+        for (let y = castle.y - band; y < castle.y + castle.h + band; y++) {
+          for (let x = castle.x - band; x < castle.x + castle.w + band; x++) {
+            if (x < 0 || y < 0 || x >= width || y >= height) continue;
+            if (state.islandId[y * width + x] === island) box.push(y * width + x);
+          }
+        }
+        offer(key, [...sealedCastles, castle], [...held, ...box]);
+      }
+    }
+    for (const plan of seal.options(this.profile.maxCastles, true, this.profile.roomRadius)) {
+      const key = `room${plan.castleIds.join('+')}`;
+      if (key === this.widerKey) continue;
+      options.push({ key, plan, ground: null });
+    }
+
+    const board = state.structure.slice();
+    const valueOf = (tiles: readonly number[]): number => {
+      for (const i of tiles) board[i] = Structure.Wall;
+      const e = computeEnclosure({ ...state, structure: board });
+      for (const i of tiles) board[i] = state.structure[i] as number;
+      let area = 0;
+      for (const t of e.territory) if (t === island) area++;
+      return area * (e.enclosedCastlesByPlayer[this.playerId] ?? 0);
+    };
+
+    const reach = this.cellsAffordable(state) * WIDEN_REACH * this.profile.riskMargin;
+    type Valued = (typeof options)[number] & { value: number };
+    let best: Valued | null = null;
+    let kept: Valued | null = null;
+    for (const option of options) {
+      if (option.plan.cost > reach) continue;
+      const value = valueOf(option.plan.tiles);
+      if (best === null || value > best.value) best = { ...option, value };
+      if (option.key === this.widerKey) kept = { ...option, value };
+    }
+    if (kept !== null && best !== null && kept.value * KEEP_WIDER >= best.value) best = kept;
+    if (best === null || best.value < valueOf([]) * WIDEN_GAIN) {
+      this.widerKey = null;
+      this.widerGround = null;
+      return null;
+    }
+    this.widerKey = best.key;
+    this.widerGround = best.ground;
+    return best.plan;
   }
 
   /**
@@ -640,4 +810,50 @@ export class Builder {
     this.plannedAt = -1;
     this.unreachable.clear();
   }
+}
+
+/**
+ * Up to `count` of these tiles, spread out: the first, then each time the one farthest
+ * (Chebyshev) from every one taken, the first of equals in the order given.
+ */
+function spreadAlong(state: MatchState, tiles: readonly number[], count: number): number[] {
+  const out: number[] = [];
+  if (tiles.length === 0) return out;
+  const width = state.width;
+  const near = new Int32Array(tiles.length).fill(0x7fffffff);
+  let next = 0;
+  while (out.length < count) {
+    const chosen = tiles[next] as number;
+    out.push(chosen);
+    const cx = chosen % width;
+    const cy = (chosen - cx) / width;
+    let far = -1;
+    let farthest = 0;
+    tiles.forEach((t, k) => {
+      const tx = t % width;
+      const d = Math.max(Math.abs(tx - cx), Math.abs((t - tx) / width - cy));
+      if (d < (near[k] as number)) near[k] = d;
+      if ((near[k] as number) > farthest) {
+        farthest = near[k] as number;
+        far = k;
+      }
+    });
+    if (far < 0) break;
+    next = far;
+  }
+  return out;
+}
+
+/** This island's tiles within `radius` (Chebyshev) of a tile. */
+function patchRound(state: MatchState, island: number, centre: number, radius: number): number[] {
+  const { width, height } = state;
+  const cx = centre % width;
+  const cy = (centre - cx) / width;
+  const out: number[] = [];
+  for (let y = Math.max(0, cy - radius); y <= Math.min(height - 1, cy + radius); y++) {
+    for (let x = Math.max(0, cx - radius); x <= Math.min(width - 1, cx + radius); x++) {
+      if (state.islandId[y * width + x] === island) out.push(y * width + x);
+    }
+  }
+  return out;
 }

@@ -97,6 +97,12 @@ export const RiskTraitSchema = z.strictObject({
    * farthest from any opponent.
    */
   castleChoice: z.enum(['cheapest', 'central', 'sheltered']),
+  /**
+   * Once sealed, builds the most valuable wall it can finish this phase — the standing wall
+   * pushed out to take in another castle, or a stretch of land beside it — before the rest
+   * of the ladder (docs/BOT_LEARNING.md, B).
+   */
+  widensWhenSealed: z.boolean(),
 });
 export type RiskTrait = z.infer<typeof RiskTraitSchema>;
 
@@ -274,6 +280,7 @@ export interface BotProfile extends Skill {
   expandsWhenSafe: boolean;
   widensWhileRepairing: boolean;
   castleChoice: RiskTrait['castleChoice'];
+  widensWhenSealed: boolean;
   roomRadius: number;
   roomMargin: number;
   thickenFirst: boolean;
@@ -292,6 +299,7 @@ export function botProfile(ai: AiConfig, setup: BotSetup): BotProfile {
     expandsWhenSafe: risk.expandsWhenSafe,
     widensWhileRepairing: risk.widensWhileRepairing,
     castleChoice: risk.castleChoice,
+    widensWhenSealed: risk.widensWhenSealed,
     picksTarget: true,
     targeting: setup.personality.targeting,
     targetShare: ai.targeting[setup.personality.targeting].share,
