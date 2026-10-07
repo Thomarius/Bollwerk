@@ -119,8 +119,11 @@ export const RecordingLineSchema = z.discriminatedUnion('kind', [
 ]);
 export type RecordingLine = z.infer<typeof RecordingLineSchema>;
 
-/** How often a tick line carries the state's fingerprint. The server hashes as often. */
-export const RECORDING_HASH_EVERY_TICKS = 30;
+/**
+ * How often the state's fingerprint is taken: sent by the server for clients to check
+ * against, and written on a recording's tick line. One interval, so it is hashed once.
+ */
+export const HASH_EVERY_TICKS = 30;
 
 /**
  * An id for a recording: when it started, where, and something unique — sortable by
@@ -161,14 +164,15 @@ export class MatchRecorder {
 
   /**
    * Call after stepping tick `t`, with what was applied on it. Only ticks where
-   * something was done are written, and the regular fingerprint ticks.
+   * something was done are written, and the regular fingerprint ticks. Returns the
+   * fingerprint when it took one, for the server's commit.
    */
-  stepped(t: number, actions: readonly Action[], state: MatchState): void {
-    if (this.ended) return;
-    const hashed = t % RECORDING_HASH_EVERY_TICKS === 0;
-    if (actions.length > 0 || hashed) {
+  stepped(t: number, actions: readonly Action[], state: MatchState): string | undefined {
+    if (this.ended) return undefined;
+    const hash = t % HASH_EVERY_TICKS === 0 ? hashMatchState(state) : undefined;
+    if (actions.length > 0 || hash !== undefined) {
       const line: RecordingTick = { kind: 'tick', t, a: [...actions] };
-      if (hashed) line.h = hashMatchState(state);
+      if (hash !== undefined) line.h = hash;
       this.write(line);
     }
     if (state.phase === 'game_over') {
@@ -182,6 +186,7 @@ export class MatchRecorder {
         draw: state.draw,
       });
     }
+    return hash;
   }
 }
 

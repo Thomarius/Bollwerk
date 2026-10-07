@@ -59,14 +59,34 @@ export function canPlacePiece(
   x: number,
   y: number,
 ): Rejection | null {
+  const refusal = buildRefusal(state, playerId);
+  if (refusal !== null) return refusal;
+  const player = state.players[playerId] as PlayerState;
+  return cellsRefusal(state, player, pieceCells(currentPieceId(state, playerId), rotation), x, y);
+}
+
+/** Why this player may not place a piece anywhere just now, whatever the piece. */
+export function buildRefusal(state: MatchState, playerId: number): Rejection | null {
   if (state.phase !== 'build') return 'wrong_phase';
   const player = playerOf(state, playerId);
   if (!player) return 'unknown_player';
   if (player.eliminated) return 'eliminated';
-
   if (state.overtime && player.overtimeSpent) return 'overtime_spent';
+  return null;
+}
 
-  const cells = pieceCells(currentPieceId(state, playerId), rotation);
+/**
+ * Why a piece of these cells may not stand with its origin at (`x`, `y`), for a player
+ * `buildRefusal` lets build: `canPlacePiece` once the piece is known, which a bot trying
+ * hundreds of spots for one piece looks up once rather than at every spot.
+ */
+export function cellsRefusal(
+  state: MatchState,
+  player: PlayerState,
+  cells: readonly (readonly [number, number])[],
+  x: number,
+  y: number,
+): Rejection | null {
   for (const [ox, oy] of cells) {
     const tx = x + ox;
     const ty = y + oy;

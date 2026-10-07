@@ -16,6 +16,7 @@ import {
 import { Bot, PlanningSlots, dealPersonalities, turnOrder } from '@bollwerk/ai';
 import {
   ActionSchema,
+  HASH_EVERY_TICKS,
   MatchRecorder,
   PROTOCOL_VERSION,
   captureSnapshot,
@@ -82,9 +83,6 @@ export interface RoomOptions {
   /** The server's public address while its port is open to the internet (PLAN 11.21). */
   publicUrl?: () => string | null;
 }
-
-/** How often the server sends its state fingerprint for clients to check against. */
-const HASH_EVERY_TICKS = 30;
 
 /**
  * One match and its players.
@@ -590,10 +588,11 @@ export class Room {
     const tick = state.tick;
     step(state);
     drainEvents(state);
-    this.recorder?.stepped(tick, applied, state);
+    // The recorder fingerprints the state on the ticks the commit carries one.
+    const recorded = this.recorder?.stepped(tick, applied, state);
 
     const commit: ServerMessage = { type: 'commit', tick, actions: applied };
-    if (tick % HASH_EVERY_TICKS === 0) commit.hash = hashMatchState(state);
+    if (tick % HASH_EVERY_TICKS === 0) commit.hash = recorded ?? hashMatchState(state);
     this.broadcast(commit);
   }
 

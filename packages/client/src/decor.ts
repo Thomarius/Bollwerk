@@ -1084,8 +1084,21 @@ const TITLES: Record<ArtStyle, (text: string, art: ArtConfig) => Title> = {
   electric: electricTitle,
 };
 
+/**
+ * Each style's title, drawn once and kept: it is a canvas turned into an image, and the
+ * menu's random half asks for a new one at every sweep. Nothing in it moves or varies.
+ */
+const titles = new WeakMap<ArtConfig, Map<ArtStyle, Title>>();
+
 export function titleFor(style: ArtStyle, art: ArtConfig): Title {
-  return TITLES[style](GAME_TITLE, art);
+  let drawn = titles.get(art);
+  if (drawn === undefined) titles.set(art, (drawn = new Map()));
+  let title = drawn.get(style);
+  if (title === undefined) {
+    title = TITLES[style](GAME_TITLE, art);
+    drawn.set(style, title);
+  }
+  return title;
 }
 
 /** How wide the title's letters stand in the menu, in CSS pixels: 8 to a cell in every style. */

@@ -218,32 +218,123 @@ export function sealOptions(
   keepCannons = false,
   roomRadius = 0,
 ): SealPlan[] {
+  return new SealPlanner(state, playerId, blocked).options(maxCastles, keepCannons, roomRadius);
+}
+
+/** The castles on this player's island. */
+function castlesOf(state: MatchState, playerId: number): Castle[] {
   const islandId = state.players[playerId]?.islandId;
-  const mine = state.castles.filter((c) => c.islandId === islandId);
-  if (mine.length === 0) return [];
+  return state.castles.filter((c) => c.islandId === islandId);
+}
 
-  const graph = new SealGraph(state, playerId, blocked);
-  const plans: SealPlan[] = [];
-  const add = (plan: SealPlan | null): void => {
-    if (plan !== null) plans.push(plan);
-  };
+/**
+ * Every question about walls one plan asks, answered on one graph and remembered: a bot
+ * deciding what to build asks for the same walls at several widths, and the same wall
+ * more than once on the way. Good only while the board and `blocked` stand as they were
+ * when it was made — for one plan, not across placements. The plans it hands out are
+ * shared between askers, so they are read, never changed.
+ *
+ * Each castle alone, each pair and the lot are cut only when asked for: a wall round two
+ * castles or more never needs the single castles' cuts, which were most of the max-flows a
+ * plan ran (2026-10-06).
+ */
+export class SealPlanner {
+  private graph: SealGraph | null = null;
+  private readonly cuts = new Map<string, Cuts>();
+  private readonly answers = new Map<string, SealPlan[]>();
+  private readonly mine: Castle[];
 
-  for (const castle of mine) {
-    add(graph.plan([castle], keepCannons, roomRadius));
+  constructor(
+    private readonly state: MatchState,
+    private readonly playerId: number,
+    private readonly blocked?: ReadonlySet<number>,
+  ) {
+    this.mine = castlesOf(state, playerId);
   }
 
-  if (maxCastles > 1) {
-    for (let a = 0; a < mine.length; a++) {
-      for (let b = a + 1; b < mine.length; b++) {
-        add(graph.plan([mine[a] as Castle, mine[b] as Castle], keepCannons, roomRadius));
+  /** As `sealOptions`: each castle alone, then pairs, then the lot, cheapest first. */
+  options(maxCastles: number, keepCannons = false, roomRadius = 0): SealPlan[] {
+    if (this.mine.length === 0) return [];
+    const key = `${maxCastles}:${keepCannons}:${roomRadius}`;
+    let plans = this.answers.get(key);
+    if (plans === undefined) {
+      plans = this.candidates(1, maxCastles, keepCannons, roomRadius).sort(
+        (x, y) => x.cost - y.cost,
+      );
+      this.answers.set(key, plans);
+    }
+    return plans;
+  }
+
+  /**
+   * As `cheapestPlanFor`: the first of `options` to take in enough castles, which is the
+   * cheapest of them and, among equals, the first made — what a stable sort puts first.
+   */
+  cheapest(
+    atLeastCastles: number,
+    maxCastles: number,
+    keepCannons = false,
+    roomRadius = 0,
+  ): SealPlan | null {
+    if (this.mine.length === 0) return null;
+    let best: SealPlan | null = null;
+    for (const plan of this.candidates(atLeastCastles, maxCastles, keepCannons, roomRadius)) {
+      if (plan.castleIds.length >= atLeastCastles && (best === null || plan.cost < best.cost)) {
+        best = plan;
       }
     }
-  }
-  if (maxCastles > 2 && mine.length >= 3) {
-    add(graph.plan(mine, keepCannons, roomRadius));
+    return best;
   }
 
-  return plans.sort((x, y) => x.cost - y.cost);
+  /** The plans `options` would hold that could take in this many castles, as made. */
+  private candidates(
+    atLeastCastles: number,
+    maxCastles: number,
+    keepCannons: boolean,
+    roomRadius: number,
+  ): SealPlan[] {
+    const key = `${keepCannons}:${roomRadius}`;
+    let cuts = this.cuts.get(key);
+    if (cuts === undefined) {
+      cuts = { singles: null, pairs: null, all: undefined };
+      this.cuts.set(key, cuts);
+    }
+    const mine = this.mine;
+    const graph = (this.graph ??= new SealGraph(this.state, this.playerId, this.blocked));
+    const out: SealPlan[] = [];
+    const add = (plan: SealPlan | null): void => {
+      if (plan !== null) out.push(plan);
+    };
+    if (atLeastCastles <= 1) {
+      cuts.singles ??= mine.map((castle) => graph.plan([castle], keepCannons, roomRadius));
+      cuts.singles.forEach(add);
+    }
+    if (maxCastles > 1 && atLeastCastles <= 2) {
+      if (cuts.pairs === null) {
+        cuts.pairs = [];
+        for (let a = 0; a < mine.length; a++) {
+          for (let b = a + 1; b < mine.length; b++) {
+            cuts.pairs.push(
+              graph.plan([mine[a] as Castle, mine[b] as Castle], keepCannons, roomRadius),
+            );
+          }
+        }
+      }
+      cuts.pairs.forEach(add);
+    }
+    if (maxCastles > 2 && mine.length >= 3 && atLeastCastles <= mine.length) {
+      if (cuts.all === undefined) cuts.all = graph.plan(mine, keepCannons, roomRadius);
+      add(cuts.all);
+    }
+    return out;
+  }
+}
+
+/** The cuts a planner has made at one width, each null until first asked for. */
+interface Cuts {
+  singles: (SealPlan | null)[] | null;
+  pairs: (SealPlan | null)[] | null;
+  all: SealPlan | null | undefined;
 }
 
 /** The cheapest wall that encloses at least this many castles, if one exists. */
@@ -256,10 +347,12 @@ export function cheapestPlanFor(
   keepCannons = false,
   roomRadius = 0,
 ): SealPlan | null {
-  const options = sealOptions(state, playerId, maxCastles, blocked, keepCannons, roomRadius).filter(
-    (plan) => plan.castleIds.length >= atLeastCastles,
+  return new SealPlanner(state, playerId, blocked).cheapest(
+    atLeastCastles,
+    maxCastles,
+    keepCannons,
+    roomRadius,
   );
-  return options[0] ?? null;
 }
 
 export function bestSealPlan(
@@ -328,8 +421,12 @@ export function cannonRoom(state: MatchState, playerId: number): number {
  * where an opponent would come through; the empty ground beside those blocks is
  * where a second layer is worth having.
  */
-export function thickenTargets(state: MatchState, playerId: number): number[] {
-  const breach = weakestWall(state, playerId);
+export function thickenTargets(
+  state: MatchState,
+  playerId: number,
+  /** `weakestWall` of this player, when the caller has it already. */
+  breach: readonly number[] = weakestWall(state, playerId),
+): number[] {
   if (breach.length === 0) return [];
 
   const seen = new Set<number>();
@@ -396,16 +493,17 @@ export function weakestWall(state: MatchState, targetPlayer: number): number[] {
   if (targets.length === 0) return [];
 
   const size = state.width * state.height;
+  const { dist, from, deque, goal } = weakestScratch(size);
   // Not MAX_SAFE_INTEGER: an Int32Array truncates it to -1, which makes every
   // relaxation look like a step backwards and the search never leaves the border.
-  const dist = new Int32Array(size).fill(0x7fffffff);
-  const from = new Int32Array(size).fill(-1);
+  dist.fill(0x7fffffff);
+  from.fill(-1);
+  goal.fill(0);
 
   // A real double-ended queue: 0-1 BFS pushes free steps to the front and costly ones
   // to the back, which is only linear if the front push is O(1). Splicing an array
   // instead turns this into the slowest thing the bot does.
-  const capacity = size * 4;
-  const deque = new Int32Array(capacity);
+  const capacity = deque.length;
   let head = capacity >> 1;
   let tail = head;
   const pushFront = (v: number): void => {
@@ -415,22 +513,29 @@ export function weakestWall(state: MatchState, targetPlayer: number): number[] {
     deque[tail++] = v;
   };
 
-  const goal = new Uint8Array(size);
   for (const castle of targets) {
     for (let oy = 0; oy < castle.h; oy++) {
       for (let ox = 0; ox < castle.w; ox++) goal[(castle.y + oy) * state.width + castle.x + ox] = 1;
     }
   }
 
-  for (let i = 0; i < size; i++) {
-    const x = i % state.width;
-    const y = (i - x) / state.width;
-    if (x !== 0 && y !== 0 && x !== state.width - 1 && y !== state.height - 1) continue;
+  // The border, in index order: the order the search sets out in decides between paths
+  // of equal cost.
+  const seedBorder = (i: number): void => {
     const cost = state.structure[i] === Structure.Wall ? 1 : 0;
-    if (cost >= (dist[i] as number)) continue;
+    if (cost >= (dist[i] as number)) return;
     dist[i] = cost;
     if (cost === 0) pushFront(i);
     else pushBack(i);
+  };
+  for (let y = 0; y < state.height; y++) {
+    const row = y * state.width;
+    if (y === 0 || y === state.height - 1) {
+      for (let x = 0; x < state.width; x++) seedBorder(row + x);
+    } else {
+      seedBorder(row);
+      if (state.width > 1) seedBorder(row + state.width - 1);
+    }
   }
 
   let reached = -1;
@@ -442,9 +547,9 @@ export function weakestWall(state: MatchState, targetPlayer: number): number[] {
     }
     const x = i % state.width;
     const y = (i - x) / state.width;
-    for (const [ox, oy] of NEIGHBOURS_8) {
-      const nx = x + ox;
-      const ny = y + oy;
+    for (let k = 0; k < 8; k++) {
+      const nx = x + (DX8[k] as number);
+      const ny = y + (DY8[k] as number);
       if (nx < 0 || ny < 0 || nx >= state.width || ny >= state.height) continue;
       const j = ny * state.width + nx;
       const step = state.structure[j] === Structure.Wall ? 1 : 0;
@@ -463,6 +568,32 @@ export function weakestWall(state: MatchState, targetPlayer: number): number[] {
     if (state.structure[at] === Structure.Wall) path.push(at);
   }
   return path;
+}
+
+/** `NEIGHBOURS_8` as two arrays, in its order, for the searches run most. */
+const DX8 = Int8Array.from(NEIGHBOURS_8, ([x]) => x);
+const DY8 = Int8Array.from(NEIGHBOURS_8, ([, y]) => y);
+
+/** `weakestWall`'s arrays, kept between calls: it runs at every shot of some bots. */
+let weakestArrays: {
+  size: number;
+  dist: Int32Array;
+  from: Int32Array;
+  deque: Int32Array;
+  goal: Uint8Array;
+} | null = null;
+
+function weakestScratch(size: number): NonNullable<typeof weakestArrays> {
+  if (weakestArrays?.size !== size) {
+    weakestArrays = {
+      size,
+      dist: new Int32Array(size),
+      from: new Int32Array(size),
+      deque: new Int32Array(size * 4),
+      goal: new Uint8Array(size),
+    };
+  }
+  return weakestArrays;
 }
 
 /** A pocket for guns (§1.3): the blocks still to build, and how many guns it will hold. */

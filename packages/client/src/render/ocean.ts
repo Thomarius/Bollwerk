@@ -90,8 +90,10 @@ export class Crossings {
     headroomTiles = 0,
   ): void {
     this.until -= deltaMs;
-    const rows = ocean.rows.filter((r) => r - headroomTiles >= ocean.y0);
-    if (this.until <= 0 && this.items.length === 0 && rows.length > 0) {
+    // The rows are sifted only when something is due to set out, not every frame.
+    const due = this.until <= 0 && this.items.length === 0;
+    const rows = due ? ocean.rows.filter((r) => r - headroomTiles >= ocean.y0) : [];
+    if (due && rows.length > 0) {
       const dir = Math.random() < 0.5 ? 1 : -1;
       const row = rows[Math.floor(Math.random() * rows.length)] as number;
       this.items.push({ x: dir === 1 ? ocean.x0 - 2 : ocean.x1 + 2, y: row + 0.5, dir });
@@ -162,8 +164,9 @@ export class Surfacings {
   ): void {
     if (this.until < 0) this.until = everyMs * Math.random();
     this.until -= deltaMs;
-    const cells = ocean.cells.filter(allowed);
-    if (this.until <= 0 && cells.length > 0) {
+    // The whole outer ocean is sifted only when something is due to surface, not every frame.
+    const cells = this.until <= 0 ? ocean.cells.filter(allowed) : [];
+    if (cells.length > 0) {
       const at = cells[Math.floor(Math.random() * cells.length)] as Cell;
       this.items.push({
         x: at.x + 0.5,

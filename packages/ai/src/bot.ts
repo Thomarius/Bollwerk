@@ -13,13 +13,15 @@ import {
   computeEnclosure,
   Terrain,
   canPlaceCannon,
-  canPlacePiece,
+  buildRefusal,
+  cellsRefusal,
   currentPieceId,
   distanceSquared,
   pieceById,
   pieceCells,
   sameTeam,
   type Action,
+  type EnclosureResult,
   type MatchState,
   type Rng,
 } from '@bollwerk/sim';
@@ -27,11 +29,11 @@ import {
 import { PlanningSlots } from './planning.js';
 import {
   cannonRoom,
-  cheapestPlanFor,
   outerSkin,
   pocketCount,
   pocketPlan,
-  sealOptions,
+  SealGraph,
+  SealPlanner,
   thickenTargets,
   weakestWall,
   type PocketPlan,
@@ -77,6 +79,33 @@ const CASTLE_CHOICE_SLACK = 1.2;
  * scored.
  */
 const CANNON_CLEARANCE = 2;
+
+/**
+ * What one turn works out about the board, for everything the turn decides: the board
+ * cannot change within a turn, and a plan asked the same questions of it several times.
+ */
+class Look {
+  private enclosed: EnclosureResult | null = null;
+  private weakest: number[] | null = null;
+
+  constructor(
+    private readonly state: MatchState,
+    private readonly playerId: number,
+  ) {}
+
+  enclosure(): EnclosureResult {
+    return (this.enclosed ??= computeEnclosure(this.state));
+  }
+
+  /** `weakestWall` of this bot's own wall; read, never changed. */
+  weakestWall(): readonly number[] {
+    return (this.weakest ??= weakestWall(this.state, this.playerId));
+  }
+
+  thickenTargets(): number[] {
+    return thickenTargets(this.state, this.playerId, this.weakestWall());
+  }
+}
 
 /**
  * A bot.
@@ -249,10 +278,16 @@ export class Bot {
    * The next block of an opponent's weakest wall — one shot per block, moving on whether
    * or not this one has landed yet — or null when there is none left to shoot.
    */
-  private breachOf(state: MatchState, opponent: number, taken: ReadonlySet<number>): number | null {
+  private breachOf(
+    state: MatchState,
+    opponent: number,
+    taken: ReadonlySet<number>,
+    /** `weakestWall` of the opponent on this board, when the caller has it already. */
+    weakest?: readonly number[],
+  ): number | null {
     let breach = this.breaches.get(opponent);
     if (breach === undefined || state.tick - breach.at > 20 || breach.tiles.length === 0) {
-      breach = { tiles: weakestWall(state, opponent), at: state.tick };
+      breach = { tiles: weakest?.slice() ?? weakestWall(state, opponent), at: state.tick };
       this.breaches.set(opponent, breach);
     }
     while (breach.tiles.length > 0) {
@@ -294,17 +329,18 @@ export class Bot {
         // thinnest wall — worked along to force the failed round that takes a life.
         const lives = (p: (typeof rivals)[number]): number =>
           state.teams[p.team]?.continuesRemaining ?? 0;
-        const thin = new Map(rivals.map((p) => [p.id, weakestWall(state, p.id).length]));
+        const walls = new Map(rivals.map((p) => [p.id, weakestWall(state, p.id)]));
+        const thin = (id: number): number => walls.get(id)?.length ?? 0;
         const weakest = rivals.reduce((best, p) => {
-          const a = [lives(p), p.enclosedCastles, thin.get(p.id) ?? 0];
-          const b = [lives(best), best.enclosedCastles, thin.get(best.id) ?? 0];
+          const a = [lives(p), p.enclosedCastles, thin(p.id)];
+          const b = [lives(best), best.enclosedCastles, thin(best.id)];
           for (let k = 0; k < a.length; k++) {
             if ((a[k] as number) !== (b[k] as number))
               return (a[k] as number) < (b[k] as number) ? p : best;
           }
           return best;
         });
-        return this.breachOf(state, weakest.id, taken);
+        return this.breachOf(state, weakest.id, taken, walls.get(weakest.id));
       }
       case 'grudge': {
         // Whoever hit it hardest last round; nobody, and the neutral rule decides.
@@ -436,6 +472,7 @@ export class Bot {
     // and looking the piece up first made that lookup the bot's largest single cost.
     if (state.tick < this.nextPlacementTick) return null;
     const pieceId = currentPieceId(state, this.playerId);
+    const look = new Look(state, this.playerId);
 
     // Last round's dead ends mean nothing now that the board has changed.
     if (this.planRound !== state.round) {
@@ -448,7 +485,7 @@ export class Bot {
     if (this.plannedAt < 0 || state.tick - this.plannedAt > this.profile.replanTicks) {
       // No plan left at the table this tick: try again on the next.
       if (!this.slots.take(state.tick)) return null;
-      this.plan = this.decide(state);
+      this.plan = this.decide(state, look);
       this.plannedAt = state.tick;
     }
 
@@ -467,7 +504,7 @@ export class Bot {
       () => this.plan,
       // Outward only, which `thickenTargets` guarantees — a second layer laid on the
       // inside stands where a cannon could have stood.
-      () => (thickens ? thickenTargets(state, this.playerId) : []),
+      () => (thickens ? look.thickenTargets() : []),
       () => {
         if (this.slots.take(state.tick)) return this.spareWork(state);
         deferred = true;
@@ -485,7 +522,7 @@ export class Bot {
       );
       if (wanted.length === 0) continue;
       tried = true;
-      placement = this.fit(state, pieceId, wanted, rng);
+      placement = this.fit(state, pieceId, wanted, rng, look);
       if (placement !== null) break;
       // Nothing legal reaches any of these tiles — a gap with no free neighbours
       // cannot take a piece. Rule them out so the next plan routes around them.
@@ -529,29 +566,19 @@ export class Bot {
     // multiplier. Start it even if this phase cannot close it — and reach for every
     // castle on the island, not only the tier's ambition: that bounds what a bot commits
     // to, and this is time nobody else wants.
+    const seal = new SealPlanner(state, this.playerId, this.unreachable);
     const onIsland = state.castles.filter((c) => c.islandId === player.islandId).length;
     if (sealed < onIsland) {
-      const next = cheapestPlanFor(
-        state,
-        this.playerId,
-        sealed + 1,
-        onIsland,
-        this.unreachable,
-        true,
-        this.profile.roomRadius,
-      );
+      const next = seal.cheapest(sealed + 1, onIsland, true, this.profile.roomRadius);
       const tiles = next?.tiles.filter((i) => state.structure[i] === Structure.Empty) ?? [];
       if (tiles.length > 0) return tiles;
     }
 
     // No castle worth reaching for: take in more open ground instead, which is where
     // the cannons this wall earns will have to stand.
-    const roomier = cheapestPlanFor(
-      state,
-      this.playerId,
+    const roomier = seal.cheapest(
       Math.max(1, sealed),
       this.profile.maxCastles,
-      this.unreachable,
       true,
       this.profile.roomRadius + 2,
     );
@@ -572,21 +599,13 @@ export class Bot {
    * a time. A tight wall is still reachable, as the last rung rather than the first.
    */
   private widestAffordable(
-    state: MatchState,
+    seal: SealPlanner,
     atLeastCastles: number,
     keepCannons: boolean,
     budget: number,
   ): SealPlan | null {
     for (let radius = this.profile.roomRadius; radius >= 0; radius--) {
-      const plan = cheapestPlanFor(
-        state,
-        this.playerId,
-        atLeastCastles,
-        this.profile.maxCastles,
-        this.unreachable,
-        keepCannons,
-        radius,
-      );
+      const plan = seal.cheapest(atLeastCastles, this.profile.maxCastles, keepCannons, radius);
       if (plan !== null && plan.cost / 3.5 <= budget) return plan;
     }
     return null;
@@ -600,13 +619,15 @@ export class Bot {
    * 3. Take more ground. Another castle is another cannon a round, and a spare life.
    * 4. Thicken. A minimum cut is one block thick, so every block of it is load-bearing.
    */
-  private decide(state: MatchState): number[] {
+  private decide(state: MatchState, look: Look): number[] {
     const player = state.players[this.playerId];
     if (!player) return [];
+    // One graph for every wall this plan weighs, and each wall weighed once.
+    const seal = new SealPlanner(state, this.playerId, this.unreachable);
     // Counted afresh rather than read from `enclosedCastles`, which placements and
     // resolutions refresh but landing shots do not: as a breached build phase opens it
     // still says sealed, and the first plan of the phase was made for a wall that stood.
-    const enclosure = computeEnclosure(state);
+    const enclosure = look.enclosure();
     const sealed = enclosure.enclosedCastlesByPlayer[this.playerId] ?? 0;
     const mainSealed =
       player.startingCastleId !== null &&
@@ -623,15 +644,7 @@ export class Bot {
       // ended 1-3 cells short with the phase spent on a wider plan that did not close.
       // Tight first took marshal from 26% of rounds forfeited to 9%, and from 7 of 11
       // wins against two gunners to 10 of 12.
-      const tight = cheapestPlanFor(
-        state,
-        this.playerId,
-        1,
-        this.profile.maxCastles,
-        this.unreachable,
-        true,
-        0,
-      );
+      const tight = seal.cheapest(1, this.profile.maxCastles, true, 0);
       // An offensive bot with only a small breach closes it with a roomier wall than it
       // had, taking in more ground in the same repair — when that roomier wall fits the
       // pieces it can still lay this phase, not a hopeful fraction more. Otherwise it
@@ -640,15 +653,7 @@ export class Bot {
       if (this.profile.widensWhileRepairing && tight !== null && tight.cost <= SMALL_REPAIR) {
         const pieces = this.piecesAffordable(state);
         for (let radius = this.profile.roomRadius + 1; radius >= 1; radius--) {
-          const wide = cheapestPlanFor(
-            state,
-            this.playerId,
-            1,
-            this.profile.maxCastles,
-            this.unreachable,
-            true,
-            radius,
-          );
+          const wide = seal.cheapest(1, this.profile.maxCastles, true, radius);
           if (wide !== null && wide.cost / 3.5 <= pieces) return wide.tiles;
         }
       }
@@ -659,16 +664,11 @@ export class Bot {
       // and only searched when the cheapest pair at no room fits, since no wider wall
       // round two castles costs less. Late in a phase nothing fits, and the search at
       // every width was a third of a plan of 30 ms where 5 is usual (PLAN 11).
-      if (
-        this.profile.maxCastles > 1 &&
-        affordable(
-          cheapestPlanFor(state, this.playerId, 2, this.profile.maxCastles, this.unreachable),
-        )
-      ) {
-        const bold = this.widestAffordable(state, 2, false, budget);
+      if (this.profile.maxCastles > 1 && affordable(seal.cheapest(2, this.profile.maxCastles))) {
+        const bold = this.widestAffordable(seal, 2, false, budget);
         if (bold !== null) return bold.tiles;
       }
-      return this.reseal(state, budget);
+      return this.reseal(state, seal, budget);
     }
 
     // cannonsToPlace is zero throughout a build phase — it is set at the resolution
@@ -679,10 +679,12 @@ export class Bot {
     // Max cannons walls pockets for guns (§1.3), up to its cap: sealed ground with no
     // castle, which counts while a castle is sealed. Always against the standing wall,
     // which `pocketPlan` insists on — a pocket standing alone is a whole ring of work.
+    let pocketed: PocketPlan | null | undefined;
     const pocket = (): PocketPlan | null =>
-      this.profile.maxPockets > pocketCount(state, this.playerId)
-        ? pocketPlan(state, this.playerId, this.unreachable)
-        : null;
+      (pocketed ??=
+        this.profile.maxPockets > pocketCount(state, this.playerId)
+          ? pocketPlan(state, this.playerId, this.unreachable)
+          : null);
 
     // Guns left outside the wall are the thing most worth fixing. When one of two
     // enclosures is breached the sweep takes that whole wall, and its cannons are
@@ -699,15 +701,7 @@ export class Bot {
       if (cannon.active) firing++;
     }
     if (owned >= 3 && firing * 2 < owned) {
-      const recover = cheapestPlanFor(
-        state,
-        this.playerId,
-        1,
-        this.profile.maxCastles,
-        this.unreachable,
-        true,
-        this.profile.roomRadius,
-      );
+      const recover = seal.cheapest(1, this.profile.maxCastles, true, this.profile.roomRadius);
       if (recover !== null) return recover.tiles;
     }
     const wantsMore = sealed < this.profile.maxCastles;
@@ -720,8 +714,8 @@ export class Bot {
     }
 
     // Cannon space second: a thin wall is thickened before any room is sought.
-    if (this.profile.thickenFirst && weakestWall(state, this.playerId).length < 2) {
-      const thicken = thickenTargets(state, this.playerId).filter((i) => !this.unreachable.has(i));
+    if (this.profile.thickenFirst && look.weakestWall().length < 2) {
+      const thicken = look.thickenTargets().filter((i) => !this.unreachable.has(i));
       if (thicken.length > 0) return thicken;
     }
 
@@ -732,18 +726,13 @@ export class Bot {
     // judged as the phase goes, not at its start, which follows a barrage and would
     // almost never find the wall whole.
     if (this.profile.expandsWhenSafe && wantsMore) {
-      if (weakestWall(state, this.playerId).length < 2) {
-        const thicken = thickenTargets(state, this.playerId).filter(
-          (i) => !this.unreachable.has(i),
-        );
+      if (look.weakestWall().length < 2) {
+        const thicken = look.thickenTargets().filter((i) => !this.unreachable.has(i));
         if (thicken.length > 0) return thicken;
       }
-      const next = cheapestPlanFor(
-        state,
-        this.playerId,
+      const next = seal.cheapest(
         sealed + 1,
         this.profile.maxCastles,
-        this.unreachable,
         true,
         this.profile.roomRadius,
       );
@@ -755,12 +744,9 @@ export class Bot {
     // standing while the new one is built outside it, and a part-built extension that
     // touches territory survives the sweep and carries into the next phase.
     if (this.profile.expandsWhenSealed && wantsMore) {
-      const next = cheapestPlanFor(
-        state,
-        this.playerId,
+      const next = seal.cheapest(
         sealed + 1,
         this.profile.maxCastles,
-        this.unreachable,
         true,
         this.profile.roomRadius,
       );
@@ -768,12 +754,9 @@ export class Bot {
     }
 
     if (needsRoom || wantsMore) {
-      const bigger = cheapestPlanFor(
-        state,
-        this.playerId,
+      const bigger = seal.cheapest(
         sealed + 1,
         this.profile.maxCastles,
-        this.unreachable,
         true,
         this.profile.roomRadius,
       );
@@ -788,7 +771,7 @@ export class Bot {
     // the phase making its wall stouter and its arsenal smaller, which is how a match
     // turns into two impregnable castles with nothing to shoot at each other.
     if (!needsRoom && this.profile.thickens) {
-      const thicken = thickenTargets(state, this.playerId);
+      const thicken = look.thickenTargets();
       if (thicken.length > 0) return thicken;
     }
 
@@ -796,8 +779,7 @@ export class Bot {
     // roomy version of it. This is the branch a settled bot spends most of the match in,
     // so a tight plan here is not one bad round, it is the shape the bot converges on.
     const hold =
-      this.widestAffordable(state, 1, true, budget) ??
-      cheapestPlanFor(state, this.playerId, 1, this.profile.maxCastles, this.unreachable);
+      this.widestAffordable(seal, 1, true, budget) ?? seal.cheapest(1, this.profile.maxCastles);
     return hold?.tiles ?? [];
   }
 
@@ -813,7 +795,7 @@ export class Bot {
    * So a wall that takes back the ground the guns are standing on is worth paying
    * more for.
    */
-  private reseal(state: MatchState, budget: number): number[] {
+  private reseal(state: MatchState, seal: SealPlanner, budget: number): number[] {
     // No wall that keeps the guns is asked for here: `decide` comes here only once the
     // tightest of them is past the budget, and a wall with room in it is never cheaper,
     // so asking at every width could only fail — a third of a slow plan late in a phase
@@ -842,14 +824,7 @@ export class Bot {
     // recovered is worth a few extra blocks of wall.
     let cheapest: SealPlan | null = null;
     for (let radius = this.profile.roomRadius; radius >= 0; radius--) {
-      const options = sealOptions(
-        state,
-        this.playerId,
-        this.profile.maxCastles,
-        this.unreachable,
-        false,
-        radius,
-      );
+      const options = seal.options(this.profile.maxCastles, false, radius);
       let best: SealPlan | null = null;
       let bestValue = -Infinity;
       for (const plan of options) {
@@ -891,12 +866,12 @@ export class Bot {
    * current wall where thickening goes, and walls came out 14% thinner at Level 5 with
    * forfeits up 2.3 points. Once something is sealed, the territory as before.
    */
-  private insideOf(state: MatchState): Uint8Array {
+  private insideOf(state: MatchState, look: Look): Uint8Array {
     const key = `${state.round}:${this.plannedAt}`;
     if (this.inside?.key === key) return this.inside.territory;
     let territory = state.territory;
     const planned = this.plan.filter((i) => state.structure[i] === Structure.Empty);
-    const repairing = (computeEnclosure(state).enclosedCastlesByPlayer[this.playerId] ?? 0) === 0;
+    const repairing = (look.enclosure().enclosedCastlesByPlayer[this.playerId] ?? 0) === 0;
     if (repairing && planned.length > 0) {
       const structure = state.structure.slice();
       for (const i of planned) structure[i] = Structure.Wall;
@@ -917,14 +892,19 @@ export class Bot {
     pieceId: number,
     wanted: readonly number[],
     rng: Rng,
+    look: Look,
   ): { x: number; y: number; rotation: number } | null {
     let best: { x: number; y: number; rotation: number } | null = null;
     let bestScore = Number.NEGATIVE_INFINITY;
     let second: { x: number; y: number; rotation: number } | null = null;
     let secondScore = Number.NEGATIVE_INFINITY;
     const target = new Set(wanted);
-    const islandId = state.players[this.playerId]?.islandId;
-    const inside = this.insideOf(state);
+    const inside = this.insideOf(state, look);
+    const player = state.players[this.playerId];
+    // Whether this player may build at all is one question, not one a spot: refused, no
+    // spot fits, and nothing below is drawn from the stream either.
+    if (player === undefined || buildRefusal(state, this.playerId) !== null) return null;
+    const islandId = player.islandId;
 
     for (const tile of wanted) {
       const tx = tile % state.width;
@@ -934,7 +914,7 @@ export class Bot {
         for (const [ox, oy] of cells) {
           const x = tx - ox;
           const y = ty - oy;
-          if (canPlacePiece(state, this.playerId, rotation, x, y) !== null) continue;
+          if (cellsRefusal(state, player, cells, x, y) !== null) continue;
           let covered = 0;
           let indoors = 0;
           for (const [cx, cy] of cells) {
@@ -992,18 +972,12 @@ export class Bot {
     // it. Costing the wall that leaves room for guns instead picks a castle worth
     // holding. Falls back to the bare cost only if no castle has room at all, since
     // an unwallable start is worse than a cramped one.
+    // One graph for every castle at every width: only the castle cut for differs.
+    const graph = new SealGraph(state, this.playerId);
     const pick = (roomRadius: number): (typeof mine)[number] | null => {
       const costed: { castle: (typeof mine)[number]; cost: number }[] = [];
       for (const castle of mine) {
-        const plan = cheapestPlanFor(
-          { ...state, castles: [castle] } as MatchState,
-          this.playerId,
-          1,
-          1,
-          undefined,
-          false,
-          roomRadius,
-        );
+        const plan = graph.plan([castle], false, roomRadius);
         if (plan !== null) costed.push({ castle, cost: plan.cost });
       }
       if (costed.length === 0) return null;

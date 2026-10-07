@@ -2,6 +2,7 @@ import {
   canPlaceCannon,
   canPlacePiece,
   currentPieceId,
+  computeEnclosure,
   findReadyCannon,
   owesCastleChoice,
   pieceCells,
@@ -109,6 +110,8 @@ export class Controls {
   private rotation = 0;
   /** The sealing preview's last answer, asked again only when the question changes. */
   private sealing: { key: string; cells: Cell[] } = { key: '', cells: [] };
+  /** The territory as the board stands, kept with the board's sum it was computed for. */
+  private standing: { sum: number; territory: Uint8Array } | null = null;
   private detachers: (() => void)[] = [];
 
   constructor(
@@ -228,8 +231,16 @@ export class Controls {
     const { structure } = this.state;
     for (let i = 0; i < structure.length; i++) sum = (sum * 31 + (structure[i] as number)) | 0;
     const key = `${x},${y},${JSON.stringify(cells)},${sum}`;
-    if (key !== this.sealing.key)
-      this.sealing = { key, cells: sealingCells(this.state, cells, x, y) };
+    if (key !== this.sealing.key) {
+      // By round as well: who is out, which decides whose pockets count, changes only
+      // at a resolution.
+      const board = sum ^ (this.state.round * 0x9e3779b1);
+      if (this.standing?.sum !== board) {
+        this.standing = { sum: board, territory: computeEnclosure(this.state).territory };
+      }
+      const now = this.standing.territory;
+      this.sealing = { key, cells: sealingCells(this.state, cells, x, y, now) };
+    }
     return this.sealing.cells;
   }
 

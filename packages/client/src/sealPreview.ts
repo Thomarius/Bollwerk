@@ -20,6 +20,8 @@ export function sealingCells(
   cells: readonly (readonly [number, number])[],
   x: number,
   y: number,
+  /** The territory as the board stands, when the caller has it: it changes only with the board. */
+  now: Uint8Array = computeEnclosure(state).territory,
 ): Cell[] {
   const structure = state.structure.slice();
   for (const [dx, dy] of cells) {
@@ -28,7 +30,6 @@ export function sealingCells(
     if (cx < 0 || cy < 0 || cx >= state.width || cy >= state.height) return [];
     structure[cy * state.width + cx] = Structure.Wall;
   }
-  const now = computeEnclosure(state).territory;
   const after = computeEnclosure({ ...state, structure }).territory;
   const gained: Cell[] = [];
   for (let i = 0; i < after.length; i++) {

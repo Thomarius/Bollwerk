@@ -28,14 +28,37 @@ export interface EnclosureResult {
   cannonActive: boolean[];
 }
 
+/** The neighbour lists as offsets, for the flood's inner loop. */
+const offsets = (list: readonly (readonly [number, number])[]) => ({
+  dx: Int8Array.from(list, ([x]) => x),
+  dy: Int8Array.from(list, ([, y]) => y),
+});
+const OFFSETS_4 = offsets(NEIGHBOURS_4);
+const OFFSETS_8 = offsets(NEIGHBOURS_8);
+
+/**
+ * The floods' working arrays, kept between calls: the enclosure is computed at every
+ * placement, by every bot's plan and by the client's preview, and nothing it returns is
+ * one of these.
+ */
+let scratch: { queue: Int32Array; region: Int32Array } | null = null;
+
+function scratchFor(size: number): { queue: Int32Array; region: Int32Array } {
+  if (scratch === null || scratch.queue.length !== size) {
+    scratch = { queue: new Int32Array(size), region: new Int32Array(size) };
+  }
+  return scratch;
+}
+
 export function computeEnclosure(state: MatchState): EnclosureResult {
   const { width: w, height: h, structure } = state;
   const size = w * h;
-  const neighbours = state.ruleset.enclosure.connectivity === 8 ? NEIGHBOURS_8 : NEIGHBOURS_4;
+  const { dx, dy } = state.ruleset.enclosure.connectivity === 8 ? OFFSETS_8 : OFFSETS_4;
+  const reach = dx.length;
+  const { queue, region } = scratchFor(size);
 
   // Flood inward from the border. Water is traversable — the sea is "outside".
   const outside = new Uint8Array(size);
-  const queue = new Int32Array(size);
   let head = 0;
   let tail = 0;
 
@@ -58,9 +81,9 @@ export function computeEnclosure(state: MatchState): EnclosureResult {
     const i = queue[head++] as number;
     const x = i % w;
     const y = (i - x) / w;
-    for (const [ox, oy] of neighbours) {
-      const nx = x + ox;
-      const ny = y + oy;
+    for (let k = 0; k < reach; k++) {
+      const nx = x + (dx[k] as number);
+      const ny = y + (dy[k] as number);
       if (nx < 0 || ny < 0 || nx >= w || ny >= h) continue;
       const ni = ny * w + nx;
       if (outside[ni] === 1 || structure[ni] === Structure.Wall) continue;
@@ -98,7 +121,7 @@ export function computeEnclosure(state: MatchState): EnclosureResult {
   // tiles score, and it all goes the moment the last castle is breached. Without a castle
   // sealed a pocket is nothing, so it can never keep a player in the round on its own.
   const pockets = state.ruleset.enclosure.castlelessRegionsCount;
-  const region = new Int32Array(size).fill(-1);
+  region.fill(-1);
   const regionOwner: number[] = [];
   let regionCount = 0;
 
@@ -121,9 +144,9 @@ export function computeEnclosure(state: MatchState): EnclosureResult {
       const y = (i - x) / w;
       if (structure[i] === Structure.Castle) owner = state.islandId[i] as number;
       if (island === 0) island = state.islandId[i] as number;
-      for (const [ox, oy] of neighbours) {
-        const nx = x + ox;
-        const ny = y + oy;
+      for (let k = 0; k < reach; k++) {
+        const nx = x + (dx[k] as number);
+        const ny = y + (dy[k] as number);
         if (nx < 0 || ny < 0 || nx >= w || ny >= h) continue;
         const ni = ny * w + nx;
         if (outside[ni] === 1 || region[ni] !== -1) continue;

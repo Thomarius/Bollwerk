@@ -12,7 +12,7 @@ import { daylight, shadowCast, weatherFor, type Weather } from './pixel/atmosphe
 import { OceanLife } from './pixel/ocean.js';
 import { release } from './release.js';
 import { SceneryTracker } from './scenery.js';
-import { Discs, StampBook, Stamps } from './stamps.js';
+import { Discs, SpritePool, StampBook, Stamps } from './stamps.js';
 import {
   CASTLE_WINDOWS,
   E,
@@ -192,6 +192,16 @@ export class PixelTheme implements Theme {
   private readonly tileLayer = new Container({ isRenderGroup: true });
   private structureLayer!: Container;
   private effectLayer!: Container;
+  /**
+   * Sprites for the layers emptied and filled again: the effects and the piece in hand
+   * every frame, the walls at every hit, the paving and scorches as they change. Made anew
+   * each time, the old ones were left to the collector, two hundred a frame at eight
+   * players, and the walls' shadow was a new `Graphics` at every hit, never destroyed.
+   */
+  private readonly pools = new Map<Container, SpritePool>();
+  /** The walls' shadows and the snow lying on them, redrawn with the walls. */
+  private readonly shade = new Graphics();
+  private readonly snowCaps = new Graphics();
   private readonly territoryGfx = new Graphics();
   private readonly ghostMotion = new GhostMotion();
   /** Under the piece's sprites: the shadow it casts while held. */
@@ -328,6 +338,15 @@ export class PixelTheme implements Theme {
     this.structureLayer = new Container({ isRenderGroup: true });
     layers.structures.addChild(this.structureLayer);
     this.effectLayer = layers.effects;
+    for (const layer of [
+      this.structureLayer,
+      this.effectLayer,
+      this.ghostLayer,
+      this.courtLayer,
+      this.craterLayer,
+    ]) {
+      this.pools.set(layer, new SpritePool());
+    }
 
     layers.territory.addChild(
       this.courtLayer,
@@ -356,8 +375,15 @@ export class PixelTheme implements Theme {
   destroy(): void {
     this.terrainLayer?.removeChildren();
     release(this.tileLayer);
+    // The pooled sprites go with their pools, not twice over with their layers.
+    for (const [layer, pool] of this.pools) {
+      layer.removeChildren();
+      pool.destroy();
+    }
+    this.pools.clear();
+    this.shade.destroy();
+    this.snowCaps.destroy();
     if (this.structureLayer) release(this.structureLayer);
-    this.effectLayer?.removeChildren();
     this.territoryGfx.destroy();
     this.overlayGfx.destroy();
     release(this.ghostLayer);
@@ -385,6 +411,12 @@ export class PixelTheme implements Theme {
     this.surf = [];
   }
 
+  /** Empties a pooled layer for drawing again, its sprites back in its pool. */
+  private empty(layer: Container): void {
+    layer.removeChildren();
+    this.pools.get(layer)?.begin();
+  }
+
   private texture(key: string): Texture {
     return this.textures.get(key) ?? Texture.EMPTY;
   }
@@ -397,7 +429,8 @@ export class PixelTheme implements Theme {
     y: number,
     tiles = 1,
   ): Sprite {
-    const sprite = new Sprite(this.texture(key));
+    const texture = this.texture(key);
+    const sprite = this.pools.get(parent)?.take(texture) ?? new Sprite(texture);
     sprite.x = tileX(view, x);
     sprite.y = tileY(view, y);
     sprite.width = view.tile * tiles;
@@ -557,7 +590,7 @@ export class PixelTheme implements Theme {
 
   /** Places the scorch marks, whose sprites must follow the camera. */
   private layoutCraters(): void {
-    this.craterLayer.removeChildren();
+    this.empty(this.craterLayer);
     const rounds = this.art.generators.fx.craterRounds;
     for (const crater of this.craters) {
       const x = crater.index % this.width;
@@ -572,7 +605,7 @@ export class PixelTheme implements Theme {
    * was hard to read at a glance under textured grass; paving says "held" by itself.
    */
   drawTerritory(state: MatchState, view: ViewTransform): void {
-    this.courtLayer.removeChildren();
+    this.empty(this.courtLayer);
     const variants = this.art.generators.terrain.courtyardVariants;
     for (let i = 0; i < state.territory.length; i++) {
       const owner = (state.territory[i] as number) - 1;
@@ -591,9 +624,10 @@ export class PixelTheme implements Theme {
 
   drawStructures(state: MatchState, view: ViewTransform): void {
     if (this.scenery.sync(state, this.art.scenery)) this.layoutScenery();
-    this.structureLayer.removeChildren();
+    this.empty(this.structureLayer);
     // Shadows first, under everything that casts them.
-    const shade = new Graphics();
+    const shade = this.shade;
+    shade.clear();
     this.structureLayer.addChild(shade);
     this.dropShadows(shade, state, view);
 
@@ -663,6 +697,27 @@ export class PixelTheme implements Theme {
         ? washed(playerColour(this.art, cannon.owner, 'base'), 0.3)
         : hex(this.art.palette.rockDark);
       sprite.alpha = cannon.active ? 1 : 0.7;
+    }
+
+    // Snow lies on every top edge a wall shows, and along the top of each castle: drawn
+    // with the walls rather than every frame, since it moves only when they do.
+    // The weather from the seed, as `drawTerrain` sets it: the walls may be drawn first.
+    this.snowCaps.clear();
+    if (!this.torchlit && weatherFor(state.seed, this.art.pixel.weatherOdds) === 'snow') {
+      const g = this.snowCaps;
+      const cap = Math.max(2, Math.round(view.tile * 0.2));
+      for (let i = 0; i < state.structure.length; i++) {
+        if (state.structure[i] !== Structure.Wall || state.owner[i] === 0) continue;
+        const x = i % state.width;
+        const y = (i - x) / state.width;
+        if (y > 0 && state.structure[i - state.width] === Structure.Wall) continue;
+        g.rect(tileX(view, x), tileY(view, y), view.tile, cap);
+      }
+      for (const castle of state.castles) {
+        g.rect(tileX(view, castle.x) + 1, tileY(view, castle.y), castle.w * view.tile - 2, cap);
+      }
+      g.fill({ color: 0xf4f7ff, alpha: 0.85 });
+      this.structureLayer.addChild(g);
     }
   }
 
@@ -955,7 +1010,7 @@ export class PixelTheme implements Theme {
 
     this.clock += frame.deltaMs;
     this.animateWater(frame.deltaMs);
-    this.effectLayer.removeChildren();
+    this.empty(this.effectLayer);
     this.effectLayer.addChild(
       this.cloudStamps.container,
       g,
@@ -973,7 +1028,7 @@ export class PixelTheme implements Theme {
     this.drawClouds(view, frame.deltaMs, still);
     this.drawDaylight(state, view);
     this.drawRain(view, frame.deltaMs, still);
-    this.drawSnow(state, view, frame.deltaMs, still);
+    this.drawSnow(view, frame.deltaMs, still);
     this.drawReflections(state, view, frame.castleSealed, still);
     if (this.torchlit) this.drawTorchlight(state, view, frame);
     this.drawNight(view, frame.deltaMs, still);
@@ -1524,25 +1579,13 @@ export class PixelTheme implements Theme {
    * everything, and white lying on the tops of walls and castles — the lie of it drawn
    * even under reduced motion, which stops only the falling.
    */
-  private drawSnow(state: MatchState, view: ViewTransform, deltaMs: number, still: boolean): void {
+  private drawSnow(view: ViewTransform, deltaMs: number, still: boolean): void {
     if (this.weather !== 'snow') {
       this.snow = [];
       return;
     }
     const g = this.effectGfx;
-    // White on every top edge a wall shows, and along the top of each castle.
-    const cap = Math.max(2, Math.round(view.tile * 0.2));
-    for (let i = 0; i < state.structure.length; i++) {
-      if (state.structure[i] !== Structure.Wall || state.owner[i] === 0) continue;
-      const x = i % state.width;
-      const y = (i - x) / state.width;
-      if (y > 0 && state.structure[i - state.width] === Structure.Wall) continue;
-      g.rect(tileX(view, x), tileY(view, y), view.tile, cap);
-    }
-    for (const castle of state.castles) {
-      g.rect(tileX(view, castle.x) + 1, tileY(view, castle.y), castle.w * view.tile - 2, cap);
-    }
-    g.fill({ color: 0xf4f7ff, alpha: 0.85 });
+    // The snow lying on the walls is drawn with them, in `drawStructures`.
     if (still) {
       this.snow = [];
       return;
@@ -2108,7 +2151,7 @@ export class PixelTheme implements Theme {
       const pole = Math.max(2, Math.round(view.tile / 10));
       g.rect(poleX - pole / 2, top, pole, length);
       g.fill({ color: hex(this.art.palette.rockDark) });
-      const sprite = new Sprite(texture);
+      const sprite = this.pools.get(this.effectLayer)?.take(texture) ?? new Sprite(texture);
       sprite.width = view.tile * 0.8;
       sprite.height = (view.tile * 0.8 * texture.height) / Math.max(1, texture.width);
       sprite.x = poleX + pole / 2;
@@ -2205,7 +2248,7 @@ export class PixelTheme implements Theme {
     const g = this.overlayGfx;
     g.clear();
     this.ghostShadow.clear();
-    this.ghostLayer.removeChildren();
+    this.empty(this.ghostLayer);
     drawOvertimeBorder(g, state, view, this.art, performance.now());
 
     drawSelectable(g, view, ghost, this.art, performance.now());

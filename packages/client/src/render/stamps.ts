@@ -1,4 +1,4 @@
-import { Container, Graphics, GraphicsContext } from 'pixi.js';
+import { Container, Graphics, GraphicsContext, Sprite, type Texture } from 'pixi.js';
 
 import { release } from './release.js';
 
@@ -193,5 +193,39 @@ export class Discs {
   destroy(): void {
     this.stamps.destroy();
     this.book.destroy();
+  }
+}
+
+/**
+ * Sprites lent out for a frame and taken back at the next: a layer emptied and filled
+ * again every frame keeps its sprites rather than making new ones and leaving the old to
+ * the collector, as Medieval's guns, shots and flags did, two hundred a frame at eight
+ * players. Each is handed out as a new one would be, untinted and opaque.
+ */
+export class SpritePool {
+  private readonly sprites: Sprite[] = [];
+  private used = 0;
+
+  begin(): void {
+    this.used = 0;
+  }
+
+  take(texture: Texture): Sprite {
+    let sprite = this.sprites[this.used];
+    if (sprite === undefined) {
+      sprite = new Sprite(texture);
+      this.sprites.push(sprite);
+    } else {
+      sprite.texture = texture;
+      sprite.tint = 0xffffff;
+      sprite.alpha = 1;
+    }
+    this.used++;
+    return sprite;
+  }
+
+  destroy(): void {
+    for (const sprite of this.sprites) sprite.destroy();
+    this.sprites.length = 0;
   }
 }

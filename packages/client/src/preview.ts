@@ -133,35 +133,19 @@ export function drawPreview(
   if (ctx === null) return;
   ctx.imageSmoothingEnabled = false;
 
-  ctx.fillStyle = art.palette.waterMid;
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
-
   const seatOfIsland = new Map<number, number>();
   preview.playerOfSeat.forEach((player, seat) => seatOfIsland.set(player + 1, seat));
 
-  for (let i = 0; i < terrain.terrain.length; i++) {
-    if (terrain.terrain[i] !== Terrain.Land) continue;
-    const seat = seatOfIsland.get(terrain.islandId[i] as number);
-    const colour = seat === undefined ? undefined : preview.colourOfSeat[seat];
-    const x = i % terrain.width;
-    const y = (i - x) / terrain.width;
-    ctx.fillStyle = colour?.dark ?? art.palette.grassMid;
-    ctx.fillRect(x * scale, y * scale, scale, scale);
-  }
+  // The sea and the land change only with the table, so they are painted once and copied;
+  // the map is drawn every frame the lobby is open, and painting them was a rectangle a tile.
+  const still = stillLayer(preview, seatOfIsland, art, scale);
+  ctx.drawImage(still.canvas, 0, 0);
 
   // Surf on the sea tiles beside land, breathing.
-  const land = (x: number, y: number): boolean =>
-    x >= 0 &&
-    y >= 0 &&
-    x < terrain.width &&
-    y < terrain.height &&
-    terrain.terrain[y * terrain.width + x] === Terrain.Land;
   ctx.fillStyle = art.palette.waterFoam;
-  for (let i = 0; i < terrain.terrain.length; i++) {
-    if (terrain.terrain[i] === Terrain.Land) continue;
+  for (const i of still.surf) {
     const x = i % terrain.width;
     const y = (i - x) / terrain.width;
-    if (!land(x - 1, y) && !land(x + 1, y) && !land(x, y - 1) && !land(x, y + 1)) continue;
     ctx.globalAlpha = 0.15 + 0.4 * surfAt(x, y, timeMs, art.menu.mapSurfMs);
     ctx.fillRect(x * scale, y * scale, scale, scale);
   }
@@ -177,7 +161,7 @@ export function drawPreview(
     ctx.fillRect(castle.x * scale, castle.y * scale, castle.w * scale, castle.h * scale);
   }
 
-  const centres = islandCentres(terrain);
+  const centres = still.centres;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   const figure = Math.max(11, scale * 5);
@@ -222,4 +206,66 @@ export function drawPreview(
     if (edge(x - 1, y)) ctx.fillRect(x * scale, y * scale, line, scale);
     if (edge(x + 1, y)) ctx.fillRect((x + 1) * scale - line, y * scale, line, scale);
   }
+}
+
+/** What `drawPreview` paints once a table: the sea and the land, and where surf breaks. */
+interface StillLayer {
+  key: string;
+  canvas: HTMLCanvasElement;
+  /** Sea tiles beside land. */
+  surf: number[];
+  centres: ReturnType<typeof islandCentres>;
+}
+
+const stillLayers = new WeakMap<TablePreview['terrain'], StillLayer>();
+
+function stillLayer(
+  preview: TablePreview,
+  seatOfIsland: ReadonlyMap<number, number>,
+  art: ArtConfig,
+  scale: number,
+): StillLayer {
+  const { terrain } = preview;
+  const colours = [...seatOfIsland].map(([island, seat]) => {
+    return `${island}:${preview.colourOfSeat[seat]?.dark ?? ''}`;
+  });
+  const key = `${scale}|${art.palette.waterMid}|${art.palette.grassMid}|${colours.join()}`;
+  const kept = stillLayers.get(terrain);
+  if (kept?.key === key) return kept;
+
+  const canvas = kept?.canvas ?? document.createElement('canvas');
+  canvas.width = terrain.width * scale;
+  canvas.height = terrain.height * scale;
+  const ctx = canvas.getContext('2d');
+  if (ctx !== null) {
+    ctx.fillStyle = art.palette.waterMid;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    for (let i = 0; i < terrain.terrain.length; i++) {
+      if (terrain.terrain[i] !== Terrain.Land) continue;
+      const seat = seatOfIsland.get(terrain.islandId[i] as number);
+      const colour = seat === undefined ? undefined : preview.colourOfSeat[seat];
+      const x = i % terrain.width;
+      const y = (i - x) / terrain.width;
+      ctx.fillStyle = colour?.dark ?? art.palette.grassMid;
+      ctx.fillRect(x * scale, y * scale, scale, scale);
+    }
+  }
+
+  const land = (x: number, y: number): boolean =>
+    x >= 0 &&
+    y >= 0 &&
+    x < terrain.width &&
+    y < terrain.height &&
+    terrain.terrain[y * terrain.width + x] === Terrain.Land;
+  const surf =
+    kept?.surf ??
+    Array.from(terrain.terrain).flatMap((tile, i) => {
+      if (tile === Terrain.Land) return [];
+      const x = i % terrain.width;
+      const y = (i - x) / terrain.width;
+      return land(x - 1, y) || land(x + 1, y) || land(x, y - 1) || land(x, y + 1) ? [i] : [];
+    });
+  const layer = { key, canvas, surf, centres: kept?.centres ?? islandCentres(terrain) };
+  stillLayers.set(terrain, layer);
+  return layer;
 }

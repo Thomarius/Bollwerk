@@ -104,7 +104,7 @@ export function t(key: TextKey, params: TextParams = {}): string {
     form = text;
   } else {
     const n = typeof params.n === 'number' ? params.n : 0;
-    const which = new Intl.PluralRules(INTL[current]).select(n);
+    const which = plurals(INTL[current], 'cardinal').select(n);
     form = text[which] ?? text.other;
   }
   return form.replace(/\{(\w+)\}/g, (whole, name: string) => {
@@ -114,6 +114,25 @@ export function t(key: TextKey, params: TextParams = {}): string {
   });
 }
 
+/**
+ * The `Intl` formatters, made once a language and kept: building one is costly, and the HUD
+ * formats every figure it shows every frame through `t` — twenty and more a frame at eight
+ * players.
+ */
+const numberFormats = new Map<string, Intl.NumberFormat>();
+const listFormats = new Map<string, Intl.ListFormat>();
+const pluralRules = new Map<string, Intl.PluralRules>();
+
+function plurals(locale: string, type: Intl.PluralRuleType): Intl.PluralRules {
+  const key = `${locale}:${type}`;
+  let rules = pluralRules.get(key);
+  if (rules === undefined) {
+    rules = new Intl.PluralRules(locale, { type });
+    pluralRules.set(key, rules);
+  }
+  return rules;
+}
+
 /** A place as the language writes it: "3rd" in English, "3." in German. */
 export function ordinal(n: number): string {
   const text = locales[current].ordinal ?? locales.en.ordinal;
@@ -121,20 +140,32 @@ export function ordinal(n: number): string {
   const form =
     typeof text === 'string'
       ? text
-      : (text[new Intl.PluralRules(INTL[current], { type: 'ordinal' }).select(n)] ?? text.other);
+      : (text[plurals(INTL[current], 'ordinal').select(n)] ?? text.other);
   return form.replace('{n}', String(n));
 }
 
 /** A number as the language writes it: `18.6` in English, `18,6` in German. */
 export function formatNumber(value: number, fractionDigits?: number): string {
-  return new Intl.NumberFormat(INTL[current], {
-    minimumFractionDigits: fractionDigits,
-    maximumFractionDigits: fractionDigits ?? 20,
-    useGrouping: false,
-  }).format(value);
+  const key = `${INTL[current]}:${fractionDigits ?? ''}`;
+  let format = numberFormats.get(key);
+  if (format === undefined) {
+    format = new Intl.NumberFormat(INTL[current], {
+      minimumFractionDigits: fractionDigits,
+      maximumFractionDigits: fractionDigits ?? 20,
+      useGrouping: false,
+    });
+    numberFormats.set(key, format);
+  }
+  return format.format(value);
 }
 
 /** Names joined as the language joins them: "Ada, Bo and Cy". */
 export function listOf(names: readonly string[]): string {
-  return new Intl.ListFormat(INTL[current], { style: 'long', type: 'conjunction' }).format(names);
+  const locale = INTL[current];
+  let format = listFormats.get(locale);
+  if (format === undefined) {
+    format = new Intl.ListFormat(locale, { style: 'long', type: 'conjunction' });
+    listFormats.set(locale, format);
+  }
+  return format.format(names);
 }

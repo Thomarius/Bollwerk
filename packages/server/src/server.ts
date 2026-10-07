@@ -27,6 +27,22 @@ import { PortOpener, type InternetStatus } from './upnp.js';
  * app keeps its config and client in its resources and cannot write recordings inside
  * itself.
  */
+
+/**
+ * A message as sent, encoded once however many seats it goes to: a room broadcasts the
+ * same message object to every connection, thirty times a second. Kept by the object,
+ * which nothing changes once it is sent.
+ */
+const encodings = new WeakMap<ServerMessage, string>();
+function encoded(message: ServerMessage): string {
+  let text = encodings.get(message);
+  if (text === undefined) {
+    text = encode(message);
+    encodings.set(message, text);
+  }
+  return text;
+}
+
 export interface ServerOptions {
   /** Where `config/` is: the repository, or a packaged app's resources. */
   root: string;
@@ -207,7 +223,7 @@ export async function startServer(options: ServerOptions): Promise<StartResult> 
     const connection: Connection = {
       id,
       send(message: ServerMessage) {
-        if (socket.readyState === socket.OPEN) socket.send(encode(message));
+        if (socket.readyState === socket.OPEN) socket.send(encoded(message));
       },
       close(reason: string) {
         connection.send({ type: 'error', code: 'closed', message: reason });

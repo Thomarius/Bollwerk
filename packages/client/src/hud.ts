@@ -287,7 +287,7 @@ export class Hud {
   showTeamTags(
     tags: readonly { player: number; text: string; colour: string; x: number; y: number }[],
   ): void {
-    for (const tag of tags) {
+    const nodes = tags.map((tag) => {
       let node = this.teamTags.get(tag.player);
       if (node === undefined) {
         node = document.createElement('div');
@@ -296,20 +296,25 @@ export class Hud {
         this.bannerRoot.append(node);
         this.teamTags.set(tag.player, node);
       }
-      node.style.borderColor = tag.colour;
+      return node;
+    });
+    // Every size read before any position is written: a read after a write lays the page
+    // out again, and that was once a tag, every frame of a team match.
+    const margin = 4;
+    const bar = this.barBottom();
+    const width = this.bannerRoot.clientWidth;
+    const sizes = nodes.map((node) => ({ half: node.offsetWidth / 2, high: node.offsetHeight }));
+    tags.forEach((tag, k) => {
+      const node = nodes[k] as HTMLElement;
+      const { half, high } = sizes[k] as { half: number; high: number };
       // Kept on screen and below the bar: the tags grew (testers missed the small ones),
       // and over an island at the window's edge or in the top row they ran off it or
       // under the roster. Hung from their bottom middle, as the stylesheet places them.
-      const margin = 4;
-      const half = node.offsetWidth / 2;
-      const below = this.barBottom() + node.offsetHeight + margin;
-      const x = Math.min(
-        Math.max(tag.x, half + margin),
-        this.bannerRoot.clientWidth - half - margin,
-      );
-      node.style.left = `${x}px`;
-      node.style.top = `${Math.max(tag.y, below)}px`;
-    }
+      const x = Math.min(Math.max(tag.x, half + margin), width - half - margin);
+      setStyle(node, 'borderColor', tag.colour);
+      setStyle(node, 'left', `${x}px`);
+      setStyle(node, 'top', `${Math.max(tag.y, bar + high + margin)}px`);
+    });
   }
 
   /** Where the HUD's bar ends, in the banner layer's pixels. */
@@ -999,4 +1004,21 @@ export class Hud {
       frame.fill.style.width = fillWidth;
     }
   }
+}
+
+/**
+ * Writes a style only when it changes: the labels over the board are placed every frame.
+ * Compared with what was last written, not read back, which the browser normalises.
+ */
+const written = new WeakMap<HTMLElement, Map<string, string>>();
+function setStyle(
+  node: HTMLElement,
+  property: 'borderColor' | 'left' | 'top',
+  value: string,
+): void {
+  let last = written.get(node);
+  if (last === undefined) written.set(node, (last = new Map()));
+  if (last.get(property) === value) return;
+  last.set(property, value);
+  node.style[property] = value;
 }

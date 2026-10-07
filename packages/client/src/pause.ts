@@ -181,8 +181,10 @@ export class PauseControls {
   update(pausedBy: number | null, humanPlayer: number, names: readonly string[], over: boolean) {
     this.over = over;
     this.paused = pausedBy !== null;
-    this.button.hidden = over;
-    this.button.textContent = this.paused ? t('pause.resume') : t('pause.button');
+    // Written only on a change: this runs every frame.
+    if (this.button.hidden !== over) this.button.hidden = over;
+    const label = this.paused ? t('pause.resume') : t('pause.button');
+    if (this.button.textContent !== label) this.button.textContent = label;
     const text = pausedBy === null || over ? null : pauseText(pausedBy, humanPlayer, names);
     if (text === this.shown) return;
     const opening = this.shown === null && text !== null;

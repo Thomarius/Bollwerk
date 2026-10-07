@@ -180,6 +180,9 @@ export class OktoberfestTheme implements Theme {
   private readonly terrainGfx = new Graphics();
   /** The bubbles, the puddles and the Ferris wheel: redrawn each frame. */
   private readonly flowGfx = new Graphics();
+  /** The puddles, drawn again only when one comes or dries a round further. */
+  private readonly puddleGfx = new Graphics();
+  private puddlesDrawn = '';
   /** Sealed ground, an island to a `Graphics`, redrawn where it changes. */
   private readonly territory = new IslandParts(1, 'territory');
   private readonly ghostMotion = new GhostMotion();
@@ -244,7 +247,7 @@ export class OktoberfestTheme implements Theme {
     // Medieval's weather, drawn from the seed: it rains at the Wiesn, of course, and now and
     // then it snows; fog is left to the morning after.
     this.weather = weatherFor(this.seed, art.pixel.weatherOdds);
-    layers.terrain.addChild(this.terrainGfx, this.flowGfx);
+    layers.terrain.addChild(this.terrainGfx, this.puddleGfx, this.flowGfx);
     layers.territory.addChild(this.scenery.gfx, this.territory.container);
     layers.structures.addChild(this.structures.container);
     layers.effects.addChild(
@@ -267,7 +270,13 @@ export class OktoberfestTheme implements Theme {
     this.lateGfx.destroy();
     this.structures.destroy();
     this.scenery.destroy();
-    for (const g of [this.terrainGfx, this.flowGfx, this.effectGfx, this.overlayGfx]) {
+    for (const g of [
+      this.terrainGfx,
+      this.puddleGfx,
+      this.flowGfx,
+      this.effectGfx,
+      this.overlayGfx,
+    ]) {
       g.destroy();
     }
   }
@@ -462,17 +471,24 @@ export class OktoberfestTheme implements Theme {
     const still = motionReduced();
 
     // Spilt beer where a shot came down on open ground, drying over the rounds after.
+    // Still from one round to the next, so they have a `Graphics` of their own.
     const rounds = this.art.generators.fx.craterRounds;
     this.puddles = this.puddles.filter((p) => state.round - p.round < rounds);
-    for (const p of this.puddles) {
-      const fade = 1 - (state.round - p.round) / rounds;
-      const cx = tileX(view, p.x + 0.5);
-      const cy = tileY(view, p.y + 0.5);
-      g.ellipse(cx, cy, t * 0.42, t * 0.3);
-      g.circle(cx + t * 0.3, cy + t * 0.12, t * 0.14);
-      g.fill({ color: hex(palette.craterMid), alpha: 0.55 * fade });
-      g.circle(cx - t * 0.1, cy - t * 0.06, t * 0.08);
-      g.fill({ color: FOAM, alpha: 0.6 * fade });
+    const key = `${state.round}|${this.puddles.length}|${t}|${view.originX}|${view.originY}`;
+    if (key !== this.puddlesDrawn) {
+      this.puddlesDrawn = key;
+      const pg = this.puddleGfx;
+      pg.clear();
+      for (const p of this.puddles) {
+        const fade = 1 - (state.round - p.round) / rounds;
+        const cx = tileX(view, p.x + 0.5);
+        const cy = tileY(view, p.y + 0.5);
+        pg.ellipse(cx, cy, t * 0.42, t * 0.3);
+        pg.circle(cx + t * 0.3, cy + t * 0.12, t * 0.14);
+        pg.fill({ color: hex(palette.craterMid), alpha: 0.55 * fade });
+        pg.circle(cx - t * 0.1, cy - t * 0.06, t * 0.08);
+        pg.fill({ color: FOAM, alpha: 0.6 * fade });
+      }
     }
 
     // Bubbles rising through the beer in streams, swelling a little, popping.

@@ -177,6 +177,9 @@ export class HalloweenTheme implements Theme {
   private readonly terrainGfx = new Graphics();
   /** The bog's bubbles, the bats round the moon and the scorches: redrawn each frame. */
   private readonly flowGfx = new Graphics();
+  /** The scorches, drawn again only when one comes or fades a round further. */
+  private readonly scorchGfx = new Graphics();
+  private scorchesDrawn = '';
   /** Sealed ground, an island to a `Graphics`, redrawn where it changes. */
   private readonly territory = new IslandParts(1, 'territory');
   private readonly ghostMotion = new GhostMotion();
@@ -237,7 +240,12 @@ export class HalloweenTheme implements Theme {
     this.style = art.halloween;
     // Medieval's weather, drawn from the seed: fog thickens the fog, snow falls as leaves.
     this.weather = weatherFor(this.seed, art.pixel.weatherOdds);
-    layers.terrain.addChild(this.terrainGfx, this.flowGfx, this.bubbleStamps.container);
+    layers.terrain.addChild(
+      this.terrainGfx,
+      this.scorchGfx,
+      this.flowGfx,
+      this.bubbleStamps.container,
+    );
     layers.territory.addChild(this.scenery.gfx, this.territory.container);
     layers.structures.addChild(this.structures.container);
     layers.effects.addChild(
@@ -259,7 +267,13 @@ export class HalloweenTheme implements Theme {
     this.territory.destroy();
     this.structures.destroy();
     this.scenery.destroy();
-    for (const g of [this.terrainGfx, this.flowGfx, this.effectGfx, this.overlayGfx]) {
+    for (const g of [
+      this.terrainGfx,
+      this.scorchGfx,
+      this.flowGfx,
+      this.effectGfx,
+      this.overlayGfx,
+    ]) {
       g.destroy();
     }
   }
@@ -498,14 +512,25 @@ export class HalloweenTheme implements Theme {
     const still = motionReduced();
 
     // Scorches on open ground, embers glowing in them, fading over the rounds after.
+    // The scorch is still from one round to the next, so it has a `Graphics` of its own;
+    // only the embers glowing in it are drawn every frame.
     const rounds = this.art.generators.fx.craterRounds;
     this.scorches = this.scorches.filter((s) => state.round - s.round < rounds);
+    const key = `${state.round}|${this.scorches.length}|${t}|${view.originX}|${view.originY}`;
+    if (key !== this.scorchesDrawn) {
+      this.scorchesDrawn = key;
+      const sg = this.scorchGfx;
+      sg.clear();
+      for (const s of this.scorches) {
+        const fade = 1 - (state.round - s.round) / rounds;
+        sg.circle(tileX(view, s.x + 0.5), tileY(view, s.y + 0.5), t * 0.42);
+        sg.fill({ color: hex(palette.craterDark), alpha: 0.75 * fade });
+      }
+    }
     for (const s of this.scorches) {
       const fade = 1 - (state.round - s.round) / rounds;
       const cx = tileX(view, s.x + 0.5);
       const cy = tileY(view, s.y + 0.5);
-      g.circle(cx, cy, t * 0.42);
-      g.fill({ color: hex(palette.craterDark), alpha: 0.75 * fade });
       for (let k = 0; k < 4; k++) {
         const glow = still ? 0.6 : 0.4 + 0.4 * Math.sin(this.clock / 300 + k * 2 + s.x);
         g.circle(
