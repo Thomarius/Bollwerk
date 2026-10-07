@@ -147,6 +147,15 @@ Full detail in PLAN.md §1. The parts that surprise people:
 
 **Done** (2026-10-06; the latest release **v0.8.1**, 2026-10-06):
 
+- **A refactoring** (2026-10-07, ARCHIVE 12w), the game unchanged: bots plan in a third
+  less time (`SealPlanner`, `Look`, typed max-flow); the client stops redoing per frame what
+  rarely changes; the bot is `Gunner`, `Builder` and `Siting` (`ai/src/combat.ts`,
+  `building.ts`, `siting.ts`); main.ts is app, prefs, session, menu, lobbyFlow and
+  matchScreen, the last with `BoardEffects`; the HUD has `BoardLabels` and `EndScreen`;
+  the titles are titles.ts; a room's match is `MatchRunner`; the styles since Chocolate
+  extend `ShapeTheme`; seats are dealt by `dealSeats` and bots driven by `takeBotTurns`.
+  Protocol 17: the state hash takes in the piece schedule (`HASH_VERSION` 2), and
+  recordings name theirs by format. `npm run check` runs its four steps at once.
 - **The game**: its rules, online play with rooms, a games browser, pause, and recording
   of every match (ARCHIVE 11e, each header stamped with the server's commit); team mode
   (ARCHIVE 10u); bots as a skill level 1–10 chosen in the lobby and a personality dealt
@@ -354,7 +363,12 @@ its header but the simulation does not — so the server stamps each header with
 - **Bots share a few plans a tick** (`PlanningSlots`, `ai.plansPerTick`): every player is dealt
   the same pieces, so bots of one level fall due to plan on the same ticks. Every driver —
   room, `LocalMatch`, harness — gives a table's bots one `PlanningSlots` and calls them in
-  `turnOrder`; a bot made without one is never held back (ARCHIVE 12p).
+  `turnOrder` (`takeBotTurns`; `LocalMatch` spreads one tick's over frames in the same
+  order); a bot made without one is never held back (ARCHIVE 12p).
+- **`computeEnclosure`, `weakestWall` and `MaxFlow` keep their working arrays between
+  calls** (ARCHIVE 12w): nothing they return is one of them, and they are not re-entrant.
+  A cache of a bot's plan lasts one turn (`Look`, `SealPlanner`), never a tick: bots act
+  in turn, and each one's action changes the board the next one plans on.
 - **Never `app.destroy(true)` while another Pixi renderer runs**: `true` releases what every
   renderer on the page shares, including pooled batches the other is using, and its next
   frame fails in the batcher. The style pictures destroy theirs without it (ARCHIVE 12b).
@@ -372,6 +386,8 @@ card does not help with that (ARCHIVE 12n). So a style **never redraws what has 
 
 - **Walls and sealed ground by island**: `IslandParts` (`render/islandParts.ts`) gives the
   style's drawing one island's board and redraws only the island that changed.
+- **Sprites in a layer emptied every frame**: from a `SpritePool` (`render/stamps.ts`), not
+  `new Sprite`; Medieval made two hundred a frame and left them to the collector (ARCHIVE 12w).
 - **Many alike, moving**: `Stamps` and `StampBook` (`render/stamps.ts`) — a shape drawn once
   for the tile size, then only placed, turned, scaled, tinted and faded. A shape whose
   look changes with its motion is stamped per step (Chocolate's swirls by turn, Sakura's

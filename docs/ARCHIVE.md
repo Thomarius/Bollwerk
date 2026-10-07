@@ -5402,3 +5402,76 @@ six times a second rather than every frame.
 
 **Checked in play** by the user (2026-10-06): the calmer piece in hand "much better", the
 style "perfect". Released, with Under the sea, as **v0.8.1** the same day.
+
+## 12w. A refactoring, the game unchanged (2026-10-06/07)
+
+Asked by the user for a cleanup session: the code analysed by four read-only agents
+(the styles, the client's screens, sim and bots, the server and tools), the findings
+checked in the code and offered as a list, approved, and done in work packages one at a
+time, each committed with the user's approval. **The rule throughout: the game must not
+change.** Every step that touched the simulation or the bots was checked against
+headless matches before and after (the same state hashes, eighteen matches over 2 to 8
+players and Levels 1 to 10, until protocol 17 changed the hash itself, below), against the recordings in `recordings/` (the same statistics,
+byte for byte), and the client in a browser: every style in build and combat at eight
+players, watched matches through their banners, a knockout and the game's end, the menu
+to a match and back, and online against a rebuilt server, in sync.
+
+**Speed.** Bot planning asked the same questions of one board many times: now one seal
+graph a plan, each set of castles cut once and only when asked (`SealPlanner`), what a
+turn learns about the board worked out once (`Look`), the piece looked up once a fit
+rather than once a spot (`buildRefusal`, `cellsRefusal`), and max-flow, `weakestWall`
+and `computeEnclosure` on typed arrays kept between calls, visit order kept wherever it
+decides between equals. Profiled first: max-flow was 57% of a bot's time, and stays the
+most of it, since what remains is the cuts a plan really needs. **Bot thinking over four
+fixed tables 14.7 s -> 9.4 s, the worst single turn 32 -> 24 ms.** In the client:
+Medieval and Night made some two hundred sprites a frame and left them to the collector,
+and a new shadow `Graphics` at every wall hit, never destroyed — now `SpritePool`s and
+one `Graphics` cleared; snow lies on the walls drawn with them, under the clouds'
+shadows now; `Intl` formatters are kept (the HUD built twenty and more a frame); the team
+tags were read and written in turn, a forced layout a tag a frame; the sealing preview,
+the pause button, Halloween's scorches, Oktoberfest's puddles, the outer ocean's
+spawner, the menu's titles and the lobby's map were recomputed every frame. Not measured
+with `&perf=1`, which wants the user's machine. The server encodes a broadcast once for
+every seat and fingerprints the state once a hash tick. **The tests: one file held 98 of
+the suite's 103 seconds on one worker; split, 45 s, and `npm run check` runs its four
+steps at once, 88 -> 70 s.**
+
+**Structure.** Split where the code divides, functions moved whole: the bot into
+`Gunner`, `Builder` and `Siting`; main.ts (2,025 lines) into app, prefs, session, menu,
+lobbyFlow and matchScreen; `runSession`'s board as drawn into `BoardEffects`; the HUD's
+labels over the board into `BoardLabels` and its summary into `EndScreen`; the sixteen
+titles into titles.ts; a room's running match into `MatchRunner`, handed the room's own
+random stream so every draw is as before. Seating a table, written four times, is
+`dealSeats`; a tick of bot turns, written three times, `takeBotTurns`. The eight styles
+since Chocolate extend `ShapeTheme`, which held four methods word for word in each;
+`mixed`, `hash`, `GunAims`, `roseSpot`, `seaDepth`, `climax` and `shotProgress` each live
+once. Removed as used by nothing but their own tests: the stopgap opponent,
+`bestSealPlan`, `upcomingPieceIds`, `legalPiecePlacements`, `parseAscii` and seven grid
+helpers. **Not done**: `applyEvents` stays in `runSession` as the coordinator; the
+recording writes stay synchronous (a stream would make the statistics replay wait on its
+flush); one helper for the three overlays, whose closing differs; `startServer`'s
+260-line closure.
+
+**Bugs found along the way, fixed.** A watched local match said "watching" untranslated;
+the menu saved the translated default name as if typed, so it stayed English after a
+change to German; the sound's mute and volume read storage unguarded and threw where a
+browser refuses it (now `storage.ts` for every saved setting). One socket could hold
+seats in several rooms, so a room it left was never emptied or closed — refused now
+(`in_a_room`). Uploads could add lines to a server's own recording, whose name is its
+start and its room's code — only a browser's own now. The headless harness ran its
+defaults on a mistyped flag (`--players x` played NaN players); the harness and the soak
+now parse strictly (`node:util`). A sloppy bot's "worse fit" was often the placement it
+had chosen, a square's four turns or one anchor reached twice ranking second: Levels 1–4
+now slip for real, Levels 5 and up play exactly as before, and the soak of the coming bot
+work covers it (PLAN §11).
+
+**Protocol 17.** The state hash left out each player's piece schedule, which a continue
+rewinds, and a few counters; version 2 adds them after everything version 1 hashes
+(`HASH_VERSION`). A recording's format names its version, 1 before and 2 since, each
+checked against its own, so every recording still replays exactly. Ten settings no code
+read were removed — the coast never counts and only walls are ever damaged, whatever
+the ruleset said — and an old header is read without them (`RETIRED_RULESET_KEYS`).
+`reconnect.graceMs` promised a seat back "within the grace period" and was never applied:
+a dropped player can reclaim their seat for the rest of the match, and PLAN §6 now says
+so rather than the limit being enforced. The four recordings of 2026-09-28 fail to parse
+as they did before, on fields added since.

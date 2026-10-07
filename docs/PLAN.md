@@ -395,7 +395,7 @@ styles made the name mean nothing), Night, Cyberpunk, Blueprint, Parchment, Toy 
 (`bricks`), Stained glass (`glass`), Chocolate (`chocolate`), Halloween (`halloween`), Sakura (`sakura`), Oktoberfest (`oktoberfest`), Opera (`opera`), Office (`office`), Under the sea (`undersea`) and Electric (`electric`) — behind one `Theme` interface: the scene owns the camera, the layer stacks,
 dirty tracking and input mapping; a theme owns only what things look like. Adding a style
 is a name in `ArtStyleSchema`, the looks it is made for in `STYLE_LOOKS`, a `Theme`, a
-case in `createTheme`, a menu title in `decor.ts` and a banner class in `hud.ts`; the
+case in `createTheme`, a menu title in `titles.ts` and a banner class in `hud.ts`; the
 types refuse a style missing any of them. All
 sprites are generated at boot from `art.default.json` plus the match seed — nothing binary
 is committed except audio.
@@ -574,7 +574,7 @@ sealing pages are real ones judged by `computeEnclosure`, and a test holds every
 to the rule it shows. Back, Next and Close; still at each page's key moment under
 reduced motion.
 
-**The menu and lobby** are dressed in the game's own art (`decor.ts`): **every style has
+**The menu and lobby** are dressed in the game's own art (`titles.ts`, `decor.ts`): **every style has
 a title of its own**, the same 5x7 letters in its look — stone threaded with gold for
 Medieval, flat blocks in the players' colours for Minimal, moonlit stone with a halo
 and stars for Night, a neon sign that flickers on for Cyberpunk. **The menu shows both
@@ -601,7 +601,7 @@ from its middle over `effects.lifeCrumbleMs` instead of clearing it in a frame (
 cannons, removed from the state outright, still go at once). Once the match is over,
 fireworks burst over the winners' islands in their colours for as long as the screen
 stays up, a swallowtail banner in their colour is hoisted on a tall pole over each of
-their castles (`WinnerBanners`, `winnerBannerRiseMs`), and **the summary** (`summary.ts`) comes up over them after
+their castles (`WinnerBanners`, `winnerBannerRiseMs`), and **the summary** (`endScreen.ts`, its log `summary.ts`) comes up over them after
 `summary.delayMs`, narrow and opaque (see-through, its grey figures could not be read). It gives each player —
 each team, in a team match — the wall they destroyed, the most castles held at once and
 the lives left (none once out), with every score charted round by round, the viewer's
@@ -1204,7 +1204,8 @@ construction, and the soak asserts they never ask for a move the rules refuse.
 - **Sealing is a minimum cut.** Enclosure is an escape flood, so sealing is cutting every
   path: buildable tiles get capacity one, everything else infinity, and the minimum cut
   between border and castle is the smallest wall that works. Built over the bot's own
-  island alone, which is exact and far faster than the whole grid.
+  island alone, which is exact and far faster than the whole grid, and once a plan: every
+  wall a plan weighs is cut on one graph and remembered for it (`SealPlanner`, ARCHIVE 12w).
 - **A minimum cut is the _tightest_ wall that works** — which is exactly the wall with
   nowhere to put a gun, and the most fragile one. Nearly every bot problem traces back to
   this. Once sealed, `widestAffordable` asks for room first and gives it up a tile at a
@@ -1226,7 +1227,8 @@ construction, and the soak asserts they never ask for a move the rules refuse.
   thought. Everyone is dealt the same pieces, so bots of one level fell due on the same
   ticks all phase; now a bot finding none left waits a tick, and they fall out of step. They
   take their turns in player order rotated by the round (`turnOrder`), so the same ones do
-  not always wait (ARCHIVE 12p).
+  not always wait (ARCHIVE 12p); every driver takes them through `takeBotTurns`, and seats
+  a table through `dealSeats` (ARCHIVE 12w).
 - A bot **does not idle while anything is worth building**. Choices are tried in turn —
   the plan, thickening, the next castle (up to every castle on the island), more room,
   and finally any tile against the outside of its wall — skipping tiles already found
@@ -1376,7 +1378,7 @@ test-session feedback, in ARCHIVE 11w; 11.5 the small items and 11.6 the bots, i
 11.16 help for new players, the menu and the sea, and 11.17 the desktop app, in ARCHIVE
 11zt; 11.18 the fourth visual pass, in ARCHIVE 11zv; 11.19 every style to the edges, in
 ARCHIVE 11zz; 11.20 more languages, in ARCHIVE 12g; 11.21 UPnP, in ARCHIVE 12j; 11.2 points decide, 11.3 two players,
-11.4 measurements never taken and 11.13 the bots' loose ends, closed by the weekend soak, in ARCHIVE 12h; 11.22 rendering performance, in ARCHIVE 12n, its bots planning on the same ticks in ARCHIVE 12p; 11.23 random looks every round, in ARCHIVE 12q; Cyberpunk under Glowing, in ARCHIVE 12r; the slow plan late in a build phase, in ARCHIVE 12s; 11.24 a piece in the corner for every style, in ARCHIVE 12t; Under the sea and Electric, in ARCHIVE 12u and 12v — so the open sections keep theirs.
+11.4 measurements never taken and 11.13 the bots' loose ends, closed by the weekend soak, in ARCHIVE 12h; 11.22 rendering performance, in ARCHIVE 12n, its bots planning on the same ticks in ARCHIVE 12p; 11.23 random looks every round, in ARCHIVE 12q; Cyberpunk under Glowing, in ARCHIVE 12r; the slow plan late in a build phase, in ARCHIVE 12s; 11.24 a piece in the corner for every style, in ARCHIVE 12t; Under the sea and Electric, in ARCHIVE 12u and 12v; the refactoring of 2026-10-07, in ARCHIVE 12w — so the open sections keep theirs.
 
 ## 12. Deferred (explicitly out of scope for v1)
 
