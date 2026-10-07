@@ -145,7 +145,7 @@ Full detail in PLAN.md §1. The parts that surprise people:
 
 ## Status
 
-**Done** (2026-10-06; the latest release **v0.8.1**, 2026-10-06):
+**Done** (2026-10-07; the latest release **v0.8.1**, 2026-10-06; protocol 17 since):
 
 - **A refactoring** (2026-10-07, ARCHIVE 12w), the game unchanged: bots plan in a third
   less time (`SealPlanner`, `Look`, typed max-flow); the client stops redoing per frame what
@@ -196,8 +196,11 @@ Full detail in PLAN.md §1. The parts that surprise people:
   (ARCHIVE 12q); Cyberpunk's "Glowing" cheap and its cores sharp (ARCHIVE 12r). Every look,
   every corner piece and German were checked in play by the user (ARCHIVE 12n–12t).
 
-**Next** — more test games towards a first feature-ready version, then perhaps a big new
-feature, not yet decided. PLAN §11 holds what is open: the user's manual test of UPnP, and bots that miss as people do
+**Next** — **the bot learning work**: stronger bots by valuing the options still open
+rather than the gaps left, then a scoring function whose weights are learned
+(**`docs/BOT_LEARNING.md`**: the plan, its steps, its progress and findings; step 1, the
+testers' recordings, has a first pass). Beside it, PLAN §11: more test games towards a first
+feature-ready version, the user's manual test of UPnP, and bots that miss as people do
 (combat accuracy, measured against the testers' recordings; how is not yet decided).
 French is not to be done. Signing the Windows app was explained (PLAN §12) and is not
 pursued for now.

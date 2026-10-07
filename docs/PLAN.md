@@ -1322,7 +1322,10 @@ every resolution against an independent search, not only on unit pictures.
 
 ## 11. Open work
 
-**Where to start (2026-10-06).** Everything planned is done and in **v0.8.1**, the latest
+**Where to start (2026-10-07).** Next: the bot learning work, item 3 and
+[`BOT_LEARNING.md`](./BOT_LEARNING.md), step 1 under way. The refactoring of 2026-10-07
+(ARCHIVE 12w) left the game as it was, apart from protocol 17. Everything planned before
+that is done and in **v0.8.1**, the latest
 release: the game and online play, bots as skill levels and personalities, sixteen styles —
 Under the sea and Electric the newest (ARCHIVE 12u, 12v) — each with its piece in the corner,
 random looks every round, English and German, the desktop app, UPnP, the balance soak and the
@@ -1369,6 +1372,12 @@ decision, 2026-10-06). Still open:
    testers won both six-player ones (L4, L5) and the two-against-two against L3, and lost
    both two-against-two against L5 by knockout in rounds 7 and 8, where every bot shot is at
    them.
+
+3. **Stronger bots by valuing options, then learning the weights** (the user's goal,
+   2026-10-07; also to learn how ML fits a game): the plan, its steps and its progress are
+   in [`BOT_LEARNING.md`](./BOT_LEARNING.md) — first the testers' recordings, then a "go big
+   while a bail-out remains" rule, then a scoring function trained by the cross-entropy
+   method. Read it before changing how bots build.
 
 Only open work is kept here. Finished packages move to `ARCHIVE.md` under their old
 numbers — 11.1 scoring, 11.7 team mode, 11.8 the visual pass, 11.9 the themes, 11.10 the
