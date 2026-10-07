@@ -5596,6 +5596,13 @@ as it lands, neighbours a little out of step — stamps placed again at each ste
 in the scenery's drawing; at eight players the cost unchanged within the measurement's noise.
 Approved as it stands; line boil not taken up.
 
+**Then the rest of the scenery** (2026-10-07, after the user played it again): only the trees
+moved, and the user asked for the other land elements too. Every piece is a stamp now, each look
+moving its own way from its foot — daisies and grass swaying further, light on their stems,
+toadstools and haystacks bouncing, squashing as they land, rocks only breathing — the shadows left
+in the scenery's still drawing. At eight players about 21 800 vertices a frame against 20 300 with
+the trees alone, within the measurement's noise.
+
 ## 12zc. Christmas, an eighteenth style (2026-10-07)
 
 The user's idea, its design left to us — "be creative, make it unique", no pitch, only the
@@ -5625,3 +5632,8 @@ to box into a grid, so each box has a dark seam, a narrower ribbon and one in th
 snowman north of a tree hid its top, so trees and snowmen are stamped in one, nearest last.
 
 **Checked in play** by the user (2026-10-07): "absolutely awesome".
+
+## 12zd. v0.8.3 (2026-10-07)
+
+Released with the two styles of the day, Cartoon (12zb) and Christmas (12zc), eighteen styles in
+all; the game, the bots and the protocol (17) unchanged from v0.8.2.

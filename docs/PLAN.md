@@ -1137,9 +1137,10 @@ grain new at each step, a faint flicker, a hair now and then and scratches runni
 none under reduced motion, and a vignette drawn once on a small canvas and stretched over the
 window (a Pixi radial gradient lost its stops' alpha). Weather from the seed: rain in short
 slanting dashes of ink, snow in white flakes inked round, fog pale banks. Scenery is puffy trees
-on bendy trunks, one in four with a face, **swaying on the beat from their foot**, neighbours a
-little out of step (stamps, placed again at each step); toadstools, daisies with faces, tufts of
-grass, rocks and haystacks — nothing round and black, which is a bomb; on the outer sea a fish
+on bendy trunks, one in four with a face, toadstools, daisies with faces, tufts of grass, rocks
+and haystacks, and **all of it moves on the beat from its foot**, neighbours a little out of step
+(stamps, placed again at each step, the shadows left still): trees lean and squash, daisies and
+grass sway further, toadstools and haystacks bounce, rocks only breathe — nothing round and black, which is a bomb; on the outer sea a fish
 hops out grinning, a whale surfaces to spout and a rowing boat crosses, its oars pulling on
 twos, hidden behind the clock. Its banner is a title card, grey rays bursting from its middle,
 a white double rule along it, lettered fat and white, inked; its HUD a strip of film with its
@@ -1418,9 +1419,9 @@ every resolution against an independent search, not only on unit pictures.
 
 ## 11. Open work
 
-**Where to start (2026-10-07).** Everything planned is done and in **v0.8.2**, the latest
-release: the game and online play, bots as skill levels and personalities, sixteen styles (eighteen since Cartoon and Christmas, ARCHIVE 12zb, 12zc)
-each with its piece in the corner, random looks every round, English and German, the desktop
+**Where to start (2026-10-07).** Everything planned is done and in **v0.8.3**, the latest
+release: the game and online play, bots as skill levels and personalities, eighteen styles
+each with its piece in the corner — Cartoon and Christmas the newest (ARCHIVE 12zb, 12zc) — random looks every round, English and German, the desktop
 app, UPnP, the balance soak and the rendering work (ARCHIVE 12h–12v); the refactoring of
 2026-10-07 (ARCHIVE 12w, protocol 17); and stronger bots — they route round holes no piece
 can fill and widen their walls once sealed (ARCHIVE 12x, 12y). The bot learning work, item

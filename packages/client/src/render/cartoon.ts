@@ -174,8 +174,8 @@ export class CartoonTheme extends ShapeTheme implements Theme {
   private readonly territory = new IslandParts(1, 'territory');
   private readonly scenery = new SceneryLayer(
     (g, view, items) => {
-      this.trees = items.filter((item) => item.kind === 'tree');
-      this.treesStep = -2;
+      this.standing = [...items];
+      this.standingStep = -2;
       drawCartoonScenery(g, view, items);
     },
     () => 0x6a6a6a,
@@ -215,10 +215,10 @@ export class CartoonTheme extends ShapeTheme implements Theme {
   private shownBeats = 0;
   private step = -1;
   private wavesStep = -2;
-  /** The trees standing, as the scenery last drew, and the step they were last swayed at. */
-  private trees: SceneryItem[] = [];
-  private treesStep = -2;
-  private readonly treeStamps = new Stamps();
+  /** The scenery standing, as it was last drawn, and the step it was last swayed at. */
+  private standing: SceneryItem[] = [];
+  private standingStep = -2;
+  private readonly standingStamps = new Stamps();
   private grainStep = -2;
   private round = 0;
   private corner: TimerSpot | null = null;
@@ -253,7 +253,7 @@ export class CartoonTheme extends ShapeTheme implements Theme {
     );
     layers.territory.addChild(
       this.scenery.gfx,
-      this.treeStamps.container,
+      this.standingStamps.container,
       this.territory.container,
     );
     layers.structures.addChild(this.structures.container);
@@ -282,7 +282,7 @@ export class CartoonTheme extends ShapeTheme implements Theme {
     this.clockMemos.destroy();
     for (const s of [
       this.waveStamps,
-      this.treeStamps,
+      this.standingStamps,
       this.castleStamps,
       this.cannonStamps,
       this.bombStamps,
@@ -448,34 +448,37 @@ export class CartoonTheme extends ShapeTheme implements Theme {
   }
 
   /**
-   * The trees, swaying on the beat from their foot, leaning one way and then the other as the
-   * castles' arms swap, their canopies squashing as they land; neighbours a little out of
-   * step, as a cartoon's chorus line. Placed again only at each step of the film.
+   * Everything standing on the land, moving on the beat from its foot, neighbours a little out
+   * of step, as a cartoon's chorus line: trees lean one way and then the other as the castles'
+   * arms swap, their canopies squashing as they land; daisies and grass sway further, light on
+   * their stems; toadstools and haystacks bounce, squashing; rocks only breathe. Stamps, placed
+   * again only at each step of the film.
    */
-  private drawTrees(view: ViewTransform): void {
-    if (this.step === this.treesStep) return;
-    this.treesStep = this.step;
+  private drawStanding(view: ViewTransform): void {
+    if (this.step === this.standingStep) return;
+    this.standingStep = this.step;
     const t = view.tile;
     const still = motionReduced();
-    const plain = this.book.get('tree', t, (k) => drawTree(k, t, false));
-    const face = this.book.get('tree|face', t, (k) => drawTree(k, t, true));
-    this.treeStamps.begin();
-    for (const tree of this.trees) {
-      const { hop, squash, side } = this.pose(((tree.x + tree.y) % 2) * 0.12);
-      this.treeStamps.place(
-        tree.variant === 0 ? face : plain,
-        tileX(view, tree.x + 0.5),
-        tileY(view, tree.y + 0.92),
+    this.standingStamps.begin();
+    for (const item of this.standing) {
+      const look = sceneryLook(item);
+      const figure = this.book.get(`scenery|${look}`, t, (k) => drawSceneryFigure(k, t, look));
+      const { hop, squash, side } = this.pose(((item.x + item.y) % 2) * 0.12);
+      const { lean, give } = SWAY[look];
+      this.standingStamps.place(
+        figure,
+        tileX(view, item.x + 0.5),
+        tileY(view, item.y + 0.5) + FOOT[look] * t,
         still
           ? {}
           : {
-              rotation: side * 0.1 * (0.3 + 0.7 * hop),
-              scale: 1 + 0.06 * squash,
-              scaleY: 1 - 0.07 * squash + 0.03 * hop,
+              rotation: side * lean * (0.3 + 0.7 * hop),
+              scale: 1 + give * squash,
+              scaleY: 1 - give * 1.2 * squash + give * 0.5 * hop,
             },
       );
     }
-    this.treeStamps.end();
+    this.standingStamps.end();
   }
 
   /** Craters where shots came down on the ground, drawn again only when one comes or fades. */
@@ -818,7 +821,7 @@ export class CartoonTheme extends ShapeTheme implements Theme {
     perf.begin('flow');
     this.drawCraters(state, view);
     this.drawWaves(view);
-    this.drawTrees(view);
+    this.drawStanding(view);
     this.drawClock(state, view);
     perf.end('flow');
     this.seaLife.draw(under, view, this.art, frame.deltaMs);
@@ -1709,147 +1712,171 @@ function drawNote(g: Graphics, h: number, beamed: boolean): void {
   g.stroke({ width: Math.max(1.5, h * 0.12), color: INK, cap: 'round' });
 }
 
-/**
- * A tree, its foot at the origin so it sways from there: a bendy trunk under a puffy
- * canopy, and a face on it if `face`.
- */
-function drawTree(g: Graphics, t: number, face: boolean): void {
-  const ink = Math.max(1, t * 0.06);
-  const cy = -t * 0.42;
-  g.moveTo(-t * 0.06, 0)
-    .quadraticCurveTo(-t * 0.12, cy + t * 0.1, -t * 0.02, cy - t * 0.1)
-    .lineTo(t * 0.06, cy - t * 0.1)
-    .quadraticCurveTo(0, cy + t * 0.1, t * 0.08, 0)
-    .closePath();
-  g.fill({ color: 0x5a5a5a });
-  g.stroke({ width: ink, color: INK, join: 'round' });
-  drawCloud(g, 0, cy - t * 0.25, t * 0.24, 0xeeeeee, 1, ink);
-  if (!face) return;
-  drawPieEye(g, -t * 0.08, cy - t * 0.3, t * 0.045, t * 0.07, 0, 0);
-  drawPieEye(g, t * 0.08, cy - t * 0.3, t * 0.045, t * 0.07, 0, 0);
-  g.moveTo(-t * 0.08, cy - t * 0.17).quadraticCurveTo(0, cy - t * 0.1, t * 0.08, cy - t * 0.17);
-  g.stroke({ width: Math.max(1, ink * 0.8), color: INK, cap: 'round' });
-}
+/** What a piece of scenery is drawn as. */
+type SceneryLook = 'tree' | 'face' | 'toadstool' | 'daisy' | 'grass' | 'haystack' | 'rock';
+
+/** Each look's foot below its tile's middle, in tiles: where it stands and moves from. */
+const FOOT: Record<SceneryLook, number> = {
+  tree: 0.42,
+  face: 0.42,
+  toadstool: 0.35,
+  daisy: 0.4,
+  grass: 0.3,
+  haystack: 0.3,
+  rock: 0.27,
+};
+
+/** How far each look leans on the beat, in radians, and how much it squashes as it lands. */
+const SWAY: Record<SceneryLook, { lean: number; give: number }> = {
+  tree: { lean: 0.1, give: 0.06 },
+  face: { lean: 0.1, give: 0.06 },
+  toadstool: { lean: 0.05, give: 0.1 },
+  daisy: { lean: 0.2, give: 0.04 },
+  grass: { lean: 0.16, give: 0.03 },
+  haystack: { lean: 0, give: 0.09 },
+  rock: { lean: 0, give: 0.04 },
+};
 
 /**
  * Cartoon's scenery, none square like a wall nor round and black like a bomb: a tree is a
  * puffy canopy on a bendy trunk, one in four with a face; a pine a toadstool; a bush a daisy
  * with a face or a tuft of grass; a boulder a grey rock, or one in three a haystack.
  */
+function sceneryLook(item: SceneryItem): SceneryLook {
+  if (item.kind === 'tree') return item.variant === 0 ? 'face' : 'tree';
+  if (item.kind === 'pine') return 'toadstool';
+  if (item.kind === 'bush') return item.variant % 2 === 0 ? 'daisy' : 'grass';
+  return item.variant % 3 === 0 ? 'haystack' : 'rock';
+}
+
+/** A piece of scenery, its foot at the origin so it moves from there. */
+function drawSceneryFigure(g: Graphics, t: number, look: SceneryLook): void {
+  const ink = Math.max(1, t * 0.06);
+  const cx = 0;
+  const cy = -FOOT[look] * t;
+  if (look === 'tree' || look === 'face') {
+    g.moveTo(-t * 0.06, 0)
+      .quadraticCurveTo(-t * 0.12, cy + t * 0.1, -t * 0.02, cy - t * 0.1)
+      .lineTo(t * 0.06, cy - t * 0.1)
+      .quadraticCurveTo(0, cy + t * 0.1, t * 0.08, 0)
+      .closePath();
+    g.fill({ color: 0x5a5a5a });
+    g.stroke({ width: ink, color: INK, join: 'round' });
+    drawCloud(g, 0, cy - t * 0.25, t * 0.24, 0xeeeeee, 1, ink);
+    if (look === 'tree') return;
+    drawPieEye(g, -t * 0.08, cy - t * 0.3, t * 0.045, t * 0.07, 0, 0);
+    drawPieEye(g, t * 0.08, cy - t * 0.3, t * 0.045, t * 0.07, 0, 0);
+    g.moveTo(-t * 0.08, cy - t * 0.17).quadraticCurveTo(0, cy - t * 0.1, t * 0.08, cy - t * 0.17);
+    g.stroke({ width: Math.max(1, ink * 0.8), color: INK, cap: 'round' });
+  } else if (look === 'toadstool') {
+    // A white stem, a grey cap with white spots.
+    g.rect(cx - t * 0.07, cy - t * 0.05, t * 0.14, t * 0.4);
+    g.fill({ color: PAPER });
+    g.stroke({ width: ink, color: INK });
+    g.moveTo(cx - t * 0.32, cy - t * 0.02)
+      .quadraticCurveTo(cx - t * 0.3, cy - t * 0.42, cx, cy - t * 0.42)
+      .quadraticCurveTo(cx + t * 0.3, cy - t * 0.42, cx + t * 0.32, cy - t * 0.02)
+      .closePath();
+    g.fill({ color: 0xb4b4b4 });
+    g.stroke({ width: ink, color: INK, join: 'round' });
+    for (const [dx, dy] of [
+      [-0.14, -0.18],
+      [0.1, -0.28],
+      [0.18, -0.1],
+    ] as const) {
+      g.circle(cx + dx * t, cy + dy * t, t * 0.05);
+    }
+    g.fill({ color: PAPER });
+  } else if (look === 'daisy') {
+    // A daisy with a face, on a stem.
+    g.moveTo(cx, cy + t * 0.4).quadraticCurveTo(cx + t * 0.08, cy + t * 0.15, cx, cy - t * 0.05);
+    g.stroke({ width: ink, color: INK });
+    const petals = (): void => {
+      for (let k = 0; k < 7; k++) {
+        const a = (k / 7) * Math.PI * 2;
+        g.ellipse(
+          cx + Math.cos(a) * t * 0.14,
+          cy - t * 0.12 + Math.sin(a) * t * 0.14,
+          t * 0.08,
+          t * 0.08,
+        );
+      }
+    };
+    petals();
+    g.stroke({ width: ink, color: INK });
+    petals();
+    g.fill({ color: PAPER });
+    g.circle(cx, cy - t * 0.12, t * 0.1);
+    g.fill({ color: 0xc8c8c8 });
+    g.stroke({ width: Math.max(1, ink * 0.7), color: INK });
+    g.circle(cx - t * 0.035, cy - t * 0.14, Math.max(0.8, t * 0.018));
+    g.circle(cx + t * 0.035, cy - t * 0.14, Math.max(0.8, t * 0.018));
+    g.fill({ color: INK });
+  } else if (look === 'grass') {
+    // A tuft of long grass.
+    for (const [dx, lean] of [
+      [-0.15, -0.12],
+      [-0.05, -0.04],
+      [0.05, 0.05],
+      [0.15, 0.14],
+    ] as const) {
+      g.moveTo(cx + dx * t, cy + t * 0.3).quadraticCurveTo(
+        cx + (dx + lean * 0.3) * t,
+        cy,
+        cx + (dx + lean) * t,
+        cy - t * 0.25,
+      );
+    }
+    g.stroke({ width: ink, color: INK, cap: 'round' });
+  } else if (look === 'haystack') {
+    // A haystack, straw sticking out of it.
+    g.moveTo(cx - t * 0.36, cy + t * 0.3)
+      .quadraticCurveTo(cx - t * 0.32, cy - t * 0.38, cx, cy - t * 0.38)
+      .quadraticCurveTo(cx + t * 0.32, cy - t * 0.38, cx + t * 0.36, cy + t * 0.3)
+      .closePath();
+    g.fill({ color: 0xdedede });
+    g.stroke({ width: ink, color: INK, join: 'round' });
+    for (const [x1, y1, x2, y2] of [
+      [-0.2, 0.1, -0.1, -0.1],
+      [0.05, 0.15, 0.12, -0.12],
+      [-0.05, -0.15, 0.02, -0.3],
+      [0.2, 0.05, 0.26, -0.1],
+    ] as const) {
+      g.moveTo(cx + x1 * t, cy + y1 * t).lineTo(cx + x2 * t, cy + y2 * t);
+    }
+    g.stroke({ width: Math.max(1, ink * 0.6), color: 0x6a6a6a, cap: 'round' });
+  } else {
+    // A rock, lumpy, a crack across it.
+    g.moveTo(cx - t * 0.32, cy + t * 0.26)
+      .quadraticCurveTo(cx - t * 0.36, cy - t * 0.1, cx - t * 0.12, cy - t * 0.2)
+      .quadraticCurveTo(cx + t * 0.15, cy - t * 0.3, cx + t * 0.3, cy - t * 0.02)
+      .quadraticCurveTo(cx + t * 0.36, cy + t * 0.2, cx + t * 0.28, cy + t * 0.26)
+      .closePath();
+    g.fill({ color: 0xc4c4c4 });
+    g.stroke({ width: ink, color: INK, join: 'round' });
+    g.moveTo(cx - t * 0.05, cy - t * 0.18)
+      .lineTo(cx + t * 0.02, cy - t * 0.02)
+      .lineTo(cx - t * 0.03, cy + t * 0.08);
+    g.stroke({ width: Math.max(1, ink * 0.6), color: INK });
+  }
+}
+
+/**
+ * The scenery's shadows, which stay put while what casts them moves (`drawStanding`): under the
+ * trees, the toadstools, the haystacks and the rocks.
+ */
 function drawCartoonScenery(g: Graphics, view: ViewTransform, items: readonly SceneryItem[]): void {
   const t = view.tile;
-  const ink = Math.max(1, t * 0.06);
   for (const item of items) {
-    const cx = tileX(view, item.x + 0.5);
-    const cy = tileY(view, item.y + 0.5);
-    if (item.kind === 'tree') {
-      // Only its shadow, which stays put: the tree itself sways, stamped (`drawTrees`).
-      g.ellipse(cx + t * 0.08, cy + t * 0.42, t * 0.3, t * 0.07);
-      g.fill({ color: INK, alpha: 0.25 });
-    } else if (item.kind === 'pine') {
-      // A toadstool: a white stem, a grey cap with white spots.
-      g.rect(cx - t * 0.07, cy - t * 0.05, t * 0.14, t * 0.4);
-      g.fill({ color: PAPER });
-      g.stroke({ width: ink, color: INK });
-      g.moveTo(cx - t * 0.32, cy - t * 0.02)
-        .quadraticCurveTo(cx - t * 0.3, cy - t * 0.42, cx, cy - t * 0.42)
-        .quadraticCurveTo(cx + t * 0.3, cy - t * 0.42, cx + t * 0.32, cy - t * 0.02)
-        .closePath();
-      g.fill({ color: 0xb4b4b4 });
-      g.stroke({ width: ink, color: INK, join: 'round' });
-      for (const [dx, dy] of [
-        [-0.14, -0.18],
-        [0.1, -0.28],
-        [0.18, -0.1],
-      ] as const) {
-        g.circle(cx + dx * t, cy + dy * t, t * 0.05);
-      }
-      g.fill({ color: PAPER });
-    } else if (item.kind === 'bush') {
-      if (item.variant % 2 === 0) {
-        // A daisy with a face, on a stem.
-        g.moveTo(cx, cy + t * 0.4).quadraticCurveTo(
-          cx + t * 0.08,
-          cy + t * 0.15,
-          cx,
-          cy - t * 0.05,
-        );
-        g.stroke({ width: ink, color: INK });
-        for (let k = 0; k < 7; k++) {
-          const a = (k / 7) * Math.PI * 2;
-          g.ellipse(
-            cx + Math.cos(a) * t * 0.14,
-            cy - t * 0.12 + Math.sin(a) * t * 0.14,
-            t * 0.08,
-            t * 0.08,
-          );
-        }
-        g.stroke({ width: ink, color: INK });
-        for (let k = 0; k < 7; k++) {
-          const a = (k / 7) * Math.PI * 2;
-          g.ellipse(
-            cx + Math.cos(a) * t * 0.14,
-            cy - t * 0.12 + Math.sin(a) * t * 0.14,
-            t * 0.08,
-            t * 0.08,
-          );
-        }
-        g.fill({ color: PAPER });
-        g.circle(cx, cy - t * 0.12, t * 0.1);
-        g.fill({ color: 0xc8c8c8 });
-        g.stroke({ width: Math.max(1, ink * 0.7), color: INK });
-        g.circle(cx - t * 0.035, cy - t * 0.14, Math.max(0.8, t * 0.018));
-        g.circle(cx + t * 0.035, cy - t * 0.14, Math.max(0.8, t * 0.018));
-        g.fill({ color: INK });
-      } else {
-        // A tuft of long grass.
-        for (const [dx, lean] of [
-          [-0.15, -0.12],
-          [-0.05, -0.04],
-          [0.05, 0.05],
-          [0.15, 0.14],
-        ] as const) {
-          g.moveTo(cx + dx * t, cy + t * 0.3).quadraticCurveTo(
-            cx + (dx + lean * 0.3) * t,
-            cy,
-            cx + (dx + lean) * t,
-            cy - t * 0.25,
-          );
-        }
-        g.stroke({ width: ink, color: INK, cap: 'round' });
-      }
-    } else if (item.variant % 3 === 0) {
-      // A haystack, straw sticking out of it.
-      g.moveTo(cx - t * 0.36, cy + t * 0.3)
-        .quadraticCurveTo(cx - t * 0.32, cy - t * 0.38, cx, cy - t * 0.38)
-        .quadraticCurveTo(cx + t * 0.32, cy - t * 0.38, cx + t * 0.36, cy + t * 0.3)
-        .closePath();
-      g.fill({ color: 0xdedede });
-      g.stroke({ width: ink, color: INK, join: 'round' });
-      for (const [x1, y1, x2, y2] of [
-        [-0.2, 0.1, -0.1, -0.1],
-        [0.05, 0.15, 0.12, -0.12],
-        [-0.05, -0.15, 0.02, -0.3],
-        [0.2, 0.05, 0.26, -0.1],
-      ] as const) {
-        g.moveTo(cx + x1 * t, cy + y1 * t).lineTo(cx + x2 * t, cy + y2 * t);
-      }
-      g.stroke({ width: Math.max(1, ink * 0.6), color: 0x6a6a6a, cap: 'round' });
-    } else {
-      // A rock, lumpy, a crack across it.
-      g.ellipse(cx + t * 0.05, cy + t * 0.28, t * 0.34, t * 0.07);
-      g.fill({ color: INK, alpha: 0.25 });
-      g.moveTo(cx - t * 0.32, cy + t * 0.26)
-        .quadraticCurveTo(cx - t * 0.36, cy - t * 0.1, cx - t * 0.12, cy - t * 0.2)
-        .quadraticCurveTo(cx + t * 0.15, cy - t * 0.3, cx + t * 0.3, cy - t * 0.02)
-        .quadraticCurveTo(cx + t * 0.36, cy + t * 0.2, cx + t * 0.28, cy + t * 0.26)
-        .closePath();
-      g.fill({ color: 0xc4c4c4 });
-      g.stroke({ width: ink, color: INK, join: 'round' });
-      g.moveTo(cx - t * 0.05, cy - t * 0.18)
-        .lineTo(cx + t * 0.02, cy - t * 0.02)
-        .lineTo(cx - t * 0.03, cy + t * 0.08);
-      g.stroke({ width: Math.max(1, ink * 0.6), color: INK });
-    }
+    const look = sceneryLook(item);
+    if (look === 'daisy' || look === 'grass') continue;
+    const wide = look === 'toadstool' ? 0.22 : look === 'tree' || look === 'face' ? 0.3 : 0.34;
+    g.ellipse(
+      tileX(view, item.x + 0.5) + t * 0.06,
+      tileY(view, item.y + 0.5) + FOOT[look] * t,
+      t * wide,
+      t * 0.07,
+    );
   }
+  g.fill({ color: INK, alpha: 0.25 });
 }

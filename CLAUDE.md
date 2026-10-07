@@ -146,7 +146,11 @@ Full detail in PLAN.md §1. The parts that surprise people:
 
 ## Status
 
-**Done** (2026-10-07; the latest release **v0.8.2**, 2026-10-07; protocol 17):
+**Done** (2026-10-07; the latest release **v0.8.3**, 2026-10-07; protocol 17):
+
+- **Two new styles** (2026-10-07, released as v0.8.3): Cartoon, a 1930s rubber-hose reel in
+  black and white with only the players in colour, everything moving on one beat in twelve
+  steps a second (ARCHIVE 12zb); and Christmas, snowy islands on Christmas Eve (ARCHIVE 12zc).
 
 - **A refactoring** (2026-10-07, ARCHIVE 12w), the game unchanged: bots plan in a third
   less time (`SealPlanner`, `Look`, typed max-flow); the client stops redoing per frame what
