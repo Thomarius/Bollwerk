@@ -7,9 +7,9 @@ import { perf } from '../perf.js';
 import { inFinalRound } from '../scores.js';
 import { timerSpot, type TimerSpot } from '../timerSpot.js';
 
-import { hash } from './chocolate.js';
+import { hash } from './noise.js';
 import { GOLD, drawLyre, drawQuaver, drawRest } from './music.js';
-import { roseSpot } from './parchment.js';
+import { roseSpot } from './corner.js';
 import { IslandParts } from './islandParts.js';
 import { release } from './release.js';
 import { OperaSeaLife } from './seaLife.js';
@@ -48,6 +48,7 @@ import {
   type Theme,
   type ThemeLayers,
   type ViewTransform,
+  mixed,
 } from './theme.js';
 import { outline, trace, wallGeometry } from './walls.js';
 import { cannonBase } from './cannonBase.js';
@@ -126,13 +127,6 @@ const BRASS_DARK = 0x8a6a1a;
 
 /** How Opera sends off the winners (PLAN 11.19 Z4). */
 const FINISH: FinishLook = { spark: 'roses', flag: 'lyre' };
-
-/** A colour between two, `t` of the way from the first. */
-function mix(a: number, b: number, t: number): number {
-  const ch = (c: number, s: number): number => (c >> s) & 0xff;
-  const m = (s: number): number => Math.round(ch(a, s) + (ch(b, s) - ch(a, s)) * t) << s;
-  return m(16) | m(8) | m(0);
-}
 
 /** Whether the keys either side of a seam after key `n` have a black key between them. */
 function blackAfter(n: number): boolean {
@@ -369,7 +363,7 @@ export class OperaTheme implements Theme {
     this.depth = depth;
     const bands = [
       hex(palette.waterShallow),
-      mix(hex(palette.waterShallow), hex(palette.waterMid), 0.5),
+      mixed(hex(palette.waterShallow), hex(palette.waterMid), 0.5),
       hex(palette.waterMid),
       hex(palette.waterDeep),
     ];

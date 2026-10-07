@@ -12,7 +12,6 @@ import {
   legalCannonPlacements,
   placeCannon,
   placePiece,
-  upcomingPieceIds,
 } from './placement.js';
 import { beginMatch, fastRuleset } from './testing.js';
 import { Structure } from './types.js';
@@ -135,15 +134,6 @@ describe('the piece queue', () => {
     state.players[0]!.pieceIndex++;
     expect(currentPieceId(state, 1)).toBe(previous);
     expect(currentPieceId(state, 0)).toBe(pieceAt(state.ruleset, state.seed, state.round, 1));
-  });
-
-  it('previews the pieces still to come', () => {
-    const state = buildPhaseMatch();
-    expect(upcomingPieceIds(state, 0, 3)).toEqual([
-      pieceAt(state.ruleset, state.seed, state.round, 1),
-      pieceAt(state.ruleset, state.seed, state.round, 2),
-      pieceAt(state.ruleset, state.seed, state.round, 3),
-    ]);
   });
 
   it('never runs out, however long a build phase lasts', () => {

@@ -48,7 +48,8 @@ import {
   stepLook,
   type LookChoices,
 } from './looks.js';
-import { escape, lobbyMarkup, type LobbyView } from './lobby.js';
+import { escape } from './html.js';
+import { lobbyMarkup, type LobbyView } from './lobby.js';
 import {
   REFRESH_MS,
   gamesMarkup,
@@ -113,12 +114,12 @@ import { NetworkMatch } from './net/networkMatch.js';
 import type { RoomListing, ServerMessage } from '@bollwerk/protocol';
 import { Scene, createTheme, type Ghost, type SceneLook } from './render/scene.js';
 import type { Choice } from './render/theme.js';
+import { store, stored } from './storage.js';
 
 /**
  * Bollwerk client.
  *
- * A match is played either locally against stopgap opponents or against an
- * authoritative server. Both drive the same renderer, controls and HUD through one
+ * A match is played either locally against bots or against an authoritative server. Both drive the same renderer, controls and HUD through one
  * session interface, so the netcode changes where the state comes from and nothing
  * about how the game is presented.
  */
@@ -201,7 +202,7 @@ const STYLES_KEY = 'bollwerk.styles';
 /** What the menu saved, unchecked: `chooseLook` decides whether each is still usable. */
 function storedStyles(): Partial<Record<ArtLook, unknown>> {
   try {
-    const raw: unknown = JSON.parse(globalThis.localStorage?.getItem(STYLES_KEY) ?? '{}');
+    const raw: unknown = JSON.parse(stored(STYLES_KEY) ?? '{}');
     return typeof raw === 'object' && raw !== null ? raw : {};
   } catch {
     return {};
@@ -227,11 +228,7 @@ function preferredStyles(): LookChoices {
 
 /** Saves the two looks for next time, as they are chosen. */
 function saveStyles(choices: LookChoices): void {
-  try {
-    globalThis.localStorage?.setItem(STYLES_KEY, JSON.stringify(choices));
-  } catch {
-    // Storage refused, as in some private windows: the choice holds for this page only.
-  }
+  store(STYLES_KEY, JSON.stringify(choices));
 }
 const timeScale = Math.max(1, Number(params.get('speed') ?? 1));
 // The frame-time readout (PLAN 11.22).
@@ -374,29 +371,20 @@ function lookPicker(look: ArtLook): string {
 const NAME_KEY = 'bollwerk.name';
 
 function storedName(): string {
-  try {
-    return globalThis.localStorage?.getItem(NAME_KEY)?.trim() || t('menu.defaultName');
-  } catch {
-    return t('menu.defaultName');
-  }
+  return stored(NAME_KEY)?.trim() || t('menu.defaultName');
 }
 
 function saveName(name: string): void {
-  try {
-    globalThis.localStorage?.setItem(NAME_KEY, name);
-  } catch {
-    // Not remembered; the field still holds it for this visit.
-  }
+  store(NAME_KEY, name);
 }
 
 function readCommon(): Common {
-  const name =
-    document.querySelector<HTMLInputElement>('#name')?.value.trim() || t('menu.defaultName');
-  try {
-    globalThis.localStorage?.setItem(NAME_KEY, name);
-  } catch {
-    // Storage refused, as in some private windows: the name holds for this visit only.
-  }
+  const typed = document.querySelector<HTMLInputElement>('#name')?.value.trim() ?? '';
+  const name = typed || t('menu.defaultName');
+  // The default is a text in the reader's language, not a name anyone chose: saved as one,
+  // it stayed English after a change to German. Saved empty, the next visit shows the
+  // default in whichever language it is read.
+  saveName(name === t('menu.defaultName') ? '' : name);
   const isPublic =
     document.querySelector<HTMLButtonElement>('#visibility')?.dataset.public !== 'false';
   return { styles: readStyles(), name, isPublic };
@@ -636,7 +624,7 @@ function localSession(match: LocalMatch, rematch: (() => void) | null = null): S
       pausedBy = paused && !match.finished ? match.humanPlayer : null;
     },
     setups: match.setups,
-    status: () => (match.humanPlayer < 0 ? 'watching' : ''),
+    status: () => (match.humanPlayer < 0 ? t('watching.status') : ''),
     network: () => null,
     leave: () => undefined,
     rematch: rematch === null ? null : 'mine',
@@ -835,10 +823,10 @@ async function openLobby(
   });
   connection.connect().catch(() => undefined);
 
-  const stored = sessionStorage.getItem(TOKEN_KEY)?.split(':') ?? [];
+  const seat = stored(TOKEN_KEY, 'session')?.split(':') ?? [];
   if (code === null) connection.createRoom(common.name, playerCount, common.isPublic);
-  else if (stored[0] === code.toUpperCase() && stored[1])
-    connection.joinRoom(common.name, code, stored[1]);
+  else if (seat[0] === code.toUpperCase() && seat[1])
+    connection.joinRoom(common.name, code, seat[1]);
   else connection.joinRoom(common.name, code);
 
   const first = await answered;
@@ -1024,7 +1012,7 @@ function roomLobby(
       case 'welcome':
         roomCode = message.code;
         hostId = message.hostId;
-        sessionStorage.setItem(TOKEN_KEY, `${message.code}:${message.token}`);
+        store(TOKEN_KEY, `${message.code}:${message.token}`, 'session');
         break;
       case 'room': {
         hostId = message.hostId;
@@ -1102,7 +1090,7 @@ function roomLobby(
   match.receive(welcome);
   roomCode = welcome.code;
   hostId = welcome.hostId;
-  sessionStorage.setItem(TOKEN_KEY, `${welcome.code}:${welcome.token}`);
+  store(TOKEN_KEY, `${welcome.code}:${welcome.token}`, 'session');
 
   // Until the connection closes — left running, every lobby opened in the page went on
   // queueing a ping every two seconds for a socket that would never send them.

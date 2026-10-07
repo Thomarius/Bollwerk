@@ -9,16 +9,11 @@
  * panes, and the lead can be drawn wherever two neighbours' panes differ.
  */
 
-/** A fixed amount for two integers, 0 to 1. */
-function hash01(a: number, b: number, salt: number): number {
-  let h = (a * 374761393 + b * 668265263 + salt * 2147483647) | 0;
-  h = Math.imul(h ^ (h >>> 13), 1274126177);
-  return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
-}
+import { hash } from './noise.js';
 
 /** Where a cell's point sits, in tiles: within its cell, never on its edge. */
 function pointOf(i: number, j: number, size: number): [number, number] {
-  return [(i + 0.15 + 0.7 * hash01(i, j, 1)) * size, (j + 0.15 + 0.7 * hash01(i, j, 2)) * size];
+  return [(i + 0.15 + 0.7 * hash(i, j, 1)) * size, (j + 0.15 + 0.7 * hash(i, j, 2)) * size];
 }
 
 /**
@@ -51,5 +46,5 @@ export function paneOf(x: number, y: number, land: boolean, size: number): numbe
 
 /** A pane's own shade, 0 to 1, so neighbouring panes are not one colour. */
 export function paneShade(pane: number): number {
-  return hash01(pane, pane >>> 11, 3);
+  return hash(pane, pane >>> 11, 3);
 }

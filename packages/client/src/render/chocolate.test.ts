@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
-import { across, hash } from './chocolate.js';
+import { across } from './chocolate.js';
+import { hash } from './noise.js';
 
 describe('the chocolate shine', () => {
   it('crosses a block corner to corner as the band passes over it', () => {

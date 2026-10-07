@@ -14,7 +14,6 @@ import { codeVersion } from './version.js';
 function room(record: (line: RecordingLine) => void): Room {
   return new Room({
     code: 'REC123',
-    hostName: 'host',
     playerCount: 3,
     ruleset: defaultConfigBundle.ruleset,
     terrain: defaultConfigBundle.terrain,
@@ -155,7 +154,6 @@ describe('the recording store', () => {
     };
     const r = new Room({
       code: 'END123',
-      hostName: 'host',
       playerCount: 2,
       ruleset,
       terrain: defaultConfigBundle.terrain,
@@ -214,7 +212,6 @@ describe('the personalities a room deals', () => {
     const lines: RecordingLine[] = [];
     const r = new Room({
       code: 'MIX123',
-      hostName: 'Ada',
       playerCount: 4,
       ruleset: defaultConfigBundle.ruleset,
       terrain: defaultConfigBundle.terrain,

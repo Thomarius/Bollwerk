@@ -9,7 +9,7 @@ import { cornerSpot } from './corner.js';
 
 import { IslandParts } from './islandParts.js';
 import { CyberpunkSeaLife } from './seaLife.js';
-import { seaDepth } from './pixel.js';
+import { seaDepth } from './ocean.js';
 import { trace, wallGeometry } from './walls.js';
 import { Memos, viewKey } from './stamps.js';
 import {

@@ -192,7 +192,7 @@ export function owesCastleChoice(player: PlayerState): boolean {
   return !player.eliminated && player.startingCastleId === null;
 }
 
-export function alivePlayers(state: MatchState): PlayerState[] {
+function alivePlayers(state: MatchState): PlayerState[] {
   return state.players.filter((p) => !p.eliminated);
 }
 
@@ -350,7 +350,7 @@ export function cannonReward(
 }
 
 /** Whether a player's main castle — the one they chose — is sealed as the board stands. */
-export function mainCastleSealed(state: MatchState, player: PlayerState): boolean {
+function mainCastleSealed(state: MatchState, player: PlayerState): boolean {
   const id = player.startingCastleId;
   return id !== null && state.castles.some((c) => c.id === id && c.enclosed);
 }

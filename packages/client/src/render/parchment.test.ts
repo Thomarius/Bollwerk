@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 
 import { timerSpot } from '../timerSpot.js';
 
-import { roseSpot } from './parchment.js';
+import { roseSpot } from './corner.js';
 
 describe('where the compass rose goes', () => {
   it('takes the open water nearest the bottom-right, on open sea, clear of the timer', () => {

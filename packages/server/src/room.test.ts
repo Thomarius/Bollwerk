@@ -65,7 +65,6 @@ class TestClient implements Connection {
 function room(playerCount: number, seed = 1): Room {
   return new Room({
     code: 'TEST42',
-    hostName: 'host',
     playerCount,
     ruleset: defaultConfigBundle.ruleset,
     terrain: defaultConfigBundle.terrain,
@@ -574,7 +573,7 @@ describe('room manager', () => {
     const manager = new RoomManager(defaultConfigBundle, 99);
     const { codeAlphabet, codeLength } = defaultConfigBundle.server.rooms;
     for (let i = 0; i < 40; i++) {
-      const created = manager.create('host', 2);
+      const created = manager.create(2);
       expect(created).not.toBeNull();
       expect(created!.code).toHaveLength(codeLength);
       for (const ch of created!.code) expect(codeAlphabet).toContain(ch);
@@ -584,7 +583,7 @@ describe('room manager', () => {
   it('issues a different code each time, and finds rooms by it', () => {
     const manager = new RoomManager(defaultConfigBundle, 1);
     const codes = new Set<string>();
-    for (let i = 0; i < 50; i++) codes.add(manager.create('host', 2)!.code);
+    for (let i = 0; i < 50; i++) codes.add(manager.create(2)!.code);
     expect(codes.size).toBe(50);
     for (const code of codes) expect(manager.get(code)).toBeDefined();
     expect(manager.get('NOSUCH')).toBeUndefined();
@@ -592,7 +591,7 @@ describe('room manager', () => {
 
   it('retires a room nobody is left in', () => {
     const manager = new RoomManager(defaultConfigBundle, 2);
-    const created = manager.create('host', 2)!;
+    const created = manager.create(2)!;
     const a = new TestClient('a');
     created.join(a, 'Ada');
     expect(manager.size).toBe(1);
@@ -606,7 +605,7 @@ describe('room manager', () => {
 describe('the open games browser', () => {
   it('lists a public room being set, with who is hosting and the seats taken', () => {
     const manager = new RoomManager(defaultConfigBundle, 3);
-    const open = manager.create('Ada', 3)!;
+    const open = manager.create(3)!;
     open.join(new TestClient('a'), 'Ada');
     expect(manager.listOpen()).toEqual([
       {
@@ -622,14 +621,14 @@ describe('the open games browser', () => {
 
   it('leaves out private rooms, full ones, running ones and empty ones', () => {
     const manager = new RoomManager(defaultConfigBundle, 4);
-    manager.create('Ada', 2, false)!.join(new TestClient('a'), 'Ada'); // private
-    const full = manager.create('Bo', 2)!;
+    manager.create(2, false)!.join(new TestClient('a'), 'Ada'); // private
+    const full = manager.create(2)!;
     full.join(new TestClient('b'), 'Bo');
     full.join(new TestClient('b2'), 'Bea');
-    const running = manager.create('Cy', 3)!;
+    const running = manager.create(3)!;
     running.join(new TestClient('c'), 'Cy');
     running.start();
-    manager.create('Di', 2); // nobody in it yet
+    manager.create(2); // nobody in it yet
     expect(manager.listOpen()).toEqual([]);
   });
 });

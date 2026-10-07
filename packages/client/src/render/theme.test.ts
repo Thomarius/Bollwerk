@@ -3,7 +3,8 @@ import { describe, expect, it } from 'vitest';
 
 import { stateFromAscii } from '@bollwerk/sim';
 
-import { nextTorch, seaDepth } from './pixel.js';
+import { seaDepth } from './ocean.js';
+import { nextTorch } from './pixel.js';
 import { createTheme } from './scene.js';
 import { FlagHoist, hex, playerColour, tileX, tileY, type ViewTransform } from './theme.js';
 

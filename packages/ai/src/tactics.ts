@@ -355,23 +355,6 @@ export function cheapestPlanFor(
   );
 }
 
-export function bestSealPlan(
-  state: MatchState,
-  playerId: number,
-  ambition: number,
-  blocked?: ReadonlySet<number>,
-): SealPlan | null {
-  const options = sealOptions(state, playerId, ambition, blocked);
-  if (options.length === 0) return null;
-  // More castles mean more cannons, so a longer wall can still be the better deal —
-  // but only just. The blocks are a one-off; the length is a bill that arrives every
-  // round, because a longer wall is more of it to repair under fire.
-  let best = options[0] as SealPlan;
-  const value = (p: SealPlan): number => p.cost - p.castleIds.length * 6;
-  for (const plan of options) if (value(plan) < value(best)) best = plan;
-  return best;
-}
-
 /**
  * How many cannons this player's sealed ground could still hold.
  *

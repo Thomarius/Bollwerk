@@ -24,7 +24,7 @@ function fade(t: number): number {
 }
 
 /** Bilinearly interpolated value noise at (x, y). Returns [0, 1). */
-export function valueNoise2D(x: number, y: number, seed: number): number {
+function valueNoise2D(x: number, y: number, seed: number): number {
   const x0 = Math.floor(x);
   const y0 = Math.floor(y);
   const fx = fade(x - x0);

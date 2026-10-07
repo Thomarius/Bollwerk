@@ -36,17 +36,6 @@ export function currentPieceId(state: MatchState, playerId: number): number {
   return pieceAt(state.ruleset, state.seed, player.pieceRound, player.pieceIndex);
 }
 
-/** The next `count` pieces, for the client's preview strip. */
-export function upcomingPieceIds(state: MatchState, playerId: number, count: number): number[] {
-  const player = state.players[playerId];
-  if (!player) return [];
-  const out: number[] = [];
-  for (let i = 1; i <= count; i++) {
-    out.push(pieceAt(state.ruleset, state.seed, player.pieceRound, player.pieceIndex + i));
-  }
-  return out;
-}
-
 /**
  * Walls may only go on free land of your own island. Islands are separated by
  * water, so there is no way to interfere with an opponent's walls — every wall
@@ -146,7 +135,7 @@ export function placePiece(
  * let this kind of player help. Separate islands never share a piece — the channel
  * between them is water — so asking cell by cell is enough.
  */
-export function mayBuildOn(state: MatchState, player: PlayerState, island: number): boolean {
+function mayBuildOn(state: MatchState, player: PlayerState, island: number): boolean {
   if (island === player.islandId) return true;
   const rule = state.ruleset.teams.crossIslandBuild;
   if (rule === 'none' || (rule === 'humans' && player.isBot)) return false;
@@ -214,7 +203,7 @@ export function placeCannon(
 }
 
 /** Writes a cannon into the grid without any phase or entitlement checks. */
-export function spawnCannon(state: MatchState, playerId: number, x: number, y: number): Cannon {
+function spawnCannon(state: MatchState, playerId: number, x: number, y: number): Cannon {
   const player = state.players[playerId] as PlayerState;
   const [cw, ch] = state.ruleset.cannons.footprint;
   const cannon: Cannon = {
@@ -236,21 +225,6 @@ export function spawnCannon(state: MatchState, playerId: number, x: number, y: n
   }
   state.cannons.push(cannon);
   return cannon;
-}
-
-/** Every legal anchor for the current piece at a given rotation. Used by the AI and UI. */
-export function legalPiecePlacements(
-  state: MatchState,
-  playerId: number,
-  rotation: number,
-): { x: number; y: number }[] {
-  const out: { x: number; y: number }[] = [];
-  for (let y = 0; y < state.height; y++) {
-    for (let x = 0; x < state.width; x++) {
-      if (canPlacePiece(state, playerId, rotation, x, y) === null) out.push({ x, y });
-    }
-  }
-  return out;
 }
 
 /**

@@ -8,7 +8,7 @@ import { inFinalRound } from '../scores.js';
 import type { TimerSpot } from '../timerSpot.js';
 
 import { cannonBase } from './cannonBase.js';
-import { hash } from './chocolate.js';
+import { hash } from './noise.js';
 import { cornerSpot, pressing } from './corner.js';
 import { IslandParts } from './islandParts.js';
 import { outerOcean } from './ocean.js';

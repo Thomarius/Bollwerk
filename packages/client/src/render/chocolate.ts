@@ -49,9 +49,11 @@ import {
   type ThemeLayers,
   type ViewTransform,
   type FinishLook,
+  mixed,
 } from './theme.js';
+import { hash } from './noise.js';
 import { weatherFor } from './pixel/atmosphere.js';
-import { roseSpot } from './parchment.js';
+import { roseSpot } from './corner.js';
 import { ChocolateSeaLife } from './seaLife.js';
 import type { SceneryItem } from './scenery.js';
 import { SceneryLayer } from './sceneryLayer.js';
@@ -145,21 +147,6 @@ const SPRINKLES = [0xfffaf0, 0xffb3cf, 0xa8e6ff, 0xfff07a, 0xc9a7ff, 0xffc48a] a
 
 /** Lollipops and candy floss, pastel, so none reads as a player's colour on the board. */
 const CANDY = [0xffa8cc, 0xa8dcff, 0xffe08a, 0xc8b0ff] as const;
-
-/** A colour between two, `t` of the way from the first. */
-function mix(a: number, b: number, t: number): number {
-  const ch = (c: number, s: number): number => (c >> s) & 0xff;
-  const m = (s: number): number => Math.round(ch(a, s) + (ch(b, s) - ch(a, s)) * t) << s;
-  return m(16) | m(8) | m(0);
-}
-
-/** A fixed number in [0, 1) for a tile, so decoration stays put from one redraw to the next. */
-export function hash(x: number, y: number, salt = 0): number {
-  let h = (x * 374761393 + y * 668265263 + salt * 2147483647) | 0;
-  h = Math.imul(h ^ (h >>> 13), 1274126177);
-  h ^= h >>> 16;
-  return (h >>> 0) / 4294967296;
-}
 
 /**
  * Where a line u + v = c crosses a w by h box, as a segment, or null if it misses: the
@@ -377,9 +364,9 @@ export class ChocolateTheme implements Theme {
     }
     const bands = [
       hex(palette.waterShallow),
-      mix(hex(palette.waterShallow), hex(palette.waterMid), 0.55),
+      mixed(hex(palette.waterShallow), hex(palette.waterMid), 0.55),
       hex(palette.waterMid),
-      mix(hex(palette.waterMid), hex(palette.waterDeep), 0.6),
+      mixed(hex(palette.waterMid), hex(palette.waterDeep), 0.6),
       hex(palette.waterDeep),
     ];
     // The deep river everywhere, then each lighter band nearer the land laid over it in
@@ -463,7 +450,7 @@ export class ChocolateTheme implements Theme {
         );
       }
     }
-    g.fill({ color: mix(hex(palette.sand), hex(palette.craterMid), 0.45) });
+    g.fill({ color: mixed(hex(palette.sand), hex(palette.craterMid), 0.45) });
 
     // The chocolate fall, in the corner the compass rose takes in Parchment.
     const right = Math.floor((view.width - view.originX) / t) - state.width;
@@ -485,7 +472,7 @@ export class ChocolateTheme implements Theme {
     const f = this.fallShape(view, fall);
     // The pool: a deep round basin, its rim lit with cream.
     g.ellipse(f.cx, f.poolY, f.half * 1.15, f.half * 0.55);
-    g.fill({ color: mix(hex(palette.waterDeep), hex(palette.shadow), 0.3) });
+    g.fill({ color: mixed(hex(palette.waterDeep), hex(palette.shadow), 0.3) });
     g.ellipse(f.cx, f.poolY, f.half * 1.15, f.half * 0.55);
     g.stroke({ width: Math.max(1, view.tile * 0.08), color: hex(palette.waterFoam), alpha: 0.35 });
     // The banks: heaps of meringue either side of the lip, peaked and lit.
@@ -631,7 +618,7 @@ export class ChocolateTheme implements Theme {
     // The sheet, lighter at the lip where the light catches it, widening as it falls.
     const shades = [
       hex(palette.waterShallow),
-      mix(hex(palette.waterShallow), hex(palette.waterMid), 0.5),
+      mixed(hex(palette.waterShallow), hex(palette.waterMid), 0.5),
       hex(palette.waterMid),
     ];
     shades.forEach((colour, k) => {
@@ -697,7 +684,7 @@ export class ChocolateTheme implements Theme {
         cells.push({ x, y: (i - x) / state.width });
       }
       if (cells.length === 0) continue;
-      const icing = mix(this.colour(player, 'light'), 0xffffff, this.style.icingWhite);
+      const icing = mixed(this.colour(player, 'light'), 0xffffff, this.style.icingWhite);
       for (const { x, y } of cells) g.rect(tileX(view, x), tileY(view, y), t, t);
       g.fill({ color: icing, alpha: this.style.territoryAlpha });
       // Sprinkles on the icing: the owner's darker shade, white and gold.
@@ -834,14 +821,14 @@ export class ChocolateTheme implements Theme {
     const t = view.tile;
     const bloom = player < 0;
     const coat = bloom
-      ? mix(hex(palette.craterMid), hex(palette.rockMid), 0.7)
+      ? mixed(hex(palette.craterMid), hex(palette.rockMid), 0.7)
       : this.colour(player, 'base');
     const coatDark = bloom
-      ? mix(hex(palette.craterMid), hex(palette.rockMid), 0.5)
+      ? mixed(hex(palette.craterMid), hex(palette.rockMid), 0.5)
       : this.colour(player, 'dark');
     const coatLight = bloom ? hex(palette.rockLight) : this.colour(player, 'light');
     const chocolate = bloom
-      ? mix(hex(palette.craterMid), hex(palette.rockMid), 0.45)
+      ? mixed(hex(palette.craterMid), hex(palette.rockMid), 0.45)
       : hex(palette.craterMid);
     const wall = wallGeometry(cells, joins, view, this.faceFraction());
 
@@ -1611,7 +1598,7 @@ export class ChocolateTheme implements Theme {
           t * 0.12,
         );
       }
-      g.fill({ color: mix(rim, hex(palette.shadow), 0.55), alpha: 0.7 });
+      g.fill({ color: mixed(rim, hex(palette.shadow), 0.55), alpha: 0.7 });
       for (const { x, y } of cells) {
         const px = tileX(view, x);
         const py = tileY(view, y);
@@ -1738,7 +1725,7 @@ function drawChocolateScenery(
     } else {
       g.ellipse(cx, cy + t * 0.04, t * 0.32, t * 0.22);
       g.fill({ color: hex(palette.sand) });
-      g.stroke({ width: ink, color: mix(hex(palette.sand), hex(palette.craterMid), 0.5) });
+      g.stroke({ width: ink, color: mixed(hex(palette.sand), hex(palette.craterMid), 0.5) });
       for (let k = 0; k < 5; k++) {
         g.circle(
           cx + t * (hash(item.x, item.y, 170 + k) - 0.5) * 0.4,

@@ -7,8 +7,8 @@ import { perf } from '../perf.js';
 import { inFinalRound } from '../scores.js';
 import { timerSpot, type TimerSpot } from '../timerSpot.js';
 
-import { hash } from './chocolate.js';
-import { roseSpot } from './parchment.js';
+import { hash } from './noise.js';
+import { roseSpot } from './corner.js';
 import { weatherFor, type Weather } from './pixel/atmosphere.js';
 import { OktoberfestSeaLife } from './seaLife.js';
 import type { SceneryItem } from './scenery.js';
@@ -47,6 +47,7 @@ import {
   type Theme,
   type ThemeLayers,
   type ViewTransform,
+  mixed,
 } from './theme.js';
 import { outline, trace, wallGeometry } from './walls.js';
 import {
@@ -146,13 +147,6 @@ const CANVAS = 0xfbf5e6;
 
 /** How Oktoberfest sends off the winners (PLAN 11.19 Z4). */
 const FINISH: FinishLook = { spark: 'pretzel', flag: 'rauten' };
-
-/** A colour between two, `t` of the way from the first. */
-function mix(a: number, b: number, t: number): number {
-  const ch = (c: number, s: number): number => (c >> s) & 0xff;
-  const m = (s: number): number => Math.round(ch(a, s) + (ch(b, s) - ch(a, s)) * t) << s;
-  return m(16) | m(8) | m(0);
-}
 
 /**
  * The Oktoberfest look, for either look: the fair on islands in a sea of beer, and a
@@ -359,9 +353,9 @@ export class OktoberfestTheme implements Theme {
     }
     const bands = [
       hex(palette.waterShallow),
-      mix(hex(palette.waterShallow), hex(palette.waterMid), 0.5),
+      mixed(hex(palette.waterShallow), hex(palette.waterMid), 0.5),
       hex(palette.waterMid),
-      mix(hex(palette.waterMid), hex(palette.waterDeep), 0.5),
+      mixed(hex(palette.waterMid), hex(palette.waterDeep), 0.5),
       hex(palette.waterDeep),
     ];
     g.rect(tileX(view, x0), tileY(view, y0), w * t, h * t);
@@ -1082,7 +1076,7 @@ export class OktoberfestTheme implements Theme {
       -back,
       half * 0.82,
     ]);
-    g.fill({ color: active ? KEG : mix(KEG, 0x808080, 0.4) });
+    g.fill({ color: active ? KEG : mixed(KEG, 0x808080, 0.4) });
     g.stroke({ width: Math.max(1, t * 0.05), color: this.brown, alpha: 0.85, join: 'round' });
     for (const f of [0.18, 0.82]) {
       const u = -back + (front + back) * f;

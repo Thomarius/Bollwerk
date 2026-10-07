@@ -65,7 +65,6 @@ interface Seat {
 
 export interface RoomOptions {
   code: string;
-  hostName: string;
   playerCount: number;
   ruleset: Ruleset;
   terrain: TerrainConfig;

@@ -1,3 +1,5 @@
+import { store, stored } from './storage.js';
+
 /**
  * How much the screen moves: full, or reduced — no shake, no flicker, no beat, no slide,
  * no sweep of the title — for anyone who wants that without changing their system's
@@ -16,12 +18,8 @@ const KEY = 'bollwerk.effects';
 let level: EffectsLevel | null = null;
 
 function readStored(): EffectsLevel {
-  try {
-    const stored = globalThis.localStorage?.getItem(KEY);
-    return stored === 'reduced' || stored === 'high' ? stored : 'full';
-  } catch {
-    return 'full';
-  }
+  const saved = stored(KEY);
+  return saved === 'reduced' || saved === 'high' ? saved : 'full';
 }
 
 export function storedEffects(): EffectsLevel {
@@ -36,11 +34,7 @@ globalThis.addEventListener?.('storage', (event) => {
 
 export function saveEffects(chosen: EffectsLevel): void {
   level = chosen;
-  try {
-    globalThis.localStorage?.setItem(KEY, chosen);
-  } catch {
-    // Storage refused, as in some private windows: the choice holds for this page only.
-  }
+  store(KEY, chosen);
   applyEffects(chosen);
 }
 

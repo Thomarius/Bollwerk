@@ -10,7 +10,7 @@ import {
 
 import { LivePreview } from './galleryLive.js';
 import { t } from './i18n.js';
-import { escape } from './lobby.js';
+import { escape } from './html.js';
 import { stylePreview } from './stylePreview.js';
 
 /**

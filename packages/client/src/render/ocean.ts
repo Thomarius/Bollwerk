@@ -196,3 +196,41 @@ export function behindCorner(corner: CornerPiece | null, x: number, y: number): 
     Math.abs(y - corner.y) < corner.size / 2
   );
 }
+
+/**
+ * Distance from each tile of the drawn area to the nearest land, in tiles, capped at
+ * `limit`. Euclidean, measured outright within the limit: a breadth-first flood gave
+ * Manhattan distance, and the sea stepped in diamonds. Run only when the terrain is
+ * drawn, so a few million comparisons at eight players cost nothing that matters. The
+ * drawn area runs past the board by the given margins, which are open sea.
+ */
+export function seaDepth(
+  state: MatchState,
+  marginX: number,
+  marginY: number,
+  limit: number,
+): Float32Array {
+  const w = state.width + marginX * 2;
+  const h = state.height + marginY * 2;
+  const depth = new Float32Array(w * h).fill(limit);
+  const reach = Math.ceil(limit);
+  for (let y = 0; y < state.height; y++) {
+    for (let x = 0; x < state.width; x++) {
+      if (state.terrain[y * state.width + x] !== Terrain.Land) continue;
+      const cx = x + marginX;
+      const cy = y + marginY;
+      for (let dy = -reach; dy <= reach; dy++) {
+        const ny = cy + dy;
+        if (ny < 0 || ny >= h) continue;
+        for (let dx = -reach; dx <= reach; dx++) {
+          const nx = cx + dx;
+          if (nx < 0 || nx >= w) continue;
+          const d = Math.sqrt(dx * dx + dy * dy);
+          const j = ny * w + nx;
+          if (d < (depth[j] as number)) depth[j] = d;
+        }
+      }
+    }
+  }
+  return depth;
+}

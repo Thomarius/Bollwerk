@@ -7,8 +7,8 @@ import { perf } from '../perf.js';
 import { inFinalRound } from '../scores.js';
 import { timerSpot, type TimerSpot } from '../timerSpot.js';
 
-import { hash } from './chocolate.js';
-import { roseSpot } from './parchment.js';
+import { hash } from './noise.js';
+import { roseSpot } from './corner.js';
 import { weatherFor, type Weather } from './pixel/atmosphere.js';
 import { SakuraSeaLife } from './seaLife.js';
 import type { SceneryItem } from './scenery.js';
@@ -47,6 +47,7 @@ import {
   type Theme,
   type ThemeLayers,
   type ViewTransform,
+  mixed,
 } from './theme.js';
 import { MAPLE, PETALS, drawCloudCurl, drawCrest, drawMapleLeaf, drawPetal } from './ukiyo.js';
 import { outline, trace, wallGeometry, type Segment } from './walls.js';
@@ -146,13 +147,6 @@ const MOSS = 0x5f7a3a;
 
 /** How Sakura sends off the winners (PLAN 11.19 Z4). */
 const FINISH: FinishLook = { spark: 'blossom', flag: 'nobori' };
-
-/** A colour between two, `t` of the way from the first. */
-function mix(a: number, b: number, t: number): number {
-  const ch = (c: number, s: number): number => (c >> s) & 0xff;
-  const m = (s: number): number => Math.round(ch(a, s) + (ch(b, s) - ch(a, s)) * t) << s;
-  return m(16) | m(8) | m(0);
-}
 
 /**
  * The lines of raked gravel round the inside of a region, `per` to a tile: one ring for
@@ -414,9 +408,9 @@ export class SakuraTheme implements Theme {
     }
     const bands = [
       hex(palette.waterShallow),
-      mix(hex(palette.waterShallow), hex(palette.waterMid), 0.5),
+      mixed(hex(palette.waterShallow), hex(palette.waterMid), 0.5),
       hex(palette.waterMid),
-      mix(hex(palette.waterMid), hex(palette.waterDeep), 0.5),
+      mixed(hex(palette.waterMid), hex(palette.waterDeep), 0.5),
       hex(palette.waterDeep),
     ];
     g.rect(tileX(view, x0), tileY(view, y0), w * t, h * t);
@@ -605,7 +599,7 @@ export class SakuraTheme implements Theme {
     while (this.crests.length < target && this.seaCells.length > 0) {
       this.crests.push(this.newCrest(still ? 0.6 : Math.random()));
     }
-    const body = mix(hex(palette.waterMid), hex(palette.waterShallow), 0.6);
+    const body = mixed(hex(palette.waterMid), hex(palette.waterShallow), 0.6);
     const stamps = this.crestStamps;
     stamps.begin();
     for (let i = 0; i < this.crests.length; i++) {
@@ -711,7 +705,7 @@ export class SakuraTheme implements Theme {
       if (cells.length === 0) continue;
       for (const { x, y } of cells) g.rect(tileX(view, x), tileY(view, y), t, t);
       g.fill({
-        color: mix(0xeae3d0, this.colour(player, 'base'), 0.3),
+        color: mixed(0xeae3d0, this.colour(player, 'base'), 0.3),
         alpha: this.style.territoryAlpha,
       });
       const raked = cells.filter(({ x, y }) => keeps[y * state.width + x] === 0);
@@ -801,14 +795,14 @@ export class SakuraTheme implements Theme {
     const capLight = dead ? hex(palette.rockLight) : this.colour(player, 'light');
     const capDark = dead ? hex(palette.rockDark) : this.colour(player, 'dark');
     const plaster = dead
-      ? mix(hex(palette.rockLight), hex(palette.rockMid), 0.5)
+      ? mixed(hex(palette.rockLight), hex(palette.rockMid), 0.5)
       : hex(palette.rockLight);
     const wall = wallGeometry(cells, joins, view, this.faceFraction());
 
     // In a snowy match the caps lie under snow, their colour showing through.
     const snowy = this.weather === 'snow';
     for (const r of wall.tops) g.rect(r.x, r.y, r.w, r.h);
-    g.fill({ color: snowy ? mix(cap, 0xffffff, 0.5) : cap, alpha });
+    g.fill({ color: snowy ? mixed(cap, 0xffffff, 0.5) : cap, alpha });
     // The rows of round tiles running down each cap, lit along their crowns.
     for (const b of wall.blocks) {
       const h = b.lip - b.top;
@@ -1574,7 +1568,7 @@ export class SakuraTheme implements Theme {
  * by the mouth. `angle` is the way the wind carries it, 0 out to the right; `clock` ripples
  * the body, 0 holds it still.
  */
-export function drawCarpStreamer(
+function drawCarpStreamer(
   g: Graphics,
   x: number,
   y: number,

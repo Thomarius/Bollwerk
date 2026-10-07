@@ -41,6 +41,7 @@ import {
   type ThemeLayers,
   type ViewTransform,
   type FinishLook,
+  mixed,
 } from './theme.js';
 import { GlassSeaLife } from './seaLife.js';
 import type { SceneryItem } from './scenery.js';
@@ -91,13 +92,6 @@ interface Glint {
 const RECOIL_MS = 160;
 const RIPPLE_MS = 520;
 const GLINT_MS = 340;
-
-/** A colour between two, `t` of the way from the first. */
-function mix(a: number, b: number, t: number): number {
-  const ch = (c: number, s: number): number => (c >> s) & 0xff;
-  const m = (s: number): number => Math.round(ch(a, s) + (ch(b, s) - ch(a, s)) * t) << s;
-  return m(16) | m(8) | m(0);
-}
 
 /** How this style sends off the winners (PLAN 11.19 Z4). */
 const FINISH: FinishLook = { spark: 'shard', flag: 'leaded' };
@@ -221,7 +215,7 @@ export class GlassTheme implements Theme {
     for (const [pane, tiles] of byPane) {
       for (const { x, y } of tiles) g.rect(tileX(view, x), tileY(view, y), t, t);
       const shade = 0.25 + this.style.paneVariance * (paneShade(pane) - 0.5);
-      g.fill({ color: mix(dark, light, shade), alpha });
+      g.fill({ color: mixed(dark, light, shade), alpha });
     }
     // The light through each pane: a sheen in the corner of its first tile, row by row.
     for (const tiles of byPane.values()) {
@@ -943,7 +937,7 @@ function drawGlassScenery(
       g.stroke({ width: lead, color: hex(palette.shadow) });
     } else if (item.kind === 'pine') {
       g.poly([cx, cy - t * 0.4, cx + t * 0.3, cy + t * 0.25, cx - t * 0.3, cy + t * 0.25]);
-      g.fill({ color: mix(hex(palette.grassDark), hex(palette.grassLight), 0.4) });
+      g.fill({ color: mixed(hex(palette.grassDark), hex(palette.grassLight), 0.4) });
       g.stroke({ width: lead, color: hex(palette.shadow) });
     } else if (item.kind === 'bush') {
       const flower = item.variant % 3 === 1;

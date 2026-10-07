@@ -39,11 +39,10 @@ export class RoomManager {
     return [...this.rooms.values()].flatMap((room) => room.listing() ?? []);
   }
 
-  create(hostName: string, playerCount: number, isPublic = true): Room | null {
+  create(playerCount: number, isPublic = true): Room | null {
     if (this.rooms.size >= this.config.server.rooms.maxConcurrent) return null;
     const room = new Room({
       code: this.newCode(),
-      hostName,
       playerCount,
       public: isPublic,
       ruleset: this.config.ruleset,

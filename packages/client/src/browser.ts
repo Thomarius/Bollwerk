@@ -1,6 +1,6 @@
 import { PROTOCOL_VERSION, RoomListSchema, type RoomListing } from '@bollwerk/protocol';
 
-import { escape } from './lobby.js';
+import { escape } from './html.js';
 import type { TextKey } from '@bollwerk/config';
 
 import { t } from './i18n.js';

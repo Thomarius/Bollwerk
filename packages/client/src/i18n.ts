@@ -8,6 +8,7 @@ import {
   type LocaleText,
   type TextKey,
 } from '@bollwerk/config';
+import { store, stored } from './storage.js';
 
 /*
  * The language the page speaks, and its texts (PLAN 11.20). Everything a player reads goes
@@ -48,19 +49,11 @@ export { detectLanguage, isLanguage };
 const LANGUAGE_KEY = 'bollwerk.language';
 
 export function saveLanguage(language: Language): void {
-  try {
-    globalThis.localStorage?.setItem(LANGUAGE_KEY, language);
-  } catch {
-    // A browser refusing storage forgets the choice at the next visit; nothing worse.
-  }
+  store(LANGUAGE_KEY, language);
 }
 
 function savedLanguage(): string | null {
-  try {
-    return globalThis.localStorage?.getItem(LANGUAGE_KEY) ?? null;
-  } catch {
-    return null;
-  }
+  return stored(LANGUAGE_KEY);
 }
 
 /**

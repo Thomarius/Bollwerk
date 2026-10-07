@@ -13,6 +13,7 @@ import { OceanLife } from './pixel/ocean.js';
 import { release } from './release.js';
 import { SceneryTracker } from './scenery.js';
 import { Discs, SpritePool, StampBook, Stamps } from './stamps.js';
+import { seaDepth } from './ocean.js';
 import {
   CASTLE_WINDOWS,
   E,
@@ -57,6 +58,8 @@ import {
   type ViewTransform,
   shotLift,
   type FinishLook,
+  GunAims,
+  mixed,
 } from './theme.js';
 
 interface Blast {
@@ -134,12 +137,6 @@ interface Cloud {
   reach: number;
 }
 
-/** Where a cannon points, and how long ago it last fired. */
-interface Aim {
-  angle: number;
-  firedAgo: number;
-}
-
 /** How long each recoil and muzzle-flash frame is held. */
 const FX_FRAME_MS = 50;
 
@@ -157,11 +154,7 @@ const WIND_Y = 0.34;
 
 /** Mixes a colour toward white, so tinting a texture shifts its hue without crushing it. */
 function washed(colour: number, amount: number): number {
-  const r = (colour >> 16) & 0xff;
-  const g = (colour >> 8) & 0xff;
-  const b = colour & 0xff;
-  const mix = (c: number): number => Math.round(c + (255 - c) * amount);
-  return (mix(r) << 16) | (mix(g) << 8) | mix(b);
+  return mixed(colour, 0xffffff, amount);
 }
 
 /** How this style sends off the winners (PLAN 11.19 Z4). */
@@ -275,7 +268,7 @@ export class PixelTheme implements Theme {
   private blasts: Blast[] = [];
   private fragments: Fragment[] = [];
   /** By cannon id. A gun that has never fired faces the nearest enemy castle. */
-  private aims = new Map<number, Aim>();
+  private readonly aims = new GunAims();
   private bannerElapsed = 0;
   /** Milliseconds since the theme began drawing, for anything that loops. */
   private clock = 0;
@@ -956,8 +949,7 @@ export class PixelTheme implements Theme {
   }
 
   noteShot(shot: Shot): void {
-    const angle = Math.atan2(shot.toX - shot.fromX, -(shot.toY - shot.fromY));
-    this.aims.set(shot.cannonId, { angle, firedAgo: 0 });
+    const angle = this.aims.fire(shot);
     // Smoke from the muzzle, blown out along the barrel and then drifting off. The
     // shot's origin is the tile at the gun's centre, so the muzzle is half a tile on
     // from there plus the barrel's length.
@@ -975,33 +967,6 @@ export class PixelTheme implements Theme {
         age: -k * 60,
       });
     }
-  }
-
-  /** Aims a cannon that has not fired yet at the nearest enemy castle. */
-  private aimFor(state: MatchState, cannonId: number): Aim | null {
-    const known = this.aims.get(cannonId);
-    if (known !== undefined) return known;
-    const cannon = state.cannons.find((c) => c.id === cannonId);
-    if (cannon === undefined) return null;
-    const cx = cannon.x + cannon.w / 2;
-    const cy = cannon.y + cannon.h / 2;
-    let best = Number.POSITIVE_INFINITY;
-    let angle = 0;
-    for (const castle of state.castles) {
-      // Toward the other teams: a teammate's castle is not what a gun faces.
-      const owner = state.players[castle.islandId - 1];
-      if (owner === undefined || owner.team === state.players[cannon.owner]?.team) continue;
-      const dx = castle.x + castle.w / 2 - cx;
-      const dy = castle.y + castle.h / 2 - cy;
-      const d = dx * dx + dy * dy;
-      if (d < best) {
-        best = d;
-        angle = Math.atan2(dx, -dy);
-      }
-    }
-    const aim = { angle, firedAgo: Number.POSITIVE_INFINITY };
-    this.aims.set(cannonId, aim);
-    return aim;
   }
 
   drawEffects(state: MatchState, view: ViewTransform, frame: EffectFrame): void {
@@ -2083,7 +2048,7 @@ export class PixelTheme implements Theme {
     const length = this.art.generators.cannon.barrelLengthPx / this.art.tileSizePx;
     const g = this.effectGfx;
     for (const cannon of state.cannons) {
-      const aim = this.aimFor(state, cannon.id);
+      const aim = this.aims.of(state, cannon.id);
       if (aim === null) continue;
       aim.firedAgo += deltaMs;
       const step = ((Math.round((aim.angle / (2 * Math.PI)) * steps) % steps) + steps) % steps;
@@ -2123,11 +2088,7 @@ export class PixelTheme implements Theme {
         g.fill({ color: hex(this.art.palette.uiInk), alpha: 0.9 });
       }
     }
-    // Forget guns that no longer exist, so a continue's wiped island starts clean.
-    if (this.aims.size > state.cannons.length) {
-      const live = new Set(state.cannons.map((c) => c.id));
-      for (const id of this.aims.keys()) if (!live.has(id)) this.aims.delete(id);
-    }
+    this.aims.prune(state);
   }
 
   /** A banner in the owner's colour flies over every castle sealed as things stand. */
@@ -2298,42 +2259,4 @@ export function nextTorch(
     sealed,
     doused: torch.sealed && !sealed && torch.lit > 0,
   };
-}
-
-/**
- * Distance from each tile of the drawn area to the nearest land, in tiles, capped at
- * `limit`. Euclidean, measured outright within the limit: a breadth-first flood gave
- * Manhattan distance, and the sea stepped in diamonds. Run only when the terrain is
- * drawn, so a few million comparisons at eight players cost nothing that matters. The
- * drawn area runs past the board by the given margins, which are open sea.
- */
-export function seaDepth(
-  state: MatchState,
-  marginX: number,
-  marginY: number,
-  limit: number,
-): Float32Array {
-  const w = state.width + marginX * 2;
-  const h = state.height + marginY * 2;
-  const depth = new Float32Array(w * h).fill(limit);
-  const reach = Math.ceil(limit);
-  for (let y = 0; y < state.height; y++) {
-    for (let x = 0; x < state.width; x++) {
-      if (state.terrain[y * state.width + x] !== Terrain.Land) continue;
-      const cx = x + marginX;
-      const cy = y + marginY;
-      for (let dy = -reach; dy <= reach; dy++) {
-        const ny = cy + dy;
-        if (ny < 0 || ny >= h) continue;
-        for (let dx = -reach; dx <= reach; dx++) {
-          const nx = cx + dx;
-          if (nx < 0 || nx >= w) continue;
-          const d = Math.sqrt(dx * dx + dy * dy);
-          const j = ny * w + nx;
-          if (d < (depth[j] as number)) depth[j] = d;
-        }
-      }
-    }
-  }
-  return depth;
 }

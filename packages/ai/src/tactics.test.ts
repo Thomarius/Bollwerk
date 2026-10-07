@@ -11,7 +11,7 @@ import {
 } from '@bollwerk/sim';
 import { describe, expect, it } from 'vitest';
 
-import { bestSealPlan, planSeal, pocketCount, pocketPlan, weakestWall } from './tactics.js';
+import { cheapestPlanFor, planSeal, pocketCount, pocketPlan, weakestWall } from './tactics.js';
 
 /** Builds every tile of a plan, as a bot eventually would. */
 function buildPlan(state: MatchState, tiles: readonly number[], islandId = 1): void {
@@ -111,23 +111,6 @@ describe('sealing plan', () => {
     expect(computeEnclosure(state).castleEnclosed[0]).toBe(true);
   });
 
-  it('will take a longer wall when it brings in another castle', () => {
-    const state = createMatch({
-      seed: 3,
-      ruleset: defaultRuleset,
-      terrainConfig: defaultTerrainConfig,
-      players: [
-        { name: 'a', isBot: true },
-        { name: 'b', isBot: true },
-      ],
-    });
-    const modest = bestSealPlan(state, 0, 1)!;
-    const ambitious = bestSealPlan(state, 0, 3)!;
-    expect(modest.castleIds).toHaveLength(1);
-    expect(ambitious.castleIds.length).toBeGreaterThanOrEqual(modest.castleIds.length);
-    expect(ambitious.cost).toBeGreaterThanOrEqual(modest.cost);
-  });
-
   it('produces a plan that actually encloses, on a generated map', () => {
     const state = beginMatch(
       createMatch({
@@ -151,7 +134,7 @@ describe('sealing plan', () => {
     }
     expect(computeEnclosure(state).enclosedCastlesByPlayer[0]).toBe(0);
 
-    const plan = bestSealPlan(state, 0, 1)!;
+    const plan = cheapestPlanFor(state, 0, 1, 1)!;
     expect(plan.cost).toBeGreaterThan(0);
     buildPlan(state, plan.tiles);
     expect(computeEnclosure(state).enclosedCastlesByPlayer[0]).toBeGreaterThanOrEqual(1);

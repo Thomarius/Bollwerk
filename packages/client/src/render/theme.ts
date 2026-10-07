@@ -749,7 +749,7 @@ export interface FinishLook {
     | 'rod';
 }
 
-export const PLAIN_FINISH: FinishLook = { spark: 'square', flag: 'swallowtail' };
+const PLAIN_FINISH: FinishLook = { spark: 'square', flag: 'swallowtail' };
 
 /** Candy for the sprinkles, as Chocolate's falling ones are. */
 const SPRINKLE_COLOURS = [0xfffaf0, 0xffb3cf, 0xa8e6ff, 0xfff07a, 0xc9a7ff] as const;

@@ -12,6 +12,7 @@ import type { Seat } from '@bollwerk/protocol';
 import { t } from './i18n.js';
 import { teamLetter } from './scores.js';
 import { shapeSvg } from './shapes.js';
+import { escape } from './html.js';
 
 /**
  * The lobby, as markup — one lobby for online and offline.
@@ -58,13 +59,6 @@ export interface LobbyView {
 
 /** The levels a seat's bot may play at, as the lobby offers them. */
 const LEVELS = Array.from({ length: MAX_LEVEL - MIN_LEVEL + 1 }, (_, i) => MIN_LEVEL + i);
-
-export function escape(text: string): string {
-  return text.replace(
-    /[&<>"']/g,
-    (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c] as string,
-  );
-}
 
 /** Every whole number in a range, as options with one selected. */
 export function rangeOptions(min: number, max: number, selected: number): string {

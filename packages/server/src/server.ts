@@ -256,7 +256,7 @@ export async function startServer(options: ServerOptions): Promise<StartResult> 
       }
 
       if (message.type === 'create') {
-        const room = rooms.create(message.name, message.players, message.public ?? true);
+        const room = rooms.create(message.players, message.public ?? true);
         if (room === null) {
           connection.send({ type: 'error', code: 'no_capacity', message: 'server is full' });
           return;

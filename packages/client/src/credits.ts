@@ -6,7 +6,7 @@ import {
 } from '@bollwerk/config';
 
 import { t } from './i18n.js';
-import { escape } from './lobby.js';
+import { escape } from './html.js';
 
 /**
  * The menu's Credits: what the game owes Rampart, and who made each sound, on what

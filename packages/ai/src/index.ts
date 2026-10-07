@@ -6,4 +6,3 @@ export * from './personality.js';
 export * from './planning.js';
 export * from './tactics.js';
 export * from './flow.js';
-export * from './stopgap.js';

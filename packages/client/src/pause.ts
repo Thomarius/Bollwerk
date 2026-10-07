@@ -8,7 +8,7 @@ import {
   setLanguage,
   t,
 } from './i18n.js';
-import { escape } from './lobby.js';
+import { escape } from './html.js';
 import { saveEffects, storedEffects, type EffectsLevel } from './motion.js';
 import { refreshVolumeSliders, volumeSliders, type VolumeTarget } from './volume.js';
 

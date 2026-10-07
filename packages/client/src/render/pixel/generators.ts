@@ -633,7 +633,7 @@ function blast(art: ArtConfig, rng: Rng, size: number, frame: number, frames: nu
 }
 
 /** Variants drawn of each kind of scenery. */
-export const SCENERY_VARIANTS = 4;
+const SCENERY_VARIANTS = 4;
 
 /**
  * Scenery on open land, in one tile: a broadleaf tree, a pine, a bush or a boulder, each

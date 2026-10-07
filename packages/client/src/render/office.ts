@@ -8,9 +8,9 @@ import { inFinalRound } from '../scores.js';
 import { timerSpot, type TimerSpot } from '../timerSpot.js';
 
 import { cannonBase } from './cannonBase.js';
-import { hash } from './chocolate.js';
+import { hash } from './noise.js';
 import { IslandParts } from './islandParts.js';
-import { roseSpot } from './parchment.js';
+import { roseSpot } from './corner.js';
 import { weatherFor, type Weather } from './pixel/atmosphere.js';
 import type { SceneryItem } from './scenery.js';
 import { SceneryLayer } from './sceneryLayer.js';

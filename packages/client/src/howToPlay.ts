@@ -10,6 +10,7 @@ import {
 
 import { t } from './i18n.js';
 import { motionReduced } from './motion.js';
+import { store, stored } from './storage.js';
 
 /**
  * How to play (PLAN 11.16 H1): a few pages opened from the menu, each a small looping
@@ -794,11 +795,7 @@ const SEEN_KEY = 'bollwerk.howToPlaySeen';
 
 /** Whether the pages have ever been opened here: until then the menu's button stands out. */
 export function howToPlaySeen(): boolean {
-  try {
-    return globalThis.localStorage?.getItem(SEEN_KEY) === '1';
-  } catch {
-    return true;
-  }
+  return stored(SEEN_KEY) === '1';
 }
 
 /**
@@ -806,11 +803,7 @@ export function howToPlaySeen(): boolean {
  * Close, and a click outside the panel closes it too.
  */
 export function openHowToPlay(onClose: () => void = () => {}, click: () => void = () => {}): void {
-  try {
-    globalThis.localStorage?.setItem(SEEN_KEY, '1');
-  } catch {
-    // Storage refused: the button stays marked, which is all it costs.
-  }
+  store(SEEN_KEY, '1');
   const root = document.createElement('div');
   root.className = 'how-to-play';
   root.innerHTML = `

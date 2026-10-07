@@ -1,4 +1,5 @@
 import type { AudioManifest, MusicCue, SfxCue } from '@bollwerk/config';
+import { store, stored } from './storage.js';
 
 /**
  * Sound.
@@ -47,11 +48,7 @@ export function parseVolume(stored: string | null | undefined): number {
 }
 
 function storedVolume(kind: VolumeKind): number {
-  try {
-    return parseVolume(globalThis.localStorage?.getItem(VOLUME_KEY[kind]));
-  } catch {
-    return 1;
-  }
+  return parseVolume(stored(VOLUME_KEY[kind]));
 }
 
 /**
@@ -87,7 +84,7 @@ export class Audio {
   private readonly lastStarted = new Map<string, number>();
 
   constructor(private readonly manifest: AudioManifest) {
-    this.muted = globalThis.localStorage?.getItem(MUTE_KEY) === '1';
+    this.muted = stored(MUTE_KEY) === '1';
   }
 
   get isMuted(): boolean {
@@ -102,11 +99,7 @@ export class Audio {
   setVolume(kind: VolumeKind, value: number): void {
     const level = Math.max(0, Math.min(1, value));
     this.volumes[kind] = level;
-    try {
-      globalThis.localStorage?.setItem(VOLUME_KEY[kind], String(level));
-    } catch {
-      // Storage refused: the volume holds for this page only.
-    }
+    store(VOLUME_KEY[kind], String(level));
     const bus = this.buses?.[kind];
     if (bus !== undefined && this.ctx !== null) {
       bus.gain.setTargetAtTime(level, this.ctx.currentTime, 0.03);
@@ -145,7 +138,7 @@ export class Audio {
 
   setMuted(muted: boolean): void {
     this.muted = muted;
-    globalThis.localStorage?.setItem(MUTE_KEY, muted ? '1' : '0');
+    store(MUTE_KEY, muted ? '1' : '0');
     if (this.master && this.ctx) {
       this.master.gain.setTargetAtTime(
         muted ? 0 : this.manifest.masterVolume,

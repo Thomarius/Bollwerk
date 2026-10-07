@@ -3,7 +3,7 @@ import { SHAPE_PATHS, playerShape, shapeSvg } from './shapes.js';
 import { awardCandidates, drawAwards, type Award } from './awards.js';
 import type { BannerKind } from './banners.js';
 import { formatNumber, t } from './i18n.js';
-import { escape } from './lobby.js';
+import { escape } from './html.js';
 import { defaultArtConfig, type ArtStyle, type PlayerShape, type TextKey } from '@bollwerk/config';
 
 import { showsClock } from './clock.js';

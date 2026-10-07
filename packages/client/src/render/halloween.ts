@@ -7,8 +7,8 @@ import { perf } from '../perf.js';
 import { inFinalRound } from '../scores.js';
 import { timerSpot, type TimerSpot } from '../timerSpot.js';
 
-import { hash } from './chocolate.js';
-import { roseSpot } from './parchment.js';
+import { hash } from './noise.js';
+import { roseSpot } from './corner.js';
 import { weatherFor, type Weather } from './pixel/atmosphere.js';
 import { HalloweenSeaLife } from './seaLife.js';
 import type { SceneryItem } from './scenery.js';
@@ -48,6 +48,7 @@ import {
   type Theme,
   type ThemeLayers,
   type ViewTransform,
+  mixed,
 } from './theme.js';
 import { outline, trace, wallGeometry } from './walls.js';
 import { cannonBase } from './cannonBase.js';
@@ -144,13 +145,6 @@ const LEAVES = [0xff9a1f, 0xc2410c, 0xe0b040, 0x8a3a1a] as const;
 
 /** How Halloween sends off the winners (PLAN 11.19 Z4). */
 const FINISH: FinishLook = { spark: 'spirits', flag: 'tattered' };
-
-/** A colour between two, `t` of the way from the first. */
-function mix(a: number, b: number, t: number): number {
-  const ch = (c: number, s: number): number => (c >> s) & 0xff;
-  const m = (s: number): number => Math.round(ch(a, s) + (ch(b, s) - ch(a, s)) * t) << s;
-  return m(16) | m(8) | m(0);
-}
 
 /**
  * The Halloween look, for either look: a haunted land round a bog — cute-spooky, more ghosts
@@ -353,9 +347,9 @@ export class HalloweenTheme implements Theme {
     }
     const bands = [
       hex(palette.waterShallow),
-      mix(hex(palette.waterShallow), hex(palette.waterMid), 0.55),
+      mixed(hex(palette.waterShallow), hex(palette.waterMid), 0.55),
       hex(palette.waterMid),
-      mix(hex(palette.waterMid), hex(palette.waterDeep), 0.6),
+      mixed(hex(palette.waterMid), hex(palette.waterDeep), 0.6),
       hex(palette.waterDeep),
     ];
     g.rect(tileX(view, x0), tileY(view, y0), w * t, h * t);
@@ -745,10 +739,10 @@ export class HalloweenTheme implements Theme {
     const dead = player < 0;
     const stone = dead
       ? hex(palette.rockMid)
-      : mix(hex(palette.rockMid), this.colour(player, 'base'), 0.4);
+      : mixed(hex(palette.rockMid), this.colour(player, 'base'), 0.4);
     const stoneDark = dead
       ? hex(palette.rockDark)
-      : mix(hex(palette.rockDark), this.colour(player, 'dark'), 0.4);
+      : mixed(hex(palette.rockDark), this.colour(player, 'dark'), 0.4);
     const spirit = dead ? hex(palette.rockDark) : this.colour(player, 'light');
     const wall = wallGeometry(cells, joins, view, this.faceFraction());
 
@@ -1090,7 +1084,7 @@ export class HalloweenTheme implements Theme {
           color:
             s.owner < 0
               ? hex(this.art.palette.rockMid)
-              : mix(hex(this.art.palette.rockMid), this.colour(s.owner, 'base'), 0.4),
+              : mixed(hex(this.art.palette.rockMid), this.colour(s.owner, 'base'), 0.4),
         });
       }
       g.ellipse(left + t / 2, top + t * 0.95, t * (0.3 + 0.2 * k), t * (0.08 + 0.08 * k));
