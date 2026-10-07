@@ -5,15 +5,8 @@ import {
   type BotSetup,
   type ConfigBundle,
 } from '@bollwerk/config';
-import { cannonRoom, cheapestPlanFor, pocketCount } from '@bollwerk/ai';
-import {
-  Structure,
-  Terrain,
-  pieceCells,
-  poolForRound,
-  type MatchEvent,
-  type MatchState,
-} from '@bollwerk/sim';
+import { cannonRoom, cheapestPlanFor, coverable, pocketCount } from '@bollwerk/ai';
+import { Structure, type MatchEvent, type MatchState } from '@bollwerk/sim';
 
 /** Who played a seat: a bot's level and personality, or a person, from a recording. */
 export type Tier = BotSetup | 'human';
@@ -130,33 +123,6 @@ function wallTilesOf(state: MatchState, playerId: number): number {
     if (state.structure[i] === Structure.Wall && state.islandId[i] === islandId) tiles++;
   }
   return tiles;
-}
-
-/** Whether any piece in the player's current bag can legally cover tile `i`. */
-function coverable(state: MatchState, playerId: number, i: number): boolean {
-  const player = state.players[playerId];
-  if (player === undefined) return false;
-  const tx = i % state.width;
-  const ty = (i - tx) / state.width;
-  const fits = (x: number, y: number): boolean => {
-    if (x < 0 || y < 0 || x >= state.width || y >= state.height) return false;
-    const j = y * state.width + x;
-    return (
-      state.terrain[j] === Terrain.Land &&
-      state.structure[j] === Structure.Empty &&
-      state.islandId[j] === player.islandId
-    );
-  };
-  for (const id of poolForRound(state.ruleset, player.pieceRound).ids) {
-    for (let rotation = 0; rotation < 4; rotation++) {
-      const cells = pieceCells(id, rotation);
-      // Every way of laying this piece so that one of its cells lands on the tile.
-      for (const [ax, ay] of cells) {
-        if (cells.every(([cx, cy]) => fits(tx - ax + cx, ty - ay + cy))) return true;
-      }
-    }
-  }
-  return false;
 }
 
 /** The rows as CSV, a header line first — for a file, wherever the caller keeps it. */

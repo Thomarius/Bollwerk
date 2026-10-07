@@ -175,6 +175,12 @@ score by the average outcome), or a neural value function trained in Python. Not
   measures (below). Still to do in step 1: `reachableValue` and `bailoutSlack` proper
   (area a wall would enclose, the player's own placement rate for the budget), and the
   split of gap-neutral pieces into progress and waste by them.
+- 2026-10-07: step 1 proper done (findings below). The question is answered by hindsight;
+  `reachableValue` over minimum-cut walls was built and does not explain the play.
+  Decided with the user: A, the unfillable last gaps, then B, step 2 adjusted by the
+  findings.
+- 2026-10-07: A done (below): plans route round tiles no piece can cover; failed rounds
+  down about a point at every level measured.
 
 ## 5. Findings
 
@@ -227,3 +233,123 @@ from the phase's opening to its resolution):
   the crude test (does the piece lower the cost of sealing two castles?) about half are
   for him and for Mausica alike; but that test misses a wall widened round the same castle
   for room. `reachableValue` (ground a wall would enclose, step 1 proper) is what can tell.
+
+### Step 1 proper (2026-10-07)
+
+**The script** (`tools/headless/src/placements.ts`, three minutes over the five
+recordings) now measures, for every piece and on the island it landed on (37 pieces went
+on a teammate's), before and after: every candidate wall (each castle alone, each pair,
+all of them, at room radii 0–3) with its remaining cost and its value (enclosed tiles ×
+castles, the wall stood in on a copy); the budget (time left × the owner's own rate of
+laying cells × their own efficiency, blocks of the cheapest seal removed per repairing
+cell, 0.41–0.48 for everyone); `bailoutSlack` = budget − T; and `reachableValue`, max over
+walls of value × P(finish). **In hindsight**, at the resolution: whether each cell of the
+piece ended in the wall round the player's territory ("sealing"), standing elsewhere, or
+swept — and per phase, the wall finally sealed, priced as its blocks not yet standing as
+the phase opened.
+
+**1. Gap-neutral pieces are progress for people, mostly not for bots.** Of the cells of
+pieces laid while unsealed in phases that sealed, the share that ended in the sealing wall:
+
+| Placer  | repairing pieces | gap-neutral pieces |
+| ------- | ---------------- | ------------------ |
+| Thomas  | 66%              | 67%                |
+| Mausica | 61%              | 66%                |
+| L5      | 55%              | 47%                |
+| L4      | 54%              | 43%                |
+| L3      | 57%              | 33%                |
+
+A tester's piece that leaves the cheapest seal where it was is as much part of the final
+wall as one that closes a gap. A bot's is spill and thickening.
+
+**2. Thomas closes far bigger walls than he needs, and they cost more than his "budget".**
+Sealed phases that opened breached, medians:
+
+| Player  | phases | tight seal | wall sealed | budget | sealed / budget | sealed > 1.5× tight | value at the end |
+| ------- | ------ | ---------- | ----------- | ------ | --------------- | ------------------- | ---------------- |
+| Thomas  | 36     | 8          | 30          | 22.4   | 1.4             | 97%                 | 214              |
+| Mausica | 31     | 8          | 17          | 18.1   | 1.1             | 58%                 | 48               |
+| L5      | 58     | 7          | 17          | 18.6   | 0.9             | 64%                 | 62               |
+| L4      | 28     | 11         | 14          | 20.4   | 0.7             | 36%                 | 37               |
+| L3      | 15     | 7          | 14          | 20.8   | 0.7             | 47%                 | 35               |
+
+The budget, priced at repair efficiency, understates what a long wall costs to lay: on a
+long run nearly every cell becomes wall, while a repair's last blocks are dear. **Budget
+for a wall in cells, at about 0.6 of a cell laid a block** (the sealing share above),
+not in blocks of the cheapest seal. Once sealed, the same holds: 45% of Thomas's cells end
+in the sealing wall (he widens), against 12–24% for bots and Mausica (they thicken — 60–75%
+of their cells stand off the seal).
+
+**3. Risk with slack in hand.** Median `bailoutSlack` (blocks) when laying a repairing /
+a gap-neutral piece while unsealed: Thomas 6.9 / 9.2, Mausica 3.6 / 5.0, bots 9.3–10 /
+8.4–8.8. Thomas goes neutral when he has more margin than when he repairs; bots do the
+opposite (a bot's neutral piece is mostly a bad fit, not a choice). Mausica plays on half
+Thomas's margin throughout. By slack band, the share of neutral pieces whose phase sealed:
+slack 0–5: Thomas 61%, Mausica 51%, bots 27–41%; 10–20: Thomas 88%, Mausica 79%, bots
+64–84%.
+
+**4. What fails, fails at the end, and was affordable.** Every one of the 40 failed phases
+opened with a tight seal of 5–12 blocks against a budget of 14–24 (as ARCHIVE 10s found
+for bots), and ended 1–3 blocks short in 37 of them. The chance of sealing by the cheapest
+seal over the budget at the time, every piece laid while unsealed, pooled:
+
+| T / budget | < 0.2 | 0.2–0.4 | 0.4–0.6 | 0.6–0.8 | 0.8–1 | 1–1.5 | > 1.5 |
+| ---------- | ----- | ------- | ------- | ------- | ----- | ----- | ----- |
+| sealed     | 97%   | 85%     | 66%     | 58%     | 59%   | 49%   | 12%   |
+| Thomas     | 100%  | 96%     | 78%     | 57%     | 67%   | 38%   | 0%    |
+| bots       | 96%   | 80%     | 62%     | 57%     | 46%   | 33%   | 9%    |
+
+So **a bail-out needs a large margin**: the tight repair should cost no more than about a
+third of the budget to be ~90% safe — far from "it still fits". At the same margin Thomas
+seals more often than the bots (96% against 80% at 0.2–0.4), and **10 of the bots' 21
+failed phases ended on a gap no piece in the bag could fill** (`repairStuck` > 0 in the
+recordings' statistics), against 1 of the testers' 19: the bots' endgame fitting, not
+their choice of wall, is where they lose rounds.
+
+**5. `reachableValue` over minimum-cut walls does not explain the play.** Gap-neutral
+pieces raised it for 34–37% of the testers' pieces and 26–41% of the bots' — no
+difference — and in 33 of Thomas's 37 sealed phases the value he ended with exceeds every
+affordable candidate wall. The walls people close are not minimum cuts round castles and a
+band: they follow the old wall and the coast and take in whole stretches of land at once.
+Value by the min-cut family is the wrong family; step 2 needs candidate walls of that kind
+(the wall last round, its ring widened, the coast-hugging loop), or step 3 a feature that
+does not depend on enumerating walls.
+
+**For the next step**, then: the testers' long game is real, it is progress and it pays
+(Thomas 232 points a phase, L5 165); it is taken with slack in hand; a bail-out must keep
+the tight repair to about a third of the budget; and separately, the bots lose half their
+failed rounds to unfillable holes at the end.
+
+### A: the unfillable last gaps (2026-10-07)
+
+**Where they came from**, 16 matches of three bots a level (Levels 3, 5, 8), on the build
+phase's last tick: 12–14% of rounds failed, and in a quarter to a third of those the
+cheapest seal still ran through a tile no piece of the bag could cover. Two thirds of
+those tiles were unfillable already as the phase opened — a shot's hole between wall and
+sea or wall and gun, once one-cell pieces stop being dealt — and a third were boxed in by
+the bot's own pieces during the phase. At the opening, 36–58 of ~470 player-rounds had
+their tightest repair running through such a tile.
+
+**The change** (`markUncoverable` in `building.ts`, `coverable` in the new
+`ai/src/coverage.ts`): before each plan, every empty tile of the island that no piece of
+the bag could cover joins the bot's `unreachable` set, which the planner already routes
+round. The bag is the rules' (which pieces the round can deal), not foresight. A build
+phase only fills the board, so a tile uncoverable now stays so for the round. `analysis`
+uses the same `coverable` for `repairStuck`.
+
+**Measured**, 96 matches a variant, three players, dealt personalities, seeds 1001–1096,
+with a temporary switch per part (rows are player-rounds, ±1 SE ≈ 0.6 points):
+
+| Variant          | failed rounds | of them on an unfillable gap | points a round | knockouts |
+| ---------------- | ------------- | ---------------------------- | -------------- | --------- |
+| L5 before        | 12.8%         | 120                          | 103.5          | 12        |
+| L5 routing       | 11.5%         | 55                           | 108.6          | 11        |
+| L5 fit guard     | 12.4%         | 105                          | 104.8          | 13        |
+| L5 both          | 11.5%         | 60                           | 108.0          | 6         |
+| L8 before / both | 12.4% / 11.4% | 131 / 71                     | 129.9 / 133.2  | 14 / 13   |
+| L3 before / both | 13.9% / 11.8% | 120 / 48                     | 82.2 / 84.0    | 28 / 17   |
+
+The routing does the work; a guard in `fit` against placements that leave a planned tile
+uncoverable (penalised as one covered tile) added nothing beside it and was dropped. No
+cost in time (the soaks ran as long). The final code reproduces the routing variant's
+hashes. Every level gains, the low ones most; the ladder is not re-measured.

@@ -15,6 +15,7 @@ import {
 } from '@bollwerk/sim';
 
 import { ticksFor } from './botTurn.js';
+import { coverable } from './coverage.js';
 import { type PlanningSlots } from './planning.js';
 import {
   cannonRoom,
@@ -85,10 +86,40 @@ export class Builder {
 
   private planRound = -1;
 
-  /** Cut tiles no piece could reach; the next plan routes around them. */
+  /**
+   * Cut tiles no piece could reach, found by a fit that failed or by `markUncoverable`;
+   * the next plan routes around them.
+   */
   private unreachable = new Set<number>();
 
   private nextPlacementTick = 0;
+
+  /**
+   * Rules out every tile of the island no piece the bag can deal could cover, so a plan
+   * routes round it from the start rather than meeting it with the phase spent. A build
+   * phase only fills the board, so a tile that takes no piece now takes none this round;
+   * the set is cleared with the round, when shots and a new bag change both.
+   *
+   * Measured before (2026-10-07, 96 matches of three bots a level): a third of failed
+   * rounds ended on a gap no piece could fill, mostly a shot's hole between wall and water
+   * or wall and gun, already unfillable as the phase opened. With this, half as many, and
+   * rounds failed 12.8% -> 11.5% at Level 5, 12.4% -> 11.4% at 8, 13.9% -> 11.8% at 3,
+   * points a round up 2-5%. Also refusing, in the fit, placements that box a planned tile
+   * in added nothing to it (12.4% alone, 11.5% beside it) and was dropped.
+   */
+  private markUncoverable(state: MatchState): void {
+    const island = state.players[this.playerId]?.islandId;
+    for (let i = 0; i < state.structure.length; i++) {
+      if (
+        state.islandId[i] !== island ||
+        state.structure[i] !== Structure.Empty ||
+        this.unreachable.has(i)
+      ) {
+        continue;
+      }
+      if (!coverable(state, this.playerId, i)) this.unreachable.add(i);
+    }
+  }
 
   /** Stands down briefly after a fruitless look, rather than retrying every tick. */
   private pause(state: MatchState): void {
@@ -132,6 +163,7 @@ export class Builder {
     if (this.plannedAt < 0 || state.tick - this.plannedAt > this.profile.replanTicks) {
       // No plan left at the table this tick: try again on the next.
       if (!this.slots.take(state.tick)) return null;
+      this.markUncoverable(state);
       this.plan = this.decide(state, look);
       this.plannedAt = state.tick;
     }

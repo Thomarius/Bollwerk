@@ -5475,3 +5475,27 @@ the ruleset said — and an old header is read without them (`RETIRED_RULESET_KE
 a dropped player can reclaim their seat for the rest of the match, and PLAN §6 now says
 so rather than the limit being enforced. The four recordings of 2026-09-28 fail to parse
 as they did before, on fields added since.
+
+## 12x. The testers' play measured, and holes no piece can fill (2026-10-07)
+
+The first two pieces of the bot learning work (`docs/BOT_LEARNING.md`, where the tables
+are). **Step 1**: every piece of the five recordings that replay exactly, measured against
+every wall the player could have been building and, in hindsight, against the wall they
+finally sealed (`tools/headless/src/placements.ts`). The testers' pieces that leave the
+cheapest seal where it was end in the final wall as often as their repairs (66–67% of
+cells) where the bots' are spill and thickening (33–47%); Thomas seals walls a median 30
+blocks against a tight repair of 8 and ends a phase worth 214 against L5's 62, taking the
+risk with more slack in hand than his repairs. Every failed phase was affordable and ended
+1–3 blocks short; a tight repair is safe (~90%) only at about a third of the budget. The
+planned `reachableValue` over minimum-cut walls did not tell testers from bots: people's
+walls follow the old wall and the coast.
+
+**The unfillable last gaps**: 10 of the bots' 21 failed phases in the recordings ended on
+a gap no piece of the bag could fill, against 1 of the testers' 19; in bot soaks a third
+of failed rounds, mostly a shot's hole between wall and sea or gun that was unfillable as
+the phase opened. Bots now rule such tiles out before each plan (`markUncoverable`,
+`coverable` in `ai/src/coverage.ts`), so the wall routes round them from the start. 96
+matches a variant at three players: rounds failed 12.8% -> 11.5% at Level 5, 12.4% ->
+11.4% at 8, 13.9% -> 11.8% at 3, failures on an unfillable gap halved, points up 2–5%, no
+cost in time. A guard in the fit against boxing a planned tile in added nothing and was
+dropped. The final code reproduces the measured variant's hashes.
