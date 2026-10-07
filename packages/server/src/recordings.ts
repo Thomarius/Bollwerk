@@ -79,9 +79,14 @@ export class RecordingStore {
    * recording line, the first a header naming this id when the file does not exist yet,
    * and no later one another header — nothing but recordings gets written, and nothing
    * lands in a file that another match began.
+   *
+   * Only a browser's own recording, named and headed as one (`recordingId('local', …)`):
+   * a server's is named by its start and its room's code, which the games browser shows
+   * anyone, and lines posted to that name were added to the server's own file.
    */
   upload(id: string, body: string): { ok: true } | { ok: false; reason: string } {
     if (!/^[A-Za-z0-9-]{8,64}$/.test(id)) return { ok: false, reason: 'bad id' };
+    if (!id.includes('-local-')) return { ok: false, reason: 'not a browser recording' };
     if (Buffer.byteLength(body) > this.maxUploadBytes) return { ok: false, reason: 'too large' };
     const lines: RecordingLine[] = [];
     try {
@@ -100,6 +105,9 @@ export class RecordingStore {
       const opens = !exists && i === 0;
       if (line.kind === 'header' && (!opens || line.id !== id)) {
         return { ok: false, reason: 'misplaced header' };
+      }
+      if (line.kind === 'header' && line.source !== 'local') {
+        return { ok: false, reason: 'not a browser recording' };
       }
       if (opens && line.kind !== 'header') return { ok: false, reason: 'no header' };
     }

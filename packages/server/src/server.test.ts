@@ -70,6 +70,34 @@ describe('the server as something a program starts and stops', () => {
   });
 });
 
+describe('a connection', () => {
+  it('sits in one room: a second create or join on it is refused', async () => {
+    const server = await started();
+    const replies: { type: string; code?: string }[] = [];
+    const socket = new WebSocket(`ws://127.0.0.1:${server.port}`);
+    const create = { type: 'create', protocol: PROTOCOL_VERSION, name: 'Ada', players: 2 };
+    await new Promise<void>((resolve, reject) => {
+      socket.on('error', reject);
+      socket.on('open', () => socket.send(JSON.stringify(create)));
+      socket.on('message', (data) => {
+        const reply = JSON.parse(String(data)) as { type: string; code?: string };
+        replies.push(reply);
+        if (reply.type === 'welcome') socket.send(JSON.stringify(create));
+        if (reply.type === 'error') resolve();
+      });
+    });
+    socket.close();
+    expect(replies.some((r) => r.type === 'welcome')).toBe(true);
+    expect(replies.at(-1)).toMatchObject({ type: 'error', code: 'in_a_room' });
+    // And the second create made no room: only the first is open.
+    const open = (await (await fetch(`http://127.0.0.1:${server.port}/api/rooms`)).json()) as {
+      rooms: unknown[];
+    };
+    expect(open.rooms).toHaveLength(1);
+    await server.stop();
+  });
+});
+
 describe('opening the port to the internet', () => {
   it('puts the public address in the lobby while open, and takes it out when closed', async () => {
     const router: Router = {

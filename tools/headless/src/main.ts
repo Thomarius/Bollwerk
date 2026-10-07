@@ -1,6 +1,5 @@
 import { writeFileSync } from 'node:fs';
-import { dirname, resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { parseArgs as parseFlags } from 'node:util';
 
 import {
   BALANCED,
@@ -27,6 +26,7 @@ import {
   type MatchState,
 } from '@bollwerk/sim';
 
+import { repoRoot, usageError, wholeNumber } from './cli.js';
 import { replayAll } from './replay.js';
 import { summariseStats } from './summary.js';
 import {
@@ -96,99 +96,84 @@ function parsePersonalities(value: string | undefined): (Personality | 'dealt')[
   return out;
 }
 
+const USAGE =
+  'usage: npm start -w @bollwerk/headless -- [--matches N] [--players N] [--seed N] ' +
+  '[--max-ticks N] [--max-rounds N|none] [--teams N] [--level 1-10[,...]] ' +
+  '[--personality offensive|dealt|...[,...]] [--stats FILE] [--outcomes FILE] [--map]\n' +
+  '       npm start -w @bollwerk/headless -- --replay recordings/ [more files or dirs] [--stats FILE]';
+
+/**
+ * The flags, refused whole when one is unknown, lacks its value or is not a number: they
+ * were once read loosely, so a typo ran the defaults and `--stats --level 5` wrote a file
+ * called `--level`. What `--replay` replays are the arguments that are not flags.
+ */
 function parseArgs(argv: string[]): Args {
-  const args: Args = {
-    matches: 20,
-    players: 3,
-    seed: 1,
-    maxTicks: 150_000,
-    map: false,
-    levels: [5],
-    // Balanced unless asked, so a soak measures what it says rather than a random draw.
-    personalities: [BALANCED],
-    stats: null,
-    outcomes: null,
-    maxRounds: undefined,
-    teams: 1,
-    replay: [],
-  };
-  for (let i = 0; i < argv.length; i++) {
-    const flag = argv[i];
-    const value = argv[i + 1];
-    switch (flag) {
-      case '--matches':
-        args.matches = Number(value);
-        i++;
-        break;
-      case '--teams':
-        args.teams = Number(value);
-        i++;
-        break;
-      case '--players':
-        args.players = Number(value);
-        i++;
-        break;
-      case '--seed':
-        args.seed = Number(value);
-        i++;
-        break;
-      case '--max-rounds':
-        args.maxRounds = value === 'none' ? null : Number(value);
-        i++;
-        break;
-      case '--max-ticks':
-        args.maxTicks = Number(value);
-        i++;
-        break;
-      case '--level': {
-        const levels = parseLevels(value);
-        if (levels === null) {
-          console.error(`--level wants ${MIN_LEVEL}-${MAX_LEVEL}, or a comma-separated list`);
-          process.exit(1);
-        }
-        args.levels = levels;
-        i++;
-        break;
-      }
-      case '--personality': {
-        const personalities = parsePersonalities(value);
-        if (personalities === null) {
-          console.error('--personality wants trait values joined by -, "dealt", or a list');
-          process.exit(1);
-        }
-        args.personalities = personalities;
-        i++;
-        break;
-      }
-      case '--stats':
-        args.stats = value ?? 'stats.csv';
-        i++;
-        break;
-      case '--outcomes':
-        args.outcomes = value ?? 'outcomes.csv';
-        i++;
-        break;
-      case '--map':
-        args.map = true;
-        break;
-      case '--replay':
-        // Every argument up to the next flag: files, or directories of recordings.
-        while (argv[i + 1] !== undefined && !(argv[i + 1] as string).startsWith('--')) {
-          args.replay.push(argv[i + 1] as string);
-          i++;
-        }
-        break;
-      case '--help':
-        console.log(
-          'usage: npm start -w @bollwerk/headless -- [--matches N] [--players N] [--seed N] ' +
-            `[--max-ticks N] [--max-rounds N|none] [--teams N] [--level 1-10[,...]] [--personality offensive|dealt|...[,...]] [--stats FILE] [--outcomes FILE] [--map]\n` +
-            '       npm start -w @bollwerk/headless -- --replay recordings/ [more files or dirs] [--stats FILE]',
-        );
-        process.exit(0);
-    }
+  let parsed: ReturnType<typeof parseFlags<{ options: typeof FLAGS; allowPositionals: true }>>;
+  try {
+    parsed = parseFlags({ args: argv, options: FLAGS, allowPositionals: true, strict: true });
+  } catch (error) {
+    usageError(`${(error as Error).message}\n${USAGE}`);
   }
-  return args;
+  const { values, positionals } = parsed;
+  if (values.help === true) {
+    console.log(USAGE);
+    process.exit(0);
+  }
+  if (positionals.length > 0 && values.replay !== true) {
+    usageError(`unexpected ${positionals.join(' ')}: only --replay takes files\n${USAGE}`);
+  }
+  if (values.replay === true && positionals.length === 0) {
+    usageError('--replay wants recordings: files, or directories of them');
+  }
+  const levels = values.level === undefined ? [5] : parseLevels(values.level);
+  if (levels === null)
+    usageError(`--level wants ${MIN_LEVEL}-${MAX_LEVEL}, or a comma-separated list`);
+  // Balanced unless asked, so a soak measures what it says rather than a random draw.
+  const personalities =
+    values.personality === undefined ? [BALANCED] : parsePersonalities(values.personality);
+  if (personalities === null) {
+    usageError('--personality wants trait values joined by -, "dealt", or a list');
+  }
+  const number = (flag: keyof typeof values, fallback: number, min: number): number => {
+    const value = values[flag];
+    return typeof value === 'string' ? wholeNumber(flag, value, min) : fallback;
+  };
+  return {
+    matches: number('matches', 20, 1),
+    players: number('players', 3, 2),
+    seed: number('seed', 1, 0),
+    maxTicks: number('max-ticks', 150_000, 1),
+    map: values.map === true,
+    levels,
+    personalities,
+    stats: values.stats ?? null,
+    outcomes: values.outcomes ?? null,
+    maxRounds:
+      values['max-rounds'] === undefined
+        ? undefined
+        : values['max-rounds'] === 'none'
+          ? null
+          : number('max-rounds', 0, 1),
+    teams: number('teams', 1, 1),
+    replay: values.replay === true ? positionals : [],
+  };
 }
+
+const FLAGS = {
+  matches: { type: 'string' },
+  players: { type: 'string' },
+  seed: { type: 'string' },
+  'max-ticks': { type: 'string' },
+  'max-rounds': { type: 'string' },
+  teams: { type: 'string' },
+  level: { type: 'string' },
+  personality: { type: 'string' },
+  stats: { type: 'string' },
+  outcomes: { type: 'string' },
+  map: { type: 'boolean' },
+  replay: { type: 'boolean' },
+  help: { type: 'boolean' },
+} as const;
 
 function describeOutcome(state: MatchState): string {
   if (state.phase !== 'game_over') return `unfinished (${state.phase}, round ${state.round})`;
@@ -292,7 +277,6 @@ function summariseTeams(layouts: TeamLayout[]): void {
 
 // -------------------------------------------------------------------------- run
 
-const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..', '..');
 const args = parseArgs(process.argv.slice(2));
 const bundle = loadConfigBundle(repoRoot);
 

@@ -253,6 +253,13 @@ export async function startServer(options: ServerOptions): Promise<StartResult> 
           connection.close(`protocol ${message.protocol} is not ${PROTOCOL_VERSION}`);
           return;
         }
+        // One room a connection: a second seat was left behind still connected when the
+        // socket closed, so its room was never emptied and never closed, and a match never
+        // handed it to a bot. The client opens a new socket for every room.
+        if (joined.has(connection.id)) {
+          connection.send({ type: 'error', code: 'in_a_room', message: 'already in a room' });
+          return;
+        }
       }
 
       if (message.type === 'create') {

@@ -127,6 +127,24 @@ describe('the recording store', () => {
     );
   });
 
+  it('never adds to a recording the server made, nor takes one claiming to be the server’s', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'rec-'));
+    const store = new RecordingStore(dir, 1 << 20, defaultConfigBundle);
+    // A room's recording, named by its start and the room's code, which anyone can see.
+    const own = '20260927-100000-server-ABCD';
+    const write = store.writer();
+    write({ ...header(own), source: 'server' } as RecordingLine);
+    write(tick(1));
+    const before = readFileSync(join(dir, `${own}.jsonl`), 'utf8');
+    expect(store.upload(own, body(tick(2), tick(3))).ok).toBe(false);
+    expect(readFileSync(join(dir, `${own}.jsonl`), 'utf8')).toBe(before);
+    // Nor may a browser open a file headed as a server's, under a browser's name.
+    const posed = '20260927-100000-local-posed1';
+    expect(
+      store.upload(posed, body({ ...header(posed), source: 'server' } as RecordingLine)).ok,
+    ).toBe(false);
+  });
+
   it('writes a room’s lines to the file its header names', () => {
     const dir = mkdtempSync(join(tmpdir(), 'rec-'));
     const store = new RecordingStore(dir, 1 << 20, defaultConfigBundle);

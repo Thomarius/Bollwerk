@@ -10,8 +10,8 @@ import {
   writeFileSync,
 } from 'node:fs';
 import { cpus, constants, setPriority } from 'node:os';
-import { basename, dirname, join, resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { parseArgs as parseFlags } from 'node:util';
+import { basename, join, resolve } from 'node:path';
 
 import {
   parseOutcomesCsv,
@@ -20,6 +20,7 @@ import {
   type StatRow,
 } from '@bollwerk/analysis';
 
+import { repoRoot, usageError, wholeNumber } from './cli.js';
 import { chunkArgs, chunksOf, soakPlan, type Batch, type Chunk } from './soakPlan.js';
 import { soakSummary, type SoakGroup } from './soakSummary.js';
 
@@ -43,7 +44,6 @@ import { soakSummary, type SoakGroup } from './soakSummary.js';
  *   npm run soak -- --summarise FILE...   a summary of any stats tables, recordings' too
  */
 
-const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..', '..');
 const tsx = join(repoRoot, 'node_modules', 'tsx', 'dist', 'cli.mjs');
 const harness = join(repoRoot, 'tools', 'headless', 'src', 'main.ts');
 /**
@@ -64,49 +64,52 @@ interface Options {
   summarise: string[];
 }
 
+/** The flags, refused whole when one is unknown or lacks its value, as the harness's are. */
 function parseOptions(argv: string[]): Options {
   // The local date, as the person starting it reads the calendar; UTC would differ at night.
   const now = new Date();
   const today = [now.getFullYear(), now.getMonth() + 1, now.getDate()]
     .map((n) => String(n).padStart(2, '0'))
     .join('-');
-  const o: Options = {
-    out: join(repoRoot, 'soaks', today),
-    workers: Math.max(1, cpus().length - 2),
-    only: [],
-    trial: false,
-    list: false,
-    summary: false,
-    summarise: [],
-  };
-  let outGiven = false;
-  for (let i = 0; i < argv.length; i++) {
-    const flag = argv[i];
-    const value = argv[i + 1];
-    if (flag === '--out' && value !== undefined) {
-      o.out = fromCwd(value);
-      outGiven = true;
-      i++;
-    } else if (flag === '--workers' && value !== undefined) {
-      o.workers = Math.max(1, Number(value));
-      i++;
-    } else if (flag === '--only' && value !== undefined) {
-      o.only = value.split(',').map((s) => s.trim());
-      i++;
-    } else if (flag === '--trial') o.trial = true;
-    else if (flag === '--list') o.list = true;
-    else if (flag === '--summary') o.summary = true;
-    else if (flag === '--summarise') {
-      while (argv[i + 1] !== undefined && !argv[i + 1]!.startsWith('--'))
-        o.summarise.push(fromCwd(argv[++i]!));
-    } else {
-      console.error(`unknown option ${flag}; see the head of tools/headless/src/soak.ts`);
-      process.exit(2);
-    }
+  let parsed: ReturnType<typeof parseFlags<{ options: typeof FLAGS; allowPositionals: true }>>;
+  try {
+    parsed = parseFlags({ args: argv, options: FLAGS, allowPositionals: true, strict: true });
+  } catch (error) {
+    usageError(`${(error as Error).message}; see the head of tools/headless/src/soak.ts`);
   }
-  if (o.trial && !outGiven) o.out = join(repoRoot, 'soaks', `trial-${today}`);
-  return o;
+  const { values, positionals } = parsed;
+  // What --summarise summarises are the arguments that are not flags.
+  if (positionals.length > 0 && values.summarise !== true) {
+    usageError(`unexpected ${positionals.join(' ')}: only --summarise takes files`);
+  }
+  const trial = values.trial === true;
+  const out =
+    values.out !== undefined
+      ? fromCwd(values.out)
+      : join(repoRoot, 'soaks', trial ? `trial-${today}` : today);
+  return {
+    out,
+    workers:
+      values.workers === undefined
+        ? Math.max(1, cpus().length - 2)
+        : wholeNumber('workers', values.workers, 1),
+    only: values.only === undefined ? [] : values.only.split(',').map((s) => s.trim()),
+    trial,
+    list: values.list === true,
+    summary: values.summary === true,
+    summarise: values.summarise === true ? positionals.map(fromCwd) : [],
+  };
 }
+
+const FLAGS = {
+  out: { type: 'string' },
+  workers: { type: 'string' },
+  only: { type: 'string' },
+  trial: { type: 'boolean' },
+  list: { type: 'boolean' },
+  summary: { type: 'boolean' },
+  summarise: { type: 'boolean' },
+} as const;
 
 function git(...args: string[]): string {
   return execFileSync('git', args, { cwd: repoRoot, encoding: 'utf8' }).trim();
