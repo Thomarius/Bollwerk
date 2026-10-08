@@ -5684,3 +5684,29 @@ road, `--count N` how far hosts get. A first look, the host as Level 5 against L
 a short single-elimination of up to eight teams a match won 5% of the time; long double
 elimination 0.5–4%. Multi-team matches are hard to win as an average team; whether that is
 right for people is for T2's ratings and T8's play.
+
+## 12zf. Tournament mode, T2: ratings, names, and one size a matchday (2026-10-08)
+
+**Linear ratings**, the user's choice: Level _n_ counts _n_ in a quick roll. T1's fit to the
+soak's ladder ran from 1 to 414, the cliff from Level 4 to 5 a factor of eight, and the user
+would rather a roll felt like a contest than replayed the bots' real gaps. The soak of team
+matches T2 planned, to test whether summing the fitted ratings modelled a team, is therefore
+not needed. Rolled, a host as Level 5 against Levels 3–6 wins a Medium knockout of eight teams
+in pairs 13.9% of the time, near the one in eight of equal teams.
+
+**Name pools for every field.** The largest field any settings allow, enumerated over every
+match range and length (`largestField`), is 256 teams: 512 bots at teams of two. The pools are
+now 627 given names and 298 team names, so no name needs a numeral; a test enumerates the
+bound and checks the pools against it. Given names from many languages, written without
+accents; team names single words that read alike in most languages, Rampart (the trademark),
+Zulu and Sherpa (peoples) and Pirate left out.
+
+**One match size a matchday.** Linear ratings brought out a flaw in the league: with sizes
+mixed within a matchday, a win in a two-team match earned 1 point and a win in an eight-team
+match 7, and a host who won every league match missed the cut — 5.4% of the time in a Short
+league of 2–4 teams a match, 3.8% at 2–8, 0.5–0.7% in Long, never at 3–5 (1,000 seeds each).
+The user chose, of three fixes, to give each matchday one size, drawn among those in range
+that divide the field, as each knockout round has one; ranking by wins first, or scoring a
+win the same at any size with fractions, were the others. The league's field is now exactly
+the knockout's times `leagueFactor`, which every knockout size divides, and a test confirms an
+unbeaten host goes through on 200 seeds.

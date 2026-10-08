@@ -1,7 +1,7 @@
 import type { TournamentConfig } from '@bollwerk/config';
 import { streamFor } from '@bollwerk/sim';
 
-import { drawLeague, knockoutSizes, loserRounds, partitionableAtLeast, product } from './plan.js';
+import { drawLeague, knockoutSizes, loserRounds, product } from './plan.js';
 import { settle } from './progress.js';
 import { createTeams } from './roster.js';
 import { SAVE_VERSION, type Save } from './save.js';
@@ -30,9 +30,8 @@ export function createTournament(
     config.maxField,
   );
   const advance = product(rounds);
-  const field = settings.league
-    ? partitionableAtLeast(advance * config.leagueFactor, matchTeams)
-    : advance;
+  // Every knockout size divides the league's field, so each matchday has one that fits.
+  const field = settings.league ? advance * config.leagueFactor : advance;
   const ids = Array.from({ length: field }, (_, id) => id);
 
   const save: Save = {

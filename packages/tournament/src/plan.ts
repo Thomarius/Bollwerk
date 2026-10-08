@@ -36,40 +36,6 @@ export function knockoutSizes(rng: Rng, rounds: number, sizes: MatchSizes, cap: 
   return out;
 }
 
-/** Whether `teams` can be split into matches of sizes within the range. */
-export function partitionable(teams: number, sizes: MatchSizes): boolean {
-  if (teams === 0) return true;
-  if (teams < sizes.min) return false;
-  return Math.ceil(teams / sizes.max) * sizes.min <= teams;
-}
-
-/** The smallest field at least `teams` that splits into matches within the range. */
-export function partitionableAtLeast(teams: number, sizes: MatchSizes): number {
-  let field = teams;
-  while (!partitionable(field, sizes)) field++;
-  return field;
-}
-
-/**
- * Match sizes summing to `teams`, each drawn uniformly among those that still leave a
- * remainder that can be split.
- */
-export function drawSizes(rng: Rng, teams: number, sizes: MatchSizes): number[] {
-  const out: number[] = [];
-  let left = teams;
-  while (left > 0) {
-    const options: number[] = [];
-    for (let s = sizes.min; s <= Math.min(sizes.max, left); s++) {
-      if (partitionable(left - s, sizes)) options.push(s);
-    }
-    if (options.length === 0) throw new Error(`${teams} teams cannot be split into matches`);
-    const size = options[rng.nextInt(options.length)] as number;
-    out.push(size);
-    left -= size;
-  }
-  return out;
-}
-
 /** Teams still in the losers' pool after a round of matches of `size`: byes and winners. */
 export function survivors(pool: number, size: number): number {
   return Math.floor(pool / size) + (pool % size);
@@ -102,14 +68,27 @@ export function loserRounds(rng: Rng, rounds: readonly number[], sizes: MatchSiz
 }
 
 /**
- * One league matchday: every team in one match, sizes drawn within the range, opponents
- * drawn at random but steering clear of teams already met. A few draws are tried and the
- * one with the fewest repeat meetings kept; a repeat happens only when they all have one.
+ * The match sizes a league of `teams` may play a matchday at: those in the range that
+ * divide it. Every matchday has one size for all its matches, so a win is worth the same
+ * to everyone that day — mixed sizes let a team that won every match miss the cut, beaten
+ * on points by single wins in larger matches (5% of unbeaten hosts in a Short league, ARCHIVE
+ * 12zf). The knockout's first round size always divides the league's field.
+ */
+export function matchdaySizes(teams: number, sizes: MatchSizes): number[] {
+  const out: number[] = [];
+  for (let s = sizes.min; s <= sizes.max; s++) if (teams % s === 0) out.push(s);
+  return out;
+}
+
+/**
+ * One league matchday: every team in one match of `size`, opponents drawn at random but
+ * steering clear of teams already met. A few draws are tried and the one with the fewest
+ * repeat meetings kept; a repeat happens only when they all have one.
  */
 export function drawMatchday(
   rng: Rng,
   teams: number,
-  sizes: MatchSizes,
+  size: number,
   met: readonly Set<number>[],
 ): number[][] {
   let best: number[][] = [];
@@ -118,7 +97,7 @@ export function drawMatchday(
     const left = rng.shuffle(Array.from({ length: teams }, (_, id) => id));
     const matches: number[][] = [];
     let repeats = 0;
-    for (const size of drawSizes(rng, teams, sizes)) {
+    for (let m = 0; m < teams / size; m++) {
       const match = [left.shift() as number];
       while (match.length < size) {
         // The first team left that has met the fewest of this match so far.
@@ -145,7 +124,10 @@ export function drawMatchday(
   return best;
 }
 
-/** Every league matchday, drawn at creation, each steering clear of the meetings before. */
+/**
+ * Every league matchday, drawn at creation: each its size, from those `matchdaySizes`
+ * allows, then its matches, steering clear of the meetings before.
+ */
 export function drawLeague(
   rng: Rng,
   teams: number,
@@ -155,11 +137,42 @@ export function drawLeague(
   const met = Array.from({ length: teams }, () => new Set<number>());
   const out: number[][][] = [];
   for (let day = 0; day < matchdays; day++) {
-    const matches = drawMatchday(rng, teams, sizes, met);
+    const options = matchdaySizes(teams, sizes);
+    if (options.length === 0) throw new Error(`no match size within range divides ${teams}`);
+    const size = options[rng.nextInt(options.length)] as number;
+    const matches = drawMatchday(rng, teams, size, met);
     for (const match of matches) {
       for (const a of match) for (const b of match) if (a !== b) met[a]?.add(b);
     }
     out.push(matches);
   }
   return out;
+}
+
+/**
+ * The most teams any tournament can field at a team size, over every match range and
+ * length the settings allow: what the name pools must cover for every name to be plain.
+ */
+export function largestField(
+  config: {
+    maxField: number;
+    leagueFactor: number;
+    lengths: Record<string, { knockoutRounds: number }>;
+  },
+  teams: MatchSizes,
+): number {
+  const rounds = Math.max(...Object.values(config.lengths).map((l) => l.knockoutRounds));
+  let most = 0;
+  const visit = (sizes: number[], range: MatchSizes): void => {
+    const field = product(sizes);
+    if (field > config.maxField) return;
+    if (sizes.length > 0) most = Math.max(most, field * config.leagueFactor);
+    if (sizes.length < rounds) {
+      for (let s = range.min; s <= range.max; s++) visit([...sizes, s], range);
+    }
+  };
+  for (let min = teams.min; min <= teams.max; min++) {
+    for (let max = min; max <= teams.max; max++) visit([], { min, max });
+  }
+  return most;
 }

@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vitest';
 import { chunk, seedBracket, separate, snake } from './bracket.js';
 import { createTournament } from './create.js';
 import { placings } from './placement.js';
-import { drawSizes, knockoutSizes, loserRounds, partitionable, product } from './plan.js';
+import { knockoutSizes, largestField, loserRounds, matchdaySizes, product } from './plan.js';
 import { Progress, hostHistory, recordMatch, rollHostMatch, stepsOf } from './progress.js';
 import { NameDrawer } from './roster.js';
 import { rollOrder } from './roll.js';
@@ -302,6 +302,24 @@ describe('the league', () => {
     expect(save.teams.length).toBeGreaterThanOrEqual(save.plan.advance * config.leagueFactor);
   });
 
+  it('plays every match of a matchday at one size', () => {
+    for (let seed = 0; seed < 30; seed++) {
+      const save = make({ seed, league: true, length: 'long', matchTeams: { min: 2, max: 8 } });
+      for (const day of save.plan.matchdays) {
+        expect(new Set(day.map((m) => m.length)).size).toBe(1);
+      }
+    }
+  });
+
+  it('always sends a team that won every league match through', () => {
+    for (let seed = 0; seed < 200; seed++) {
+      const save = make({ seed, league: true, length: 'short', matchTeams: { min: 2, max: 8 } });
+      let progress = new Progress(save);
+      for (let day = 0; day < save.plan.matchdays.length; day++) progress = winNext(save);
+      expect(progress.status.kind, `seed ${seed}`).toBe('playing');
+    }
+  });
+
   it('meets an opponent twice only when the draw cannot avoid it', () => {
     const save = make({ league: true, length: 'long', matchTeams: { min: 2, max: 2 } });
     const met = new Set<string>();
@@ -352,22 +370,9 @@ describe('the bracket', () => {
 });
 
 describe('the plan', () => {
-  it('splits a field into matches within the range', () => {
-    const rng = new Rng(3);
-    for (let teams = 2; teams < 60; teams++) {
-      for (const range of [
-        { min: 2, max: 4 },
-        { min: 3, max: 3 },
-        { min: 3, max: 8 },
-      ]) {
-        if (!partitionable(teams, range)) continue;
-        const sizes = drawSizes(rng, teams, range);
-        expect(sizes.reduce((a, b) => a + b, 0)).toBe(teams);
-        for (const s of sizes) expect(s >= range.min && s <= range.max).toBe(true);
-      }
-    }
-    expect(partitionable(7, { min: 3, max: 3 })).toBe(false);
-    expect(partitionable(7, { min: 3, max: 4 })).toBe(true);
+  it('offers a matchday only the sizes that divide the league', () => {
+    expect(matchdaySizes(48, { min: 2, max: 8 })).toEqual([2, 3, 4, 6, 8]);
+    expect(matchdaySizes(18, { min: 4, max: 5 })).toEqual([]);
   });
 
   it('lowers the largest round first to meet the cap, then drops rounds', () => {
@@ -497,6 +502,31 @@ describe('a roll', () => {
 });
 
 describe('names', () => {
+  it('cover the largest field without a numeral', () => {
+    const { teamSize } = limits;
+    for (let size = teamSize.min; size <= teamSize.max; size++) {
+      const range = teamLimits(size, limits.players);
+      if (range === null) continue;
+      const field = largestField(config, range);
+      // Every bot but the host's team's, and the few the host's own names may take from it.
+      const players = (field - 1) * size + size + 1;
+      expect(config.names.players.length, `teams of ${size}`).toBeGreaterThanOrEqual(players);
+      if (size > 1) expect(config.names.teams.length).toBeGreaterThanOrEqual(field);
+    }
+  });
+
+  it('are all plain at the largest field', () => {
+    const save = make({
+      teamSize: 2,
+      league: true,
+      length: 'long',
+      matchTeams: { min: 2, max: 4 },
+      archnemesis: 'Ada',
+    });
+    const names = save.teams.flatMap((t) => [t.name, ...t.members.map((m) => m.name)]);
+    expect(names.filter((n) => / [IVX]+$/.test(n))).toEqual([]);
+  });
+
   it('go round again with a numeral once the pool is used up', () => {
     const names = new NameDrawer(['Ada', 'Bo'], new Rng(1), ['bo']);
     const drawn = [names.next(), names.next(), names.next()];

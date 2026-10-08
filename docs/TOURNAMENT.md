@@ -79,16 +79,19 @@ everything; ARCHIVE 12ze.)
 ### 1.4 The league stage
 
 - **Matchdays.** On each, every team plays one match against opponents drawn at random from
-  the whole field, with match sizes drawn within the min–max. A team meets the same opponent
-  twice only if the draw cannot avoid it.
+  the whole field. **Each matchday has one match size**, drawn within the min–max among
+  those that divide the field, as each knockout round has one. A team meets the same
+  opponent twice only if the draw cannot avoid it.
 - **Points: one for every team you finish ahead of.** A win in a four-team match is 3, a win
-  in a two-team match 1, last place 0.
+  in a two-team match 1, last place 0. With one size a matchday a win is worth the same to
+  everyone that day, so **a team that wins every league match always goes through**: the
+  unbeaten can never outnumber the places. (Sizes mixed within a matchday, the first design,
+  let 5% of unbeaten hosts miss the cut in a Short league; ARCHIVE 12zf.)
 - **One table.** Ranked by points, then **Buchholz** (the sum of the points of every team you
   met), then a seeded draw. See the note below on why Buchholz replaces the match-score
   tie-break agreed on 2026-10-08.
 - **Who goes through:** the top _K_ after the last matchday, _K_ being the knockout field.
-  The league field is `tournament.leagueFactor` × _K_, rounded up until the matchdays divide
-  it into legal matches.
+  The league field is `tournament.leagueFactor` × _K_, which every knockout size divides.
 - **The host's team plays every matchday.** It is out if it is not in the top _K_ at the end.
   It plays on even when it can no longer reach the top _K_: there is no early "you cannot
   qualify", which would be cruel to work out and confusing to show.
@@ -123,8 +126,9 @@ everything; ARCHIVE 12ze.)
 - **Ties in a played match** (a shared win at the cap, a simultaneous knockout): the higher
   score ranks first, then the later knockout, then a seeded coin flip. Quick rolls cannot
   tie.
-- **The quick roll.** Each level has a **rating** (`tournament.levelRatings`, calibrated
-  from the soak's ladder, ARCHIVE 12h). A team's strength is the sum of its members'
+- **The quick roll.** Each level has a **rating** (`tournament.levelRatings`), **linear on
+  purpose** — Level _n_ counts _n_ — rather than the bots' real gaps, which run from 1 to over
+  400 (the user's choice, 2026-10-08; ARCHIVE 12zf). A team's strength is the sum of its members'
   ratings. A full placement order is drawn in proportion to strength, Plackett–Luce: first
   place in proportion to strength among all, second among the rest, and so on.
   Personalities play no part.
@@ -209,17 +213,10 @@ In order. Each ends with `npm run check` passing and the user's go-ahead to comm
 `packages/tournament`, its tests, and `--tournament` in the headless harness. The ratings and
 name pools it ships with are provisional, for T2.
 
-### T2 — Ratings and names
+### T2 — Ratings and names — done (ARCHIVE 12zf)
 
-- **Level ratings** fitted to the soak's ladder (ARCHIVE 12h, one bot against two of another
-  level) as a Bradley–Terry fit — T1 ships a quick fit of it (ARCHIVE 12ze) — then **checked against a small soak of team matches** to
-  test whether summing ratings is a fair model of a team. Adjust if not, before trusting the
-  rolls.
-- **Name pools** in config, one for every language: given names that read well in most
-  countries, and team names (the user's choice, 2026-10-08). Names are unique whatever the
-  pool's size — a used-up pool goes round again as "Anna II" — but the largest field holds
-  512 bots (teams of two, 256 with a league), against T1's 157 names: grow the pools so the
-  numerals are rare.
+Linear ratings, name pools large enough for the largest field, and the league played at one
+match size a matchday.
 
 ### T3 — Fixed tables
 

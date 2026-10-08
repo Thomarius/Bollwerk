@@ -36,6 +36,9 @@ export const TournamentConfigSchema = z.strictObject({
   /**
    * Each level's strength in a quick roll, Level 1 first: a team counts the sum of its
    * members', and places are drawn in proportion to it (Plackett–Luce, TOURNAMENT §1.6).
+   * Linear on purpose, the user's choice (2026-10-08): fitted to the soak's ladder they ran
+   * from 1 to 414, the cliff from Level 4 to 5 a factor of eight, and a roll should feel
+   * like a contest rather than replay the bots' real gaps.
    */
   levelRatings: z.array(z.number().positive()).length(MAX_LEVEL),
   names: z.strictObject({
