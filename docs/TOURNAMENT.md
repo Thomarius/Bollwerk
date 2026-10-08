@@ -218,17 +218,11 @@ name pools it ships with are provisional, for T2.
 Linear ratings, name pools large enough for the largest field, and the league played at one
 match size a matchday.
 
-### T3 — Fixed tables
+### T3 — Fixed tables — done (ARCHIVE 12zg)
 
-A match can be set up with each seat's name, level and personality given, offline and on a
-server.
-
-- `dealSeats` keeps any given setups and deals only the rest. Islands are still shuffled by
-  seat as ever.
-- The local setup (`Setup`, `LocalMatch`) carries seat names and setups.
-- The end screen's bot reveal and the recording header show the given setups.
-- The recording header gets an optional `tournament` field (the tournament's id and the
-  match's place), which bumps the recording format.
+A local match takes each seat's name and its bot's personality from the table, a tournament's
+match becomes such a table (`matchTable`) and its result a tournament's (`placedFrom`). A room
+taking a table is T6's, with the protocol it needs.
 
 ### T4 — Saves and the menu
 

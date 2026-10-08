@@ -40,6 +40,15 @@ export interface LocalMatchOptions {
   personality?: Personality;
   /** Each seat's team, by seat. Omitted, every seat is on its own. */
   teams?: readonly number[];
+  /**
+   * Each seat's name, by seat, where the table names it — a tournament's bots and its host;
+   * otherwise the person is "You" and a bot is numbered by seat.
+   */
+  names?: readonly (string | null)[];
+  /** Each seat's bot's personality, by seat, where the table gives one rather than dealing it. */
+  personalities?: readonly (Personality | null)[];
+  /** The tournament this match is part of, for the recording's header. */
+  tournament?: { id: string; step: number };
   ruleset?: Ruleset;
   /** Where the match's recording goes, line by line; see `recording.ts`. */
   record?: (line: RecordingLine) => void;
@@ -91,7 +100,11 @@ export class LocalMatch {
     // seats people as an online one would.
     const { playerOfSeat: order, setups: dealt } = dealSeats(
       options.seed,
-      seats.map((level) => ({ level, bot: level !== null })),
+      seats.map((level, index) => ({
+        level,
+        bot: level !== null,
+        personality: options.personalities?.[index] ?? null,
+      })),
     );
     const humanSeat = seats.findIndex((seat) => seat === null);
     this.humanPlayer = humanSeat < 0 ? -1 : (order[humanSeat] as number);
@@ -100,7 +113,9 @@ export class LocalMatch {
     seats.forEach((seat, index) => {
       players[order[index] as number] = {
         // Numbered by seat, as the lobby and a room number them.
-        name: seat === null ? t('local.you') : t('lobby.bot', { n: index + 1 }),
+        name:
+          options.names?.[index] ??
+          (seat === null ? t('local.you') : t('lobby.bot', { n: index + 1 })),
         isBot: seat !== null,
         team: options.teams?.[index] ?? index,
       };
@@ -141,6 +156,7 @@ export class LocalMatch {
           level: setups.get(id)?.level ?? null,
           personality: setups.get(id)?.personality ?? null,
         })),
+        ...(options.tournament === undefined ? {} : { tournament: options.tournament }),
       });
     }
   }

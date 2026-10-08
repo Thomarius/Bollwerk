@@ -5710,3 +5710,28 @@ that divide the field, as each knockout round has one; ranking by wins first, or
 win the same at any size with fractions, were the others. The league's field is now exactly
 the knockout's times `leagueFactor`, which every knockout size divides, and a test confirms an
 unbeaten host goes through on 200 seeds.
+
+## 12zg. Tournament mode, T3: fixed tables (2026-10-08)
+
+A tournament's match is an ordinary match at a table whose seats are named and whose bots
+keep the personalities they have all tournament. **`dealSeats`** takes a seat's personality
+when the table gives one; it still deals every seat as if none were given and then puts the
+given ones in, so no other seat's deal moves and every table without one is dealt exactly as
+before. **`LocalMatch`** and the client's `Setup` take each seat's name (the person is no
+longer always "You", nor a bot "Bot 3") and personality, and the tournament the match is part
+of, which goes into the recording's header as `tournament: { id, step }`. The end screen's
+reveal shows the given personalities with nothing changed, since it reads the match's setups.
+
+**The recording format is not bumped**, where the plan said it would be: the format names the
+state's fingerprint, which has not changed, and the key is only added — every reader of this
+format reads it, and a recording replays only against the code that made it anyway.
+
+In `packages/tournament`, **`matchTable`** lays a match's teams out in seat order, each labelled
+by its place in the match, so the simulation's team _i_ is the match's team _i_ (`createMatch`
+numbers labels densely in order); **`placedFrom`** reads a finished match back into places by
+tournament team, its ties decided by the match's own coin. A test plays a whole Short
+tournament match of two teams of two locally, every bot the tournament's, replays its
+recording exactly, and records the result into the tournament: about 4 s.
+
+The server's room still deals as before; a room taking a tournament's table is T6, with
+protocol 18.

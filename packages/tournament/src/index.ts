@@ -7,3 +7,4 @@ export * from './roll.js';
 export * from './placement.js';
 export * from './progress.js';
 export * from './create.js';
+export * from './table.js';

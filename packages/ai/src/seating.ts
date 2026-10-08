@@ -23,15 +23,22 @@ export interface TableSeat {
   /** Null for a seat that has no bot at all — a person's, offline. */
   level: number | null;
   bot: boolean;
+  /**
+   * A personality the table gives this seat's bot rather than one dealt from the seed — a
+   * tournament's bots keep theirs from match to match (TOURNAMENT §1.1).
+   */
+  personality?: Personality | null;
 }
 
 export interface DealtSeats {
   /** The player each seat becomes, by seat (`seatOrder`). */
   playerOfSeat: number[];
   /**
-   * Each player's bot, by player: its level and the personality dealt it. Null for a seat
-   * with no level. Personalities are dealt over who is a bot, so a person's seat changes
-   * the deal, and a seat a person holds online still gets a bot to cover them if they drop.
+   * Each player's bot, by player: its level and the personality dealt it, or the one the
+   * table gave it. Null for a seat with no level. Personalities are dealt over who is a bot,
+   * so a person's seat changes the deal, and a seat a person holds online still gets a bot
+   * to cover them if they drop. A given personality replaces the one dealt and moves no
+   * other seat's: the deal is made for every seat as if none were given.
    */
   setups: (BotSetup | null)[];
 }
@@ -47,7 +54,8 @@ export function dealSeats(seed: number, seats: readonly TableSeat[]): DealtSeats
   seats.forEach((seat, index) => {
     const player = playerOfSeat[index] as number;
     if (seat.level !== null) {
-      setups[player] = { level: seat.level, personality: personalities[player] as Personality };
+      const personality = seat.personality ?? (personalities[player] as Personality);
+      setups[player] = { level: seat.level, personality };
     }
   });
   return { playerOfSeat, setups };

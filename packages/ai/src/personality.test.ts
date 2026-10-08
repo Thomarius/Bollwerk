@@ -2,6 +2,7 @@ import { TRAIT_VALUES, type Personality } from '@bollwerk/config';
 import { describe, expect, it } from 'vitest';
 
 import { dealPersonalities } from './personality.js';
+import { dealSeats } from './seating.js';
 
 const traits = Object.keys(TRAIT_VALUES) as (keyof Personality)[];
 
@@ -49,5 +50,26 @@ describe('dealing personalities', () => {
     }
     const one = JSON.stringify(dealPersonalities(7, [true, true, true]));
     expect(JSON.stringify(dealPersonalities(8, [true, true, true]))).not.toBe(one);
+  });
+});
+
+describe('seating a table', () => {
+  it('keeps a personality the table gives, and deals every other seat as without it', () => {
+    const given: Personality = { risk: 'defensive', targeting: 'strategic', cannons: 'secondary' };
+    const plain = dealSeats(5, [
+      { level: 4, bot: true },
+      { level: null, bot: false },
+      { level: 7, bot: true },
+    ]);
+    const kept = dealSeats(5, [
+      { level: 4, bot: true, personality: given },
+      { level: null, bot: false },
+      { level: 7, bot: true },
+    ]);
+    expect(kept.playerOfSeat).toEqual(plain.playerOfSeat);
+    const first = kept.playerOfSeat[0] as number;
+    const third = kept.playerOfSeat[2] as number;
+    expect(kept.setups[first]).toEqual({ level: 4, personality: given });
+    expect(kept.setups[third]).toEqual(plain.setups[third]);
   });
 });

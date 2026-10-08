@@ -56,7 +56,6 @@ export interface Session {
 }
 
 export interface Setup {
-  /** One per seat: null for the person, otherwise the bot's skill. */
   /** One per seat: null for the person, otherwise the bot's level, 1 to 10. */
   seats: (number | null)[];
   seed: number;
@@ -66,6 +65,12 @@ export interface Setup {
   settings: MatchSettings;
   /** Each seat's team, by seat. Omitted, free-for-all. */
   teams?: readonly number[];
+  /** Each seat's name, by seat, where the table names it rather than numbering bots. */
+  names?: readonly (string | null)[];
+  /** Each seat's bot's personality, by seat, where the table gives one. */
+  personalities?: readonly (Personality | null)[];
+  /** The tournament the match belongs to, for its recording. */
+  tournament?: { id: string; step: number };
 }
 
 export const SETTING_BOUNDS = defaultConfigBundle.server.lobbySettings;
@@ -89,6 +94,9 @@ export function localMatchFor(setup: Setup, record = true): LocalMatch {
     // ?personality= fixes every bot's, for testing; otherwise each is dealt from the seed.
     ...(FIXED_PERSONALITY === null ? {} : { personality: FIXED_PERSONALITY }),
     ...(setup.teams === undefined ? {} : { teams: setup.teams }),
+    ...(setup.names === undefined ? {} : { names: setup.names }),
+    ...(setup.personalities === undefined ? {} : { personalities: setup.personalities }),
+    ...(setup.tournament === undefined ? {} : { tournament: setup.tournament }),
     ruleset: applySettings(defaultConfigBundle.ruleset, setup.settings),
     ...(record ? { record: new RecordingUpload().write } : {}),
   });

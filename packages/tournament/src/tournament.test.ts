@@ -5,6 +5,7 @@ import { describe, expect, it } from 'vitest';
 import { chunk, seedBracket, separate, snake } from './bracket.js';
 import { createTournament } from './create.js';
 import { placings } from './placement.js';
+import { matchTable, placedFrom } from './table.js';
 import { knockoutSizes, largestField, loserRounds, matchdaySizes, product } from './plan.js';
 import { Progress, hostHistory, recordMatch, rollHostMatch, stepsOf } from './progress.js';
 import { NameDrawer } from './roster.js';
@@ -488,6 +489,31 @@ describe('a played match', () => {
     );
     const out = placings(state([player(0, 20, 4), player(1, 30, 4)]), new Rng(1));
     expect(out.map((p) => p.team)).toEqual([1, 0]);
+  });
+});
+
+describe('a table', () => {
+  it('seats each team in turn, labelled by its place in the match, and reads a result back', () => {
+    const save = make({ teamSize: 2 });
+    const teams = [3, HOST_TEAM, 5];
+    const table = matchTable(save, teams);
+    expect(table.seats.map((s) => s.team)).toEqual([0, 0, 1, 1, 2, 2]);
+    expect(table.seats[2]).toEqual({ name: 'Thomas', level: null, personality: null, team: 1 });
+    expect(table.seats[3]?.name).toBe('Helper 1');
+    expect(table.seats[0]?.name).toBe(save.teams[3]?.members[0]?.name);
+    // The match's team 1 is the host's, 2 the tournament's team 5, 0 its team 3.
+    const players = [0, 0, 1, 1, 2, 2].map((team, i) => ({
+      team,
+      score: [10, 10, 50, 50, 30, 30][i],
+      eliminated: false,
+      eliminatedRound: null,
+    }));
+    const state = { players } as unknown as MatchState;
+    expect(placedFrom(state, table, new Rng(1))).toEqual([
+      { team: HOST_TEAM, score: 100 },
+      { team: 5, score: 60 },
+      { team: 3, score: 20 },
+    ]);
   });
 });
 
