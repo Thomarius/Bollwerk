@@ -1,5 +1,11 @@
-import { artForStyle, defaultConfigBundle, type ArtStyle, type Ruleset } from '@bollwerk/config';
-import { owesCastleChoice, type MatchEvent, type Phase } from '@bollwerk/sim';
+import {
+  artForStyle,
+  defaultConfigBundle,
+  type ArtStyle,
+  type Ruleset,
+  type TextKey,
+} from '@bollwerk/config';
+import { owesCastleChoice, type MatchEvent, type MatchState, type Phase } from '@bollwerk/sim';
 
 import { countdownBeat, showsClock } from './clock.js';
 import { Controls, inputMode, readyCannons } from './controls.js';
@@ -51,8 +57,30 @@ function shownOnScreen(): Promise<void> {
   );
 }
 
+/**
+ * Where a match leads other than the menu and a rematch: a tournament's match records its
+ * result as it ends, leads on to the standings, and is left for the tournament, to be
+ * played again (docs/TOURNAMENT.md §1.7).
+ */
+export interface MatchExits {
+  /** Called once, as the match is first seen over, before the summary shows. */
+  finished?(state: MatchState): void;
+  /** Leaving before the end — paused, or watching after being knocked out. */
+  leave?(): void;
+  /** What Leave match asks before it goes. */
+  leaveConfirm?: TextKey;
+  /** The summary's main button, in place of Rematch, and its way on. */
+  next?: { label: TextKey; go(): void };
+  /** The summary's way back, once the match is over; the menu without one. */
+  back?(): void;
+}
+
 /** Plays a session; resolves with what takes it down, once it is running. */
-export async function runSession(session: Session, setup: Setup): Promise<() => void> {
+export async function runSession(
+  session: Session,
+  setup: Setup,
+  exits: MatchExits = {},
+): Promise<() => void> {
   // Over the board until its first frame (PLAN 11.18 Y1): building both looks' sprites
   // takes about a second as a match opens, and more with every look added, which read as
   // the page freezing. Painted before that work starts, so it is on screen through it.
@@ -244,23 +272,38 @@ export async function runSession(session: Session, setup: Setup): Promise<() => 
     audio.play('select');
     session.leave();
     cleanup();
-    showMenu();
+    // Over, the match is recorded wherever it belongs; before that, a tournament's is not.
+    if (session.finished) (exits.back ?? showMenu)();
+    else (exits.leave ?? showMenu)();
   };
   hud.endScreen.onLeave(leaveMatch);
-  // Locally the table opens at once; online the host asks, and the room's answer brings
-  // every page back to the lobby, this one included.
-  hud.endScreen.useRematch(session.rematch);
-  hud.endScreen.onRematch(() => {
-    audio.play('select');
-    if (session.network() === null) cleanup();
-    session.requestRematch();
-  });
+  const next = exits.next;
+  if (next !== undefined) {
+    hud.endScreen.useRematch('mine', next.label);
+    hud.endScreen.onRematch(() => {
+      audio.play('select');
+      session.leave();
+      cleanup();
+      next.go();
+    });
+  } else {
+    // Locally the table opens at once; online the host asks, and the room's answer brings
+    // every page back to the lobby, this one included.
+    hud.endScreen.useRematch(session.rematch);
+    hud.endScreen.onRematch(() => {
+      audio.play('select');
+      if (session.network() === null) cleanup();
+      session.requestRematch();
+    });
+  }
+  let finishedSeen = false;
 
   // Anyone may pause, and anyone resume: Esc, or the button beside the Sound switch.
   // Paused, the overlay is the match's menu: the settings, and a way out (PLAN 11.18 Y2).
   const pause = new PauseControls({
     toggle: (paused) => session.setPaused(paused),
     leave: leaveMatch,
+    ...(exits.leaveConfirm === undefined ? {} : { leaveConfirm: exits.leaveConfirm }),
     isMuted: () => audio.isMuted,
     setMuted: (muted) => {
       audio.setMuted(muted);
@@ -586,6 +629,10 @@ export async function runSession(session: Session, setup: Setup): Promise<() => 
 
     perf.begin('sim');
     const events = session.advance(delta);
+    if (session.finished && !finishedSeen) {
+      finishedSeen = true;
+      exits.finished?.(session.state);
+    }
     pause.update(
       session.pausedBy,
       session.humanPlayer,

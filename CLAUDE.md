@@ -213,8 +213,8 @@ Full detail in PLAN.md §1. The parts that surprise people:
   every corner piece and German were checked in play by the user (ARCHIVE 12n–12t).
 
 **In progress — tournament mode** (decided 2026-10-08): the design and its work packages
-T1–T8 are `docs/TOURNAMENT.md`; T1, the core in `packages/tournament`, T2, its ratings and names, T3, fixed tables, and T4, saves and the menu, are done (ARCHIVE
-12ze–12zh).
+T1–T8 are `docs/TOURNAMENT.md`; T1, the core in `packages/tournament`, T2, its ratings and names, T3, fixed tables, T4, saves and the menu, and T5, playing offline, are done
+(ARCHIVE 12ze–12zi).
 
 **Next** — PLAN §11: more test games towards a first feature-ready version, the user's
 manual test of UPnP, and bots that miss as people do (combat accuracy, measured against the

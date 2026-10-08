@@ -103,6 +103,16 @@ export class Progress {
     return this.outAt.get(team) ?? null;
   }
 
+  /** The winners' bracket's teams still in — the knockout's, in single elimination. */
+  get winnersBracket(): readonly number[] {
+    return this.bracket.filter((team) => !this.outAt.has(team));
+  }
+
+  /** The losers' bracket's teams still in; always empty in single elimination. */
+  get losersBracket(): readonly number[] {
+    return this.pool.filter((team) => !this.outAt.has(team));
+  }
+
   /** The knockout's champion, once there is one. */
   get winner(): number | null {
     return this.champion;

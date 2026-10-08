@@ -23,7 +23,10 @@ function savedRow(entry: SavedTournament, confirming: boolean): string {
   }
   const { save } = entry;
   const progress = new Progress(save);
-  const next = t('tournament.next', { stage: stageName(save, progress.done) });
+  const next =
+    progress.status.kind === 'playing'
+      ? t('tournament.next', { stage: stageName(save, progress.done) })
+      : t('tournament.finished');
   const when = t('tournament.lastPlayed', { date: playedWhen(save.playedAt) });
   return (
     `<li class="saved"><div class="saved-text"><b>${escape(save.teams[0]?.name ?? '')}</b>` +

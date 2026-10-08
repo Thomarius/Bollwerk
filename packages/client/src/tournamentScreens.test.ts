@@ -7,6 +7,7 @@ import {
   settingsProblems,
   stepsOf,
   type Save,
+  type TableRow,
 } from '@bollwerk/tournament';
 import { describe, expect, it } from 'vitest';
 
@@ -27,6 +28,7 @@ import {
   type NameSource,
 } from './tournamentSetup.js';
 import { settingsLine, stageName } from './tournamentText.js';
+import { endingMarkup, tableExcerpt, tournamentMarkup } from './tournamentView.js';
 
 const config = defaultConfigBundle.tournament;
 
@@ -225,5 +227,92 @@ describe('a tournament in words', () => {
     );
     const markup = resumeMarkup([{ id: 't', kind: 'ok', save }], null, null);
     expect(markup).toContain('Next: Semi-final');
+  });
+});
+
+describe('the tournament between matches', () => {
+  const row = (team: number): TableRow => ({ team, points: 0, buchholz: 0, played: 0 });
+
+  it('cuts the table to its top, the host, and the cut', () => {
+    const rows = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 0, 19, 20].map(
+      row,
+    );
+    const lines = tableExcerpt(rows, 10);
+    const ranks = lines.map((l) => (l === 'gap' ? 'gap' : l.rank));
+    expect(ranks).toEqual([1, 2, 3, 4, 5, 'gap', 10, 11, 'gap', 17, 18, 19, 20, 21]);
+  });
+
+  it('shows the whole table when it is short', () => {
+    const lines = tableExcerpt([0, 1, 2, 3].map(row), 2);
+    expect(lines).toHaveLength(4);
+  });
+
+  it('shows the next match, the league table and the last result', () => {
+    setLanguage('en');
+    const save = tournament('t', 'now', {
+      league: true,
+      archnemesis: 'Nemesis',
+      levels: { min: 4, max: 6 },
+    });
+    const progress = new Progress(save);
+    const ahead = tournamentMarkup(save, progress, null);
+    expect(ahead).toContain('Next: League, matchday 1 of 3');
+    expect(ahead).toContain('the top');
+    expect(ahead).not.toContain('class="last-result');
+    const teams = progress.next?.matches[progress.hostMatch] ?? [];
+    recordMatch(
+      save,
+      config,
+      [0, ...teams.filter((t) => t !== 0)].map((team) => ({ team, score: 1234 })),
+      'later',
+    );
+    const after = tournamentMarkup(save, new Progress(save), 'A notice');
+    expect(after).toContain('Last match, League, matchday 1 of 3: 1st of 2 · 1234 points');
+    expect(after).toContain('class="league-table"');
+    expect(after).toContain('A notice');
+  });
+
+  it('shows the knockout around the host, the archnemesis by name', () => {
+    setLanguage('en');
+    const save = tournament('t', 'now', {
+      archnemesis: 'Nemesis',
+      knockout: 'double',
+      length: 'long',
+    });
+    const markup = tournamentMarkup(save, new Progress(save), null);
+    expect(markup).toContain('Nemesis, the archnemesis, is still in.');
+    expect(markup).toMatch(/Your team is in the winners(&#39;|') bracket/);
+    expect(markup).toContain('The other matches');
+  });
+
+  it('ends with the road, won or out', () => {
+    setLanguage('en');
+    const won = tournament('t', 'now', { length: 'short' });
+    let progress = new Progress(won);
+    while (progress.status.kind === 'playing') {
+      const teams = progress.next?.matches[progress.hostMatch] ?? [];
+      progress = recordMatch(
+        won,
+        config,
+        [0, ...teams.filter((t) => t !== 0)].map((team) => ({ team, score: 9 })),
+        'later',
+      );
+    }
+    const champion = endingMarkup(won, progress);
+    expect(champion).toContain('Champions!');
+    expect(champion.match(/<tr class="won">/g)).toHaveLength(2);
+
+    const out = tournament('t', 'now');
+    const first = new Progress(out);
+    const teams = first.next?.matches[first.hostMatch] ?? [];
+    progress = recordMatch(
+      out,
+      config,
+      [...teams.filter((t) => t !== 0), 0].map((team) => ({ team, score: 9 })),
+      'later',
+    );
+    const exit = endingMarkup(out, progress);
+    expect(exit).toContain('Out of the tournament');
+    expect(exit).toContain('Knocked out: Quarter-final.');
   });
 });

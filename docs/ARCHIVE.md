@@ -5770,3 +5770,40 @@ full or switched off) is reported, not swallowed as the page's other settings ar
 whose browser is the one cached here: the latest had moved on to one not downloaded. Checked
 by clicking through in headless Chrome: a tournament set up, saved with its settings, listed,
 deleted after the question, and back to the menu, with no page errors.
+
+## 12zi. Tournament mode, T5: playing a tournament offline (2026-10-08)
+
+**One screen between matches** (`tournamentView.ts`, `tournamentFlow.ts`), where the plan had a
+pre-match screen and a standings screen: the user's description, after each match the
+standings and the choice of the next match or the menu, is one decision, so it is one screen.
+The team's name and settings; the last match in a line (the stage, the place, the points);
+the next match, every team in it a card with its members' levels, the host's and the
+archnemesis's marked; and the standings. In the league they are its table cut to the top
+five, the host's neighbourhood and the lines either side of the cut, a dashed line under the
+last place through (`tableExcerpt`); before the first matchday, a line of what the league is.
+In the knockout, how many teams are still in — each bracket's in double elimination, and
+which the host is in — whether the archnemesis is still in, by its name, and the step's other
+matches, the first six. Play match and Back to menu.
+
+**A match** is a local match at the tournament's table on the map of its step. Its result is
+placed, recorded and saved the moment the match is over (`MatchExits.finished` in
+`runSession`), before the summary shows, so closing the page on the summary loses nothing; the
+summary's Rematch is Continue, back to the tournament. **Leaving before the end** — Leave
+match in the pause menu, which now asks "Leave? The match is played again", or Back while
+watching after a knockout — records nothing and returns to the tournament, which says the
+match will be played again. The plan marked a started match in the save; nothing needs to be,
+since an unrecorded step is simply played again on the same map.
+
+**The endings**: Champions! in gold, or Out of the tournament, with the line of where, and the
+team's road match by match (stage, opponents, place, score), the victory or defeat music, and
+Back to menu. The save goes as the end is shown; one ended but never shown its end — the page
+closed on the summary — is listed as Finished and shows its end when opened.
+
+`&snapshot=PHASE` works on a tournament's match as on `?autostart`; `game_over` plays it out
+at once, its result counted. Checked by clicking through in headless Chrome, English and
+German: a match started and left (the save untouched, the note shown), a match played out
+(recorded before the summary, Continue to the standings with the last result), both endings,
+and no page errors. Unit tests cover the table's excerpt, the screen's parts and both endings.
+
+**Open**: the match's HUD and summary still name the teams Team A and Team B rather than the
+tournament's names.

@@ -28,6 +28,8 @@ import { resumeMarkup } from './tournamentResume.js';
 export interface TournamentExits {
   menu: () => void;
   play: (id: string) => void;
+  /** The resume list, with a line to say why it is shown. */
+  list: (notice: string) => void;
 }
 
 /** The form a new tournament was last set up with, kept while the page is open. */

@@ -2,6 +2,7 @@ import { playerCssColour } from './colours.js';
 import { SHAPE_PATHS, playerShape, shapeSvg } from './shapes.js';
 import { awardCandidates, drawAwards, type Award } from './awards.js';
 import { t } from './i18n.js';
+import type { TextKey } from '@bollwerk/config';
 import { escape } from './html.js';
 import { defaultArtConfig } from '@bollwerk/config';
 
@@ -36,14 +37,18 @@ export class EndScreen {
 
   private rematchBy: 'mine' | 'host' | null = null;
 
+  /** The Rematch button's label, where it leads on rather than back to the table. */
+  private rematchLabel: TextKey = 'hud.rematch';
+
   /** What the end screen's button does: back to the menu, whether played or watched. */
   onLeave(handler: () => void): void {
     this.leave = handler;
   }
 
   /** The end screen's Rematch: the player's to press, the host's to press, or not there. */
-  useRematch(by: 'mine' | 'host' | null): void {
+  useRematch(by: 'mine' | 'host' | null, label: TextKey = 'hud.rematch'): void {
     this.rematchBy = by;
+    this.rematchLabel = label;
   }
 
   onRematch(handler: () => void): void {
@@ -122,7 +127,9 @@ export class EndScreen {
 
   /** Rematch, for whoever may call it; for the others online, the host's to call. */
   private rematchButton(): string {
-    if (this.rematchBy === 'mine') return `<button class="rematch">${t('hud.rematch')}</button>`;
+    if (this.rematchBy === 'mine') {
+      return `<button class="rematch">${t(this.rematchLabel)}</button>`;
+    }
     if (this.rematchBy === 'host') {
       return `<button class="rematch" disabled>${t('hud.rematchHost')}</button>`;
     }

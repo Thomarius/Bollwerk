@@ -23,6 +23,7 @@ import { preferredStyles, saveStyles, storedName, saveName } from './prefs.js';
 import { openLobby } from './lobbyFlow.js';
 import { openNewTournament, openResumeList, type TournamentExits } from './tournamentMenu.js';
 import { savedTournaments } from './tournamentSaves.js';
+import { playTournament } from './tournamentFlow.js';
 
 /** The menu: who you are and how the game looks. */
 
@@ -114,8 +115,8 @@ function watchOpenGames(): void {
 export function tournamentExits(): TournamentExits {
   const exits: TournamentExits = {
     menu: () => showMenu(),
-    // Playing one is T5's; until then the list says so.
-    play: () => openResumeList(exits, t('tournament.comingSoon')),
+    play: (id) => playTournament(id, exits),
+    list: (notice) => openResumeList(exits, notice),
   };
   return exits;
 }

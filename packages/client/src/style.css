@@ -2478,20 +2478,23 @@ body.reduced-effects .preparing .blocks i {
 }
 
 /* A bot's level as ten pips beside its choice (lobby.ts). */
-.seats .pips {
+.seats .pips,
+.team-card .pips {
   display: inline-flex;
   gap: 2px;
   margin-left: auto;
   margin-right: 0.5rem;
 }
 
-.seats .pips i {
+.seats .pips i,
+.team-card .pips i {
   width: 4px;
   height: 10px;
   background: var(--edge);
 }
 
-.seats .pips i.on {
+.seats .pips i.on,
+.team-card .pips i.on {
   background: var(--accent);
 }
 
@@ -4400,4 +4403,197 @@ body.reduced-effects .look-gallery .card img {
 
 .menu .note.warn {
   color: #f0a0a0;
+}
+
+/* Between matches: the next match on one side, the standings on the other. */
+.tournament-view h2,
+.tournament-ending h2 {
+  margin: 0 0 0.75rem;
+  font-size: 0.85rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.tournament-view .lobby-body {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+}
+
+@media (max-width: 760px) {
+  .tournament-view .lobby-body {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.menu p.subtitle {
+  margin: -0.5rem 0 1rem;
+}
+
+.menu .last-result {
+  margin: 0 0 1rem;
+  padding: 0.5rem 0.75rem;
+  border-left: 3px solid var(--edge);
+  color: var(--ink);
+}
+
+.menu .last-result.won {
+  border-left-color: var(--accent);
+}
+
+.team-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.team-card {
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--edge);
+}
+
+.team-card.mine {
+  border-color: var(--accent);
+}
+
+.team-card.arch {
+  border-color: #c0504d;
+}
+
+.team-card ul {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  margin: 0.4rem 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.85rem;
+}
+
+.team-card li {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.menu em.tag {
+  margin-left: 0.4rem;
+  font-size: 0.72rem;
+  font-style: normal;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.menu em.tag.you {
+  color: var(--accent);
+}
+
+.menu em.tag.arch {
+  color: #e07a76;
+}
+
+.standings p {
+  margin: 0 0 0.5rem;
+  color: var(--ink);
+}
+
+.standings h3 {
+  margin: 1rem 0 0.4rem;
+  font-size: 0.78rem;
+  font-weight: normal;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.other-matches {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.other-matches li {
+  padding: 0.15rem 0;
+}
+
+/* The league's table, cut down to its top, the host's neighbourhood and the cut. */
+.league-table,
+.tournament-ending .road {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+
+.league-table th,
+.league-table td,
+.road th,
+.road td {
+  padding: 0.25rem 0.4rem;
+  text-align: left;
+}
+
+.league-table th,
+.road th {
+  font-weight: normal;
+  color: var(--muted);
+  border-bottom: 1px solid var(--edge);
+}
+
+.league-table td:first-child,
+.league-table td:nth-child(n + 3),
+.league-table th:nth-child(n + 3) {
+  text-align: right;
+}
+
+.league-table tr.through td:first-child {
+  color: var(--accent);
+}
+
+.league-table tr.cut td {
+  border-bottom: 1px dashed var(--accent);
+}
+
+.league-table tr.mine td {
+  background: rgb(255 255 255 / 6%);
+  color: var(--accent);
+}
+
+.league-table tr.gap td {
+  text-align: center;
+  color: var(--muted);
+}
+
+/* The end of a tournament: a champion's in gold, an exit plainer. */
+.menu.tournament-ending {
+  width: min(46rem, 94vw);
+}
+
+.tournament-ending .ending-line {
+  margin: 0 0 0.5rem;
+  font-size: 1.1rem;
+  color: var(--ink);
+}
+
+.tournament-ending.won h1 {
+  font-size: 2.2rem;
+  text-shadow: 0 0 1.2rem rgb(240 200 80 / 45%);
+}
+
+.tournament-ending.out h1 {
+  color: var(--muted);
+}
+
+.tournament-ending .road tr.won td:nth-child(3) {
+  color: var(--accent);
+}
+
+.tournament-ending .road td:last-child,
+.tournament-ending .road th:last-child {
+  text-align: right;
 }

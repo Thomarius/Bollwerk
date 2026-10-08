@@ -37,6 +37,8 @@ export interface PauseActions {
   toggle(paused: boolean): void;
   /** Leaves the match for the main menu. */
   leave(): void;
+  /** What Leave match asks before it goes, where leaving means more than leaving. */
+  leaveConfirm?: TextKey;
   /** The sound's state, shared with the corner switch. */
   isMuted(): boolean;
   setMuted(muted: boolean): void;
@@ -168,7 +170,7 @@ export class PauseControls {
         return;
       }
       this.leaving.classList.add('confirm');
-      this.leaving.textContent = t('pause.leaveConfirm');
+      this.leaving.textContent = t(actions.leaveConfirm ?? 'pause.leaveConfirm');
     });
   }
 

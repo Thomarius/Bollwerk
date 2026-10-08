@@ -230,17 +230,13 @@ The menu's New tournament, Resume tournament and Single match; the new tournamen
 the resume list; saves in local storage. Resume leads nowhere yet: playing is T5, and until
 then the list says so (`tournament.comingSoon`, to go with T5).
 
-### T5 — The tournament flow, offline
+### T5 — The tournament flow, offline — done (ARCHIVE 12zi)
 
-- **Pre-match**: the match about to be played, through the lobby view (`lobby.ts`) with
-  everything but the team's sitting-out locked, or a screen of its own if that reads better.
-- **Play** as a local match. On game over, the placement, the rolls of the stage, the save,
-  then the standings.
-- **Replay**: a match is marked as started in the save. On resume, a started match that never
-  finished is played again.
-- **Standings** (§1.8): the league table and the bracket view.
-- **The two endings**, the save deleted, back to the menu.
-- **Leaving mid-match**: the Leave dialog's line that it will be replayed.
+One screen between matches — the next match and the standings — the match, its result saved
+as it ends, and the two endings. Open from it:
+
+- **The tournament's names in the match.** The HUD and the match's summary still call the
+  teams Team A and Team B; the host's team name, and the opponents', belong there.
 
 ### T6 — Online
 
