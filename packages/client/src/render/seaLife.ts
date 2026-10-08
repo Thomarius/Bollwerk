@@ -1807,3 +1807,70 @@ export class ChristmasSeaLife extends OceanDrawn {
     }
   }
 }
+
+/**
+ * Noir: now and then a harbour tug crosses the outer sea in the dark, a black hull low in the
+ * water, its wheelhouse window lit, smoke curling from its funnel and a wake of pale foam.
+ */
+export class NoirSeaLife extends OceanDrawn {
+  private readonly tugs = new Crossings();
+
+  override layout(state: MatchState, view: ViewTransform, art: ArtConfig): void {
+    super.layout(state, view, art);
+    this.tugs.layout(this.ocean, art.noir.boatEveryMs);
+  }
+
+  protected frame(g: Graphics, view: ViewTransform, art: ArtConfig, deltaMs: number): void {
+    const { boatEveryMs, boatTilesPerSecond } = art.noir;
+    const t = view.tile;
+    const ink = Math.max(1, t * 0.05);
+    this.tugs.step(this.ocean, deltaMs, boatEveryMs, boatTilesPerSecond, 1);
+    for (const tug of this.tugs.items) {
+      if (this.behind(tug.x, tug.y)) continue;
+      const d = tug.dir;
+      const x = tileX(view, tug.x);
+      const y = tileY(view, tug.y);
+      const bob = Math.sin(this.clock / 700 + tug.y) * t * 0.03;
+      // The wake, pale behind it.
+      for (let k = 1; k <= 4; k++) {
+        g.moveTo(x - d * t * (0.7 + k * 0.4), y + t * 0.18 - k * t * 0.04);
+        g.lineTo(x - d * t * (0.9 + k * 0.4), y + t * 0.24 + k * t * 0.04);
+      }
+      g.stroke({ width: Math.max(1, t * 0.04), color: 0xd6d6d6, alpha: 0.5 });
+      g.poly(
+        shape(view, tug.x, tug.y + bob / t, d, [
+          [-0.8, 0],
+          [0.9, -0.05],
+          [0.7, 0.28],
+          [-0.65, 0.28],
+        ]),
+      );
+      g.fill({ color: 0x141418 });
+      g.stroke({ width: ink, color: 0x050506 });
+      g.poly(
+        shape(view, tug.x, tug.y + bob / t, d, [
+          [-0.35, 0],
+          [0.25, 0],
+          [0.25, -0.42],
+          [-0.35, -0.42],
+        ]),
+      );
+      g.fill({ color: 0x2a2a30 });
+      g.stroke({ width: ink, color: 0x050506 });
+      g.rect(x + d * t * 0.02 - t * 0.09, y - t * 0.33 + bob, t * 0.18, t * 0.12);
+      g.fill({ color: 0xf6eedc });
+      g.rect(x - d * t * 0.55 - t * 0.07, y - t * 0.6 + bob, t * 0.14, t * 0.4);
+      g.fill({ color: 0x1a1a1e });
+      // Smoke from the funnel, rising and drifting back.
+      for (let k = 0; k < 4; k++) {
+        const rise = (((this.clock / 1800 + k / 4) % 1) + 1) % 1;
+        g.circle(
+          x - d * t * (0.55 + rise * 0.6),
+          y - t * (0.7 + rise * 0.9) + bob,
+          t * (0.1 + rise * 0.18),
+        );
+        g.fill({ color: 0x8a8a90, alpha: 0.5 * (1 - rise) });
+      }
+    }
+  }
+}

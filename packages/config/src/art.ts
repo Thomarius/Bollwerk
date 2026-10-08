@@ -53,7 +53,8 @@ export type PlayerPalette = z.infer<typeof PlayerPaletteSchema>;
  * `oktoberfest` the beer festival on an island in a sea of beer, `opera` a night at the opera
  * on a sea whose waves are staves, `office` an open-plan office at war with itself,
  * `undersea` a coral reef on the seabed, the deep all round it, `electric` a storm
- * laboratory under a thunderstorm, `cartoon` a 1930s rubber-hose cartoon in black and white, `christmas` a snowy island on Christmas Eve.
+ * laboratory under a thunderstorm, `cartoon` a 1930s rubber-hose cartoon in black and white, `christmas` a snowy island on Christmas Eve,
+ * `noir` a crime city at night drawn as a cel-shaded graphic novel.
  */
 export const ArtStyleSchema = z.enum([
   'flat',
@@ -74,6 +75,7 @@ export const ArtStyleSchema = z.enum([
   'electric',
   'cartoon',
   'christmas',
+  'noir',
 ]);
 export type ArtStyle = z.infer<typeof ArtStyleSchema>;
 
@@ -695,6 +697,43 @@ export const ChristmasStyleSchema = z.strictObject({
 });
 export type ChristmasStyleConfig = z.infer<typeof ChristmasStyleSchema>;
 
+/**
+ * The Noir look: a 1940s crime city at night drawn as a hard-boiled graphic novel —
+ * cel-shaded, inked thick, its shadows hatched; black, white and grey, the players' colours
+ * the only colour, glowing as neon. Sealed ground is turf in a street lamp's light.
+ */
+export const NoirStyleSchema = z.strictObject({
+  /** The owner's colour washed into the lamplight on sealed ground. */
+  floorAlpha: z.number().min(0).max(1),
+  /** How dark the hatching lies on everything out of the light. */
+  hatchAlpha: z.number().min(0).max(1),
+  /** How bright the neon's and the lamps' halos glow. */
+  glowAlpha: z.number().min(0).max(1),
+  /** How long a sign or lamp holds each state as it sputters out at a breach. */
+  flickerMs: z.number().int().positive(),
+  /** One sweep of a gun's searchlight, there and back. */
+  searchlightSweepMs: z.number().int().positive(),
+  /** Raindrops falling at once, and in the final round's storm. */
+  rainCount: z.number().int().nonnegative(),
+  stormRainCount: z.number().int().nonnegative(),
+  /** Banks of fog in a foggy match, and how thick. */
+  mistBanks: z.number().int().nonnegative(),
+  mistAlpha: z.number().min(0).max(1),
+  /** Drains steaming on a dry night. */
+  steamVents: z.number().int().nonnegative(),
+  /** How long a big hit's impact frame holds the screen. */
+  impactFrameMs: z.number().int().positive(),
+  /** How long a sound word stays on the board, and the share of wall hits that get one. */
+  wordMs: z.number().int().positive(),
+  wordChance: z.number().min(0).max(1),
+  /** Between lightning strikes in the final round's storm, on average. */
+  lightningEveryMs: z.number().int().positive(),
+  /** A tug crossing the outer sea now and then, and how fast. */
+  boatEveryMs: z.number().int().positive(),
+  boatTilesPerSecond: z.number().positive(),
+});
+export type NoirStyleConfig = z.infer<typeof NoirStyleSchema>;
+
 /** One of the two looks a match is drawn in. */
 export type ArtLook = 'build' | 'combat';
 
@@ -745,6 +784,7 @@ export const STYLE_LOOKS: Record<ArtStyle, readonly ArtLook[]> = {
   electric: ['build', 'combat'],
   cartoon: ['build', 'combat'],
   christmas: ['build', 'combat'],
+  noir: ['build', 'combat'],
 };
 
 export function styleServes(
@@ -874,6 +914,7 @@ export const ArtConfigSchema = z
     electric: ElectricStyleSchema,
     cartoon: CartoonStyleSchema,
     christmas: ChristmasStyleSchema,
+    noir: NoirStyleSchema,
     scenery: ScenerySchema,
     /** Effects both styles draw alike, because they carry information. */
     effects: z.strictObject({

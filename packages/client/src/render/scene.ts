@@ -17,6 +17,7 @@ import { UnderseaTheme } from './undersea.js';
 import { ElectricTheme } from './electric.js';
 import { CartoonTheme } from './cartoon.js';
 import { ChristmasTheme } from './christmas.js';
+import { NoirTheme } from './noir.js';
 import { OperaTheme } from './opera.js';
 import { release } from './release.js';
 import { SakuraTheme } from './sakura.js';
@@ -80,6 +81,8 @@ export function createTheme(style: ArtStyle, seed = 1): Theme {
       return new CartoonTheme(seed);
     case 'christmas':
       return new ChristmasTheme(seed);
+    case 'noir':
+      return new NoirTheme(seed);
   }
 }
 

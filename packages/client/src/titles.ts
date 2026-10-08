@@ -1275,7 +1275,50 @@ const TITLES: Record<ArtStyle, (text: string, art: ArtConfig) => Title> = {
   electric: electricTitle,
   cartoon: cartoonTitle,
   christmas: christmasTitle,
+  noir: noirTitle,
 };
+
+/**
+ * Noir's title: the word in blocky capitals lit hard from above — white where the light falls,
+ * a grey band below it, as a cel is shaded — inked thick round, a hatched shadow cast down to
+ * the right as a street lamp casts one on a wall.
+ */
+export function noirTitle(text: string, _art: ArtConfig): Title {
+  const { canvas, ctx, cells, has } = drawnCanvas(text);
+  const title = { cellPx: DRAWN_CELL, padPx: DRAWN_PAD, tailPx: 0, smooth: true, flicker: false };
+  if (ctx === null) return { src: canvas.toDataURL(), ...title };
+  const at = (v: number): number => DRAWN_PAD + v * DRAWN_CELL;
+  const drop = DRAWN_CELL * 0.6;
+  // The shadow, hatched: the cells moved down and right, clipped, struck through at a slant.
+  ctx.save();
+  ctx.beginPath();
+  for (const { x, y } of cells) ctx.rect(at(x) + drop, at(y) + drop, DRAWN_CELL, DRAWN_CELL);
+  ctx.clip();
+  ctx.strokeStyle = '#0a0a0d';
+  ctx.lineWidth = 1.6;
+  ctx.beginPath();
+  for (let d = -canvas.height; d < canvas.width; d += 5) {
+    ctx.moveTo(d, canvas.height);
+    ctx.lineTo(d + canvas.height, 0);
+  }
+  ctx.stroke();
+  ctx.restore();
+  // The letters, two hard tones.
+  for (const { x, y } of cells) {
+    ctx.fillStyle = y < 4 ? '#f4f2ec' : '#9a9aa2';
+    ctx.fillRect(at(x), at(y), DRAWN_CELL, DRAWN_CELL);
+  }
+  ctx.strokeStyle = '#0a0a0d';
+  ctx.lineWidth = 3;
+  ctx.lineCap = 'square';
+  ctx.beginPath();
+  for (const [x1, y1, x2, y2] of wordOutline(cells, has)) {
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x2, y2);
+  }
+  ctx.stroke();
+  return { src: canvas.toDataURL(), ...title };
+}
 
 /**
  * Each style's title, drawn once and kept: it is a canvas turned into an image, and the
