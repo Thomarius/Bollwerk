@@ -210,6 +210,13 @@ export class Scene {
   private pending: Partial<Record<Look, { slot: Slot; ready: boolean }>> = {};
   /** Counts changes of looks from the pause menu, which a preparation under way gives way to. */
   private generation = 0;
+  /**
+   * Whether the scene has been taken down. A look made in the background over frames
+   * (`prepare`) outlives the frame loop: with Random looks it can still be going when a match
+   * ends, and one going on into the destroyed renderer was the error a tournament's last
+   * Continue met (ARCHIVE 12zo).
+   */
+  private destroyed = false;
 
   /**
    * Both looks' roots, under the camera (`camera.ts`): scaled and moved together as it
@@ -266,7 +273,7 @@ export class Scene {
     const build = await this.slotFor(looks.build);
     const combat = looks.combat === looks.build ? build : await this.slotFor(looks.combat);
     if (generation !== this.generation) {
-      for (const slot of new Set([build, combat])) this.drop(slot);
+      if (!this.destroyed) for (const slot of new Set([build, combat])) this.drop(slot);
       return;
     }
     const old = this.all();
@@ -307,7 +314,7 @@ export class Scene {
     const pace = gradual ? pacer() : undefined;
     const slot = await this.slotFor(next, pace);
     if (generation !== this.generation) {
-      this.drop(slot);
+      if (!this.destroyed) this.drop(slot);
       return;
     }
     const replaced = this.pending[look];
@@ -817,8 +824,20 @@ export class Scene {
   }
 
   private renderOffscreen(): void {
+    if (this.destroyed) return;
     const target = RenderTexture.create({ width: 64, height: 64 });
     this.app.renderer.render({ container: this.app.stage, target });
     target.destroy(true);
+  }
+
+  /**
+   * Takes the scene down: anything still making a look in the background stops at its next
+   * step, since the generation it was made for is gone, and then the application goes.
+   */
+  destroy(): void {
+    this.destroyed = true;
+    this.generation++;
+    this.pending = {};
+    this.app.destroy(true);
   }
 }

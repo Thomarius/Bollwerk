@@ -339,7 +339,7 @@ export async function runSession(
     watching.destroy();
     hud.useSkin(null);
     globalThis.removeEventListener('resize', fit);
-    scene.app.destroy(true);
+    scene.destroy();
   };
 
   /** The intermission whose banner is showing, by the tick it ends on. */

@@ -5972,3 +5972,22 @@ banner's black lettering was lost on the blinds' light and dark slats, now white
 its lines sat beside the heading and took its outline, now under it in caption boxes; the shared
 final-round dusk tinted the sky orange, now overridden as Cartoon's is. A white band in one
 screenshot was the lightning caught mid-frame, which twelve frames sampled after confirmed.
+
+## 12zo. A crash at a tournament's end: a look made into a destroyed scene (2026-10-08)
+
+Found in the users' tournament test: Continue on the last match's summary showed "Unhandled
+rejection — Cannot read properties of null (reading 'render')" in `Scene.renderOffscreen`,
+from `warmChain` and `prepare`, on the slower of the users' machines, with Random looks. The
+next random looks are made in the background after each resolution (`prepare`, ARCHIVE 12q),
+and the match's teardown destroyed the Pixi application with nothing to tell that making it
+was gone: it went on drawing into the destroyed scene at its next frame and failed at its next
+render. The flaw was old; 12zm made it likely, cutting the making into thousands of steps
+where there had been forty, so that on a slower machine it outlasts the match. Leaving any
+match while a look was being made could fail the same way.
+
+The scene has a `destroy` now, which `runSession`'s cleanup calls: it marks the scene gone and
+moves the generation on, so a look being made stops at its next step; nothing renders offscreen
+in a destroyed scene, and a look finished for a scene already gone is let go rather than
+thrown away into it. Reproduced in headless Chrome by taking the scene down the moment the
+next looks began to be made, eight players watched with Random looks: the old teardown failed
+in `renderOffscreen`, as the users saw; the new one left nothing failing.
