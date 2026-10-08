@@ -53,7 +53,7 @@ leave your seat undriven on the way, so you are soon knocked out), `&speed=10`,
 `&style=flat|pixel|night|cyberpunk|blueprint|parchment|bricks|glass|chocolate|halloween|sakura|oktoberfest|opera|office|undersea|electric` for both looks (a one-look style sets only its own)
 (`&buildStyle=`, `&combatStyle=` for one), `&watch=1&level=8` to observe a bot match (`&personality=offensive` fixes every bot's),
 `&rounds=12` for the round cap, `&teams=2` for teams of two in seat order, `&lang=de` for a
-language (not saved). `?host=8` opens
+language (not saved). `?tournament=new` and `?tournament=resume` open the tournament screens. `?host=8` opens
 the lobby at eight seats — a room if a server answers, a local table if not —
 `?join=CODE` joins one, `&name=Bo` sets the name, `&seed=N` the map, `&private=1` makes
 the room private. The menu's Play (with its Public / Private switch), its list of open
@@ -213,7 +213,8 @@ Full detail in PLAN.md §1. The parts that surprise people:
   every corner piece and German were checked in play by the user (ARCHIVE 12n–12t).
 
 **In progress — tournament mode** (decided 2026-10-08): the design and its work packages
-T1–T8 are `docs/TOURNAMENT.md`; T1, the core in `packages/tournament`, T2, its ratings and names, and T3, fixed tables, are done (ARCHIVE 12ze–12zg).
+T1–T8 are `docs/TOURNAMENT.md`; T1, the core in `packages/tournament`, T2, its ratings and names, T3, fixed tables, and T4, saves and the menu, are done (ARCHIVE
+12ze–12zh).
 
 **Next** — PLAN §11: more test games towards a first feature-ready version, the user's
 manual test of UPnP, and bots that miss as people do (combat accuracy, measured against the

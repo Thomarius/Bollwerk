@@ -224,17 +224,11 @@ A local match takes each seat's name and its bot's personality from the table, a
 match becomes such a table (`matchTable`) and its result a tournament's (`placedFrom`). A room
 taking a table is T6's, with the protocol it needs.
 
-### T4 — Saves and the menu
+### T4 — Saves and the menu — done (ARCHIVE 12zh)
 
-- **Saves** in local storage: one key per tournament, plus an index. Write, list, load and
-  delete, with the version check. Each write is a single `setItem`, so a closed tab never
-  leaves half a save.
-- **The menu**: New tournament, Resume tournament, Single match, Join and the open games
-  (§1.9).
-- **The configuration screen** (§1.2): the settings shown only where they apply, the
-  archnemesis's limit on the range, the final's exception to the minimum, and a short line
-  of what the length means in matches.
-- **The resume screen**, with deleting confirmed.
+The menu's New tournament, Resume tournament and Single match; the new tournament's screen and
+the resume list; saves in local storage. Resume leads nowhere yet: playing is T5, and until
+then the list says so (`tournament.comingSoon`, to go with T5).
 
 ### T5 — The tournament flow, offline
 

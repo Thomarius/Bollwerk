@@ -5735,3 +5735,38 @@ recording exactly, and records the result into the tournament: about 4 s.
 
 The server's room still deals as before; a room taking a tournament's table is T6, with
 protocol 18.
+
+## 12zh. Tournament mode, T4: saves and the menu (2026-10-08)
+
+**The menu** has New tournament and Resume tournament side by side above Single match — Play
+renamed, its Public/Private switch kept beside it — then How to play, Join and the open games.
+Resume is greyed while nothing is saved.
+
+**The new tournament's screen** is the lobby's wide panel: the team on the left (team size,
+team name from two up, the host and a row for each teammate with a name and a level), the
+tournament's shape on the right (length with a line of how many matches winning every one
+takes, league, knockout, teams a match from–to, opponents' levels from–to, archnemesis and its
+name, rounds a match). Only what applies is shown: no team name alone, no teams a match from
+three up (a line says every match is two teams), the archnemesis's name only with one, the
+note that double elimination's final is two teams only above a minimum of two. The form is a
+model (`tournamentSetup.ts`) changed through `reshapeForm`, which keeps the constraints: a team
+size resizes the teammates and clamps the teams a match; a range's ends never cross, the end
+not moved giving way; an archnemesis holds the range's top at 9. Teammates and the team are
+named from the tournament's pools to start with, at the server's default bot level; the form
+is kept while the page is open. The length's line counts what `createTournament` will build,
+rounds dropped for the cap included (`unbeatenRoad`, tested against every shape).
+
+**The resume list** (`tournamentResume.ts`) shows each save's team, its settings in a line,
+the stage it goes on with and when it was last played, played last first. A save of another
+version or a damaged one is named as far as it can be read and offers only Delete; a delete
+asks first, Resume hidden while it does.
+
+**Saves** (`tournamentSaves.ts`): one key a tournament under `bollwerk.tournament.`, found by
+prefix, so there is no index to fall out of step — the plan had one. A refused write (storage
+full or switched off) is reported, not swallowed as the page's other settings are.
+
+`?tournament=new` and `?tournament=resume` open the screens directly, for screenshots, as
+`?host=` opens the lobby; `tools/screenshots.sh` has both. Its Playwright is pinned at 1.63.0,
+whose browser is the one cached here: the latest had moved on to one not downloaded. Checked
+by clicking through in headless Chrome: a tournament set up, saved with its settings, listed,
+deleted after the question, and back to the menu, with no page errors.

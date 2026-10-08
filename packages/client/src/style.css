@@ -4262,3 +4262,142 @@ body.hud-christmas .final-stamp {
 body.reduced-effects .look-gallery .card img {
   transition: none;
 }
+
+/* --- Tournaments (docs/TOURNAMENT.md) ----------------------------------------- */
+
+/* New and Resume side by side above Single match; Resume greyed with nothing saved. */
+.menu button:disabled,
+.menu button:disabled:hover {
+  border-color: var(--edge);
+  background: transparent;
+  color: var(--muted);
+  opacity: 0.5;
+  cursor: default;
+}
+
+/* The new tournament's settings: the team on one side, the tournament's shape on the other. */
+.tournament-setup .lobby-body {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+}
+
+@media (max-width: 760px) {
+  .tournament-setup .lobby-body {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.tournament-setup h2 {
+  margin: 0 0 0.75rem;
+  font-size: 0.85rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.tournament-setup .settings label > select,
+.tournament-setup .settings label > input {
+  width: 12rem;
+}
+
+/* A range as two choices with a dash between. */
+.tournament-setup .range {
+  display: flex;
+  gap: 0.4rem;
+  align-items: center;
+  width: 12rem;
+}
+
+.tournament-setup .range select {
+  flex: 1;
+  width: auto;
+  min-width: 0;
+}
+
+.tournament-setup .range .dash {
+  color: var(--muted);
+}
+
+.tournament-setup .note {
+  margin: -0.35rem 0 0.75rem;
+}
+
+.tournament-setup .seats {
+  margin: 0.5rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.tournament-setup .seats .seat {
+  padding: 0.35rem 0;
+  border-bottom: 1px solid var(--edge);
+}
+
+.tournament-setup .seats .seat.you .who {
+  color: var(--accent);
+}
+
+.tournament-setup .seats input.who {
+  width: auto;
+}
+
+.tournament-setup .seats select {
+  width: 7rem;
+}
+
+/* The saved tournaments, the one played last first. */
+.menu.tournament-resume {
+  width: min(38rem, 94vw);
+  max-height: 94vh;
+  overflow-y: auto;
+}
+
+.saved-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.saved-list .saved {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem 1rem;
+  align-items: center;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid var(--edge);
+}
+
+.saved-list .saved-text {
+  display: flex;
+  flex: 1 1 18rem;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-width: 0;
+}
+
+.saved-list .saved-text b {
+  color: var(--accent);
+}
+
+.saved-list .saved-text small {
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
+.saved-list .unreadable .saved-text b {
+  color: var(--muted);
+}
+
+.saved-list .saved-buttons {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.menu .saved-list .saved-buttons button {
+  width: auto;
+  margin: 0;
+  padding: 0.4rem 0.8rem;
+}
+
+.menu .note.warn {
+  color: #f0a0a0;
+}

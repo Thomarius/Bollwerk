@@ -10,7 +10,9 @@
 #   npm run dev -w @bollwerk/client            # in another terminal, or BASE=...
 #   tools/screenshots.sh [outdir] [scene...]  # all scenes by default
 #
-# Uses the latest Playwright through npx, whose browser matches the one cached here.
+# Uses Playwright through npx at the version whose browser is cached here: the latest moved
+# on to a browser not downloaded (1.64 wants Chromium 1248, the cache holds 1243). PLAYWRIGHT
+# overrides it after a `npx playwright install`.
 set -euo pipefail
 
 OUT=${1:-/tmp/shots}
@@ -30,6 +32,9 @@ SCENES=(
   # The lobby, with the map it will play; no server under the dev server, so a local table.
   "lobby|$BASE/?host=3&seed=5&name=Ada|3000"
   "lobby-eight|$BASE/?host=8&seed=11&name=Ada|3000"
+  # The tournament screens (docs/TOURNAMENT.md); the resume list is empty in a fresh browser.
+  "tournament-new|$BASE/?tournament=new&name=Ada|1500"
+  "tournament-resume|$BASE/?tournament=resume|1500"
   "build-flat|$GAME&snapshot=build&style=flat|2000"
   "build-pixel|$GAME&snapshot=build&style=pixel|2000"
   "cannons-pixel|$GAME&snapshot=cannon_place&round=2&style=pixel|2000"
@@ -154,7 +159,7 @@ mkdir -p "$OUT"
 for scene in "${SCENES[@]}"; do
   IFS='|' read -r name url wait <<<"$scene"
   if [[ $# -gt 0 && ! " $* " =~ " $name " ]]; then continue; fi
-  (cd /tmp && npx -y playwright@latest screenshot --viewport-size "1400,900" \
+  (cd /tmp && npx -y "playwright@${PLAYWRIGHT:-1.63.0}" screenshot --viewport-size "1400,900" \
     --wait-for-timeout "$wait" "$url" "$OUT/$name.png" >/dev/null 2>&1 &&
     echo "$OUT/$name.png") &
 done

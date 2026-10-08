@@ -13,7 +13,8 @@ import {
   settingsFromParams,
 } from './session.js';
 import type { Common } from './menu.js';
-import { showMenu } from './menu.js';
+import { showMenu, tournamentExits } from './menu.js';
+import { openNewTournament, openResumeList } from './tournamentMenu.js';
 import { openLobby } from './lobbyFlow.js';
 import { runSession } from './matchScreen.js';
 
@@ -75,6 +76,18 @@ if (params.get('autostart') === '1') {
     (error: unknown) =>
       showError(t(joining !== null ? 'error.couldNotJoin' : 'error.couldNotHost'), error),
   );
+} else if (params.get('tournament') === 'new') {
+  // The tournament screens, reachable as the lobby is, for looking at them.
+  openNewTournament(
+    {
+      styles: preferredStyles(),
+      name: params.get('name') ?? storedName(),
+      isPublic: params.get('private') !== '1',
+    },
+    tournamentExits(),
+  );
+} else if (params.get('tournament') === 'resume') {
+  openResumeList(tournamentExits());
 } else {
   showMenu();
 }

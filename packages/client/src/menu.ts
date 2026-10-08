@@ -21,6 +21,8 @@ import { EFFECTS } from './pause.js';
 import { app, showError, audio } from './app.js';
 import { preferredStyles, saveStyles, storedName, saveName } from './prefs.js';
 import { openLobby } from './lobbyFlow.js';
+import { openNewTournament, openResumeList, type TournamentExits } from './tournamentMenu.js';
+import { savedTournaments } from './tournamentSaves.js';
 
 /** The menu: who you are and how the game looks. */
 
@@ -108,6 +110,16 @@ function watchOpenGames(): void {
   }, REFRESH_MS);
 }
 
+/** Where the tournament screens lead: back to the menu, or on into a tournament. */
+export function tournamentExits(): TournamentExits {
+  const exits: TournamentExits = {
+    menu: () => showMenu(),
+    // Playing one is T5's; until then the list says so.
+    play: () => openResumeList(exits, t('tournament.comingSoon')),
+  };
+  return exits;
+}
+
 /**
  * The menu: only who you are and how the game looks. Everything about the table —
  * players, teams, bots, rounds — is set in the lobby, which is one screen whether or
@@ -124,8 +136,12 @@ export function showMenu(notice: string | null = null): void {
       <div class="look" data-look="combat">${t('menu.combatLook')} ${lookPicker('combat')}</div>
       <label>${t('settings.language')} <select id="language">${languageOptions()}</select></label>
       <label>${t('settings.effects')} <select id="effects">${EFFECTS.map(([value, key]) => `<option value="${value}">${t(key)}</option>`).join('')}</select></label>
+      <div class="split tournament-row">
+        <button id="new-tournament">${t('menu.newTournament')}</button>
+        <button id="resume-tournament"${savedTournaments().length === 0 ? ' disabled' : ''}>${t('menu.resumeTournament')}</button>
+      </div>
       <div class="split play-row">
-        <button id="play">${t('menu.play')}</button>
+        <button id="play">${t('menu.singleMatch')}</button>
         <button id="visibility" data-public="true" title="${t('menu.visibilityTitle')}">${t('menu.public')}</button>
       </div>
       <button id="how-to-play" class="quiet${howToPlaySeen() ? '' : ' fresh'}">${t('menu.howToPlay')}</button>
@@ -253,6 +269,18 @@ export function showMenu(notice: string | null = null): void {
     showPicture('build');
     showPicture('combat');
   }, defaultConfigBundle.art.menu.titleSweepMs);
+
+  // Tournaments (docs/TOURNAMENT.md): a new one set up, or a saved one to go on with.
+  const exits = tournamentExits();
+  document.querySelector('#new-tournament')?.addEventListener('click', () => {
+    audio.play('select');
+    openNewTournament(readCommon(), exits);
+  });
+  document.querySelector('#resume-tournament')?.addEventListener('click', () => {
+    audio.play('select');
+    readCommon();
+    openResumeList(exits);
+  });
 
   document.querySelector('#play')?.addEventListener('click', () => {
     audio.play('select');

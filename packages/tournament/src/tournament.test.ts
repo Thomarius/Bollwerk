@@ -3,7 +3,7 @@ import { Rng, type MatchState } from '@bollwerk/sim';
 import { describe, expect, it } from 'vitest';
 
 import { chunk, seedBracket, separate, snake } from './bracket.js';
-import { createTournament } from './create.js';
+import { createTournament, unbeatenRoad } from './create.js';
 import { placings } from './placement.js';
 import { matchTable, placedFrom } from './table.js';
 import { knockoutSizes, largestField, loserRounds, matchdaySizes, product } from './plan.js';
@@ -124,6 +124,7 @@ describe('a tournament', () => {
         rounds +
         (shape.knockout === 'double' ? 1 : 0);
       expect(hostHistory(save).length, JSON.stringify(shape)).toBe(expected);
+      expect(unbeatenRoad(save.settings, config)).toBe(expected);
       expect(progress.winner).toBe(HOST_TEAM);
     }
   });

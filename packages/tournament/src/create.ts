@@ -58,3 +58,22 @@ export function createTournament(
   settle(save, config);
   return save;
 }
+
+/**
+ * The matches a team that never loses plays, for the settings as they stand: the league's
+ * matchdays, the knockout's rounds — fewer than the length's when its minimum match size
+ * would burst the cap (TOURNAMENT §1.3) — and the final of double elimination.
+ */
+export function unbeatenRoad(
+  settings: Pick<TournamentSettings, 'length' | 'league' | 'knockout' | 'matchTeams'>,
+  config: TournamentConfig,
+): number {
+  const length = config.lengths[settings.length];
+  let rounds = length.knockoutRounds;
+  while (rounds > 1 && settings.matchTeams.min ** rounds > config.maxField) rounds--;
+  return (
+    (settings.league ? length.leagueMatchdays : 0) +
+    rounds +
+    (settings.knockout === 'double' ? 1 : 0)
+  );
+}
