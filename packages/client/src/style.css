@@ -193,45 +193,6 @@ body.reduced-effects .embers {
   letter-spacing: 0.08em;
 }
 
-/* The end screen's reveal: how each bot played, a surprise kept until now (PLAN 11.6). */
-.reveal {
-  margin: 0.9rem auto 0;
-  text-align: left;
-  width: fit-content;
-}
-
-.reveal small {
-  display: block;
-  margin: 0 0 0.3rem;
-  text-align: center;
-}
-
-.reveal ul {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  font-size: 12px;
-  letter-spacing: 0.03em;
-  text-transform: none;
-}
-
-.reveal li {
-  display: flex;
-  gap: 0.45rem;
-  align-items: center;
-  padding: 0.1rem 0;
-}
-
-.reveal li b {
-  width: 9px;
-  height: 9px;
-  border-radius: 1px;
-}
-
-.reveal li span {
-  color: var(--muted);
-}
-
 /* Over the viewer's island as the match opens: seats are shuffled onto islands, so
    nobody knows which is theirs until told. */
 .you-are-here {
@@ -845,9 +806,10 @@ body {
    lifted well above the HUD's: see-through, the grey figures lost against the board. */
 .banner.summary {
   --muted: #c9cedb;
-  padding: 1rem 1.75rem;
+  max-width: min(60rem, 94vw);
+  padding: 1.25rem 2.25rem;
   background: #0a0a12;
-  font-size: 1.2rem;
+  font-size: 1.6rem;
   transition:
     opacity 600ms ease-out,
     visibility 600ms;
@@ -1072,16 +1034,18 @@ body.reduced-effects .banner.summary {
   text-transform: uppercase;
 }
 
+/* Sized up after the test session of 2026-10-08 found it tiny, the bots' personalities
+   it had beside it gone to make the room. */
 table.final {
   margin: 0.9rem auto 0.2rem;
   border-collapse: collapse;
-  font-size: 13px;
+  font-size: 18px;
   letter-spacing: 0.04em;
   text-transform: none;
 }
 
 table.final td {
-  padding: 0.2rem 0.7rem;
+  padding: 0.3rem 0.9rem;
   text-align: left;
 }
 
@@ -1093,8 +1057,8 @@ table.final td:nth-child(3) {
 
 table.final td b {
   display: inline-block;
-  width: 9px;
-  height: 9px;
+  width: 12px;
+  height: 12px;
   margin-right: 0.5rem;
 }
 
@@ -1106,7 +1070,7 @@ table.final td:nth-child(n + 4) {
 
 table.final tr.head td {
   padding-bottom: 0.35rem;
-  font-size: 10px;
+  font-size: 13px;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--muted);
@@ -1138,7 +1102,7 @@ table.final tr.head td {
   display: flex;
   justify-content: space-between;
   margin-top: 0.3rem;
-  font-size: 10px;
+  font-size: 13px;
   letter-spacing: 0.06em;
   color: var(--muted);
 }
@@ -2513,9 +2477,9 @@ body.reduced-effects .preparing .blocks i {
   display: flex;
   flex: 1 1 0;
   flex-direction: column;
-  gap: 0.2rem;
-  max-width: 12rem;
-  padding: 0.5rem 0.7rem;
+  gap: 0.25rem;
+  max-width: 16rem;
+  padding: 0.65rem 0.9rem;
   border: 1px solid var(--edge);
   border-left: 3px solid var(--who);
   background: rgb(255 255 255 / 3%);
@@ -2526,7 +2490,7 @@ body.reduced-effects .preparing .blocks i {
    than leaving a word alone on the second. */
 .summary .award strong {
   color: var(--accent);
-  font-size: 0.85rem;
+  font-size: 1.05rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   text-wrap: balance;
@@ -2534,12 +2498,12 @@ body.reduced-effects .preparing .blocks i {
 
 .summary .award .who {
   color: var(--ink);
-  font-size: 0.85rem;
+  font-size: 1.05rem;
 }
 
 .summary .award small {
   color: var(--muted);
-  font-size: 11px;
+  font-size: 14px;
 }
 
 /* The summary's capitals are for its headline and the awards' titles, not their names or
@@ -2569,7 +2533,7 @@ body.reduced-effects .preparing .blocks i {
   background: var(--accent);
   color: #0a0a12;
   font: inherit;
-  font-size: 13px;
+  font-size: 16px;
   letter-spacing: 0.1em;
   text-transform: uppercase;
   cursor: pointer;
@@ -4637,4 +4601,21 @@ body.reduced-effects .look-gallery .card img {
 
 .room-panel .seats select {
   width: auto;
+}
+
+.tournament-setup h3 {
+  margin: 1rem 0 0.4rem;
+  font-size: 0.78rem;
+  font-weight: normal;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.tournament-setup .setup-team .note {
+  margin: 0 0 0.5rem;
+}
+
+.banner.summary .leave {
+  font-size: 16px;
 }

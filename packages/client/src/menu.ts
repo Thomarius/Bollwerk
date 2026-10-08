@@ -35,6 +35,13 @@ export interface Common {
   isPublic: boolean;
 }
 
+/**
+ * How long the looks' pictures wait as the menu opens: building them takes a moment, which
+ * once waited for the title's first sweep; the title glides without end now, so this is
+ * only for the menu to be on screen first.
+ */
+const PICTURES_AFTER_MS = 600;
+
 /** The menu's two looks as they stand, or null with no menu shown. */
 let menuChoices: LookChoices | null = null;
 
@@ -208,13 +215,12 @@ export function showMenu(notice: string | null = null): void {
   const title = titleRoot ? new SplitTitle(titleRoot, defaultConfigBundle.art) : null;
   if (title) {
     title.use(new LookRotation(styles));
-    title.sweep();
-    title.repeat();
+    title.glide();
   }
 
   // A picture of each chosen look with its name, arrows either side to step through the
   // styles in place, and the gallery of them all behind a click on the picture (ARCHIVE
-  // 12b). The pictures wait for the title's first sweep, so building them cannot stutter it.
+  // 12b). The pictures wait a moment, so the menu is on screen before building them holds it.
   let picturesShown = false;
   const showPicture = (look: ArtLook): void => {
     const choice = menuChoices?.[look];
@@ -271,7 +277,7 @@ export function showMenu(notice: string | null = null): void {
     picturesShown = true;
     showPicture('build');
     showPicture('combat');
-  }, defaultConfigBundle.art.menu.titleSweepMs);
+  }, PICTURES_AFTER_MS);
 
   // Tournaments (docs/TOURNAMENT.md): a new one set up, or a saved one to go on with.
   const exits = (): TournamentExits => tournamentExits(readCommon().isPublic);

@@ -25,43 +25,45 @@ export const TITLE_AT_REST: TitleFrame = { split: 0.5, upper: 'build' };
 /** Just past the letters, so the line enters and leaves out of sight of them. */
 const BEYOND = 0.12;
 
+/** How far into a pass the line is at the middle of the letters. */
+const MIDDLE = (0.5 + BEYOND) / (1 + 2 * BEYOND);
+
 /**
- * The title's line, `ms` into a sweep of `span`: a round of the game in miniature. The
- * line carries on down out of the letters with building above it, so the whole word is
- * the build look; a banner then crosses it top to bottom bringing combat, as "Fire!"
- * does; and a last one brings building back and stops halfway. Each stage starts where
- * the last left the word, so nothing on it changes except under the line.
+ * Passes of the line since the title began gliding, as a whole and a fraction: begun in
+ * the second pass with the line at the middle, so the glide starts where the title rests.
  */
-export function titleSweep(ms: number, span: number): TitleFrame {
-  const t = ms / span;
-  if (t <= 0 || t >= 1) return TITLE_AT_REST;
-  const ease = (u: number): number => 1 - (1 - u) * (1 - u);
-  // A fifth to clear the word, two fifths for each banner.
-  if (t < CLEARED) return { split: 0.5 + (0.5 + BEYOND) * ease(t / CLEARED), upper: 'build' };
-  if (t < CROSSED) {
-    return {
-      split: -BEYOND + (1 + 2 * BEYOND) * ((t - CLEARED) / (CROSSED - CLEARED)),
-      upper: 'combat',
-    };
-  }
-  return { split: -BEYOND + (0.5 + BEYOND) * ease((t - CROSSED) / (1 - CROSSED)), upper: 'build' };
+function passes(ms: number, passMs: number): number {
+  return 1 + MIDDLE + ms / passMs;
 }
 
-/** How far into a sweep the word is all the build look, the combat half out of sight. */
-const CLEARED = 0.2;
-/** How far into a sweep the combat banner has crossed, the build half out of sight. */
-const CROSSED = 0.6;
+/**
+ * The title's line, `ms` into its glide: down across the letters at an even pace, out of
+ * sight below them, and in again from above, each pass a banner bringing the other look
+ * over the whole word — combat, then building, as a round's banners do. Without a pause, at
+ * one speed: the line stopped at the middle and waited between sweeps until the test session
+ * of 2026-10-08 asked for it slower and never still. Leaving at the foot and entering at the
+ * head, the line is out of sight both times, so nothing on the word jumps.
+ */
+export function titleGlide(ms: number, passMs: number): TitleFrame {
+  const u = passes(ms, passMs);
+  const pass = Math.floor(u);
+  return {
+    split: -BEYOND + (1 + 2 * BEYOND) * (u - pass),
+    upper: pass % 2 === 0 ? 'combat' : 'build',
+  };
+}
 
 /**
- * The half of the title a sweep may give a new style at `t` of the way through it, having
- * been at `before`: each half while it is wholly out of sight, as a banner on the board
- * changes a look it is about to reveal (PLAN 11.23) — the combat half once the line has
- * left the word in the build look, the build half once the combat banner has crossed.
+ * The half of the title that may take a new style between `before` and `ms` into the glide,
+ * or null: at the start of each pass, the half that pass brings — wholly out of sight then,
+ * since the word is all the other look — as a banner on the board changes a look it is about
+ * to reveal (PLAN 11.23). A frame that skips past the moment still turns it.
  */
-export function titleTurn(before: number, t: number): ArtLook | null {
-  if (before < CLEARED && t >= CLEARED) return 'combat';
-  if (before < CROSSED && t >= CROSSED) return 'build';
-  return null;
+export function titleTurn(before: number, ms: number, passMs: number): ArtLook | null {
+  const was = Math.floor(passes(before, passMs));
+  const now = Math.floor(passes(ms, passMs));
+  if (now === was) return null;
+  return now % 2 === 0 ? 'combat' : 'build';
 }
 
 /** Where the title's looks come from: `LookRotation`, the match's own. */
@@ -74,20 +76,20 @@ export interface TitleRotation {
 /**
  * The menu's title as both chosen looks at once: the build look's title above a banner's
  * gold line and the combat look's below it, the letters of the two coinciding, so the
- * word reads as one cut through by the line. The line sweeps across as either choice
- * changes and now and again while the menu is open; the same style for both is one
- * title and no line, as a banner then changes nothing.
+ * word reads as one cut through by the line, which glides across it without end while the
+ * menu is open (`titleGlide`); the same style for both is one title and no line, as a
+ * banner then changes nothing.
  */
 export class SplitTitle {
   private readonly layers: Record<ArtLook, HTMLElement>;
   private readonly line: HTMLElement;
   private shown: Partial<Record<ArtLook, ArtStyle>> = {};
   private same = false;
-  private sweepStart: number | null = null;
-  /** How far the sweep under way had come at the last frame, as a fraction. */
-  private sweptTo = 0;
+  /** When the glide began, or null while the title rests. */
+  private glideStart: number | null = null;
+  /** How far into the glide the last frame was. */
+  private glidedTo = 0;
   private rotation: TitleRotation | null = null;
-  private timer: ReturnType<typeof setInterval> | null = null;
 
   constructor(
     private readonly root: HTMLElement,
@@ -111,17 +113,15 @@ export class SplitTitle {
   }
 
   /**
-   * Shows the looks a rotation opens with, sweeping the line across if either has changed,
-   * and gives a random half a new style at every sweep after.
+   * Shows the looks a rotation opens with — a choice changed shows at once — and gives a
+   * random half a new style at every pass after.
    */
   use(rotation: TitleRotation): void {
     this.rotation = rotation;
     const styles = rotation.opening();
-    const changed = styles.build !== this.shown.build || styles.combat !== this.shown.combat;
-    const first = this.shown.build === undefined;
     for (const look of ['build', 'combat'] as const) this.dress(look, styles[look]);
-    this.frame(TITLE_AT_REST);
-    if (changed && !first) this.sweep();
+    if (this.glideStart === null) this.frame(TITLE_AT_REST);
+    this.glide();
   }
 
   /** Draws one half in a style. */
@@ -139,40 +139,35 @@ export class SplitTitle {
     this.same = this.shown.build === this.shown.combat;
   }
 
-  /** Sweeps the line across once, unless motion is unwelcome or one style shows both. */
-  sweep(): void {
-    if (this.same || motionReduced()) return;
-    const already = this.sweepStart !== null;
-    this.sweepStart = performance.now();
-    this.sweptTo = 0;
-    if (!already) requestAnimationFrame(this.tick);
+  /**
+   * Sets the line gliding, from where the title rests, unless it already is, motion is
+   * unwelcome, or one style shows both — then there is no line to move.
+   */
+  glide(): void {
+    if (this.glideStart !== null || this.same || motionReduced()) return;
+    this.glideStart = performance.now();
+    this.glidedTo = 0;
+    requestAnimationFrame(this.tick);
   }
 
-  /** Sweeps now and then while the title is on the page, and stops once it has gone. */
-  repeat(): void {
-    this.timer ??= setInterval(() => {
-      if (!this.root.isConnected) {
-        clearInterval(this.timer!);
-        this.timer = null;
-        return;
-      }
-      this.sweep();
-    }, this.art.menu.titleSweepEveryMs);
-  }
-
+  /** A frame of the glide, until the title has left the page or one style shows both. */
   private readonly tick = (now: number): void => {
-    if (this.sweepStart === null || !this.root.isConnected) return;
-    const ms = now - this.sweepStart;
-    const t = ms / this.art.menu.titleSweepMs;
-    const turn = titleTurn(this.sweptTo, t);
-    this.sweptTo = t;
+    if (this.glideStart === null) return;
+    if (!this.root.isConnected || this.same) {
+      this.glideStart = null;
+      this.frame(TITLE_AT_REST);
+      return;
+    }
+    const passMs = this.art.menu.titlePassMs;
+    const ms = now - this.glideStart;
+    const turn = titleTurn(this.glidedTo, ms, passMs);
+    this.glidedTo = ms;
     if (turn !== null && this.rotation?.isRandom(turn) === true) {
       const other = turn === 'build' ? 'combat' : 'build';
       this.dress(turn, this.rotation.next(turn, this.shown[other] ?? null));
     }
-    this.frame(titleSweep(ms, this.art.menu.titleSweepMs));
-    if (ms < this.art.menu.titleSweepMs) requestAnimationFrame(this.tick);
-    else this.sweepStart = null;
+    this.frame(titleGlide(ms, passMs));
+    requestAnimationFrame(this.tick);
   };
 
   private frame(frame: TitleFrame): void {

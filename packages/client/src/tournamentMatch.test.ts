@@ -101,5 +101,6 @@ describe('a tournament match, played locally', () => {
     expect(result?.scores).toEqual(placed.map((p) => p.score));
     // Won, on to the next round; lost, out of a single elimination.
     expect(after.status.kind).toBe(placed[0]?.team === HOST_TEAM ? 'playing' : 'out');
-  });
+    // A whole match of bots: under 4 s alone, past the default 5 s beside every other test.
+  }, 60_000);
 });

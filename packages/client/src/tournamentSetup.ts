@@ -200,7 +200,12 @@ function teamRows(form: TournamentForm, hostName: string): string {
         `${levelPips(bot.level)}<select class="mate-level" data-mate="${i}" aria-label="${escape(t('tournament.mateLevelAria', { n: i + 2 }))}">${rangeOptions(MIN_LEVEL, MAX_LEVEL, bot.level)}</select></li>`,
     )
     .join('');
-  return `<ul class="seats">${host}${mates}</ul>`;
+  // Above the teammates, what they are: bots, set here, whose seats friends may take.
+  const heading =
+    form.teamBots.length === 0
+      ? ''
+      : `<h3>${t('tournament.members')}</h3><p class="note">${escape(t('tournament.membersNote'))}</p>`;
+  return `${heading}<ul class="seats">${host}${mates}</ul>`;
 }
 
 export function setupMarkup(form: TournamentForm, hostName: string): string {

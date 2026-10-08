@@ -17,7 +17,6 @@ import { wireCopy } from './lobbyFlow.js';
 import { runSession, type MatchExits } from './matchScreen.js';
 import { preferredStyles } from './prefs.js';
 import { localMatchFor, localSession, networkSession, type Setup } from './session.js';
-import { botSetupsFromSeats } from './summary.js';
 import type { TournamentExits } from './tournamentMenu.js';
 import { TournamentRoom, roomTable } from './tournamentRoom.js';
 import { deleteTournament, loadTournament, writeTournament } from './tournamentSaves.js';
@@ -218,22 +217,13 @@ function playHere(open: Open, progress: Progress): void {
 function playOnline(open: Open, room: TournamentRoom, progress: Progress): void {
   const prepared = matchFor(open, progress);
   if (prepared === null) return;
-  const { setup, table, exits } = prepared;
+  const { setup, exits } = prepared;
   let started = false;
   room.onSnapshot = () => {
     if (started) return;
     started = true;
-    // Each seat's bot as the room played it: the tournament's, or none for a person.
-    const seats = table.seats.map((seat, index) =>
-      room.people.some((p) => p.playerId === index) ? null : seat.level,
-    );
-    const setups = botSetupsFromSeats(
-      setup.seed,
-      seats,
-      table.seats.map((s) => s.personality),
-    );
     void runSession(
-      networkSession(room.match, room.connection, false, setups, () => true),
+      networkSession(room.match, room.connection, false, () => true),
       setup,
       {
         ...exits,

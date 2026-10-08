@@ -3,7 +3,7 @@ import type { MatchEvent, Shot } from '@bollwerk/sim';
 import { describe, expect, it } from 'vitest';
 
 import { LocalMatch } from './localMatch.js';
-import { MatchLog, botSetupsFromSeats, mostCastlesOf, revealLines, scoreChart } from './summary.js';
+import { MatchLog, mostCastlesOf, scoreChart } from './summary.js';
 
 const shot = (id: number, owner: number): Shot => ({
   id,
@@ -106,21 +106,5 @@ describe('the score chart', () => {
       { x: 200, y: 0 },
     ]);
     expect(b?.points.at(-1)).toEqual({ x: 200, y: 60 });
-  });
-});
-
-describe('the reveal at the end', () => {
-  it('knows each bot as the match dealt it, from the seed and the seats alone', () => {
-    const seats = [null, 3, 8, 6];
-    const match = new LocalMatch({ seed: 99, seats });
-    expect(botSetupsFromSeats(99, seats)).toEqual(match.setups);
-  });
-
-  it('says each bot’s level and personality in plain words, and leaves people out', () => {
-    const match = new LocalMatch({ seed: 5, seats: [null, 7] });
-    const lines = revealLines(match.state, match.setups);
-    expect(lines).toHaveLength(1);
-    expect(lines[0]?.player).not.toBe(match.humanPlayer);
-    expect(lines[0]?.text).toMatch(/^Level 7 · \w+ · [\w-]+ · \w+ cannons$/);
   });
 });

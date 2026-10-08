@@ -964,10 +964,8 @@ export const ArtConfigSchema = z
     }),
     /** The menu's title, split between the two chosen looks at a banner's line. */
     menu: z.strictObject({
-      /** One sweep of the line across it, as the banners cross the board. */
-      titleSweepMs: z.number().int().positive(),
-      /** Between sweeps, while the menu is open. */
-      titleSweepEveryMs: z.number().int().positive(),
+      /** One pass of the line down across it, gliding without a pause while the menu is open. */
+      titlePassMs: z.number().int().positive(),
       /** One breath of the surf round the lobby map's coasts, each tile a little out of step. */
       mapSurfMs: z.number().int().positive(),
       /** One breath of the castles on the lobby map. */

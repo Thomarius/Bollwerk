@@ -12,7 +12,6 @@ import { type ServerMessage } from '@bollwerk/protocol';
 import { lobbyMarkup, type LobbyView } from './lobby.js';
 import { joinRefusedNotice, refusalText } from './browser.js';
 import { t } from './i18n.js';
-import { botSetupsFromSeats } from './summary.js';
 import { motionReduced } from './motion.js';
 import { drawPreview, tablePreview } from './preview.js';
 import { ServerConnection } from './net/connection.js';
@@ -459,8 +458,7 @@ function roomLobby(
           // A host who gave their seat to a bot watches it play, whoever else is here.
           const watching =
             view !== null && view.hostBot !== null && match.humanPlayer === view.hostId;
-          // Each seat's bot level, or null for a person, in lobby order — what the room
-          // dealt the islands and personalities from — so the reveal can name every bot.
+          // Each seat's bot level, or null for a person, in lobby order.
           const seats = Array.from({ length: table?.playerCount ?? 0 }, (_, seat) => {
             const person = table?.seats.some((s) => s.playerId === seat) ?? false;
             if (!person) return table?.bots[seat] ?? DEFAULT_BOT;
@@ -468,15 +466,9 @@ function roomLobby(
           });
           const seed = table?.seed ?? view?.seed ?? 0;
           const setup: Setup = { ...common, seed, seats, settings: DEFAULT_SETTINGS };
-          // A tournament's bots keep their own personalities rather than being dealt them.
           const tournament = table?.tournament ?? null;
-          const setups = botSetupsFromSeats(
-            seed,
-            seats,
-            tournament?.seats.map((s) => s.personality) ?? [],
-          );
           void runSession(
-            networkSession(match, connection, watching, setups, () => match.humanPlayer === hostId),
+            networkSession(match, connection, watching, () => match.humanPlayer === hostId),
             setup,
             // The next match is the host's to send from their tournament.
             tournament === null ? {} : { waitLabel: 'tournament.waitHost' },

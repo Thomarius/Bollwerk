@@ -1,8 +1,4 @@
-import { dealSeats } from '@bollwerk/ai';
-import type { BotSetup, Personality } from '@bollwerk/config';
 import type { MatchEvent, MatchState } from '@bollwerk/sim';
-
-import { t } from './i18n.js';
 
 /**
  * What the end of a match shows beside the final standings: for each player the wall
@@ -129,66 +125,4 @@ export function scoreChart(
       y: Number((height - (score / top) * height).toFixed(1)),
     })),
   }));
-}
-
-/**
- * Each bot's level and personality, by player, from the table as the host set it: the
- * seats in lobby order, a level for each bot and null for a person. Seats are shuffled onto
- * players by the seed and personalities dealt from it for the table (PLAN 11.6), exactly as a
- * room and a local match do, so a client needs nothing more from the server to know them.
- */
-export function botSetupsFromSeats(
-  seed: number,
-  seats: readonly (number | null)[],
-  /** Personalities the table gave its bots, by seat — a tournament's — rather than dealt. */
-  personalities: readonly (Personality | null)[] = [],
-): Map<number, BotSetup> {
-  const { setups } = dealSeats(
-    seed,
-    seats.map((level, index) => ({
-      level,
-      bot: level !== null,
-      personality: personalities[index] ?? null,
-    })),
-  );
-  const byPlayer = new Map<number, BotSetup>();
-  setups.forEach((setup, player) => {
-    if (setup !== null) byPlayer.set(player, setup);
-  });
-  return byPlayer;
-}
-
-/** One bot revealed at the end: who, and how it played. */
-export interface Reveal {
-  player: number;
-  name: string;
-  /** "Level 6 · offensive · finisher · max cannons". */
-  text: string;
-}
-
-/**
- * The surprise at the end of a match (PLAN 11.6): every bot's level and the personality it
- * was dealt, in plain words, in player order. A person is left out; so is a seat whose
- * setup this client does not know.
- */
-export function revealLines(
-  state: Pick<MatchState, 'players'>,
-  setups: ReadonlyMap<number, BotSetup>,
-): Reveal[] {
-  return state.players.flatMap((p) => {
-    const setup = setups.get(p.id);
-    if (!p.isBot || setup === undefined) return [];
-    return [
-      {
-        player: p.id,
-        name: p.name,
-        text: t('summary.reveal', {
-          level: setup.level,
-          risk: t(`trait.risk.${setup.personality.risk}` as const),
-          targeting: t(`trait.targeting.${setup.personality.targeting}` as const),
-          cannons: t(`trait.cannons.${setup.personality.cannons}` as const),
-        }),
-      },
-    ];
-  });
 }

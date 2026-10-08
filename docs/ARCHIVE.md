@@ -5877,3 +5877,31 @@ host's matches played at the tournament's table, offline or in a room their team
 code, its result saved the moment it ends; a match left before its end played again; the two
 endings, the team's road shown match by match. Protocol 18, recording format unchanged, save
 version 1.
+
+## 12zl. The tournament test session's first feedback (2026-10-08)
+
+From the users' play-testing round (TOURNAMENT T8), mid-tournament, triaged with them first:
+
+- **The new tournament's screen**: a "Team members" heading over the teammates, with a line
+  saying they are bots that friends who join play in place of; team size Solo (Einzel) rather
+  than Alone; the archnemesis No/Yes (Nein/Ja) rather than None/One.
+- **The score bar** sorts teams by standing as it sorted players: the leader first, a change
+  of places sliding. Teams had kept their letters' order, and the leader was hard to see.
+- **The title** glides without pause, one pass of the line every 6 s at one speed
+  (`menu.titlePassMs`), each pass a banner bringing the other look over the whole word and the
+  half out of sight taking its next style; it swept for 2.6 s every 12 s, stopping at the
+  middle.
+- **The match's summary** drops the bots' personalities — "not useful for the players" — and
+  with them the reveal's whole plumbing (`Session.setups`, `botSetupsFromSeats`,
+  `revealLines`); the rest is about a third larger: the table 13 to 18 px, the award cards,
+  the chart 360 by 110 to 520 by 160, the buttons.
+
+**Stutter at the looks' wipes, measured** (8 players watched, a probe timing every frame, in
+headless Chrome on this machine's integrated GPU, Radeon Renoir, found by `--enable-gpu
+--use-angle=gl --ignore-gpu-blocklist`): a wipe as such costs 2 to 3 ms a frame and holds
+60 fps for its 4 s. The hitches are its first frame, 33 to 50 ms with chosen looks and 83 to
+100 ms with Random, the incoming look redrawing its whole board at once as the line reveals it;
+and with Random, about 4 s before a wipe, gaps of up to 167 ms while the next look is made in
+the background, its steps meant to take 8 ms of a frame overrunning it. Freezing the outgoing
+look as an image would save only the 2 to 3 ms. Two fixes chosen: the incoming look drawn
+before the line reaches it, and the background making cut finer (12zm).

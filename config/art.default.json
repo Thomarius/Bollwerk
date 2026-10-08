@@ -1374,8 +1374,7 @@
     }
   },
   "menu": {
-    "titleSweepMs": 2600,
-    "titleSweepEveryMs": 12000,
+    "titlePassMs": 6000,
     "mapSurfMs": 3200,
     "mapCastleMs": 2200
   },

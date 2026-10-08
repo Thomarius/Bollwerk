@@ -22,7 +22,7 @@ import { MatchAudio } from './matchAudio.js';
 import { announcementLines, announcementTitle, isTeamMatch, ranking, teamName } from './scores.js';
 import { buildHints, type BuildHints } from './hints.js';
 import { timerSpot } from './timerSpot.js';
-import { MatchLog, revealLines } from './summary.js';
+import { MatchLog } from './summary.js';
 import { motionReduced, storedEffects } from './motion.js';
 import { PauseControls } from './pause.js';
 import { openingShot, winnerShot } from './camera.js';
@@ -143,7 +143,6 @@ export async function runSession(
   // What the end of the match summarises, kept from the events as they come.
   const matchLog = new MatchLog();
   hud.endScreen.useLog(matchLog);
-  hud.endScreen.useReveal(revealLines(session.state, session.setups));
   const matchAudio = new MatchAudio(audio, session.humanPlayer);
 
   /**

@@ -6,7 +6,7 @@ import type { TextKey } from '@bollwerk/config';
 import { escape } from './html.js';
 import { defaultArtConfig } from '@bollwerk/config';
 
-import { mostCastlesOf, scoreChart, type MatchLog, type Reveal } from './summary.js';
+import { mostCastlesOf, scoreChart, type MatchLog } from './summary.js';
 
 import { endOfMatchText, isTeamMatch, standings, teamName, teamStandings } from './scores.js';
 import { type MatchState } from '@bollwerk/sim';
@@ -14,7 +14,7 @@ import { type MatchState } from '@bollwerk/sim';
 /**
  * The summary at the end of a match (`summary.ts` keeps its log): each player's or team's
  * standing, the wall they knocked down, the most castles they held and the lives left, up
- * to three awards, every score charted round by round, the bots revealed, and Rematch and
+ * to three awards, every score charted round by round, and Rematch and
  * Back to menu. Held back a moment so the fireworks have the screen first.
  */
 export class EndScreen {
@@ -90,13 +90,6 @@ export class EndScreen {
     this.log = log;
   }
 
-  /** The bots revealed at game over: their levels and the personalities they were dealt. */
-  private reveal: readonly Reveal[] = [];
-
-  useReveal(reveal: readonly Reveal[]): void {
-    this.reveal = reveal;
-  }
-
   /** The awards drawn for this match, once it is over: drawn once, so they hold still. */
   private awards: readonly Award[] | null = null;
 
@@ -137,29 +130,16 @@ export class EndScreen {
   }
 
   /**
-   * The surprise at the end (PLAN 11.6): one line per bot, its colour, name, level and
-   * personality in plain words.
-   */
-  private revealMarkup(): string {
-    if (this.reveal.length === 0) return '';
-    const lines = this.reveal
-      .map(
-        (r) =>
-          `<li><b style="background:${playerCssColour(r.player)}"></b>${escape(r.name)} <span>${escape(r.text)}</span></li>`,
-      )
-      .join('');
-    return `<div class="reveal"><small>${t('hud.revealTitle')}</small><ul>${lines}</ul></div>`;
-  }
-
-  /**
    * Every score round by round, one line per player — per team in a team match — so the
    * end of a match shows where it was won. The viewer's own line is drawn heaviest.
    */
   private chart(state: MatchState, humanPlayer: number): string {
     const log = this.log;
     if (log === null || log.scores.length < 2) return '';
-    const width = 360;
-    const height = 110;
+    // Larger since the test session of 2026-10-08: the summary had room once the bots'
+    // personalities left it.
+    const width = 520;
+    const height = 160;
     const teamed = isTeamMatch(state);
     const groups = teamed
       ? [...new Set(state.players.map((p) => p.team))]
@@ -259,6 +239,6 @@ export class EndScreen {
     const table = `<table class="final">${head}${rows}</table>`;
     // A button, not a key: everything else in the game is the mouse, and a key that
     // does something unannounced is the kind of surprise players dislike.
-    return `<div class="banner summary">${text}${table}${this.awardsMarkup(state, humanPlayer)}${this.chart(state, humanPlayer)}${this.revealMarkup()}<div class="end-buttons">${this.rematchButton()}<button class="leave">${t('watching.back')}</button></div></div>`;
+    return `<div class="banner summary">${text}${table}${this.awardsMarkup(state, humanPlayer)}${this.chart(state, humanPlayer)}<div class="end-buttons">${this.rematchButton()}<button class="leave">${t('watching.back')}</button></div></div>`;
   }
 }

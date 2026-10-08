@@ -4,7 +4,6 @@ import {
   defaultSettings,
   mergeSettings,
   parsePersonality,
-  type BotSetup,
   type MatchSettings,
   type Personality,
 } from '@bollwerk/config';
@@ -36,8 +35,6 @@ export interface Session {
   readonly pausedBy: number | null;
   /** Pauses or resumes: at once locally, and for everyone once a server agrees. */
   setPaused(paused: boolean): void;
-  /** Each bot's level and personality, by player, for the reveal at game over. */
-  readonly setups: ReadonlyMap<number, BotSetup>;
   /** Extra line for the HUD: watching, or the last move the server refused. */
   status(): string;
   /** The connection, for the badge beside Pause; null for a match on this computer. */
@@ -135,7 +132,6 @@ export function localSession(match: LocalMatch, rematch: (() => void) | null = n
     setPaused: (paused) => {
       pausedBy = paused && !match.finished ? match.humanPlayer : null;
     },
-    setups: match.setups,
     status: () => (match.humanPlayer < 0 ? t('watching.status') : ''),
     network: () => null,
     leave: () => undefined,
@@ -148,11 +144,9 @@ export function networkSession(
   match: NetworkMatch,
   connection: ServerConnection,
   watching = false,
-  setups: ReadonlyMap<number, BotSetup> = new Map(),
   isHost: () => boolean = () => false,
 ): Session {
   return {
-    setups,
     get state() {
       if (match.state === null) throw new Error('match has no state yet');
       return match.state;

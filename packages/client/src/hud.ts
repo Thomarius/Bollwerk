@@ -14,6 +14,7 @@ import {
   roundLabel,
   standings,
   teamLetter,
+  teamStandings,
   type AnnouncementLine,
   type RankEntry,
 } from './scores.js';
@@ -486,12 +487,13 @@ export class Hud {
     };
     const frame = this.layout();
     const { phase: phaseRoot, roster: rosterRoot, rest } = frame;
-    // Free-for-all in standing, best first, so a change of places slides; a team match
-    // groups by team in team order, which never reshuffles, each headed by its letter,
-    // score and pooled lives.
+    // In standing, best first, so the leader is always the first entry and a change of
+    // places slides — players in free-for-all, teams in a team match, each team headed by
+    // its letter, score and pooled lives. Teams kept their letters' order until the test
+    // session of 2026-10-08 found the leader hard to see.
     let order: string[];
     if (teamed) {
-      const teams = [...new Set(state.players.map((p) => p.team))].sort((a, b) => a - b);
+      const teams = teamStandings(state).map((s) => s.team);
       for (const team of teams) {
         const members = state.players.filter((p) => p.team === team);
         const out = members.every((p) => p.eliminated);

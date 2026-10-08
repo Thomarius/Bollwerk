@@ -210,7 +210,7 @@ describe('a tournament in words', () => {
     expect(names).toContain("Winners' final");
     expect(names).toContain("Losers' final");
     expect(names.at(-1)).toBe('Final');
-    expect(settingsLine(save.settings)).toBe('Short · Alone · League · Double elimination');
+    expect(settingsLine(save.settings)).toBe('Short · Solo · League · Double elimination');
   });
 
   it('has the next stage of a tournament under way', () => {
