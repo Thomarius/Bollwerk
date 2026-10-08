@@ -35,6 +35,8 @@ SCENES=(
   # The tournament screens (docs/TOURNAMENT.md); the resume list is empty in a fresh browser.
   "tournament-new|$BASE/?tournament=new&name=Ada|1500"
   "tournament-resume|$BASE/?tournament=resume|1500"
+  # A tournament between matches; under the dev server no room opens, after its two seconds.
+  "tournament-demo|$BASE/?tournament=demo&seed=5&name=Ada|3500"
   "build-flat|$GAME&snapshot=build&style=flat|2000"
   "build-pixel|$GAME&snapshot=build&style=pixel|2000"
   "cannons-pixel|$GAME&snapshot=cannon_place&round=2&style=pixel|2000"

@@ -779,6 +779,70 @@ const scorePage: HowToPage = {
   },
 };
 
+/**
+ * 8. Tournaments (docs/TOURNAMENT.md): a bracket of eight, the player's team in blue winning
+ * its way along to the final, each other match's winner going on in grey, the cup lit last.
+ */
+const tournamentPage: HowToPage = {
+  caption: 'howTo.tournament',
+  loopMs: 5200,
+  stillMs: 4200,
+  draw(ctx, w, h, ms) {
+    const rounds = [8, 4, 2, 1];
+    const boxW = w * 0.14;
+    const boxH = h * 0.075;
+    const columnX = (r: number): number => w * (0.06 + r * 0.24);
+    const rowY = (r: number, i: number): number => {
+      const n = rounds[r] as number;
+      return h * 0.1 + ((i + 0.5) * (h * 0.8)) / n;
+    };
+    // The player's team is the third of the first round; it wins every match.
+    const mine = (r: number): number => Math.floor(2 / 2 ** r);
+    // A round's winners come in one after the other, the player's last of all.
+    const reached = (r: number): number => span(ms, 600 + (r - 1) * 1200, 1300 + (r - 1) * 1200);
+    rounds.forEach((n, r) => {
+      for (let i = 0; i < n; i++) {
+        const x = columnX(r);
+        const y = rowY(r, i);
+        const shown = r === 0 ? 1 : reached(r);
+        if (r > 0) {
+          // The lines from the two boxes of the round before.
+          ctx.strokeStyle = INK;
+          ctx.globalAlpha = 0.35;
+          ctx.lineWidth = 2;
+          for (const from of [2 * i, 2 * i + 1]) {
+            ctx.beginPath();
+            ctx.moveTo(columnX(r - 1) + boxW, rowY(r - 1, from));
+            ctx.lineTo(x - w * 0.03, rowY(r - 1, from));
+            ctx.lineTo(x - w * 0.03, y);
+            ctx.lineTo(x, y);
+            ctx.stroke();
+          }
+          ctx.globalAlpha = 1;
+        }
+        if (shown <= 0) continue;
+        const ours = i === mine(r);
+        ctx.globalAlpha = shown;
+        ctx.fillStyle = ours ? BLUE.base : 'rgba(255,255,255,0.18)';
+        ctx.fillRect(x, y - boxH / 2, boxW, boxH);
+        if (ours) {
+          ctx.strokeStyle = ACCENT;
+          ctx.lineWidth = 2;
+          ctx.strokeRect(x, y - boxH / 2, boxW, boxH);
+        }
+        ctx.globalAlpha = 1;
+      }
+    });
+    // The cup over the final, once the player's team is in it and has won it.
+    const cup = span(ms, 4000, 4600);
+    if (cup > 0) {
+      ctx.globalAlpha = cup;
+      text(ctx, '\u{1F3C6}', columnX(3) + boxW / 2, rowY(3, 0) - h * 0.14, h * 0.13, ACCENT);
+      ctx.globalAlpha = 1;
+    }
+  },
+};
+
 export const HOW_TO_PLAY: readonly HowToPage[] = [
   mousePage,
   roundPage,
@@ -787,6 +851,7 @@ export const HOW_TO_PLAY: readonly HowToPage[] = [
   gunsPage,
   combatPage,
   scorePage,
+  tournamentPage,
 ];
 
 // ----------------------------------------------------------------------- overlay

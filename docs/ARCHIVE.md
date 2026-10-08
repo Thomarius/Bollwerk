@@ -5857,3 +5857,23 @@ match started on both pages with the teams' names on the islands, the host leavi
 (nothing recorded, a new room opened), no page errors; the test match's recording removed.
 Seven room tests cover the table, the seats, the moves, the start, the rematch refused, the
 lobby after a match and the listing.
+
+## 12zk. Tournament mode, T7: texts, help and the documents (2026-10-08)
+
+Every text of tournament mode is in English and German, as each package went (`locale.test.ts`
+holds them to it). **How to play** has an eighth page: a bracket of eight, the player's team in
+blue winning its way along to the final, the cup lit over it — "Tournament: win each match to
+reach the final." **`?tournament=demo&seed=N`** opens a tournament of teams of two, with a
+league, double elimination and an archnemesis, between matches — saved as `t-demo`, so looking
+again replaces it — and `tools/screenshots.sh` has it as `tournament-demo`, beside
+`tournament-new` and `tournament-resume`. CLAUDE.md names the shortcuts and where the work
+stands; PLAN.md §11 says tournament mode is built and T8, the users' play-testing round, is
+what is left of it.
+
+Tournament mode in all, T1–T7 (ARCHIVE 12ze–12zk): a tournament is made from a screen of its
+own and saved in the browser; a league of one match size a matchday, then single or double
+elimination at any match sizes, the rest of the field rolled from linear level ratings; the
+host's matches played at the tournament's table, offline or in a room their teammates join by
+code, its result saved the moment it ends; a match left before its end played again; the two
+endings, the team's road shown match by match. Protocol 18, recording format unchanged, save
+version 1.

@@ -53,7 +53,9 @@ leave your seat undriven on the way, so you are soon knocked out), `&speed=10`,
 `&style=flat|pixel|night|cyberpunk|blueprint|parchment|bricks|glass|chocolate|halloween|sakura|oktoberfest|opera|office|undersea|electric` for both looks (a one-look style sets only its own)
 (`&buildStyle=`, `&combatStyle=` for one), `&watch=1&level=8` to observe a bot match (`&personality=offensive` fixes every bot's),
 `&rounds=12` for the round cap, `&teams=2` for teams of two in seat order, `&lang=de` for a
-language (not saved). `?tournament=new` and `?tournament=resume` open the tournament screens. `?host=8` opens
+language (not saved). `?tournament=new` and `?tournament=resume` open the tournament screens,
+`?tournament=demo&seed=N` a tournament of teams of two between matches (saved as `t-demo`), and
+`&snapshot=game_over` plays a tournament's match out at once, its result counted. `?host=8` opens
 the lobby at eight seats — a room if a server answers, a local table if not —
 `?join=CODE` joins one, `&name=Bo` sets the name, `&seed=N` the map, `&private=1` makes
 the room private. The menu's Play (with its Public / Private switch), its list of open
@@ -213,8 +215,10 @@ Full detail in PLAN.md §1. The parts that surprise people:
   every corner piece and German were checked in play by the user (ARCHIVE 12n–12t).
 
 **In progress — tournament mode** (decided 2026-10-08): the design and its work packages
-T1–T8 are `docs/TOURNAMENT.md`; T1, the core in `packages/tournament`, T2, its ratings and names, T3, fixed tables, T4, saves and the menu, T5, playing offline, and T6, online
-(protocol 18), are done (ARCHIVE 12ze–12zj).
+T1–T8 are `docs/TOURNAMENT.md`; T1–T7 are done (ARCHIVE 12ze–12zk): the core in
+`packages/tournament`, linear ratings and name pools, fixed tables, saves and the menu, playing
+offline, online with protocol 18, and the texts and help. Next is T8, the users'
+play-testing round, triaged with them before anything changes.
 
 **Next** — PLAN §11: more test games towards a first feature-ready version, the user's
 manual test of UPnP, and bots that miss as people do (combat accuracy, measured against the

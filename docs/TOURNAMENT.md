@@ -244,12 +244,10 @@ before its end** closes the room, as leaving any online match does, and the repl
 one with a new code for teammates to join again — the user's choice (2026-10-08), as long as
 the match starts again cleanly, which a second run with the server confirmed.
 
-### T7 — Texts, help and documentation
+### T7 — Texts, help and documentation — done (ARCHIVE 12zk)
 
-- Every new text in English and German (`locale.test.ts`).
-- A short section in How to play on what a tournament is.
-- `tools/screenshots.sh` scenes for the new screens.
-- CLAUDE.md and PLAN.md brought up to date, and the work summarised in ARCHIVE.md.
+Every text in English and German, an eighth How to play page, the screenshot scenes, and the
+documents brought up to date.
 
 ### T8 — Play-testing
 

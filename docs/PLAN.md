@@ -1427,8 +1427,10 @@ app, UPnP, the balance soak and the rendering work (ARCHIVE 12h–12v); the refa
 can fill and widen their walls once sealed (ARCHIVE 12x, 12y). The bot learning work, item
 3, is **paused** after a first learned fit (ARCHIVE 12z), its next steps in
 [`BOT_LEARNING.md`](./BOT_LEARNING.md) §6. More test games come first, towards a first
-feature-ready version. The next big feature is **tournament mode** (decided 2026-10-08): its
-design and work packages are in [`TOURNAMENT.md`](./TOURNAMENT.md). French is not to be
+feature-ready version. **Tournament mode** (decided 2026-10-08) is built — a cooperative run
+of matches against a field of named bots, offline or with friends in the host's team, saved
+between matches — its design and work packages in [`TOURNAMENT.md`](./TOURNAMENT.md) and
+ARCHIVE 12ze–12zk; what is left of it is T8, the users' play-testing round. French is not to be
 done (the user's decision, 2026-10-06). Still open:
 
 1. **The user's manual test of UPnP**, reported back: switch on Open to the internet in the

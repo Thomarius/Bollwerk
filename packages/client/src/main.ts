@@ -1,4 +1,4 @@
-import { defaultTeams, MAX_LEVEL, MIN_LEVEL } from '@bollwerk/config';
+import { defaultConfigBundle, defaultTeams, MAX_LEVEL, MIN_LEVEL } from '@bollwerk/config';
 import { PHASES, type Phase } from '@bollwerk/sim';
 
 import { t } from './i18n.js';
@@ -15,6 +15,9 @@ import {
 import type { Common } from './menu.js';
 import { showMenu, tournamentExits } from './menu.js';
 import { openNewTournament, openResumeList } from './tournamentMenu.js';
+import { writeTournament } from './tournamentSaves.js';
+import { TOURNAMENT_LIMITS } from './tournamentSetup.js';
+import { createTournament } from '@bollwerk/tournament';
 import { openLobby } from './lobbyFlow.js';
 import { runSession } from './matchScreen.js';
 
@@ -88,6 +91,31 @@ if (params.get('autostart') === '1') {
   );
 } else if (params.get('tournament') === 'resume') {
   openResumeList(tournamentExits(params.get('private') !== '1'));
+} else if (params.get('tournament') === 'demo') {
+  // A tournament to look at: teams of two, a league and an archnemesis, from `&seed=`, saved
+  // under one id so that looking again replaces it rather than piling saves up.
+  const now = new Date();
+  const save = createTournament(
+    {
+      seed: chosenSeed(),
+      teamSize: 2,
+      hostName: params.get('name') ?? storedName(),
+      teamName: 'Bastion',
+      teamBots: [{ name: 'Mira', level: 5 }],
+      levels: { min: 4, max: 6 },
+      archnemesis: 'Nemesis',
+      length: 'medium',
+      league: true,
+      knockout: 'double',
+      matchTeams: { min: 2, max: 4 },
+      maxRounds: 10,
+    },
+    defaultConfigBundle.tournament,
+    TOURNAMENT_LIMITS,
+    { id: 't-demo', now: now.toISOString() },
+  );
+  writeTournament(save);
+  tournamentExits(params.get('private') !== '1').play(save.id);
 } else {
   showMenu();
 }

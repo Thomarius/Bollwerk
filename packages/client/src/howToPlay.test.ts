@@ -18,7 +18,7 @@ import {
 
 describe('how to play', () => {
   it('is seven pages of ten words or fewer, each standing still inside its own loop', () => {
-    expect(HOW_TO_PLAY).toHaveLength(7);
+    expect(HOW_TO_PLAY).toHaveLength(8);
     for (const page of HOW_TO_PLAY) {
       expect(t(page.caption).split(/\s+/).length).toBeLessThanOrEqual(10);
       expect(page.stillMs).toBeGreaterThanOrEqual(0);
