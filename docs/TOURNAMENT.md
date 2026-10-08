@@ -142,8 +142,9 @@ everything; ARCHIVE 12ze.)
   levels, names or seats to change.
 - **One room for the whole session.** The room is opened when the host starts or resumes,
   and keeps its code across matches until the host returns to the menu. People join it with
-  the existing Join and games browser. It is private by default, with the same Public/Private
-  switch as Play, and a public one is listed as a tournament, with the team named. **A person
+  the existing Join and games browser. It is public or private by the menu's switch beside
+  Single match, public to start with as Play's tables are (the user's choice, 2026-10-08), and
+  a public one is listed as a tournament, with the team named. **A person
   who joins may only take a seat on the host's team.**
 - **With no server answering**, the tournament plays offline, the team's bots in every seat
   of the host's team, and the invite is not shown.
@@ -233,23 +234,15 @@ then the list says so (`tournament.comingSoon`, to go with T5).
 ### T5 — The tournament flow, offline — done (ARCHIVE 12zi)
 
 One screen between matches — the next match and the standings — the match, its result saved
-as it ends, and the two endings. Open from it:
+as it ends, and the two endings.
 
-- **The tournament's names in the match.** The HUD and the match's summary still call the
-  teams Team A and Team B; the host's team name, and the opponents', belong there.
+### T6 — Online — done (ARCHIVE 12zj)
 
-### T6 — Online
-
-- **Protocol 18.** The host sends the room the table of the next match: each seat's name,
-  level and personality, which seats are the team's, and the settings. The room then refuses
-  a seat outside the team, any `configure` but choosing which team bot sits out, and a
-  rematch.
-- **The room kept across matches.** After a match the host sends the next table, and everyone
-  still at the room returns to its lobby, as a rematch does now.
-- **For the teammates**, a short line of where the tournament stands (the stage and the
-  opponents), sent with the table. The full standings stay the host's screen.
-- **The games browser** marks a tournament room and names the team.
-- The host dropping, on purpose or not, is the replay of §1.7.
+Protocol 18: the host's tournament sends its room each match's table; teammates join the
+host's team by the room's code; the teams' names reach every page. **The host leaving a match
+before its end** closes the room, as leaving any online match does, and the replay opens a new
+one with a new code for teammates to join again — the user's choice (2026-10-08), as long as
+the match starts again cleanly, which a second run with the server confirmed.
 
 ### T7 — Texts, help and documentation
 

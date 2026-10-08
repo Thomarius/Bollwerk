@@ -1,6 +1,6 @@
 import type { MatchState, PlayerState } from '@bollwerk/sim';
 
-import { isTeamMatch, teamLetter } from './scores.js';
+import { isTeamMatch, teamName } from './scores.js';
 import { t } from './i18n.js';
 
 /**
@@ -78,7 +78,7 @@ export function bannersFor(
         kind: 'out',
         title: t('banner.out'),
         detail: t('banner.outDetail', {
-          who: teamed ? t('team.name', { letter: teamLetter(player.team) }) : player.name,
+          who: teamed ? teamName(state, player.team) : player.name,
           round: player.eliminatedRound ?? state.round,
         }),
         urgent: false,

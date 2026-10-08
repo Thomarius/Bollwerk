@@ -128,10 +128,10 @@
   "end.yourTeamWinsOnPoints": "Dein Team gewinnt nach Punkten",
   "end.yourTeamShares": "Dein Team teilt sich den Sieg",
   "end.yourTeamSharesOnPoints": "Dein Team teilt sich den Sieg nach Punkten",
-  "end.teamWins": "Team {letter} gewinnt",
-  "end.teamWinsOnPoints": "Team {letter} gewinnt nach Punkten",
-  "end.teamsShare": "Die Teams {letters} teilen sich den Sieg",
-  "end.teamsShareOnPoints": "Die Teams {letters} teilen sich den Sieg nach Punkten",
+  "end.teamWins": "{name} gewinnt",
+  "end.teamWinsOnPoints": "{name} gewinnt nach Punkten",
+  "end.teamsShare": "{names} teilen sich den Sieg",
+  "end.teamsShareOnPoints": "{names} teilen sich den Sieg nach Punkten",
   "ordinal": {
     "other": "{n}."
   },
@@ -253,7 +253,7 @@
   "hud.colWall": "Mauer",
   "hud.colCastles": "Burgen",
   "hud.colLives": "Leben übrig",
-  "hud.teamRow": "Team {letter} · {members}",
+  "hud.teamRow": "{team} · {members}",
   "hud.next": "Gleich: {label}",
   "hud.seconds": "{seconds} s",
   "error.uncaught": "Unerwarteter Fehler",
@@ -459,5 +459,19 @@
   "tournament.stage": "Runde",
   "tournament.against": "Gegen",
   "tournament.place": "Platz",
-  "tournament.score": "Punkte"
+  "tournament.score": "Punkte",
+  "tournament.openingRoom": "Der Raum deines Teams wird eröffnet",
+  "tournament.starting": "Das Spiel beginnt…",
+  "tournament.botTag": "Bot",
+  "tournament.inPlaceOf": "statt {bot}",
+  "tournament.sitInAria": "Wessen Platz {name} einnimmt",
+  "tournament.room": "Der Raum deines Teams",
+  "tournament.roomNote": "Mit diesem Code treten Freunde bei und spielen in deinem Team statt seiner Bots. Ist niemand da, wird das Spiel auf diesem Computer gespielt.",
+  "tournament.waitHost": "Der Gastgeber macht weiter",
+  "lobby.tournament": "Turnier von {team}",
+  "lobby.tournamentStatement": {
+    "one": "{stage} · {n} Runde pro Spiel",
+    "other": "{stage} · {n} Runden pro Spiel"
+  },
+  "browser.tournament": "Turnier von {team}"
 }

@@ -128,10 +128,10 @@
   "end.yourTeamWinsOnPoints": "Your team wins on points",
   "end.yourTeamShares": "Your team shares the win",
   "end.yourTeamSharesOnPoints": "Your team shares the win on points",
-  "end.teamWins": "Team {letter} wins",
-  "end.teamWinsOnPoints": "Team {letter} wins on points",
-  "end.teamsShare": "Teams {letters} share the win",
-  "end.teamsShareOnPoints": "Teams {letters} share the win on points",
+  "end.teamWins": "{name} wins",
+  "end.teamWinsOnPoints": "{name} wins on points",
+  "end.teamsShare": "{names} share the win",
+  "end.teamsShareOnPoints": "{names} share the win on points",
   "ordinal": {
     "one": "{n}st",
     "two": "{n}nd",
@@ -256,7 +256,7 @@
   "hud.colWall": "wall",
   "hud.colCastles": "castles",
   "hud.colLives": "lives left",
-  "hud.teamRow": "Team {letter} · {members}",
+  "hud.teamRow": "{team} · {members}",
   "hud.next": "Next: {label}",
   "hud.seconds": "{seconds}s",
   "error.uncaught": "Uncaught error",
@@ -462,5 +462,19 @@
   "tournament.stage": "Stage",
   "tournament.against": "Against",
   "tournament.place": "Place",
-  "tournament.score": "Score"
+  "tournament.score": "Score",
+  "tournament.openingRoom": "Opening your team's room",
+  "tournament.starting": "Starting the match…",
+  "tournament.botTag": "bot",
+  "tournament.inPlaceOf": "in place of {bot}",
+  "tournament.sitInAria": "Whose seat {name} takes",
+  "tournament.room": "Your team's room",
+  "tournament.roomNote": "Friends join with this code and play in your team, in place of its bots. With nobody here, the match is played on this computer.",
+  "tournament.waitHost": "The host goes on",
+  "lobby.tournament": "Tournament of {team}",
+  "lobby.tournamentStatement": {
+    "one": "{stage} · {n} round a match",
+    "other": "{stage} · {n} rounds a match"
+  },
+  "browser.tournament": "Tournament of {team}"
 }

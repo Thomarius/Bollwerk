@@ -10,6 +10,7 @@ const room = {
   playerCount: 3,
   teamSize: 1,
   maxRounds: 10,
+  tournament: null,
 };
 
 describe('the open games browser', () => {

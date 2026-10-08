@@ -1,5 +1,5 @@
 import { dealSeats } from '@bollwerk/ai';
-import type { BotSetup } from '@bollwerk/config';
+import type { BotSetup, Personality } from '@bollwerk/config';
 import type { MatchEvent, MatchState } from '@bollwerk/sim';
 
 import { t } from './i18n.js';
@@ -140,10 +140,16 @@ export function scoreChart(
 export function botSetupsFromSeats(
   seed: number,
   seats: readonly (number | null)[],
+  /** Personalities the table gave its bots, by seat — a tournament's — rather than dealt. */
+  personalities: readonly (Personality | null)[] = [],
 ): Map<number, BotSetup> {
   const { setups } = dealSeats(
     seed,
-    seats.map((level) => ({ level, bot: level !== null })),
+    seats.map((level, index) => ({
+      level,
+      bot: level !== null,
+      personality: personalities[index] ?? null,
+    })),
   );
   const byPlayer = new Map<number, BotSetup>();
   setups.forEach((setup, player) => {

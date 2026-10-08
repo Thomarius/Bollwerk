@@ -71,6 +71,8 @@ export interface Setup {
   personalities?: readonly (Personality | null)[];
   /** The tournament the match belongs to, for its recording. */
   tournament?: { id: string; step: number };
+  /** Each team's name, by team label in order, where the table names them. */
+  teamNames?: readonly string[];
 }
 
 export const SETTING_BOUNDS = defaultConfigBundle.server.lobbySettings;
@@ -97,6 +99,7 @@ export function localMatchFor(setup: Setup, record = true): LocalMatch {
     ...(setup.names === undefined ? {} : { names: setup.names }),
     ...(setup.personalities === undefined ? {} : { personalities: setup.personalities }),
     ...(setup.tournament === undefined ? {} : { tournament: setup.tournament }),
+    ...(setup.teamNames === undefined ? {} : { teamNames: setup.teamNames }),
     ruleset: applySettings(defaultConfigBundle.ruleset, setup.settings),
     ...(record ? { record: new RecordingUpload().write } : {}),
   });

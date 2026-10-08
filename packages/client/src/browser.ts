@@ -32,6 +32,7 @@ export function gamesMarkup(rooms: readonly RoomListing[]): string {
   }
   const rows = rooms.map((room) => {
     const detail = [
+      ...(room.tournament === null ? [] : [t('browser.tournament', { team: room.tournament })]),
       t('browser.seated', { people: room.people, players: room.playerCount }),
       ...(room.teamSize > 1 ? [t('browser.teams', { n: room.teamSize })] : []),
       t('browser.rounds', { n: room.maxRounds }),

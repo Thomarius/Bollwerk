@@ -84,10 +84,10 @@ if (params.get('autostart') === '1') {
       name: params.get('name') ?? storedName(),
       isPublic: params.get('private') !== '1',
     },
-    tournamentExits(),
+    tournamentExits(params.get('private') !== '1'),
   );
 } else if (params.get('tournament') === 'resume') {
-  openResumeList(tournamentExits());
+  openResumeList(tournamentExits(params.get('private') !== '1'));
 } else {
   showMenu();
 }

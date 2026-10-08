@@ -137,7 +137,7 @@ function drawLobby(view: LobbyView, on: LobbyHandlers): void {
 }
 
 /** A button that copies `text`, shown in the node `shown`; see the lobby's copy above. */
-function wireCopy(button: string, shown: string, text: string): void {
+export function wireCopy(button: string, shown: string, text: string): void {
   const copy = document.querySelector<HTMLButtonElement>(button);
   copy?.addEventListener('click', () => {
     audio.play('select');
@@ -438,6 +438,7 @@ function roomLobby(
           hostBot: message.hostBot,
           arrived,
           invite: message.internet === null ? null : `${message.internet}/?join=${roomCode}`,
+          tournament: message.tournament,
         };
         if (!message.started) {
           // Unstarted again after a match: the host called a rematch, and the room is its
@@ -467,10 +468,18 @@ function roomLobby(
           });
           const seed = table?.seed ?? view?.seed ?? 0;
           const setup: Setup = { ...common, seed, seats, settings: DEFAULT_SETTINGS };
-          const setups = botSetupsFromSeats(seed, seats);
+          // A tournament's bots keep their own personalities rather than being dealt them.
+          const tournament = table?.tournament ?? null;
+          const setups = botSetupsFromSeats(
+            seed,
+            seats,
+            tournament?.seats.map((s) => s.personality) ?? [],
+          );
           void runSession(
             networkSession(match, connection, watching, setups, () => match.humanPlayer === hostId),
             setup,
+            // The next match is the host's to send from their tournament.
+            tournament === null ? {} : { waitLabel: 'tournament.waitHost' },
           ).then(
             (end) => (endMatch = end),
             (e: unknown) => showError(t('error.matchFailed'), e),

@@ -112,10 +112,12 @@ function watchOpenGames(): void {
 }
 
 /** Where the tournament screens lead: back to the menu, or on into a tournament. */
-export function tournamentExits(): TournamentExits {
+export function tournamentExits(isPublic: boolean): TournamentExits {
   const exits: TournamentExits = {
+    isPublic,
     menu: () => showMenu(),
-    play: (id) => playTournament(id, exits),
+    play: (id) =>
+      void playTournament(id, exits).catch((e: unknown) => showError(t('error.couldNotOpen'), e)),
     list: (notice) => openResumeList(exits, notice),
   };
   return exits;
@@ -272,15 +274,14 @@ export function showMenu(notice: string | null = null): void {
   }, defaultConfigBundle.art.menu.titleSweepMs);
 
   // Tournaments (docs/TOURNAMENT.md): a new one set up, or a saved one to go on with.
-  const exits = tournamentExits();
+  const exits = (): TournamentExits => tournamentExits(readCommon().isPublic);
   document.querySelector('#new-tournament')?.addEventListener('click', () => {
     audio.play('select');
-    openNewTournament(readCommon(), exits);
+    openNewTournament(readCommon(), exits());
   });
   document.querySelector('#resume-tournament')?.addEventListener('click', () => {
     audio.play('select');
-    readCommon();
-    openResumeList(exits);
+    openResumeList(exits());
   });
 
   document.querySelector('#play')?.addEventListener('click', () => {

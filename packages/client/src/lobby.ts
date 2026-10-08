@@ -7,7 +7,7 @@ import {
   type PlayerShape,
   type SettingBounds,
 } from '@bollwerk/config';
-import type { Seat } from '@bollwerk/protocol';
+import type { Seat, TournamentTable } from '@bollwerk/protocol';
 
 import { t } from './i18n.js';
 import { teamLetter } from './scores.js';
@@ -55,6 +55,12 @@ export interface LobbyView {
   arrived?: readonly number[];
   /** A link to this room from the internet, while the host's port is open there (PLAN 11.21). */
   invite?: string | null;
+  /**
+   * The tournament's match the room is set for (docs/TOURNAMENT.md T6), or none. Its table
+   * is the tournament's: the seats' bots are named, the teams too, and nothing can be
+   * changed here — the host sets it from their tournament.
+   */
+  tournament?: TournamentTable | null;
 }
 
 /** The levels a seat's bot may play at, as the lobby offers them. */
@@ -93,6 +99,13 @@ function tableControls(view: LobbyView, isHost: boolean): string {
   const { maxRounds, teamSize } = view.settings;
   const teamName = (size: number): string =>
     size === 1 ? t('lobby.freeForAll') : t('lobby.teamsOf', { n: size });
+  if (view.tournament) {
+    const statement = t('lobby.tournamentStatement', {
+      stage: view.tournament.stage,
+      n: maxRounds,
+    });
+    return `<p class="note settings">${escape(statement)}</p>`;
+  }
   if (!isHost) {
     const statement = t('lobby.statement', {
       players: view.playerCount,
@@ -215,7 +228,7 @@ function seatRow(view: LobbyView, index: number, isHost: boolean, defaultLevel: 
     `class="bot-select" data-seat="${index}"`,
     t('lobby.botLevelAria', { n: index + 1 }),
   );
-  const bot = t('lobby.bot', { n: index + 1 });
+  const bot = view.tournament?.seats[index]?.name ?? t('lobby.bot', { n: index + 1 });
   return `<li class="seat bot${arrived}">${seatBadge(view, index)}${occupant(view, index, isHost, bot)}${control}</li>`;
 }
 
@@ -244,7 +257,7 @@ function seatLists(view: LobbyView, rows: readonly string[]): string {
     .sort(([a], [b]) => a - b)
     .map(
       ([team, members]) =>
-        `<section class="team-column"><h2>${t('team.name', { letter: teamLetter(team) })}</h2><ul class="seats">${members.join('')}</ul></section>`,
+        `<section class="team-column"><h2>${escape(view.tournament?.teamNames[team] ?? t('team.name', { letter: teamLetter(team) }))}</h2><ul class="seats">${members.join('')}</ul></section>`,
     )
     .join('');
   return `<div class="team-columns">${columns}</div>`;
@@ -259,7 +272,8 @@ export function startBlocked(view: LobbyView): string | null {
 }
 
 export function lobbyMarkup(view: LobbyView): string {
-  const isHost = view.humanPlayer === view.hostId;
+  // A tournament's table is set from the host's tournament screen, never here.
+  const isHost = view.humanPlayer === view.hostId && !view.tournament;
   const rows = Array.from({ length: view.playerCount }, (_, i) => seatRow(view, i, isHost, 5));
 
   const blocked = startBlocked(view);
@@ -285,7 +299,7 @@ export function lobbyMarkup(view: LobbyView): string {
 
   return `
     <div class="menu lobby">
-      <h1>${view.code === null ? t('lobby.table') : t('lobby.room')}</h1>
+      <h1>${view.tournament ? escape(t('lobby.tournament', { team: view.tournament.teamNames[view.tournament.seats.find((s) => s.level === null)?.team ?? 0] ?? '' })) : view.code === null ? t('lobby.table') : t('lobby.room')}</h1>
       ${code}
       <div class="lobby-body">
         <div class="lobby-side">

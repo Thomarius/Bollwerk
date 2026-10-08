@@ -138,6 +138,7 @@ export function stateFromAscii(
     players: players.length > 0 ? players : [],
     // Every player on their own, with no lives: a test wanting either sets it.
     teams: players.map((_, id) => ({ id, continuesRemaining: 0, continuesAtStart: 0 })),
+    teamNames: null,
     terrain,
     islandId,
     structure,

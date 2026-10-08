@@ -38,6 +38,14 @@ export function teamLetter(team: number): string {
   return String.fromCharCode(65 + team);
 }
 
+/**
+ * A team's name in words: the one the table gave it — a tournament's team — or Team A, B, C
+ * after its letter. The HUD's tags keep the letter, which is what fits beside a score.
+ */
+export function teamName(state: MatchState, team: number): string {
+  return state.teamNames?.[team] ?? t('team.name', { letter: teamLetter(team) });
+}
+
 /** Whether this is a team match rather than free-for-all's teams of one. */
 export function isTeamMatch(state: MatchState): boolean {
   const sizes = new Map<number, number>();
@@ -144,7 +152,7 @@ export function ranking(state: MatchState, before: readonly number[] | null): Ra
   const entries = isTeamMatch(state)
     ? teamStandings(state).map((team) => ({
         key: `t${team.team}`,
-        label: t('team.name', { letter: teamLetter(team.team) }),
+        label: teamName(state, team.team),
         lead: team.members[0] ?? 0,
         score: team.score,
         from: team.members.reduce((sum, id) => sum + was(id), 0),
@@ -204,12 +212,14 @@ export function endOfMatchText(state: MatchState, humanPlayer: number): string {
     if (teams.length === 1) {
       return teams[0] === yours
         ? say('end.yourTeamWins', 'end.yourTeamWinsOnPoints')
-        : say('end.teamWins', 'end.teamWinsOnPoints', { letter: teamLetter(teams[0] as number) });
+        : say('end.teamWins', 'end.teamWinsOnPoints', {
+            name: teamName(state, teams[0] as number),
+          });
     }
-    const letters = listOf(teams.map(teamLetter));
+    const names = listOf(teams.map((team) => teamName(state, team)));
     return yours !== undefined && teams.includes(yours)
       ? say('end.yourTeamShares', 'end.yourTeamSharesOnPoints')
-      : say('end.teamsShare', 'end.teamsShareOnPoints', { letters });
+      : say('end.teamsShare', 'end.teamsShareOnPoints', { names });
   }
   if (winners.length === 1) {
     const winner = winners[0] as number;

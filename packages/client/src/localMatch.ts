@@ -47,6 +47,8 @@ export interface LocalMatchOptions {
   names?: readonly (string | null)[];
   /** Each seat's bot's personality, by seat, where the table gives one rather than dealing it. */
   personalities?: readonly (Personality | null)[];
+  /** Each team's name, by team label in order, where the table names them. */
+  teamNames?: readonly string[];
   /** The tournament this match is part of, for the recording's header. */
   tournament?: { id: string; step: number };
   ruleset?: Ruleset;
@@ -125,6 +127,7 @@ export class LocalMatch {
       ruleset,
       terrainConfig: defaultTerrainConfig,
       players,
+      ...(options.teamNames === undefined ? {} : { teamNames: options.teamNames }),
     });
 
     const setups = new Map<number, BotSetup>();

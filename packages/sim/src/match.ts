@@ -39,6 +39,8 @@ export interface MatchOptions {
   ruleset: Ruleset;
   terrainConfig: TerrainConfig;
   players: readonly MatchPlayerOptions[];
+  /** Each team's name, in team label order; omitted, teams go by their letters. */
+  teamNames?: readonly string[];
 }
 
 export function ticksFor(ms: number, tickRateHz: number): number {
@@ -110,6 +112,7 @@ export function createMatch(options: MatchOptions): MatchState {
     overtime: false,
     players,
     teams,
+    teamNames: options.teamNames === undefined ? null : [...options.teamNames],
     terrain: generated.terrain,
     islandId: generated.islandId,
     structure,

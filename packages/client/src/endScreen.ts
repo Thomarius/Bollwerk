@@ -8,7 +8,7 @@ import { defaultArtConfig } from '@bollwerk/config';
 
 import { mostCastlesOf, scoreChart, type MatchLog, type Reveal } from './summary.js';
 
-import { endOfMatchText, isTeamMatch, standings, teamLetter, teamStandings } from './scores.js';
+import { endOfMatchText, isTeamMatch, standings, teamName, teamStandings } from './scores.js';
 import { type MatchState } from '@bollwerk/sim';
 
 /**
@@ -38,7 +38,7 @@ export class EndScreen {
   private rematchBy: 'mine' | 'host' | null = null;
 
   /** The Rematch button's label, where it leads on rather than back to the table. */
-  private rematchLabel: TextKey = 'hud.rematch';
+  private rematchLabel: TextKey | null = null;
 
   /** What the end screen's button does: back to the menu, whether played or watched. */
   onLeave(handler: () => void): void {
@@ -46,9 +46,9 @@ export class EndScreen {
   }
 
   /** The end screen's Rematch: the player's to press, the host's to press, or not there. */
-  useRematch(by: 'mine' | 'host' | null, label: TextKey = 'hud.rematch'): void {
+  useRematch(by: 'mine' | 'host' | null, label?: TextKey): void {
     this.rematchBy = by;
-    this.rematchLabel = label;
+    this.rematchLabel = label ?? null;
   }
 
   onRematch(handler: () => void): void {
@@ -128,10 +128,10 @@ export class EndScreen {
   /** Rematch, for whoever may call it; for the others online, the host's to call. */
   private rematchButton(): string {
     if (this.rematchBy === 'mine') {
-      return `<button class="rematch">${t(this.rematchLabel)}</button>`;
+      return `<button class="rematch">${t(this.rematchLabel ?? 'hud.rematch')}</button>`;
     }
     if (this.rematchBy === 'host') {
-      return `<button class="rematch" disabled>${t('hud.rematchHost')}</button>`;
+      return `<button class="rematch" disabled>${t(this.rematchLabel ?? 'hud.rematchHost')}</button>`;
     }
     return '';
   }
@@ -243,7 +243,7 @@ export class EndScreen {
               .join(' ');
             return (
               `<tr class="${s.eliminated ? 'out' : ''}${mine ? ' you' : ''}">` +
-              `<td>${rank + 1}</td><td>${shapeSvg(playerShape(s.members[0] ?? 0), playerCssColour(s.members[0] ?? 0))}${t('hud.teamRow', { letter: teamLetter(s.team), members })}</td>` +
+              `<td>${rank + 1}</td><td>${shapeSvg(playerShape(s.members[0] ?? 0), playerCssColour(s.members[0] ?? 0))}${t('hud.teamRow', { team: escape(teamName(state, s.team)), members })}</td>` +
               `<td>${s.score}</td>${stats(s.members, s.team, s.eliminated)}<td>${s.eliminated ? t('hud.out') : ''}</td></tr>`
             );
           })

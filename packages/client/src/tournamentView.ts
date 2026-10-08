@@ -8,6 +8,8 @@ import {
   type Team,
 } from '@bollwerk/tournament';
 
+import type { Seat, TournamentTable } from '@bollwerk/protocol';
+
 import { escape } from './html.js';
 import { formatNumber, ordinal, t } from './i18n.js';
 import { levelPips } from './lobby.js';
@@ -162,8 +164,66 @@ function knockoutView(save: Save, progress: Progress): string {
   return `${lines.map((l) => `<p>${escape(l)}</p>`).join('')}${otherList}`;
 }
 
+/** The tournament's room as its panel shows it (TOURNAMENT §1.7). */
+export interface RoomPanel {
+  code: string;
+  invite: string | null;
+  /** The table the room was last sent. */
+  table: TournamentTable;
+  /** The people at it, the host among them. */
+  people: readonly Seat[];
+  hostId: number;
+}
+
+/**
+ * The room, for the host: its code and invitation, and the host's team's seats — each
+ * teammate's bot, or the person who took its seat, who may be moved to another so that a
+ * different bot sits the match out.
+ */
+export function roomPanelMarkup(panel: RoomPanel): string {
+  const { table, people } = panel;
+  const hostTeam = table.seats[panel.hostId]?.team ?? 0;
+  const open = table.seats.flatMap((seat, index) => (seat.open ? [index] : []));
+  const rows = table.seats
+    .map((seat, index) => {
+      if (seat.team !== hostTeam) return '';
+      if (index === panel.hostId) {
+        return `<li class="seat you"><span class="who">${escape(t('tournament.you', { name: seat.name }))}</span></li>`;
+      }
+      const person = people.find((p) => p.playerId === index);
+      if (person === undefined) {
+        return `<li class="seat bot"><span class="who">${escape(seat.name)}</span><em class="tag">${t('tournament.botTag')}</em></li>`;
+      }
+      const choices = open
+        .map(
+          (to) =>
+            `<option value="${to}"${to === index ? ' selected' : ''}>${escape(t('tournament.inPlaceOf', { bot: table.seats[to]?.name ?? '' }))}</option>`,
+        )
+        .join('');
+      const place =
+        open.length > 1
+          ? `<select class="sit-in" data-seat="${index}" aria-label="${escape(t('tournament.sitInAria', { name: person.name }))}">${choices}</select>`
+          : `<em class="tag">${escape(t('tournament.inPlaceOf', { bot: seat.name }))}</em>`;
+      return `<li class="seat person"><span class="who">${escape(person.name)}</span>${place}</li>`;
+    })
+    .join('');
+  const invite = panel.invite
+    ? `<div class="code-row invite-row"><span class="invite-label">${t('lobby.invite')}</span><code id="invite-link" class="invite-link">${escape(panel.invite)}</code><button id="copy-invite" class="quiet">${t('lobby.copy')}</button></div>`
+    : '';
+  return (
+    `<section class="room-panel"><h2>${t('tournament.room')}</h2>` +
+    `<div class="code-row"><code id="room-code" class="room-code">${escape(panel.code)}</code><button id="copy-code" class="quiet">${t('lobby.copy')}</button></div>` +
+    `${invite}<p class="note">${escape(t('tournament.roomNote'))}</p><ul class="seats">${rows}</ul></section>`
+  );
+}
+
 /** The tournament between matches: the last result, the standings, and the next match. */
-export function tournamentMarkup(save: Save, progress: Progress, notice: string | null): string {
+export function tournamentMarkup(
+  save: Save,
+  progress: Progress,
+  notice: string | null,
+  room: RoomPanel | null = null,
+): string {
   const steps = stepsOf(save);
   const next = progress.next;
   const step = steps[progress.done];
@@ -190,6 +250,7 @@ export function tournamentMarkup(save: Save, progress: Progress, notice: string 
           ${standings}
         </section>
       </div>
+      ${room === null ? '' : roomPanelMarkup(room)}
       <button id="play">${t('tournament.play')}</button>
       <button id="back" class="quiet">${t('watching.back')}</button>
     </div>`;

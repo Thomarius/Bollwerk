@@ -198,7 +198,7 @@ Full detail in PLAN.md §1. The parts that surprise people:
 - **Releases**: the desktop app, a portable file for Windows and Linux (M14, ARCHIVE
   11zp–11zt); every audio file credited (ARCHIVE 11zx). Online clients catch up on the
   server at once (ARCHIVE 11zg). Deployment is verified by a CI job, since there is no
-  Docker on this machine. The protocol is 17: a test session needs the server rebuilt and
+  Docker on this machine. The protocol is 18: a test session needs the server rebuilt and
   every page reloaded. **UPnP** (ARCHIVE 12j): the desktop app's switch Open to the
   internet, off by default, and `npm start -- --upnp` ask the router to open the port; the
   lobby then offers an invite link. Never in the image.
@@ -213,8 +213,8 @@ Full detail in PLAN.md §1. The parts that surprise people:
   every corner piece and German were checked in play by the user (ARCHIVE 12n–12t).
 
 **In progress — tournament mode** (decided 2026-10-08): the design and its work packages
-T1–T8 are `docs/TOURNAMENT.md`; T1, the core in `packages/tournament`, T2, its ratings and names, T3, fixed tables, T4, saves and the menu, and T5, playing offline, are done
-(ARCHIVE 12ze–12zi).
+T1–T8 are `docs/TOURNAMENT.md`; T1, the core in `packages/tournament`, T2, its ratings and names, T3, fixed tables, T4, saves and the menu, T5, playing offline, and T6, online
+(protocol 18), are done (ARCHIVE 12ze–12zj).
 
 **Next** — PLAN §11: more test games towards a first feature-ready version, the user's
 manual test of UPnP, and bots that miss as people do (combat accuracy, measured against the

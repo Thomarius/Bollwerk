@@ -24,6 +24,7 @@ import {
   type ClientMessage,
   type ServerMessage,
   type Seat as WireSeat,
+  type TournamentTable,
 } from '@bollwerk/protocol';
 import { MatchRunner } from './matchRunner.js';
 import { Rng, createMatch } from '@bollwerk/sim';
@@ -114,6 +115,12 @@ export class Room {
    */
   private lobbySeats = new Map<string, number>();
   private lobbyHost = 0;
+  /**
+   * The tournament's match the host has set the room for (docs/TOURNAMENT.md T6), or null.
+   * While set, the table is the tournament's: people may take only its open seats — the
+   * host's team's — and the host may only move them between those.
+   */
+  private tournament: TournamentTable | null = null;
 
   constructor(options: RoomOptions) {
     this.options = options;
@@ -145,7 +152,7 @@ export class Room {
    */
   listing(): RoomListing | null {
     if (this.options.public === false || this.match !== null) return null;
-    if (this.seats.length === 0 || this.seats.length >= this.playerCount) return null;
+    if (this.seats.length === 0 || this.freeSeat() >= this.playerCount) return null;
     const host = this.seats.find((s) => s.playerId === this.hostId) ?? this.seats[0]!;
     return {
       code: this.code,
@@ -154,6 +161,7 @@ export class Room {
       playerCount: this.playerCount,
       teamSize: this.settings.teamSize,
       maxRounds: this.settings.maxRounds,
+      tournament: this.tournament?.teamNames[this.tournament.seats[this.hostId]?.team ?? 0] ?? null,
     };
   }
 
@@ -189,7 +197,7 @@ export class Room {
     }
 
     if (this.match !== null) return null; // no new seats once a match is running
-    if (this.seats.length >= this.playerCount) return null;
+    if (this.freeSeat() >= this.playerCount) return null;
 
     const seat: Seat = {
       // The lowest seat nobody holds: once the host has moved people about, the count of
@@ -239,14 +247,29 @@ export class Room {
         this.broadcastRoom();
         return;
       case 'start':
-        if (seat.playerId === this.hostId) this.start();
+        // At a tournament's table, only from the seat whose tournament it is: a guest left
+        // as host has no tournament to record the match in.
+        if (seat.playerId !== this.hostId) return;
+        if (this.tournament !== null && this.tournament.seats[seat.playerId]?.level !== null)
+          return;
+        this.start();
         return;
       case 'rematch':
-        if (seat.playerId === this.hostId) this.rematch();
+        // A tournament's next match is its host's to send, not this one again.
+        if (seat.playerId === this.hostId && this.tournament === null) this.rematch();
+        return;
+      case 'tournament':
+        if (seat.playerId === this.hostId) this.setTournament(message.table);
         return;
       case 'configure': {
         // Only the host, and only while the table is still being set.
         if (seat.playerId !== this.hostId || this.match !== null) return;
+        if (this.tournament !== null) {
+          // The tournament's table is fixed: only who sits in which open seat may change.
+          if (message.move !== undefined) this.moveSeat(message.move.from, message.move.to);
+          this.broadcastRoom();
+          return;
+        }
         for (let i = 0; i < this.botLevels.length; i++) {
           const wanted = message.bots?.[i];
           if (wanted !== undefined) this.botLevels[i] = wanted;
@@ -334,11 +357,69 @@ export class Room {
     }
   }
 
-  /** The lowest seat nobody holds. */
+  /**
+   * The lowest seat nobody holds, or the table's size when there is none — at a
+   * tournament's table, the lowest of its open seats.
+   */
   private freeSeat(): number {
     let seat = 0;
-    while (this.seats.some((s) => s.playerId === seat)) seat++;
+    while (
+      seat < this.playerCount &&
+      (this.seats.some((s) => s.playerId === seat) ||
+        (this.tournament !== null && this.tournament.seats[seat]?.open !== true))
+    ) {
+      seat++;
+    }
     return seat;
+  }
+
+  /**
+   * Sets the room for a tournament's match (docs/TOURNAMENT.md T6): the table as the host's
+   * tournament has it, the host in their own seat, everyone else who is here in an open
+   * seat — the one they had, while it stays open. Sent once a match is over, it brings the
+   * room back to its lobby first, as a rematch does. Refused while a match is under way.
+   */
+  private setTournament(table: TournamentTable): void {
+    if (this.match !== null && !this.match.finished) return;
+    const hostSeat = table.seats.findIndex((seat) => seat.level === null);
+    const open = table.seats.flatMap((seat, index) => (seat.open ? [index] : []));
+    if (hostSeat < 0 || table.seats[hostSeat]?.open === true) return;
+    if (this.match !== null) this.backToLobby();
+    this.tournament = table;
+    this.playerCount = table.seats.length;
+    this.teams = table.seats.map((seat) => seat.team);
+    this.settings = { ...table.settings };
+    this.seed = table.seed;
+    this.hostBot = null;
+    this.botLevels.length = 0;
+    for (const seat of table.seats) this.botLevels.push(seat.level ?? this.options.server.botLevel);
+    // The host first, then everyone else into the open seats, keeping theirs where it is.
+    const host = this.seats.find((s) => s.playerId === this.hostId);
+    const guests = this.seats.filter((s) => s !== host);
+    const kept = new Set<number>();
+    for (const guest of guests) {
+      if (open.includes(guest.playerId) && !kept.has(guest.playerId)) kept.add(guest.playerId);
+    }
+    const free = open.filter((seat) => !kept.has(seat));
+    for (const guest of guests) {
+      if (kept.has(guest.playerId) && open.includes(guest.playerId)) continue;
+      const seat = free.shift();
+      if (seat === undefined) {
+        // More people than open seats: only a table sent wrongly; the latest are let go.
+        guest.connection?.close('the table has no seat for you');
+        this.seats.splice(this.seats.indexOf(guest), 1);
+        continue;
+      }
+      guest.playerId = seat;
+      kept.add(seat);
+    }
+    if (host !== undefined) host.playerId = hostSeat;
+    this.hostId = hostSeat;
+    for (const seat of this.seats) {
+      seat.ready = false;
+      this.sendWelcome(seat);
+    }
+    this.broadcastRoom();
   }
 
   /**
@@ -350,6 +431,18 @@ export class Room {
     if (from === to || to >= this.playerCount) return;
     const mover = this.seats.find((s) => s.playerId === from);
     if (mover === undefined) return;
+    if (this.tournament !== null) {
+      // Between open seats only, and the bots stay with their seats: the tournament's bot
+      // in a seat a person takes is the one that sits the match out.
+      const open = (seat: number): boolean => this.tournament?.seats[seat]?.open === true;
+      if (!open(from) || !open(to)) return;
+      const other = this.seats.find((s) => s.playerId === to);
+      mover.playerId = to;
+      if (other !== undefined) other.playerId = from;
+      this.sendWelcome(mover);
+      if (other !== undefined) this.sendWelcome(other);
+      return;
+    }
     const other = this.seats.find((s) => s.playerId === to);
     const hostWas = this.hostId;
     mover.playerId = to;
@@ -376,8 +469,8 @@ export class Room {
       if (this.seats.some((s) => s.playerId === i)) continue;
       this.seats.push({
         playerId: i,
-        // Numbered from one, as the lobby numbers its seats.
-        name: `Bot ${i + 1}`,
+        // Numbered from one, as the lobby numbers its seats; a tournament's have names.
+        name: this.tournament?.seats[i]?.name ?? `Bot ${i + 1}`,
         connection: null,
         token: this.newToken(),
         ready: true,
@@ -416,7 +509,12 @@ export class Room {
     // recording, a person is nulls.
     const { playerOfSeat, setups } = dealSeats(
       seed,
-      this.seats.map((seat, index) => ({ level: levels[index] as number, bot: seat.bot })),
+      this.seats.map((seat, index) => ({
+        level: levels[index] as number,
+        bot: seat.bot,
+        // A tournament's bots keep theirs; a person's seat is covered by the seat's bot.
+        personality: this.tournament?.seats[index]?.personality ?? null,
+      })),
     );
     const recorded = new Array<{ level: number | null; personality: Personality | null }>(
       this.seats.length,
@@ -439,6 +537,7 @@ export class Room {
       ruleset,
       terrainConfig: this.options.terrain,
       players,
+      ...(this.tournament === null ? {} : { teamNames: this.tournament.teamNames }),
     });
 
     let recorder: MatchRecorder | null = null;
@@ -456,6 +555,7 @@ export class Room {
           ...p,
           ...(recorded[id] ?? { level: null, personality: null }),
         })),
+        ...(this.tournament === null ? {} : { tournament: this.tournament.tournament }),
       });
     }
 
@@ -486,6 +586,14 @@ export class Room {
    */
   rematch(): void {
     if (this.match === null || !this.match.finished) return;
+    this.backToLobby();
+    this.seed = this.rng.nextU32();
+    for (const seat of this.seats) this.sendWelcome(seat);
+    this.broadcastRoom();
+  }
+
+  /** The finished match gone, and everyone still here back in their lobby seats. */
+  private backToLobby(): void {
     this.match = null;
     this.seats.splice(
       0,
@@ -502,9 +610,6 @@ export class Room {
     this.hostId = this.seats.some((s) => s.playerId === this.lobbyHost)
       ? this.lobbyHost
       : Math.min(...this.seats.map((s) => s.playerId));
-    this.seed = this.rng.nextU32();
-    for (const seat of this.seats) this.sendWelcome(seat);
-    this.broadcastRoom();
   }
 
   /** Advances the match by elapsed real time. Called by the host loop, or by tests. */
@@ -561,6 +666,7 @@ export class Room {
       hostId: this.hostId,
       started: this.started,
       internet: this.options.publicUrl?.() ?? null,
+      tournament: this.tournament,
     });
   }
 

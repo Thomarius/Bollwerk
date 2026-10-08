@@ -615,6 +615,7 @@ describe('the open games browser', () => {
         playerCount: 3,
         teamSize: 1,
         maxRounds: defaultConfigBundle.ruleset.scoring.maxRounds,
+        tournament: null,
       },
     ]);
   });

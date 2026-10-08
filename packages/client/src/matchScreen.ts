@@ -19,13 +19,7 @@ import { t } from './i18n.js';
 import { Hud } from './hud.js';
 import type { IslandBanner } from './boardLabels.js';
 import { MatchAudio } from './matchAudio.js';
-import {
-  announcementLines,
-  announcementTitle,
-  isTeamMatch,
-  ranking,
-  teamLetter,
-} from './scores.js';
+import { announcementLines, announcementTitle, isTeamMatch, ranking, teamName } from './scores.js';
 import { buildHints, type BuildHints } from './hints.js';
 import { timerSpot } from './timerSpot.js';
 import { MatchLog, revealLines } from './summary.js';
@@ -73,6 +67,8 @@ export interface MatchExits {
   next?: { label: TextKey; go(): void };
   /** The summary's way back, once the match is over; the menu without one. */
   back?(): void;
+  /** The Rematch button's label where it is somebody else's to press. */
+  waitLabel?: TextKey;
 }
 
 /** Plays a session; resolves with what takes it down, once it is running. */
@@ -220,7 +216,7 @@ export async function runSession(
     hud.labels.showTeamTags(
       [...islandTops].map(([player, at]) => ({
         player,
-        text: t('team.name', { letter: teamLetter(session.state.players[player]?.team ?? 0) }),
+        text: teamName(session.state, session.state.players[player]?.team ?? 0),
         colour: playerCssColour(player),
         ...scene.screenAt(at.x, at.y - 0.3),
       })),
@@ -282,14 +278,14 @@ export async function runSession(
     hud.endScreen.useRematch('mine', next.label);
     hud.endScreen.onRematch(() => {
       audio.play('select');
-      session.leave();
+      // The connection is kept: a tournament's room plays its next match on it.
       cleanup();
       next.go();
     });
   } else {
     // Locally the table opens at once; online the host asks, and the room's answer brings
     // every page back to the lobby, this one included.
-    hud.endScreen.useRematch(session.rematch);
+    hud.endScreen.useRematch(session.rematch, exits.waitLabel);
     hud.endScreen.onRematch(() => {
       audio.play('select');
       if (session.network() === null) cleanup();

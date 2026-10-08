@@ -203,6 +203,11 @@ export interface MatchState {
   players: PlayerState[];
   /** Indexed by team id. */
   teams: TeamState[];
+  /**
+   * Each team's name, by team id, where the table names them — a tournament's teams — or
+   * null for the letters. Shown, never played: no rule reads it and the hash leaves it out.
+   */
+  teamNames: string[] | null;
 
   /** Static after generation. */
   terrain: Uint8Array;

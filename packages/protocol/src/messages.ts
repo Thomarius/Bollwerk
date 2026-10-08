@@ -1,10 +1,15 @@
-import { LevelSchema, MatchSettingsSchema, SettingBoundsSchema } from '@bollwerk/config';
+import {
+  LevelSchema,
+  MatchSettingsSchema,
+  PersonalitySchema,
+  SettingBoundsSchema,
+} from '@bollwerk/config';
 import { z } from 'zod';
 
 import { SnapshotSchema } from './snapshot.js';
 
 /** Bumped on any breaking change to the message set; mismatched clients are rejected. */
-export const PROTOCOL_VERSION = 17;
+export const PROTOCOL_VERSION = 18;
 
 /**
  * A player's intent. The server overwrites `player` with the sender's own seat before
@@ -45,6 +50,40 @@ export const SeatSchema = z.strictObject({
   ready: z.boolean(),
 });
 export type Seat = z.infer<typeof SeatSchema>;
+
+/**
+ * A tournament's match as its host sends it to the room (docs/TOURNAMENT.md T6): every
+ * seat as the tournament has it, and which of them a person may take — the host's team's.
+ * The tournament lives on the host's computer; the room only plays the match it is given.
+ */
+export const TournamentTableSchema = z.strictObject({
+  seats: z
+    .array(
+      z.strictObject({
+        name: z.string().min(1).max(24),
+        /** Null for the host's own seat; otherwise the level of the seat's bot. */
+        level: LevelSchema.nullable(),
+        personality: PersonalitySchema.nullable(),
+        /** The seat's team, by its place in the match. */
+        team: z.number().int().nonnegative(),
+        /** A person may take this seat in place of its bot. */
+        open: z.boolean(),
+      }),
+    )
+    .min(2)
+    .max(8),
+  /** Each team's name, by its place in the match. */
+  teamNames: z.array(z.string().min(1).max(32)).max(8),
+  settings: MatchSettingsSchema,
+  seed: z.number().int().nonnegative().max(0xffffffff),
+  tournament: z.strictObject({
+    id: z.string().min(1).max(64),
+    step: z.number().int().nonnegative(),
+  }),
+  /** Where the tournament stands, in the host's words, for the teammates' lobby. */
+  stage: z.string().max(160),
+});
+export type TournamentTable = z.infer<typeof TournamentTableSchema>;
 
 export const ClientMessageSchema = z.discriminatedUnion('type', [
   z.strictObject({
@@ -102,6 +141,12 @@ export const ClientMessageSchema = z.discriminatedUnion('type', [
    * as it was, with a new map (PLAN 11.18 Y6).
    */
   z.strictObject({ type: z.literal('rematch') }),
+  /**
+   * The host, before a match or once one is over: the room plays this tournament's match
+   * next, and goes back to its lobby to wait for it. Nothing about it can be changed in the
+   * room but who of the people sits in which of the open seats.
+   */
+  z.strictObject({ type: z.literal('tournament'), table: TournamentTableSchema }),
   z.strictObject({ type: z.literal('action'), action: ActionSchema }),
   /** Anyone at the table may pause a running match, and anyone may resume it. */
   z.strictObject({ type: z.literal('pause'), paused: z.boolean() }),
@@ -148,6 +193,8 @@ export const ServerMessageSchema = z.discriminatedUnion('type', [
      * null: the lobby offers it as an invitation, with the room's code.
      */
     internet: z.string().nullable(),
+    /** The tournament's match the room is set for, or null for a room of its own choosing. */
+    tournament: TournamentTableSchema.nullable(),
   }),
   z.strictObject({ type: z.literal('snapshot'), snapshot: SnapshotSchema }),
   /**
@@ -197,6 +244,8 @@ export const RoomListingSchema = z.strictObject({
   playerCount: z.number().int().min(2).max(8),
   teamSize: z.number().int().min(1),
   maxRounds: z.number().int().positive(),
+  /** The tournament team whose room it is, or null for a match of its own. */
+  tournament: z.string().nullable(),
 });
 export type RoomListing = z.infer<typeof RoomListingSchema>;
 

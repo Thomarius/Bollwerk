@@ -26,6 +26,8 @@ import { resumeMarkup } from './tournamentResume.js';
 
 /** Where the screens go back to, and on to: the menu, and a tournament to play. */
 export interface TournamentExits {
+  /** Whether a room opened for a tournament is listed among the open games. */
+  isPublic: boolean;
   menu: () => void;
   play: (id: string) => void;
   /** The resume list, with a line to say why it is shown. */

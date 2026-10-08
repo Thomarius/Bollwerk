@@ -62,7 +62,15 @@ describe('in German', () => {
   it('writes the open games, the gallery and the credits in German', () => {
     clean(
       gamesMarkup([
-        { code: 'ABC123', host: 'Ada', people: 1, playerCount: 4, teamSize: 2, maxRounds: 10 },
+        {
+          code: 'ABC123',
+          host: 'Ada',
+          people: 1,
+          playerCount: 4,
+          teamSize: 2,
+          maxRounds: 10,
+          tournament: null,
+        },
       ]),
     );
     clean(gamesMarkup([]));

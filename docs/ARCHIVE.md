@@ -5807,3 +5807,53 @@ and no page errors. Unit tests cover the table's excerpt, the screen's parts and
 
 **Open**: the match's HUD and summary still name the teams Team A and Team B rather than the
 tournament's names.
+
+## 12zj. Tournament mode, T6: online, and the teams' names (2026-10-08)
+
+**The teams' names**, the gap T5 left: `MatchState.teamNames` (by team id, null for letters)
+is set from the table — `createMatch`'s `teamNames`, a tournament's — carried in the snapshot,
+and never hashed: no rule reads it, so a page with other names cannot fall out of step.
+`teamName(state, team)` names a team in words wherever one is named: the island banners, the
+ranking between rounds, the banner of a knockout, the summary's rows and its headline, "Die
+Wälle wins on points". The HUD's tags keep the letter, which is what fits beside a score.
+Done with T6 rather than before it, the user agreeing: online the names can only reach a
+teammate's page from the server, which is the same change.
+
+**Protocol 18.** The host sends the room each match's table, `tournament`: every seat's name,
+level, personality and team, which seats a person may take (the host's team's bots'), the
+teams' names, the settings, the map, the tournament's id and step, and the stage in the host's
+words. A room so set (`Room.setTournament`) seats newcomers only in those open seats and turns
+away the rest; lets the host only move people between open seats, the bots staying with their
+seats, so the bot whose seat a person takes is the one that sits the match out; starts with
+the tournament's bots by name, level and personality, a person's seat covered by its bot,
+the teams' names in the snapshot and the tournament in the recording's header; is started only
+from the seat whose tournament it is, not by a guest left as host; refuses a rematch; and,
+sent the next table once a match is over, goes back to its lobby with everyone in their new
+seats. The table refused mid-match waits for the host to send it again. The games browser
+lists a tournament's room by its team; `room` messages carry the table.
+
+**The host** (`tournamentRoom.ts`, `tournamentFlow.ts`): in a team of two or more, opening a
+tournament opens a room if a server answers within the lobby's two seconds, and holds it while
+the tournament is open — public or private by the menu's switch, as Play's tables are. The
+tournament screen gains the room: its code and invitation, and the team's seats, each a bot or
+the person in its place, who may be moved to another bot's seat. Play starts the match in the
+room when somebody has joined, and on this computer when nobody has. The result is recorded as
+offline, from the host's own replicated match; Continue keeps the connection and sends the next
+table, bringing the teammates back to the lobby. Leaving before the end closes the room, as
+leaving any online match does, and a new one is opened for the replay; the user's choice,
+confirmed by a second run with the server: the teammate rejoined the new room in place of the
+same bot, and the same semi-final started again on both pages. Tournament rooms are public or
+private by the menu's switch, public to start with as Play's are — the user's choice over the
+design's "private by default".
+
+**The teammates** join by code or from the browser into the room's lobby, read-only for a
+tournament: "Tournament of Die Wälle", the stage and the rounds, the bots by their names, the
+teams' columns by theirs. Their summary's button reads "The host goes on"; the bots' reveal
+shows the tournament's personalities, not ones dealt from the seed.
+
+Checked with the built server and two headless browsers: a tournament made, its room opened,
+a teammate joined by code (seated in place of the host's bot, both screens saying so), the
+match started on both pages with the teams' names on the islands, the host leaving mid-match
+(nothing recorded, a new room opened), no page errors; the test match's recording removed.
+Seven room tests cover the table, the seats, the moves, the start, the rematch refused, the
+lobby after a match and the listing.

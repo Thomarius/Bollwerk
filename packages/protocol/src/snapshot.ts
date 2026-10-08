@@ -109,6 +109,8 @@ export const SnapshotSchema = z.strictObject({
       continuesAtStart: z.number().int().nonnegative(),
     }),
   ),
+  /** The teams' names where the table gave them (a tournament's), or null for letters. */
+  teamNames: z.array(z.string().max(32)).nullable(),
   structure: z.array(z.number().int().nonnegative()),
   owner: z.array(z.number().int().nonnegative()),
   territory: z.array(z.number().int().nonnegative()),
@@ -137,6 +139,7 @@ export function captureSnapshot(state: MatchState): Snapshot {
     overtime: state.overtime,
     players: state.players.map((p) => ({ ...p })),
     teams: state.teams.map((t) => ({ ...t })),
+    teamNames: state.teamNames === null ? null : [...state.teamNames],
     structure: encodeRle(state.structure),
     owner: encodeRle(state.owner),
     territory: encodeRle(state.territory),
@@ -168,6 +171,7 @@ export function applySnapshot(state: MatchState, snapshot: Snapshot): void {
   state.overtime = snapshot.overtime;
   state.players = snapshot.players.map((p) => ({ ...p }));
   state.teams = snapshot.teams.map((t) => ({ ...t }));
+  state.teamNames = snapshot.teamNames === null ? null : [...snapshot.teamNames];
   state.structure = decodeRle(snapshot.structure, size);
   state.owner = decodeRle(snapshot.owner, size);
   state.territory = decodeRle(snapshot.territory, size);
