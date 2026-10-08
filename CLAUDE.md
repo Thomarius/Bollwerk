@@ -37,6 +37,7 @@ npm start     -w @bollwerk/server   # serves the built client at http://localhos
 npm start     -w @bollwerk/headless -- --matches 8 --players 3 --level 5 --stats out.csv
 npm start     -w @bollwerk/headless -- --map --players 3 --seed 2   # print a map as ASCII
 npm start     -w @bollwerk/headless -- --replay recordings/ --stats human.csv   # recorded human play
+npm start     -w @bollwerk/headless -- --tournament --count 400 --league --double  # tournaments by rolls
 tools/screenshots.sh /tmp/shots [scene...]   # client in fixed states, against the dev server
 npm start     -w @bollwerk/desktop  # the desktop app, after npm run build
 npm run package -w @bollwerk/desktop # its portable file for this system, into packages/desktop/release/
@@ -68,6 +69,7 @@ rounds.
 | `protocol`       | Wire messages and validators.                                              |
 | `ai`             | Bots: min-cut sealing, 0-1 BFS attack, skill levels and personalities.     |
 | `analysis`       | Per-round match statistics, for bot soaks and recorded human play alike.   |
+| `tournament`     | Tournament mode's core: schedule, brackets, quick rolls, saves. No DOM.    |
 | `server`         | Authoritative match server, rooms, WebSocket, match recordings.            |
 | `client`         | Pixi renderer, eighteen visual styles, controls, HUD, netcode client.      |
 | `desktop`        | Electron app for releases: the server behind a minimal window (M14).       |
@@ -209,6 +211,9 @@ Full detail in PLAN.md §1. The parts that surprise people:
   every effect kept, and no stutter as the looks swap; no memory kept by a swap of looks
   (ARCHIVE 12q); Cyberpunk's "Glowing" cheap and its cores sharp (ARCHIVE 12r). Every look,
   every corner piece and German were checked in play by the user (ARCHIVE 12n–12t).
+
+**In progress — tournament mode** (decided 2026-10-08): the design and its work packages
+T1–T8 are `docs/TOURNAMENT.md`; T1, the core in `packages/tournament`, is done (ARCHIVE 12ze).
 
 **Next** — PLAN §11: more test games towards a first feature-ready version, the user's
 manual test of UPnP, and bots that miss as people do (combat accuracy, measured against the

@@ -5637,3 +5637,50 @@ snowman north of a tree hid its top, so trees and snowmen are stamped in one, ne
 
 Released with the two styles of the day, Cartoon (12zb) and Christmas (12zc), eighteen styles in
 all; the game, the bots and the protocol (17) unchanged from v0.8.2.
+
+## 12ze. Tournament mode, T1: the core (2026-10-08)
+
+The first work package of tournament mode (docs/TOURNAMENT.md, designed with the user the same
+day): **`packages/tournament`**, the whole tournament without a screen — pure, deterministic,
+no DOM or Node, under the same lint rule as `sim` and `ai`. A save is its settings, the field,
+the plan fixed at creation and every finished step; `Progress` replays those into everything
+else — the table, the bracket, who is out and when, the next step's matches — so nothing
+derived is stored and nothing stored can disagree with it. Rolled results are stored, though,
+so retuning the ratings cannot rewrite a saved tournament's history.
+
+- **The schedule is made at creation**: the knockout's round sizes, the league's every matchday
+  (its pairings are random, not drawn from the table, so nothing was gained by waiting), the
+  losers' bracket's shape, the draw without a league, and the field. Only who meets whom in
+  the knockout waits on results.
+- **Steps** are the unit of play: the matches played at once, of which the host's team plays at
+  most one. `recordMatch` takes the host's placings, rolls the rest of the step, and rolls on
+  through every step the host has no part in (byes; the winners' bracket while the host is in
+  the losers'), stopping at the host's next match or the end. Every roll draws from a stream
+  of its own (`roll:step:match`), and the map (`map:step`) and a tie's coin (`tie:step`) too:
+  a test records one match won and lost and finds the rest of the step identical.
+- **Seeding at any match sizes** deals seeds to the final's branches in a snake, each branch
+  dealing its own likewise — for two-team matches exactly the familiar bracket — and moves
+  the archnemesis to the next branch along if it shares the host's.
+- **The losers' bracket** is TOURNAMENT §1.5's pool, its rounds' sizes drawn at creation. Rolled
+  by the harness, a host who loses in the first round and then wins everything plays 5 to 10
+  matches against Medium's 4.
+
+**The cap became hard** (TOURNAMENT §1.3; to be confirmed by the user). The design accepted a
+field the minimum match size forced over the cap; measured, eight-team matches in Long made
+4,096 teams, 8,192 with a league — 2.4 s to play a step until the table's counting was fixed,
+and then still a save of 2 MB, where a browser keeps about 5 MB for everything. Now rounds are
+dropped until the field fits, with the cap raised from 64 to 128 so only a minimum of four
+teams a match or more loses a round in Long (six in Medium). The largest saves left, a league
+over Long in double elimination, are about 55 KB.
+
+**Provisional for T2**: the level ratings, a quick Plackett–Luce fit to the soak's ladder (one
+bot against two, ARCHIVE 12h): 1, 3, 4, 7, 58, 79, 117, 155, 279, 414 for Levels 1–10, the
+cliff from 4 to 5 plain in them. The name pools, 157 given names and 106 one-word team names
+chosen to read alike in most languages; a used-up pool goes round again as "Anna II".
+
+**The headless runner**, `npm start -w @bollwerk/headless -- --tournament`, plays whole
+tournaments by rolls, the host as a bot of `--host-level`: one prints the shape and the host's
+road, `--count N` how far hosts get. A first look, the host as Level 5 against Levels 3–6:
+a short single-elimination of up to eight teams a match won 5% of the time; long double
+elimination 0.5–4%. Multi-team matches are hard to win as an average team; whether that is
+right for people is for T2's ratings and T8's play.

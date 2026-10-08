@@ -27,6 +27,7 @@ import {
 
 import { repoRoot, usageError, wholeNumber } from './cli.js';
 import { replayAll } from './replay.js';
+import { runTournaments } from './tournament.js';
 import { summariseStats } from './summary.js';
 import {
   RoundStats,
@@ -99,7 +100,8 @@ const USAGE =
   'usage: npm start -w @bollwerk/headless -- [--matches N] [--players N] [--seed N] ' +
   '[--max-ticks N] [--max-rounds N|none] [--teams N] [--level 1-10[,...]] ' +
   '[--personality offensive|dealt|...[,...]] [--stats FILE] [--outcomes FILE] [--map]\n' +
-  '       npm start -w @bollwerk/headless -- --replay recordings/ [more files or dirs] [--stats FILE]';
+  '       npm start -w @bollwerk/headless -- --replay recordings/ [more files or dirs] [--stats FILE]\n' +
+  '       npm start -w @bollwerk/headless -- --tournament [--help for its flags]';
 
 /**
  * The flags, refused whole when one is unknown, lacks its value or is not a number: they
@@ -275,6 +277,12 @@ function summariseTeams(layouts: TeamLayout[]): void {
 }
 
 // -------------------------------------------------------------------------- run
+
+// Whole tournaments by rolls (docs/TOURNAMENT.md): flags of their own, and no match is run.
+if (process.argv[2] === '--tournament') {
+  runTournaments(process.argv.slice(2), loadConfigBundle(repoRoot));
+  process.exit(0);
+}
 
 const args = parseArgs(process.argv.slice(2));
 const bundle = loadConfigBundle(repoRoot);

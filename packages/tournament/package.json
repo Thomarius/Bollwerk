@@ -1,0 +1,17 @@
+{
+  "name": "@bollwerk/tournament",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@bollwerk/config": "*",
+    "@bollwerk/sim": "*",
+    "zod": "^4.6.5"
+  }
+}

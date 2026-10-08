@@ -7,6 +7,7 @@ import { ArtConfigSchema } from './art.js';
 import { AudioManifestSchema } from './audio.js';
 import { ServerConfigSchema } from './server.js';
 import { AiConfigSchema } from './ai.js';
+import { TournamentConfigSchema } from './tournament.js';
 import { assertValidConfigBundle, type ConfigBundle } from './bundle.js';
 
 function readJson(path: string): unknown {
@@ -26,6 +27,7 @@ export function loadConfigBundle(repoRoot: string): ConfigBundle {
     audio: AudioManifestSchema.parse(readJson(join(dir, 'audio.manifest.json'))),
     server: ServerConfigSchema.parse(readJson(join(dir, 'server.default.json'))),
     ai: AiConfigSchema.parse(readJson(join(dir, 'ai.default.json'))),
+    tournament: TournamentConfigSchema.parse(readJson(join(dir, 'tournament.default.json'))),
   };
   assertValidConfigBundle(bundle);
   return bundle;

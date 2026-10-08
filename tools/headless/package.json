@@ -12,6 +12,7 @@
     "@bollwerk/analysis": "*",
     "@bollwerk/config": "*",
     "@bollwerk/protocol": "*",
-    "@bollwerk/sim": "*"
+    "@bollwerk/sim": "*",
+    "@bollwerk/tournament": "*"
   }
 }

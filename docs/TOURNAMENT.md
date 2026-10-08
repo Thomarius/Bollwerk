@@ -67,10 +67,14 @@ teams. With a league, the field is larger and the league's table decides who goe
 (§1.4). Without one, the field is exactly the knockout field.
 
 A field can grow large: four rounds of eight-player free-for-all is 4,096 teams. Quick rolls
-cost nothing, but names run out and nobody needs that many. So **`tournament.maxField` caps
-it**: while the product is over the cap, the largest round size is lowered by one, never
-below the minimum. If even the minimum at every round is over the cap, that field is
-accepted as it is.
+cost nothing, but names run out, the save is kept whole in the browser, and nobody needs that
+many. So **`tournament.maxField` caps the knockout's field, hard**: while the product is over
+the cap, the largest round size is lowered by one, never below the minimum; if every round is
+at the minimum and still over, **rounds are dropped until it fits**. With the cap at 128 that
+happens only for a minimum of four teams a match or more in Long, and six or more in Medium,
+where a match knocks out three or more teams at once. (Accepting the field as it was, the first
+design, gave 8,192 teams with a league and a 2 MB save, where a browser keeps about 5 MB for
+everything; ARCHIVE 12ze.)
 
 ### 1.4 The league stage
 
@@ -200,37 +204,22 @@ tournament's rounds a match.
 
 In order. Each ends with `npm run check` passing and the user's go-ahead to commit.
 
-### T1 — The tournament core (`packages/tournament`)
+### T1 — The tournament core — done (ARCHIVE 12ze)
 
-The whole tournament without a screen, testable on its own.
-
-- The save's schema (Zod, strict, with a version), and the settings within it.
-- **Roster**: the field from the settings (§1.3, the cap included), team and bot names
-  unique within the tournament, levels in the range, the archnemesis as its team's leader,
-  personalities dealt once, the host's team as configured.
-- **Schedule**: league matchdays with their pairings, drawn as each matchday comes but from
-  the stream fixed at creation. The single-elimination bracket with its round sizes and
-  byes. The losers' bracket of double elimination as in §1.5. Seeding, with the archnemesis
-  opposite the host.
-- **Results**: placement from a finished `MatchState` (§1.6), the quick roll, league points,
-  Buchholz, advancing through either bracket, and whether and how the tournament has ended.
-- **Map seeds** drawn from the schedule, so a replayed match is the same match.
-- Tests: every length and mode at every team size and match size, simulated through to the
-  end by rolls alone. The field and the host's path length are as §1.3 says, every match is
-  a legal size, the archnemesis never meets the host before the final in single elimination,
-  the same seed gives the same tournament, and replaying one match changes no other.
-- **A headless runner** (`--tournament` in `tools/headless`) plays whole tournaments by
-  rolls and prints their shape: for checking, and for the calibration in T2.
+`packages/tournament`, its tests, and `--tournament` in the headless harness. The ratings and
+name pools it ships with are provisional, for T2.
 
 ### T2 — Ratings and names
 
 - **Level ratings** fitted to the soak's ladder (ARCHIVE 12h, one bot against two of another
-  level) as a Bradley–Terry fit, then **checked against a small soak of team matches** to
+  level) as a Bradley–Terry fit — T1 ships a quick fit of it (ARCHIVE 12ze) — then **checked against a small soak of team matches** to
   test whether summing ratings is a fair model of a team. Adjust if not, before trusting the
   rolls.
 - **Name pools** in config, one for every language: given names that read well in most
-  countries, and team names (the user's choice, 2026-10-08). Large enough for the
-  field cap with names unique.
+  countries, and team names (the user's choice, 2026-10-08). Names are unique whatever the
+  pool's size — a used-up pool goes round again as "Anna II" — but the largest field holds
+  512 bots (teams of two, 256 with a league), against T1's 157 names: grow the pools so the
+  numerals are rare.
 
 ### T3 — Fixed tables
 

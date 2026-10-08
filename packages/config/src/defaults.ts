@@ -4,6 +4,7 @@ import artJson from '../../../config/art.default.json' with { type: 'json' };
 import audioJson from '../../../config/audio.manifest.json' with { type: 'json' };
 import serverJson from '../../../config/server.default.json' with { type: 'json' };
 import aiJson from '../../../config/ai.default.json' with { type: 'json' };
+import tournamentJson from '../../../config/tournament.default.json' with { type: 'json' };
 import enJson from '../../../config/locale/en.json' with { type: 'json' };
 import deJson from '../../../config/locale/de.json' with { type: 'json' };
 
@@ -13,6 +14,7 @@ import { ArtConfigSchema, type ArtConfig } from './art.js';
 import { AudioManifestSchema, type AudioManifest } from './audio.js';
 import { ServerConfigSchema, type ServerConfig } from './server.js';
 import { AiConfigSchema, type AiConfig } from './ai.js';
+import { TournamentConfigSchema, type TournamentConfig } from './tournament.js';
 import { LocaleSchema, type Language, type Locale } from './locale.js';
 
 /**
@@ -25,6 +27,8 @@ export const defaultArtConfig: ArtConfig = ArtConfigSchema.parse(artJson);
 export const defaultAudioManifest: AudioManifest = AudioManifestSchema.parse(audioJson);
 export const defaultServerConfig: ServerConfig = ServerConfigSchema.parse(serverJson);
 export const defaultAiConfig: AiConfig = AiConfigSchema.parse(aiJson);
+export const defaultTournamentConfig: TournamentConfig =
+  TournamentConfigSchema.parse(tournamentJson);
 
 export const defaultConfigBundle = {
   ruleset: defaultRuleset,
@@ -33,6 +37,7 @@ export const defaultConfigBundle = {
   audio: defaultAudioManifest,
   server: defaultServerConfig,
   ai: defaultAiConfig,
+  tournament: defaultTournamentConfig,
 } as const;
 
 /** Every text the game shows, keyed as in English, the reference. */
