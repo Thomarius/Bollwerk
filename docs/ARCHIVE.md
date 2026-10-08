@@ -6026,3 +6026,18 @@ From the users' play-testing round (TOURNAMENT T8), triaged with them first:
   tree has 24 rows or fewer. Pointing at a box shows its stage and teams, placed with scores
   or rolled; a click keeps them shown. Drawn at its own size and scrolled: fitted to the
   window, a long double elimination's 64 first-round boxes were too small to read.
+
+## 12zq. A crash on a guest's screen after a tournament match (2026-10-08)
+
+Found in the users' tournament test with v0.8.4, a team of two, both on Random looks: when
+the host went on from a won match's summary, the partner's page showed "Unhandled rejection —
+Cannot read properties of null (reading 'addChild')" in `Scene.slotFor`, from `prepare`. 12zo
+had stopped a look being made from going on into a destroyed scene, but not a new one being
+begun there: a round's next looks are made one after another, the combat look and then the
+build look, and when the scene went while the first was made, the first stopped as it should
+and the second was then begun in a scene whose stage was already gone.
+
+`prepare` and `replaceLooks` now do nothing in a destroyed scene, and a look already being
+made when it goes is no longer put on its stage. Reproduced in headless Chrome by taking the
+scene down a frame after the next looks began to be made, four bots watched with Random looks:
+the same error before the fix, nothing failing after it.

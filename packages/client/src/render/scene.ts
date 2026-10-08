@@ -269,6 +269,7 @@ export class Scene {
   async replaceLooks(looks: Record<Look, SceneLook>): Promise<void> {
     // The new looks are made before the old go, since frames go on being drawn while
     // they are. A look being prepared is for the old ones' rotation, and goes with them.
+    if (this.destroyed) return;
     const generation = ++this.generation;
     const build = await this.slotFor(looks.build);
     const combat = looks.combat === looks.build ? build : await this.slotFor(looks.combat);
@@ -310,6 +311,9 @@ export class Scene {
    * costs only the change.
    */
   async prepare(look: Look, next: SceneLook, gradual = true): Promise<void> {
+    // A match's next looks are made one after another, and the second can be asked for
+    // after the first has seen the scene go (a guest's screen, a tournament's next match).
+    if (this.destroyed) return;
     const generation = this.generation;
     const pace = gradual ? pacer() : undefined;
     const slot = await this.slotFor(next, pace);
@@ -375,8 +379,12 @@ export class Scene {
     const mask = new Graphics();
     // Masks live on the stage, so the shake moves them with the board, but outside the
     // camera, whose zoom must not move the banner's line.
-    this.cameraRoot.addChild(root);
-    this.app.stage.addChild(mask);
+    // Not into a scene taken down while a look was being made: its stage is gone. The caller
+    // finds its generation over and lets the look go.
+    if (!this.destroyed) {
+      this.cameraRoot.addChild(root);
+      this.app.stage.addChild(mask);
+    }
     await theme.init(layers, art, pace);
     // A new look has drawn nothing yet.
     return {
