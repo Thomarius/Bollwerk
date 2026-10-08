@@ -24,6 +24,31 @@ import type { ViewTransform } from './theme.js';
  * walls — asks for that many: each layer is a container of its own, holding that layer
  * of every island, so all the glow stays under all the walls as before.
  */
+/**
+ * The time a look being made in the background may spend drawing islands before it waits
+ * for the next frame (`withDrawBudget`), or null outside one: drawing a whole layer of a new
+ * look at once, every island of it, was up to 89 ms of a frame with Random looks (ARCHIVE
+ * 12zm). One island is always drawn, so every call gets somewhere.
+ */
+let deadline: number | null = null;
+/** Whether a draw under the budget left islands undrawn. */
+let cutShort = false;
+
+/**
+ * Runs `draw` with islands drawn only until `ms` has passed, the rest left for the next
+ * call, which takes up where this one stopped. True when everything was drawn.
+ */
+export function withDrawBudget(ms: number, draw: () => void): boolean {
+  deadline = performance.now() + ms;
+  cutShort = false;
+  try {
+    draw();
+  } finally {
+    deadline = null;
+  }
+  return !cutShort;
+}
+
 export class IslandParts {
   readonly containers: Container[];
   private parts: { layers: Graphics[]; key: string }[] = [];
@@ -55,6 +80,7 @@ export class IslandParts {
     const islandAt = (x: number, y: number): number =>
       (state.islandId[Math.floor(y) * state.width + Math.floor(x)] as number | undefined) ?? 0;
 
+    let drawn = 0;
     for (let part = 0; part < this.cells.length; part++) {
       const cells = this.cells[part] as number[];
       const castles = state.castles.filter((c) => islandAt(c.x, c.y) === part);
@@ -72,6 +98,14 @@ export class IslandParts {
       const key = `${hash >>> 0}|${JSON.stringify(castles)}|${JSON.stringify(cannons)}`;
       const entry = this.parts[part] as { layers: Graphics[]; key: string };
       if (!viewChanged && key === entry.key) continue;
+      if (deadline !== null && drawn > 0 && performance.now() > deadline) {
+        // Out of time: drawn at the next call, which the key no longer matching ensures
+        // even if the view does not change again.
+        entry.key = '';
+        cutShort = true;
+        continue;
+      }
+      drawn++;
       entry.key = key;
       for (const g of entry.layers) g.clear();
       drawPart(

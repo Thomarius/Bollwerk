@@ -5,6 +5,7 @@ import { Application, BigPool, Container, Graphics, RenderTexture } from 'pixi.j
 import type { CameraShot } from '../camera.js';
 import type { DrainWash, SealGlow } from '../seal.js';
 import type { Look } from '../transition.js';
+import { withDrawBudget } from './islandParts.js';
 
 import { BlueprintTheme } from './blueprint.js';
 import { BricksTheme } from './bricks.js';
@@ -108,6 +109,13 @@ interface Slot {
    * redrawn at every wipe, it was most of a frame of 100 ms as Opera came into view.
    */
   stale: Set<BoardLayer>;
+  /**
+   * What of its board is still to be rendered once offscreen before it is seen, as paths
+   * from a board layer down to one island's drawing (`warmChain`), while it is primed.
+   */
+  warming: Container[][];
+  /** Whether its effects have been drawn and rendered once, unseen (`prime`). */
+  effectsPrimed: boolean;
 }
 
 /**
@@ -125,6 +133,12 @@ function pacer(): Pace {
     since = performance.now();
   };
 }
+
+/**
+ * A frame's share of readying the look the next banner brings, in the pause before it
+ * (`prime`): the frame's own drawing is light then, nothing moving on the board.
+ */
+const PRIME_MS = 6;
 
 /** The layers a look draws from the board, as against its effects drawn every frame. */
 const BOARD_LAYERS = ['terrain', 'territory', 'structures'] as const;
@@ -303,15 +317,18 @@ export class Scene {
       await pace?.();
       return generation === this.generation && this.pending[look]?.slot === slot;
     };
+    // A layer a frame's share at a time, islands left for the next frame once it is spent:
+    // a whole layer at once overran its share by up to 80 ms (ARCHIVE 12zm).
     for (const layer of BOARD_LAYERS) {
-      if (!(await wanted())) return;
-      this.refresh(slot, layer);
-    }
-    for (const layer of [slot.layers.terrain, slot.layers.territory, slot.layers.structures]) {
-      for (const part of [...layer.children]) {
+      do {
         if (!(await wanted())) return;
-        if (part.parent === layer) this.warm(slot, layer, part);
-      }
+      } while (!this.refresh(slot, layer, SHARE_MS));
+    }
+    // Then its first render, an island's drawing at a time, as against a whole layer of
+    // every island's, up to 56 ms.
+    for (const chain of this.warmChains(slot)) {
+      if (!(await wanted())) return;
+      this.warmChain(slot, chain);
     }
     const entry = this.pending[look];
     if (entry?.slot === slot) entry.ready = true;
@@ -352,7 +369,17 @@ export class Scene {
     this.app.stage.addChild(mask);
     await theme.init(layers, art, pace);
     // A new look has drawn nothing yet.
-    return { theme, art, root, backdrop, layers, mask, stale: new Set(BOARD_LAYERS) };
+    return {
+      theme,
+      art,
+      root,
+      backdrop,
+      layers,
+      mask,
+      stale: new Set(BOARD_LAYERS),
+      warming: [],
+      effectsPrimed: false,
+    };
   }
 
   /** The styles in use, one per look. */
@@ -415,23 +442,76 @@ export class Scene {
     }
   }
 
-  /** Brings a look up to date with the last board drawn: every layer, or one. */
-  private refresh(slot: Slot, only?: BoardLayer): void {
+  /**
+   * Brings a look up to date with the last board drawn: every layer, or one. Given `budgetMs`,
+   * islands are drawn only until it is spent (`withDrawBudget`), and a layer with islands
+   * left stays stale for the next call to finish. False only when the budget cut one short.
+   */
+  private refresh(slot: Slot, only?: BoardLayer, budgetMs?: number): boolean {
     const { state, territory, structures } = this.board;
     const due = (layer: BoardLayer): boolean =>
       slot.stale.has(layer) && (only === undefined || only === layer);
+    // Only a layer the budget cut short is unfinished: one with no board to draw yet stays
+    // stale for whenever there is one, as ever, and must not hold a caller in a loop.
+    let finished = true;
+    const draw = (layer: BoardLayer, paint: () => void): void => {
+      const done = budgetMs === undefined ? (paint(), true) : withDrawBudget(budgetMs, paint);
+      if (done) slot.stale.delete(layer);
+      else finished = false;
+    };
     if (state !== null && due('terrain')) {
-      slot.theme.drawTerrain(state, this.view);
-      slot.stale.delete('terrain');
+      draw('terrain', () => slot.theme.drawTerrain(state, this.view));
     }
     if (state !== null && territory !== null && due('territory')) {
-      slot.theme.drawTerritory({ ...state, territory: territory[this.lookOf(slot)] }, this.view);
-      slot.stale.delete('territory');
+      draw('territory', () =>
+        slot.theme.drawTerritory({ ...state, territory: territory[this.lookOf(slot)] }, this.view),
+      );
     }
     if (structures !== null && due('structures')) {
-      slot.theme.drawStructures(structures, this.view);
-      slot.stale.delete('structures');
+      draw('structures', () => slot.theme.drawStructures(structures, this.view));
     }
+    return finished;
+  }
+
+  /**
+   * Readies the look the next banner brings while it is still hidden, in the pause before
+   * the banner (ARCHIVE 12zm): its stale layers drawn and its new drawing rendered offscreen
+   * once, a frame's share at a time, so the frame the line first reveals it has nothing
+   * left to do. That frame redrew every stale layer at once and cut it all into triangles:
+   * 33 to 50 ms with chosen looks, 83 to 100 with Random. A board changing again after
+   * this is drawn again as the look comes into view, as before.
+   */
+  prime(look: Look): void {
+    const slot = this.slots[look];
+    if (this.isVisible(slot)) return;
+    const until = performance.now() + PRIME_MS;
+    for (const layer of BOARD_LAYERS) {
+      if (!slot.stale.has(layer)) continue;
+      const left = until - performance.now();
+      if (left <= 0 || !this.refresh(slot, layer, left)) return;
+      slot.warming.push(...this.warmChains(slot, layer));
+    }
+    while (slot.warming.length > 0 && performance.now() < until) {
+      this.warmChain(slot, slot.warming.shift() as Container[]);
+    }
+    // Last, its effects, once: a new look's first frame of them makes its stamps and
+    // pools, 16 ms of the frame the line first reveals it. Drawn with no time passing, so
+    // nothing in them moves or ages unseen.
+    const last = this.lastEffects;
+    if (slot.warming.length > 0 || slot.effectsPrimed || last === null) return;
+    if (performance.now() >= until) return;
+    slot.effectsPrimed = true;
+    slot.theme.drawEffects(last.state, this.view, {
+      tickFraction: last.tickFraction,
+      deltaMs: 0,
+      castleSealed: last.castleSealed[look],
+      sealGlow: [],
+      humanPlayer: last.humanPlayer,
+      celebrate: [],
+      choices: [],
+      drain: [],
+    });
+    this.warmChain(slot, [slot.layers.effects]);
   }
 
   /**
@@ -572,6 +652,16 @@ export class Scene {
     drain: readonly DrainWash[] = [],
   ): void {
     this.applyShake(deltaMs);
+    this.lastEffects = {
+      state,
+      tickFraction,
+      castleSealed,
+      sealGlow,
+      humanPlayer,
+      celebrate,
+      choices,
+      drain,
+    };
     for (const slot of this.visible()) {
       slot.theme.drawEffects(state, this.view, {
         tickFraction,
@@ -585,6 +675,18 @@ export class Scene {
       });
     }
   }
+
+  /** What the last frame's effects were drawn from, for a look primed before it is seen. */
+  private lastEffects: {
+    state: MatchState;
+    tickFraction: number;
+    castleSealed: Record<Look, readonly boolean[]>;
+    sealGlow: readonly SealGlow[];
+    humanPlayer: number;
+    celebrate: readonly Celebration[];
+    choices: readonly Choice[];
+    drain: readonly DrainWash[];
+  } | null = null;
 
   /** Remaining shake, in milliseconds. */
   private shaking = 0;
@@ -666,20 +768,48 @@ export class Scene {
   }
 
   /**
-   * One part of a look being prepared, rendered offscreen alone, so its first render is
-   * spread over frames as its drawing is: the whole look at once was 35 to 135 ms.
+   * What of a look's board to render offscreen, a piece at a time: each part of each board
+   * layer, and of a part that is a plain container of others — an `IslandParts` layer —
+   * each of those, one island's drawing. The whole look at once was 35 to 135 ms; a whole
+   * part, every island's drawing of it, up to 56 ms (ARCHIVE 12zm).
    */
-  private warm(slot: Slot, layer: Container, part: Container): void {
-    const shown = this.all().map((s) => [s, s.root.visible] as const);
-    for (const [s] of shown) s.root.visible = s === slot;
-    const layers = slot.root.children.map((child) => [child, child.visible] as const);
-    for (const [child] of layers) child.visible = child === layer;
-    const parts = layer.children.map((child) => [child, child.visible] as const);
-    for (const [child] of parts) child.visible = child === part;
+  private warmChains(slot: Slot, only?: BoardLayer): Container[][] {
+    const layers = only === undefined ? BOARD_LAYERS : [only];
+    return layers.flatMap((name) => {
+      const layer = slot.layers[name];
+      return layer.children.flatMap((part) =>
+        part.constructor === Container && part.children.length > 1
+          ? part.children.map((piece) => [layer, part, piece])
+          : [[layer, part]],
+      );
+    });
+  }
+
+  /**
+   * One piece of a look rendered offscreen alone, every other thing on the stage hidden for
+   * it, so its first render is spread over frames as its drawing is. A piece no longer where
+   * it was — drawn again since — is passed over.
+   */
+  private warmChain(slot: Slot, chain: readonly Container[]): void {
+    for (let i = 1; i < chain.length; i++) {
+      if (chain[i]?.parent !== chain[i - 1]) return;
+    }
+    if (chain[0]?.parent !== slot.root) return;
+    const hidden: [Container, boolean][] = [];
+    const only = (siblings: readonly Container[], keep: Container | undefined): void => {
+      for (const child of siblings) {
+        hidden.push([child, child.visible]);
+        child.visible = child === keep;
+      }
+    };
+    only(
+      this.all().map((s) => s.root),
+      slot.root,
+    );
+    only(slot.root.children, chain[0]);
+    for (let i = 1; i < chain.length; i++) only((chain[i - 1] as Container).children, chain[i]);
     this.renderOffscreen();
-    for (const [child, visible] of parts) child.visible = visible;
-    for (const [child, visible] of layers) child.visible = visible;
-    for (const [s, visible] of shown) s.root.visible = visible;
+    for (const [child, visible] of hidden.reverse()) child.visible = visible;
     this.applyVisibility();
   }
 

@@ -5905,3 +5905,32 @@ and with Random, about 4 s before a wipe, gaps of up to 167 ms while the next lo
 the background, its steps meant to take 8 ms of a frame overrunning it. Freezing the outgoing
 look as an image would save only the 2 to 3 ms. Two fixes chosen: the incoming look drawn
 before the line reaches it, and the background making cut finer (12zm).
+
+## 12zm. The looks' wipes made smoother (2026-10-08)
+
+The two fixes chosen in 12zl, measured as far as the machine allowed and then left to the users'
+own tests in the tournament sessions (their decision).
+
+**The look primed before its wipe** (`Scene.prime`): in the pause before a banner that brings
+the other look — the last shots landed, the board still — that look is readied out of sight in
+6 ms of each frame: its stale board layers drawn, its new drawing rendered offscreen an island's
+drawing at a time, and its effects drawn once with no time passing (a new look's first frame of
+them made its stamps and pools, 16 ms). The frame the line first reveals it then has nothing
+left to do. Measured on a quiet machine before the effects were primed: the hitch at the wipe's
+start gone for Cartoon to Electric (50 ms) and Christmas to Electric (33 ms), Electric to Opera
+down from 50 to 33 ms.
+
+**The next random look made finer**: `IslandParts` draws under a budget (`withDrawBudget`),
+stopping after any island once it is spent and taking up the rest at the next call, never an
+island twice and always one; a new look's board layers are made so, a frame's share at a time,
+and rendered offscreen an island's drawing at a time rather than a layer of every island's.
+`refresh` reports a layer unfinished only when the budget cut it short — reporting one with no
+board yet to draw froze the page in the loop at the first look of a Random match, found at once.
+With Random, the wipes' starts fell from 83–100 ms to 33–50 ms in two of three; the making ran
+in about 2 300 steps where it had run in 40.
+
+**Left**: every style draws its terrain whole, one drawing — made in 20 to 52 ms and first cut
+into triangles in up to 90 ms (Sakura, Opera, Halloween the worst) — so a new random look still
+costs one such moment, in the points' count-up after a resolution, where nothing is playable
+(PLAN §11). A last measurement was spoiled by the users' own session running on the machine,
+which the benchmarks may also have taken frames from: measuring stopped there.

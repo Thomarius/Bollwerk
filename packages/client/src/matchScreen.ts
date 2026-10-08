@@ -385,6 +385,9 @@ export async function runSession(
       }
       lineY = hud.placeAnnouncement(progress);
     }
+    // In the pause before a banner that brings the other look — the last shots landed, the
+    // board still — that look is readied out of sight, so the line reveals it at no cost.
+    if (progress === null && before !== after && state.shots.length === 0) scene.prime(after);
     hud.useSkin(scene.styles[lineY === null ? before : after]);
     scene.showLooks(
       lineY === null

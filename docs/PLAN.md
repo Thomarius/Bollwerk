@@ -1430,7 +1430,10 @@ can fill and widen their walls once sealed (ARCHIVE 12x, 12y). The bot learning 
 feature-ready version. **Tournament mode** (decided 2026-10-08) is built — a cooperative run
 of matches against a field of named bots, offline or with friends in the host's team, saved
 between matches — its design and work packages in [`TOURNAMENT.md`](./TOURNAMENT.md) and
-ARCHIVE 12ze–12zk; what is left of it is T8, the users' play-testing round. French is not to be
+ARCHIVE 12ze–12zk; what is left of it is T8, the users' play-testing round, under way
+(its first feedback in ARCHIVE 12zl, the looks' wipes smoothed in 12zm). Should the wipes still
+stutter there, what is left is each style's terrain drawn whole: splitting it by island, in all
+eighteen styles, would remove the last hitch a new random look costs. French is not to be
 done (the user's decision, 2026-10-06). Still open:
 
 1. **The user's manual test of UPnP**, reported back: switch on Open to the internet in the
