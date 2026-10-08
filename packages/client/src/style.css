@@ -4730,3 +4730,167 @@ body.reduced-effects .look-gallery .card img {
 .banner.summary .leave {
   font-size: 16px;
 }
+
+/* The tournament's last match, marked: a gold frame round it and a line saying so. */
+.tournament-view .next-match.last-match {
+  padding: 0.75rem;
+  border: 2px solid var(--accent);
+  box-shadow: 0 0 1.2rem rgb(240 200 80 / 25%);
+}
+
+.tournament-view .next-match.last-match h2 {
+  color: var(--accent);
+}
+
+.tournament-view .last-line {
+  margin: -0.4rem 0 0.75rem;
+  color: var(--accent);
+}
+
+/* The knockout's tree, in a window over the tournament (tournamentBracketView.ts). */
+.bracket-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgb(0 0 0 / 55%);
+}
+
+.bracket-overlay .panel {
+  position: relative;
+  width: min(92vw, 1400px);
+  max-height: 92vh;
+  padding: 1.25rem 1.5rem;
+  border: 1px solid var(--edge);
+  background: rgb(20 20 30);
+  box-shadow: 0 1rem 3rem rgb(0 0 0 / 60%);
+  color: var(--ink);
+}
+
+.bracket-overlay h2 {
+  margin: 0 0 0.25rem;
+  color: var(--accent);
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+}
+
+.bracket-scroll {
+  max-height: 72vh;
+  overflow: auto;
+}
+
+.bracket-svg {
+  display: block;
+  margin: 0 auto;
+  font:
+    11px ui-monospace,
+    Menlo,
+    Consolas,
+    monospace;
+}
+
+.bracket-svg .heading {
+  fill: var(--muted);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.bracket-svg .edge {
+  fill: none;
+  stroke: rgb(255 255 255 / 25%);
+  stroke-width: 1.5;
+}
+
+.bracket-svg .edge.host {
+  stroke: var(--accent);
+  stroke-width: 2.5;
+}
+
+.bracket-svg .match rect {
+  fill: rgb(255 255 255 / 8%);
+  stroke: rgb(255 255 255 / 30%);
+  stroke-width: 1;
+  cursor: pointer;
+}
+
+.bracket-svg .match.later rect {
+  fill: none;
+  stroke-dasharray: 4 3;
+}
+
+.bracket-svg .match.next rect {
+  stroke: #ffffff;
+  stroke-width: 2;
+}
+
+.bracket-svg .match.host rect {
+  fill: rgb(240 200 80 / 18%);
+  stroke: var(--accent);
+  stroke-width: 2;
+}
+
+.bracket-svg .match.pinned rect,
+.bracket-svg .match:hover rect {
+  fill: rgb(255 255 255 / 22%);
+}
+
+.bracket-svg .match text {
+  fill: var(--ink);
+  pointer-events: none;
+}
+
+.bracket-svg .arch-dot {
+  fill: #e0504c;
+  pointer-events: none;
+}
+
+.bracket-tip {
+  position: absolute;
+  z-index: 1;
+  width: 240px;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid var(--edge);
+  background: #0e0e16;
+  box-shadow: 0 0.5rem 1.5rem rgb(0 0 0 / 60%);
+  font-size: 0.85rem;
+  pointer-events: none;
+}
+
+.bracket-tip p {
+  margin: 0.3rem 0;
+  color: var(--muted);
+}
+
+/* The places are written out ("1st"), so the list numbers nothing itself. */
+.bracket-tip ol,
+.bracket-tip ul {
+  margin: 0;
+  padding-left: 0;
+  list-style: none;
+}
+
+.bracket-tip .place,
+.bracket-tip .score {
+  color: var(--muted);
+}
+
+.bracket-tip em {
+  font-style: normal;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+}
+
+.bracket-tip em.you {
+  color: var(--accent);
+}
+
+.bracket-tip em.arch {
+  color: #e07a76;
+}
+
+.bracket-overlay .close {
+  margin-top: 0.75rem;
+}

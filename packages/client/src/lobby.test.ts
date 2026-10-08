@@ -16,8 +16,12 @@ function view(over: Partial<LobbyView> = {}): LobbyView {
     humanPlayer: 0,
     seats: [seat(0, 'Ada')],
     bots: [5, 5, 5, 5],
-    settings: { maxRounds: 10, teamSize: 1 },
-    settingBounds: { maxRounds: { min: 5, max: 20 }, teamSize: { min: 1, max: 4 } },
+    settings: { maxRounds: 10, teamSize: 1, continues: 2 },
+    settingBounds: {
+      maxRounds: { min: 5, max: 20 },
+      teamSize: { min: 1, max: 4 },
+      continues: { min: 0, max: 4 },
+    },
     teams: [0, 1, 2, 3],
     playerLimits: { min: 2, max: 8 },
     seed: 42,
@@ -109,7 +113,7 @@ describe('lobby', () => {
 
   it('puts the seats in one column per team', () => {
     const html = lobbyMarkup(
-      view({ settings: { maxRounds: 10, teamSize: 2 }, teams: [0, 1, 1, 0] }),
+      view({ settings: { maxRounds: 10, teamSize: 2, continues: 2 }, teams: [0, 1, 1, 0] }),
     );
     const columns = [...html.matchAll(/<section class="team-column">([\s\S]*?)<\/section>/g)];
     expect(columns).toHaveLength(2);
@@ -164,7 +168,7 @@ describe('lobby', () => {
   });
 
   it('gives the host the table controls, bounded by the rules, and guests a statement', () => {
-    const host = lobbyMarkup(view({ settings: { maxRounds: 12, teamSize: 1 } }));
+    const host = lobbyMarkup(view({ settings: { maxRounds: 12, teamSize: 1, continues: 2 } }));
     expect(host).toContain('id="max-rounds"');
     expect(host).toContain('<option value="12" selected>');
     expect(host).toContain('id="team-size"');
@@ -174,7 +178,7 @@ describe('lobby', () => {
       view({
         humanPlayer: 1,
         seats: [seat(0, 'Ada'), seat(1, 'Bo')],
-        settings: { maxRounds: 12, teamSize: 1 },
+        settings: { maxRounds: 12, teamSize: 1, continues: 2 },
       }),
     );
     expect(guest).not.toContain('id="max-rounds"');
@@ -184,7 +188,7 @@ describe('lobby', () => {
 
   it('offers only the player counts a team size allows', () => {
     const html = lobbyMarkup(
-      view({ settings: { maxRounds: 10, teamSize: 2 }, teams: [0, 0, 1, 1] }),
+      view({ settings: { maxRounds: 10, teamSize: 2, continues: 2 }, teams: [0, 0, 1, 1] }),
     );
     const select = html.slice(
       html.indexOf('id="player-count"'),
@@ -196,7 +200,7 @@ describe('lobby', () => {
 
   it('lets only the host choose who sits where, which is how sides are chosen', () => {
     const teamed = {
-      settings: { maxRounds: 10, teamSize: 2 },
+      settings: { maxRounds: 10, teamSize: 2, continues: 2 },
       teams: [0, 0, 1, 1],
       seats: [seat(0, 'Ada'), seat(1, 'Bo')],
     };
@@ -227,7 +231,7 @@ describe('lobby', () => {
 
   it('will not start unequal teams, and says why', () => {
     const html = lobbyMarkup(
-      view({ settings: { maxRounds: 10, teamSize: 2 }, teams: [0, 0, 0, 1] }),
+      view({ settings: { maxRounds: 10, teamSize: 2, continues: 2 }, teams: [0, 0, 0, 1] }),
     );
     expect(html).toContain('id="begin" disabled');
     expect(html).toContain('Teams must be the same size');

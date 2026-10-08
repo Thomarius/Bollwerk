@@ -150,7 +150,7 @@ Full detail in PLAN.md §1. The parts that surprise people:
 
 ## Status
 
-**Done** (2026-10-08; the latest release **v0.8.3**, 2026-10-07; protocol 18 since, which a
+**Done** (2026-10-08; the latest release **v0.8.4**, 2026-10-08, protocol 19, which a
 test session needs the server rebuilt and every page reloaded for):
 
 - **Tournament mode** (2026-10-08, `docs/TOURNAMENT.md`, ARCHIVE 12ze–12zk): the host's team
@@ -162,6 +162,12 @@ test session needs the server rebuilt and every page reloaded for):
   and personalities), offline or in a room friends join by code to sit in the host's team
   (protocol 18, `TournamentTable`); one left before its end is played again. Its last work
   package, T8, is the users' play-testing round, under way.
+- **The second feedback** (ARCHIVE 12zp): lives, one to five, chosen in the lobby beside the
+  rounds and in the tournament (`MatchSettings.continues`, protocol 19); a tournament's
+  matches of 1–15 rounds; the archnemesis's teammates at the top level, him one above, carried
+  to the final by the rolls unless the host puts him out (in double elimination's winners'
+  bracket he rolls as anyone); the last match framed under a trophy; and the **Bracket**
+  window, the knockout as a tree of matches (`tournamentBracket.ts`, pure, and its view).
 - **The first feedback of that round** (ARCHIVE 12zl, 12zm): the score bar sorts teams by
   standing; the title's line glides without pause; the match's summary is larger and no
   longer reveals the bots' personalities; and the looks' wipes are smoother — the coming

@@ -30,6 +30,11 @@ export const TournamentSettingsSchema = z.strictObject({
   /** Teams a match, the knockout's double-elimination final excepted (TOURNAMENT §1.5). */
   matchTeams: RangeSchema,
   maxRounds: z.number().int().positive(),
+  /**
+   * Continues each player has in every match, lives less one. Optional: tournaments saved
+   * before it was a setting (2026-10-08) play on the rules' own.
+   */
+  continues: z.number().int().nonnegative().optional(),
 });
 export type TournamentSettings = z.infer<typeof TournamentSettingsSchema>;
 
@@ -38,6 +43,7 @@ export interface SettingLimits {
   players: { min: number; max: number };
   teamSize: { min: number; max: number };
   maxRounds: { min: number; max: number };
+  continues: { min: number; max: number };
 }
 
 /**
@@ -79,6 +85,13 @@ export function settingsProblems(settings: TournamentSettings, limits: SettingLi
   }
   if (maxRounds < limits.maxRounds.min || maxRounds > limits.maxRounds.max) {
     problems.push(`rounds a match must be within ${limits.maxRounds.min}-${limits.maxRounds.max}`);
+  }
+  const { continues } = settings;
+  if (
+    continues !== undefined &&
+    (continues < limits.continues.min || continues > limits.continues.max)
+  ) {
+    problems.push(`continues must be within ${limits.continues.min}-${limits.continues.max}`);
   }
   return problems;
 }

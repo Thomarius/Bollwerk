@@ -139,7 +139,9 @@ exact on a square grid, so every island is pixel-identical at every player count
 Failing to seal a castle spends a life rather than ending the match. The island is wiped —
 cannons, shots in the air, and the wall itself — a castle is chosen again during the
 coming cannon phase, a fresh ring goes up, and the player places the opening count plus
-one cannon for each life already spent. Out of lives, failing is final.
+one cannon for each life already spent. Out of lives, failing is final. A host picks one
+to five lives in the lobby, beside the rounds (`elimination.continues`, 2 by default, bounded
+by `lobbySettings.continues`; ARCHIVE 12zp).
 
 A continue also **rewinds that player's piece schedule to round one**, so somebody
 starting again gets the small pieces they need to close a ring while whoever has survived
@@ -382,8 +384,8 @@ sender's seat**, so a client cannot act for someone else.
 - **Lobby settings are a mechanism, not a special case**: an explicit list of typed
   settings (`config/src/settings.ts`), bounded by `server.lobbySettings`, accepted only
   from the host before the start, refused whole when out of bounds, and applied over the
-  server's ruleset — which is re-validated and travels in the snapshot. `maxRounds` and
-  `teamSize` exist. Game speed will not join them (decided 2026-10-01): the game is
+  server's ruleset — which is re-validated and travels in the snapshot. `maxRounds`,
+  `teamSize` and `continues` exist. Game speed will not join them (decided 2026-10-01): the game is
   played at one speed.
 
 ---
@@ -1453,16 +1455,18 @@ every resolution against an independent search, not only on unit pictures.
 
 ## 11. Open work
 
-**Where to start (2026-10-08).** The latest release is **v0.8.3**: the game and online play,
+**Where to start (2026-10-08).** The latest release is **v0.8.4** (2026-10-08). Up to **v0.8.3**: the game and online play,
 bots as skill levels and personalities, eighteen styles each with its piece in the corner,
 random looks every round, English and German, the desktop app, UPnP, the balance soak and the
 rendering work (ARCHIVE 12h–12v); the refactoring of 2026-10-07 (ARCHIVE 12w); and stronger
 bots, which route round holes no piece can fill and widen their walls once sealed (ARCHIVE
-12x, 12y). Built since, not yet released: **tournament mode** — a cooperative run of matches
+12x, 12y). New in v0.8.4: **tournament mode** — a cooperative run of matches
 against a field of named bot teams, offline or with friends in the host's team, saved between
 matches; its design and work packages in [`TOURNAMENT.md`](./TOURNAMENT.md), ARCHIVE 12ze–12zk,
 protocol 18 — the first feedback from its play-testing (ARCHIVE 12zl), smoother wipes between
-the looks (ARCHIVE 12zm), and **Noir**, a nineteenth style (ARCHIVE 12zn). **The tournament's
+the looks (ARCHIVE 12zm), **Noir**, a nineteenth style (ARCHIVE 12zn), and the second
+feedback: lives in the lobby and the tournament, one-round matches, the archnemesis carried to
+the final, the last match marked and the bracket drawn (ARCHIVE 12zp, protocol 19). **The tournament's
 play-testing round, T8, is under way**, its findings triaged with the users first. Should the
 wipes still stutter, what is left is each style's terrain drawn as one: splitting it by island,
 in all nineteen styles, would remove the last hitch a new random look costs. The bot learning

@@ -13,7 +13,7 @@ import type { Seat, TournamentTable } from '@bollwerk/protocol';
 import { escape } from './html.js';
 import { formatNumber, ordinal, t } from './i18n.js';
 import { levelPips } from './lobby.js';
-import { settingsLine, stageName } from './tournamentText.js';
+import { isLastStep, settingsLine, stageLabel, stageName } from './tournamentText.js';
 
 /**
  * A tournament between its matches, as markup (TOURNAMENT §1.8): where it stands — the
@@ -241,8 +241,9 @@ export function tournamentMarkup(
       ${notice === null ? '' : `<p class="note warn">${escape(notice)}</p>`}
       ${lastResult(save)}
       <div class="lobby-body">
-        <section class="next-match">
-          <h2>${escape(t('tournament.nextMatch', { stage: stageName(save, progress.done) }))}</h2>
+        <section class="next-match${isLastStep(save, progress.done) ? ' last-match' : ''}">
+          <h2>${escape(t('tournament.nextMatch', { stage: stageLabel(save, progress.done) }))}</h2>
+          ${isLastStep(save, progress.done) ? `<p class="last-line">${escape(t('tournament.lastMatch'))}</p>` : ''}
           <ul class="team-cards">${match.map((id) => teamCard(save, id)).join('')}</ul>
         </section>
         <section class="standings">
@@ -252,6 +253,7 @@ export function tournamentMarkup(
       </div>
       ${room === null ? '' : roomPanelMarkup(room)}
       <button id="play">${t('tournament.play')}</button>
+      <button id="bracket" class="quiet">${t('tournament.bracket')}</button>
       <button id="back" class="quiet">${t('watching.back')}</button>
     </div>`;
 }
@@ -290,6 +292,7 @@ export function endingMarkup(save: Save, progress: Progress): string {
       <p class="note subtitle">${escape(settingsLine(save.settings))}</p>
       <table class="road"><thead><tr><th>${t('tournament.stage')}</th><th>${t('tournament.against')}</th><th>${t('tournament.place')}</th><th>${t('tournament.score')}</th></tr></thead>
       <tbody>${rows}</tbody></table>
+      <button id="bracket" class="quiet">${t('tournament.bracket')}</button>
       <button id="back">${t('watching.back')}</button>
     </div>`;
 }

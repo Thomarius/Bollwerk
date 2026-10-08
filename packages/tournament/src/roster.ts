@@ -48,7 +48,9 @@ export function createTeams(
     }
     const leader = members[0] as Member;
     if (id === archTeam) {
-      // The archnemesis leads its team, a level above anyone else the field was dealt.
+      // The archnemesis leads its team, a level above anyone else the field was dealt, and
+      // his teammates are the strongest the range allows (the user's, 2026-10-08).
+      for (const member of members) member.level = levels.max;
       leader.name = settings.archnemesis as string;
       leader.level = levels.max + 1;
     }

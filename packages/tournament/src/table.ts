@@ -1,4 +1,4 @@
-import type { Personality } from '@bollwerk/config';
+import type { MatchSettings, Personality } from '@bollwerk/config';
 import type { MatchState } from '@bollwerk/sim';
 
 import { placings } from './placement.js';
@@ -38,6 +38,16 @@ export function matchTable(save: Save, teams: readonly number[]): MatchTable {
     })),
   );
   return { seats, teams: [...teams] };
+}
+
+/**
+ * The settings every match of a tournament is played on: its rounds, its team size, and its
+ * continues — the rules' own, `ruleContinues`, for a tournament saved before they were a
+ * setting.
+ */
+export function matchSettingsOf(save: Save, ruleContinues: number): MatchSettings {
+  const { maxRounds, teamSize, continues } = save.settings;
+  return { maxRounds, teamSize, continues: continues ?? ruleContinues };
 }
 
 /**

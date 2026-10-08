@@ -15,6 +15,11 @@ export const MatchSettingsSchema = z.strictObject({
   maxRounds: z.number().int().positive(),
   /** Players per team; one is free-for-all. */
   teamSize: z.number().int().positive(),
+  /**
+   * Continues each player has, so lives less one: failing to seal spends one (PLAN §1.5).
+   * Offered as lives, 1 to 5, from the test session of 2026-10-08.
+   */
+  continues: z.number().int().nonnegative(),
 });
 export type MatchSettings = z.infer<typeof MatchSettingsSchema>;
 
@@ -22,9 +27,15 @@ const RangeSchema = z
   .strictObject({ min: z.number().int().positive(), max: z.number().int().positive() })
   .refine((r) => r.max >= r.min, { message: 'max must be >= min', path: ['max'] });
 
+/** A range that may start at nothing: no continues is a single life. */
+const CountRangeSchema = z
+  .strictObject({ min: z.number().int().nonnegative(), max: z.number().int().nonnegative() })
+  .refine((r) => r.max >= r.min, { message: 'max must be >= min', path: ['max'] });
+
 export const SettingBoundsSchema = z.strictObject({
   maxRounds: RangeSchema,
   teamSize: RangeSchema,
+  continues: CountRangeSchema,
 });
 export type SettingBounds = z.infer<typeof SettingBoundsSchema>;
 
@@ -38,7 +49,11 @@ function clamp(value: number, range: { min: number; max: number }): number {
  */
 export function defaultSettings(ruleset: Ruleset, bounds: SettingBounds): MatchSettings {
   const rounds = ruleset.scoring.maxRounds ?? bounds.maxRounds.max;
-  return { maxRounds: clamp(rounds, bounds.maxRounds), teamSize: 1 };
+  return {
+    maxRounds: clamp(rounds, bounds.maxRounds),
+    teamSize: 1,
+    continues: clamp(ruleset.elimination.continues, bounds.continues),
+  };
 }
 
 /**
@@ -55,6 +70,7 @@ export function mergeSettings(
     value >= range.min && value <= range.max;
   if (!within(next.maxRounds, bounds.maxRounds)) return null;
   if (!within(next.teamSize, bounds.teamSize)) return null;
+  if (!within(next.continues, bounds.continues)) return null;
   return next;
 }
 
@@ -66,6 +82,7 @@ export function applySettings(ruleset: Ruleset, settings: MatchSettings): Rulese
   return RulesetSchema.parse({
     ...ruleset,
     scoring: { ...ruleset.scoring, maxRounds: settings.maxRounds },
+    elimination: { ...ruleset.elimination, continues: settings.continues },
   });
 }
 

@@ -181,11 +181,12 @@
   },
   "lobby.freeForAll": "Jeder gegen jeden",
   "lobby.teamsOf": "Teams zu {n}",
-  "lobby.statement": "{players} Spieler · {teams} · {rounds} Runden, dann gewinnt die höchste Punktzahl.",
+  "lobby.statement": "{players} Spieler · {teams} · {rounds} Runden · {lives} Leben, dann gewinnt die höchste Punktzahl.",
   "lobby.teams": "Teams",
   "lobby.teamSize": "Teamgröße",
   "lobby.players": "Spieler",
   "lobby.rounds": "Runden",
+  "lobby.lives": "Leben",
   "lobby.seatAria": "Wer auf Platz {n} sitzt",
   "lobby.level": "Stufe {n}",
   "lobby.youPlay": "Du spielst",
@@ -436,6 +437,7 @@
     "other": "und {n} weitere"
   },
   "tournament.nextMatch": "Als Nächstes: {stage}",
+  "tournament.lastMatch": "Das letzte Spiel: Wer es gewinnt, gewinnt das Turnier.",
   "tournament.play": "Spiel starten",
   "tournament.continue": "Weiter",
   "tournament.replayNote": "Das Spiel wurde vor seinem Ende verlassen: Es wird noch einmal gespielt.",
@@ -466,5 +468,12 @@
   },
   "browser.tournament": "Turnier von {team}",
   "tournament.members": "Teammitglieder",
-  "tournament.membersNote": "Deine Mitspieler sind Bots, hier eingestellt. Freunde, die einem Spiel beitreten, spielen an ihrer Stelle."
+  "tournament.membersNote": "Deine Mitspieler sind Bots, hier eingestellt. Freunde, die einem Spiel beitreten, spielen an ihrer Stelle.",
+  "tournament.bracket": "Turnierbaum",
+  "bracket.title": "Die K.‑o.‑Runde",
+  "bracket.hint": "Jedes Kästchen ein Spiel, verbunden mit dem, in das sein Sieger weiterzieht. Zeig auf ein Kästchen für seine Teams; ein Klick lässt sie stehen.",
+  "bracket.later": "Steht noch nicht fest.",
+  "bracket.toPlay": "Noch zu spielen:",
+  "bracket.rolled": "Unter den anderen entschieden:",
+  "bracket.played": "Gespielt:"
 }

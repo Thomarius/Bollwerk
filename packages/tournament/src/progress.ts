@@ -278,7 +278,32 @@ function rollMatch(
     strength(save.teams[id] as (typeof save.teams)[number], config, hostLevel),
   );
   const order = rollOrder(teams, strengths, streamFor(save.settings.seed, `roll:${step}:${match}`));
+  // The archnemesis goes through every rolled match that could put him out before the final
+  // — the league's, the knockout's before its final, the losers' bracket's — where the rolled
+  // places of the rest stand. A winners' bracket match only sends a loser down, so there he
+  // takes his chances; the final, and any match the host's team plays him, are his to lose
+  // (the user's, 2026-10-08).
+  const arch = teams.findIndex((id) => save.teams[id]?.archnemesis === true);
+  if (arch >= 0 && hostLevel === undefined && archnemesisCarried(save, step)) {
+    const id = teams[arch] as number;
+    order.splice(order.indexOf(id), 1);
+    order.unshift(id);
+  }
   return { teams: [...teams], order, scores: null };
+}
+
+/** Whether the archnemesis wins a rolled match at this step, rather than taking his chances. */
+function archnemesisCarried(save: Save, step: number): boolean {
+  const at = stepsOf(save)[step];
+  switch (at?.kind) {
+    case 'league':
+    case 'losers':
+      return true;
+    case 'knockout':
+      return save.settings.knockout === 'single' && at.round < save.plan.rounds.length - 1;
+    default:
+      return false;
+  }
 }
 
 /**

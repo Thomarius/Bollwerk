@@ -69,7 +69,8 @@ export function runTournaments(argv: string[], bundle: ConfigBundle): void {
   const limits: SettingLimits = {
     players: bundle.ruleset.players,
     teamSize: bundle.server.lobbySettings.teamSize,
-    maxRounds: bundle.server.lobbySettings.maxRounds,
+    maxRounds: bundle.tournament.maxRounds,
+    continues: bundle.server.lobbySettings.continues,
   };
   const widest = teamLimits(teamSize, limits.players);
   if (widest === null) usageError(`no match can be played in teams of ${teamSize}`);

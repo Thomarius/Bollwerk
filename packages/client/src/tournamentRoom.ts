@@ -1,9 +1,17 @@
+import { defaultConfigBundle } from '@bollwerk/config';
 import type { Seat, ServerMessage, TournamentTable } from '@bollwerk/protocol';
-import { HOST_TEAM, mapSeed, matchTable, type Progress, type Save } from '@bollwerk/tournament';
+import {
+  HOST_TEAM,
+  mapSeed,
+  matchSettingsOf,
+  matchTable,
+  type Progress,
+  type Save,
+} from '@bollwerk/tournament';
 
 import { ServerConnection } from './net/connection.js';
 import { NetworkMatch } from './net/networkMatch.js';
-import { stageName } from './tournamentText.js';
+import { stageLabel } from './tournamentText.js';
 
 /**
  * A tournament's room on the server (docs/TOURNAMENT.md T6), held by its host for as long as
@@ -31,10 +39,10 @@ export function roomTable(save: Save, progress: Progress): TournamentTable | nul
       open: seat.team === hostTeam && seat.level !== null,
     })),
     teamNames: teams.map((id) => save.teams[id]?.name ?? ''),
-    settings: { maxRounds: save.settings.maxRounds, teamSize: save.settings.teamSize },
+    settings: matchSettingsOf(save, defaultConfigBundle.ruleset.elimination.continues),
     seed: mapSeed(save, progress.done),
     tournament: { id: save.id, step: progress.done },
-    stage: stageName(save, progress.done),
+    stage: stageLabel(save, progress.done),
   };
 }
 

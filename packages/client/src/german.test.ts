@@ -25,8 +25,12 @@ function view(over: Partial<LobbyView> = {}): LobbyView {
     humanPlayer: 0,
     seats: [seat(0, 'Ada'), seat(1, 'Bo')],
     bots: [5, 5, 5, 5],
-    settings: { maxRounds: 10, teamSize: 2 },
-    settingBounds: { maxRounds: { min: 5, max: 20 }, teamSize: { min: 1, max: 4 } },
+    settings: { maxRounds: 10, teamSize: 2, continues: 2 },
+    settingBounds: {
+      maxRounds: { min: 5, max: 20 },
+      teamSize: { min: 1, max: 4 },
+      continues: { min: 0, max: 4 },
+    },
     teams: [0, 0, 1, 1],
     playerLimits: { min: 2, max: 8 },
     seed: 42,
@@ -56,7 +60,9 @@ describe('in German', () => {
     clean(host);
     expect(host).toContain('Spiel starten');
     expect(host).toContain('Team A');
-    clean(lobbyMarkup(view({ humanPlayer: 1, settings: { maxRounds: 10, teamSize: 1 } })));
+    clean(
+      lobbyMarkup(view({ humanPlayer: 1, settings: { maxRounds: 10, teamSize: 1, continues: 2 } })),
+    );
   });
 
   it('writes the open games, the gallery and the credits in German', () => {

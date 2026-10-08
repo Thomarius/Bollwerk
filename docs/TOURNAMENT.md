@@ -42,12 +42,13 @@ only what is still open.
 | Team name         | text                         | Team size 2 or more only. At size 1 the team is the player.                                                                       |
 | Your team's bots  | a name and level each        | One per seat beyond the host's. Fixed for the tournament, like everyone else's.                                                   |
 | Opponents' levels | a range, _x_ to _y_          | Each opponent bot is dealt a level in the range.                                                                                  |
-| Archnemesis       | on/off, and a name           | One bot at _y_ + 1, the leader (first seat) of its team. Needs _y_ ≤ 9.                                                           |
+| Archnemesis       | on/off, and a name           | One bot at _y_ + 1, the leader (first seat) of its team; his teammates at _y_. Needs _y_ ≤ 9.                                     |
 | Length            | Short, Medium, Long          | Sets the field size, which is not shown (§1.3).                                                                                   |
 | League stage      | on/off                       | §1.4.                                                                                                                             |
 | Knockout          | single or double elimination | §1.5.                                                                                                                             |
 | Match size        | min–max teams a match        | Shown only at team sizes 1 (2–8 teams) and 2 (2–4). Sizes 3 and 4 allow only two teams a match, so every match is 3 v 3 or 4 v 4. |
-| Rounds a match    | the lobby's bounds           | One value for every match, the final included.                                                                                    |
+| Rounds a match    | 1–15                         | One value for every match, the final included (`tournament.maxRounds`).                                                           |
+| Lives             | 1–5                          | Each player's, as in the lobby: continues 0–4, three lives by default.                                                            |
 
 Not settings, on purpose: the league's points (§1.4), tie-breaks (§1.6), and the field size.
 
@@ -108,6 +109,12 @@ everything; ARCHIVE 12ze.)
   late as possible. Without a league, by a random draw. Either way, **the archnemesis's team
   is placed in the half of the bracket opposite the host's**, so the earliest the two can
   meet is the final. In double elimination they can also meet in the losers' bracket.
+- **The archnemesis reaches the final** unless the host's team puts him out: a quick roll
+  that has him in it places him first in the league, the losers' bracket and single
+  elimination's rounds before the final. In double elimination's winners' bracket he rolls
+  as anyone does, so he may drop into the losers' bracket by chance, and win his way back
+  from there. A match the host's team plays against him is played, not rolled, and counts as
+  it ends (the test session, 2026-10-08).
 - **Only a match's winner goes on.** In single elimination everyone else is out.
 - **Double elimination.** The winners' bracket runs as single elimination. Every team it
   beats drops into the losers' bracket, and a team the losers' bracket beats is out. The
@@ -163,6 +170,12 @@ everything; ARCHIVE 12ze.)
   - in the league, the top of the table and the host's neighbourhood in it;
   - in the knockout, the bracket around the host's path: the next opponents, and who is
     still alive elsewhere, the archnemesis included.
+
+  The next match is framed when it is the tournament's last, its stage under a trophy. A
+  **Bracket** button, there and on the end screens, opens the knockout as a tree of matches
+  in a window of its own: rounds as columns, the losers' bracket in a band below, the
+  host's road in gold, the archnemesis's matches marked; pointing at a match shows its teams
+  and places, a click keeps them shown.
 
   From there the host plays the next match or returns to the menu.
 
@@ -269,4 +282,5 @@ documents brought up to date.
   compact (placements as small arrays, names as indices into the pools) and the save is
   measured in T1.
 - **The archnemesis in double elimination** can meet the host in the losers' bracket before
-  the final. That is accepted: it makes for a better story, not a worse one.
+  the final. That is accepted: it makes for a better story, not a worse one. He can also be
+  rolled out of the losers' bracket there, the one way he misses the final without the host.

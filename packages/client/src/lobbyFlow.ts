@@ -92,6 +92,7 @@ function drawLobby(view: LobbyView, on: LobbyHandlers): void {
   number('#team-size', (teamSize) => on.table({ settings: { ...view.settings, teamSize } }));
   number('#player-count', (playerCount) => on.table({ playerCount }));
   number('#max-rounds', (maxRounds) => on.table({ settings: { ...view.settings, maxRounds } }));
+  number('#lives', (lives) => on.table({ settings: { ...view.settings, continues: lives - 1 } }));
   for (const field of document.querySelectorAll<HTMLSelectElement>('.bot-select')) {
     field.addEventListener('change', () => {
       audio.play('select');

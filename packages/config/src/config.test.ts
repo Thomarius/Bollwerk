@@ -238,8 +238,12 @@ describe('cross-file validation', () => {
 });
 
 describe('lobby settings', () => {
-  const bounds = { maxRounds: { min: 5, max: 20 }, teamSize: { min: 1, max: 4 } };
-  const ffa = (maxRounds: number) => ({ maxRounds, teamSize: 1 });
+  const bounds = {
+    maxRounds: { min: 5, max: 20 },
+    teamSize: { min: 1, max: 4 },
+    continues: { min: 0, max: 4 },
+  };
+  const ffa = (maxRounds: number) => ({ maxRounds, teamSize: 1, continues: 2 });
 
   it('opens on the ruleset cap, pulled inside the bounds, as free-for-all', () => {
     const rules = (maxRounds: number | null) => ({
@@ -256,12 +260,21 @@ describe('lobby settings', () => {
     expect(mergeSettings(ffa(10), { maxRounds: 7 }, bounds)).toEqual(ffa(7));
     expect(mergeSettings(ffa(10), { maxRounds: 21 }, bounds)).toBeNull();
     expect(mergeSettings(ffa(10), { maxRounds: 4 }, bounds)).toBeNull();
-    expect(mergeSettings(ffa(10), { teamSize: 2 }, bounds)).toEqual({ maxRounds: 10, teamSize: 2 });
+    expect(mergeSettings(ffa(10), { teamSize: 2 }, bounds)).toEqual({
+      maxRounds: 10,
+      teamSize: 2,
+      continues: 2,
+    });
     expect(mergeSettings(ffa(10), { teamSize: 5 }, bounds)).toBeNull();
+    expect(mergeSettings(ffa(10), { continues: 4 }, bounds)).toEqual({ ...ffa(10), continues: 4 });
+    expect(mergeSettings(ffa(10), { continues: 5 }, bounds)).toBeNull();
   });
 
   it('applies over the ruleset and re-validates the result', () => {
     expect(applySettings(defaultRuleset, ffa(7)).scoring.maxRounds).toBe(7);
+    expect(applySettings(defaultRuleset, { ...ffa(7), continues: 0 }).elimination.continues).toBe(
+      0,
+    );
     expect(() => applySettings(defaultRuleset, ffa(0))).toThrow();
   });
 
@@ -287,7 +300,11 @@ describe('lobby settings', () => {
       ...defaultConfigBundle,
       server: {
         ...defaultServerConfig,
-        lobbySettings: { maxRounds: { min: 12, max: 20 }, teamSize: { min: 1, max: 4 } },
+        lobbySettings: {
+          maxRounds: { min: 12, max: 20 },
+          teamSize: { min: 1, max: 4 },
+          continues: { min: 0, max: 4 },
+        },
       },
     });
     expect(problems.some((p) => p.includes('lobbySettings.maxRounds'))).toBe(true);

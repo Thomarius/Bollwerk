@@ -22,7 +22,8 @@ const config = defaultConfigBundle.tournament;
 const limits: SettingLimits = {
   players: defaultConfigBundle.ruleset.players,
   teamSize: defaultConfigBundle.server.lobbySettings.teamSize,
-  maxRounds: defaultConfigBundle.server.lobbySettings.maxRounds,
+  maxRounds: defaultConfigBundle.tournament.maxRounds,
+  continues: defaultConfigBundle.server.lobbySettings.continues,
 };
 
 function settingsFor(over: Partial<TournamentSettings> = {}): TournamentSettings {
@@ -236,6 +237,8 @@ describe('a tournament', () => {
     const arch = save.teams.filter((t) => t.archnemesis);
     expect(arch).toHaveLength(1);
     expect(arch[0]?.members[0]).toMatchObject({ name: 'Nemesis', level: 8 });
+    // His teammates the strongest the range allows.
+    expect(arch[0]?.members.slice(1).map((m) => m.level)).toEqual([7, 7]);
     for (const team of save.teams.slice(1)) {
       for (const [seat, member] of team.members.entries()) {
         if (team.archnemesis && seat === 0) continue;
@@ -244,6 +247,49 @@ describe('a tournament', () => {
         expect(member.personality).not.toBeNull();
       }
     }
+  });
+
+  it('never puts the archnemesis out before the final, unless the host does', () => {
+    for (let seed = 0; seed < 60; seed++) {
+      for (const shape of [
+        { knockout: 'single' as const, matchTeams: { min: 2, max: 4 } },
+        { knockout: 'double' as const, league: true, length: 'long' as const },
+        { knockout: 'double' as const, matchTeams: { min: 3, max: 3 } },
+      ]) {
+        const save = make({ seed, archnemesis: 'Nemesis', ...shape });
+        const arch = save.teams.findIndex((t) => t.archnemesis);
+        // The host as strong as can be, so tournaments go deep; or weak, out at once.
+        const level = seed % 2 === 0 ? 10 : 1;
+        const progress = playOut(save, (s) => rollHostMatch(s, config, level));
+        const out = progress.outStep(arch);
+        if (out === null) continue;
+        const steps = stepsOf(save);
+        const last = out === steps.length - 1;
+        const byHost = save.steps[out]?.matches.some(
+          (m) => m.teams.includes(arch) && m.teams.includes(HOST_TEAM),
+        );
+        expect(last || byHost, `seed ${seed}, out at step ${out}`).toBe(true);
+      }
+    }
+  });
+
+  it('lets the archnemesis drop to the losers bracket by chance in double elimination', () => {
+    let dropped = 0;
+    for (let seed = 0; seed < 80; seed++) {
+      const save = make({ seed, archnemesis: 'Nemesis', knockout: 'double', length: 'long' });
+      const arch = save.teams.findIndex((t) => t.archnemesis);
+      const progress = playOut(save, (s) => rollHostMatch(s, config, 10));
+      const steps = stepsOf(save);
+      if (
+        save.steps.some(
+          (record, i) =>
+            steps[i]?.kind === 'losers' && record.matches.some((m) => m.teams.includes(arch)),
+        )
+      )
+        dropped++;
+      void progress;
+    }
+    expect(dropped).toBeGreaterThan(0);
   });
 
   it('keeps the archnemesis from the host until the final', () => {

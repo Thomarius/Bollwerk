@@ -109,6 +109,23 @@ export function validateConfigBundle(bundle: ConfigBundle): string[] {
     );
   }
 
+  // Likewise the ruleset's continues, which a room opens on.
+  const continues = ruleset.elimination.continues;
+  const lives = bundle.server.lobbySettings.continues;
+  if (continues < lives.min || continues > lives.max) {
+    problems.push(
+      `server: lobbySettings.continues ${lives.min}-${lives.max} does not include the ` +
+        `ruleset's continues of ${continues}.`,
+    );
+  }
+  const tournamentRounds = bundle.tournament.maxRounds;
+  if (rounds !== null && (rounds < tournamentRounds.min || rounds > tournamentRounds.max)) {
+    problems.push(
+      `tournament: maxRounds ${tournamentRounds.min}-${tournamentRounds.max} does not include ` +
+        `the ruleset's maxRounds of ${rounds}.`,
+    );
+  }
+
   return problems;
 }
 

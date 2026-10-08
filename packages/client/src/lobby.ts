@@ -96,7 +96,7 @@ export function teamSizesFor(view: LobbyView): number[] {
 
 /** The table's settings: controls for the host, a statement for everyone else. */
 function tableControls(view: LobbyView, isHost: boolean): string {
-  const { maxRounds, teamSize } = view.settings;
+  const { maxRounds, teamSize, continues } = view.settings;
   const teamName = (size: number): string =>
     size === 1 ? t('lobby.freeForAll') : t('lobby.teamsOf', { n: size });
   if (view.tournament) {
@@ -111,6 +111,7 @@ function tableControls(view: LobbyView, isHost: boolean): string {
       players: view.playerCount,
       teams: teamName(teamSize),
       rounds: maxRounds,
+      lives: continues + 1,
     });
     return `<p class="note settings">${statement}</p>`;
   }
@@ -128,6 +129,9 @@ function tableControls(view: LobbyView, isHost: boolean): string {
       </label>
       <label>${t('lobby.rounds')}
         <select id="max-rounds" aria-label="${t('lobby.rounds')}">${rangeOptions(min, max, maxRounds)}</select>
+      </label>
+      <label>${t('lobby.lives')}
+        <select id="lives" aria-label="${t('lobby.lives')}">${rangeOptions(view.settingBounds.continues.min + 1, view.settingBounds.continues.max + 1, continues + 1)}</select>
       </label>
     </div>`;
 }

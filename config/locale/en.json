@@ -184,11 +184,12 @@
   },
   "lobby.freeForAll": "Free-for-all",
   "lobby.teamsOf": "Teams of {n}",
-  "lobby.statement": "{players} players · {teams} · {rounds} rounds, then the best score wins.",
+  "lobby.statement": "{players} players · {teams} · {rounds} rounds · {lives} lives, then the best score wins.",
   "lobby.teams": "Teams",
   "lobby.teamSize": "Team size",
   "lobby.players": "Players",
   "lobby.rounds": "Rounds",
+  "lobby.lives": "Lives",
   "lobby.seatAria": "Who sits in seat {n}",
   "lobby.level": "Level {n}",
   "lobby.youPlay": "You play",
@@ -439,6 +440,7 @@
     "other": "and {n} more"
   },
   "tournament.nextMatch": "Next: {stage}",
+  "tournament.lastMatch": "The last match: win it, and the tournament is yours.",
   "tournament.play": "Play match",
   "tournament.continue": "Continue",
   "tournament.replayNote": "The match was left before its end: it will be played again.",
@@ -469,5 +471,12 @@
   },
   "browser.tournament": "Tournament of {team}",
   "tournament.members": "Team members",
-  "tournament.membersNote": "Your teammates are bots, set up here. Friends who join a match play in their place."
+  "tournament.membersNote": "Your teammates are bots, set up here. Friends who join a match play in their place.",
+  "tournament.bracket": "Bracket",
+  "bracket.title": "The knockout",
+  "bracket.hint": "Each box a match, joined to the one its winner goes on to. Point at a box for its teams; click to keep them shown.",
+  "bracket.later": "To be decided.",
+  "bracket.toPlay": "Still to be played:",
+  "bracket.rolled": "Decided among the others:",
+  "bracket.played": "Played:"
 }

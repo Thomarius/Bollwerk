@@ -39,6 +39,16 @@ export function stageName(save: Save, step: number): string {
   }
 }
 
+/** Whether a step is the tournament's last: its final, the match that decides it. */
+export function isLastStep(save: Save, step: number): boolean {
+  return step === stepsOf(save).length - 1;
+}
+
+/** A step's name, a trophy before it when it is the last (the test session of 2026-10-08). */
+export function stageLabel(save: Save, step: number): string {
+  return `${isLastStep(save, step) ? '🏆 ' : ''}${stageName(save, step)}`;
+}
+
 /** The settings that shape a tournament, in a line: "Medium · League · Double elimination". */
 export function settingsLine(settings: TournamentSettings): string {
   const parts = [

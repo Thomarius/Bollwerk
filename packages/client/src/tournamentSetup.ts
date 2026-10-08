@@ -36,6 +36,8 @@ export interface TournamentForm {
   knockout: 'single' | 'double';
   matchTeams: { min: number; max: number };
   maxRounds: number;
+  /** Lives less one, as the match settings count them. */
+  continues: number;
 }
 
 const bundle = defaultConfigBundle;
@@ -43,7 +45,8 @@ const bundle = defaultConfigBundle;
 export const TOURNAMENT_LIMITS: SettingLimits = {
   players: bundle.ruleset.players,
   teamSize: bundle.server.lobbySettings.teamSize,
-  maxRounds: bundle.server.lobbySettings.maxRounds,
+  maxRounds: bundle.tournament.maxRounds,
+  continues: bundle.server.lobbySettings.continues,
 };
 
 /** A level for a new teammate: the level a new seat's bot gets. */
@@ -79,6 +82,7 @@ export function defaultForm(names: NameSource): TournamentForm {
     // Two to four teams a match: larger free-for-alls are offered, not the first thing met.
     matchTeams: { min: 2, max: 4 },
     maxRounds: bundle.ruleset.scoring.maxRounds ?? TOURNAMENT_LIMITS.maxRounds.max,
+    continues: bundle.ruleset.elimination.continues,
   };
 }
 
@@ -152,6 +156,7 @@ export function settingsOf(
     knockout: form.knockout,
     matchTeams: { ...form.matchTeams },
     maxRounds: form.maxRounds,
+    continues: form.continues,
   };
 }
 
@@ -209,7 +214,7 @@ function teamRows(form: TournamentForm, hostName: string): string {
 }
 
 export function setupMarkup(form: TournamentForm, hostName: string): string {
-  const { teamSize: sizes, maxRounds: rounds } = TOURNAMENT_LIMITS;
+  const { teamSize: sizes, maxRounds: rounds, continues } = TOURNAMENT_LIMITS;
   const teamName =
     form.teamSize > 1
       ? `<label>${t('tournament.teamName')}<input id="team-name" type="text" maxlength="16" value="${escape(form.teamName)}" /></label>`
@@ -253,6 +258,7 @@ export function setupMarkup(form: TournamentForm, hostName: string): string {
             <label>${t('tournament.archnemesis')}${choice('archnemesis', t('tournament.archnemesis'), ['no', 'yes'] as const, form.archnemesis ? 'yes' : 'no', (v) => (v === 'yes' ? t('tournament.archOn') : t('tournament.archOff')))}</label>
             ${archName}
             <label>${t('tournament.rounds')}<select id="max-rounds" aria-label="${t('tournament.rounds')}">${rangeOptions(rounds.min, rounds.max, form.maxRounds)}</select></label>
+            <label>${t('lobby.lives')}<select id="lives" aria-label="${t('lobby.lives')}">${rangeOptions(continues.min + 1, continues.max + 1, form.continues + 1)}</select></label>
           </div>
         </section>
       </div>

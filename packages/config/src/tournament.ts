@@ -41,6 +41,13 @@ export const TournamentConfigSchema = z.strictObject({
    * like a contest rather than replay the bots' real gaps.
    */
   levelRatings: z.array(z.number().positive()).length(MAX_LEVEL),
+  /**
+   * The rounds a tournament's match may be set to: down to one, where a single match's lobby
+   * starts at five (the test session of 2026-10-08).
+   */
+  maxRounds: z
+    .strictObject({ min: z.number().int().positive(), max: z.number().int().positive() })
+    .refine((r) => r.max >= r.min, { message: 'max must be >= min', path: ['max'] }),
   names: z.strictObject({
     /** Bots: given names that read well in most countries, in every language alike. */
     players: NamePoolSchema,

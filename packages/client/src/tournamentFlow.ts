@@ -4,6 +4,7 @@ import {
   Progress,
   coinFor,
   mapSeed,
+  matchSettingsOf,
   matchTable,
   placedFrom,
   recordMatch,
@@ -20,6 +21,7 @@ import { localMatchFor, localSession, networkSession, type Setup } from './sessi
 import type { TournamentExits } from './tournamentMenu.js';
 import { TournamentRoom, roomTable } from './tournamentRoom.js';
 import { deleteTournament, loadTournament, writeTournament } from './tournamentSaves.js';
+import { openBracket } from './tournamentBracketView.js';
 import { endingMarkup, tournamentMarkup, type RoomPanel } from './tournamentView.js';
 
 /**
@@ -104,6 +106,10 @@ function showTournament(open: Open, notice: string | null): void {
       }
       playHere(open, progress);
     });
+    app!.querySelector('#bracket')?.addEventListener('click', () => {
+      audio.play('select');
+      openBracket(save, progress, () => audio.play('select'));
+    });
     app!.querySelector('#back')?.addEventListener('click', () => {
       audio.play('select');
       if (room !== null) room.onChange = null;
@@ -139,6 +145,10 @@ function showEnding(open: Open, progress: Progress): void {
   deleteTournament(open.save.id);
   app!.innerHTML = endingMarkup(open.save, progress);
   audio.music(progress.status.kind === 'won' ? 'music_victory' : 'music_defeat');
+  app!.querySelector('#bracket')?.addEventListener('click', () => {
+    audio.play('select');
+    openBracket(open.save, progress, () => audio.play('select'));
+  });
   app!.querySelector('#back')?.addEventListener('click', () => {
     audio.play('select');
     open.exits.menu();
@@ -160,7 +170,7 @@ function matchFor(
     seed: mapSeed(save, step),
     styles: preferredStyles(),
     name: save.settings.hostName,
-    settings: { maxRounds: save.settings.maxRounds, teamSize: save.settings.teamSize },
+    settings: matchSettingsOf(save, defaultConfigBundle.ruleset.elimination.continues),
     teams: table.seats.map((s) => s.team),
     names: table.seats.map((s) => s.name),
     personalities: table.seats.map((s) => s.personality),

@@ -81,6 +81,8 @@ export function openNewTournament(common: Common, exits: TournamentExits): void 
         return change({ levels: { ...form.levels, max: number(target) } });
       case 'max-rounds':
         return change({ maxRounds: number(target) });
+      case 'lives':
+        return change({ continues: number(target) - 1 });
       case 'mate-level':
         return change({
           teamBots: form.teamBots.map((b, i) => (i === mate ? { ...b, level: number(target) } : b)),

@@ -5991,3 +5991,38 @@ in a destroyed scene, and a look finished for a scene already gone is let go rat
 thrown away into it. Reproduced in headless Chrome by taking the scene down the moment the
 next looks began to be made, eight players watched with Random looks: the old teardown failed
 in `renderOffscreen`, as the users saw; the new one left nothing failing.
+
+## 12zp. The tournament test session's second feedback (2026-10-08)
+
+From the users' play-testing round (TOURNAMENT T8), triaged with them first:
+
+- **Lives, one to five**, three by default, chosen by the host: in the lobby beside Rounds
+  (the users' choice of place) and in a new tournament's settings. A lobby setting like the
+  others, `MatchSettings.continues`, bounded by `server.lobbySettings.continues` (0–4) and
+  applied over `elimination.continues`; the bundle checks the ruleset's own value lies in the
+  bounds. It changes what a room is told, so **protocol 19**. A tournament saved before it has
+  no `continues` and plays on the ruleset's (`matchSettingsOf`).
+- **A tournament's matches of 1 to 15 rounds** (`tournament.maxRounds`), a single round
+  included; the lobby's own bounds stay 5–20. A one-round match was played out headless: it
+  ends at its first resolution, on points.
+- **The archnemesis**: only he is a level above the chosen top, his teammates at the top
+  rather than dealt from the range. He never drops out before the final unless the host's
+  team puts him out: a quick roll with him in it places him first in the league, the losers'
+  bracket and single elimination's rounds before the final. In double elimination's winners'
+  bracket he rolls as anyone does, so he may drop into the losers' bracket by chance — the
+  users' wish — and can be rolled out of it. A match against the host's team is played, and
+  its result stands (their answer). Tested over seeds: never out before the final without the
+  host in single elimination; in double elimination, seen in the losers' bracket.
+- **The last match marked**: the next match's frame in gold with a line, "The last match: win
+  it, and the tournament is yours", and a trophy before its stage, here and in the room's
+  lobby (`stageLabel`).
+- **The bracket** (the users chose "a match tree, hover for details" of three drafts): a
+  Bracket button on the tournament and end screens opens the knockout in a window of its own,
+  a box a match rather than a team, since a knockout of 128 teams in pairs is 127 matches.
+  `bracketLayout` (pure, tested) lays the winners' bracket as a tree, each match level with
+  the middle of those it draws on; double elimination's losers' bracket in a band below, joined
+  where a winner is known, and its final at the right. The host's road is gold, the
+  archnemesis's matches carry a red dot, a played match is lettered with its winner while the
+  tree has 24 rows or fewer. Pointing at a box shows its stage and teams, placed with scores
+  or rolled; a click keeps them shown. Drawn at its own size and scrolled: fitted to the
+  window, a long double elimination's 64 first-round boxes were too small to read.

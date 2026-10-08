@@ -6,6 +6,7 @@ import {
   coinFor,
   createTournament,
   mapSeed,
+  matchSettingsOf,
   matchTable,
   placedFrom,
   recordMatch,
@@ -19,7 +20,8 @@ const config = defaultConfigBundle.tournament;
 const limits = {
   players: defaultConfigBundle.ruleset.players,
   teamSize: defaultConfigBundle.server.lobbySettings.teamSize,
-  maxRounds: defaultConfigBundle.server.lobbySettings.maxRounds,
+  maxRounds: defaultConfigBundle.tournament.maxRounds,
+  continues: defaultConfigBundle.server.lobbySettings.continues,
 };
 
 function tournament(): Save {
@@ -60,10 +62,10 @@ describe('a tournament match, played locally', () => {
       names: table.seats.map((s) => s.name),
       personalities: table.seats.map((s) => s.personality),
       teams: table.seats.map((s) => s.team),
-      ruleset: applySettings(defaultConfigBundle.ruleset, {
-        maxRounds: save.settings.maxRounds,
-        teamSize: save.settings.teamSize,
-      }),
+      ruleset: applySettings(
+        defaultConfigBundle.ruleset,
+        matchSettingsOf(save, defaultConfigBundle.ruleset.elimination.continues),
+      ),
       tournament: { id: save.id, step: progress.done },
       record: (line) => lines.push(line),
       thinkBudgetMs: Number.POSITIVE_INFINITY,
