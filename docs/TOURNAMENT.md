@@ -7,7 +7,8 @@ ordinary match under the current rules. Every match without them is decided by a
 roll.
 
 This file is the design as agreed with the user (2026-10-08) and the plan to build it, in
-work packages. Like PLAN.md it says what is configurable and why, and leaves the values to
+work packages. **T1–T7 are built** (ARCHIVE 12ze–12zk); T8, the users' play-testing, is under
+way. Like PLAN.md it says what is configurable and why, and leaves the values to
 `config/*.json`. When a package is done, its summary moves to ARCHIVE.md and this file keeps
 only what is still open.
 
@@ -228,8 +229,7 @@ taking a table is T6's, with the protocol it needs.
 ### T4 — Saves and the menu — done (ARCHIVE 12zh)
 
 The menu's New tournament, Resume tournament and Single match; the new tournament's screen and
-the resume list; saves in local storage. Resume leads nowhere yet: playing is T5, and until
-then the list says so (`tournament.comingSoon`, to go with T5).
+the resume list; saves in local storage.
 
 ### T5 — The tournament flow, offline — done (ARCHIVE 12zi)
 

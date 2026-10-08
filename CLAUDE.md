@@ -50,7 +50,7 @@ Client dev query parameters: `?autostart=1&players=3&seed=7` (a random seed with
 `&snapshot=build` to jump to a phase (`&round=N` for one deep in a match, `&idle=1` to
 leave your seat undriven on the way, so you are soon knocked out), `&speed=10`,
 `&perf=1` for the frame-time readout (ARCHIVE 12n: a fixed 30 s window, Copy for the figures),
-`&style=flat|pixel|night|cyberpunk|blueprint|parchment|bricks|glass|chocolate|halloween|sakura|oktoberfest|opera|office|undersea|electric` for both looks (a one-look style sets only its own)
+`&style=flat|pixel|night|cyberpunk|blueprint|parchment|bricks|glass|chocolate|halloween|sakura|oktoberfest|opera|office|undersea|electric|cartoon|christmas|noir` for both looks (a one-look style sets only its own)
 (`&buildStyle=`, `&combatStyle=` for one), `&watch=1&level=8` to observe a bot match (`&personality=offensive` fixes every bot's),
 `&rounds=12` for the round cap, `&teams=2` for teams of two in seat order, `&lang=de` for a
 language (not saved). `?tournament=new` and `?tournament=resume` open the tournament screens,
@@ -73,7 +73,7 @@ rounds.
 | `analysis`       | Per-round match statistics, for bot soaks and recorded human play alike.   |
 | `tournament`     | Tournament mode's core: schedule, brackets, quick rolls, saves. No DOM.    |
 | `server`         | Authoritative match server, rooms, WebSocket, match recordings.            |
-| `client`         | Pixi renderer, eighteen visual styles, controls, HUD, netcode client.      |
+| `client`         | Pixi renderer, nineteen visual styles, controls, HUD, netcode client.      |
 | `desktop`        | Electron app for releases: the server behind a minimal window (M14).       |
 | `tools/headless` | Bot-vs-bot soak runs and map dumps.                                        |
 
@@ -150,77 +150,67 @@ Full detail in PLAN.md §1. The parts that surprise people:
 
 ## Status
 
-**Done** (2026-10-07; the latest release **v0.8.3**, 2026-10-07; protocol 17):
+**Done** (2026-10-08; the latest release **v0.8.3**, 2026-10-07; protocol 18 since, which a
+test session needs the server rebuilt and every page reloaded for):
 
-- **Two new styles** (2026-10-07, released as v0.8.3): Cartoon, a 1930s rubber-hose reel in
-  black and white with only the players in colour, everything moving on one beat in twelve
-  steps a second (ARCHIVE 12zb); and Christmas, snowy islands on Christmas Eve (ARCHIVE 12zc).
-
-- **A refactoring** (2026-10-07, ARCHIVE 12w), the game unchanged: bots plan in a third
-  less time (`SealPlanner`, `Look`, typed max-flow); the client stops redoing per frame what
-  rarely changes; the bot is `Gunner`, `Builder` and `Siting` (`ai/src/combat.ts`,
-  `building.ts`, `siting.ts`); main.ts is app, prefs, session, menu, lobbyFlow and
-  matchScreen, the last with `BoardEffects`; the HUD has `BoardLabels` and `EndScreen`;
-  the titles are titles.ts; a room's match is `MatchRunner`; the styles since Chocolate
-  extend `ShapeTheme`; seats are dealt by `dealSeats` and bots driven by `takeBotTurns`.
-  Protocol 17: the state hash takes in the piece schedule (`HASH_VERSION` 2), and
-  recordings name theirs by format. `npm run check` runs its four steps at once.
-- **Stronger bots** (2026-10-07, ARCHIVE 12x–12z; `docs/BOT_LEARNING.md`): the testers'
-  recordings measured piece by piece (`tools/headless/src/placements.ts`); bots plan round
-  tiles no piece can cover (`coverable`, `markUncoverable`), and once sealed widen their
-  wall to another castle or a stretch of land beside it (`widensWhenSealed`, `widen`) —
-  such a bot won 65 of 96 against two of the old. A learned fit (`fitWeights`, null by
-  default) and its trainer (`tools/headless/src/cem.ts`, `fitEval.ts`) matched the hand-made
-  fit; the learning work is paused.
+- **Tournament mode** (2026-10-08, `docs/TOURNAMENT.md`, ARCHIVE 12ze–12zk): the host's team
+  of people and bots against a field of named bot teams, through a league (one match size a
+  matchday) and a single- or double-elimination knockout, saved in the browser between
+  matches. The core is `packages/tournament` — a save is settings, field, plan and finished
+  steps, and `Progress` derives the rest; matches without the host's team are quick rolls
+  over linear level ratings. A match is played at a fixed table (`matchTable`, given names
+  and personalities), offline or in a room friends join by code to sit in the host's team
+  (protocol 18, `TournamentTable`); one left before its end is played again. Its last work
+  package, T8, is the users' play-testing round, under way.
+- **The first feedback of that round** (ARCHIVE 12zl, 12zm): the score bar sorts teams by
+  standing; the title's line glides without pause; the match's summary is larger and no
+  longer reveals the bots' personalities; and the looks' wipes are smoother — the coming
+  look primed in the pause before its banner (`Scene.prime`), a new random look made a
+  frame's share at a time (`withDrawBudget` in `IslandParts`).
 - **The game**: its rules, online play with rooms, a games browser, pause, and recording
   of every match (ARCHIVE 11e, each header stamped with the server's commit); team mode
-  (ARCHIVE 10u); bots as a skill level 1–10 chosen in the lobby and a personality dealt
-  from the seed, revealed at game over (M13, ARCHIVE 11x–11zb); bots sharing a few plans a
-  tick (ARCHIVE 12p) and skipping searches that cannot fit (ARCHIVE 12s).
-- **The looks**: eighteen styles for either look — Minimal, Medieval, Night, Cyberpunk,
+  (ARCHIVE 10u), the teams named where a table names them (`MatchState.teamNames`); bots as
+  a skill level 1–10 chosen in the lobby and a personality dealt from the seed (M13,
+  ARCHIVE 11x–11zb); bots sharing a few plans a tick (ARCHIVE 12p) and skipping searches
+  that cannot fit (ARCHIVE 12s).
+- **Stronger bots** (ARCHIVE 12x–12z; `docs/BOT_LEARNING.md`): bots plan round tiles no
+  piece can cover (`coverable`, `markUncoverable`), and once sealed widen their wall
+  (`widensWhenSealed`, `widen`) — such a bot won 65 of 96 against two of the old. A learned
+  fit (`fitWeights`, null by default) and its trainer (`tools/headless/src/cem.ts`) matched
+  the hand-made fit; the learning work is paused.
+- **A refactoring** (ARCHIVE 12w), the game unchanged: the bot is `Gunner`, `Builder` and
+  `Siting`; main.ts is app, prefs, session, menu, lobbyFlow and matchScreen, the last with
+  `BoardEffects`; a room's match is `MatchRunner`; the styles since Chocolate extend
+  `ShapeTheme`; seats are dealt by `dealSeats` and bots driven by `takeBotTurns`.
+- **The looks**: nineteen styles for either look — Minimal, Medieval, Night, Cyberpunk,
   Blueprint, Parchment, Toy bricks, Stained glass, Chocolate (ARCHIVE 11zy), Halloween
-  (ARCHIVE 12a), Sakura (ARCHIVE 12d), Oktoberfest (ARCHIVE 12e), Opera (ARCHIVE 12f),
-  Office (ARCHIVE 12l), Under the sea (ARCHIVE 12u), Electric (ARCHIVE 12v), Cartoon, a
-  rubber-hose reel in black and white, only the players in colour (ARCHIVE 12zb), and
-  Christmas, snowy islands on Christmas Eve (ARCHIVE 12zc) — over four
-  visual passes (M9–M12); every style carried to the panels, the big timer, the island
-  banners and the finish (ARCHIVE 11zz), and each with a piece of its own in the sea's corner
-  (`corner.ts`, ARCHIVE 12t); chosen from a gallery with Random — a new style every round, in
-  the title too (ARCHIVE 12q) — and changeable mid-match from the pause menu (ARCHIVE 12b).
-  A new style is drawn cheaply from the start and measured against Office with `&perf=1`
-  (ARCHIVE 12u: curves and round caps on every block cost four times as much).
+  (12a), Sakura (12d), Oktoberfest (12e), Opera (12f), Office (12l), Under the sea (12u),
+  Electric (12v), Cartoon, a rubber-hose reel in black and white (12zb), Christmas (12zc),
+  and Noir, a crime city at night as a cel-shaded graphic novel, hatched in ink (12zn) —
+  each carried to the panels, the big timer, the island banners and the finish (ARCHIVE
+  11zz), each with a piece in the sea's corner (`corner.ts`, 12t); chosen from a gallery with
+  Random, a new style every round (12q), and changeable mid-match from the pause menu (12b).
 - **Around a match**: How to play, the ranking between rounds, awards, a rematch, music
-  and sounds volumes, a pause menu with Leave match; two rounds of test-session feedback
-  (ARCHIVE 11n–11w, 11ze) and a trim of the menu's and lobby's texts with larger roster
-  figures and team tags (ARCHIVE 12c). Mouse only; Esc for pause is the one key.
+  and sounds volumes, a pause menu with Leave match; rounds of test-session feedback
+  (ARCHIVE 11n–11w, 11ze, 12zl). Mouse only; Esc for pause is the one key.
 - **Languages**: English and German, every text in `config/locale/`, chosen in the menu and
   pause menu, the desktop window in the system's language (M15, ARCHIVE 12g). A text is a key
   until shown (`t` in `client/src/i18n.ts`); a new text goes into every locale file, or
   `locale.test.ts` fails.
 - **Releases**: the desktop app, a portable file for Windows and Linux (M14, ARCHIVE
-  11zp–11zt); every audio file credited (ARCHIVE 11zx). Online clients catch up on the
-  server at once (ARCHIVE 11zg). Deployment is verified by a CI job, since there is no
-  Docker on this machine. The protocol is 18: a test session needs the server rebuilt and
-  every page reloaded. **UPnP** (ARCHIVE 12j): the desktop app's switch Open to the
-  internet, off by default, and `npm start -- --upnp` ask the router to open the port; the
-  lobby then offers an invite link. Never in the image.
+  11zp–11zt); every audio file credited (ARCHIVE 11zx). Deployment is verified by a CI job,
+  since there is no Docker on this machine. **UPnP** (ARCHIVE 12j): the desktop app's switch
+  Open to the internet, off by default, and `npm start -- --upnp` ask the router to open the
+  port; the lobby then offers an invite link. Never in the image.
 - **Balance** (M7, ARCHIVE 12h): a weekend soak of 22,656 matches found the points game on
-  target — almost every match decided at the cap, knockouts late and rare, two players fine,
-  the ladder in order — and one cliff, Level 4 to 5, ended by `carelessness` fading by
-  level. The default is to change no rule without a very good reason. `npm run soak`
-  reruns the whole plan, resumable (`tools/headless/src/soak.ts`; the plan as run in ARCHIVE 12h).
+  target and one cliff, Level 4 to 5, ended by `carelessness` fading by level. The default
+  is to change no rule without a very good reason. `npm run soak` reruns the whole plan.
 - **Rendering performance** (ARCHIVE 12n): 58–60 fps at eight players on an integrated GPU,
-  every effect kept, and no stutter as the looks swap; no memory kept by a swap of looks
-  (ARCHIVE 12q); Cyberpunk's "Glowing" cheap and its cores sharp (ARCHIVE 12r). Every look,
-  every corner piece and German were checked in play by the user (ARCHIVE 12n–12t).
+  every effect kept; no memory kept by a swap of looks (ARCHIVE 12q); every look, corner
+  piece and German checked in play by the user (ARCHIVE 12n–12t).
 
-**In progress — tournament mode** (decided 2026-10-08): the design and its work packages
-T1–T8 are `docs/TOURNAMENT.md`; T1–T7 are done (ARCHIVE 12ze–12zk): the core in
-`packages/tournament`, linear ratings and name pools, fixed tables, saves and the menu, playing
-offline, online with protocol 18, and the texts and help. Next is T8, the users'
-play-testing round, triaged with them before anything changes.
-
-**Next** — PLAN §11: more test games towards a first feature-ready version, the user's
+**Next** — PLAN §11: the tournament's play-testing (T8), more test games towards a first
+feature-ready version, the user's
 manual test of UPnP, and bots that miss as people do (combat accuracy, measured against the
 testers' recordings; how is not yet decided). **The bot learning work is paused**; when it
 resumes, `docs/BOT_LEARNING.md` §6 says where — first, learning the choice of wall rather
@@ -423,8 +413,15 @@ card does not help with that (ARCHIVE 12n). So a style **never redraws what has 
 - **Thousands of sprites** beside something redrawn each frame: a render group of their own
   (Medieval's `tileLayer`), or Pixi gathers and packs every one of them again each frame.
 
-A hidden look redraws only the layers it missed as a wipe reveals it, and is rendered once
-offscreen at the start (`Scene.warmUp`), so its first reveal costs no more than later ones.
+- **Hatching, textures, anything repeating**: a `FillPattern` drawn once on a small canvas and
+  laid into shapes as a fill, in screen space (Noir's hatching and cobbles, ARCHIVE 12zn) — a
+  few vertices a shape, where strokes would be thousands.
+
+A hidden look is rendered once offscreen at the start (`Scene.warmUp`) and primed in the pause
+before the banner that brings it (`Scene.prime`): its stale layers drawn and rendered unseen a
+frame's share at a time, so the wipe's first frame has nothing left to do (ARCHIVE 12zm). A new
+random look is made the same way, `IslandParts` drawing under a budget (`withDrawBudget`). Each
+style's terrain is still one drawing, the last hitch a new random look costs.
 
 Check with `&perf=1` at eight players: the readout names the `Graphics` rebuilt most, every
 frame and at worst. Keep the draw order where it shows; what came after a stamped thing goes

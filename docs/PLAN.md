@@ -390,9 +390,9 @@ sender's seat**, so a client cannot act for someone else.
 
 ## 7. `packages/client`
 
-Eighteen visual styles — Minimal (`flat`), Medieval (`pixel`: named Pixel art until the other
+Nineteen visual styles — Minimal (`flat`), Medieval (`pixel`: named Pixel art until the other
 styles made the name mean nothing), Night, Cyberpunk, Blueprint, Parchment, Toy bricks
-(`bricks`), Stained glass (`glass`), Chocolate (`chocolate`), Halloween (`halloween`), Sakura (`sakura`), Oktoberfest (`oktoberfest`), Opera (`opera`), Office (`office`), Under the sea (`undersea`), Electric (`electric`), Cartoon (`cartoon`) and Christmas (`christmas`) — behind one `Theme` interface: the scene owns the camera, the layer stacks,
+(`bricks`), Stained glass (`glass`), Chocolate (`chocolate`), Halloween (`halloween`), Sakura (`sakura`), Oktoberfest (`oktoberfest`), Opera (`opera`), Office (`office`), Under the sea (`undersea`), Electric (`electric`), Cartoon (`cartoon`), Christmas (`christmas`) and Noir (`noir`) — behind one `Theme` interface: the scene owns the camera, the layer stacks,
 dirty tracking and input mapping; a theme owns only what things look like. Adding a style
 is a name in `ArtStyleSchema`, the looks it is made for in `STYLE_LOOKS`, a `Theme`, a
 case in `createTheme`, a menu title in `titles.ts` and a banner class in `hud.ts`; the
@@ -530,7 +530,7 @@ top saying whether a click chooses the building or the combat look, each card ba
 the look it is chosen for. The styles are in alphabetical order by name, so a new one finds
 its place, and **Random** comes last, a die for its picture: **a new style at every
 banner that brings its look** (`LookRotation`, ARCHIVE 12q), repeating none until every
-style has been shown — both looks random share one cycle of all eighteen, one random cycles
+style has been shown — both looks random share one cycle of all nineteen, one random cycles
 through all but the other look's — and never the style the banner takes away, nor the one a
 look last had across a cycle's end. Each next look is made a step a frame, hidden, in the
 intermission after the build phase (`Scene.prepare`), and goes on screen once the look it
@@ -1188,6 +1188,40 @@ finish snowflakes in the winners' colours, the winners' flag a Christmas stockin
 pole with a star at its top. The player colours are the shared ones; the lights are warm white,
 gold is the garlands' and the stars', and nothing else on the board is a player's colour.
 
+**Noir** (`noir.ts`, `art.noir`), for either look: **a 1940s crime city at night drawn as a
+hard-boiled graphic novel** — the user's wish for a cel-shaded look, refined with them into film
+noir, ARCHIVE 12zn; the war over walls a turf war between gangs, and no game or film it was
+inspired by named. **Cel-shaded**: two hard tones and a thick ink line, no gradients, the shadows
+**hatched** — the hatching, the cross-hatching and the cobbles are patterns drawn once on small
+canvases and laid into shapes as fills (`FillPattern`, in screen space), a few vertices a shape.
+Black, white and grey; **the players' colours the only colour, as neon**. **The light carries
+the meaning**: the streets are wet cobbles hatched over; **sealed ground is turf in a street
+lamp's light** — lit cobbles, no hatching, the owner's colour faint in it, edged hard. Castles are
+**speakeasies**, a neon sign in the owner's colour over the door, each with a street lamp at its
+corner: sealed, the sign glows, door and windows lit warm, the lamp's halo on; **a breach makes
+sign and lamp sputter out** and letters a sound word over the club; a player's who is out has
+theirs closed — grey, boarded, a sign hanging from one nail, the lamp broken. Walls are **brick**
+in the owner's colour, coursed in thin ink, the face hatched, a cross-hatched shadow cast below.
+Guns are **rooftop guns** behind sandbags and a shield in the owner's colour: a live one's
+**searchlight sweeps the night** (`searchlightSweepMs`); firing, it kicks back in a white muzzle
+flash; **a silenced one stands in the dark**, cross-hatched, its barrel down. Shells trail speed
+lines. **A hit is a cel-shaded blast** in three hard tones of white and grey, inked, bricks flying
+in the owner's colour, smoke in outlined puffs, a crater on the ground; **a share of wall hits
+(`wordChance`) and every breach letter a sound word**, in the reader's language (`noir.words`:
+BLAM!, KRAK! — BUMM!, KRACH!), and are held for an **impact frame**: the screen flashed white,
+speed lines bursting from the hit in ink (`impactFrameMs`, none with motion reduced). Weather from
+the seed: **rain** in slanting strokes by default, fog banks in a foggy match, a dry night with
+the drains steaming in a clear one; **the final round a thunderstorm**, heavier rain and lightning
+struck twice (`lightningEveryMs`), its dusk a darkening rather than orange. The sea black harbour
+water, the city's lamps broken in it, foam inked along stone quays with bollards; scenery dead
+lamp posts, water towers, crates, a bin with a cat, parked forties cars and hydrants — nothing
+lit, since a lamp burning is a sealed club's; a harbour tug crosses the outer sea, its wheelhouse
+lit, smoke from its funnel. **A detective stands in the corner** under a lamp, trench coat and
+fedora in silhouette, turning his head now and then, faster at the climax. Its banner is **the
+shadow of venetian blinds** across the board, lettered in white capitals inked thick, its lines
+in caption boxes; its HUD black comic panels with white gutters; its title blocky capitals lit
+white above a grey band, a hatched shadow cast; its finish ink drops and a necktie for a flag.
+
 The thirteen shape-drawn styles share `walls.ts`: the wall geometry (tops, faces, rim), and
 hatching laid on one lattice so neighbouring tiles hatch as one fill.
 
@@ -1419,22 +1453,22 @@ every resolution against an independent search, not only on unit pictures.
 
 ## 11. Open work
 
-**Where to start (2026-10-07).** Everything planned is done and in **v0.8.3**, the latest
-release: the game and online play, bots as skill levels and personalities, eighteen styles
-each with its piece in the corner — Cartoon and Christmas the newest (ARCHIVE 12zb, 12zc) — random looks every round, English and German, the desktop
-app, UPnP, the balance soak and the rendering work (ARCHIVE 12h–12v); the refactoring of
-2026-10-07 (ARCHIVE 12w, protocol 17); and stronger bots — they route round holes no piece
-can fill and widen their walls once sealed (ARCHIVE 12x, 12y). The bot learning work, item
-3, is **paused** after a first learned fit (ARCHIVE 12z), its next steps in
-[`BOT_LEARNING.md`](./BOT_LEARNING.md) §6. More test games come first, towards a first
-feature-ready version. **Tournament mode** (decided 2026-10-08) is built — a cooperative run
-of matches against a field of named bots, offline or with friends in the host's team, saved
-between matches — its design and work packages in [`TOURNAMENT.md`](./TOURNAMENT.md) and
-ARCHIVE 12ze–12zk; what is left of it is T8, the users' play-testing round, under way
-(its first feedback in ARCHIVE 12zl, the looks' wipes smoothed in 12zm). Should the wipes still
-stutter there, what is left is each style's terrain drawn whole: splitting it by island, in all
-eighteen styles, would remove the last hitch a new random look costs. French is not to be
-done (the user's decision, 2026-10-06). Still open:
+**Where to start (2026-10-08).** The latest release is **v0.8.3**: the game and online play,
+bots as skill levels and personalities, eighteen styles each with its piece in the corner,
+random looks every round, English and German, the desktop app, UPnP, the balance soak and the
+rendering work (ARCHIVE 12h–12v); the refactoring of 2026-10-07 (ARCHIVE 12w); and stronger
+bots, which route round holes no piece can fill and widen their walls once sealed (ARCHIVE
+12x, 12y). Built since, not yet released: **tournament mode** — a cooperative run of matches
+against a field of named bot teams, offline or with friends in the host's team, saved between
+matches; its design and work packages in [`TOURNAMENT.md`](./TOURNAMENT.md), ARCHIVE 12ze–12zk,
+protocol 18 — the first feedback from its play-testing (ARCHIVE 12zl), smoother wipes between
+the looks (ARCHIVE 12zm), and **Noir**, a nineteenth style (ARCHIVE 12zn). **The tournament's
+play-testing round, T8, is under way**, its findings triaged with the users first. Should the
+wipes still stutter, what is left is each style's terrain drawn as one: splitting it by island,
+in all nineteen styles, would remove the last hitch a new random look costs. The bot learning
+work, item 3, is **paused** after a first learned fit (ARCHIVE 12z), its next steps in
+[`BOT_LEARNING.md`](./BOT_LEARNING.md) §6. French is not to be done (the user's decision,
+2026-10-06). Still open:
 
 1. **The user's manual test of UPnP**, reported back: switch on Open to the internet in the
    app, or `npm start -- --upnp`, and open the invite link from a phone on mobile data

@@ -11,9 +11,11 @@ score among those still standing wins.
 > OpenGameArt.org and Pixabay under the licences listed in [`CREDITS.md`](CREDITS.md).
 
 - 2–8 players, free-for-all or in equal teams; bots of ten skill levels fill any empty seat
+- Tournaments: your team against a field of named bot teams, through a league and a single-
+  or double-elimination knockout, with friends joining your team; saved between matches
 - Play alone on your own computer, with friends on your home network, or over the internet
-- Eighteen visual styles — Medieval, Minimal, Night, Cyberpunk, Blueprint, Parchment, Toy
-  bricks, Stained glass, Chocolate, Halloween, Sakura, Oktoberfest, Opera, Office, Under the sea, Electric, Cartoon and Christmas — one for building and one for combat, swapped by the
+- Nineteen visual styles — Medieval, Minimal, Night, Cyberpunk, Blueprint, Parchment, Toy
+  bricks, Stained glass, Chocolate, Halloween, Sakura, Oktoberfest, Opera, Office, Under the sea, Electric, Cartoon, Christmas and Noir — one for building and one for combat, swapped by the
   banners as in Rampart
 - In English and German, chosen in the menu
 - Awards at the end of every match, and a rematch in one click
@@ -200,72 +202,22 @@ is the package's own unless `BOLLWERK_VERSION` says otherwise — `BOLLWERK_VERS
 `$env:BOLLWERK_VERSION='1.0.0'; npm run package -w @bollwerk/desktop`. `release/` is never
 committed.
 
-### Publishing a release
-
-Releases are made for major versions only, not for every change, by
-`.github/workflows/release.yml`, which builds both files on GitHub — Windows on Windows,
-Linux on Linux.
-
-- **To try a build first**: on GitHub, _Actions → Release → Run workflow_, type a version
-  (e.g. `1.0.0`) and run it. When it finishes, the two files are at the bottom of the
-  run's page under _Artifacts_. Nothing is published.
-- **To publish**: tag the commit with the version, starting with `v`, and push the tag:
-
-  ```bash
-  git tag v1.0.0
-  git push origin v1.0.0
-  ```
-
-  The workflow builds both files and publishes them as the release _Bollwerk v1.0.0_ on the
-  repository's Releases page, where anyone can download them. Use a new number each time
-  (`v1.0.1`, `v1.1.0`, `v2.0.0`); a tag is meant to be permanent.
-
-- **To withdraw one**: delete the release on the Releases page, then the tag —
-  `git push origin --delete v1.0.0` and `git tag -d v1.0.0`.
-
-Do not create the release through GitHub's _Draft a new release_ page: that makes the tag
-and the release together, and the workflow, started by the tag, then finds its release
-already there and fails. Push the tag, and let the workflow make the release.
-
 ## Layout
 
-| Path                | Contents                                                    |
-| ------------------- | ----------------------------------------------------------- |
-| `config/`           | Every tunable in the game, as JSON                          |
-| `packages/config`   | Schemas, typed defaults, cross-file validation              |
-| `packages/sim`      | Deterministic game core — no DOM, no Node, no I/O           |
-| `packages/protocol` | Wire message types and validators                           |
-| `packages/ai`       | Bot logic                                                   |
-| `packages/analysis` | Per-round match statistics, for bot soaks and recorded play |
-| `packages/server`   | Authoritative match server                                  |
-| `packages/client`   | Renderer, UI, lobby, procedural asset generators            |
-| `packages/desktop`  | The desktop app for releases: the server behind a window    |
-| `tools/headless`    | Bot-vs-bot harness for balance tuning and soak tests        |
-| `assets/audio`      | Audio cues                                                  |
-
-## Configuration
-
-No game rule is hardcoded. Phase timings, cannon rewards, scoring, teams, map generation,
-palettes and sprite parameters all live in `config/*.json`, validated by strict schemas —
-an unknown key is an error rather than a silently ignored one. The server sends the
-ruleset to every client in the match snapshot, so all of them run one identical copy.
-
-## Status
-
-| Milestone                                       | State |
-| ----------------------------------------------- | ----- |
-| M0 — scaffold, config schemas, CI               | Done  |
-| M1 — simulation core                            | Done  |
-| M2 — locally playable, placeholder art          | Done  |
-| M3 — procedural art                             | Done  |
-| M4 — online multiplayer                         | Done  |
-| M5 — AI opponents                               | Done  |
-| M6 — full scope, 2–8 players, audio, deployment | Done  |
-| M7 — balance pass                               | Done  |
-| M8 — team mode, one lobby online and offline    | Done  |
-| M9–M12 — visual passes and sixteen styles       | Done  |
-| M13 — bots as skill levels and personalities    | Done  |
-| M14 — a desktop app for releases                | Done  |
+| Path                  | Contents                                                    |
+| --------------------- | ----------------------------------------------------------- |
+| `config/`             | Every tunable in the game, as JSON                          |
+| `packages/config`     | Schemas, typed defaults, cross-file validation              |
+| `packages/sim`        | Deterministic game core — no DOM, no Node, no I/O           |
+| `packages/protocol`   | Wire message types and validators                           |
+| `packages/ai`         | Bot logic                                                   |
+| `packages/analysis`   | Per-round match statistics, for bot soaks and recorded play |
+| `packages/tournament` | Tournament mode: schedule, brackets, quick rolls, saves     |
+| `packages/server`     | Authoritative match server                                  |
+| `packages/client`     | Renderer, UI, lobby, procedural asset generators            |
+| `packages/desktop`    | The desktop app for releases: the server behind a window    |
+| `tools/headless`      | Bot-vs-bot harness for balance tuning and soak tests        |
+| `assets/audio`        | Audio cues                                                  |
 
 ## License
 

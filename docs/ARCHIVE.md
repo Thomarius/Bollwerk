@@ -5934,3 +5934,41 @@ into triangles in up to 90 ms (Sakura, Opera, Halloween the worst) — so a new 
 costs one such moment, in the points' count-up after a resolution, where nothing is playable
 (PLAN §11). A last measurement was spoiled by the users' own session running on the machine,
 which the benchmarks may also have taken frames from: measuring stopped there.
+
+## 12zn. Noir, a nineteenth style (2026-10-08)
+
+The user asked for more ideas for styles while the tournament was being tested; of fourteen
+settings and eight animation styles offered, they took up **cel-shading like the modern games
+drawn in ink** — Cartoon their favourite so far. Pitched as "Ink & Hatch" (a light that moves with
+the phases, hatching in the shadows), then turned with them into **film noir**: "not only a
+harbour — dark alley cities too". Their choices: **neon glow** for the players' colours over flat
+spot colour; **smooth motion with impact frames** over stepping on twos like Cartoon; **sound
+words in each language** on big moments; a **detective under a lamp** for the corner piece over a
+ringing payphone or a flickering hotel sign; named **Noir** in both languages. Approved and built
+the same day, the tournament's play-testing undisturbed, since a style changes nothing in play.
+The style is PLAN §7's Noir.
+
+What carries meaning: **light is sealed** — the turf in a street lamp's pool, lit and unhatched,
+the owner's colour faint in it; everything out of the light hatched. A breach makes a club's sign
+and lamp sputter out (the shared hoist, `FlagHoist`, flickered by `flickerMs`) and letters a sound
+word; a silenced gun stands cross-hatched in the dark; a player who is out has their club closed
+and their lamp broken. The players' colours are the only colour on the board but the lamplight's
+warm white; the blasts are white and grey, and the final round's orange dusk and embers are, as
+under Cartoon, a darkening and white specks.
+
+**Drawn cheaply from the start.** The hatching, cross-hatching and cobbles are `FillPattern`s,
+drawn once on 16- and 32-pixel canvases and laid into shapes in screen space — the first style to
+use them, and the answer to 12zm's terrain cost: hatching drawn stroke by stroke would have been
+thousands of vertices. Walls and the turf by island; the clubs, lamps, guns, beams, shells, blasts,
+bricks, smoke and rain stamps; the detective a `Memos` redrawn when he turns; the sound words a
+few Pixi `Text`s kept and lettered again. At eight players in combat, watched, on this machine's
+integrated GPU: render 1.77 ms a frame against Office's 2.09, about 2 100 vertices rebuilt a frame
+against Office's 4 900, 60 fps.
+
+Seen in screenshots building, in combat at two and eight players, in the final round, in the
+menu's gallery, and its banner set on the page by hand in German. What the first look changed:
+the blasts' and muzzle flashes' halos were white blobs, now a third their size and fainter; the
+banner's black lettering was lost on the blinds' light and dark slats, now white inked thick, and
+its lines sat beside the heading and took its outline, now under it in caption boxes; the shared
+final-round dusk tinted the sky orange, now overridden as Cartoon's is. A white band in one
+screenshot was the lightning caught mid-frame, which twelve frames sampled after confirmed.
