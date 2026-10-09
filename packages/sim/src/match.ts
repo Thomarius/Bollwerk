@@ -12,7 +12,7 @@ import {
 } from './placement.js';
 import { streamFor } from './rng.js';
 import { fire, resolveImpacts } from './shots.js';
-import { denseTeams, teamScore } from './teams.js';
+import { denseTeams, tableTeamSize, teamScore } from './teams.js';
 import { generateTerrain } from './terrain.js';
 import {
   PHASES,
@@ -56,11 +56,12 @@ export function createMatch(options: MatchOptions): MatchState {
     );
   }
 
-  const generated = generateTerrain(terrainConfig, playerCount, seed);
+  const labels = options.players.map((p) => p.team);
+  const generated = generateTerrain(terrainConfig, playerCount, seed, tableTeamSize(labels));
   const size = generated.width * generated.height;
 
   // Team labels to dense ids in label order, so the table's Team A is team 0.
-  const teamOfSeat = denseTeams(options.players.map((p) => p.team));
+  const teamOfSeat = denseTeams(labels);
   const teamCount = teamOfSeat.reduce((most, t) => Math.max(most, t + 1), 0);
   const teams: TeamState[] = Array.from({ length: teamCount }, (_, id) => {
     const pool = teamOfSeat.filter((t) => t === id).length * ruleset.elimination.continues;

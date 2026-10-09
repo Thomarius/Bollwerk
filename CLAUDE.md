@@ -108,7 +108,8 @@ Full detail in PLAN.md §1. The parts that surprise people:
 - **One island, copied into a pattern.** An island is drawn in a box with rounded
   corners, trimmed to its land, then stamped by translation and mirroring — both exact, so
   every island is pixel-identical at every player count. 2–8 players; grids at every count
-  but 3, which is a ring (a short last row is centred). **The map's size is measured from the island and the pattern, not
+  but 3, which is a ring (a short last row is centred), and three teams of two, who play on
+  a ring of six (`teamSize` patterns, ARCHIVE 12zs). **The map's size is measured from the island and the pattern, not
   configured.**
 - **A wall must turn its corners.** The escape flood is 8-connected while the wall is
   not, so a diagonal join does not seal. The coastline is worth nothing.
@@ -143,7 +144,9 @@ Full detail in PLAN.md §1. The parts that surprise people:
   sum of their members') and a pool of lives, and a member failing with the pool empty
   takes the whole team out. Teammates may build on each other's islands — people only by
   default. A placed block belongs to the island, not to whoever placed it.
-- **Seats are shuffled onto islands at the start**, server and local alike. Player p still
+- **Seats are shuffled onto islands at the start**, server and local alike — except three
+  and four teams of two, dealt onto one of the pattern's fair `teamLayouts`, drawn by
+  weight, so every team stands alike (`seatOrder`, ARCHIVE 12zs). Player p still
   owns island p + 1; the room tells each connection which player it has become, so never
   assume the first seat is player 0. **Teams belong to seats**, and the host chooses who
   sits where; the seed is fixed when the table is set, so the lobby shows the real map.

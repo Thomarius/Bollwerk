@@ -184,11 +184,11 @@ describe('island layout', () => {
   it('measures the map from the pattern rather than being told its size', () => {
     // Two players side by side need a wide, short map; eight need a much larger one.
     // Neither is configured — both fall out of the island box and the arrangement.
-    const small = planLayout(defaultTerrainConfig, 2);
-    const large = planLayout(defaultTerrainConfig, 8);
+    const small = planLayout(defaultTerrainConfig, 2, 1);
+    const large = planLayout(defaultTerrainConfig, 8, 1);
     expect(large.width * large.height).toBeGreaterThan(small.width * small.height);
     for (const count of [2, 3, 4, 5, 6, 7, 8]) {
-      const plan = planLayout(defaultTerrainConfig, count);
+      const plan = planLayout(defaultTerrainConfig, count, 1);
       expect(plan.placements).toHaveLength(count);
     }
   });
@@ -197,8 +197,18 @@ describe('island layout', () => {
     // The water gap used to be a constraint a candidate map could fail. Spacing the
     // boxes makes it true by construction, so there is nothing left to reject.
     const gap = defaultTerrainConfig.island.minWaterGapTiles;
-    for (const count of [2, 3, 4, 5, 6, 7, 8]) {
-      const plan = planLayout(defaultTerrainConfig, count);
+    for (const [count, teamSize] of [
+      [2, 1],
+      [3, 1],
+      [4, 1],
+      [5, 1],
+      [6, 1],
+      [6, 2],
+      [7, 1],
+      [8, 1],
+      [8, 2],
+    ] as const) {
+      const plan = planLayout(defaultTerrainConfig, count, teamSize);
       for (let a = 0; a < plan.placements.length; a++) {
         for (let b = a + 1; b < plan.placements.length; b++) {
           const first = plan.placements[a] as (typeof plan.placements)[number];
@@ -216,8 +226,8 @@ describe('island layout', () => {
       ...defaultTerrainConfig,
       patterns: [{ players: 2, kind: 'grid', cols: 2, rows: 1 }],
     });
-    expect(() => planLayout(config, 4)).toThrow(TerrainGenerationError);
-    expect(() => planLayout(config, 4)).toThrow(/no island pattern is configured for 4/);
+    expect(() => planLayout(config, 4, 1)).toThrow(TerrainGenerationError);
+    expect(() => planLayout(config, 4, 1)).toThrow(/no island pattern is configured for 4/);
   });
 
   it('gives every sector the same share of the map', () => {

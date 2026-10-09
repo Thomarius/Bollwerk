@@ -1,4 +1,4 @@
-import type { PatternKind, TerrainConfig } from '@bollwerk/config';
+import type { IslandPattern, PatternKind, TerrainConfig } from '@bollwerk/config';
 
 import { fbm2D } from './noise.js';
 import { NEIGHBOURS_4 } from './grid.js';
@@ -209,6 +209,8 @@ function ringPlacements(
 export function planLayout(
   config: TerrainConfig,
   playerCount: number,
+  /** The table's team size (`tableTeamSize`): a pattern of its own may serve it. */
+  teamSize: number,
   /**
    * The island's actual extent, which is smaller than the box it was drawn in.
    *
@@ -221,13 +223,7 @@ export function planLayout(
   islandWidth: number = config.island.boxWidth,
   islandHeight: number = config.island.boxHeight,
 ): LayoutPlan {
-  const pattern = config.patterns.find((p) => p.players === playerCount);
-  if (pattern === undefined) {
-    throw new TerrainGenerationError(
-      `no island pattern is configured for ${playerCount} players ` +
-        `(patterns exist for ${config.patterns.map((p) => p.players).join(', ')})`,
-    );
-  }
+  const pattern = patternFor(config, playerCount, teamSize);
 
   const boxW = islandWidth;
   const boxH = islandHeight;
@@ -267,6 +263,28 @@ export function planLayout(
     height,
     placements,
   };
+}
+
+/**
+ * The pattern a table is laid out on: the one for its count and team size if there is one
+ * — three teams of two sit on a ring, where the count's grid has no fair seating for them
+ * (PLAN §1.2) — and otherwise its count's own.
+ */
+export function patternFor(
+  config: TerrainConfig,
+  playerCount: number,
+  teamSize: number,
+): IslandPattern {
+  const pattern =
+    config.patterns.find((p) => p.players === playerCount && p.teamSize === teamSize) ??
+    config.patterns.find((p) => p.players === playerCount && p.teamSize === undefined);
+  if (pattern === undefined) {
+    throw new TerrainGenerationError(
+      `no island pattern is configured for ${playerCount} players ` +
+        `(patterns exist for ${config.patterns.map((p) => p.players).join(', ')})`,
+    );
+  }
+  return pattern;
 }
 
 /**
@@ -533,7 +551,12 @@ function placeCastles(
 type Attempt =
   { ok: true; value: Omit<GeneratedTerrain, 'attempts'> } | { ok: false; reason: RejectReason };
 
-function tryGenerate(config: TerrainConfig, playerCount: number, seed: number): Attempt {
+function tryGenerate(
+  config: TerrainConfig,
+  playerCount: number,
+  teamSize: number,
+  seed: number,
+): Attempt {
   const drawW = config.island.boxWidth;
   const drawH = config.island.boxHeight;
 
@@ -584,7 +607,7 @@ function tryGenerate(config: TerrainConfig, playerCount: number, seed: number): 
   const castleSpots = placeCastles(canonical, dist, boxW, boxH, config);
   if (castleSpots === null) return { ok: false, reason: 'canonical_castles' };
 
-  const plan = planLayout(config, playerCount, boxW, boxH);
+  const plan = planLayout(config, playerCount, teamSize, boxW, boxH);
 
   // Stamp it into every placement. Mirroring is exact, so these are the same island
   // tile for tile — equal areas and a single component each need no checking.
@@ -641,12 +664,14 @@ export function generateTerrain(
   config: TerrainConfig,
   playerCount: number,
   seed: number,
+  /** The table's team size (`tableTeamSize`), which may choose its own pattern. */
+  teamSize = 1,
 ): GeneratedTerrain {
   const rng = streamFor(seed, 'terrain');
   const tally = new Map<RejectReason, number>();
 
   for (let attempt = 0; attempt < config.generation.maxRetries; attempt++) {
-    const result = tryGenerate(config, playerCount, rng.nextU32());
+    const result = tryGenerate(config, playerCount, teamSize, rng.nextU32());
     if (result.ok) return { ...result.value, attempts: attempt + 1 };
     tally.set(result.reason, (tally.get(result.reason) ?? 0) + 1);
   }

@@ -62,6 +62,16 @@ exact on a square grid, so every island is pixel-identical at every player count
   A grid's short last row — five players on three by two, seven on four by two — is centred
   under the row above. Five and seven were rings until 2026-09-30, and made considerably
   larger maps; on a grid five share six's footprint and seven eight's.
+- **Fair team seating** (2026-10-09, ARCHIVE 12zs). A pattern may serve one team size
+  (`teamSize`) and list its fair seatings (`teamLayouts`), one drawn by weight each match,
+  the teams dealt onto its groups of islands. **Three teams of two play on a ring of six**,
+  teammates side by side or directly opposite, half the matches each: the three-by-two
+  grid has no fair seating for three teams, and the ring costs a larger map (80x86 against
+  80x50 on seed 1), open sea in its middle. **Four teams of two keep the four-by-two grid**,
+  each team one corner and one middle island, in one of the four seatings that keep the
+  grid's mirror symmetry (side by side, one apart, diagonal near, diagonal far). Teams of
+  three and four are always two teams, head to head, and two teams of two on four islands
+  are fair however dealt: those, and free-for-all, are shuffled freely.
 - **The island is cut from a rounded rectangle** (`island.cornerRadiusTiles`), its coast
   moved by noise (`coastlineRoughness`, `noiseFrequency`). Rounder and rougher reads less
   boxy but turns neighbours' facing coasts into points with open sea between — at three
@@ -1512,6 +1522,15 @@ work, item 2, is **paused** after a first learned fit (ARCHIVE 12z), its next st
    testers won both six-player ones (L4, L5) and the two-against-two against L3, and lost
    both two-against-two against L5 by knockout in rounds 7 and 8, where every bot shot is at
    them.
+
+   **The tournament's four matches of 2026-10-08** (Thomas with an L5 bot as teammate, against
+   L3–L6; ARCHIVE 12zs) agree on accuracy — Thomas 74% on a wall, 17% on one gone, 9% on
+   ground or sea, and 9–18% of his shots at a tile his own shot was already flying to; bots
+   86–98% on a wall — and qualify two points above: people too fire their first shot within
+   a tenth of a second (the difference in reaction is the castle, about 1.4–5.4 s, the first
+   gun and the last, 4.4–5.7 s against bots' 0.4–0.9 s), and L5 bots did not fade (111 points
+   a round early, 166 late). L3–L4 bots again left 65–83% of their guns inert. Thomas won all
+   four by a wide margin, 3.5 to 5 times the next team; one tester, so nothing on Mausica.
 
 2. **Stronger bots by valuing options, then learning the weights** (the user's goal,
    2026-10-07; also to learn how ML fits a game): the plan, its steps and its progress are

@@ -77,7 +77,12 @@ export class NetworkMatch {
           seed: message.snapshot.seed,
           ruleset: message.snapshot.ruleset,
           terrainConfig: message.snapshot.terrain,
-          players: message.snapshot.players.map((p) => ({ name: p.name, isBot: p.isBot })),
+          // With their teams: a table's team size may choose its pattern, so its map.
+          players: message.snapshot.players.map((p) => ({
+            name: p.name,
+            isBot: p.isBot,
+            team: p.team,
+          })),
         });
         applySnapshot(base, message.snapshot);
         this.state = base;

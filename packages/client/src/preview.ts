@@ -4,6 +4,7 @@ import {
   denseTeams,
   generateTerrain,
   seatOrder,
+  tableTeamSize,
   type GeneratedTerrain,
 } from '@bollwerk/sim';
 
@@ -16,7 +17,7 @@ import { drawShape, matchShapes } from './shapes.js';
  *
  * Possible because the seed is fixed when the table is set rather than when the match
  * starts, and because everything else follows from it — the terrain is generated from
- * the seed alone, and seats are shuffled onto islands by `seatOrder(seed, seats)`, which
+ * the seed and the teams' size, and seats are dealt onto islands by `seatOrder`, which
  * the server and a local match both use. Seats are in lobby order: the host first, then
  * people in the order they joined, then the bots — the order a match is started in.
  */
@@ -30,14 +31,19 @@ export interface TablePreview {
   shapeOfSeat: PlayerShape[];
 }
 
-/** Terrain is the slow part and depends on two numbers, so the last few are kept. */
+/** Terrain is the slow part and depends on three numbers, so the last few are kept. */
 const terrains = new Map<string, GeneratedTerrain>();
 
-function terrainFor(config: TerrainConfig, playerCount: number, seed: number): GeneratedTerrain {
-  const key = `${seed}:${playerCount}`;
+function terrainFor(
+  config: TerrainConfig,
+  playerCount: number,
+  seed: number,
+  teamSize: number,
+): GeneratedTerrain {
+  const key = `${seed}:${playerCount}:${teamSize}`;
   let terrain = terrains.get(key);
   if (terrain === undefined) {
-    terrain = generateTerrain(config, playerCount, seed);
+    terrain = generateTerrain(config, playerCount, seed, teamSize);
     if (terrains.size > 8) terrains.clear();
     terrains.set(key, terrain);
   }
@@ -51,8 +57,9 @@ export function tablePreview(
   art: ArtConfig,
   terrainConfig: TerrainConfig,
 ): TablePreview {
-  const terrain = terrainFor(terrainConfig, playerCount, seed);
-  const playerOfSeat = seatOrder(seed, playerCount);
+  const teams = Array.from({ length: playerCount }, (_, seat) => teamsBySeat[seat] ?? seat);
+  const terrain = terrainFor(terrainConfig, playerCount, seed, tableTeamSize(teams));
+  const playerOfSeat = seatOrder(seed, teams, terrainConfig);
   // The match's own palette rule, over the players the seats will become, with team
   // ids made exactly as `createMatch` makes them — the colour family follows the id.
   const labels = new Array<number | undefined>(playerCount);

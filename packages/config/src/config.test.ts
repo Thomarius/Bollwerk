@@ -35,7 +35,8 @@ import {
 describe('shipped config files', () => {
   it('all parse against their schemas', () => {
     expect(defaultRuleset.tickRateHz).toBe(30);
-    expect(defaultTerrainConfig.patterns).toHaveLength(7);
+    // One for each count, and the ring and the grid for three and four teams of two.
+    expect(defaultTerrainConfig.patterns).toHaveLength(9);
     expect(defaultArtConfig.players.length).toBeGreaterThanOrEqual(defaultRuleset.players.max);
     expect(defaultServerConfig.port).toBe(8080);
   });
@@ -86,6 +87,53 @@ describe('schema strictness', () => {
       island: { ...defaultTerrainConfig.island, targetAreaTiles: 999_999 },
     };
     expect(TerrainConfigSchema.safeParse(bad).success).toBe(false);
+  });
+
+  it('rejects a team layout that does not seat every island once', () => {
+    const ring = { players: 6, teamSize: 2, kind: 'ring' };
+    const layouts = (teams: number[][]) => ({
+      ...defaultTerrainConfig,
+      patterns: [
+        ...defaultTerrainConfig.patterns,
+        { ...ring, players: 4, teamLayouts: [{ weight: 1, teams }] },
+      ],
+    });
+    expect(
+      TerrainConfigSchema.safeParse(
+        layouts([
+          [0, 1],
+          [2, 3],
+        ]),
+      ).success,
+    ).toBe(true);
+    expect(
+      TerrainConfigSchema.safeParse(
+        layouts([
+          [0, 1],
+          [1, 3],
+        ]),
+      ).success,
+    ).toBe(false);
+    expect(TerrainConfigSchema.safeParse(layouts([[0, 1, 2], [3]])).success).toBe(false);
+    const sizeless = {
+      ...defaultTerrainConfig,
+      patterns: [
+        {
+          players: 4,
+          kind: 'ring',
+          teamLayouts: [
+            {
+              weight: 1,
+              teams: [
+                [0, 1],
+                [2, 3],
+              ],
+            },
+          ],
+        },
+      ],
+    };
+    expect(TerrainConfigSchema.safeParse(sizeless).success).toBe(false);
   });
 
   it('rejects an out-of-range port', () => {
@@ -191,6 +239,23 @@ describe('cross-file validation', () => {
       },
     });
     expect(problems).toContain('terrain: no island pattern for 3 players.');
+  });
+
+  it('catches a count served only for teams, or served twice', () => {
+    const [six] = defaultTerrainConfig.patterns.filter((p) => p.players === 6 && !p.teamSize);
+    const problems = validateConfigBundle({
+      ...defaultConfigBundle,
+      terrain: {
+        ...defaultTerrainConfig,
+        patterns: [
+          ...defaultTerrainConfig.patterns.filter((p) => p.players !== 6 || p.teamSize),
+          ...defaultTerrainConfig.patterns.filter((p) => p.players === 8),
+        ],
+      },
+    });
+    expect(six).toBeDefined();
+    expect(problems).toContain('terrain: no island pattern for 6 players.');
+    expect(problems).toContain('terrain: two island patterns for 8 players in teams of 2.');
   });
 
   it('catches too few player palettes for the allowed player count', () => {

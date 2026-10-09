@@ -517,7 +517,9 @@ export class Room {
         bot: seat.bot,
         // A tournament's bots keep theirs; a person's seat is covered by the seat's bot.
         personality: this.tournament?.seats[index]?.personality ?? null,
+        team: this.teams[index] ?? index,
       })),
+      this.options.terrain,
     );
     const recorded = new Array<{ level: number | null; personality: Personality | null }>(
       this.seats.length,

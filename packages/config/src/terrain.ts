@@ -11,20 +11,58 @@ import { z } from 'zod';
 export const PatternKindSchema = z.enum(['ring', 'grid']);
 export type PatternKind = z.infer<typeof PatternKindSchema>;
 
+/**
+ * One fair way to seat a table's teams on a pattern's islands: each team's islands, by
+ * placement index (0 up to players - 1, in the order the pattern lays them out), and how
+ * often it is drawn against the pattern's other layouts.
+ */
+export const TeamLayoutSchema = z.strictObject({
+  weight: z.number().int().positive(),
+  teams: z.array(z.array(z.number().int().nonnegative()).min(1)).min(2),
+});
+export type TeamLayout = z.infer<typeof TeamLayoutSchema>;
+
 export const IslandPatternSchema = z
   .strictObject({
     players: z.number().int().min(2).max(8),
+    /**
+     * For tables of teams of this size only, in place of the count's own pattern; omitted,
+     * for every table of this count that has no pattern of its own.
+     */
+    teamSize: z.number().int().min(2).optional(),
     kind: PatternKindSchema,
     /** Grid only; ignored by a ring. */
     cols: z.number().int().positive().optional(),
     rows: z.number().int().positive().optional(),
+    /**
+     * The fair seatings of `teamSize` teams on these islands: one is drawn for each match
+     * and the teams dealt onto it, rather than every seat shuffled onto any island. Where a
+     * pattern has none, seats are shuffled freely.
+     */
+    teamLayouts: z.array(TeamLayoutSchema).min(1).optional(),
   })
   .refine((p) => p.kind !== 'grid' || (p.cols !== undefined && p.rows !== undefined), {
     message: 'a grid pattern needs cols and rows',
   })
   .refine((p) => p.kind !== 'grid' || (p.cols ?? 0) * (p.rows ?? 0) >= p.players, {
     message: 'cols x rows must be at least players',
-  });
+  })
+  .refine((p) => p.teamLayouts === undefined || p.teamSize !== undefined, {
+    message: 'team layouts belong to a pattern for one team size',
+  })
+  .refine(
+    (p) =>
+      (p.teamLayouts ?? []).every((layout) => {
+        // Every island once, in teams of the pattern's size.
+        const islands = layout.teams.flat().sort((a, b) => a - b);
+        return (
+          layout.teams.every((team) => team.length === p.teamSize) &&
+          islands.length === p.players &&
+          islands.every((island, i) => island === i)
+        );
+      }),
+    { message: "a team layout must put every island in exactly one team of the pattern's size" },
+  );
 export type IslandPattern = z.infer<typeof IslandPatternSchema>;
 
 export const TerrainConfigSchema = z

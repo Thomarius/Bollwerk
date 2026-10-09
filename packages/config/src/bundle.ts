@@ -43,11 +43,18 @@ export function validateConfigBundle(bundle: ConfigBundle): string[] {
     );
   }
 
-  // Every playable count needs somewhere to put the islands.
+  // Every playable count needs somewhere to put the islands, whatever its teams; one
+  // pattern a count and team size, or which one a table gets would depend on their order.
   for (let count = ruleset.players.min; count <= ruleset.players.max; count++) {
-    if (!terrain.patterns.some((pattern) => pattern.players === count)) {
+    if (!terrain.patterns.some((p) => p.players === count && p.teamSize === undefined)) {
       problems.push(`terrain: no island pattern for ${count} players.`);
     }
+  }
+  const seen = new Set<string>();
+  for (const pattern of terrain.patterns) {
+    const key = `${pattern.players} players${pattern.teamSize === undefined ? '' : ` in teams of ${pattern.teamSize}`}`;
+    if (seen.has(key)) problems.push(`terrain: two island patterns for ${key}.`);
+    seen.add(key);
   }
 
   if (art.players.length < ruleset.players.max) {

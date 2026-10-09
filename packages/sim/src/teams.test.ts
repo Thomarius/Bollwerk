@@ -4,7 +4,8 @@ import { describe, expect, it } from 'vitest';
 import { applyAction, createMatch, step } from './match.js';
 import { canPlacePiece } from './placement.js';
 import { fire, resolveImpacts } from './shots.js';
-import { seatOrder, teamScore, denseTeams } from './teams.js';
+import { seatOrder, tableTeamSize, teamScore, denseTeams } from './teams.js';
+import { generateTerrain, patternFor } from './terrain.js';
 import { stateFromAscii, withoutContinues } from './testing.js';
 import { Structure, type MatchState } from './types.js';
 
@@ -216,12 +217,121 @@ describe('building on a teammate’s island', () => {
 });
 
 describe('which seat gets which island', () => {
+  const config = defaultTerrainConfig;
+  const free = [0, 1, 2, 3, 4, 5, 6, 7];
+
   it('is a shuffle, the same for the same seed and different for another', () => {
-    const order = seatOrder(7, 8);
-    expect([...order].sort((a, b) => a - b)).toEqual([0, 1, 2, 3, 4, 5, 6, 7]);
-    expect(seatOrder(7, 8)).toEqual(order);
-    const differs = [1, 2, 3, 4, 5].some((seed) => seatOrder(seed, 8).join() !== order.join());
+    const order = seatOrder(7, free, config);
+    expect([...order].sort((a, b) => a - b)).toEqual(free);
+    expect(seatOrder(7, free, config)).toEqual(order);
+    const differs = [1, 2, 3, 4, 5].some(
+      (seed) => seatOrder(seed, free, config).join() !== order.join(),
+    );
     expect(differs).toBe(true);
+  });
+
+  it('knows a table by the size its teams share', () => {
+    expect(tableTeamSize([0, 0, 1, 1, 2, 2])).toBe(2);
+    expect(tableTeamSize([0, 1, 1, 0])).toBe(2);
+    expect(tableTeamSize([0, 1, 2])).toBe(1);
+    expect(tableTeamSize([0, 0, 1])).toBe(1);
+    expect(tableTeamSize([undefined, undefined])).toBe(1);
+  });
+
+  /** Each team's islands as the deal gave them, by team label. */
+  function islandsOf(order: number[], teams: number[]): number[][] {
+    return [...new Set(teams)].map((label) =>
+      order.filter((_, seat) => teams[seat] === label).sort((a, b) => a - b),
+    );
+  }
+
+  /** A layout's teams, each as its sorted islands, in a stable order to compare by. */
+  const key = (groups: readonly (readonly number[])[]): string =>
+    groups
+      .map((g) => [...g].sort((a, b) => a - b).join('+'))
+      .sort()
+      .join(' ');
+
+  for (const [players, teams] of [
+    [6, [0, 0, 1, 1, 2, 2]],
+    [8, [0, 1, 0, 1, 2, 2, 3, 3]],
+  ] as const) {
+    it(`deals ${players / 2} teams of two onto one of the fair layouts, each in turn`, () => {
+      const pattern = patternFor(config, players, 2);
+      const layouts = new Map((pattern.teamLayouts ?? []).map((l) => [key(l.teams), 0]));
+      expect(layouts.size).toBeGreaterThan(1);
+      for (let seed = 0; seed < 400; seed++) {
+        const order = seatOrder(seed, [...teams], config);
+        expect([...order].sort((a, b) => a - b)).toEqual(free.slice(0, players));
+        const dealt = key(islandsOf(order, [...teams]));
+        expect(layouts.has(dealt), `seed ${seed}: ${dealt}`).toBe(true);
+        layouts.set(dealt, (layouts.get(dealt) ?? 0) + 1);
+      }
+      // Drawn by weight: in the ring of six, neighbours half the time and opposite half.
+      const total = 400;
+      for (const layout of pattern.teamLayouts ?? []) {
+        const share = (layouts.get(key(layout.teams)) ?? 0) / total;
+        const weights = (pattern.teamLayouts ?? []).reduce((sum, l) => sum + l.weight, 0);
+        expect(share).toBeGreaterThan((layout.weight / weights) * 0.7);
+        expect(share).toBeLessThan((layout.weight / weights) * 1.3);
+      }
+    });
+  }
+
+  it('lays out three teams of two on a ring, and anyone else at six on the grid', () => {
+    expect(patternFor(config, 6, 2).kind).toBe('ring');
+    expect(patternFor(config, 6, 1).kind).toBe('grid');
+    expect(patternFor(config, 6, 3).kind).toBe('grid');
+    expect(patternFor(config, 8, 2).kind).toBe('grid');
+    expect(patternFor(config, 8, 4).teamLayouts).toBeUndefined();
+  });
+
+  it('gives every team of a fair layout the same standing on the map', () => {
+    // Each team's distances, centre to centre: between its own islands, and from each of
+    // them to every other — on real maps, whose islands are trimmed to their land. Alike
+    // for every team, up to the ring's rounding: its centres are whole tiles on a circle.
+    for (const [players, seed] of [6, 8].flatMap((n) =>
+      [1, 2, 3, 4, 5].map((s) => [n, s] as const),
+    )) {
+      const plan = generateTerrain(config, players, seed, 2).layout;
+      const centre = (i: number) => {
+        const p = plan.placements[i] as { x: number; y: number };
+        return { x: p.x + plan.boxWidth / 2, y: p.y + plan.boxHeight / 2 };
+      };
+      const apart = (a: number, b: number) => {
+        const [p, q] = [centre(a), centre(b)];
+        return Math.hypot(p.x - q.x, p.y - q.y);
+      };
+      for (const layout of patternFor(config, players, 2).teamLayouts ?? []) {
+        const standings = layout.teams.map((team) => {
+          const others = free.slice(0, players).filter((i) => !team.includes(i));
+          return [
+            apart(team[0] as number, team[1] as number),
+            ...team.flatMap((i) => others.map((o) => apart(i, o))).sort((a, b) => a - b),
+          ];
+        });
+        for (const standing of standings.slice(1)) {
+          standing.forEach((d, i) => {
+            expect(
+              Math.abs(d - (standings[0]?.[i] ?? 0)),
+              JSON.stringify(layout.teams),
+            ).toBeLessThanOrEqual(1.5);
+          });
+        }
+      }
+    }
+  });
+
+  it('builds the map a table of three teams of two plays on as a ring', () => {
+    const players = [0, 0, 1, 1, 2, 2].map((team, i) => ({ name: `P${i}`, isBot: true, team }));
+    const ring = createMatch({ seed: 3, ruleset: defaultRuleset, terrainConfig: config, players });
+    const grid = createMatch({
+      seed: 3,
+      ruleset: defaultRuleset,
+      terrainConfig: config,
+      players: players.map((p, i) => ({ ...p, team: i })),
+    });
+    expect(ring.height).toBeGreaterThan(grid.height);
   });
 });
 

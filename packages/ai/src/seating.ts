@@ -1,4 +1,4 @@
-import type { BotSetup, Personality } from '@bollwerk/config';
+import type { BotSetup, Personality, TerrainConfig } from '@bollwerk/config';
 import {
   applyAction,
   seatOrder,
@@ -28,6 +28,8 @@ export interface TableSeat {
    * tournament's bots keep theirs from match to match (TOURNAMENT §1.1).
    */
   personality?: Personality | null;
+  /** The seat's team label; omitted, the seat is a team of its own. */
+  team?: number;
 }
 
 export interface DealtSeats {
@@ -43,8 +45,17 @@ export interface DealtSeats {
   setups: (BotSetup | null)[];
 }
 
-export function dealSeats(seed: number, seats: readonly TableSeat[]): DealtSeats {
-  const playerOfSeat = seatOrder(seed, seats.length);
+export function dealSeats(
+  seed: number,
+  seats: readonly TableSeat[],
+  terrain: TerrainConfig,
+): DealtSeats {
+  // Teams of two at three or four teams are dealt onto a fair layout (`seatOrder`).
+  const playerOfSeat = seatOrder(
+    seed,
+    seats.map((seat, index) => seat.team ?? index),
+    terrain,
+  );
   const isBot = new Array<boolean>(seats.length);
   seats.forEach((seat, index) => {
     isBot[playerOfSeat[index] as number] = seat.bot;

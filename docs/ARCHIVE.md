@@ -6088,3 +6088,50 @@ finished double elimination of 216 teams), where a message may be 4 KB: the serv
 the tournament message alone up to `limits.maxTournamentBytes`, 256 KB. Seen with the built
 server and two browsers, host and teammate: both tabs on both pages, the bracket opened from a
 teammate's, no error on either.
+
+## 12zs. Fair seating for three and four teams of two, and the tournament's recordings (2026-10-09)
+
+**The recordings** of the tournament session of 2026-10-08, four matches (two 2v2, two
+2v2v2v2), all of Thomas with an L5 bot as his teammate, all replayed exactly on the current
+code and all won by his team on points at the round cap. What they add to PLAN §11 item 1 is
+written there: accuracy as measured before, people firing as fast as bots once combat opens,
+no late fade of L5 this time, L3–L4 still leaving most guns inert. And, for what follows: in
+the two eight-player matches the bots on the grid's outer columns banked 1 363 points on
+average against 767 on the inner ones, though the inner were if anything of higher levels —
+two matches, mixed levels and a dominant person, so a tendency only, but the one the
+geometry predicts: the middle islands have more neighbours.
+
+**The users' finding**: in three and four teams of two, where a team's islands fall decides
+too much. On the four-by-two grid the islands are of two kinds under its exact mirror
+symmetries, four corners and four middles; a team is equal to every other only if each has
+one of each, related alike. That leaves exactly four seatings (same letter, same team):
+
+```
+side by side   one apart   diagonal, near   diagonal, far
+A A B B        A B A B     A C D B          A D C B
+C C D D        C D C D     C A B D          C B A D
+```
+
+Teammates one above the other give two teams the corners and two the middles. On the
+three-by-two grid no seating of three teams is fair, so three teams of two play on **a ring
+of six**, the users' choice: fair with teammates side by side or directly opposite. The
+islands are mirrored, not turned, so the ring is not exactly six-fold — the top and bottom
+islands are mirror images of themselves only in part — but every island's centres are equal
+to a tile: neighbours 32.0–32.2 apart, the next round 55.6–56.0, opposite 64.0–64.5 (seed
+1). The ring costs room: 80x86 on seed 1 against the grid's 80x50, open sea in its middle.
+The users chose all four grid seatings, drawn alike, and on the ring neighbours and opposite
+half the matches each; no soak (their decision): fairness is by construction, and a test
+checks every seating on real maps gives each team the same distances, to a tile and a half.
+
+**How**: a pattern may name a team size (`teamSize`), serving only tables of teams of that
+size, and its fair seatings (`teamLayouts`: groups of placement indices and a weight). A
+table's team size is the size all its teams share (`tableTeamSize`), else 1; the pattern is
+that size's or the count's own (`patternFor`). `seatOrder` takes each seat's team: with
+layouts it draws one by weight, deals the teams onto its groups and each team's members onto
+its islands, all from the match seed's `seats` stream; without, the shuffle is the old one,
+so every other table is dealt exactly as before. The map follows the team size, so
+`createMatch` reads it from the players' teams — and a page joining a running match now
+rebuilds the match with the snapshot's teams, which it had left out, or it would have built
+the grid under a ring. The lobby's preview, a room, a local match and the harness deal the
+same way (`--map --teams 2` prints the ring). Seen in play: a ring of three teams of two, and
+four teams of two on the grid, one apart.

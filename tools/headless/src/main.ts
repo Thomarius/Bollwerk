@@ -186,15 +186,21 @@ function describeOutcome(state: MatchState): string {
 
 // ------------------------------------------------------------------------- teams
 
+/** Each seat's team: seats go into teams in order, as a room's default table has them. */
+function teamsBySeat(players: number, size: number): number[] {
+  return Array.from({ length: players }, (_, seat) => (size > 1 ? Math.floor(seat / size) : seat));
+}
+
 /**
  * Each player's team, by player id, seated the way a room seats them: seats go into
- * teams in order, then which island each seat gets is shuffled from the seed.
+ * teams in order, then each seat is dealt its island from the seed (`seatOrder`).
  */
 function teamSeating(seed: number, players: number, size: number): number[] {
-  const order = seatOrder(seed, players);
+  const teams = teamsBySeat(players, size);
+  const order = seatOrder(seed, teams, bundle.terrain);
   const byPlayer = new Array<number>(players).fill(0);
   order.forEach((player, seat) => {
-    byPlayer[player] = size > 1 ? Math.floor(seat / size) : seat;
+    byPlayer[player] = teams[seat] as number;
   });
   return byPlayer;
 }
@@ -304,7 +310,8 @@ if (args.replay.length > 0) {
 }
 
 if (args.map) {
-  const map = generateTerrain(bundle.terrain, args.players, args.seed);
+  // `--teams 2` shows the map a table of teams of two plays on: a ring at six.
+  const map = generateTerrain(bundle.terrain, args.players, args.seed, args.teams);
   const structure = new Uint8Array(map.width * map.height);
   for (const castle of map.castles) {
     for (let oy = 0; oy < castle.h; oy++) {

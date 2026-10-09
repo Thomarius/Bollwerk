@@ -1,4 +1,7 @@
+import type { TeamLayout, TerrainConfig } from '@bollwerk/config';
+
 import { streamFor } from './rng.js';
+import { patternFor } from './terrain.js';
 import type { MatchState } from './types.js';
 
 /**
@@ -21,17 +24,52 @@ export function teamScore(state: MatchState, team: number): number {
 }
 
 /**
- * Which player — and so which island — each seat becomes, as `order[seat]`.
+ * A table's team size: the size its teams share, or 1 for free-for-all — or for teams of
+ * different sizes, which have no pattern or fair seating of their own.
+ */
+export function tableTeamSize(labels: readonly (number | undefined)[]): number {
+  if (labels.some((label) => label === undefined)) return 1;
+  const sizes = new Map<number, number>();
+  for (const label of labels) sizes.set(label as number, (sizes.get(label as number) ?? 0) + 1);
+  const values = [...sizes.values()];
+  const size = values[0] ?? 1;
+  return values.length > 1 && values.every((v) => v === size) ? size : 1;
+}
+
+/**
+ * Which player — and so which island — each seat becomes, as `order[seat]`, from each
+ * seat's team label.
  *
  * The host chooses who plays with whom, but not where: which island each seat gets is
- * shuffled at the start, so no seat is always the one with the awkward neighbours.
- * Seeded from the match seed, so the server and a local match agree, and a match can be
- * reproduced. Players keep the invariant that player p owns island p + 1; it is the
- * seats that move.
+ * dealt at the start, so no seat is always the one with the awkward neighbours. Where the
+ * table's pattern has fair team layouts (`teamLayouts`) — three or four teams of two — one
+ * is drawn by weight, the teams dealt onto its groups of islands and each team's members
+ * onto its own; otherwise every seat is shuffled onto any island. Seeded from the match
+ * seed, so the server and a local match agree, and a match can be reproduced. Players keep
+ * the invariant that player p owns island p + 1; it is the seats that move.
  */
-export function seatOrder(seed: number, count: number): number[] {
-  const order = Array.from({ length: count }, (_, i) => i);
+export function seatOrder(
+  seed: number,
+  teamsBySeat: readonly (number | undefined)[],
+  config: TerrainConfig,
+): number[] {
+  const count = teamsBySeat.length;
   const rng = streamFor(seed, 'seats');
+  const teamSize = tableTeamSize(teamsBySeat);
+  const layouts = patternFor(config, count, teamSize).teamLayouts;
+  if (layouts !== undefined) {
+    const layout = layouts[rng.nextWeightedIndex(layouts.map((l) => l.weight))] as TeamLayout;
+    const groups = rng.shuffle(layout.teams.map((islands) => [...islands]));
+    const order = new Array<number>(count);
+    [...new Set(teamsBySeat)].forEach((label, team) => {
+      const islands = rng.shuffle([...(groups[team] as number[])]);
+      teamsBySeat.forEach((l, seat) => {
+        if (l === label) order[seat] = islands.shift() as number;
+      });
+    });
+    return order;
+  }
+  const order = Array.from({ length: count }, (_, i) => i);
   for (let i = count - 1; i > 0; i--) {
     const j = rng.nextInt(i + 1);
     [order[i], order[j]] = [order[j] as number, order[i] as number];

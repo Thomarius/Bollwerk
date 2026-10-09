@@ -106,7 +106,9 @@ export class LocalMatch {
         level,
         bot: level !== null,
         personality: options.personalities?.[index] ?? null,
+        team: options.teams?.[index] ?? index,
       })),
+      defaultTerrainConfig,
     );
     const humanSeat = seats.findIndex((seat) => seat === null);
     this.humanPlayer = humanSeat < 0 ? -1 : (order[humanSeat] as number);

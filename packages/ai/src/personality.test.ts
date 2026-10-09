@@ -1,4 +1,4 @@
-import { TRAIT_VALUES, type Personality } from '@bollwerk/config';
+import { TRAIT_VALUES, defaultTerrainConfig, type Personality } from '@bollwerk/config';
 import { describe, expect, it } from 'vitest';
 
 import { dealPersonalities } from './personality.js';
@@ -56,16 +56,24 @@ describe('dealing personalities', () => {
 describe('seating a table', () => {
   it('keeps a personality the table gives, and deals every other seat as without it', () => {
     const given: Personality = { risk: 'defensive', targeting: 'strategic', cannons: 'secondary' };
-    const plain = dealSeats(5, [
-      { level: 4, bot: true },
-      { level: null, bot: false },
-      { level: 7, bot: true },
-    ]);
-    const kept = dealSeats(5, [
-      { level: 4, bot: true, personality: given },
-      { level: null, bot: false },
-      { level: 7, bot: true },
-    ]);
+    const plain = dealSeats(
+      5,
+      [
+        { level: 4, bot: true },
+        { level: null, bot: false },
+        { level: 7, bot: true },
+      ],
+      defaultTerrainConfig,
+    );
+    const kept = dealSeats(
+      5,
+      [
+        { level: 4, bot: true, personality: given },
+        { level: null, bot: false },
+        { level: 7, bot: true },
+      ],
+      defaultTerrainConfig,
+    );
     expect(kept.playerOfSeat).toEqual(plain.playerOfSeat);
     const first = kept.playerOfSeat[0] as number;
     const third = kept.playerOfSeat[2] as number;
