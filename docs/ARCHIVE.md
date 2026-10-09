@@ -6551,3 +6551,11 @@ neighbour alike once the rows allow it and otherwise just clear of them (`hexPla
 ring order so the seatings read as on the ring. The ring stays for three players. The test of
 equal standing now holds the four-team grid alone; the hex's own test checks its shape, and that
 at a gap of an island's height and two channels it is the flat hexagon, neighbours alike.
+
+## 13d. v0.8.5 (2026-10-09)
+
+Released with the day's work since v0.8.4: one tournament lobby for host and teammates in two
+tabs (12zr, protocol 20, so v0.8.4 pages and servers cannot meet it); fair seating for four
+teams of two and the compact hex for three (12zs, 13c); the crown smaller and the style pass,
+every style but Minimal reviewed and finished (12zt–12zz, 13a, 13b). The game's rules and bots
+unchanged.

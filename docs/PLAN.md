@@ -1568,7 +1568,7 @@ every resolution against an independent search, not only on unit pictures.
 
 ## 11. Open work
 
-**Where to start (2026-10-08).** The latest release is **v0.8.4** (2026-10-08). Up to **v0.8.3**: the game and online play,
+**Where to start (2026-10-09).** The latest release is **v0.8.5** (2026-10-09). Up to **v0.8.3**: the game and online play,
 bots as skill levels and personalities, eighteen styles each with its piece in the corner,
 random looks every round, English and German, the desktop app, UPnP, the balance soak and the
 rendering work (ARCHIVE 12h–12v); the refactoring of 2026-10-07 (ARCHIVE 12w); and stronger
@@ -1579,9 +1579,11 @@ matches; its design and work packages in [`TOURNAMENT.md`](./TOURNAMENT.md), ARC
 protocol 18 — the first feedback from its play-testing (ARCHIVE 12zl), smoother wipes between
 the looks (ARCHIVE 12zm), **Noir**, a nineteenth style (ARCHIVE 12zn), and the second
 feedback: lives in the lobby and the tournament, one-round matches, the archnemesis carried to
-the final, the last match marked and the bracket drawn (ARCHIVE 12zp, protocol 19). After
-v0.8.4, the third feedback: one lobby for the host and their teammates, in a Match and a
-Tournament tab (ARCHIVE 12zr, protocol 20). **The tournament's
+the final, the last match marked and the bracket drawn (ARCHIVE 12zp, protocol 19). New in
+v0.8.5 (ARCHIVE 13d): the third feedback — one lobby for the host and their teammates, in a
+Match and a Tournament tab (ARCHIVE 12zr, protocol 20); fair seating for four teams of two and
+a wide compact hex for three (ARCHIVE 12zs, 13c); and **the style pass**, every style but
+Minimal finished in nine packages (ARCHIVE 12zt–12zz, 13a, 13b). **The tournament's
 play-testing round, T8, is under way**, its findings triaged with the users first. Should the
 wipes still stutter, what is left is each style's terrain drawn as one: splitting it by island,
 in all nineteen styles, would remove the last hitch a new random look costs. The bot learning

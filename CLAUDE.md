@@ -153,9 +153,8 @@ Full detail in PLAN.md §1. The parts that surprise people:
 
 ## Status
 
-**Done** (2026-10-09; the latest release **v0.8.4**, 2026-10-08, protocol 19; the working
-tree is at protocol 20, which a test session needs the server rebuilt and every page
-reloaded for):
+**Done** (2026-10-09; the latest release **v0.8.5**, 2026-10-09, protocol 20, which a test
+session needs the server rebuilt and every page reloaded for):
 
 - **The style pass** (ARCHIVE 12zt–12zz, 13a, 13b): every style but Minimal reviewed in the same
   screenshots and finished in nine packages — readability first (S1), then Parchment, Blueprint,
