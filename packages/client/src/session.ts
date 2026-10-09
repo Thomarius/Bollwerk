@@ -46,7 +46,8 @@ export interface Session {
   leave(): void;
   /**
    * The rematch at the end (PLAN 11.18 Y6): the player's to call, the host's to call while
-   * they wait, or none — a match started from a link, with no table to go back to.
+   * they wait, or none — a match started from a link, with no table to go back to, or a
+   * room its host has left. Read each frame, since the host may leave as the summary shows.
    */
   readonly rematch: 'mine' | 'host' | null;
   requestRematch(): void;
@@ -145,6 +146,7 @@ export function networkSession(
   connection: ServerConnection,
   watching = false,
   isHost: () => boolean = () => false,
+  hostHere: () => boolean = () => true,
 ): Session {
   return {
     get state() {
@@ -177,8 +179,11 @@ export function networkSession(
       desynced: match.desynced,
     }),
     leave: () => connection.close(),
+    // The host gone, or the room, nobody will call the next match: the summary keeps only
+    // its way back to the menu, where a guest once waited on the button for good.
     get rematch() {
-      return isHost() ? 'mine' : 'host';
+      if (isHost()) return 'mine';
+      return hostHere() && connection.state !== 'closed' ? 'host' : null;
     },
     requestRematch: () => connection.send({ type: 'rematch' }),
   };

@@ -108,6 +108,11 @@ export class TournamentRoom {
     this.connection.send({ type: 'tournament', table, save: JSON.stringify(save) });
   }
 
+  /** The tournament over: sent alone, since there is no next match to carry it. */
+  sendEnd(save: Save): void {
+    this.connection.send({ type: 'tournamentEnd', save: JSON.stringify(save) });
+  }
+
   start(): void {
     this.connection.send({ type: 'start' });
   }

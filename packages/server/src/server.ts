@@ -244,8 +244,9 @@ export async function startServer(options: ServerOptions): Promise<StartResult> 
       if (text.length > Math.max(maxMessageBytes, maxTournamentBytes)) return;
 
       const message = decodeClientMessage(text);
-      // Only a tournament's table, which carries its save, may be longer than any other.
-      if (text.length > maxMessageBytes && message?.type !== 'tournament') return;
+      // Only a tournament's table or end, which carry its save, may be longer than any other.
+      const carriesSave = message?.type === 'tournament' || message?.type === 'tournamentEnd';
+      if (text.length > maxMessageBytes && !carriesSave) return;
       if (message === null) {
         connection.send({ type: 'error', code: 'bad_message', message: 'unparseable message' });
         return;

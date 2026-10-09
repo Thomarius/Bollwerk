@@ -639,6 +639,8 @@ export async function runSession(
       finishedSeen = true;
       exits.finished?.(session.state);
     }
+    // Whose the next match is can change as the summary shows: a host who leaves takes it.
+    if (next === undefined) hud.endScreen.useRematch(session.rematch, exits.waitLabel);
     pause.update(
       session.pausedBy,
       session.humanPlayer,

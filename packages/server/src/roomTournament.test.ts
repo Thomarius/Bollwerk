@@ -209,6 +209,28 @@ describe("a tournament's room", () => {
     expect(guest.playerId).toBe(0);
   });
 
+  it("passes the finished tournament on once its last match is over, and only the host's", () => {
+    const r = room();
+    const host = new Listener('h');
+    r.join(host, 'Thomas');
+    r.handle(host, { type: 'tournament', table: table(), save: SAVE });
+    const guest = new Listener('g');
+    r.join(guest, 'Mausica');
+    r.handle(host, { type: 'start' });
+    const ENDED = '{"version":1,"ended":true}';
+    // Mid-match, the end waits; and a guest has no tournament to end.
+    r.handle(host, { type: 'tournamentEnd', save: ENDED });
+    run(r, 60_000);
+    expect(r.finished).toBe(true);
+    r.handle(guest, { type: 'tournamentEnd', save: ENDED });
+    expect(guest.latest('tournamentSave').save).toBe(SAVE);
+
+    r.handle(host, { type: 'tournamentEnd', save: ENDED });
+    expect(guest.latest('tournamentSave').save).toBe(ENDED);
+    // The room stays on the finished match: there is no lobby to go back to.
+    expect(r.started).toBe(true);
+  });
+
   it('is listed with its team while an open seat is free', () => {
     const r = new Room({
       code: 'TOUR43',

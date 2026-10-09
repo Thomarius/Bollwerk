@@ -217,8 +217,9 @@ everything; ARCHIVE 12ze.)
   pre-match screen, the standings and end screens, and the flow driving a session from one
   match to the next.
 - **`protocol` and `server`**: a room told its table rather than letting its host set one, and
-  kept across matches (protocol 18), and the host's save passed on to the teammates' pages
-  (protocol 20).
+  kept across matches (protocol 18), the host's save passed on to the teammates' pages
+  (protocol 20), and the finished tournament sent alone as the room closes, so their pages
+  show its end too (`tournamentEnd`, protocol 21).
 - **`ai`**: `dealSeats` takes fixed setups when a table brings them, rather than dealing
   personalities from the match seed.
 

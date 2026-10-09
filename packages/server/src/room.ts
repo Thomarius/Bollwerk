@@ -263,6 +263,13 @@ export class Room {
       case 'tournament':
         if (seat.playerId === this.hostId) this.setTournament(message.table, message.save);
         return;
+      case 'tournamentEnd':
+        // Only at a tournament's table, and not while its match is under way.
+        if (seat.playerId !== this.hostId || this.tournament === null) return;
+        if (this.match !== null && !this.match.finished) return;
+        this.tournamentSave = message.save;
+        this.broadcast({ type: 'tournamentSave', save: message.save });
+        return;
       case 'configure': {
         // Only the host, and only while the table is still being set.
         if (seat.playerId !== this.hostId || this.match !== null) return;

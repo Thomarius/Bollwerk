@@ -34,7 +34,7 @@ import type { Common } from './menu.js';
 import { showMenu } from './menu.js';
 import { runSession } from './matchScreen.js';
 import { openBracket } from './tournamentBracketView.js';
-import { tournamentTab } from './tournamentView.js';
+import { endingMarkup, tournamentTab } from './tournamentView.js';
 
 /** The lobby, one screen whether a server holds the table or the browser does. */
 
@@ -162,6 +162,17 @@ export function wireBracket(save: Save, progress: Progress): void {
   document.querySelector('#bracket')?.addEventListener('click', () => {
     audio.play('select');
     openBracket(save, progress, () => audio.play('select'));
+  });
+}
+
+/** A tournament's end, won or out, as the host's page and their teammates' show it. */
+export function showEnding(save: Save, progress: Progress, back: () => void): void {
+  app!.innerHTML = endingMarkup(save, progress);
+  audio.music(progress.status.kind === 'won' ? 'music_victory' : 'music_defeat');
+  wireBracket(save, progress);
+  app!.querySelector('#back')?.addEventListener('click', () => {
+    audio.play('select');
+    back();
   });
 }
 
@@ -390,6 +401,8 @@ function roomLobby(
   let table: LobbyView | null = null;
   let roomCode = code ?? '';
   let hostId = -1;
+  /** Whether the host is still at the table, as the room last said: gone, nobody calls the next match. */
+  let hostHere = true;
   let started = false;
   /** Takes the match down, for a rematch bringing the room back to its lobby. */
   let endMatch: (() => void) | null = null;
@@ -462,6 +475,7 @@ function roomLobby(
         break;
       case 'room': {
         hostId = message.hostId;
+        hostHere = message.seats.some((s) => s.playerId === hostId && s.connected);
         // Somebody new at the table: marked as they arrive, and heard.
         const ids = new Set(message.seats.map((seat) => seat.playerId));
         const arrived = known === null ? [] : [...ids].filter((id) => !known?.has(id));
@@ -499,6 +513,15 @@ function roomLobby(
       }
       case 'tournamentSave':
         tournament = readTournament(message.save);
+        // The tournament over, sent as the host's room closes: its end, as the host sees it,
+        // in place of the last match's summary.
+        if (started && tournament !== null && tournament.progress.status.kind !== 'playing') {
+          endMatch?.();
+          endMatch = null;
+          connection.close();
+          showEnding(tournament.save, tournament.progress, showMenu);
+          break;
+        }
         render();
         break;
       case 'snapshot':
@@ -517,7 +540,13 @@ function roomLobby(
           const setup: Setup = { ...common, seed, seats, settings: DEFAULT_SETTINGS };
           const tournament = table?.tournament ?? null;
           void runSession(
-            networkSession(match, connection, watching, () => match.humanPlayer === hostId),
+            networkSession(
+              match,
+              connection,
+              watching,
+              () => match.humanPlayer === hostId,
+              () => hostHere,
+            ),
             setup,
             // The next match is the host's to send from their tournament.
             tournament === null ? {} : { waitLabel: 'tournament.waitHost' },

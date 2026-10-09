@@ -15,7 +15,7 @@ import {
 import { app, audio, params, showError } from './app.js';
 import { t } from './i18n.js';
 import type { LobbyTab, LobbyView } from './lobby.js';
-import { drawLobby, wireBracket } from './lobbyFlow.js';
+import { drawLobby, showEnding, wireBracket } from './lobbyFlow.js';
 import { runSession, type MatchExits } from './matchScreen.js';
 import { preferredStyles } from './prefs.js';
 import {
@@ -29,7 +29,7 @@ import {
 import type { TournamentExits } from './tournamentMenu.js';
 import { TournamentRoom, roomTable } from './tournamentRoom.js';
 import { deleteTournament, loadTournament, writeTournament } from './tournamentSaves.js';
-import { endingMarkup, tournamentTab } from './tournamentView.js';
+import { tournamentTab } from './tournamentView.js';
 
 /**
  * Playing a tournament (TOURNAMENT T5, T6): the screen between matches, the match, its
@@ -86,9 +86,12 @@ function showTournament(open: Open, notice: string | null): void {
   const { save } = open;
   const progress = new Progress(save);
   if (progress.status.kind !== 'playing') {
+    // The teammates' pages are sent the end before the room goes: they have no next match
+    // to be brought back to the lobby for.
+    open.room?.sendEnd(save);
     open.room?.close();
     open.room = null;
-    showEnding(open, progress);
+    showEnd(open, progress);
     return;
   }
   const room = open.room?.open === true ? open.room : null;
@@ -174,15 +177,9 @@ function showTournament(open: Open, notice: string | null): void {
  * shown its end — the page closed on the match's summary — is still saved, and opening it
  * shows the end then.
  */
-function showEnding(open: Open, progress: Progress): void {
+function showEnd(open: Open, progress: Progress): void {
   deleteTournament(open.save.id);
-  app!.innerHTML = endingMarkup(open.save, progress);
-  audio.music(progress.status.kind === 'won' ? 'music_victory' : 'music_defeat');
-  wireBracket(open.save, progress);
-  app!.querySelector('#back')?.addEventListener('click', () => {
-    audio.play('select');
-    open.exits.menu();
-  });
+  showEnding(open.save, progress, () => open.exits.menu());
 }
 
 /** The host's next match: its table, and how the match screen leads back here. */

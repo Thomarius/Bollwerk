@@ -9,7 +9,7 @@ import { z } from 'zod';
 import { SnapshotSchema } from './snapshot.js';
 
 /** Bumped on any breaking change to the message set; mismatched clients are rejected. */
-export const PROTOCOL_VERSION = 20;
+export const PROTOCOL_VERSION = 21;
 
 /**
  * A player's intent. The server overwrites `player` with the sender's own seat before
@@ -154,6 +154,13 @@ export const ClientMessageSchema = z.discriminatedUnion('type', [
     table: TournamentTableSchema,
     save: z.string(),
   }),
+  /**
+   * The host, once their tournament is over — won, or their team out — as the room closes:
+   * there is no next match to send, so the finished tournament goes alone, for the
+   * teammates' pages to show its end. Without it they waited on the last match's summary
+   * for a host who had gone (the tournament tests, 2026-10-09). Up to `maxTournamentBytes`.
+   */
+  z.strictObject({ type: z.literal('tournamentEnd'), save: z.string() }),
   z.strictObject({ type: z.literal('action'), action: ActionSchema }),
   /** Anyone at the table may pause a running match, and anyone may resume it. */
   z.strictObject({ type: z.literal('pause'), paused: z.boolean() }),
