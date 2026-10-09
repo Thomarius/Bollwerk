@@ -1577,28 +1577,24 @@ every resolution against an independent search, not only on unit pictures.
 
 ## 11. Open work
 
-**Where to start (2026-10-09).** The latest release is **v0.8.6** (2026-10-09). Up to **v0.8.3**: the game and online play,
-bots as skill levels and personalities, eighteen styles each with its piece in the corner,
-random looks every round, English and German, the desktop app, UPnP, the balance soak and the
-rendering work (ARCHIVE 12h–12v); the refactoring of 2026-10-07 (ARCHIVE 12w); and stronger
-bots, which route round holes no piece can fill and widen their walls once sealed (ARCHIVE
-12x, 12y). New in v0.8.4: **tournament mode** — a cooperative run of matches
-against a field of named bot teams, offline or with friends in the host's team, saved between
-matches; its design and work packages in [`TOURNAMENT.md`](./TOURNAMENT.md), ARCHIVE 12ze–12zk,
-protocol 18 — the first feedback from its play-testing (ARCHIVE 12zl), smoother wipes between
-the looks (ARCHIVE 12zm), **Noir**, a nineteenth style (ARCHIVE 12zn), and the second
-feedback: lives in the lobby and the tournament, one-round matches, the archnemesis carried to
-the final, the last match marked and the bracket drawn (ARCHIVE 12zp, protocol 19). New in
-v0.8.5 (ARCHIVE 13d): the third feedback — one lobby for the host and their teammates, in a
-Match and a Tournament tab (ARCHIVE 12zr, protocol 20); fair seating for four teams of two and
-a wide compact hex for three (ARCHIVE 12zs, 13c); and **the style pass**, every style but
-Minimal finished in nine packages (ARCHIVE 12zt–12zz, 13a, 13b). New in v0.8.6 (ARCHIVE 13g): Random looks no longer repeat (13e), the Sharpness setting, the music at once where allowed, and Chocolate's and Blueprint's frames cut (13f). **The tournament's
-play-testing round, T8, is under way**, its findings triaged with the users first. Should the
-wipes still stutter, what is left is each style's terrain drawn as one: splitting it by island,
-in all nineteen styles, would remove the last hitch a new random look costs. The bot learning
-work, item 2, is **paused** after a first learned fit (ARCHIVE 12z), its next steps in
-[`BOT_LEARNING.md`](./BOT_LEARNING.md) §6. French is not to be done (the user's decision,
-2026-10-06). Still open:
+**Where to start (2026-10-09).** The latest release is **v0.8.6** (2026-10-09, protocol 20).
+Up to **v0.8.3**: the game and online play, bots as skill levels and personalities, the styles
+with their corner pieces, random looks every round, English and German, the desktop app, UPnP,
+the balance soak and the rendering work (ARCHIVE 12h–12v), the refactoring (12w) and stronger
+bots (12x, 12y). **v0.8.4**: tournament mode ([`TOURNAMENT.md`](./TOURNAMENT.md), ARCHIVE
+12ze–12zk) with its first two rounds of feedback (12zl, 12zp), smoother wipes (12zm) and Noir
+(12zn). **v0.8.5** (13d): the shared tournament lobby (12zr), team seating for three and four
+teams of two (12zs, 13c) and the style pass, every style but Minimal finished (12zt–12zz, 13a,
+13b). **v0.8.6** (13g): Random looks no longer repeat (13e), a Sharpness setting, the music at
+once where allowed, and Chocolate's and Blueprint's frames cut (13f).
+
+**The tournament's play-testing round, T8, is under way**, its findings triaged with the users
+first. **Next to build**: item 3, the bots' planning moved off the page's thread in local matches,
+planned in detail. Should the wipes still stutter, what is left is each style's terrain drawn as
+one: splitting it by island, in all nineteen styles, would remove the last hitch a new random
+look costs. The bot learning work, item 2, is **paused** after a first learned fit (ARCHIVE
+12z), its next steps in [`BOT_LEARNING.md`](./BOT_LEARNING.md) §6. French is not to be done
+(the user's decision, 2026-10-06). Still open:
 
 1. **Bots that miss as people do** (the user's task, 2026-10-06; how and at which levels not
    yet decided). Bots should feel fair, and in combat they are superhumanly precise: their

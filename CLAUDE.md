@@ -165,14 +165,14 @@ session needs the server rebuilt and every page reloaded for):
   Pixel and Night, Toy bricks, Stained glass and Cyberpunk made things of their setting (castles,
   guns, walls, sealed ground, life), then the middle styles' walls and guns and the last touches;
   the main castle's crown, still one shared mark, smaller and at the castle's foot.
-- **Fair seating** (ARCHIVE 12zs): three teams of two on a ring of six, four teams of two on
-  one of the grid's four fair seatings (`teamLayouts`).
+- **Team seating** (ARCHIVE 12zs, 13c): four teams of two on one of the grid's four fair
+  seatings (`teamLayouts`); three teams of two on a compact hex of six (`hex`, `rowGapTiles`),
+  wide rather than fair, the users' choice for wide screens.
 - **The third feedback** (ARCHIVE 12zr): a tournament's lobby is one screen for the host and
   their teammates, a Match tab (the map, the seats, who plays in place of which bot) and a
   Tournament tab (the standings, the bracket as an icon beside them), opening on the match.
   The host's room passes their save on to the teammates' pages (protocol 20,
   `tournamentSave`, the one message allowed up to `limits.maxTournamentBytes`).
-
 - **Tournament mode** (2026-10-08, `docs/TOURNAMENT.md`, ARCHIVE 12ze–12zk): the host's team
   of people and bots against a field of named bot teams, through a league (one match size a
   matchday) and a single- or double-elimination knockout, saved in the browser between
@@ -342,12 +342,15 @@ its header but the simulation does not — so the server stamps each header with
   It is legitimately 0 mid-repair, and it still says "sealed" as a breached build phase
   opens. Do not assert on it except at a resolution; a bot deciding on it must count
   afresh with `computeEnclosure`, which is what cost the bots a quarter of their rounds.
-- **Headless Chrome cannot verify anything time-dependent in the client.** A watched match
-  is still on round 0 after 120s of virtual time at 10x speed. Pull the logic into a pure
+- **Headless Chrome cannot verify anything time-dependent in the client** by virtual time: a
+  watched match is still on round 0 after 120s of it at 10x speed. Pull the logic into a pure
   function and test that, as `banners.ts`, `lobby.ts` and `scores.ts` do. It can still be
   _looked at_: in real time, Playwright's screenshot command renders fine, and
   `tools/screenshots.sh` uses `&snapshot=PHASE&round=N` plus a wait to reach a state —
-  an announcement, the final round, game over.
+  an announcement, the final round, game over. And it can be _watched_: launched with
+  `--enable-gpu --use-angle=gl --ignore-gpu-blocklist`, a watched match at `&speed=4` plays out
+  in real time, and temporary `console.log`s read through Playwright's `console` event are how
+  the Random looks' lost styles were found (ARCHIVE 13e) — removed before committing.
 - **A test asserting "failing to seal ends your match" needs `withoutContinues`**, and so
   does anything measuring the piece-size ramp: a continue rewinds the schedule, so the
   build rate climbs back instead of falling.
