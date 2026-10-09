@@ -159,6 +159,22 @@ export const CyberpunkStyleSchema = z.strictObject({
   hovercraftTilesPerSecond: z.number().positive(),
   /** The holographic billboard in the corner (PLAN 11.24): one turn of its emblem. */
   billboardTurnMs: z.number().int().positive(),
+  /** Sealed ground's lit floor: the hexes' size (circumradius), their light and its edge's. */
+  floorHexTiles: z.number().positive(),
+  floorAlpha: z.number().min(0).max(1),
+  floorEdgeAlpha: z.number().min(0).max(1),
+  /**
+   * The city along the outer coasts: the odds of a block on a sea tile at the coast, and how
+   * far another island's land must be, so no block stands in a channel shots cross.
+   */
+  cityOdds: z.number().min(0).max(1),
+  cityClearTiles: z.number().int().nonnegative(),
+  /** Holographic adverts over the city's blocks, flickering. */
+  holoAds: z.number().int().nonnegative(),
+  /** One blink of the lights on a sealed tower's masts. */
+  mastBlinkMs: z.number().int().positive(),
+  /** The band of RGB-split glitch across the board as a phase's banner arrives. */
+  phaseGlitchMs: z.number().int().nonnegative(),
 });
 export type CyberpunkStyleConfig = z.infer<typeof CyberpunkStyleSchema>;
 

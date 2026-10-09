@@ -779,16 +779,31 @@ faint in it, so a thick wall still shows the block a shot takes. **Walls stand u
 pixel style's do, to the same height** (`frontFacePx`), so the two agree as the banner
 swaps them: a block with nothing to its south shows a darker front face with a strip of
 light, and the owner's colour spills onto the ground in front, where a shadow would vanish
-on a board this dark. Castles have faces too, in the pixel keep's proportion, and guns
-stand on a mount whose side shows; land is a dark grid
-tinted faintly by owner; the sea is near black, crossed by seeded circuit traces kept
-clear of the coast and fading toward it, with pulses running along them. Castles are
-housings with a core that blazes and breathes while sealed and dims when breached, and
-fly a hologram flag that flickers on and flickers out as it is lowered. Sealed ground is
-a lit grid floor. Shots are plasma tracers with a point on the ground below; an impact
-is a flash, a ring and a moment of glitch; a breach shorts out in arcs that die away;
-guns throw sparks instead of smoke and flicker as they lose or regain power. Glow is a
-wider shape on an additive layer under each bright line, not a bloom filter. Its player
+on a board this dark. Land is a dark grid tinted faintly by owner; the sea is near black,
+crossed by seeded circuit traces kept clear of the coast and fading toward it, with pulses
+running along them, and along the outer coasts — never in a channel shots cross — stands a
+city of low blocks on the water, their faces with lit windows, a holographic advert
+flickering over one or two. **Castles are server towers**: a podium with its face, a tower
+stepped back on it with its own face and shadow, vents in the podium's roof, two antenna
+masts off the back, clear of the flag, a vertical sign hung down the front corner with
+glyphs that are no real characters, and a reactor ring in the tower's roof. Lit means
+sealed: the sign's glyphs and the ring, turning slowly in a breathing glow, light in the
+owner's colour, and the masts' tips blink; a breach puts them out in a sputter, and they
+fly a hologram flag, projected from the ring, that flickers on and flickers out as it is
+lowered. A main castle is an arcology, a third tier and a third mast, all taller. **Guns
+are hex turrets** on the plain square: a hexagonal mount whose side shows, chevrons on
+its flanks, twin rails with a breech block, and a coil of three bands across the rails
+that charges between shots — flight time is the reload, so a gun's shot in the air is how
+far — lighting band by band; silenced, the mount grey and unlit under a red offline
+scanline, the rails short and grey. **Sealed ground is a lit floor of hexes** in the
+owner's light colour over a wash of their colour, still, edged with a dashed neon line a
+little inside its border, so it reads at a glance and the walls, square and rimmed, stand
+apart from it. Shots are plasma tracers with a point on the ground below; an impact is a
+flash, a ring and a moment of glitch; a breach shorts out in arcs that die away; guns
+throw sparks instead of smoke and flicker as they lose or regain power; as a phase's
+banner arrives a band across the board tears into slices split magenta and cyan for a
+moment, none while motion is reduced. Glow is a wider shape on an additive layer under
+each bright line, not a bloom filter. Its player
 ramps are neon restylings of the shared ones, the same hues with each team family's
 order of lightness kept, so teammates still tell apart.
 
@@ -1618,10 +1633,7 @@ work, item 2, is **paused** after a first learned fit (ARCHIVE 12z), its next st
    - **S4 — Pixel and Night** — done (ARCHIVE 12zx).
    - **S5 — Toy bricks** — done (ARCHIVE 12zy).
    - **S6 — Stained glass** — done (ARCHIVE 12zz).
-   - **S7 — Cyberpunk.** Castles as server towers — stepped roof, vents, antennas with a
-     blinking tip, a neon sign strip, the core a reactor ring; guns as hex turrets, twin rails,
-     a coil charging between shots; a lit sealed floor (`FillPattern`) with a neon edge; a city
-     of lit rooftops along the coast; a one-frame RGB-split band as a banner arrives.
+   - **S7 — Cyberpunk** — done (ARCHIVE 13a).
    - **S8 — The middle styles' walls and guns.** Sakura's walls with a roof ridge along their
      run, tile rows to the eaves, round tile-ends and a gold ornament at a run's end, and its
      guns bronze barrels on lacquered carriages with the owner's crest; Opera's keys in

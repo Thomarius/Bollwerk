@@ -1263,7 +1263,7 @@
     "glowWidthTiles": 0.55,
     "glowAlpha": 0.3,
     "gridAlpha": 0.55,
-    "territoryAlpha": 0.16,
+    "territoryAlpha": 0.22,
     "tracesPerSeaTile": 0.035,
     "traceFadeTiles": 3,
     "pulseTilesPerSecond": 7,
@@ -1273,7 +1273,15 @@
     "drones": 2,
     "hovercraftEveryMs": 15000,
     "hovercraftTilesPerSecond": 1.6,
-    "billboardTurnMs": 7000
+    "billboardTurnMs": 7000,
+    "floorHexTiles": 0.4,
+    "floorAlpha": 0.4,
+    "floorEdgeAlpha": 0.75,
+    "cityOdds": 0.45,
+    "cityClearTiles": 4,
+    "holoAds": 2,
+    "mastBlinkMs": 1400,
+    "phaseGlitchMs": 140
   },
   "blueprint": {
     "lineWidthPx": 2,

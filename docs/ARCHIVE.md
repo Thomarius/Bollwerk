@@ -6417,3 +6417,71 @@ At eight players, watched with `&perf=1` in the 30 s window: render 1.32–1.36 
 (worst 7.1–8.3) against 1.06 (5.1) before, effects 0.57–0.58 ms against 0.45, 3 019 vertices
 rebuilt a frame against 2 684 — the added sprite and shimmer layers, and the amber barrels'
 streak. 60 fps throughout.
+
+## 13a. The style pass, S7: Cyberpunk (2026-10-09)
+
+Cyberpunk's traces, pulses, rain, drone, holograms and billboard all worked, but its castle
+was Minimal's square-in-square in neon with a dot for a core, its guns dark discs with a bar,
+and its sealed "lit grid floor" the land's grid in colour, hardly reading over the owner's
+tint (the style review, 12zt). Now the board is a city:
+
+- **Castles as server towers** (`drawTower`, per island in `IslandParts`; `towerOf` places the
+  parts): a podium inset as the housing was, with its face and a row of windows; a tower
+  stepped back on it with its own face and a band of shadow below, its roof rimmed brightest;
+  vents in the podium's roof before the tower; two antenna masts, tapering rods with a short
+  spar, rising off the left and right edges, outside the 1.3 tiles of the hologram flag; a
+  vertical sign hung down the front corner over the face, with glyphs of a few strokes each
+  (eight shapes, none a real character, picked by the castle's number); and a reactor ring in
+  the tower's roof, from which the hologram's beam now rises. A main castle is an arcology: a
+  third tier, a third mast, the masts taller. All of it is drawn unlit; **what lights up**
+  (`drawTowerLights`) is stamped — the sign's glyphs in the owner's light with a wash round
+  the panel, the ring with six spokes turning slowly in a breathing soft glow, a white-hot
+  inner ring, the lamps at the masts' tips blinking briefly on their own beats
+  (`mastBlinkMs`) — shapes drawn once in white for the tile size and only placed, turned,
+  tinted and faded (`Stamps`, `StampBook`), in one added container never bloomed. Lit means
+  sealed, as `castleSealed` says each frame; a breach puts the lights out in a sputter, on and
+  off ever more rarely over `powerDownMs` as a gun powering down does, and sealing flickers
+  them on. The crossbar first drawn on each mast as wide as its foot made a plus sign of it;
+  the podium and tower in near shades did not read as stepped until the podium was darkened,
+  the tower's rim drawn in the light line and its shadow added.
+- **Guns as hex turrets** (`drawTurret`): on the plain square (`cannonBase`) a flat-topped
+  hexagonal mount whose side shows below it, two chevrons a flank pointing out to its corners,
+  and the ring the barrel turns on. The barrel is twin rails with a breech block across their
+  foot and a coil of three dark bands across their end (`Memos`, redrawn as they turn or
+  kick); the coil **charges between shots**, its bands lighting one by one from the breech
+  as the gun's shot in the air nears its landing (`shotProgress`: flight time is the
+  reload), all three lit when no shot is out — stamped, since it changes every frame. A soft
+  glow round a charged coil, tried first, and the rails' glow with round ends both put a
+  glowing ball at every muzzle, as a shot's head is: the coil has no glow and the rails' is
+  square-ended and narrower. Silenced, S1's offline look on the hexagon — grey and unlit, a
+  red scanline across — with short grey rails and no coil; at eight players a silenced gun
+  is a grey hexagon with a red bar, a live one the owner's. The power-down flicker and the
+  cannon-placing ghost are the hexagon too.
+- **A lit sealed floor** (`drawSealed`): over the owner's wash (`territoryAlpha` 0.16 to
+  0.22) a floor of hexes in the owner's light colour, added (`floorAlpha` 0.4,
+  `floorHexTiles` 0.4), with a node at every other centre, from a pattern drawn once a colour
+  on a canvas a period of the tiling and laid in as a fill lined up with the board
+  (`hexPattern`, `FillPattern`: a pattern takes no tint, so one a colour, eight at most); and
+  a dashed neon edge in the owner's light a seventh of a tile inside its border, two dashes a
+  tile so corners meet on a gap (`floorEdgeAlpha`). Still: nothing scrolls under the walls.
+  Hexes are a shape no wall or gun has, so sealed ground reads at a glance at eight players and
+  the walls, square, filled and rimmed, stand apart from it.
+- **A city at the coast** (`drawCity`, with the terrain): low blocks on the sea tiles beside
+  the land, set against the coast, a lit back edge to the roof and a face of a fifth to near
+  half the block with rows of windows, most warm and some cyan, a vent on some roofs; seeded,
+  on 45% of such tiles (`cityOdds`; 60%, tried first, was a ragged fringe round every
+  island). Only where no other island's land is within four tiles (`cityClearTiles`), so none
+  stands in a channel shots cross, and clear of the big timer and the corner's billboard. Over
+  two blocks with open water behind them a holographic advert, magenta or cyan, bars of text
+  that is no text (`holoAds`): each a `Graphics` drawn with the terrain and only faded after,
+  out for a moment now and then. On the water, never the land, so no block can be taken for a
+  wall or hide one.
+- **A glitch as a banner arrives** (`drawPhaseGlitch`): when `bannerProgress` turns from none
+  to some, for `phaseGlitchMs` (140 ms) six slices across the board at a place that jumps
+  every 45 ms, each a magenta copy and a cyan copy set apart along and across it with a white
+  line through, fading — the picture losing its sync. None while motion is reduced.
+
+At eight players, watched with `&perf=1` in the 30 s window: render 2.67–2.75 ms a frame
+(worst 6.1–7.3) against 2.66 (7.0) before; effects 1.18–1.31 ms against 1.09; 8 393–8 401
+vertices rebuilt a frame against 10 653 — the castles' cores and their glow, drawn into the
+effects' `Graphics` every frame, are stamps now. 60 fps throughout.
