@@ -6,9 +6,11 @@ import { z } from 'zod';
  * `ring` puts them on a circle, so every player has the same two neighbours at the
  * same distance — uniform, and the right answer for odd counts. `grid` packs them in
  * rows, which is tighter but gives edge and middle seats different neighbourhoods.
+ * `hex` is a ring of six laid flat for a wide screen: two islands above, two below, one
+ * at each side — the top and bottom pairs `rowGapTiles` apart.
  * Which is worth more depends on the count, so it is a table rather than a rule.
  */
-export const PatternKindSchema = z.enum(['ring', 'grid']);
+export const PatternKindSchema = z.enum(['ring', 'grid', 'hex']);
 export type PatternKind = z.infer<typeof PatternKindSchema>;
 
 /**
@@ -35,6 +37,14 @@ export const IslandPatternSchema = z
     cols: z.number().int().positive().optional(),
     rows: z.number().int().positive().optional(),
     /**
+     * Hex only: the water between the top pair of islands and the bottom pair, in tiles —
+     * never less than the channel. Below an island's height and two channels the side
+     * islands cannot stand beside the rows and go outside them: a compact map for a wide
+     * screen, its seats unalike (the users' choice for three teams of two, 2026-10-09). At
+     * that height the six stand as a flat hexagon, every neighbour at about one distance.
+     */
+    rowGapTiles: z.number().int().nonnegative().optional(),
+    /**
      * The fair seatings of `teamSize` teams on these islands: one is drawn for each match
      * and the teams dealt onto it, rather than every seat shuffled onto any island. Where a
      * pattern has none, seats are shuffled freely.
@@ -46,6 +56,12 @@ export const IslandPatternSchema = z
   })
   .refine((p) => p.kind !== 'grid' || (p.cols ?? 0) * (p.rows ?? 0) >= p.players, {
     message: 'cols x rows must be at least players',
+  })
+  .refine((p) => p.kind !== 'hex' || p.players === 6, {
+    message: 'a hex pattern is six islands',
+  })
+  .refine((p) => p.kind === 'hex' || p.rowGapTiles === undefined, {
+    message: 'rowGapTiles belongs to a hex',
   })
   .refine((p) => p.teamLayouts === undefined || p.teamSize !== undefined, {
     message: 'team layouts belong to a pattern for one team size',

@@ -31,7 +31,8 @@
     {
       "players": 6,
       "teamSize": 2,
-      "kind": "ring",
+      "kind": "hex",
+      "rowGapTiles": 8,
       "teamLayouts": [
         {
           "weight": 1,

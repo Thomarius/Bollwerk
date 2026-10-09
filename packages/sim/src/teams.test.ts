@@ -5,7 +5,7 @@ import { applyAction, createMatch, step } from './match.js';
 import { canPlacePiece } from './placement.js';
 import { fire, resolveImpacts } from './shots.js';
 import { seatOrder, tableTeamSize, teamScore, denseTeams } from './teams.js';
-import { generateTerrain, patternFor } from './terrain.js';
+import { generateTerrain, patternFor, planLayout } from './terrain.js';
 import { stateFromAscii, withoutContinues } from './testing.js';
 import { Structure, type MatchState } from './types.js';
 
@@ -278,8 +278,8 @@ describe('which seat gets which island', () => {
     });
   }
 
-  it('lays out three teams of two on a ring, and anyone else at six on the grid', () => {
-    expect(patternFor(config, 6, 2).kind).toBe('ring');
+  it('lays out three teams of two on a hex, and anyone else at six on the grid', () => {
+    expect(patternFor(config, 6, 2).kind).toBe('hex');
     expect(patternFor(config, 6, 1).kind).toBe('grid');
     expect(patternFor(config, 6, 3).kind).toBe('grid');
     expect(patternFor(config, 8, 2).kind).toBe('grid');
@@ -289,10 +289,9 @@ describe('which seat gets which island', () => {
   it('gives every team of a fair layout the same standing on the map', () => {
     // Each team's distances, centre to centre: between its own islands, and from each of
     // them to every other — on real maps, whose islands are trimmed to their land. Alike
-    // for every team, up to the ring's rounding: its centres are whole tiles on a circle.
-    for (const [players, seed] of [6, 8].flatMap((n) =>
-      [1, 2, 3, 4, 5].map((s) => [n, s] as const),
-    )) {
+    // for every team on the grid of four teams of two. Three teams of two play on a compact
+    // hex whose seats are unalike, the users' choice of room over that (2026-10-09).
+    for (const [players, seed] of [8].flatMap((n) => [1, 2, 3, 4, 5].map((s) => [n, s] as const))) {
       const plan = generateTerrain(config, players, seed, 2).layout;
       const centre = (i: number) => {
         const p = plan.placements[i] as { x: number; y: number };
@@ -322,7 +321,37 @@ describe('which seat gets which island', () => {
     }
   });
 
-  it('builds the map a table of three teams of two plays on as a ring', () => {
+  it('lays a hex flat: a pair above and below, an island each side, the rows a gap apart', () => {
+    const hex = (rowGapTiles: number) =>
+      planLayout(
+        {
+          ...config,
+          patterns: [{ players: 6, teamSize: 2, kind: 'hex', rowGapTiles }],
+        },
+        6,
+        2,
+        26,
+        22,
+      ).placements;
+    for (const gap of [2, 8]) {
+      const p = hex(gap);
+      // Clockwise from the top right: the side islands centred between the rows.
+      expect((p[0] as { y: number }).y).toBe((p[5] as { y: number }).y);
+      expect((p[2] as { y: number }).y - (p[0] as { y: number }).y).toBe(22 + gap);
+      expect((p[1] as { y: number }).y).toBe(
+        ((p[0] as { y: number }).y + (p[2] as { y: number }).y) / 2,
+      );
+      expect((p[1] as { x: number }).x).toBeGreaterThan((p[0] as { x: number }).x);
+    }
+    // Rows an island's height and two channels apart: a flat hexagon, neighbours alike.
+    const flat = hex(26);
+    const at = (i: number) => flat[i] as { x: number; y: number };
+    const apart = (a: number, b: number) => Math.hypot(at(a).x - at(b).x, at(a).y - at(b).y);
+    for (let i = 0; i < 6; i++)
+      expect(Math.abs(apart(i, (i + 1) % 6) - apart(0, 5))).toBeLessThan(2);
+  });
+
+  it('builds the map a table of three teams of two plays on as the hex, wide', () => {
     const players = [0, 0, 1, 1, 2, 2].map((team, i) => ({ name: `P${i}`, isBot: true, team }));
     const ring = createMatch({ seed: 3, ruleset: defaultRuleset, terrainConfig: config, players });
     const grid = createMatch({
@@ -331,7 +360,7 @@ describe('which seat gets which island', () => {
       terrainConfig: config,
       players: players.map((p, i) => ({ ...p, team: i })),
     });
-    expect(ring.height).toBeGreaterThan(grid.height);
+    expect(ring.width).toBeGreaterThan(grid.width);
   });
 });
 

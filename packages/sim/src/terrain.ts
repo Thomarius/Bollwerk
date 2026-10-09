@@ -1,6 +1,7 @@
 import type { IslandPattern, PatternKind, TerrainConfig } from '@bollwerk/config';
 
 import { fbm2D } from './noise.js';
+import { isqrt } from './math.js';
 import { NEIGHBOURS_4 } from './grid.js';
 import { cosTurns, sinTurns } from './trig.js';
 import { streamFor } from './rng.js';
@@ -147,6 +148,45 @@ function gridPlacements(
 }
 
 /**
+ * Six islands as a ring laid flat (`hex`): a pair above and a pair below, side by side a
+ * channel apart, the rows `rowGap` apart, and one island at each side, centred between the
+ * rows, as far out as makes every neighbour alike — or, rows too close for that, as close
+ * in as it can stand clear of them. In ring order, clockwise from the top
+ * right — so a pattern's `teamLayouts` read as they would on a ring: neighbours and
+ * opposites alike. A ring of six fits a wide screen badly, being as tall as it is wide.
+ */
+function hexPlacements(
+  boxW: number,
+  boxH: number,
+  gap: number,
+  rowGap: number,
+): { x: number; y: number; flipX: boolean; flipY: boolean }[] {
+  const a = Math.ceil((boxW + gap) / 2);
+  const b = Math.ceil((boxH + Math.max(gap, rowGap)) / 2);
+  // A side island stands where its distance to the pair beside it is the pairs' own width,
+  // 2a, so all six neighbours are alike — a hexagon, flattened only as far as the rows
+  // allow. Rows closer than an island's height leave it no room there: it must stand
+  // clear of them sideways, which packs the map but puts it far from the other side.
+  let s = a + isqrt(Math.max(0, 4 * a * a - b * b));
+  while (!boxesClear(s, 0, a, -b, boxW, boxH, gap)) s++;
+  const centres = [
+    { x: a, y: -b },
+    { x: s, y: 0 },
+    { x: a, y: b },
+    { x: -a, y: b },
+    { x: -s, y: 0 },
+    { x: -a, y: -b },
+  ];
+  // Mirrored by which side of the middle each stands, as the ring's are.
+  return centres.map((c) => ({
+    x: c.x - Math.floor(boxW / 2),
+    y: c.y - Math.floor(boxH / 2),
+    flipX: c.x > 0,
+    flipY: c.y > 0,
+  }));
+}
+
+/**
  * Islands on a circle, so every player has the same two neighbours at the same
  * distance.
  *
@@ -232,7 +272,9 @@ export function planLayout(
   const raw =
     pattern.kind === 'grid'
       ? gridPlacements(playerCount, pattern.cols as number, boxW, boxH, gap)
-      : ringPlacements(playerCount, boxW, boxH, gap);
+      : pattern.kind === 'hex'
+        ? hexPlacements(boxW, boxH, gap, pattern.rowGapTiles ?? gap)
+        : ringPlacements(playerCount, boxW, boxH, gap);
 
   // Shift the arrangement so it sits inside the border margin, then measure it.
   let minX = Infinity;

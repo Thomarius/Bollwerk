@@ -109,7 +109,7 @@ Full detail in PLAN.md §1. The parts that surprise people:
   corners, trimmed to its land, then stamped by translation and mirroring — both exact, so
   every island is pixel-identical at every player count. 2–8 players; grids at every count
   but 3, which is a ring (a short last row is centred), and three teams of two, who play on
-  a ring of six (`teamSize` patterns, ARCHIVE 12zs). **The map's size is measured from the island and the pattern, not
+  a compact hex of six, wide rather than fair (`teamSize` patterns, ARCHIVE 12zs, 13c). **The map's size is measured from the island and the pattern, not
   configured.**
 - **A wall must turn its corners.** The escape flood is 8-connected while the wall is
   not, so a diagonal join does not seal. The coastline is worth nothing.

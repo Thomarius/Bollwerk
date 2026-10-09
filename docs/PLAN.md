@@ -64,10 +64,14 @@ exact on a square grid, so every island is pixel-identical at every player count
   larger maps; on a grid five share six's footprint and seven eight's.
 - **Fair team seating** (2026-10-09, ARCHIVE 12zs). A pattern may serve one team size
   (`teamSize`) and list its fair seatings (`teamLayouts`), one drawn by weight each match,
-  the teams dealt onto its groups of islands. **Three teams of two play on a ring of six**,
-  teammates side by side or directly opposite, half the matches each: the three-by-two
-  grid has no fair seating for three teams, and the ring costs a larger map (80x86 against
-  80x50 on seed 1), open sea in its middle. **Four teams of two keep the four-by-two grid**,
+  the teams dealt onto its groups of islands. **Three teams of two play on a hex of six**
+  (`hex`, ARCHIVE 13c): a pair above, a pair below, one island at each side outside the rows,
+  the rows `rowGapTiles` apart (8) — teammates side by side or directly opposite, half the
+  matches each. The three-by-two grid has no fair seating for three teams; a ring of six was
+  fair but as tall as wide (80x86), and a flat hexagon, still fair, nearly so (74–87 x 70–74).
+  The users chose room over fairness for a wide screen: the compact hex is 106–111 x 52–56,
+  its seats unalike (a side island's partner may stand 84 tiles off where a top pair's stands
+  28), and a row gap below an island's height only makes it taller, never fairer. **Four teams of two keep the four-by-two grid**,
   each team one corner and one middle island, in one of the four seatings that keep the
   grid's mirror symmetry (side by side, one apart, diagonal near, diagonal far). Teams of
   three and four are always two teams, head to head, and two teams of two on four islands

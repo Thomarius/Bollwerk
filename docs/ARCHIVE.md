@@ -6528,3 +6528,26 @@ item 3. Render a frame: Sakura 2.66 ms, Opera 2.79, Office 1.81, Halloween 2.55,
 3.22, Oktoberfest 2.84, Christmas 1.85, Electric 1.83, Noir 1.62, Stained glass 1.72, Toy bricks
 1.73. Not seen in motion: a shot taking one of the new walls' blocks, a player out in the new
 walls; the silenced Sakura guns were seen with every third gun forced silent for a moment.
+
+## 13c. Three teams of two on a wide map (2026-10-09)
+
+The ring of six (12zs) put one island at the top and one at the bottom, two down each side, and
+was as tall as it was wide — 80x86 — which a wide screen fits badly. The users asked for one
+island at each side and two above and below, pushed together, the gap configurable.
+
+Measured first (seeds 1–3, centre distances, the worst difference between two teams' sorted
+distances): **turning the ring** a twelfth puts the islands where asked and gives 84x74, still
+fair; **squashing it** vertically does not lower it — the corner islands overlap the side ones
+in height, so the radius grows sideways instead (132x72 at half height). A side island can only
+come in beside the rows once they are an island's height and two channels apart: there the six
+are **a flat hexagon**, 74–87 x 70–74, fair to 7–9 tiles. Any closer and the side islands must
+stand outside the rows, **compact** at 106–111 x 46–50 but unfair: 26 tiles between seatings
+side by side, 46 between opposite ones, a side island's partner 84 tiles off where a top pair's
+is 28. Between the two, a gap adds height and nothing else.
+
+The users chose the compact layout, a little taller than its minimum: a pattern kind of its own,
+`hex`, with `rowGapTiles` 8 (106–111 x 52–56), its side islands as far out as keeps every
+neighbour alike once the rows allow it and otherwise just clear of them (`hexPlacements`), in
+ring order so the seatings read as on the ring. The ring stays for three players. The test of
+equal standing now holds the four-team grid alone; the hex's own test checks its shape, and that
+at a gap of an island's height and two channels it is the flat hexagon, neighbours alike.
