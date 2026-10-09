@@ -37,6 +37,9 @@ function room(record?: (line: RecordingLine) => void): Room {
   });
 }
 
+/** The host's save as the room passes it on: never read there, so any text will do. */
+const SAVE = '{"version":1}';
+
 const steady: Personality = { risk: 'defensive', targeting: 'strategic', cannons: 'max' };
 
 /**
@@ -70,7 +73,7 @@ describe("a tournament's room", () => {
     const r = room();
     const host = new Listener('h');
     r.join(host, 'Thomas');
-    r.handle(host, { type: 'tournament', table: table() });
+    r.handle(host, { type: 'tournament', table: table(), save: SAVE });
     expect(host.playerId).toBe(3);
     const message = host.latest('room');
     expect(message.playerCount).toBe(4);
@@ -81,11 +84,24 @@ describe("a tournament's room", () => {
     expect(message.tournament?.stage).toBe('Semi-final');
   });
 
+  it("passes the host's save on to everyone, and to whoever joins later", () => {
+    const r = room();
+    const host = new Listener('h');
+    r.join(host, 'Thomas');
+    r.handle(host, { type: 'tournament', table: table(), save: SAVE });
+    expect(host.latest('tournamentSave').save).toBe(SAVE);
+    const guest = new Listener('g');
+    r.join(guest, 'Mausica');
+    expect(guest.latest('tournamentSave').save).toBe(SAVE);
+    r.handle(host, { type: 'tournament', table: table({ stage: 'Final' }), save: '{"n":2}' });
+    expect(guest.latest('tournamentSave').save).toBe('{"n":2}');
+  });
+
   it('seats people only in the open seats, and turns away the rest', () => {
     const r = room();
     const host = new Listener('h');
     r.join(host, 'Thomas');
-    r.handle(host, { type: 'tournament', table: table() });
+    r.handle(host, { type: 'tournament', table: table(), save: SAVE });
     const guest = new Listener('g');
     expect(r.join(guest, 'Mausica')).toBe(2);
     expect(r.join(new Listener('x'), 'Nobody')).toBeNull();
@@ -105,6 +121,7 @@ describe("a tournament's room", () => {
     });
     r.handle(host, {
       type: 'tournament',
+      save: SAVE,
       table: table({
         seats: [
           bot('Ada', 0, false),
@@ -141,7 +158,7 @@ describe("a tournament's room", () => {
     const r = room((line) => lines.push(line));
     const host = new Listener('h');
     r.join(host, 'Thomas');
-    r.handle(host, { type: 'tournament', table: table() });
+    r.handle(host, { type: 'tournament', table: table(), save: SAVE });
     const guest = new Listener('g');
     r.join(guest, 'Mausica');
     r.handle(guest, { type: 'start' });
@@ -166,12 +183,12 @@ describe("a tournament's room", () => {
     const r = room();
     const host = new Listener('h');
     r.join(host, 'Thomas');
-    r.handle(host, { type: 'tournament', table: table() });
+    r.handle(host, { type: 'tournament', table: table(), save: SAVE });
     const guest = new Listener('g');
     r.join(guest, 'Mausica');
     r.handle(host, { type: 'start' });
     // Mid-match, the next table waits.
-    r.handle(host, { type: 'tournament', table: table({ stage: 'Final' }) });
+    r.handle(host, { type: 'tournament', table: table({ stage: 'Final' }), save: SAVE });
     expect(host.latest('room').tournament?.stage).toBe('Semi-final');
     // The host's team never moves, so it is soon out and the match over.
     run(r, 60_000);
@@ -182,7 +199,7 @@ describe("a tournament's room", () => {
     const next = table({ stage: 'Final', seed: 9, tournament: { id: 't-test', step: 3 } });
     next.seats = [next.seats[2]!, next.seats[3]!, next.seats[0]!, next.seats[1]!];
     next.seats = next.seats.map((seat) => ({ ...seat, team: seat.team === 1 ? 0 : 1 }));
-    r.handle(host, { type: 'tournament', table: next });
+    r.handle(host, { type: 'tournament', table: next, save: SAVE });
     expect(r.started).toBe(false);
     const message = guest.latest('room');
     expect(message.started).toBe(false);
@@ -204,7 +221,7 @@ describe("a tournament's room", () => {
     });
     const host = new Listener('h');
     r.join(host, 'Thomas');
-    r.handle(host, { type: 'tournament', table: table() });
+    r.handle(host, { type: 'tournament', table: table(), save: SAVE });
     expect(r.listing()).toMatchObject({ tournament: 'Die Wälle', people: 1, playerCount: 4 });
     r.join(new Listener('g'), 'Mausica');
     expect(r.listing()).toBeNull();
@@ -216,7 +233,7 @@ describe("a tournament's room", () => {
     r.join(host, 'Thomas');
     const headless = table();
     headless.seats[3] = { name: 'Thomas', level: 5, personality: steady, team: 1, open: false };
-    r.handle(host, { type: 'tournament', table: headless });
+    r.handle(host, { type: 'tournament', table: headless, save: SAVE });
     expect(host.received.some((m) => m.type === 'room' && m.tournament !== null)).toBe(false);
   });
 });

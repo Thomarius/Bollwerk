@@ -150,8 +150,15 @@ Full detail in PLAN.md §1. The parts that surprise people:
 
 ## Status
 
-**Done** (2026-10-08; the latest release **v0.8.4**, 2026-10-08, protocol 19, which a
-test session needs the server rebuilt and every page reloaded for):
+**Done** (2026-10-09; the latest release **v0.8.4**, 2026-10-08, protocol 19; the working
+tree is at protocol 20, which a test session needs the server rebuilt and every page
+reloaded for):
+
+- **The third feedback** (ARCHIVE 12zr): a tournament's lobby is one screen for the host and
+  their teammates, a Match tab (the map, the seats, who plays in place of which bot) and a
+  Tournament tab (the standings, the bracket as an icon beside them), opening on the match.
+  The host's room passes their save on to the teammates' pages (protocol 20,
+  `tournamentSave`, the one message allowed up to `limits.maxTournamentBytes`).
 
 - **Tournament mode** (2026-10-08, `docs/TOURNAMENT.md`, ARCHIVE 12ze–12zk): the host's team
   of people and bots against a field of named bot teams, through a league (one match size a
@@ -207,7 +214,8 @@ test session needs the server rebuilt and every page reloaded for):
   11zp–11zt); every audio file credited (ARCHIVE 11zx). Deployment is verified by a CI job,
   since there is no Docker on this machine. **UPnP** (ARCHIVE 12j): the desktop app's switch
   Open to the internet, off by default, and `npm start -- --upnp` ask the router to open the
-  port; the lobby then offers an invite link. Never in the image.
+  port; the lobby then offers an invite link. Never in the image. Tested by the user from
+  outside, successfully (2026-10-09).
 - **Balance** (M7, ARCHIVE 12h): a weekend soak of 22,656 matches found the points game on
   target and one cliff, Level 4 to 5, ended by `carelessness` fading by level. The default
   is to change no rule without a very good reason. `npm run soak` reruns the whole plan.
@@ -216,8 +224,7 @@ test session needs the server rebuilt and every page reloaded for):
   piece and German checked in play by the user (ARCHIVE 12n–12t).
 
 **Next** — PLAN §11: the tournament's play-testing (T8), more test games towards a first
-feature-ready version, the user's
-manual test of UPnP, and bots that miss as people do (combat accuracy, measured against the
+feature-ready version, and bots that miss as people do (combat accuracy, measured against the
 testers' recordings; how is not yet decided). **The bot learning work is paused**; when it
 resumes, `docs/BOT_LEARNING.md` §6 says where — first, learning the choice of wall rather
 than only the cell. French is not to be done. Signing the Windows app was explained (PLAN

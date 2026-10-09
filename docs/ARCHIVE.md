@@ -6010,7 +6010,9 @@ From the users' play-testing round (TOURNAMENT T8), triaged with them first:
   team puts him out: a quick roll with him in it places him first in the league, the losers'
   bracket and single elimination's rounds before the final. In double elimination's winners'
   bracket he rolls as anyone does, so he may drop into the losers' bracket by chance — the
-  users' wish — and can be rolled out of it. A match against the host's team is played, and
+  users' wish — where rolled matches carry him again. (This entry first said he could be
+  rolled out of it; the code never allowed that, and the users confirmed on 2026-10-09 that
+  he must leave only by a match against the host's team.) A match against the host's team is played, and
   its result stands (their answer). Tested over seeds: never out before the final without the
   host in single elimination; in double elimination, seen in the losers' bracket.
 - **The last match marked**: the next match's frame in gold with a line, "The last match: win
@@ -6041,3 +6043,48 @@ and the second was then begun in a scene whose stage was already gone.
 made when it goes is no longer put on its stage. Reproduced in headless Chrome by taking the
 scene down a frame after the next looks began to be made, four bots watched with Random looks:
 the same error before the fix, nothing failing after it.
+
+## 12zr. The tournament test session's third feedback (2026-10-09)
+
+From the users' play-testing round (TOURNAMENT T8), triaged with them first:
+
+- **UPnP works**: the user's test from outside succeeded, and the item left PLAN §11.
+- **The archnemesis must leave only by a match against the host's team.** The code already
+  did so — every rolled match that could put him out carries him, the losers' bracket's
+  included, and a test over 60 seeds says so — but 12zp and TOURNAMENT §4 said he could be
+  rolled out of the losers' bracket, which is what the users read. The documents were
+  corrected; nothing else changed.
+- **Checked, not changed: the final's size.** Only double elimination's final is always two
+  teams, by its making (the two brackets' champions), as the setup screen's note says; a
+  single elimination's final is its last knockout round, sized within the range like any
+  other, so three-team finals are as designed, and the users keep them. TOURNAMENT §1.5,
+  which said every final was two teams, was corrected.
+- **Checked, not changed: the pieces.** Enumerated against every polyomino up to five cells:
+  all seven one-sided tetrominoes are in the bag (S and Z, J and L each a pair), and the
+  eleven one-sided pentominoes that fit a 3x3 box (P and Q, F and G, Z and S pairs; T, U, V,
+  W, X their own mirror). Left out on purpose since 10e: the straight five and both hands of
+  L, N and Y, which need a 2x4 box. A piece is turned, never flipped, so a mirror image is a
+  piece of its own, drawn at its own weight.
+- **One lobby for host and teammates.** The host saw the tournament — its standings and the
+  bracket — and no map; a teammate saw the map and only a line of the tournament. Now both
+  see the lobby, in two tabs: **Match** (the map, the seats by team with the host's and the
+  archnemesis's tags, who plays in place of which bot, the stage, framed in gold at the last
+  match) and **Tournament** (the settings, the last result, the standings), the code and
+  invite above both. The screen opens on Match each time it appears (the users' choice); a
+  tab chosen stays while people come and go. Both tabs share one grid cell, so the buttons
+  below do not move when the tabs change. A single match's lobby has no tabs. The host seats
+  teammates with the lobby's own seat choice, offered only on the team's open seats.
+- **The bracket as an icon** (the users' choice of place): a small tree beside the standings'
+  heading, and on the end screens beside a new heading over the team's matches, rather than a
+  text button by Start.
+
+**Protocol 20.** A teammate's page has no save of its own, so the host's tournament message
+carries it as JSON, and the room passes it on in a message of its own, `tournamentSave`, after
+every welcome — a join, a return, a new table — and never in the room's state, which is sent
+at every change of seat. The teammate's page reads it with `parseSave` and draws the same tab
+and bracket; one it cannot read leaves the match's tab alone, as before. The save is at most
+80 KB (measured over every team size, range and both knockouts in Long with a league; a
+finished double elimination of 216 teams), where a message may be 4 KB: the server allows
+the tournament message alone up to `limits.maxTournamentBytes`, 256 KB. Seen with the built
+server and two browsers, host and teammate: both tabs on both pages, the bracket opened from a
+teammate's, no error on either.

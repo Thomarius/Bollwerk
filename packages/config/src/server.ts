@@ -30,6 +30,11 @@ export const ServerConfigSchema = z.strictObject({
   limits: z.strictObject({
     maxMessagesPerSecond: z.number().int().positive(),
     maxMessageBytes: z.number().int().positive(),
+    /**
+     * A tournament's table, which carries the host's save for the teammates' pages: about
+     * 80 KB at most, a Long double elimination with a league (measured 2026-10-09).
+     */
+    maxTournamentBytes: z.number().int().positive(),
   }),
 
   reconnect: z.strictObject({

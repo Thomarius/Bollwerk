@@ -1466,18 +1466,17 @@ matches; its design and work packages in [`TOURNAMENT.md`](./TOURNAMENT.md), ARC
 protocol 18 — the first feedback from its play-testing (ARCHIVE 12zl), smoother wipes between
 the looks (ARCHIVE 12zm), **Noir**, a nineteenth style (ARCHIVE 12zn), and the second
 feedback: lives in the lobby and the tournament, one-round matches, the archnemesis carried to
-the final, the last match marked and the bracket drawn (ARCHIVE 12zp, protocol 19). **The tournament's
+the final, the last match marked and the bracket drawn (ARCHIVE 12zp, protocol 19). After
+v0.8.4, the third feedback: one lobby for the host and their teammates, in a Match and a
+Tournament tab (ARCHIVE 12zr, protocol 20). **The tournament's
 play-testing round, T8, is under way**, its findings triaged with the users first. Should the
 wipes still stutter, what is left is each style's terrain drawn as one: splitting it by island,
 in all nineteen styles, would remove the last hitch a new random look costs. The bot learning
-work, item 3, is **paused** after a first learned fit (ARCHIVE 12z), its next steps in
+work, item 2, is **paused** after a first learned fit (ARCHIVE 12z), its next steps in
 [`BOT_LEARNING.md`](./BOT_LEARNING.md) §6. French is not to be done (the user's decision,
 2026-10-06). Still open:
 
-1. **The user's manual test of UPnP**, reported back: switch on Open to the internet in the
-   app, or `npm start -- --upnp`, and open the invite link from a phone on mobile data
-   (ARCHIVE 12j). Whatever they find is triaged with them first.
-2. **Bots that miss as people do** (the user's task, 2026-10-06; how and at which levels not
+1. **Bots that miss as people do** (the user's task, 2026-10-06; how and at which levels not
    yet decided). Bots should feel fair, and in combat they are superhumanly precise: their
    only error, `aimJitter`, chooses a worse target, never a worse shot — a jittered shot
    still lands on an opponent's wall that none of its own shots is headed for. People playing
@@ -1514,7 +1513,7 @@ work, item 3, is **paused** after a first learned fit (ARCHIVE 12z), its next st
    both two-against-two against L5 by knockout in rounds 7 and 8, where every bot shot is at
    them.
 
-3. **Stronger bots by valuing options, then learning the weights** (the user's goal,
+2. **Stronger bots by valuing options, then learning the weights** (the user's goal,
    2026-10-07; also to learn how ML fits a game): the plan, its steps and its progress are
    in [`BOT_LEARNING.md`](./BOT_LEARNING.md) — first the testers' recordings, then a "go big
    while a bail-out remains" rule, then a scoring function trained by the cross-entropy

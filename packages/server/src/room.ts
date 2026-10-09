@@ -121,6 +121,8 @@ export class Room {
    * host's team's — and the host may only move them between those.
    */
   private tournament: TournamentTable | null = null;
+  /** The host's tournament as it stands, as JSON, for the teammates' pages; never read here. */
+  private tournamentSave: string | null = null;
 
   constructor(options: RoomOptions) {
     this.options = options;
@@ -259,7 +261,7 @@ export class Room {
         if (seat.playerId === this.hostId && this.tournament === null) this.rematch();
         return;
       case 'tournament':
-        if (seat.playerId === this.hostId) this.setTournament(message.table);
+        if (seat.playerId === this.hostId) this.setTournament(message.table, message.save);
         return;
       case 'configure': {
         // Only the host, and only while the table is still being set.
@@ -379,13 +381,14 @@ export class Room {
    * seat — the one they had, while it stays open. Sent once a match is over, it brings the
    * room back to its lobby first, as a rematch does. Refused while a match is under way.
    */
-  private setTournament(table: TournamentTable): void {
+  private setTournament(table: TournamentTable, save: string): void {
     if (this.match !== null && !this.match.finished) return;
     const hostSeat = table.seats.findIndex((seat) => seat.level === null);
     const open = table.seats.flatMap((seat, index) => (seat.open ? [index] : []));
     if (hostSeat < 0 || table.seats[hostSeat]?.open === true) return;
     if (this.match !== null) this.backToLobby();
     this.tournament = table;
+    this.tournamentSave = save;
     this.playerCount = table.seats.length;
     this.teams = table.seats.map((seat) => seat.team);
     this.settings = { ...table.settings };
@@ -648,6 +651,10 @@ export class Room {
       token: seat.token,
       hostId: this.hostId,
     });
+    // Every welcome — a join, a return, a new tournament's table — brings the tournament.
+    if (this.tournamentSave !== null) {
+      seat.connection?.send({ type: 'tournamentSave', save: this.tournamentSave });
+    }
   }
 
   private broadcastRoom(): void {

@@ -8,8 +8,9 @@ import {
   type Table,
 } from '@bollwerk/config';
 import { type ServerMessage } from '@bollwerk/protocol';
+import { Progress, parseSave, type Save } from '@bollwerk/tournament';
 
-import { lobbyMarkup, type LobbyView } from './lobby.js';
+import { lobbyMarkup, type LobbyTab, type LobbyView } from './lobby.js';
 import { joinRefusedNotice, refusalText } from './browser.js';
 import { t } from './i18n.js';
 import { motionReduced } from './motion.js';
@@ -32,6 +33,8 @@ import {
 import type { Common } from './menu.js';
 import { showMenu } from './menu.js';
 import { runSession } from './matchScreen.js';
+import { openBracket } from './tournamentBracketView.js';
+import { tournamentTab } from './tournamentView.js';
 
 /** The lobby, one screen whether a server holds the table or the browser does. */
 
@@ -41,7 +44,7 @@ const TOKEN_KEY = 'bollwerk.seat';
 const SERVER_WAIT_MS = 2000;
 
 /** What the lobby's controls do, whichever backend is behind them. */
-interface LobbyHandlers {
+export interface LobbyHandlers {
   table(change: { settings?: MatchSettings; playerCount?: number; teams?: number[] }): void;
   bot(seat: number, level: number): void;
   /** A new map: a seed typed in, or a fresh random one. */
@@ -51,10 +54,12 @@ interface LobbyHandlers {
   /** The person in seat `from` to seat `to`, swapping with whoever sits there. */
   move(from: number, to: number): void;
   start(): void;
+  /** A tab chosen, to be kept open as the lobby is drawn again. */
+  tab?(tab: LobbyTab): void;
 }
 
 /** Draws the lobby and wires its controls to whichever backend holds the table. */
-function drawLobby(view: LobbyView, on: LobbyHandlers): void {
+export function drawLobby(view: LobbyView, on: LobbyHandlers): void {
   // The map, which island each seat is dealt and the colour it plays in: all known now,
   // since the seed is fixed while the table is set. See `preview.ts`.
   const { art, terrain } = defaultConfigBundle;
@@ -133,6 +138,30 @@ function drawLobby(view: LobbyView, on: LobbyHandlers): void {
   document.querySelector('#begin')?.addEventListener('click', () => {
     audio.play('select');
     on.start();
+  });
+  // A tournament's tabs, switched in place: the lobby is drawn again only when it changes.
+  const tabs = [...document.querySelectorAll<HTMLButtonElement>('.lobby-tabs .tab')];
+  for (const button of tabs) {
+    button.addEventListener('click', () => {
+      const chosen = button.dataset.tab as LobbyTab;
+      audio.play('select');
+      for (const other of tabs) {
+        other.classList.toggle('on', other === button);
+        other.setAttribute('aria-selected', String(other === button));
+      }
+      for (const panel of document.querySelectorAll<HTMLElement>('.tab-panel')) {
+        panel.hidden = panel.dataset.panel !== chosen;
+      }
+      on.tab?.(chosen);
+    });
+  }
+}
+
+/** The bracket's button, where a tournament's tab or end shows one. */
+export function wireBracket(save: Save, progress: Progress): void {
+  document.querySelector('#bracket')?.addEventListener('click', () => {
+    audio.play('select');
+    openBracket(save, progress, () => audio.play('select'));
   });
 }
 
@@ -364,6 +393,11 @@ function roomLobby(
   let started = false;
   /** Takes the match down, for a rematch bringing the room back to its lobby. */
   let endMatch: (() => void) | null = null;
+  /** The host's tournament as they last sent it, at a tournament's table, and where it stands. */
+  let tournament: { save: Save; progress: Progress } | null = null;
+  /** The tab open, and the tournament's step it was chosen at: each match opens on its own. */
+  let tab: LobbyTab = 'match';
+  let tabStep = -1;
 
   const tableOf = (v: LobbyView): TableState => ({
     settings: v.settings,
@@ -379,7 +413,15 @@ function roomLobby(
 
   const render = (): void => {
     if (started || view === null) return;
-    const current = view;
+    const step = view.tournament?.tournament ?? null;
+    const same = tournament !== null && step !== null && tournament.save.id === step.id;
+    if (step !== null && step.step !== tabStep) {
+      tab = 'match';
+      tabStep = step.step;
+    }
+    const current: LobbyView = same
+      ? { ...view, tournamentTab: tournamentTab(tournament!.save, tournament!.progress, tab) }
+      : view;
     drawLobby(current, {
       table: (change) => connection.send({ type: 'configure', ...change }),
       bot: (seat, tier) => {
@@ -399,7 +441,9 @@ function roomLobby(
         connection.close();
         playLocally(common, tableOf(current));
       },
+      tab: (chosen) => (tab = chosen),
     });
+    if (same) wireBracket(tournament!.save, tournament!.progress);
     document.querySelector('#leave')?.addEventListener('click', () => {
       audio.play('select');
       started = true;
@@ -453,6 +497,10 @@ function roomLobby(
         }
         break;
       }
+      case 'tournamentSave':
+        tournament = readTournament(message.save);
+        render();
+        break;
       case 'snapshot':
         if (!started) {
           started = true;
@@ -502,4 +550,17 @@ function roomLobby(
     if (connection.state === 'closed') clearInterval(pinging);
     else connection.ping();
   }, 2000);
+}
+
+/**
+ * The host's tournament as they sent it, and where it stands, or null if it cannot be read:
+ * the lobby then has no tournament's tab, only the match.
+ */
+function readTournament(json: string): { save: Save; progress: Progress } | null {
+  try {
+    const parsed = parseSave(JSON.parse(json));
+    return parsed.ok ? { save: parsed.save, progress: new Progress(parsed.save) } : null;
+  } catch {
+    return null;
+  }
 }

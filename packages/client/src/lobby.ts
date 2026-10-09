@@ -61,6 +61,28 @@ export interface LobbyView {
    * changed here — the host sets it from their tournament.
    */
   tournament?: TournamentTable | null;
+  /**
+   * The tournament's own tab beside the match's (TOURNAMENT §1.7), or none: a single
+   * match's lobby has no tabs. The host's page makes it from its save, a teammate's from
+   * the save the host sends.
+   */
+  tournamentTab?: TournamentTab | null;
+  /** A line above it all: a match left to be played again, a save the browser refused. */
+  notice?: string | null;
+}
+
+/** The lobby's tabs: the match to be played, and the tournament it belongs to. */
+export type LobbyTab = 'match' | 'tournament';
+
+export interface TournamentTab {
+  /** The tournament tab's content: where the tournament stands. */
+  markup: string;
+  /** The tab shown. */
+  open: LobbyTab;
+  /** The tournament's last match: its frame marked in gold. */
+  lastMatch: boolean;
+  /** A tag after each team's name in the match, by its place there: the host's, the archnemesis's. */
+  teamTags: readonly string[];
 }
 
 /** The levels a seat's bot may play at, as the lobby offers them. */
@@ -104,7 +126,10 @@ function tableControls(view: LobbyView, isHost: boolean): string {
       stage: view.tournament.stage,
       n: maxRounds,
     });
-    return `<p class="note settings">${escape(statement)}</p>`;
+    if (view.tournamentTab?.lastMatch !== true) {
+      return `<p class="note settings">${escape(statement)}</p>`;
+    }
+    return `<div class="settings last-match"><p class="note">${escape(statement)}</p><p class="last-line">${escape(t('tournament.lastMatch'))}</p></div>`;
   }
   if (!isHost) {
     const statement = t('lobby.statement', {
@@ -143,7 +168,12 @@ function tableControls(view: LobbyView, isHost: boolean): string {
  * team or on opposing ones. A choice of one is no choice, so it is shown as a name.
  */
 function occupant(view: LobbyView, index: number, isHost: boolean, name: string): string {
-  const people = [...view.seats].sort((a, b) => a.playerId - b.playerId);
+  // At a tournament's table the host seats their teammates, in their team's open seats only.
+  const table = view.tournament;
+  if (table && table.seats[index]?.open !== true) return `<span class="who">${escape(name)}</span>`;
+  const people = view.seats
+    .filter((seat) => !table || seat.playerId !== view.hostId)
+    .sort((a, b) => a.playerId - b.playerId);
   const here = people.find((seat) => seat.playerId === index);
   const choices = here === undefined ? people.length : people.length - 1;
   if (!isHost || choices === 0) return `<span class="who">${escape(name)}</span>`;
@@ -199,7 +229,14 @@ function levelControl(
   ).join('')}</select>`;
 }
 
-function seatRow(view: LobbyView, index: number, isHost: boolean, defaultLevel: number): string {
+/** `isHost` sets the table — never a tournament's; `seats` moves people between seats. */
+function seatRow(
+  view: LobbyView,
+  index: number,
+  isHost: boolean,
+  seats: boolean,
+  defaultLevel: number,
+): string {
   const seat = view.seats.find((s) => s.playerId === index);
   const arrived = view.arrived?.includes(index) ? ' arrived' : '';
 
@@ -223,7 +260,12 @@ function seatRow(view: LobbyView, index: number, isHost: boolean, defaultLevel: 
         (n) => `<option value="${n}">${t('lobby.level', { n })}</option>`,
       ).join('')}</select>`;
     }
-    return `<li class="seat${mine}${arrived}">${seatBadge(view, index)}${occupant(view, index, isHost, seat.name)}${tags}${control}${blurb}</li>`;
+    // A teammate at a tournament's table plays in place of one of the team's bots.
+    const stands = view.tournament?.seats[index];
+    if (stands?.open === true && stands.level !== null) {
+      blurb = `<small class="blurb">${escape(t('tournament.inPlaceOf', { bot: stands.name }))}</small>`;
+    }
+    return `<li class="seat${mine}${arrived}">${seatBadge(view, index)}${occupant(view, index, seats, seat.name)}${tags}${control}${blurb}</li>`;
   }
 
   const control = levelControl(
@@ -233,7 +275,7 @@ function seatRow(view: LobbyView, index: number, isHost: boolean, defaultLevel: 
     t('lobby.botLevelAria', { n: index + 1 }),
   );
   const bot = view.tournament?.seats[index]?.name ?? t('lobby.bot', { n: index + 1 });
-  return `<li class="seat bot${arrived}">${seatBadge(view, index)}${occupant(view, index, isHost, bot)}${control}</li>`;
+  return `<li class="seat bot${arrived}">${seatBadge(view, index)}${occupant(view, index, seats, bot)}${control}</li>`;
 }
 
 /** The map and the seed it comes from: the host may draw another or type one in. */
@@ -261,7 +303,7 @@ function seatLists(view: LobbyView, rows: readonly string[]): string {
     .sort(([a], [b]) => a - b)
     .map(
       ([team, members]) =>
-        `<section class="team-column"><h2>${escape(view.tournament?.teamNames[team] ?? t('team.name', { letter: teamLetter(team) }))}</h2><ul class="seats">${members.join('')}</ul></section>`,
+        `<section class="team-column"><h2>${escape(view.tournament?.teamNames[team] ?? t('team.name', { letter: teamLetter(team) }))}${view.tournamentTab?.teamTags[team] ?? ''}</h2><ul class="seats">${members.join('')}</ul></section>`,
     )
     .join('');
   return `<div class="team-columns">${columns}</div>`;
@@ -275,16 +317,32 @@ export function startBlocked(view: LobbyView): string | null {
   return null;
 }
 
+/** The two tabs' buttons, the open one marked. */
+function tabStrip(open: LobbyTab): string {
+  const tab = (name: LobbyTab, label: string): string =>
+    `<button class="tab${open === name ? ' on' : ''}" role="tab" data-tab="${name}" aria-selected="${open === name}">${label}</button>`;
+  return `<div class="lobby-tabs" role="tablist">${tab('match', t('lobby.tabMatch'))}${tab('tournament', t('lobby.tabTournament'))}</div>`;
+}
+
 export function lobbyMarkup(view: LobbyView): string {
-  // A tournament's table is set from the host's tournament screen, never here.
-  const isHost = view.humanPlayer === view.hostId && !view.tournament;
-  const rows = Array.from({ length: view.playerCount }, (_, i) => seatRow(view, i, isHost, 5));
+  const hosts = view.humanPlayer === view.hostId;
+  // A tournament's table is the host's tournament's: here they only seat their teammates.
+  const isHost = hosts && !view.tournament;
+  const rows = Array.from({ length: view.playerCount }, (_, i) =>
+    seatRow(view, i, isHost, hosts, 5),
+  );
 
   const blocked = startBlocked(view);
-  const start = !isHost
+  const start = !hosts
     ? `<p class="note">${t('lobby.waiting')}</p>`
-    : `<button id="begin"${blocked === null ? '' : ' disabled'}>${t('lobby.start')}</button>` +
-      (blocked === null ? '' : `<p class="note warn">${escape(blocked)}</p>`);
+    : view.tournament
+      ? `<button id="begin">${t('tournament.play')}</button>`
+      : `<button id="begin"${blocked === null ? '' : ' disabled'}>${t('lobby.start')}</button>` +
+        (blocked === null ? '' : `<p class="note warn">${escape(blocked)}</p>`);
+  const roomNote =
+    view.tournament && hosts && view.code !== null
+      ? `<p class="note">${escape(t('tournament.roomNote'))}</p>`
+      : '';
 
   const code =
     view.code === null
@@ -299,21 +357,37 @@ export function lobbyMarkup(view: LobbyView): string {
         <code id="invite-link" class="invite-link">${escape(view.invite)}</code>
         <button id="copy-invite" class="quiet">${t('lobby.copy')}</button>
       </div>`
-          : '');
+          : '') +
+        roomNote;
 
-  return `
-    <div class="menu lobby">
-      <h1>${view.tournament ? escape(t('lobby.tournament', { team: view.tournament.teamNames[view.tournament.seats.find((s) => s.level === null)?.team ?? 0] ?? '' })) : view.code === null ? t('lobby.table') : t('lobby.room')}</h1>
-      ${code}
+  const body = `
       <div class="lobby-body">
         <div class="lobby-side">
           ${mapControls(view, isHost)}
           ${tableControls(view, isHost)}
         </div>
         <div class="lobby-seats">${seatLists(view, rows)}</div>
-      </div>
+      </div>`;
+  const side = view.tournamentTab ?? null;
+  const panels =
+    side === null
+      ? body
+      : `${tabStrip(side.open)}
+      <div class="tab-panels">
+        <div class="tab-panel" data-panel="match"${side.open === 'match' ? '' : ' hidden'}>${body}</div>
+        <div class="tab-panel" data-panel="tournament"${side.open === 'tournament' ? '' : ' hidden'}>${side.markup}</div>
+      </div>`;
+  // The host leaves a tournament for the menu, where it waits to be resumed.
+  const leave = view.tournament && hosts ? t('watching.back') : t('lobby.leave');
+
+  return `
+    <div class="menu lobby${view.tournament ? ' tournament-lobby' : ''}">
+      <h1>${view.tournament ? escape(t('lobby.tournament', { team: view.tournament.teamNames[view.tournament.seats.find((s) => s.level === null)?.team ?? 0] ?? '' })) : view.code === null ? t('lobby.table') : t('lobby.room')}</h1>
+      ${view.notice ? `<p class="note warn">${escape(view.notice)}</p>` : ''}
+      ${code}
+      ${panels}
       ${start}
-      <button id="leave" class="quiet">${t('lobby.leave')}</button>
+      <button id="leave" class="quiet">${leave}</button>
     </div>
   `;
 }

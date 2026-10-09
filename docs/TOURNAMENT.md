@@ -124,8 +124,11 @@ everything; ARCHIVE 12ze.)
   in it. **The final is one match**, the winners' champion against the losers' champion,
   with no reset. Since every count is known in advance, the losers' bracket's shape is fixed
   at creation too.
-- **The final is always two teams**, even if the minimum match size is larger. That is the
-  one exception to the min–max, and the configuration menu says so.
+- **Double elimination's final is always two teams**, the two brackets' champions, even if
+  the minimum match size is larger. That is the one exception to the min–max, and the
+  configuration menu says so. A single elimination's final is its last knockout round, sized
+  within the min–max like any other, so it may be three teams or more (kept so by the users,
+  2026-10-09).
 
 ### 1.6 Results
 
@@ -143,11 +146,15 @@ everything; ARCHIVE 12ze.)
 
 ### 1.7 Playing a match
 
-- **The pre-match screen** shows who is playing whom, the stage ("League, matchday 2 of 3",
-  "Semi-final", "Losers' bracket, round 3"), the map, and the host's team. If team size is
-  over 1 and a room could be opened, it also has the invite (code and link) and a choice of
-  which of the team's bots sit out for the people who joined. The opponents are fixed: no
-  levels, names or seats to change.
+- **The pre-match screen** is the lobby, the same on the host's page and their teammates'
+  (the users' feedback, 2026-10-09), in two tabs. **Match**, open whenever the screen
+  appears: the map, who is playing whom by team, the stage ("League, matchday 2 of 3",
+  "Semi-final", "Losers' bracket, round 3"), framed in gold at the last match. **Tournament**:
+  the settings, the last result, the standings, the bracket as an icon beside their heading.
+  If team size is over 1 and a room could be opened, the code and invite sit above the tabs,
+  and the host chooses which of the team's bots sit out for the people who joined. The
+  opponents are fixed: no levels, names or seats to change. A teammate's page shows the
+  tournament from the host's save, which the room passes on with each match's table.
 - **One room for the whole session.** The room is opened when the host starts or resumes,
   and keeps its code across matches until the host returns to the menu. People join it with
   the existing Join and games browser. It is public or private by the menu's switch beside
@@ -171,8 +178,9 @@ everything; ARCHIVE 12ze.)
   - in the knockout, the bracket around the host's path: the next opponents, and who is
     still alive elsewhere, the archnemesis included.
 
-  The next match is framed when it is the tournament's last, its stage under a trophy. A
-  **Bracket** button, there and on the end screens, opens the knockout as a tree of matches
+  The next match is framed when it is the tournament's last, its stage under a trophy. The
+  **bracket's icon**, beside the standings and the end screens' list of matches, opens the
+  knockout as a tree of matches
   in a window of its own: rounds as columns, the losers' bracket in a band below, the
   host's road in gold, the archnemesis's matches marked; pointing at a match shows its teams
   and places, a click keeps them shown.
@@ -209,7 +217,8 @@ everything; ARCHIVE 12ze.)
   pre-match screen, the standings and end screens, and the flow driving a session from one
   match to the next.
 - **`protocol` and `server`**: a room told its table rather than letting its host set one, and
-  kept across matches (protocol 18).
+  kept across matches (protocol 18), and the host's save passed on to the teammates' pages
+  (protocol 20).
 - **`ai`**: `dealSeats` takes fixed setups when a table brings them, rather than dealing
   personalities from the match seed.
 
@@ -282,5 +291,6 @@ documents brought up to date.
   compact (placements as small arrays, names as indices into the pools) and the save is
   measured in T1.
 - **The archnemesis in double elimination** can meet the host in the losers' bracket before
-  the final. That is accepted: it makes for a better story, not a worse one. He can also be
-  rolled out of the losers' bracket there, the one way he misses the final without the host.
+  the final. That is accepted: it makes for a better story, not a worse one. A rolled
+  losers' match carries him, as every rolled match that could put him out does: he leaves the
+  tournament only by a match against the host's team (the users' intent, 2026-10-09).

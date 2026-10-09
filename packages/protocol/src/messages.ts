@@ -9,7 +9,7 @@ import { z } from 'zod';
 import { SnapshotSchema } from './snapshot.js';
 
 /** Bumped on any breaking change to the message set; mismatched clients are rejected. */
-export const PROTOCOL_VERSION = 19;
+export const PROTOCOL_VERSION = 20;
 
 /**
  * A player's intent. The server overwrites `player` with the sender's own seat before
@@ -144,9 +144,16 @@ export const ClientMessageSchema = z.discriminatedUnion('type', [
   /**
    * The host, before a match or once one is over: the room plays this tournament's match
    * next, and goes back to its lobby to wait for it. Nothing about it can be changed in the
-   * room but who of the people sits in which of the open seats.
+   * room but who of the people sits in which of the open seats. `save` is the host's
+   * tournament as it stands, as JSON, passed on untouched for the teammates' pages to show
+   * its standings and bracket: the one message allowed past `maxMessageBytes`, up to
+   * `maxTournamentBytes`.
    */
-  z.strictObject({ type: z.literal('tournament'), table: TournamentTableSchema }),
+  z.strictObject({
+    type: z.literal('tournament'),
+    table: TournamentTableSchema,
+    save: z.string(),
+  }),
   z.strictObject({ type: z.literal('action'), action: ActionSchema }),
   /** Anyone at the table may pause a running match, and anyone may resume it. */
   z.strictObject({ type: z.literal('pause'), paused: z.boolean() }),
@@ -228,6 +235,11 @@ export const ServerMessageSchema = z.discriminatedUnion('type', [
     t: z.number(),
     serverTick: z.number().int().nonnegative(),
   }),
+  /**
+   * The host's tournament as it stands, as JSON (TOURNAMENT §1.7): sent with each match's
+   * table, and to whoever joins, so a teammate's lobby shows what the host's does.
+   */
+  z.strictObject({ type: z.literal('tournamentSave'), save: z.string() }),
   z.strictObject({ type: z.literal('error'), code: z.string(), message: z.string() }),
 ]);
 export type ServerMessage = z.infer<typeof ServerMessageSchema>;

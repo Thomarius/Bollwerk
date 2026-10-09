@@ -103,8 +103,9 @@ export class TournamentRoom {
     return this.people.filter((seat) => seat.playerId !== this.hostId);
   }
 
-  sendTable(table: TournamentTable): void {
-    this.connection.send({ type: 'tournament', table });
+  /** The room set for a match, and the tournament sent along for the teammates' pages. */
+  sendTable(table: TournamentTable, save: Save): void {
+    this.connection.send({ type: 'tournament', table, save: JSON.stringify(save) });
   }
 
   start(): void {

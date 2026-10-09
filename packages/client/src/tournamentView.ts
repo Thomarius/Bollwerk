@@ -8,12 +8,10 @@ import {
   type Team,
 } from '@bollwerk/tournament';
 
-import type { Seat, TournamentTable } from '@bollwerk/protocol';
-
 import { escape } from './html.js';
 import { formatNumber, ordinal, t } from './i18n.js';
-import { levelPips } from './lobby.js';
-import { isLastStep, settingsLine, stageLabel, stageName } from './tournamentText.js';
+import type { LobbyTab, TournamentTab } from './lobby.js';
+import { isLastStep, settingsLine, stageName } from './tournamentText.js';
 
 /**
  * A tournament between its matches, as markup (TOURNAMENT §1.8): where it stands — the
@@ -49,35 +47,17 @@ function teamName(save: Save, id: number): string {
   return (save.teams[id] as Team).name;
 }
 
-/** A team's name, marked as the host's or the archnemesis's. */
-function teamLabel(save: Save, id: number): string {
-  const team = save.teams[id] as Team;
-  const tag =
-    id === HOST_TEAM
-      ? ` <em class="tag you">${t('tournament.yourTeamTag')}</em>`
-      : team.archnemesis
-        ? ` <em class="tag arch">${t('tournament.archTag')}</em>`
-        : '';
-  return `${escape(team.name)}${tag}`;
+/** The tag after a team's name: the host's, the archnemesis's, or none. */
+function teamTag(save: Save, id: number): string {
+  if (id === HOST_TEAM) return ` <em class="tag you">${t('tournament.yourTeamTag')}</em>`;
+  return save.teams[id]?.archnemesis === true
+    ? ` <em class="tag arch">${t('tournament.archTag')}</em>`
+    : '';
 }
 
-/** A team as a card: its name, then each member with a level, the host as a person. */
-function teamCard(save: Save, id: number): string {
-  const team = save.teams[id] as Team;
-  const members = team.members
-    .map((m) =>
-      m.level === null
-        ? `<li><span class="who">${escape(m.name)}</span></li>`
-        : `<li><span class="who">${escape(m.name)}</span>${levelPips(m.level)}</li>`,
-    )
-    .join('');
-  const solo = team.members.length === 1 && team.members[0]?.name === team.name;
-  const mine = id === HOST_TEAM ? ' mine' : team.archnemesis ? ' arch' : '';
-  return (
-    `<li class="team-card${mine}"><b>${teamLabel(save, id)}</b>` +
-    (solo && team.members[0]?.level === null ? '' : `<ul>${members}</ul>`) +
-    `</li>`
-  );
+/** A team's name, marked as the host's or the archnemesis's. */
+function teamLabel(save: Save, id: number): string {
+  return `${escape((save.teams[id] as Team).name)}${teamTag(save, id)}`;
 }
 
 /** The host's last match, in a line: where, the place, and the score where one was played. */
@@ -164,98 +144,43 @@ function knockoutView(save: Save, progress: Progress): string {
   return `${lines.map((l) => `<p>${escape(l)}</p>`).join('')}${otherList}`;
 }
 
-/** The tournament's room as its panel shows it (TOURNAMENT §1.7). */
-export interface RoomPanel {
-  code: string;
-  invite: string | null;
-  /** The table the room was last sent. */
-  table: TournamentTable;
-  /** The people at it, the host among them. */
-  people: readonly Seat[];
-  hostId: number;
-}
-
-/**
- * The room, for the host: its code and invitation, and the host's team's seats — each
- * teammate's bot, or the person who took its seat, who may be moved to another so that a
- * different bot sits the match out.
- */
-export function roomPanelMarkup(panel: RoomPanel): string {
-  const { table, people } = panel;
-  const hostTeam = table.seats[panel.hostId]?.team ?? 0;
-  const open = table.seats.flatMap((seat, index) => (seat.open ? [index] : []));
-  const rows = table.seats
-    .map((seat, index) => {
-      if (seat.team !== hostTeam) return '';
-      if (index === panel.hostId) {
-        return `<li class="seat you"><span class="who">${escape(t('tournament.you', { name: seat.name }))}</span></li>`;
-      }
-      const person = people.find((p) => p.playerId === index);
-      if (person === undefined) {
-        return `<li class="seat bot"><span class="who">${escape(seat.name)}</span><em class="tag">${t('tournament.botTag')}</em></li>`;
-      }
-      const choices = open
-        .map(
-          (to) =>
-            `<option value="${to}"${to === index ? ' selected' : ''}>${escape(t('tournament.inPlaceOf', { bot: table.seats[to]?.name ?? '' }))}</option>`,
-        )
-        .join('');
-      const place =
-        open.length > 1
-          ? `<select class="sit-in" data-seat="${index}" aria-label="${escape(t('tournament.sitInAria', { name: person.name }))}">${choices}</select>`
-          : `<em class="tag">${escape(t('tournament.inPlaceOf', { bot: seat.name }))}</em>`;
-      return `<li class="seat person"><span class="who">${escape(person.name)}</span>${place}</li>`;
-    })
-    .join('');
-  const invite = panel.invite
-    ? `<div class="code-row invite-row"><span class="invite-label">${t('lobby.invite')}</span><code id="invite-link" class="invite-link">${escape(panel.invite)}</code><button id="copy-invite" class="quiet">${t('lobby.copy')}</button></div>`
-    : '';
+/** The knockout's tree as a button: an icon beside the heading it belongs with. */
+function bracketButton(): string {
+  const label = escape(t('tournament.bracket'));
   return (
-    `<section class="room-panel"><h2>${t('tournament.room')}</h2>` +
-    `<div class="code-row"><code id="room-code" class="room-code">${escape(panel.code)}</code><button id="copy-code" class="quiet">${t('lobby.copy')}</button></div>` +
-    `${invite}<p class="note">${escape(t('tournament.roomNote'))}</p><ul class="seats">${rows}</ul></section>`
+    `<button id="bracket" class="icon-button" title="${label}" aria-label="${label}">` +
+    `<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square">` +
+    `<path d="M3 4h5v6H3M3 14h5v6H3M8 7h4v10H8M12 12h4M16 12h5"/></svg></button>`
   );
 }
 
-/** The tournament between matches: the last result, the standings, and the next match. */
-export function tournamentMarkup(
-  save: Save,
-  progress: Progress,
-  notice: string | null,
-  room: RoomPanel | null = null,
-): string {
-  const steps = stepsOf(save);
-  const next = progress.next;
-  const step = steps[progress.done];
-  const match = next?.matches[progress.hostMatch] ?? [];
+/**
+ * The tournament's tab of the lobby (TOURNAMENT §1.7, §1.8), the same on the host's page
+ * and a teammate's: the settings, the last result, the standings with the bracket beside
+ * them, and the step's other matches. The match itself is the other tab's.
+ */
+export function tournamentTab(save: Save, progress: Progress, open: LobbyTab): TournamentTab {
+  const step = stepsOf(save)[progress.done];
   const inLeague = step?.kind === 'league';
   const standings = inLeague
     ? progress.done === 0
       ? `<p class="note">${escape(t('tournament.leagueAhead', { days: save.plan.matchdays.length, n: save.plan.advance }))}</p>`
       : leagueTable(save, progress)
     : knockoutView(save, progress);
-  return `
-    <div class="menu lobby tournament-view">
-      <h1>${escape(save.teams[0]?.name ?? '')}</h1>
+  const markup = `
       <p class="note subtitle">${escape(settingsLine(save.settings))}</p>
-      ${notice === null ? '' : `<p class="note warn">${escape(notice)}</p>`}
       ${lastResult(save)}
-      <div class="lobby-body">
-        <section class="next-match${isLastStep(save, progress.done) ? ' last-match' : ''}">
-          <h2>${escape(t('tournament.nextMatch', { stage: stageLabel(save, progress.done) }))}</h2>
-          ${isLastStep(save, progress.done) ? `<p class="last-line">${escape(t('tournament.lastMatch'))}</p>` : ''}
-          <ul class="team-cards">${match.map((id) => teamCard(save, id)).join('')}</ul>
-        </section>
-        <section class="standings">
-          <h2>${inLeague ? t('tournament.league') : t('tournament.knockout')}</h2>
-          ${standings}
-        </section>
-      </div>
-      ${room === null ? '' : roomPanelMarkup(room)}
-      <button id="play">${t('tournament.play')}</button>
-      <button id="bracket" class="quiet">${t('tournament.bracket')}</button>
-      <button id="back" class="quiet">${t('watching.back')}</button>
-    </div>`;
+      <section class="standings">
+        <h2>${inLeague ? t('tournament.league') : t('tournament.knockout')}${bracketButton()}</h2>
+        ${standings}
+      </section>`;
+  const match = progress.next?.matches[progress.hostMatch] ?? [];
+  return {
+    markup,
+    open,
+    lastMatch: isLastStep(save, progress.done),
+    teamTags: match.map((id) => teamTag(save, id)),
+  };
 }
 
 /** The end of a tournament, won or out: the team's road through it, match by match. */
@@ -290,9 +215,9 @@ export function endingMarkup(save: Save, progress: Progress): string {
       <h1>${escape(headline)}</h1>
       <p class="ending-line">${escape(line)}</p>
       <p class="note subtitle">${escape(settingsLine(save.settings))}</p>
+      <h2>${t('tournament.yourMatches')}${bracketButton()}</h2>
       <table class="road"><thead><tr><th>${t('tournament.stage')}</th><th>${t('tournament.against')}</th><th>${t('tournament.place')}</th><th>${t('tournament.score')}</th></tr></thead>
       <tbody>${rows}</tbody></table>
-      <button id="bracket" class="quiet">${t('tournament.bracket')}</button>
       <button id="back">${t('watching.back')}</button>
     </div>`;
 }

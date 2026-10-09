@@ -14,15 +14,22 @@ import {
 
 import { app, audio, params, showError } from './app.js';
 import { t } from './i18n.js';
-import { wireCopy } from './lobbyFlow.js';
+import type { LobbyTab, LobbyView } from './lobby.js';
+import { drawLobby, wireBracket } from './lobbyFlow.js';
 import { runSession, type MatchExits } from './matchScreen.js';
 import { preferredStyles } from './prefs.js';
-import { localMatchFor, localSession, networkSession, type Setup } from './session.js';
+import {
+  DEFAULT_BOT,
+  SETTING_BOUNDS,
+  localMatchFor,
+  localSession,
+  networkSession,
+  type Setup,
+} from './session.js';
 import type { TournamentExits } from './tournamentMenu.js';
 import { TournamentRoom, roomTable } from './tournamentRoom.js';
 import { deleteTournament, loadTournament, writeTournament } from './tournamentSaves.js';
-import { openBracket } from './tournamentBracketView.js';
-import { endingMarkup, tournamentMarkup, type RoomPanel } from './tournamentView.js';
+import { endingMarkup, tournamentTab } from './tournamentView.js';
 
 /**
  * Playing a tournament (TOURNAMENT T5, T6): the screen between matches, the match, its
@@ -86,50 +93,76 @@ function showTournament(open: Open, notice: string | null): void {
   }
   const room = open.room?.open === true ? open.room : null;
   const table = roomTable(save, progress);
+  if (table === null) return;
   // The room is set for the coming match — and, after one, brought back to its lobby.
-  if (room !== null && table !== null) room.sendTable(table);
+  room?.sendTable(table, save);
+  const hostSeat = table.seats.findIndex((seat) => seat.level === null);
+  // Each time it appears, the screen opens on the match (the users' choice, 2026-10-09).
+  let tab: LobbyTab = 'match';
 
   const draw = (): void => {
-    const panel: RoomPanel | null =
-      room === null || table === null
-        ? null
-        : { code: room.code, invite: room.invite, table, people: room.people, hostId: room.hostId };
-    app!.innerHTML = tournamentMarkup(save, progress, notice, panel);
-    app!.querySelector('#play')?.addEventListener('click', () => {
-      audio.play('select');
-      if (room !== null) {
-        room.onChange = null;
-        if (room.guests.length > 0) {
-          playOnline(open, room, progress);
-          return;
+    // The match's lobby as a teammate's page shows it, the host in their seat: the room's
+    // last word on who sits where may still be the match before's.
+    const people =
+      room === null
+        ? [
+            {
+              playerId: hostSeat,
+              name: save.settings.hostName,
+              isBot: false,
+              connected: true,
+              ready: true,
+            },
+          ]
+        : room.people.map((p) => (p.playerId === room.hostId ? { ...p, playerId: hostSeat } : p));
+    const view: LobbyView = {
+      code: room?.code ?? null,
+      playerCount: table.seats.length,
+      hostId: hostSeat,
+      humanPlayer: hostSeat,
+      seats: people,
+      bots: table.seats.map((seat) => seat.level ?? DEFAULT_BOT),
+      settings: table.settings,
+      settingBounds: SETTING_BOUNDS,
+      teams: table.seats.map((seat) => seat.team),
+      playerLimits: defaultConfigBundle.ruleset.players,
+      seed: table.seed,
+      hostBot: null,
+      invite: room?.invite ?? null,
+      tournament: table,
+      tournamentTab: tournamentTab(save, progress, tab),
+      notice,
+    };
+    const none = (): void => undefined;
+    drawLobby(view, {
+      table: none,
+      bot: none,
+      seed: none,
+      hostBot: none,
+      move: (from, to) => room?.move(from, to),
+      start: () => {
+        if (room !== null) {
+          room.onChange = null;
+          if (room.guests.length > 0) {
+            playOnline(open, room, progress);
+            return;
+          }
         }
-      }
-      playHere(open, progress);
+        playHere(open, progress);
+      },
+      tab: (chosen) => (tab = chosen),
     });
-    app!.querySelector('#bracket')?.addEventListener('click', () => {
-      audio.play('select');
-      openBracket(save, progress, () => audio.play('select'));
-    });
-    app!.querySelector('#back')?.addEventListener('click', () => {
+    wireBracket(save, progress);
+    app!.querySelector('#leave')?.addEventListener('click', () => {
       audio.play('select');
       if (room !== null) room.onChange = null;
       leaveTournament(open);
     });
-    if (panel !== null) {
-      wireCopy('#copy-code', '#room-code', panel.code);
-      if (panel.invite !== null) wireCopy('#copy-invite', '#invite-link', panel.invite);
-    }
-    for (const field of app!.querySelectorAll<HTMLSelectElement>('.sit-in')) {
-      field.addEventListener('change', () => {
-        audio.play('select');
-        room?.move(Number(field.dataset.seat), Number(field.value));
-      });
-    }
   };
   // Somebody arrived, left or moved: drawn again, and heard.
   if (room !== null) {
     room.onChange = () => {
-      if (app!.querySelector('.tournament-view') === null) return;
+      if (app!.querySelector('.tournament-lobby') === null) return;
       draw();
     };
   }
@@ -145,10 +178,7 @@ function showEnding(open: Open, progress: Progress): void {
   deleteTournament(open.save.id);
   app!.innerHTML = endingMarkup(open.save, progress);
   audio.music(progress.status.kind === 'won' ? 'music_victory' : 'music_defeat');
-  app!.querySelector('#bracket')?.addEventListener('click', () => {
-    audio.play('select');
-    openBracket(open.save, progress, () => audio.play('select'));
-  });
+  wireBracket(open.save, progress);
   app!.querySelector('#back')?.addEventListener('click', () => {
     audio.play('select');
     open.exits.menu();

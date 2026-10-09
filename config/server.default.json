@@ -14,7 +14,8 @@
   },
   "limits": {
     "maxMessagesPerSecond": 30,
-    "maxMessageBytes": 4096
+    "maxMessageBytes": 4096,
+    "maxTournamentBytes": 262144
   },
   "reconnect": {
     "botTakeoverDelayMs": 5000

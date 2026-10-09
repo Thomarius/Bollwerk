@@ -28,7 +28,9 @@ import {
   type NameSource,
 } from './tournamentSetup.js';
 import { settingsLine, stageName } from './tournamentText.js';
-import { endingMarkup, tableExcerpt, tournamentMarkup } from './tournamentView.js';
+import { lobbyMarkup, type LobbyView } from './lobby.js';
+import { roomTable } from './tournamentRoom.js';
+import { endingMarkup, tableExcerpt, tournamentTab } from './tournamentView.js';
 
 const config = defaultConfigBundle.tournament;
 
@@ -51,6 +53,47 @@ function memoryStorage(): Storage {
     removeItem: (key) => void items.delete(key),
     clear: () => items.clear(),
   };
+}
+
+/**
+ * A tournament's lobby as a page draws it: the host's (`humanPlayer` their seat) or a
+ * teammate's, who sits in the host's team's first open seat.
+ */
+function lobbyOf(
+  save: Save,
+  progress: Progress,
+  guest: boolean,
+  notice: string | null = null,
+  mate = guest,
+) {
+  const table = roomTable(save, progress)!;
+  const host = table.seats.findIndex((s) => s.level === null);
+  const open = table.seats.findIndex((s) => s.open);
+  const seat = (playerId: number, name: string) => ({
+    playerId,
+    name,
+    isBot: false,
+    connected: true,
+    ready: true,
+  });
+  const view: LobbyView = {
+    code: 'ABCD',
+    playerCount: table.seats.length,
+    hostId: host,
+    humanPlayer: guest ? open : host,
+    seats: mate ? [seat(host, 'Ada'), seat(open, 'Bo')] : [seat(host, 'Ada')],
+    bots: table.seats.map((s) => s.level ?? 5),
+    settings: table.settings,
+    settingBounds: defaultConfigBundle.server.lobbySettings,
+    teams: table.seats.map((s) => s.team),
+    playerLimits: defaultConfigBundle.ruleset.players,
+    seed: table.seed,
+    hostBot: null,
+    tournament: table,
+    tournamentTab: tournamentTab(save, progress, 'match'),
+    notice,
+  };
+  return lobbyMarkup(view);
 }
 
 function tournament(id: string, playedAt: string, over: Partial<Save['settings']> = {}): Save {
@@ -247,7 +290,60 @@ describe('the tournament between matches', () => {
     expect(lines).toHaveLength(4);
   });
 
-  it('shows the next match, the league table and the last result', () => {
+  it('shows the match and the tournament in two tabs, the match open', () => {
+    setLanguage('en');
+    const save = tournament('t', 'now', {
+      league: true,
+      teamSize: 2,
+      teamBots: [{ name: 'Cy', level: 5 }],
+    });
+    const progress = new Progress(save);
+    for (const guest of [false, true]) {
+      const markup = lobbyOf(save, progress, guest);
+      // Both pages alike: the map, the match's stage, the standings, the bracket's icon.
+      expect(markup).toContain('id="map-preview"');
+      expect(markup).toContain('League, matchday 1 of 3');
+      expect(markup).toContain('class="tab on" role="tab" data-tab="match"');
+      expect(markup).toMatch(/data-panel="tournament" hidden>[^]*id="bracket" class="icon-button"/);
+      expect(markup).toContain('class="tag you"');
+      // Only the host plays the match on; the teammate waits, in place of the team's bot.
+      expect(markup.includes('id="begin"')).toBe(!guest);
+      expect(markup.includes('Waiting for the host')).toBe(guest);
+      expect(markup.includes('in place of Cy')).toBe(guest);
+    }
+    // The host seats a teammate in the team's other open seat, and in no other.
+    const three = tournament('t', 'now', {
+      teamSize: 3,
+      teamBots: [
+        { name: 'Cy', level: 5 },
+        { name: 'Di', level: 5 },
+      ],
+    });
+    const host = lobbyOf(three, new Progress(three), false, null, true);
+    expect(host.match(/class="occupant/g)).toHaveLength(1);
+    expect(host).toMatch(
+      /class="occupant who"[^>]*><option value="" selected>Di<\/option><option value="\d">Bo</,
+    );
+    expect(host).not.toContain('id="seed"');
+    expect(host).not.toContain('class="bot-select"');
+  });
+
+  it('marks the last match in gold, on the match tab', () => {
+    setLanguage('en');
+    const save = tournament('t', 'now', { length: 'short' });
+    let progress = new Progress(save);
+    expect(lobbyOf(save, progress, false)).not.toContain('last-match');
+    const teams = progress.next?.matches[progress.hostMatch] ?? [];
+    progress = recordMatch(
+      save,
+      config,
+      [0, ...teams.filter((t) => t !== 0)].map((team) => ({ team, score: 9 })),
+      'later',
+    );
+    expect(lobbyOf(save, progress, true)).toContain('The last match: win it');
+  });
+
+  it('shows the league table and the last result', () => {
     setLanguage('en');
     const save = tournament('t', 'now', {
       league: true,
@@ -255,8 +351,7 @@ describe('the tournament between matches', () => {
       levels: { min: 4, max: 6 },
     });
     const progress = new Progress(save);
-    const ahead = tournamentMarkup(save, progress, null);
-    expect(ahead).toContain('Next: League, matchday 1 of 3');
+    const ahead = tournamentTab(save, progress, 'match').markup;
     expect(ahead).toContain('the top');
     expect(ahead).not.toContain('class="last-result');
     const teams = progress.next?.matches[progress.hostMatch] ?? [];
@@ -266,7 +361,7 @@ describe('the tournament between matches', () => {
       [0, ...teams.filter((t) => t !== 0)].map((team) => ({ team, score: 1234 })),
       'later',
     );
-    const after = tournamentMarkup(save, new Progress(save), 'A notice');
+    const after = lobbyOf(save, new Progress(save), false, 'A notice');
     expect(after).toContain('Last match, League, matchday 1 of 3: 1st of 2 · 1234 points');
     expect(after).toContain('class="league-table"');
     expect(after).toContain('A notice');
@@ -279,7 +374,7 @@ describe('the tournament between matches', () => {
       knockout: 'double',
       length: 'long',
     });
-    const markup = tournamentMarkup(save, new Progress(save), null);
+    const markup = tournamentTab(save, new Progress(save), 'tournament').markup;
     expect(markup).toContain('Nemesis, the archnemesis, is still in.');
     expect(markup).toMatch(/Your team is in the winners(&#39;|') bracket/);
     expect(markup).toContain('The other matches');
@@ -301,6 +396,9 @@ describe('the tournament between matches', () => {
     const champion = endingMarkup(won, progress);
     expect(champion).toContain('Champions!');
     expect(champion.match(/<tr class="won">/g)).toHaveLength(2);
+    expect(champion).toMatch(
+      /<h2>Your team&#39;s matches<button id="bracket"|<h2>Your team's matches<button id="bracket"/,
+    );
 
     const out = tournament('t', 'now');
     const first = new Progress(out);
