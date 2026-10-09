@@ -1,13 +1,15 @@
 import type { ArtConfig, BricksStyleConfig } from '@bollwerk/config';
 import { Structure, Terrain, type MatchState, type Shot } from '@bollwerk/sim';
-import { Graphics } from 'pixi.js';
+import { FillPattern, Graphics, Matrix, Texture, type GraphicsContext } from 'pixi.js';
 
 import { motionReduced } from '../motion.js';
 import type { TimerSpot } from '../timerSpot.js';
 
 import { cornerSpot } from './corner.js';
 import { IslandParts } from './islandParts.js';
-import { Memos, viewKey } from './stamps.js';
+import { hash } from './noise.js';
+import { Circling, behindCorner, outerOcean } from './ocean.js';
+import { Memos, StampBook, Stamps, viewKey } from './stamps.js';
 import {
   FlagHoist,
   GhostMotion,
@@ -29,6 +31,7 @@ import {
   drawMainCastles,
   drawShotTarget,
   hex,
+  mixed,
   playerColour,
   shotLift,
   tileX,
@@ -74,6 +77,18 @@ interface Splash {
 interface Click {
   cells: readonly Cell[];
   age: number;
+}
+
+/** A stud popped off a castle as it seals, flying up and falling away. */
+interface Pop {
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
+  age: number;
+  colour: number;
+  /** A twinkle of light rather than a stud. */
+  spark: boolean;
 }
 
 /** How long a recoil takes to come home. */
@@ -135,6 +150,17 @@ export class BricksTheme implements Theme {
   private readonly fireworks = new Fireworks(FINISH);
   private readonly winnerBanners = new WinnerBanners(FINISH);
   private readonly flags = new FlagHoist();
+  /** The flag panels, a `Graphics` a castle redrawn only while its flag moves (`Memos`). */
+  private readonly flagMemo = new Memos();
+  /** The studs of the sea and of the land, drawn for the tile size (`studPattern`). */
+  private patterns: { sea: FillPattern; land: FillPattern } | null = null;
+  private readonly gulls = new Circling();
+  /** Gulls and the studs popping off a castle as it seals, stamped (`Stamps`). */
+  private readonly book = new StampBook();
+  private readonly stamps = new Stamps();
+  private pops: Pop[] = [];
+  /** Whether each castle was sealed at the last frame, to see one seal. */
+  private sealedBefore: readonly boolean[] | null = null;
   private clock = 0;
 
   init(layers: ThemeLayers, art: ArtConfig): Promise<void> {
@@ -143,13 +169,26 @@ export class BricksTheme implements Theme {
     layers.terrain.addChild(this.terrainGfx, this.craneGfx);
     layers.territory.addChild(this.territory.container, this.scenery.gfx);
     layers.structures.addChild(this.structures.container);
-    layers.effects.addChild(this.effectGfx, this.gunMemo.container, this.lateGfx);
+    layers.effects.addChild(
+      this.effectGfx,
+      this.gunMemo.container,
+      this.flagMemo.container,
+      this.lateGfx,
+      this.stamps.container,
+    );
     layers.overlay.addChild(this.overlayGfx);
     return Promise.resolve();
   }
 
   destroy(): void {
     this.gunMemo.destroy();
+    this.flagMemo.destroy();
+    this.stamps.destroy();
+    this.book.destroy();
+    if (this.patterns !== null) {
+      for (const p of [this.patterns.sea, this.patterns.land]) p.texture.destroy(true);
+      this.patterns = null;
+    }
     this.lateGfx.destroy();
     this.territory.destroy();
     this.structures.destroy();
@@ -202,22 +241,51 @@ export class BricksTheme implements Theme {
     // The sea's baseplate runs out past the board to the window's edge.
     const marginX = Math.ceil(view.originX / t) + 1;
     const marginY = Math.ceil(view.originY / t) + 1;
-    g.rect(
-      tileX(view, -marginX),
-      tileY(view, -marginY),
-      (state.width + 2 * marginX) * t,
-      (state.height + 2 * marginY) * t,
-    );
+    const x0 = -marginX;
+    const y0 = -marginY;
+    const x1 = state.width + marginX;
+    const y1 = state.height + marginY;
+    const sea = (): void => {
+      g.rect(tileX(view, x0), tileY(view, y0), (x1 - x0) * t, (y1 - y0) * t);
+    };
+    sea();
     g.fill({ color: hex(palette.waterMid) });
-    // Faint studs on the sea: every other tile, so it reads as a baseplate and stays calm.
-    const r = (t * this.style.studScale) / 2;
-    for (let y = -marginY; y < state.height + marginY; y++) {
-      for (let x = -marginX; x < state.width + marginX; x++) {
-        if (land(x, y) || (x + y) % 2 !== 0) continue;
-        g.circle(tileX(view, x + 0.5), tileY(view, y + 0.5), r);
+    // A plate of shallow water one tile out from the coast, as a toy harbour's lighter plate:
+    // the coast reads from afar without anything moving on the sea.
+    for (let y = y0; y < y1; y++) {
+      for (let x = x0; x < x1; x++) {
+        if (land(x, y)) continue;
+        let near = false;
+        for (let dy = -1; dy <= 1 && !near; dy++) {
+          for (let dx = -1; dx <= 1 && !near; dx++) near = land(x + dx, y + dy);
+        }
+        if (near) g.rect(tileX(view, x), tileY(view, y), t, t);
       }
     }
-    g.fill({ color: hex(palette.waterShallow), alpha: this.style.seaStudAlpha * 2 });
+    g.fill({ color: hex(palette.waterShallow), alpha: this.style.shallowPlateAlpha });
+    // The joins between baseplates, a darker seam every few tiles, as plates laid side by side.
+    const every = this.style.plateSeamTiles;
+    for (let x = Math.ceil(x0 / every) * every; x < x1; x += every) {
+      g.moveTo(tileX(view, x), tileY(view, y0)).lineTo(tileX(view, x), tileY(view, y1));
+    }
+    for (let y = Math.ceil(y0 / every) * every; y < y1; y += every) {
+      g.moveTo(tileX(view, x0), tileY(view, y)).lineTo(tileX(view, x1), tileY(view, y));
+    }
+    g.stroke({
+      width: Math.max(1, t * 0.08),
+      color: hex(palette.shadow),
+      alpha: this.style.plateSeamAlpha,
+    });
+    // The sea's studs, every other tile so it stays calm: a pattern of round studs drawn once
+    // for the tile size, since circles of a few pixels drawn as shapes come out as diamonds,
+    // and a fill is a handful of vertices where a stud a shape was dozens.
+    const old = this.patterns;
+    this.patterns = {
+      sea: studPattern(view, 2, palette.waterShallow, this.style.studScale),
+      land: studPattern(view, 1, palette.grassLight, this.style.studScale),
+    };
+    sea();
+    g.fill({ fill: this.patterns.sea, alpha: this.style.seaStudAlpha });
 
     // The land's plate, raised: a darker edge where it drops to the sea on its south.
     const cells: Cell[] = [];
@@ -243,18 +311,26 @@ export class BricksTheme implements Theme {
       }
       if (any) g.fill({ color: this.colour(player - 1, 'base'), alpha: 0.06 });
     }
-    // The land's studs, every tile.
-    for (const { x, y } of cells) {
-      g.circle(tileX(view, x + 0.5), tileY(view, y + 0.5), r);
-    }
-    g.fill({ color: hex(palette.grassLight), alpha: this.style.landStudAlpha });
+    // The land's studs, every tile, from the same kind of pattern.
+    for (const { x, y } of cells) g.rect(tileX(view, x), tileY(view, y), t, t);
+    g.fill({ fill: this.patterns.land, alpha: this.style.landStudAlpha });
     trace(g, outline(cells, land, view));
     g.stroke({ width: 1, color: hex(palette.grassDark) });
+    // Gulls wheel over the outer ocean, placed afresh with the board.
+    this.gulls.layout(outerOcean(state, view), this.style.gulls, [1.5, 3]);
+    // The old patterns' textures only once nothing is filled with them any more.
+    if (old !== null) for (const p of [old.sea, old.land]) p.texture.destroy(true);
   }
 
   // ------------------------------------------------------------------ territory
 
-  /** Sealed ground as smooth tiles laid over the studs, in the owner's colour. */
+  /**
+   * Sealed ground as smooth tiles laid over the studs: each tile bevelled, lit on its north
+   * and west edges and shaded on its south and east, its shade shifted a little from its
+   * neighbours', and now and then one printed with a grille or an arrow in the owner's
+   * colour — so it reads as a floor of tiles, not as tinted grass, and never as a wall,
+   * which is studded and stands up.
+   */
   drawTerritory(state: MatchState, view: ViewTransform): void {
     this.scenery.refresh(state, view, this.art);
     this.territory.draw(state, view, (g, island) => this.drawSealed(g, island, view));
@@ -264,6 +340,8 @@ export class BricksTheme implements Theme {
   private drawSealed(g: Graphics, state: MatchState, view: ViewTransform): void {
     const t = view.tile;
     const gap = Math.max(1, t * 0.06);
+    const bevel = Math.max(1, t * 0.08);
+    const { territoryAlpha, tileShift, printedTileOdds, sheenAlpha } = this.style;
     for (let player = 0; player < state.players.length; player++) {
       const cells: Cell[] = [];
       for (let i = 0; i < state.territory.length; i++) {
@@ -272,19 +350,72 @@ export class BricksTheme implements Theme {
         cells.push({ x, y: (i - x) / state.width });
       }
       if (cells.length === 0) continue;
-      for (const { x, y } of cells) {
-        g.rect(tileX(view, x) + gap / 2, tileY(view, y) + gap / 2, t - gap, t - gap);
+      const light = this.colour(player, 'light');
+      const base = this.colour(player, 'base');
+      // Two shades, by a hash of the tile, so the floor is laid of separate tiles.
+      for (const shade of [0, 1]) {
+        for (const { x, y } of cells) {
+          if ((hash(x, y, 4517) < 0.4 ? 1 : 0) !== shade) continue;
+          g.rect(tileX(view, x) + gap / 2, tileY(view, y) + gap / 2, t - gap, t - gap);
+        }
+        g.fill({
+          color: shade === 0 ? light : mixed(light, base, tileShift),
+          alpha: territoryAlpha,
+        });
       }
-      g.fill({ color: this.colour(player, 'light'), alpha: this.style.territoryAlpha });
-      // Each tile's sheen along its lit edge.
+      // The bevel: a lit edge to the north-west, a shaded one to the south-east.
+      const lo = gap / 2 + bevel / 2;
+      const hi = t - gap / 2 - bevel / 2;
       for (const { x, y } of cells) {
-        const px = tileX(view, x) + gap;
-        const py = tileY(view, y) + gap;
-        g.moveTo(px, py + t * 0.5)
-          .lineTo(px, py)
-          .lineTo(px + t * 0.5, py);
+        const px = tileX(view, x);
+        const py = tileY(view, y);
+        g.moveTo(px + lo, py + hi)
+          .lineTo(px + lo, py + lo)
+          .lineTo(px + hi, py + lo);
       }
-      g.stroke({ width: 1, color: 0xffffff, alpha: this.style.sheenAlpha * 0.6 });
+      g.stroke({ width: bevel, color: 0xffffff, alpha: sheenAlpha });
+      for (const { x, y } of cells) {
+        const px = tileX(view, x);
+        const py = tileY(view, y);
+        g.moveTo(px + hi, py + lo)
+          .lineTo(px + hi, py + hi)
+          .lineTo(px + lo, py + hi);
+      }
+      g.stroke({ width: bevel, color: 0x000000, alpha: 0.2 });
+      // Printed tiles, in the owner's own colour on the light: a grille of three slots, or an
+      // arrow pointing one of four ways. Chevrons, not a ring or a cross, which say target.
+      let printed = 0;
+      for (const { x, y } of cells) {
+        if (hash(x, y, 2203) >= printedTileOdds) continue;
+        printed++;
+        const cx = tileX(view, x + 0.5);
+        const cy = tileY(view, y + 0.5);
+        const kind = hash(x, y, 811);
+        if (kind < 0.5) {
+          for (const dy of [-0.2, 0, 0.2]) {
+            g.roundRect(cx - t * 0.24, cy + dy * t - t * 0.05, t * 0.48, t * 0.1, t * 0.05);
+          }
+        } else {
+          const turn = Math.floor(kind * 8) % 4;
+          const c = [1, 0, -1, 0][turn] as number;
+          const s = [0, 1, 0, -1][turn] as number;
+          const at = (u: number, v: number): [number, number] => [
+            cx + (u * c - v * s) * t,
+            cy + (u * s + v * c) * t,
+          ];
+          g.poly([
+            ...at(0.26, 0),
+            ...at(0, -0.24),
+            ...at(0, -0.1),
+            ...at(-0.24, -0.1),
+            ...at(-0.24, 0.1),
+            ...at(0, 0.1),
+            ...at(0, 0.24),
+          ]);
+        }
+      }
+      // Only with something printed: a fill straight after a stroke fills the stroke's path.
+      if (printed > 0) g.fill({ color: base, alpha: 0.85 });
     }
     dimEliminated(g, state, view, hex(this.art.palette.shadow));
   }
@@ -328,74 +459,180 @@ export class BricksTheme implements Theme {
     }
     g.fill({ color: hex(palette.rockMid) });
 
-    // Castles: a tower of bricks, a smaller keep standing on it, studs on both.
+    // Castles: a tower built of bricks; a player's main castle a little grander.
     for (const castle of state.castles) {
       const owner = castle.islandId - 1;
-      const x = tileX(view, castle.x);
-      const y = tileY(view, castle.y);
-      const w = castle.w * t;
-      const h = castle.h * t;
-      const face = this.faceFraction() * t * 1.4;
-      const inset = t * 0.08;
-      // The tower: top and face.
-      g.rect(x + inset, y + inset, w - inset * 2, h - inset * 2 - face);
-      g.fill({ color: this.colour(owner, 'base') });
-      g.rect(x + inset, y + h - inset - face, w - inset * 2, face);
-      g.fill({ color: this.colour(owner, 'dark') });
-      // Brick courses across the face.
-      for (let k = 1; k < 3; k++) {
-        const cy = y + h - inset - face + (face * k) / 3;
-        g.moveTo(x + inset, cy).lineTo(x + w - inset, cy);
-      }
-      g.stroke({ width: 1, color: 0x000000, alpha: 0.25 });
-      // The keep on top.
-      const kx = x + w * 0.25;
-      const ky = y + inset;
-      const kw = w * 0.5;
-      const kh = h * 0.42;
-      g.rect(kx, ky, kw, kh);
-      g.fill({ color: this.colour(owner, 'light') });
-      g.rect(kx, ky + kh, kw, face * 0.6);
-      g.fill({ color: this.colour(owner, 'base') });
-      for (let sy = 0; sy < castle.h; sy++) {
-        for (let sx = 0; sx < castle.w; sx++) {
-          const cx = x + (sx + 0.5) * t;
-          const cy = y + (sy + 0.5) * t - face * 0.5;
-          const onKeep = cx > kx && cx < kx + kw && cy > ky && cy < ky + kh;
-          this.stud(
-            g,
-            cx,
-            onKeep ? cy - t * 0.12 : cy,
-            t,
-            this.colour(owner, onKeep ? 'light' : 'base'),
-          );
-        }
-      }
+      const main = state.players[owner]?.startingCastleId === castle.id;
+      this.drawCastle(g, view, castle, owner, main);
     }
 
-    // Guns: a grey brick mount with a stud at each corner; the barrel is an effect.
+    // Guns stand on a grey plate filling their square, which says what a gun takes up while
+    // building (`cannonBase`'s reason); the cannon on it, carriage, wheels and barrel, turns
+    // with its aim and is drawn with the barrel (`drawGuns`). A silenced gun's plate is dark.
     for (const cannon of state.cannons) {
       const x = tileX(view, cannon.x);
       const y = tileY(view, cannon.y);
       const w = cannon.w * t;
       const h = cannon.h * t;
-      const inset = t * 0.18;
-      const face = this.faceFraction() * t;
+      const inset = t * 0.08;
+      const face = this.faceFraction() * t * 0.6;
       g.rect(x + inset, y + inset, w - inset * 2, h - inset * 2 - face);
       g.fill({ color: hex(cannon.active ? palette.rockMid : palette.rockDark) });
       g.rect(x + inset, y + h - inset - face, w - inset * 2, face);
-      g.fill({ color: hex(palette.rockDark) });
-      // A band in the owner's colour, so whose gun it is reads at a glance.
-      g.rect(x + inset, y + h - inset - face, w - inset * 2, Math.max(1, face * 0.35));
+      g.fill({ color: hex(cannon.active ? palette.rockDark : palette.craterDark) });
+      // A band in the owner's colour along its edge, so whose gun it is reads at a glance.
+      g.rect(x + inset, y + h - inset - face, w - inset * 2, Math.max(1, face * 0.45));
       g.fill({ color: this.colour(cannon.owner, cannon.active ? 'base' : 'dark') });
+      g.rect(x + inset, y + inset, w - inset * 2, h - inset * 2);
+      g.stroke({ width: 1, color: hex(palette.craterDark), alpha: 0.5 });
       for (const [sx, sy] of [
         [0.3, 0.3],
         [cannon.w - 0.3, 0.3],
-        [0.3, cannon.h - 0.3],
-        [cannon.w - 0.3, cannon.h - 0.3],
+        [0.3, cannon.h - 0.4],
+        [cannon.w - 0.3, cannon.h - 0.4],
       ] as const) {
-        this.stud(g, x + sx * t, y + sy * t - face * 0.4, t * 0.7, hex(palette.rockLight));
+        this.stud(
+          g,
+          x + sx * t,
+          y + sy * t,
+          t * 0.75,
+          hex(cannon.active ? palette.rockLight : palette.rockDark),
+        );
       }
+    }
+  }
+
+  /**
+   * A castle as a tower built of toy bricks, standing on its 2x2 square: a broad lower
+   * storey coursed in bricks with an arched dark doorway, a ledge on it carrying studs, a
+   * narrower upper storey with a clear window brick, and along its top a row of 1x1
+   * crenellation bricks, each with its stud. A main castle is a little grander: its upper
+   * storey wider and taller, a round turret brick at each end of the ledge, four merlons. The
+   * flag panel on top is an effect, hoisted and lowered (`drawFlags`).
+   */
+  private drawCastle(
+    g: Graphics,
+    view: ViewTransform,
+    castle: { x: number; y: number; w: number; h: number },
+    owner: number,
+    main: boolean,
+  ): void {
+    const { palette } = this.art;
+    const t = view.tile;
+    const base = this.colour(owner, 'base');
+    const light = this.colour(owner, 'light');
+    const dark = this.colour(owner, 'dark');
+    const seam = { width: 1, color: 0x000000, alpha: 0.28 };
+    const x = tileX(view, castle.x);
+    const y = tileY(view, castle.y);
+    const w = castle.w * t;
+    const h = castle.h * t;
+    const left = x + t * 0.1;
+    const right = x + w - t * 0.1;
+    const foot = y + h - t * 0.08;
+
+    // Its shadow on the ground.
+    g.rect(left + t * 0.06, foot - t * 0.02, right - left, t * 0.1);
+    g.fill({ color: 0x000000, alpha: 0.25 });
+
+    // The lower storey's face, its right side in shade, coursed in staggered bricks.
+    const lowTop = y + h * 0.5;
+    const side = t * 0.16;
+    g.rect(left, lowTop, right - left, foot - lowTop);
+    g.fill({ color: base });
+    g.rect(right - side, lowTop, side, foot - lowTop);
+    g.fill({ color: dark });
+    const courses = 3;
+    const course = (foot - lowTop) / courses;
+    for (let k = 1; k < courses; k++) {
+      g.moveTo(left, lowTop + course * k).lineTo(right, lowTop + course * k);
+    }
+    for (let k = 0; k < courses; k++) {
+      const shift = k % 2 === 0 ? 0 : t * 0.25;
+      for (let bx = left + shift + t * 0.5; bx < right - t * 0.1; bx += t * 0.5) {
+        g.moveTo(bx, lowTop + course * k).lineTo(bx, lowTop + course * (k + 1));
+      }
+    }
+    g.rect(left, lowTop, right - left, foot - lowTop);
+    g.stroke(seam);
+    // The doorway, an arch of dark under a lighter keystone course.
+    const doorW = t * 0.46;
+    const doorH = (foot - lowTop) * 0.78;
+    const dx = x + w / 2 - doorW / 2 - side / 2;
+    g.rect(dx, foot - doorH + doorW / 2, doorW, doorH - doorW / 2);
+    g.circle(dx + doorW / 2, foot - doorH + doorW / 2, doorW / 2);
+    g.fill({ color: hex(palette.shadow) });
+    const archR = doorW / 2 + t * 0.04;
+    g.moveTo(dx + doorW / 2 - archR, foot - doorH + doorW / 2);
+    g.arc(dx + doorW / 2, foot - doorH + doorW / 2, archR, Math.PI, Math.PI * 2);
+    g.stroke({ width: Math.max(1, t * 0.06), color: light });
+
+    // The ledge on the lower storey, seen from above, its studs either side of the upper.
+    const ledge = t * 0.26;
+    g.rect(left, lowTop - ledge, right - left, ledge);
+    g.fill({ color: mixed(base, light, 0.35) });
+    g.rect(left, lowTop - ledge, right - left, ledge);
+    g.stroke(seam);
+
+    // The upper storey, narrower (wider for a main castle), with its window brick.
+    const upInset = main ? t * 0.36 : t * 0.5;
+    const ul = left + upInset;
+    const ur = right - upInset;
+    const upTop = y + (main ? t * 0.2 : t * 0.36);
+    const upFoot = lowTop - ledge * 0.4;
+    g.rect(ul, upTop, ur - ul, upFoot - upTop);
+    g.fill({ color: base });
+    g.rect(ur - side * 0.8, upTop, side * 0.8, upFoot - upTop);
+    g.fill({ color: dark });
+    g.rect(ul, upTop, ur - ul, upFoot - upTop);
+    g.stroke(seam);
+    // A clear window brick: the sky through it, a frame and a glint across the glass.
+    const win = Math.min(ur - ul, upFoot - upTop) * 0.5;
+    const wx = (ul + ur) / 2 - win / 2 - side * 0.3;
+    const wy = upTop + (upFoot - upTop) * 0.48 - win / 2;
+    g.rect(wx, wy, win, win);
+    g.fill({ color: hex(palette.waterFoam), alpha: 0.75 });
+    g.stroke({ width: Math.max(1, t * 0.05), color: dark });
+    g.moveTo(wx + win * 0.25, wy + win * 0.8).lineTo(wx + win * 0.75, wy + win * 0.2);
+    g.stroke({ width: Math.max(1, t * 0.05), color: 0xffffff, alpha: 0.8 });
+
+    // The ledge's studs, or on a main castle a round turret brick at each end.
+    for (const cx of [(left + ul) / 2, (ur + right) / 2]) {
+      const cy = lowTop - ledge / 2;
+      if (main) {
+        const r = t * 0.17;
+        g.rect(cx - r, cy - t * 0.42, r * 2, t * 0.42);
+        g.fill({ color: base });
+        g.rect(cx + r * 0.4, cy - t * 0.42, r * 0.6, t * 0.42);
+        g.fill({ color: dark });
+        g.ellipse(cx, cy, r, r * 0.45);
+        g.fill({ color: base });
+        g.ellipse(cx, cy - t * 0.42, r, r * 0.45);
+        g.fill({ color: light });
+        g.stroke(seam);
+        this.stud(g, cx, cy - t * 0.45, t * 0.8, light);
+      } else {
+        this.stud(g, cx, cy - t * 0.02, t * 0.8, light);
+      }
+    }
+
+    // The crenellations: a row of 1x1 bricks along the top, each carrying its stud.
+    const merlons = main ? 4 : 3;
+    const pitch = (ur - ul) / merlons;
+    const mw = pitch * 0.72;
+    const mh = t * 0.2;
+    for (let k = 0; k < merlons; k++) {
+      const mx = ul + pitch * k + (pitch - mw) / 2;
+      g.rect(mx, upTop - mh, mw, mh);
+    }
+    g.fill({ color: base });
+    for (let k = 0; k < merlons; k++) {
+      const mx = ul + pitch * k + (pitch - mw) / 2;
+      g.rect(mx, upTop - mh, mw, mh);
+    }
+    g.stroke(seam);
+    for (let k = 0; k < merlons; k++) {
+      this.stud(g, ul + pitch * (k + 0.5), upTop - mh * 0.55, Math.min(t, mw * 2.2), light);
     }
   }
 
@@ -616,13 +853,17 @@ export class BricksTheme implements Theme {
     this.scenery.drawPuffs(g, view, frame.deltaMs);
     this.ruins.draw(g, view, state, hex(this.art.palette.rockLight), null, frame.deltaMs);
     drawChoices(g, view, frame.choices, this.art);
-    this.drawBarrels(state, view, frame.deltaMs);
+    this.drawGuns(state, view, frame.deltaMs);
     this.drawFlags(state, view, frame);
     this.drawShots(state, view, frame);
     this.drawSplashes(view, frame.deltaMs);
     this.drawLoose(view, frame.deltaMs);
     this.winnerBanners.draw(this.lateGfx, view, state, this.art, frame.celebrate, frame.deltaMs);
     this.fireworks.draw(this.lateGfx, view, this.art, frame.celebrate, frame.deltaMs);
+    this.stamps.begin();
+    this.drawPops(state, view, frame);
+    this.drawGulls(view, frame.deltaMs);
+    this.stamps.end();
   }
 
   /** A piece clicking down: a flash off its studs, as plastic snapping home catches light. */
@@ -642,8 +883,14 @@ export class BricksTheme implements Theme {
     this.clicks = this.clicks.filter((c) => c.age < CLICK_MS);
   }
 
-  /** Barrels: a round barrel from the mount, a plate at its end, kicking back on firing. */
-  private drawBarrels(state: MatchState, view: ViewTransform, deltaMs: number): void {
+  /**
+   * The guns as toy cannon, turning with their aim: a grey bracket brick on two black round
+   * wheel plates, a round barrel brick in the owner's colour, banded where its bricks join,
+   * kicking back on a shot, with a round plate at the muzzle in the owner's dark (a white ball
+   * there read as a shot leaving the gun, S1). A silenced gun's barrel lies lowered, short and
+   * dark, its muzzle dropped to the ground, so it reads at a glance at eight players.
+   */
+  private drawGuns(state: MatchState, view: ViewTransform, deltaMs: number): void {
     const t = view.tile;
     const { palette } = this.art;
     const memo = this.gunMemo;
@@ -655,54 +902,280 @@ export class BricksTheme implements Theme {
       // Still between shots: drawn again only as it turns and kicks.
       const key = `${viewKey(view)}|${cannon.x},${cannon.y},${cannon.w},${cannon.h},${cannon.owner},${cannon.active}|${aim.angle}|${aim.firedAgo < RECOIL_MS ? aim.firedAgo : '-'}`;
       memo.draw(cannon.id, key, (g) => {
-        const kick = Math.max(0, 1 - aim.firedAgo / RECOIL_MS);
-        const length = cannon.active ? 1.0 - 0.28 * kick : 0.45;
-        const cx = cannon.x + cannon.w / 2;
-        const cy = cannon.y + cannon.h / 2 - this.faceFraction() * 0.5;
-        const ex = tileX(view, cx + Math.sin(aim.angle) * length);
-        const ey = tileY(view, cy - Math.cos(aim.angle) * length);
+        const live = cannon.active;
+        const kick = live ? Math.max(0, 1 - aim.firedAgo / RECOIL_MS) : 0;
+        const cx = tileX(view, cannon.x + cannon.w / 2);
+        const cy = tileY(view, cannon.y + cannon.h / 2 - this.faceFraction() * 0.3);
+        const fx = Math.sin(aim.angle);
+        const fy = -Math.cos(aim.angle);
+        // A point `u` tiles along the barrel and `v` across it.
+        const at = (u: number, v: number): [number, number] => [
+          cx + (u * fx - v * fy) * t,
+          cy + (u * fy + v * fx) * t,
+        ];
+        const back = -0.12 * kick;
+        const edge = { width: Math.max(1, t * 0.05), color: hex(palette.craterDark) };
+
+        // The wheel plates, either side of the carriage, a grey hub stud in each.
+        for (const v of [-0.4, 0.4]) {
+          const [wx, wy] = at(-0.15 + back, v);
+          g.circle(wx, wy, t * 0.24);
+          g.fill({ color: 0x1b1d22 });
+          g.circle(wx, wy, t * 0.09);
+          g.fill({ color: hex(live ? palette.rockMid : palette.rockDark) });
+        }
+        // The bracket brick the barrel rests in.
+        g.poly([
+          ...at(-0.48 + back, -0.3),
+          ...at(0.12 + back, -0.3),
+          ...at(0.12 + back, 0.3),
+          ...at(-0.48 + back, 0.3),
+        ]);
+        g.fill({ color: hex(live ? palette.rockLight : palette.craterDark) });
+        g.stroke(edge);
+
         const width = Math.max(3, t * 0.36);
-        g.moveTo(tileX(view, cx), tileY(view, cy)).lineTo(ex, ey);
-        g.stroke({
-          width,
-          color: hex(cannon.active ? palette.rockDark : palette.craterDark),
-          cap: 'round',
-        });
-        // The barrel's end, a round 1x1 plate in the owner's dark (grey once silenced): a
-        // white ball there read as a shot leaving the gun (the style review).
-        g.circle(ex, ey, width * 0.55);
-        g.fill({
-          color: cannon.active ? this.colour(cannon.owner, 'dark') : hex(palette.rockDark),
-        });
-        g.stroke({ width: Math.max(1, t * 0.05), color: hex(palette.craterDark), alpha: 0.6 });
-        g.circle(tileX(view, cx), tileY(view, cy), width * 0.7);
-        g.fill({ color: this.colour(cannon.owner, cannon.active ? 'base' : 'dark') });
+        if (live) {
+          const length = 0.95 - 0.28 * kick;
+          const [bx, by] = at(-0.3 + back, 0);
+          const [ex, ey] = at(length, 0);
+          g.moveTo(bx, by).lineTo(ex, ey);
+          g.stroke({ width: width + 2, color: this.colour(cannon.owner, 'dark'), cap: 'round' });
+          g.moveTo(bx, by).lineTo(ex, ey);
+          g.stroke({ width, color: this.colour(cannon.owner, 'base'), cap: 'round' });
+          // Its sheen, and the bands where the round bricks of the barrel join.
+          g.moveTo(...at(-0.2 + back, -0.08)).lineTo(...at(length - 0.1, -0.08));
+          g.stroke({ width: Math.max(1, t * 0.06), color: this.colour(cannon.owner, 'light') });
+          for (const u of [0.15, 0.5]) {
+            g.moveTo(...at(u - 0.28 * kick, -0.18)).lineTo(...at(u - 0.28 * kick, 0.18));
+          }
+          g.stroke({ width: Math.max(1, t * 0.05), color: this.colour(cannon.owner, 'dark') });
+          g.circle(ex, ey, width * 0.58);
+          g.fill({ color: this.colour(cannon.owner, 'dark') });
+          g.stroke({ width: Math.max(1, t * 0.05), color: hex(palette.craterDark), alpha: 0.6 });
+        } else {
+          // Lowered: short, the muzzle tipped down toward the ground.
+          const [bx, by] = at(-0.2, 0);
+          const [mx, my] = at(0.3, 0);
+          const ey = my + t * 0.22;
+          g.moveTo(bx, by).lineTo(mx, ey);
+          g.stroke({ width, color: hex(palette.craterDark), cap: 'round' });
+          g.circle(mx, ey, width * 0.5);
+          g.fill({ color: hex(palette.rockDark) });
+          g.stroke(edge);
+        }
       });
     }
     memo.end();
     this.aims.prune(state);
   }
 
-  /** A square flag on a pole over each sealed castle, hoisted as it is sealed. */
+  /**
+   * A hinged flag panel over each sealed castle, on a short bar on its top: hoisted on
+   * sealing, swinging out on its hinge as it rises; lowered by a breach, darkening and hanging
+   * down off its hinge as it drops. Memoised a castle, so a flag still is not redrawn.
+   */
   private drawFlags(state: MatchState, view: ViewTransform, frame: EffectFrame): void {
-    const g = this.lateGfx;
     const t = view.tile;
+    const { palette } = this.art;
     this.flags.update(frame.castleSealed, this.clock, this.art);
+    const memo = this.flagMemo;
+    memo.begin();
     for (const castle of state.castles) {
       const raised = this.flags.raised(castle.id, this.clock, this.art);
       if (raised === null) continue;
       const owner = castle.islandId - 1;
-      const pole = tileX(view, castle.x + castle.w / 2);
-      const top = tileY(view, castle.y) - t * 1.1;
-      const foot = tileY(view, castle.y + 0.3);
-      g.moveTo(pole, foot).lineTo(pole, top);
-      g.stroke({ width: Math.max(1.5, t * 0.1), color: hex(this.art.palette.rockLight) });
-      g.circle(pole, top, Math.max(1.5, t * 0.1));
-      g.fill({ color: hex(this.art.palette.rockLight) });
-      const height = t * 0.5;
-      const y = foot - height - raised * (foot - top - height);
-      g.rect(pole, y, t * 0.7, height);
-      g.fill({ color: this.colour(owner, this.flags.lowering(castle.id) ? 'dark' : 'light') });
+      const main = state.players[owner]?.startingCastleId === castle.id;
+      const lowering = this.flags.lowering(castle.id);
+      const key = `${viewKey(view)}|${castle.x},${castle.y}|${owner}|${main}|${raised.toFixed(3)}|${lowering}`;
+      memo.draw(castle.id, key, (g) => {
+        const pole = tileX(view, castle.x + castle.w / 2) - t * 0.08;
+        const base = tileY(view, castle.y) + t * (main ? 0.02 : 0.18);
+        const top = base - t * 0.95;
+        // The bar, grey, a stud on its tip.
+        g.rect(pole - t * 0.05, top, t * 0.1, base - top);
+        g.fill({ color: hex(palette.rockLight) });
+        g.stroke({ width: 1, color: hex(palette.craterDark), alpha: 0.6 });
+        this.stud(g, pole, top, t * 0.5, hex(palette.rockLight));
+        // The panel on its hinge: out level when up, hanging down the bar when down.
+        const len = t * 0.72;
+        const deep = t * 0.46;
+        const hingeY = base - deep - raised * (base - top - deep - t * 0.05);
+        const swing = (1 - raised) * 1.25;
+        const c = Math.cos(swing);
+        const s = Math.sin(swing);
+        const at = (u: number, v: number): [number, number] => [
+          pole + t * 0.05 + u * c - v * s,
+          hingeY + u * s + v * c,
+        ];
+        g.poly([...at(0, 0), ...at(len, 0), ...at(len, deep), ...at(0, deep)]);
+        g.fill({ color: this.colour(owner, lowering ? 'dark' : 'light') });
+        g.stroke({ width: Math.max(1, t * 0.05), color: this.colour(owner, 'dark') });
+        // A stripe printed across it, and the hinge's two clips on the bar.
+        g.poly([
+          ...at(0, deep * 0.38),
+          ...at(len, deep * 0.38),
+          ...at(len, deep * 0.62),
+          ...at(0, deep * 0.62),
+        ]);
+        g.fill({ color: this.colour(owner, 'base'), alpha: 0.8 });
+        for (const v of [0.12, 0.72]) {
+          g.rect(pole - t * 0.08, hingeY + deep * v - t * 0.04, t * 0.16, t * 0.1);
+        }
+        g.fill({ color: hex(palette.rockMid) });
+      });
+    }
+    memo.end();
+  }
+
+  /**
+   * Studs popping off a castle as it seals, flying up and falling away with a twinkle of
+   * light among them, stamped (`Stamps`). Only on a castle seen to change from open to
+   * sealed, never for every castle sealed as a look first draws.
+   */
+  private drawPops(state: MatchState, view: ViewTransform, frame: EffectFrame): void {
+    const before = this.sealedBefore;
+    this.sealedBefore = frame.castleSealed;
+    const t = view.tile;
+    const { studPopMs, studPops } = this.style;
+    if (before !== null && !motionReduced()) {
+      for (const castle of state.castles) {
+        if (before[castle.id] !== false || frame.castleSealed[castle.id] !== true) continue;
+        for (let k = 0; k < studPops; k++) {
+          const angle = -Math.PI / 2 + (Math.random() - 0.5) * 2.2;
+          const speed = 2.4 + Math.random() * 2.2;
+          this.pops.push({
+            x: castle.x + castle.w / 2 + (Math.random() - 0.5) * 0.8,
+            y: castle.y + 0.4,
+            vx: Math.cos(angle) * speed,
+            vy: Math.sin(angle) * speed,
+            age: -Math.random() * 120,
+            colour: this.colour(castle.islandId - 1, k % 3 === 0 ? 'base' : 'light'),
+            spark: k % 4 === 3,
+          });
+        }
+      }
+    }
+    const stud = this.book.get('stud', t, (g) => {
+      const r = (t * this.style.studScale) / 2;
+      g.circle(0, r * 0.25, r);
+      g.fill({ color: 0x000000, alpha: 0.3 });
+      g.circle(0, 0, r);
+      g.fill({ color: 0xffffff });
+      g.circle(-r * 0.3, -r * 0.3, r * 0.3);
+      g.fill({ color: 0xffffff });
+    });
+    const spark = this.book.get('spark', t, (g) => {
+      const r = t * 0.32;
+      g.poly([
+        0,
+        -r,
+        r * 0.18,
+        -r * 0.18,
+        r,
+        0,
+        r * 0.18,
+        r * 0.18,
+        0,
+        r,
+        -r * 0.18,
+        r * 0.18,
+        -r,
+        0,
+        -r * 0.18,
+        -r * 0.18,
+      ]);
+      g.fill({ color: 0xffffff });
+    });
+    const dt = frame.deltaMs / 1000;
+    for (const p of this.pops) {
+      p.age += frame.deltaMs;
+      if (p.age < 0) continue;
+      p.x += p.vx * dt;
+      p.y += p.vy * dt;
+      p.vy += 9 * dt;
+      const k = p.age / studPopMs;
+      if (k >= 1) continue;
+      const fade = k < 0.6 ? 1 : 1 - (k - 0.6) / 0.4;
+      if (p.spark) {
+        this.stamps.place(spark, tileX(view, p.x), tileY(view, p.y), {
+          scale: 0.6 + 0.6 * Math.sin(Math.PI * k),
+          rotation: k * 2,
+          alpha: fade,
+        });
+      } else {
+        this.stamps.place(stud, tileX(view, p.x), tileY(view, p.y), {
+          tint: p.colour,
+          alpha: fade,
+          scale: 1.4,
+        });
+      }
+    }
+    this.pops = this.pops.filter((p) => p.age < studPopMs);
+  }
+
+  /**
+   * Gulls of bricks wheeling over the outer ocean, seen from above: a white body brick, grey
+   * wing slopes beating now and then between glides, a yellow beak, and a shadow on the sea
+   * below. Stamped: a wing position a stamp, only placed and turned each frame.
+   */
+  private drawGulls(view: ViewTransform, deltaMs: number): void {
+    if (motionReduced()) return;
+    this.gulls.step(deltaMs);
+    const { palette } = this.art;
+    // Never under eighteen pixels a unit, or at eight players a gull is a speck.
+    const u = Math.max(view.tile, 18);
+    // Seen from above, a gull is its wings: long, bent back at the wrist, black at the tips,
+    // on a short white body — straight wings on a long body read as a toy aeroplane.
+    const frames = [1, 0.7, 0.4].map((span, k) =>
+      this.book.get(`gull${k}|${u}`, view.tile, (g) => {
+        const edge = { width: Math.max(1, u * 0.035), color: hex(palette.shadow), alpha: 0.6 };
+        for (const side of [-1, 1]) {
+          const v = (n: number): number => side * u * n * span;
+          g.poly([
+            u * 0.08,
+            v(0.08),
+            u * 0.16,
+            v(0.36),
+            -u * 0.1,
+            v(0.72),
+            -u * 0.2,
+            v(0.7),
+            -u * 0.04,
+            v(0.36),
+            -u * 0.1,
+            v(0.08),
+          ]);
+          g.fill({ color: hex(palette.rockLight) });
+          g.stroke(edge);
+          g.poly([-u * 0.03, v(0.58), -u * 0.1, v(0.72), -u * 0.2, v(0.7), -u * 0.1, v(0.56)]);
+          g.fill({ color: hex(palette.craterDark) });
+        }
+        g.roundRect(-u * 0.24, -u * 0.08, u * 0.46, u * 0.16, u * 0.08);
+        g.fill({ color: 0xffffff });
+        g.stroke(edge);
+        g.poly([u * 0.22, -u * 0.03, u * 0.32, 0, u * 0.22, u * 0.03]);
+        g.fill({ color: hex(palette.uiAccent) });
+      }),
+    );
+    const shadow = this.book.get(`gullShadow|${u}`, view.tile, (g) => {
+      g.ellipse(0, 0, u * 0.22, u * 0.1);
+      g.fill({ color: 0x000000, alpha: 0.15 });
+    });
+    for (const [k, gull] of this.gulls.items.entries()) {
+      const p = Circling.at(gull);
+      if (behindCorner(this.crane, p.x, p.y)) continue;
+      const dx = -Math.sin(gull.angle) * Math.sign(gull.speed);
+      const dy = Math.cos(gull.angle) * 0.6 * Math.sign(gull.speed);
+      const heading = Math.atan2(dy, dx);
+      // Beats its wings for a second now and then, and glides between.
+      const beat = Math.sin(this.clock / 90 + k * 2);
+      const flapping = Math.sin(this.clock / 1700 + k * 3) > 0.3;
+      const wing = flapping ? (beat > 0.3 ? 0 : beat < -0.3 ? 2 : 1) : 0;
+      const x = tileX(view, p.x);
+      const y = tileY(view, p.y);
+      this.stamps.place(shadow, x + u * 0.5, y + u * 0.9, { rotation: heading });
+      this.stamps.place(frames[wing] as GraphicsContext, x, y, { rotation: heading });
     }
   }
 
@@ -844,6 +1317,51 @@ export class BricksTheme implements Theme {
     drawAimLine(g, view, state, ghost, this.art, humanPlayer);
     if (ghost.aiming) drawFireReticle(g, view, ghost, this.art, humanPlayer);
   }
+}
+
+/**
+ * A baseplate's studs as a repeating pattern, `period` tiles square with a stud on its
+ * diagonal (every tile for 1, every other for 2), drawn once on a small canvas for the tile
+ * size and laid into the plate as a fill (`FillPattern`) lined up with the board. A canvas
+ * draws a stud round at any size, with its shade and its lit rim; circles of a few pixels
+ * drawn as shapes came out as diamonds at board scale (the style review).
+ */
+function studPattern(
+  view: ViewTransform,
+  period: number,
+  colour: string,
+  studScale: number,
+): FillPattern {
+  const t = view.tile;
+  const size = Math.max(4, Math.round(t * period));
+  const canvas = document.createElement('canvas');
+  canvas.width = canvas.height = size;
+  const ctx = canvas.getContext('2d');
+  const u = size / period;
+  const r = (u * studScale) / 2;
+  if (ctx !== null) {
+    for (let k = 0; k < period; k++) {
+      const cx = (k + 0.5) * u;
+      const cy = (k + 0.5) * u;
+      ctx.fillStyle = 'rgba(0,0,0,0.6)';
+      ctx.beginPath();
+      ctx.arc(cx + r * 0.1, cy + r * 0.3, r, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = colour;
+      ctx.beginPath();
+      ctx.arc(cx, cy, r, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(255,255,255,0.85)';
+      ctx.lineWidth = Math.max(1, r * 0.3);
+      ctx.beginPath();
+      ctx.arc(cx, cy, r * 0.62, Math.PI * 1.02, Math.PI * 1.62);
+      ctx.stroke();
+    }
+  }
+  const pattern = new FillPattern({ texture: Texture.from(canvas), repetition: 'repeat' });
+  const k = (t * period) / size;
+  pattern.setTransform(new Matrix().scale(k, k).translate(view.originX, view.originY));
+  return pattern;
 }
 
 /**

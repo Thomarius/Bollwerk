@@ -365,6 +365,20 @@ export const BricksStyleSchema = z.strictObject({
   sharkMs: z.number().int().positive(),
   /** The crane on its barge in the corner (PLAN 11.24): one swing of its jib round and back. */
   craneSwingMs: z.number().int().positive(),
+  /** The sea's baseplates, so many tiles square: a darker seam where two of them join. */
+  plateSeamTiles: z.number().int().positive(),
+  plateSeamAlpha: z.number().min(0).max(1),
+  /** A plate of shallow water one tile out from every coast, so strongly over the sea's. */
+  shallowPlateAlpha: z.number().min(0).max(1),
+  /** How far a sealed tile's shade may shift toward the owner's base, 0 to 1. */
+  tileShift: z.number().min(0).max(1),
+  /** The share of sealed tiles printed with a grille or an arrow. */
+  printedTileOdds: z.number().min(0).max(1),
+  /** Brick gulls wheeling over the outer ocean. */
+  gulls: z.number().int().min(0),
+  /** The studs popping off a castle as it seals: how long they fly, and how many. */
+  studPopMs: z.number().int().positive(),
+  studPops: z.number().int().min(0),
 });
 export type BricksStyleConfig = z.infer<typeof BricksStyleSchema>;
 

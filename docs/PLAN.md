@@ -838,20 +838,31 @@ blots, flicked splashes about them, that fade over `fx.craterRounds`. Its colour
 paper, `uiInk` included, which the shared helpers draw their warnings in.
 
 **Toy bricks** (`bricks.ts`, `art.bricks`), for either look: the board built of studded
-plastic bricks on baseplates, green under the land and blue under the sea, whose studs
-are faint so the sea stays calm behind the game. Walls are bricks in the owner's colour,
-each carrying a stud in its lighter shade, with seams between them so a shot visibly
-takes one, standing up to the pixel style's height; sealed ground is smooth tiles laid
-over the studs. Castles are a brick tower with a keep on it flying a square flag; guns
-a grey brick mount banded in the owner's colour, with a round barrel that turns and
-kicks. A piece clicks down with a flash off its studs, a hit knocks bricks loose to
-tumble and bounce, the sweep pops them off, and shots are round bricks lobbed over their
-shadows. Its scenery is built of bricks too — stacked round plates for trees, stepped
-plates for pines, round plates for bushes and one in two a red or yellow flower, a grey
-sloped brick for a boulder — its banner a long yellow brick with a row of studs, its HUD
-a blue baseplate under a yellow rule, its title the word in bricks, each letter a
-player's colour. It uses the shared player colours: bright and clean already. Named toy
-bricks and never after any maker's trademark.
+plastic bricks on baseplates, green under the land and blue under the sea. The sea's plates
+join in a darker seam every eight tiles, a lighter plate of shallow water runs one tile out
+from every coast, and its studs, every other tile and faint so the sea stays calm, are round
+— both baseplates' studs a pattern drawn once for the tile size (`FillPattern`), since
+circles of a few pixels came out as diamonds. Walls are bricks in the owner's colour, each
+carrying a stud in its lighter shade, with seams between them so a shot visibly takes one,
+standing up to the pixel style's height; sealed ground is smooth tiles laid over the studs,
+each bevelled, its shade shifted a little from its neighbours', and now and then one printed
+with a grille or an arrow in the owner's colour. Castles are towers built of bricks: a broad
+lower storey coursed in bricks with an arched dark doorway, a ledge carrying studs, a narrower
+upper storey with a clear window brick, and a row of 1x1 crenellation bricks along the top,
+each with its stud; a main castle wider and taller above, with a round turret brick at each
+end of the ledge. A hinged flag panel flies over a sealed castle, swinging out as it is
+hoisted and hanging off its hinge as a breach lowers it, and studs pop off a castle as it
+seals. Guns are toy cannon on a grey plate filling their square: a grey bracket brick on two
+black wheel plates, a round barrel brick in the owner's colour with a plate at its muzzle,
+turning and kicking; silenced, the plate dark and the barrel lowered, short and dark. A piece
+clicks down with a flash off its studs, a hit knocks bricks loose to tumble and bounce, the
+sweep pops them off, and shots are round bricks lobbed over their shadows. Brick boats cross
+the outer sea and brick gulls wheel over it. Its scenery is built of bricks too — stacked
+round plates for trees, stepped plates for pines, round plates for bushes and one in two a red
+or yellow flower, a grey sloped brick for a boulder — its banner a long yellow brick with a
+row of studs, its HUD a blue baseplate under a yellow rule, its title the word in bricks, each
+letter a player's colour. It uses the shared player colours: bright and clean already. Named
+toy bricks and never after any maker's trademark.
 
 **Stained glass** (`glass.ts`, `art.glass`), for either look: the board as a church window.
 Land and sea are cut into irregular panes a few tiles each (`panes.ts`: the tiles round a
@@ -1595,12 +1606,7 @@ work, item 2, is **paused** after a first learned fit (ARCHIVE 12z), its next st
    - **S2 — Parchment** — done (ARCHIVE 12zv).
    - **S3 — Blueprint** — done (ARCHIVE 12zw).
    - **S4 — Pixel and Night** — done (ARCHIVE 12zx).
-   - **S5 — Toy bricks.** The castle a built tower of bricks — crenellation bricks with
-     studs, an arched door, a window brick, a hinged flag panel; the gun a toy cannon, a
-     bracket brick on two wheel plates, its barrel brick in the owner's colour, lowered and
-     dark when silenced; sealed ground as bevelled tiles, now and then a printed one; the sea a
-     baseplate with seams and a shallow-water plate at the coast; brick boats and gulls, a
-     stud-pop sparkle at a seal.
+   - **S5 — Toy bricks** — done (ARCHIVE 12zy).
    - **S6 — Stained glass.** A slow shaft of warm light sweeping the window; glass with streaks
      and seed bubbles, painted waves and leaf veins (`FillPattern`); walls as jewel blocks with
      a sheen and an inner bevel; rose windows with trefoil tracery, their centre glowing only

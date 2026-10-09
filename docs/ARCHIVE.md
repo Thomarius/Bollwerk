@@ -6308,3 +6308,54 @@ At eight players, watched with `&perf=1` in the 30 s window: Medieval rendered 3
 frame against 5 955; Night 3.61 ms (7.6) against 3.86 (7.4), effects 1.93 against 1.69, 5 940
 vertices against 6 408 — the windows and the lighthouses moved out of the redrawn `Graphics`
 into sprites. 60 fps throughout.
+
+## 12zy. The style pass, S5: Toy bricks (2026-10-09)
+
+Toy bricks' castle was a box with a smaller box on it, its guns a grey mount with a stick
+of a barrel, its sealed ground the land tinted, and its sea studs came out as diamonds at
+board scale (the style review, 12zt). Now the board is built of the toy:
+
+- **Castles as towers of bricks** (`drawCastle`, per island in `IslandParts`): a lower
+  storey on the 2x2 square, coursed in staggered bricks, its right side in shade, an arched
+  dark doorway; a ledge carrying a stud each side; a narrower upper storey with a clear window
+  brick, a glint across its glass; a row of 1x1 crenellation bricks along the top, each with
+  its stud. A main castle's upper storey is wider and taller, with four merlons and a round
+  turret brick at each end of the ledge; the shared crown at its foot is unchanged. **A hinged
+  flag panel** on a grey bar replaces the stick flag: hoisted on sealing as `FlagHoist` says,
+  swinging out level on its hinge as it rises, darkening and hanging down off the hinge as a
+  breach lowers it — a `Graphics` a castle (`Memos`), redrawn only while the flag moves.
+- **Guns as toy cannon** (`drawGuns`, `Memos`): on a grey plate filling the gun's square, the
+  square testers asked for, with the owner's band along its edge and a stud at each corner, a
+  grey bracket brick on two black wheel plates with grey hubs, and a round barrel brick in the
+  owner's colour with a sheen and two bands where its bricks join, the muzzle plate in the
+  owner's dark (S1), all turning with the aim and kicking. Silenced, the plate is dark grey,
+  the bracket darker and the barrel lowered — short, dark, its muzzle dropped toward the
+  ground; at eight players a silenced gun is a dark square with no colour in it, a live one a
+  light square with the owner's barrel.
+- **Sealed ground as tiles** (`drawSealed`): each bevelled, lit on its north and west edges and
+  shaded on its south and east, in two shades by a hash of the tile (`tileShift`), opaque
+  enough that the land's studs no longer show through (`territoryAlpha` 0.8 to 0.94); one in
+  about sixteen printed with a grille of three slots or an arrow pointing one of four ways, in
+  the owner's base colour (`printedTileOdds`) — chevrons, never a ring or a cross, which say
+  target. Walls still stand apart: studded, in the base colour, with a dark front face.
+- **A baseplate sea**: the studs of sea and land a pattern drawn once on a canvas for the tile
+  size and laid in as a fill lined up with the board (`studPattern`, `FillPattern`), round
+  with a shade and a lit rim, where a circle of a few pixels drawn as a shape was a diamond;
+  the sea's a little stronger (`seaStudAlpha` 0.16 to 0.32 — 0.45, tried first, made the sea
+  busy). A darker seam every eight tiles where plates join (`plateSeamTiles`,
+  `plateSeamAlpha`), and a plate of shallow water one tile out from every coast
+  (`shallowPlateAlpha`). The terrain is fewer vertices than before, the studs being fills.
+- **Life**: two brick gulls wheel over the outer ocean (`gulls`, `Circling`), seen from above
+  with a shadow on the sea, beating their wings now and then between glides — stamped, three
+  wing positions (`Stamps`). Straight wings on a long body, tried first, read as aeroplanes;
+  they are long, bent back at the wrist and black at the tips. The brick boats were kept as they
+  were. **Studs pop off a castle as it seals** (`drawPops`), ten flying up and falling with a
+  twinkle among them, stamped, only on a change from open to sealed seen in play.
+
+One Pixi trap met on the way: a `fill` straight after a `stroke`, with no shape between,
+fills the stroke's path, so the printed tiles' fill is called only when one was printed.
+
+At eight players, watched with `&perf=1` in the 30 s window: render 1.50–1.79 ms a frame over
+four runs (worst 7.1–15.7, one spike), against 1.50–1.56 (worst 6.0–7.3) before; effects
+0.59–0.64 ms against 0.62–0.71; 4 113–4 157 vertices rebuilt a frame against 3 989–4 100, most
+of them the crane and the sea life as before. 60 fps throughout.

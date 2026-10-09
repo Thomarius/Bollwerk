@@ -1380,8 +1380,8 @@
   "bricks": {
     "studScale": 0.34,
     "landStudAlpha": 0.5,
-    "seaStudAlpha": 0.16,
-    "territoryAlpha": 0.8,
+    "seaStudAlpha": 0.32,
+    "territoryAlpha": 0.94,
     "sheenAlpha": 0.35,
     "boatEveryMs": 16000,
     "boatTilesPerSecond": 0.55,
@@ -1389,7 +1389,15 @@
     "duckTilesPerSecond": 0.25,
     "sharkEveryMs": 24000,
     "sharkMs": 6000,
-    "craneSwingMs": 9000
+    "craneSwingMs": 9000,
+    "plateSeamTiles": 8,
+    "plateSeamAlpha": 0.3,
+    "shallowPlateAlpha": 0.75,
+    "tileShift": 0.14,
+    "printedTileOdds": 0.06,
+    "gulls": 2,
+    "studPopMs": 900,
+    "studPops": 10
   },
   "effects": {
     "sealFloodTilesPerSecond": 16,
