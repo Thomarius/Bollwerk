@@ -227,7 +227,9 @@ reloaded for):
   piece and German checked in play by the user (ARCHIVE 12n–12t).
 
 **Next** — PLAN §11: the tournament's play-testing (T8), more test games towards a first
-feature-ready version, and bots that miss as people do (combat accuracy, measured against the
+feature-ready version, **the style pass** (item 3: nine work packages, S1 readability first,
+then the older styles' castles and guns made things of their setting — Parchment, Blueprint,
+Pixel and Night, Toy bricks, Stained glass, Cyberpunk; the crown stays shared), and bots that miss as people do (combat accuracy, measured against the
 testers' recordings; how is not yet decided). **The bot learning work is paused**; when it
 resumes, `docs/BOT_LEARNING.md` §6 says where — first, learning the choice of wall rather
 than only the cell. French is not to be done. Signing the Windows app was explained (PLAN

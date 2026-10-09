@@ -448,16 +448,20 @@ export function drawMainCastles(
   art: ArtConfig,
   castleSealed: readonly boolean[],
 ): void {
-  const width = view.tile * 1.35;
+  // A tile wide, at the castle's foot: centred on the castle at 1.35 tiles it covered most
+  // of every style's own castle and its sign of sealed — lit windows, a glowing globe, a
+  // keep's face (the style review, 2026-10-09). Shared still, so a random look each round
+  // never moves or changes the mark that says which castle counts.
+  const width = view.tile;
   const rim = Math.max(1, Math.round(view.tile / 10));
   for (const player of state.players) {
     if (player.eliminated || player.startingCastleId === null) continue;
     const castle = state.castles.find((c) => c.id === player.startingCastleId);
     if (castle === undefined) continue;
-    // Centred on the castle's block, not over it where the flag flies (the test
-    // sessions); the crown is 0.72 of its width tall, so its band sits that much below.
+    // Its band a little below the castle's bottom edge, so the crown overlaps only the
+    // castle's lowest strip, far from the flag at its top; 0.72 of its width tall.
     const left = tileX(view, castle.x + castle.w / 2) - width / 2;
-    const base = tileY(view, castle.y + castle.h / 2) + width * 0.36;
+    const base = tileY(view, castle.y + castle.h) + width * 0.22;
     const sealed = castleSealed[castle.id] === true;
     g.poly(CROWN.flatMap(([x, y]) => [left + x * width, base + y * width]));
     // Breached, stone grey rather than the owner's dark shade, which vanished into a

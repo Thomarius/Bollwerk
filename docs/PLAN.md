@@ -1540,6 +1540,84 @@ work, item 2, is **paused** after a first learned fit (ARCHIVE 12z), its next st
    12y); step 3's first run learned a fit about as good as the hand-made one (ARCHIVE 12z),
    and the work is **paused** (2026-10-07), its next steps in BOT_LEARNING.md §6.
 
+3. **The style pass** (the user's, 2026-10-09; ARCHIVE 12zt): the newest styles feel far
+   more finished than the older ones, whose castles and guns are still Minimal's box and
+   disc in other colours. Every style was reviewed in the same three screenshots (build,
+   close combat, eight players) against its code; Minimal stays as it is. What the finished
+   styles share is the checklist for the rest: **castles as buildings of the setting, lit or
+   alive while sealed** and put out by a breach; **guns as objects of the setting in three
+   moods**, ready, firing and silenced, silenced readable at a glance; **walls as a material
+   with structure** in the owner's colour; **sealed ground with a pattern of its own**, not a
+   tint; **a hit with the setting's vocabulary** (debris in the owner's colour, a mark never
+   in it, a sea splash); **a projectile from the setting**; **life on the land and the outer
+   sea**. Every change within "Drawing a style cheaply" (CLAUDE.md), each package checked
+   with `&perf=1` at eight players. The crown stays one shared mark, so a random look each
+   round never changes which castle counts; it was made smaller and set at the castle's foot
+   at once (ARCHIVE 12zt). The packages, one at a time, in order:
+
+   - **S1 — Readability first**, across styles. Silenced guns that look live: Halloween's
+     cauldrons (grey the potion, a cobweb, the lid askew — the most urgent), Christmas's
+     snowmen (a larger, bluer puddle, the hat lower, a wisp of steam), Opera's horns (brass
+     to grey-green, a mute in the bell), Under the sea's pufferfish (desaturated), Noir's
+     guns (dome greyed or hatched), Cyberpunk's (near-black on black: a dimmed hex with a red
+     offline tick). Owner colour lost at eight players: Under the sea's conches, Office's
+     copiers (the lid in the owner's colour), Chocolate's sealed main castle (a glaze that
+     hides its tiers). Contrast: Night's walls against sealed ground at eight players,
+     Blueprint's blue player on blue paper, Halloween's violet player on dusk land,
+     Electric's charged floor in pockets, Office's faint LCD timer (a backing panel). Cartoon's
+     dance floor hidden under the guns' grey squares; Christmas's unlit trees too like lit
+     ones; Noir's dark speakeasies lost on the cobbles. Glitches: Night's moon path a column of
+     grey dashes, its lighthouse beam running off screen; Glass's ship a few stray pixels;
+     Toy bricks' white muzzles reading as stray shots; Pixel's and Night's one-tile sealed
+     pocket looking like a breach; Blueprint's shot traces a field of scratches at eight.
+   - **S2 — Parchment** (an old sea chart). A hand-drawn coast through `jitter()` with
+     stippled shore and engraved contour rings, in place of the tile staircase; castles as map
+     vignettes, two round towers with conical roofs and a pennant, the main castle a little
+     walled town with spires; guns as engraved cannon from above, flared muzzle and spoked
+     wheels, a silenced one faded and struck through; stone coursing on the walls; rhumb lines
+     from the compass rose; island names in italic script; ink blots with satellite drops.
+   - **S3 — Blueprint** (an architect's plan). Castles as real plans: solid wall thickness, a
+     door's swing, a stair symbol, a tag ("KEEP A-1"), the main castle double-lined; guns as
+     octagonal platforms with a dash-dot centreline and a dashed arc of their swing; a breach
+     as a scalloped red revision cloud with a delta tag; contours on the land, a north arrow and
+     a scale bar by the title block; a drafting compass swinging an arc round a newly sealed
+     ring.
+   - **S4 — Pixel and Night**, which share their sprites. Pixel: a pixel-sprite keep for the
+     main castle under the crown; iron shot with a smoke trail; fields, a track from each gate,
+     sheep that scatter from a hit; sandbags round a gun and a pile of balls that empties as it
+     fires; smoke from a sealed castle's chimney, stopping at a breach; masons at a placed
+     piece. Night: lit slits and windows on sealed castles, braziers on sealed walls' outer
+     corners, burning shot with embers, a real lighthouse with a warm beam, the moon's
+     reflection as a broken shimmer.
+   - **S5 — Toy bricks.** The castle a built tower of bricks — crenellation bricks with
+     studs, an arched door, a window brick, a hinged flag panel; the gun a toy cannon, a
+     bracket brick on two wheel plates, its barrel brick in the owner's colour, lowered and
+     dark when silenced; sealed ground as bevelled tiles, now and then a printed one; the sea a
+     baseplate with seams and a shallow-water plate at the coast; brick boats and gulls, a
+     stud-pop sparkle at a seal.
+   - **S6 — Stained glass.** A slow shaft of warm light sweeping the window; glass with streaks
+     and seed bubbles, painted waves and leaf veins (`FillPattern`); walls as jewel blocks with
+     a sheen and an inner bevel; rose windows with trefoil tracery, their centre glowing only
+     while sealed, cracked by a breach; guns as lancet mounts with amber glass barrels, cloudy
+     grey when silenced; fleurs-de-lis, doves and a ship that reads.
+   - **S7 — Cyberpunk.** Castles as server towers — stepped roof, vents, antennas with a
+     blinking tip, a neon sign strip, the core a reactor ring; guns as hex turrets, twin rails,
+     a coil charging between shots; a lit sealed floor (`FillPattern`) with a neon edge; a city
+     of lit rooftops along the coast; a one-frame RGB-split band as a banner arrives.
+   - **S8 — The middle styles' walls and guns.** Sakura's walls with a roof ridge along their
+     run, tile rows to the eaves, round tile-ends and a gold ornament at a run's end, and its
+     guns bronze barrels on lacquered carriages with the owner's crest; Opera's keys in
+     pairs with black keys in their true pattern; Office's partitions in woven fabric with a
+     bold aluminium top and pinned photos and notes; Halloween's crypt in irregular stones
+     with glowing mortar on the blocks' edges; Under the sea's gun nest in sandstone and
+     barnacles.
+   - **S9 — Finishing touches.** Noir's chrome as comic panels with gutters and a caption-box
+     timer; Oktoberfest's pretzels salted in the owner's colour and bottles in it from a hit
+     crate; Chocolate's walls as scored segments with varied drips, gummy bears and a
+     gingerbread house among the lollipops, a cream rim for the shallows, a waterfall that
+     reads; Christmas's presents one ribbon cross a block at small tiles; Electric's rain
+     thinner over land.
+
 Only open work is kept here. Finished packages move to `ARCHIVE.md` under their old
 numbers — 11.1 scoring, 11.7 team mode, 11.8 the visual pass, 11.9 the themes, 11.10 the
 UI polish, all in ARCHIVE 11h; 11.11 the second visual pass and 11.12 the first

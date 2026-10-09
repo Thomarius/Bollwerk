@@ -6135,3 +6135,25 @@ rebuilds the match with the snapshot's teams, which it had left out, or it would
 the grid under a ring. The lobby's preview, a room, a local match and the harness deal the
 same way (`--map --teams 2` prints the ring). Seen in play: a ring of three teams of two, and
 four teams of two on the grid, one apart.
+
+## 12zt. The style review, and the crown made smaller (2026-10-09)
+
+The user found the newest styles far more finished than the older ones and asked for every
+style to be reviewed, Minimal excepted. Each was screenshotted in the same three scenes —
+build at three players in round 3, combat at two, combat at eight — and four reviews read
+them against the code and PLAN §7. Rated against Cartoon and Noir: Parchment, Blueprint, Toy
+bricks and Stained glass 2.5 of 5; Night 3; Cyberpunk, Halloween, Opera and Office 3.5;
+Pixel, Chocolate, Sakura and Under the sea 4; Oktoberfest, Electric, Cartoon, Christmas and
+Noir 4.5 to 5. The pattern: the older styles' castles and guns are Minimal's box and disc in
+other materials, where the finished ones made them things of their setting. The review's
+checklist and its nine work packages, S1 to S9, are PLAN §11 item 3; the users approved the
+plan and the order.
+
+**The crown** over each main castle was found covering most of every style's castle and its
+own sign of sealed — lit windows, a glowing globe, a keep's face. A shared mark per style was
+offered and declined: with Random looks, a main castle's mark that changed every round would
+confuse. So it stays one drawing, made smaller and moved: a tile wide rather than 1.35, its
+band a fifth of a tile below the castle's foot, so it overlaps only the castle's lowest strip,
+far from the flag at its top. Seen in Minimal, Pixel, Cartoon, Christmas, Noir, Electric,
+Parchment and Sakura, at two, three and eight players: the castles show whole, and the crown
+still reads at eight players' tile size.
