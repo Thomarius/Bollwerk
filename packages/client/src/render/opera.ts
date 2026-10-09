@@ -124,6 +124,12 @@ const GRAPHITE = 0x4a4a55;
 const PAPER = 0xf6efdc;
 const BRASS = 0xe0b84a;
 const BRASS_DARK = 0x8a6a1a;
+/**
+ * A silenced horn's brass, tarnished grey-green: bright gold coils were what read at board
+ * scale, so a muted horn left gold looked live.
+ */
+const TARNISH = 0x7d8a72;
+const TARNISH_DARK = 0x3e4838;
 
 /** How Opera sends off the winners (PLAN 11.19 Z4). */
 const FINISH: FinishLook = { spark: 'roses', flag: 'lyre' };
@@ -787,7 +793,7 @@ export class OperaTheme extends ShapeTheme implements Theme {
       g.stroke({ width: Math.max(1.5, t * 0.07), color: 0x2a2228, cap: 'round' });
       g.circle(cx, cy, r * 0.55);
       g.fill({ color: this.colour(cannon.owner, cannon.active ? 'base' : 'dark') });
-      g.stroke({ width: Math.max(1, t * 0.05), color: GOLD });
+      g.stroke({ width: Math.max(1, t * 0.05), color: cannon.active ? GOLD : TARNISH });
     }
   }
 
@@ -1109,12 +1115,15 @@ export class OperaTheme extends ShapeTheme implements Theme {
   private drawHorns(state: MatchState, view: ViewTransform, deltaMs: number): void {
     const g = this.effectGfx;
     const t = view.tile;
-    const coil = this.book.get('coil', t, (k) => {
-      k.circle(0, 0, t * 0.26);
-      k.stroke({ width: Math.max(2, t * 0.11), color: BRASS_DARK });
-      k.circle(0, 0, t * 0.26);
-      k.stroke({ width: Math.max(1.5, t * 0.07), color: BRASS });
-    });
+    const coilOf = (key: string, metal: number, dark: number) =>
+      this.book.get(key, t, (k) => {
+        k.circle(0, 0, t * 0.26);
+        k.stroke({ width: Math.max(2, t * 0.11), color: dark });
+        k.circle(0, 0, t * 0.26);
+        k.stroke({ width: Math.max(1.5, t * 0.07), color: metal });
+      });
+    const coil = coilOf('coil', BRASS, BRASS_DARK);
+    const dullCoil = coilOf('coil|muted', TARNISH, TARNISH_DARK);
     this.coilStamps.begin();
     for (const cannon of state.cannons) {
       const aim = this.aims.of(state, cannon.id);
@@ -1131,10 +1140,12 @@ export class OperaTheme extends ShapeTheme implements Theme {
       const reach = t * (0.7 - 0.22 * kick);
       const ex = cx + dx * reach;
       const ey = cy + dy * reach;
+      const metal = cannon.active ? BRASS : TARNISH;
+      const metalDark = cannon.active ? BRASS_DARK : TARNISH_DARK;
       // The coil, and the tube out to the bell.
-      this.coilStamps.place(coil, cx, cy);
+      this.coilStamps.place(cannon.active ? coil : dullCoil, cx, cy);
       g.moveTo(cx, cy).lineTo(ex, ey);
-      g.stroke({ width: Math.max(2, t * 0.12), color: BRASS, cap: 'round' });
+      g.stroke({ width: Math.max(2, t * 0.12), color: metal, cap: 'round' });
       // The bell, flaring.
       const bell = t * 0.32;
       const fx = ex + dx * t * 0.28;
@@ -1149,21 +1160,22 @@ export class OperaTheme extends ShapeTheme implements Theme {
         ex - nx * t * 0.07,
         ey - ny * t * 0.07,
       ]);
-      g.fill({ color: BRASS });
-      g.stroke({ width: 1, color: BRASS_DARK });
+      g.fill({ color: metal });
+      g.stroke({ width: 1, color: metalDark });
       g.ellipse(
         fx,
         fy,
         bell * 0.55 + Math.abs(nx) * bell * 0.45,
         bell * 0.55 + Math.abs(ny) * bell * 0.45,
       );
-      g.fill({ color: 0x5a4010 });
+      g.fill({ color: cannon.active ? 0x5a4010 : TARNISH_DARK });
       if (!cannon.active) {
-        // The mute, stuffed in the bell.
-        g.circle(fx - dx * t * 0.05, fy - dy * t * 0.05, bell * 0.5);
-        g.fill({ color: 0x3a2a1c });
-        g.circle(fx - dx * t * 0.05, fy - dy * t * 0.05, bell * 0.2);
-        g.fill({ color: 0x6a5038 });
+        // The mute, stuffed in the bell: near black, filling it, a pale cork ring round it.
+        g.circle(fx - dx * t * 0.05, fy - dy * t * 0.05, bell * 0.72);
+        g.fill({ color: 0x15100c });
+        g.stroke({ width: Math.max(1, t * 0.04), color: 0xc8b89a });
+        g.circle(fx - dx * t * 0.05, fy - dy * t * 0.05, bell * 0.22);
+        g.fill({ color: 0x4a3a2c });
         continue;
       }
       if (aim.firedAgo < 650) {

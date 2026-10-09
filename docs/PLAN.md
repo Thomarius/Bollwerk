@@ -1555,21 +1555,7 @@ work, item 2, is **paused** after a first learned fit (ARCHIVE 12z), its next st
    round never changes which castle counts; it was made smaller and set at the castle's foot
    at once (ARCHIVE 12zt). The packages, one at a time, in order:
 
-   - **S1 — Readability first**, across styles. Silenced guns that look live: Halloween's
-     cauldrons (grey the potion, a cobweb, the lid askew — the most urgent), Christmas's
-     snowmen (a larger, bluer puddle, the hat lower, a wisp of steam), Opera's horns (brass
-     to grey-green, a mute in the bell), Under the sea's pufferfish (desaturated), Noir's
-     guns (dome greyed or hatched), Cyberpunk's (near-black on black: a dimmed hex with a red
-     offline tick). Owner colour lost at eight players: Under the sea's conches, Office's
-     copiers (the lid in the owner's colour), Chocolate's sealed main castle (a glaze that
-     hides its tiers). Contrast: Night's walls against sealed ground at eight players,
-     Blueprint's blue player on blue paper, Halloween's violet player on dusk land,
-     Electric's charged floor in pockets, Office's faint LCD timer (a backing panel). Cartoon's
-     dance floor hidden under the guns' grey squares; Christmas's unlit trees too like lit
-     ones; Noir's dark speakeasies lost on the cobbles. Glitches: Night's moon path a column of
-     grey dashes, its lighthouse beam running off screen; Glass's ship a few stray pixels;
-     Toy bricks' white muzzles reading as stray shots; Pixel's and Night's one-tile sealed
-     pocket looking like a breach; Blueprint's shot traces a field of scratches at eight.
+   - **S1 — Readability first** — done (ARCHIVE 12zu).
    - **S2 — Parchment** (an old sea chart). A hand-drawn coast through `jitter()` with
      stippled shore and engraved contour rings, in place of the tile staircase; castles as map
      vignettes, two round towers with conical roofs and a pennant, the main castle a little

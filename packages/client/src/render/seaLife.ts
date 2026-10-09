@@ -533,20 +533,30 @@ export class GlassSeaLife extends OceanDrawn {
     const lead = { width: Math.max(1, t * s.leadTiles), color: hex(pal.shadow) };
 
     this.ships.step(this.ocean, deltaMs, s.shipEveryMs, s.shipTilesPerSecond, 1.2);
+    // Never smaller than about twenty pixels a unit, under a heavier lead: at eight players'
+    // tile size the ship was fifteen pixels of colour and read as a glitch (S1).
+    const u = Math.max(t, 20);
+    const shipLead = { width: Math.max(1.5, u * s.leadTiles * 1.5), color: lead.color };
     for (const ship of this.ships.items) {
       if (this.behind(ship.x, ship.y)) continue;
       const x = tileX(view, ship.x);
       const y = tileY(view, ship.y + Math.sin(this.clock / 600 + ship.x) * 0.04);
-      g.poly([x - t * 0.7, y, x + t * 0.75, y, x + t * 0.5, y + t * 0.3, x - t * 0.5, y + t * 0.3]);
+      g.poly([x - u * 0.7, y, x + u * 0.75, y, x + u * 0.5, y + u * 0.3, x - u * 0.5, y + u * 0.3]);
       g.fill({ color: hex(pal.sand) });
-      g.stroke(lead);
-      const mast = x - ship.dir * t * 0.05;
-      g.poly([mast, y - t * 1.0, mast + ship.dir * t * 0.6, y - t * 0.15, mast, y - t * 0.15]);
+      g.stroke(shipLead);
+      // The hull leaded into three panes, as the window's glass is.
+      for (const at of [-0.2, 0.25]) {
+        g.moveTo(x + u * at, y);
+        g.lineTo(x + u * at * 0.9, y + u * 0.3);
+      }
+      g.stroke(shipLead);
+      const mast = x - ship.dir * u * 0.05;
+      g.poly([mast, y - u * 1.0, mast + ship.dir * u * 0.6, y - u * 0.15, mast, y - u * 0.15]);
       g.fill({ color: hex(pal.uiInk), alpha: 0.9 });
-      g.stroke(lead);
-      g.poly([mast, y - t * 0.85, mast - ship.dir * t * 0.4, y - t * 0.15, mast, y - t * 0.15]);
+      g.stroke(shipLead);
+      g.poly([mast, y - u * 0.85, mast - ship.dir * u * 0.4, y - u * 0.15, mast, y - u * 0.15]);
       g.fill({ color: hex(pal.emberMid), alpha: 0.9 });
-      g.stroke(lead);
+      g.stroke(shipLead);
     }
 
     this.fish.step(this.ocean, deltaMs, s.fishEveryMs, s.fishMs);

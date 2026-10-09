@@ -660,13 +660,19 @@ export class CyberpunkTheme implements Theme {
         alpha: 0.6,
       });
       g.circle(cx, cy, r);
-      g.fill({ color: cannon.active ? this.colour(cannon.owner, 'dark') : hex(palette.grassMid) });
+      g.fill({ color: cannon.active ? this.colour(cannon.owner, 'dark') : hex(palette.rockDark) });
       g.stroke({
         width: line,
-        color: cannon.active ? this.colour(cannon.owner, 'light') : hex(palette.rockMid),
-        alpha: cannon.active ? 1 : 0.6,
+        color: cannon.active ? this.colour(cannon.owner, 'light') : hex(palette.rockLight),
+        alpha: cannon.active ? 1 : 0.7,
       });
-      if (!cannon.active) continue;
+      if (!cannon.active) {
+        // Offline: a grey housing, unlit, and a red scanline across it — a near-black disc on
+        // the near-black ground read as nothing at all, where a silenced gun must read at once.
+        g.moveTo(cx - r * 0.7, cy + r * 0.35).lineTo(cx + r * 0.7, cy + r * 0.35);
+        g.stroke({ width: line * 1.5, color: hex(palette.uiInvalid), alpha: 0.9, cap: 'round' });
+        continue;
+      }
       glow.circle(cx, cy, r);
       glow.stroke({
         width: glowWidth * 0.8,

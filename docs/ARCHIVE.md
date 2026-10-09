@@ -6157,3 +6157,40 @@ band a fifth of a tile below the castle's foot, so it overlaps only the castle's
 far from the flag at its top. Seen in Minimal, Pixel, Cartoon, Christmas, Noir, Electric,
 Parchment and Sakura, at two, three and eight players: the castles show whole, and the crown
 still reads at eight players' tile size.
+
+## 12zu. The style pass, S1: readability first (2026-10-09)
+
+PLAN §11 item 3's first package: what the style review found hard to read, fixed in each
+style's own idiom, every fix seen before and after at two or three players and at eight.
+
+- **Silenced guns that looked live.** Halloween's cauldrons a grey, skinned-over potion under a
+  pale cobweb (the potion had stayed bright); Christmas's snowmen half their height in a
+  large blue puddle with drips and a wisp of steam; Opera's horns tarnished grey-green with a
+  near-black mute filling the bell; Under the sea's pufferfish drained three quarters to grey
+  and deflated to 85%; Noir's guns a grey shield, the owner's colour a band along its top,
+  hatched heavier; Cyberpunk's a dim housing with a red offline scanline, where they were
+  black on black.
+- **Owner colour lost at eight players.** Under the sea's conches tinted half-way to the
+  owner's light colour, their bands twice as deep; Office's copiers with the lid in the
+  owner's colour; Chocolate's sealed cakes glazed with a pool at the top, a collar and two
+  drips a tier, rather than the whole cake — every sealed cake, not only the main one, had
+  read as neutral brown.
+- **Contrast.** Night's paving the owner's colour pulled 45% to shadow, so lit walls stand
+  out of a dark court; Blueprint's inks washed towards white by how near their hue is to the
+  paper's (blue fully, teal and steel a little, the rest unchanged); Halloween's crypt lifted
+  and the land round it darkened by how near the owner's hue is to the dusk (violet only);
+  Electric's charged floor lit rather than shaded; Office's big timer a desk clock's sage LCD
+  face; Cartoon's gun bases at a third of their fill, so the dance floor shows under the guns.
+  The two hue nearnesses are one helper (`render/hue.ts`).
+- **Seen wrong.** Night's moon path short pale glints, widening and fading, each winking on
+  its own beat, where it was a column of grey dashes; its lighthouse beams cut where they would
+  leave the screen under the HUD; a one-tile sealed pocket in Pixel and Night opaque paving
+  with a sparse grey grain, where it had looked like a breach; Blueprint's shot courses dashed
+  only over their last four tiles, fading with more than six in the air; Toy bricks' muzzles a
+  round plate in the owner's dark colour, not a white ball like a shot; Glass's ship never under
+  about twenty pixels a unit, leaded heavier and in panes, where at eight players it was a
+  glitch of fifteen pixels; Noir's unlit clubs a faint paper rim, findable on the cobbles.
+
+Done by four agents on disjoint files at once, each checking by eye, then reviewed whole;
+Office's timer, in the shared stylesheet, and Glass's ship, in the shared sea life, were done
+last. Nothing per frame was added that is not stamped or memoised as its style already did.

@@ -1350,6 +1350,30 @@ function drawClub(
   for (const wx of [-0.62, 0.12]) g.rect(u(wx), -u(1.08), u(0.24), u(0.3));
   g.rect(-u(0.2), -u(0.6), u(0.3), u(0.6));
   g.stroke({ width: Math.max(1, ink * 0.7), color: NOIR_INK });
+  if (club === 'dark') {
+    // A faint rim of the night's light round the dark club, just outside its ink, so it can
+    // be found on the dark cobbles — the town's one way to say where a castle stands unlit.
+    const o = 0.06;
+    g.poly([
+      -u(0.78 + o),
+      u(o),
+      -u(0.78 + o),
+      -u(1.68 - o),
+      -u(0.86 + o),
+      -u(1.68 - o),
+      -u(0.86 + o),
+      -u(1.84 + o),
+      u(0.86 + o),
+      -u(1.84 + o),
+      u(0.86 + o),
+      -u(1.68 - o),
+      u(0.78 + o),
+      -u(1.68 - o),
+      u(0.78 + o),
+      u(o),
+    ]);
+    g.stroke({ width: Math.max(1, ink * 0.8), color: NOIR_PAPER, alpha: 0.5, join: 'miter' });
+  }
   if (club === 'closed') {
     // Boarded across, and a plank of a sign hanging from one nail.
     g.moveTo(-u(0.26), -u(0.48)).lineTo(u(0.16), -u(0.2));
@@ -1453,20 +1477,26 @@ function drawGun(
   ]);
   g.fill({ color: 0x2a2a30 });
   g.stroke({ width: ink, color: NOIR_INK });
-  // The shield.
+  // The shield: in the owner's colour, or, silenced, grey with only a band of it along its top
+  // — the owner still told, but a gun dark in build no longer passing for one merely idle.
+  const dark = mood === 'dark';
   g.poly([-u(0.42), -u(0.4), u(0.32), -u(0.4), u(0.22), -u(0.92), -u(0.32), -u(0.92)]);
-  g.fill({ color: colour });
+  g.fill({ color: dark ? 0x48484e : colour });
+  if (dark) {
+    g.poly([-u(0.32), -u(0.92), u(0.22), -u(0.92), u(0.2), -u(0.8), -u(0.34), -u(0.8)]);
+    g.fill({ color: colour });
+  }
   g.poly([u(0.32), -u(0.4), u(0.22), -u(0.92), u(0.02), -u(0.92), u(0.1), -u(0.4)]);
   g.fill({ color: 0x000000, alpha: 0.35 });
   g.poly([-u(0.42), -u(0.4), u(0.32), -u(0.4), u(0.22), -u(0.92), -u(0.32), -u(0.92)]);
   g.stroke({ width: ink, color: NOIR_INK, join: 'round' });
   // The searchlight on top.
   g.rect(-u(0.08), -u(1.08), u(0.3), u(0.18));
-  g.fill({ color: mood === 'dark' ? 0x2a2a30 : 0xd8d8d8 });
+  g.fill({ color: dark ? 0x2a2a30 : 0xd8d8d8 });
   g.stroke({ width: ink, color: NOIR_INK });
-  if (mood === 'dark' && crossHatch !== null) {
+  if (dark && crossHatch !== null) {
     g.rect(-u(0.8), -u(1.15), u(1.8), u(1.2));
-    g.fill({ fill: crossHatch, alpha: 0.55 });
+    g.fill({ fill: crossHatch, alpha: 0.8 });
   }
 }
 

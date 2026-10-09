@@ -934,6 +934,9 @@ export class UnderseaTheme extends ShapeTheme implements Theme {
       this.colour(owner, 'base'),
       this.colour(owner, 'dark'),
       this.dark,
+      // The shell blushed with the owner's light shade, so a palace reads as its owner's
+      // even where its bands are small, at eight players.
+      mixed(SHELL, this.colour(owner, 'light'), 0.5),
     );
   }
 
@@ -1099,18 +1102,24 @@ export class UnderseaTheme extends ShapeTheme implements Theme {
       const puff = cannon.active ? Math.max(0, 1 - aim.firedAgo / PUFF_MS) : 0;
       const mood: PufferMood = !cannon.active ? 'limp' : puff > 0.15 ? 'puffed' : 'calm';
       const angle = cannon.active ? aim.angle : aim.angle + 0.7;
+      // A silenced fish is drained to a sickly grey with only a trace of its owner's colour:
+      // in full colour it read as armed at a glance (the style review).
+      const limp = mood === 'limp';
+      const tone = (shade: 'base' | 'dark' | 'light', grey: number): number =>
+        limp ? mixed(this.colour(owner, shade), grey, 0.75) : this.colour(owner, shade);
       const fish = this.book.get(`puffer|${owner}|${mood}`, t, (k) =>
         drawPuffer(
           k,
           t,
-          this.colour(owner, 'base'),
-          this.colour(owner, 'dark'),
-          this.colour(owner, 'light'),
+          tone('base', 0x8e8c86),
+          tone('dark', 0x4e4c48),
+          tone('light', 0xb4b0a8),
           this.dark,
           mood,
         ),
       );
-      const scale = mood === 'puffed' ? 0.85 + 0.25 * Math.sin(Math.min(1, puff) * Math.PI) : 1;
+      const scale =
+        mood === 'puffed' ? 0.85 + 0.25 * Math.sin(Math.min(1, puff) * Math.PI) : limp ? 0.85 : 1;
       this.pufferStamps.place(fish, cx, cy, { rotation: angle, scale });
       if (cannon.active && aim.firedAgo < SPIT_MS) {
         // Bubbles spat after the urchin, out of the mouth along the aim.

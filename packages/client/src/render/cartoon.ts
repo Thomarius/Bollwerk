@@ -694,7 +694,9 @@ export class CartoonTheme extends ShapeTheme implements Theme {
       this.drawBricks(g, view, cells, (x, y) => wallAt(x, y) === owner, out ? -1 : owner - 1);
     }
     for (const cannon of state.cannons) {
-      cannonBase(g, view, cannon, LIGHT_GREY, this.colour(cannon.owner, 'base'), 0.9);
+      // A light wash, not a cover: guns stand mostly on sealed ground, and an opaque base hid
+      // the dance floor under them until, close up, it nearly vanished (style review, S1).
+      cannonBase(g, view, cannon, LIGHT_GREY, this.colour(cannon.owner, 'base'), 0.3);
     }
   }
 

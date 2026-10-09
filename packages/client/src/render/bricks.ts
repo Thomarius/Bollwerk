@@ -642,7 +642,7 @@ export class BricksTheme implements Theme {
     this.clicks = this.clicks.filter((c) => c.age < CLICK_MS);
   }
 
-  /** Barrels: a round barrel from the mount, a lighter muzzle ring, kicking back on firing. */
+  /** Barrels: a round barrel from the mount, a plate at its end, kicking back on firing. */
   private drawBarrels(state: MatchState, view: ViewTransform, deltaMs: number): void {
     const t = view.tile;
     const { palette } = this.art;
@@ -668,8 +668,13 @@ export class BricksTheme implements Theme {
           color: hex(cannon.active ? palette.rockDark : palette.craterDark),
           cap: 'round',
         });
+        // The barrel's end, a round 1x1 plate in the owner's dark (grey once silenced): a
+        // white ball there read as a shot leaving the gun (the style review).
         g.circle(ex, ey, width * 0.55);
-        g.fill({ color: hex(cannon.active ? palette.rockLight : palette.rockMid) });
+        g.fill({
+          color: cannon.active ? this.colour(cannon.owner, 'dark') : hex(palette.rockDark),
+        });
+        g.stroke({ width: Math.max(1, t * 0.05), color: hex(palette.craterDark), alpha: 0.6 });
         g.circle(tileX(view, cx), tileY(view, cy), width * 0.7);
         g.fill({ color: this.colour(cannon.owner, cannon.active ? 'base' : 'dark') });
       });

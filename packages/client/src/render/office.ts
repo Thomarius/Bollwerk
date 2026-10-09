@@ -972,7 +972,7 @@ export class OfficeTheme extends ShapeTheme implements Theme {
   }
 
   /**
-   * The copiers: grey, a band of the owner's colour along the side, the lid with its glass,
+   * The copiers: grey, a band of the owner's colour along the side, the lid in it too,
    * the control panel's little screen, and the output tray toward the target with a sheet
    * in it. They turn on their swivel bases to fire, kick back and flash the scan light as a
    * plane leaves. A silenced one turns aside with "out of order" taped on.
@@ -1025,10 +1025,18 @@ export class OfficeTheme extends ShapeTheme implements Theme {
     k.stroke({ width: Math.max(1, t * 0.06), color: this.dark, alpha: 0.85 });
     k.rect(-w / 2 + t * 0.04, -h / 2 + t * 0.15, t * 0.14, h - t * 0.3);
     k.fill({ color: this.colour(owner, 'base') });
-    // The lid over the glass, and the control panel with its little screen and a button.
-    k.roundRect(-w / 2 + t * 0.24, -h / 2 + t * 0.32, w - t * 0.34, h - t * 0.44, t * 0.05);
-    k.fill({ color: 0xc9ccd1 });
-    k.stroke({ width: 1, color: STEEL_DARK });
+    // The lid over the glass, in the owner's colour: a grey lid left only the thin band to
+    // say whose it was, and at eight players the copiers read as white squares (the style
+    // review). A highlight along its hinge keeps it a lid. Then the control panel with its
+    // little screen and a button.
+    const lidX = -w / 2 + t * 0.24;
+    const lidY = -h / 2 + t * 0.32;
+    const lidW = w - t * 0.34;
+    k.roundRect(lidX, lidY, lidW, h - t * 0.44, t * 0.05);
+    k.fill({ color: this.colour(owner, 'base') });
+    k.stroke({ width: 1, color: this.colour(owner, 'dark') });
+    k.rect(lidX + t * 0.05, lidY + t * 0.05, lidW - t * 0.1, Math.max(1, t * 0.06));
+    k.fill({ color: this.colour(owner, 'light'), alpha: 0.8 });
     k.rect(w / 2 - t * 0.44, h / 2 - t * 0.2, t * 0.22, t * 0.1);
     k.fill({ color: active ? 0x8fd4a0 : 0x5a5d63 });
     k.circle(w / 2 - t * 0.14, h / 2 - t * 0.15, t * 0.05);

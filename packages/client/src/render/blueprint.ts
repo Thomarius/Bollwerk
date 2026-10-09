@@ -30,6 +30,7 @@ import {
   drawMainCastles,
   drawShotTarget,
   hex,
+  mixed,
   playerColour,
   shotLift,
   tileX,
@@ -49,6 +50,7 @@ import type { SceneryItem } from './scenery.js';
 import { SceneryLayer } from './sceneryLayer.js';
 import { dashed, hatch, outline, trace, wallGeometry, type Segment } from './walls.js';
 import { cannonBase } from './cannonBase.js';
+import { hueNearness } from './hue.js';
 
 /** A mark where a shot landed: rings for a moment, and on a wall a demolition cross. */
 interface Mark {
@@ -69,6 +71,9 @@ interface Fragment {
   age: number;
   colour: number;
 }
+
+/** How much of a shot's course its dashed trail shows, in tiles. */
+const TRAIL_TILES = 4;
 
 /** A block the sweep took, its outline dashing away. */
 interface Fade {
@@ -146,6 +151,9 @@ export class BlueprintTheme implements Theme {
   private readonly winnerBanners = new WinnerBanners(FINISH);
   private readonly flags = new FlagHoist();
   private clock = 0;
+  /** Each owner's ink as drawn on this paper (`colour`), worked out once. */
+  private readonly inks = new Map<number, number>();
+  private inkPaper = -1;
 
   init(layers: ThemeLayers, art: ArtConfig): Promise<void> {
     this.art = art;
@@ -171,8 +179,23 @@ export class BlueprintTheme implements Theme {
     }
   }
 
+  /**
+   * A player's ink, washed toward white as far as its hue is near the paper's: the blue
+   * players' walls were blue on blue paper, the hardest to read (the style review).
+   */
   private colour(player: number, shade: 'base' | 'light' | 'dark'): number {
-    return playerColour(this.art, player, shade);
+    const colour = playerColour(this.art, player, shade);
+    const paper = hex(this.art.palette.grassMid);
+    if (paper !== this.inkPaper) {
+      this.inks.clear();
+      this.inkPaper = paper;
+    }
+    let ink = this.inks.get(colour);
+    if (ink === undefined) {
+      ink = mixed(colour, 0xffffff, 0.55 * hueNearness(colour, paper, 45));
+      this.inks.set(colour, ink);
+    }
+    return ink;
   }
 
   private faceFraction(): number {
@@ -643,6 +666,7 @@ export class BlueprintTheme implements Theme {
     const t = view.tile;
     const now = state.tick + frame.tickFraction;
     drawMainCastles(g, view, state, this.art, frame.castleSealed);
+    const trailAlpha = 0.45 * Math.min(1, Math.sqrt(6 / Math.max(1, state.shots.length)));
     for (const shot of state.shots) {
       const p = shotProgress(shot, now);
       const at = (tk: number): { x: number; y: number } => ({
@@ -650,14 +674,18 @@ export class BlueprintTheme implements Theme {
         y: tileY(view, shot.fromY + (shot.toY - shot.fromY) * tk + 0.5 - shotLift(shot, tk)),
       });
       const colour = this.colour(shot.owner, 'light');
-      // The trajectory behind it, in short dashes.
-      const steps = 14;
+      // The trajectory behind it, in short dashes: only its last few tiles, and fainter
+      // the more shots are in the air. Whole courses at eight players were a field of
+      // scratches over the board (the style review).
+      const range = Math.hypot(shot.toX - shot.fromX, shot.toY - shot.fromY);
+      const from = Math.max(0, p - TRAIL_TILES / Math.max(1, range));
+      const steps = 8;
       for (let k = 0; k < steps; k += 2) {
-        const a = at((p * k) / steps);
-        const b = at((p * (k + 1)) / steps);
+        const a = at(from + ((p - from) * k) / steps);
+        const b = at(from + ((p - from) * (k + 1)) / steps);
         g.moveTo(a.x, a.y).lineTo(b.x, b.y);
       }
-      g.stroke({ width: 1, color: colour, alpha: 0.45 });
+      g.stroke({ width: 1, color: colour, alpha: trailAlpha });
       const gx = tileX(view, shot.fromX + (shot.toX - shot.fromX) * p + 0.5);
       const gy = tileY(view, shot.fromY + (shot.toY - shot.fromY) * p + 0.5);
       const s = t * 0.12;

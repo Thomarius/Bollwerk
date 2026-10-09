@@ -246,9 +246,10 @@ export function drawClam(
 
 /**
  * A shell palace: a great conch standing on its broad end, whorl on whorl narrowing to its
- * spire, a knob at every shoulder; the bands between the whorls and the spire's tip in the
- * owner's `band`, arched windows dark in it and a door at its foot. (cx, foot) is the middle
- * of its foot, `W` its width; the clam is drawn beside it with the effects.
+ * spire, a knob at every shoulder; the whorls in `body`, the shell's cream blushed with the
+ * owner's light shade, the broad bands between them and the spire's tip in the owner's `band`,
+ * arched windows dark in it and a door at its foot. (cx, foot) is the middle of its foot, `W`
+ * its width; the clam is drawn beside it with the effects.
  */
 export function drawConch(
   g: Graphics,
@@ -258,6 +259,7 @@ export function drawConch(
   band: number,
   bandDark: number,
   ink: number,
+  body = SHELL,
 ): void {
   const tiers = 4;
   const tierH = W * 0.22;
@@ -274,7 +276,7 @@ export function drawConch(
     g.lineTo(cx + wt / 2, top);
     g.quadraticCurveTo(cx + wb * 0.62, top + tierH * 0.3, cx + wb / 2, bottom);
     g.closePath();
-    g.fill({ color: SHELL });
+    g.fill({ color: body });
     g.stroke({ width: Math.max(1, W * 0.025), color: ink, alpha: 0.75 });
     // Shading on its right, where the light from above falls off.
     g.moveTo(cx + wb * 0.2, bottom);
@@ -283,23 +285,24 @@ export function drawConch(
     g.quadraticCurveTo(cx + wb * 0.62, top + tierH * 0.3, cx + wb / 2, bottom);
     g.closePath();
     g.fill({ color: SHELL_DARK, alpha: 0.45 });
-    // The band along its foot, spiralling: slanted, in the owner's colour.
+    // The band along its foot, spiralling: slanted, in the owner's colour, and broad — a
+    // thin one left eight players' palaces all but white (the style review).
     g.poly([
       cx - wb / 2,
       bottom - tierH * 0.02,
       cx + wb / 2,
       bottom - tierH * 0.22,
       cx + wb / 2 - W * 0.02,
-      bottom - tierH * 0.36,
+      bottom - tierH * 0.5,
       cx - wb / 2 + W * 0.02,
-      bottom - tierH * 0.16,
+      bottom - tierH * 0.3,
     ]);
     g.fill({ color: band });
     // The knobs at its shoulder.
     for (const side of [-1, 1]) {
       g.circle(cx + side * wb * 0.5, top + tierH * 0.35, W * 0.04);
     }
-    g.fill({ color: SHELL });
+    g.fill({ color: body });
     // Windows, arched, along the whorl.
     if (k > 0 && k < tiers - 1) {
       for (const f of [-0.22, 0.18]) {

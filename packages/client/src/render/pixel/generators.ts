@@ -286,18 +286,19 @@ function rubble(art: ArtConfig, rng: Rng, size: number): Pixels {
  */
 function court(art: ArtConfig, rng: Rng, size: number): Pixels {
   const p = new Pixels(size, size);
-  const { sand, rockLight, craterMid } = art.palette;
+  const { rockMid, rockLight, craterMid } = art.palette;
   p.fill(rockLight);
-  p.speckle(rng, sand, 0.35);
+  // Sparse grey grain: a dense speckle of sand read, on a lone tile, as gravel in a breach.
+  p.speckle(rng, rockMid, 0.12);
   // Irregular slabs: a grout line across at a varying height, and down at varying
   // places above and below it.
   const across = 6 + rng.nextInt(4);
-  for (let x = 0; x < size; x++) p.set(x, across, craterMid, 0.35);
-  for (let x = 0; x < size; x++) p.set(x, 0, craterMid, 0.35);
+  for (let x = 0; x < size; x++) p.set(x, across, craterMid, 0.45);
+  for (let x = 0; x < size; x++) p.set(x, 0, craterMid, 0.45);
   const upper = 3 + rng.nextInt(size - 6);
   const lower = 3 + rng.nextInt(size - 6);
-  for (let y = 0; y < across; y++) p.set(upper, y, craterMid, 0.35);
-  for (let y = across; y < size; y++) p.set(lower, y, craterMid, 0.35);
+  for (let y = 0; y < across; y++) p.set(upper, y, craterMid, 0.45);
+  for (let y = across; y < size; y++) p.set(lower, y, craterMid, 0.45);
   p.set(0, 0, craterMid, 0.2);
   return p;
 }

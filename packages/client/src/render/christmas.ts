@@ -127,6 +127,9 @@ const COAL = 0x1a1a22;
 const CARROT = 0xe8742a;
 const ICE = 0xbfe0f4;
 const DEAD = 0x8a8478;
+/** A melted snowman's pool and its rim. */
+const MELT = 0x6aa6dc;
+const MELT_EDGE = 0x2f6aa8;
 
 /**
  * The fairy lights on a tree, in tiles from its foot: wound round it from the bottom tier up.
@@ -748,22 +751,26 @@ export class ChristmasTheme extends ShapeTheme implements Theme {
     for (const castle of state.castles) {
       const player = castle.islandId - 1;
       const out = state.players[player]?.eliminated !== false;
-      const figure = this.book.get(`tree|${out ? -1 : player}`, t, (k) =>
+      let level = out ? 0 : (this.lit.raised(castle.id, this.clock, this.art) ?? 0);
+      // Going out, the lights sputter: on and off by turns as they fade.
+      if (this.lit.lowering(castle.id) && !still && hash(castle.id, flicker, 3030) < 0.45)
+        level = 0;
+      // Unlit, the tree is stamped in the dark: its baubles dulled and the garland dim, since
+      // the lights alone were too small to tell a sealed castle at board scale.
+      const dark = level <= 0;
+      const figure = this.book.get(`tree|${out ? -1 : player}|${dark}`, t, (k) =>
         drawTreeFigure(
           k,
           t,
           out ? null : this.colour(player, 'base'),
           out ? null : this.colour(player, 'light'),
+          dark,
         ),
       );
       const x = tileX(view, castle.x + castle.w / 2);
       const y = tileY(view, castle.y + castle.h) - t * 0.04;
       this.figures.push({ foot: y, context: figure, x, y });
       if (out) continue;
-      let level = this.lit.raised(castle.id, this.clock, this.art) ?? 0;
-      // Going out, the lights sputter: on and off by turns as they fade.
-      if (this.lit.lowering(castle.id) && !still && hash(castle.id, flicker, 3030) < 0.45)
-        level = 0;
       this.figures.push({
         foot: y,
         context: star,
@@ -1155,7 +1162,13 @@ export class ChristmasTheme extends ShapeTheme implements Theme {
  * gold garland looped across them and baubles in the owner's colours. The lights and the star
  * are placed over it. With no colour given it is the bare brown tree of a player who is out.
  */
-function drawTreeFigure(g: Graphics, t: number, body: number | null, light: number | null): void {
+function drawTreeFigure(
+  g: Graphics,
+  t: number,
+  body: number | null,
+  light: number | null,
+  dark = false,
+): void {
   const u = (v: number): number => v * t;
   const dead = body === null;
   g.ellipse(u(0.05), -u(0.02), u(0.9), u(0.16));
@@ -1202,11 +1215,12 @@ function drawTreeFigure(g: Graphics, t: number, body: number | null, light: numb
       u(foot - 0.32),
     );
   }
-  g.stroke({ width: Math.max(1, u(0.05)), color: GOLD });
+  g.stroke({ width: Math.max(1, u(0.05)), color: dark ? mixed(GOLD, PINE_DARK, 0.6) : GOLD });
   for (const [bx, by, r] of BAUBLES) g.circle(u(bx), u(by), u(r));
-  g.fill({ color: body });
+  g.fill({ color: dark ? mixed(body, PINE_DARK, 0.7) : body });
   for (const [bx, by, r] of BAUBLES) g.circle(u(bx), u(by), u(r));
   g.stroke({ width: Math.max(1, u(0.035)), color: NIGHT });
+  if (dark) return;
   for (const [bx, by, r] of BAUBLES) g.circle(u(bx - r * 0.35), u(by - r * 0.35), u(r * 0.3));
   g.fill({ color: light ?? SNOW, alpha: 0.9 });
 }
@@ -1237,17 +1251,23 @@ function drawSnowmanFigure(g: Graphics, t: number, scarf: number, light: number,
   const melted = mood === 'melted';
   const ink = Math.max(1, u(0.045));
   if (melted) {
-    g.ellipse(0, -u(0.02), u(0.72), u(0.15));
-    g.fill({ color: ICE, alpha: 0.7 });
+    // A wide pool of meltwater, bluer than any snow, so a silenced gun reads at eight players
+    // by its puddle and its height alone.
+    g.ellipse(u(0.05), -u(0.04), u(0.92), u(0.24));
+    g.fill({ color: MELT });
+    g.ellipse(u(0.05), -u(0.04), u(0.92), u(0.24));
+    g.stroke({ width: ink, color: MELT_EDGE });
+    g.ellipse(-u(0.35), -u(0.08), u(0.2), u(0.05));
+    g.fill({ color: ICE, alpha: 0.9 });
   } else {
     g.ellipse(u(0.05), -u(0.02), u(0.55), u(0.12));
     g.fill({ color: NIGHT, alpha: 0.25 });
   }
   const balls: [number, number, number, number][] = melted
     ? [
-        [0, -0.24, 0.46, 0.28],
-        [0.03, -0.6, 0.32, 0.22],
-        [0.08, -0.9, 0.19, 0.18],
+        [0, -0.16, 0.5, 0.2],
+        [0.04, -0.42, 0.3, 0.16],
+        [0.1, -0.64, 0.18, 0.14],
       ]
     : [
         [0, -0.38, 0.38, 0.38],
@@ -1259,8 +1279,8 @@ function drawSnowmanFigure(g: Graphics, t: number, scarf: number, light: number,
   // The arms, behind the body.
   const arms: [number, number, number, number][] = melted
     ? [
-        [-0.25, -0.6, -0.55, -0.3],
-        [0.25, -0.6, 0.55, -0.3],
+        [-0.22, -0.42, -0.6, -0.12],
+        [0.26, -0.42, 0.62, -0.12],
       ]
     : mood === 'throw'
       ? [
@@ -1345,6 +1365,21 @@ function drawSnowmanFigure(g: Graphics, t: number, scarf: number, light: number,
   g.rect(-u(0.16), -u(0.14), u(0.32), u(0.07));
   g.fill({ color: scarf });
   g.restore();
+  if (!melted) return;
+  // Drips running down its side into the pool, and a wisp of steam rising off it.
+  for (const [dx, dy] of [
+    [0.38, -0.3],
+    [-0.42, -0.24],
+  ] as const) {
+    g.moveTo(u(dx), u(dy - 0.14)).lineTo(u(dx), u(dy));
+    g.stroke({ width: Math.max(1, u(0.05)), color: MELT, cap: 'round' });
+    g.circle(u(dx), u(dy + 0.03), u(0.05));
+    g.fill({ color: MELT });
+  }
+  g.moveTo(head.x - u(0.05), head.y - u(0.45))
+    .quadraticCurveTo(head.x + u(0.12), head.y - u(0.62), head.x - u(0.02), head.y - u(0.78))
+    .quadraticCurveTo(head.x - u(0.14), head.y - u(0.92), head.x + u(0.06), head.y - u(1.06));
+  g.stroke({ width: Math.max(1.5, u(0.07)), color: SNOW_SHADE, alpha: 0.85, cap: 'round' });
 }
 
 /**

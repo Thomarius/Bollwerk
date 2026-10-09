@@ -613,11 +613,13 @@ export class ElectricTheme extends ShapeTheme implements Theme {
       if (cells.length === 0) continue;
       for (const { x, y } of cells) g.rect(tileX(view, x), tileY(view, y), t, t);
       g.fill({ color: this.colour(player, 'base'), alpha: this.style.territoryAlpha });
-      // Each plate a shade darker inside its edge, so the floor reads as plated.
+      // Each plate lit by the charge inside its edge, so the floor reads as plated. Lit, not
+      // shaded: a darker plate sank into the slate and olive islands until a small pocket
+      // hardly read as sealed beside the cage walls (style review, S1).
       for (const { x, y } of cells) {
         g.rect(tileX(view, x) + t * 0.14, tileY(view, y) + t * 0.14, t * 0.72, t * 0.72);
       }
-      g.fill({ color: this.colour(player, 'dark'), alpha: 0.3 });
+      g.fill({ color: this.colour(player, 'light'), alpha: 0.3 });
       // The grid between the plates.
       for (const { x, y } of cells) {
         const left = tileX(view, x);
@@ -625,7 +627,7 @@ export class ElectricTheme extends ShapeTheme implements Theme {
         if (owned(x, y - 1)) g.moveTo(left, top).lineTo(left + t, top);
         if (owned(x - 1, y)) g.moveTo(left, top).lineTo(left, top + t);
       }
-      g.stroke({ width: Math.max(1, t * 0.06), color: this.colour(player, 'light'), alpha: 0.6 });
+      g.stroke({ width: Math.max(1, t * 0.06), color: this.colour(player, 'light'), alpha: 0.85 });
       const stud = Math.max(2, t * 0.14);
       for (const { x, y } of cells) {
         if (!owned(x - 1, y) || !owned(x, y - 1) || !owned(x - 1, y - 1)) continue;

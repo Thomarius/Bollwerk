@@ -1230,42 +1230,44 @@ export class ChocolateTheme extends ShapeTheme implements Theme {
       const bob = still ? 0 : Math.sin(this.clock / 180 + castle.id) * t * 0.05;
       g.circle(c.cx, jetTop + bob, t * 0.11 * running);
       g.fill({ color: flow });
-      // The chocolate overflowing: a glaze over the upper tier, running down its side in
-      // drips that swell and shrink, pooling at its foot and dripping over the lower tier.
+      // The chocolate overflowing: a pool round the basin's stem on the upper tier, a thin
+      // collar where it pools at that tier's foot, and a few thin drips that swell and
+      // shrink between them. A glaze over each whole tier hid the owner's icing, so a sealed
+      // cake read as plain brown, less owned than a breached one (the style review).
       const swell = (k: number): number =>
         still ? 0.8 : 0.65 + 0.35 * Math.sin(this.clock / 700 + k * 1.9 + castle.id);
       const upperFoot = c.top1 + (c.lip1 - c.top1) * 0.5;
       g.ellipse(
         c.cx,
-        c.top2 + (c.lip2 - c.top2) * 0.55,
-        c.half2 * 0.85 * running,
-        (c.lip2 - c.top2) * 0.4 * running,
+        c.top2 + (c.lip2 - c.top2) * 0.6,
+        c.half2 * 0.45 * running,
+        (c.lip2 - c.top2) * 0.28 * running,
       );
       g.roundRect(
-        c.cx - c.half1 * 0.85 * running,
-        upperFoot - t * 0.06,
-        c.half1 * 1.7 * running,
-        (c.lip1 - upperFoot) * 0.8 * running + t * 0.06,
-        t * 0.12,
+        c.cx - c.half2 * 1.05 * running,
+        upperFoot - t * 0.05,
+        c.half2 * 2.1 * running,
+        t * 0.12 * running,
+        t * 0.06,
       );
       const drop = (x: number, from: number, length: number): void => {
-        const w = t * 0.17;
+        const w = t * 0.11;
         g.roundRect(x - w / 2, from - t * 0.04, w, length, w / 2);
-        g.circle(x, from + length - w * 0.3, w * 0.62);
+        g.circle(x, from + length - w * 0.3, w * 0.6);
       };
-      [-0.6, 0, 0.6].forEach((s2, k) =>
+      [-0.5, 0.5].forEach((s2, k) =>
         drop(c.cx + c.half2 * s2, c.lip2, (upperFoot - c.lip2) * swell(k) * running),
       );
-      [-0.75, -0.25, 0.25, 0.75].forEach((s2, k) =>
-        drop(c.cx + c.half1 * s2, c.lip1, (c.foot1 - c.lip1) * 0.85 * swell(k + 3) * running),
+      [-0.6, 0.6].forEach((s2, k) =>
+        drop(c.cx + c.half1 * s2, c.lip1, (c.foot1 - c.lip1) * 0.7 * swell(k + 3) * running),
       );
       g.fill({ color: flow });
       // The gloss on it.
       g.ellipse(
-        c.cx - c.half2 * 0.3,
-        c.top2 + (c.lip2 - c.top2) * 0.45,
-        c.half2 * 0.25 * running,
-        t * 0.05 * running,
+        c.cx - c.half2 * 0.15,
+        c.top2 + (c.lip2 - c.top2) * 0.5,
+        c.half2 * 0.18 * running,
+        t * 0.04 * running,
       );
       g.fill({ color: hex(palette.waterFoam), alpha: 0.7 });
     }

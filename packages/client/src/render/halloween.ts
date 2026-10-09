@@ -51,6 +51,7 @@ import {
 import { outline, trace, wallGeometry } from './walls.js';
 import { cannonBase } from './cannonBase.js';
 import { ShapeTheme } from './shapeTheme.js';
+import { hueNearness } from './hue.js';
 
 /** Something with a place and an age: a ghost set free, a ring on the bog, a sinking block. */
 interface Aged {
@@ -685,11 +686,44 @@ export class HalloweenTheme extends ShapeTheme implements Theme {
       g.fill({ color: 0xffffff, alpha: 0.12 });
       g.ellipse(cx, cy - r * 0.25, r * 0.98, r * 0.36);
       g.fill({ color: 0x3a3244 });
-      g.ellipse(cx, cy - r * 0.25, r * 0.8, r * 0.26);
-      g.fill({ color: this.colour(cannon.owner, cannon.active ? 'base' : 'dark') });
       if (cannon.active) {
+        g.ellipse(cx, cy - r * 0.25, r * 0.8, r * 0.26);
+        g.fill({ color: this.colour(cannon.owner, 'base') });
         g.ellipse(cx - r * 0.25, cy - r * 0.3, r * 0.22, r * 0.07);
         g.fill({ color: this.colour(cannon.owner, 'light'), alpha: 0.8 });
+      } else {
+        // Silenced, the brew has gone cold: skinned over in grey, a wrinkle across it, and
+        // a pale cobweb spun over the rim, bright enough against the black pot to read at
+        // eight players, where the potion's colour alone did not.
+        g.ellipse(cx, cy - r * 0.25, r * 0.8, r * 0.26);
+        g.fill({ color: 0x6a6e66 });
+        g.moveTo(cx - r * 0.5, cy - r * 0.22).quadraticCurveTo(
+          cx - r * 0.1,
+          cy - r * 0.38,
+          cx + r * 0.45,
+          cy - r * 0.24,
+        );
+        g.stroke({ width: Math.max(1, t * 0.04), color: 0x45483f });
+        const hub = { x: cx + r * 0.15, y: cy - r * 0.28 };
+        const spokes = [
+          [-0.98, -0.25],
+          [-0.55, -0.5],
+          [0.2, -0.58],
+          [0.85, -0.42],
+          [0.98, -0.2],
+          [0.6, 0.05],
+          [-0.3, 0.1],
+        ] as const;
+        for (const [sx, sy] of spokes) g.moveTo(hub.x, hub.y).lineTo(cx + r * sx, cy + r * sy);
+        for (const f of [0.4, 0.75]) {
+          spokes.forEach(([sx, sy], i) => {
+            const x = hub.x + (cx + r * sx - hub.x) * f;
+            const y = hub.y + (cy + r * sy - hub.y) * f;
+            if (i === 0) g.moveTo(x, y);
+            else g.lineTo(x, y);
+          });
+        }
+        g.stroke({ width: Math.max(1, t * 0.035), color: 0xf4f0ff, alpha: 0.85 });
       }
     }
   }
@@ -711,15 +745,27 @@ export class HalloweenTheme extends ShapeTheme implements Theme {
     const { palette } = this.art;
     const t = view.tile;
     const dead = player < 0;
+    // An owner whose hue is the dusk land's own (violet at eight players) built walls that
+    // sank into the ground: its stone is lifted towards the light and the land round the
+    // wall darkened, in proportion, so the other owners look as they did.
+    const kin = dead ? 0 : hueNearness(this.colour(player, 'base'), hex(palette.grassMid), 40);
     const stone = dead
       ? hex(palette.rockMid)
-      : mixed(hex(palette.rockMid), this.colour(player, 'base'), 0.4);
+      : mixed(
+          mixed(hex(palette.rockMid), this.colour(player, 'base'), 0.4),
+          hex(palette.rockLight),
+          0.35 * kin,
+        );
     const stoneDark = dead
       ? hex(palette.rockDark)
       : mixed(hex(palette.rockDark), this.colour(player, 'dark'), 0.4);
     const spirit = dead ? hex(palette.rockDark) : this.colour(player, 'light');
     const wall = wallGeometry(cells, joins, view, this.faceFraction());
 
+    if (kin > 0) {
+      trace(g, wall.rim);
+      g.stroke({ width: t * 0.3, color: hex(palette.shadow), alpha: 0.6 * kin * alpha });
+    }
     for (const r of wall.tops) g.rect(r.x, r.y, r.w, r.h);
     g.fill({ color: stone, alpha });
     for (const r of wall.faces) g.rect(r.x, r.y, r.w, r.h);

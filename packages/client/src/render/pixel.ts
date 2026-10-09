@@ -607,8 +607,14 @@ export class PixelTheme implements Theme {
       const x = i % state.width;
       const y = (i - x) / state.width;
       const sprite = this.place(this.courtLayer, KEY.court((x * 5 + y * 3) % variants), view, x, y);
-      sprite.tint = washed(playerColour(this.art, owner, 'light'), 0.55);
-      sprite.alpha = 0.8;
+      // At Night pale paving was as light as the walls round it (the style review): there
+      // the court is the owner's colour in shadow, so the lit walls stand up out of it.
+      sprite.tint = this.torchlit
+        ? mixed(playerColour(this.art, owner, 'base'), hex(this.art.palette.shadow), 0.45)
+        : washed(playerColour(this.art, owner, 'light'), 0.55);
+      // Opaque: the grass's speckle showing through made a one-tile pocket read as a
+      // breach rather than paving.
+      sprite.alpha = 1;
     }
     const g = this.territoryGfx;
     g.clear();
@@ -1677,8 +1683,10 @@ export class PixelTheme implements Theme {
     const px = Math.max(1, Math.round(t / this.art.tileSizePx));
     const sea = this.seaGfx;
 
-    // The moon's path: short bright dashes down a column of the outer ocean, in whichever
-    // band of it clear of the land is the deeper, shimmering. Above the land alone, it was
+    // The moon's path: broken glints of moonlight on the outer ocean, in whichever band of
+    // it clear of the land is the deeper, the path widening and fading as it comes nearer.
+    // Each glint winks out and back on its own beat, so the path shimmers; a fixed column
+    // of grey dashes read as a glitch (the style review). Above the land alone, it was
     // under the HUD bar at three players.
     const bands: number[][] = [];
     for (const y of this.ocean.rows()) {
@@ -1689,20 +1697,43 @@ export class PixelTheme implements Theme {
     const rows = bands.sort((a, b) => b.length - a.length)[0] ?? [];
     if (rows.length > 0) {
       const column = tileX(view, this.drawn.x0 + (this.drawn.x1 - this.drawn.x0) * 0.72);
-      rows.forEach((y, k) => {
-        const spread = t * (0.6 + k * 0.35);
-        for (let d = 0; d < 3; d++) {
-          const wobble = still ? 0 : Math.sin(this.clock / 300 + y * 1.7 + d * 2.3);
-          const x = Math.round(column + (d - 1) * spread * 0.6 + wobble * t * 0.3);
-          sea.rect(x, Math.round(tileY(view, y + 0.5)), Math.round(t * 0.5), px);
+      const lines = rows.length * 3;
+      // Three strengths, a fill each, rather than a fill per glint.
+      const strengths = [0.18, 0.32, 0.5];
+      for (let level = 0; level < strengths.length; level++) {
+        for (let line = 0; line < lines; line++) {
+          const near = line / Math.max(1, lines - 1);
+          const spread = t * (0.4 + near * 1.6);
+          const glints = 3 + Math.floor(near * 4);
+          for (let d = 0; d < glints; d++) {
+            const h = glint(line * 7 + d);
+            const shine = still ? 0.6 : Math.sin(this.clock / (380 + h * 400) + h * 40);
+            // Brightest down the middle of the path, as the moon's light is.
+            const alpha = shine * (1 - near * 0.6) * (1 - Math.abs(h * 2 - 1) * 0.5);
+            if (alpha < 0.15) continue;
+            const at = alpha > 0.6 ? 2 : alpha > 0.35 ? 1 : 0;
+            if (at !== level) continue;
+            const length = Math.max(px * 2, Math.round(t * (0.2 + 0.5 * glint(line * 13 + d))));
+            const drift = still ? 0 : Math.sin(this.clock / 900 + h * 9) * t * 0.12;
+            const x = Math.round(column + (h * 2 - 1) * spread + drift - length / 2);
+            const y = Math.round(tileY(view, (rows[0] as number) + (line + 0.5) / 3));
+            sea.rect(x, y, length, px);
+          }
         }
-      });
-      sea.fill({ color: hex(palette.uiInk), alpha: 0.45 });
+        sea.fill({ color: 0xdfe8ff, alpha: strengths[level] as number });
+      }
     }
 
     // Lighthouses: a white tower on a rock, its lamp lit, the beam turning over the water.
     const turn = still ? 0 : (this.clock / this.art.pixel.beamTurnMs) * Math.PI * 2;
-    const reach = t * this.art.pixel.beamTiles;
+    const fullReach = t * this.art.pixel.beamTiles;
+    // The screen, clear of the HUD bar: the sea is drawn past it, out of sight.
+    const bounds = {
+      x0: t * 0.5,
+      y0: view.top + t * 0.5,
+      x1: view.width - t * 0.5,
+      y1: view.height - t * 0.5,
+    };
     this.lighthouses.forEach((spot, k) => {
       const cx = tileX(view, spot.x + 0.5);
       const cy = tileY(view, spot.y + 0.5);
@@ -1716,6 +1747,10 @@ export class PixelTheme implements Theme {
       sea.fill({ color: hex(palette.emberHot) });
       const angle = turn + k * 1.9;
       const width = 0.16;
+      // Not past the edge of the screen: a lighthouse near it swung its beam off the
+      // screen and under the HUD bar (the style review).
+      const reach = Math.min(fullReach, beamRoom(cx, cy - t * 0.5, angle, bounds));
+      if (reach <= 0) return;
       this.groundLight.poly([
         cx,
         cy - t * 0.5,
@@ -2259,4 +2294,27 @@ export function nextTorch(
     sealed,
     doused: torch.sealed && !sealed && torch.lit > 0,
   };
+}
+
+/** A glint's place in the moon's path, 0 to 1: fixed for a glint, scattered between them. */
+function glint(n: number): number {
+  const v = Math.sin(n * 12.9898 + 78.233) * 43758.5453;
+  return v - Math.floor(v);
+}
+
+/** How far a beam from (x, y) at `angle` runs before it leaves `bounds`, in pixels. */
+function beamRoom(
+  x: number,
+  y: number,
+  angle: number,
+  bounds: { x0: number; y0: number; x1: number; y1: number },
+): number {
+  const dx = Math.cos(angle);
+  const dy = Math.sin(angle);
+  let room = Infinity;
+  if (dx > 1e-6) room = Math.min(room, (bounds.x1 - x) / dx);
+  if (dx < -1e-6) room = Math.min(room, (bounds.x0 - x) / dx);
+  if (dy > 1e-6) room = Math.min(room, (bounds.y1 - y) / dy);
+  if (dy < -1e-6) room = Math.min(room, (bounds.y0 - y) / dy);
+  return Math.max(0, room);
 }
