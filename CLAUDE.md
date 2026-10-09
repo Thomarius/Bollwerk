@@ -153,7 +153,7 @@ Full detail in PLAN.md §1. The parts that surprise people:
 
 ## Status
 
-**Done** (2026-10-09; the latest release **v0.8.5**, 2026-10-09, protocol 20, which a test
+**Done** (2026-10-09; the latest release **v0.8.6**, 2026-10-09, protocol 20, which a test
 session needs the server rebuilt and every page reloaded for):
 
 - **Performance and sound** (ARCHIVE 13e, 13f): Random looks that came round again fixed

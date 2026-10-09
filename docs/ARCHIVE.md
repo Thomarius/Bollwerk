@@ -6624,3 +6624,10 @@ Both done by agents on their own files at once, each checked by eye in before an
 screenshots, then measured again here. What they found in shared code is PLAN §11 item 3's
 smaller leads. **The bots' planning off the page's thread**, the larger lead, was planned in
 detail and is PLAN §11 item 3, to be built in a session of its own.
+
+## 13g. v0.8.6 (2026-10-09)
+
+Released the same day as v0.8.5 for its fixes: Random looks that came round again (13e), the
+music starting at once where the browser allows and always in the desktop app's window, a
+Sharpness setting, and Chocolate's and Blueprint's frames cut to the other styles' (13f). Protocol
+20 as v0.8.5; the game's rules and bots unchanged.
