@@ -113,6 +113,9 @@ ipcMain.handle('play-here', () => {
     title: 'Bollwerk',
     backgroundColor: '#0a0a12',
     autoHideMenuBar: true,
+    // The app's own window may play sound unasked, so the music starts as the game opens
+    // rather than at the first click, as a browser insists (the users' wish, 2026-10-09).
+    webPreferences: { autoplayPolicy: 'no-user-gesture-required' },
   });
   // The Credits' links lead off the game, to a licence or an author's page: the
   // person's own browser, not another window of the app.

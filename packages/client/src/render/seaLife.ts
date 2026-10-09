@@ -1,6 +1,6 @@
 import type { ArtConfig } from '@bollwerk/config';
 import type { MatchState } from '@bollwerk/sim';
-import type { Container, Graphics, GraphicsContext } from 'pixi.js';
+import { Graphics, type Container, type GraphicsContext } from 'pixi.js';
 
 import { motionReduced } from '../motion.js';
 
@@ -15,7 +15,7 @@ import {
   type OuterOcean,
 } from './ocean.js';
 import { drawBat } from './spooky.js';
-import { StampBook, Stamps } from './stamps.js';
+import { StampBook, Stamps, viewKey } from './stamps.js';
 import { hex, tileX, tileY, type ViewTransform } from './theme.js';
 import { drawCrest } from './ukiyo.js';
 import { GOLD, drawQuaver, drawSwan } from './music.js';
@@ -251,10 +251,31 @@ export class ParchmentSeaLife extends OceanDrawn {
 /** Blueprint: a ship drawn in plan, sailing a dashed course across the sheet. */
 export class BlueprintSeaLife extends OceanDrawn {
   private readonly ships = new Crossings();
+  /**
+   * The ship's plotted course, beneath what the frame draws, drawn again only as the ship
+   * passes a dash: a hundred-odd dashes the width of the sheet were most of what the
+   * effects rebuilt every frame (about 450 vertices at eight players).
+   */
+  readonly course = new Graphics();
+  private courseKey = '';
 
   override layout(state: MatchState, view: ViewTransform, art: ArtConfig): void {
     super.layout(state, view, art);
     this.ships.layout(this.ocean, art.blueprint.shipEveryMs);
+  }
+
+  override draw(g: Graphics, view: ViewTransform, art: ArtConfig, deltaMs: number): void {
+    // Nothing is drawn while motion is reduced, the course included.
+    if (motionReduced()) this.plot('', () => {});
+    super.draw(g, view, art, deltaMs);
+  }
+
+  /** The course as `key` says, drawn by `draw` if that is not what it already shows. */
+  private plot(key: string, draw: (g: Graphics) => void): void {
+    if (key === this.courseKey) return;
+    this.courseKey = key;
+    this.course.clear();
+    draw(this.course);
   }
 
   protected frame(g: Graphics, view: ViewTransform, art: ArtConfig, deltaMs: number): void {
@@ -263,21 +284,34 @@ export class BlueprintSeaLife extends OceanDrawn {
     const line = b.lineWidthPx;
     const t = view.tile;
     this.ships.step(this.ocean, deltaMs, b.shipEveryMs, b.shipTilesPerSecond, 0.6);
+    let course = '';
+    const courses: ((g: Graphics) => void)[] = [];
     for (const s of this.ships.items) {
       if (this.behind(s.x, s.y)) continue;
       // The course, dashed across the sheet behind it and faint ahead, as a plotted route.
       const y = tileY(view, s.y);
       const dash = t * 0.35;
-      for (
-        let x = tileX(view, this.ocean.x0 - 2);
-        x < tileX(view, this.ocean.x1 + 3);
-        x += dash * 2
-      ) {
-        const ahead = (x - tileX(view, s.x)) * s.dir > 0;
-        g.moveTo(x, y);
-        g.lineTo(x + dash, y);
+      const from = tileX(view, this.ocean.x0 - 2);
+      const to = tileX(view, this.ocean.x1 + 3);
+      const bow = tileX(view, s.x);
+      // Which dashes are ahead changes only as the ship passes one.
+      let passed = 0;
+      for (let x = from; x < to; x += dash * 2) if ((x - bow) * s.dir <= 0) passed++;
+      course += `|${viewKey(view)},${from},${to},${y},${s.dir},${passed}`;
+      // Behind and ahead each one stroke: the dashes never overlap, so the order of their
+      // drawing does not show.
+      const dashes = (g: Graphics, ahead: boolean): void => {
+        for (let x = from; x < to; x += dash * 2) {
+          if ((x - bow) * s.dir > 0 !== ahead) continue;
+          g.moveTo(x, y);
+          g.lineTo(x + dash, y);
+        }
         g.stroke({ width: Math.max(1, line * 0.6), color: ink, alpha: ahead ? 0.18 : 0.45 });
-      }
+      };
+      courses.push((c) => {
+        dashes(c, false);
+        dashes(c, true);
+      });
       // The hull in plan: a pointed bow, a square stern, its centreline and two hatches.
       const hull = shape(view, s.x, s.y, s.dir, [
         [-0.85, -0.22],
@@ -308,6 +342,9 @@ export class BlueprintSeaLife extends OceanDrawn {
       g.lineTo(bx, dy + t * 0.08);
       g.stroke({ width: Math.max(1, line * 0.5), color: ink, alpha: 0.55 });
     }
+    this.plot(course, (c) => {
+      for (const draw of courses) draw(c);
+    });
   }
 }
 

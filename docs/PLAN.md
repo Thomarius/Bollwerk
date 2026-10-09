@@ -1340,6 +1340,15 @@ on black, never red, in its last seconds. **Toy bricks' score bar** sets each pl
 a light stud tile, so the blue player's reads on blue. **Stained glass's trees** are leaded
 crowns of four leaf panes over a short trunk.
 
+**Sharpness** (`sharpness.ts`, 2026-10-09): beside the Effects, in the menu and the pause menu,
+Sharp draws the board at the screen's density (at most 2) and Fast at 1, the browser scaling it
+up — a screen of density 2 has four times the pixels to fill, which on an integrated graphics
+chip holds the frame rate down more than the drawing does. Taken at once mid-match: the window is
+resized at the new resolution. **The music starts as the page opens** where the browser lets the
+site play sound unasked — a permission given it, or the desktop app's own window
+(`autoplayPolicy`) — and otherwise at the first click, as before; cues are never queued in a
+context still waiting for one.
+
 **Scenery on open land** (`scenery.ts`, `art.scenery`), in every style: copses of trees and
 pines with bushes at their edges, and a few lone trees, bushes and boulders, placed from
 the seed alone so every look puts them on the same tiles — only a step in from the coast,
@@ -1645,13 +1654,140 @@ work, item 2, is **paused** after a first learned fit (ARCHIVE 12z), its next st
    12y); step 3's first run learned a fit about as good as the hand-made one (ARCHIVE 12z),
    and the work is **paused** (2026-10-07), its next steps in BOT_LEARNING.md §6.
 
-3. **Rendering leads from the style pass** (2026-10-09). The style pass itself is done (ARCHIVE
-   12zt–12zz, 13a, 13b: every style but Minimal reviewed and its castles, guns, walls and
-   life made things of its setting). Two costs it measured and left: **Chocolate** is the
-   dearest style at eight players, about 6 ms of render a frame and 58–59 fps, the same before
-   and after S9 — its effects and the river's flow are most of it; and **Blueprint** rebuilds
-   about 11 600 vertices a frame, nearly three times Parchment's, from before S3. Each wants a
-   look with `&perf=1` at the `Graphics` it names, not a guess.
+3. **Bots thinking off the page's thread in local matches** (planned 2026-10-09, to be built in
+   a session of its own; local only — in a room the server runs the bots, and nothing online
+   changes). In an offline match, or a tournament played offline, one bot's wall plan takes 15–50
+   ms on the main thread; `LocalMatch.think` (`client/src/localMatch.ts`) spreads a tick's turns
+   over frames at `THINK_BUDGET_MS = 8`, but one plan cannot be split, so `&perf=1` shows "sim"
+   worst frames of 12–21 ms at eight players, felt as hitches mostly in the build phase. The fix
+   plans in a dedicated Web Worker, **in lockstep**: the page stays the only authority over
+   `MatchState`, the worker keeps a mirror, and every bot action still lands on the tick it lands
+   on today.
+
+   **Lockstep, not late answers.** Bots act in turn and each action changes the board the next
+   plans on, so the worker runs a whole tick's turns in `turnOrder` on its mirror, exactly as
+   `LocalMatch.think` does now, and the page waits for that answer before it calls `step` — as it
+   already waits while thinking spans frames, but with the screen drawing meanwhile. Late answers
+   applied a tick or more on, re-validated, were considered and rejected: bots' reactions would
+   depend on the machine, a match would no longer follow from its seed and the person's moves,
+   and the levels' ladder would want a soak. In lockstep the bots play action for action as now:
+   **no soak needed**.
+
+   **Architecture.** The page keeps `LocalMatch.state`, the recorder, the events and the clock. A
+   `BotDriver` interface has two implementations: `ThreadDriver`, today's `think(deadline,
+progressed)` loop moved out of `LocalMatch` unchanged, and `WorkerDriver`. The worker
+   (`client/src/bots/botWorker.ts`, a thin entry) wraps a pure `BotTable` (`bots/botTable.ts`, no
+   DOM, no `postMessage`) holding the mirror (`createMatch` from the same `MatchOptions`), a `Bot`
+   per bot seat from the dealt `BotSetup`, `defaultAiConfig` and one shared
+   `PlanningSlots(defaultAiConfig.plansPerTick)`, and the bots' `Rng(seed ^ 0x5f3759df)`, which
+   then lives only there. Both drivers call one `botTurns(state, rng, bots, humanPlayer, from,
+until?)`, as `takeBotTurns` (`ai/src/seating.ts`), keeping accepted actions only, so the two
+   cannot drift. The worker drains the mirror's events after every `step`.
+
+   **Messages** (`bots/protocol.ts`, plain structured-clone data, each with a `version` and a
+   `match` generation). Page to worker: `init {match, options, bots: {player, setup}[],
+humanPlayer, plansPerTick, rngSeed}` — seats dealt by `dealSeats` and names made with `t()` on
+   the page, never in the worker; `turn {match, tick, before: Action[]}`, the person's actions the
+   page applied on `tick`, in order; `dispose {match}`. Worker to page: `ready {match, hash}`, the
+   fresh mirror's `hashMatchState`, checked against the page's; `turns {match, tick, actions,
+hash?}` — the worker checks `mirror.tick === tick`, applies `before` (a refusal is divergence),
+   runs `botTurns`, steps and drains, and adds the hash every `HASH_EVERY_TICKS`
+   (`protocol/src/recording.ts`); `failed {match, tick, message}`. An answer for another match or
+   tick is dropped.
+
+   **The page.** `advance(ms)` adds time to the accumulator (capped at 250 ms as now); with the
+   bots idle, `ready` received and a tick's time there, it takes the tick and sends `turn` with
+   `this.applied`. The handler checks the answer, applies each action with `applyAction` (a
+   refusal is divergence), pushes them to `applied`, calls `stepOnce()` — whose
+   `recorder.stepped(...)` returns the hash to compare — applies the person's moves made while the
+   turn was out (they belong to the next tick), and sends the next `turn` at once if time remains
+   and the match is not paused, so several ticks a frame stay possible (`&speed=`). Events it
+   makes are queued for the next `advance`. One change: a move made while a turn is out waits up
+   to a tick and the worker's time, where now it is applied at once between bot turns;
+   `Session.submit` already discards the refusal (`void match.submit`), and recordings stay exact,
+   being what the page applied.
+
+   **Fallbacks.** The worker only where `typeof Worker === 'function'` and the address has no
+   `&bots=thread` (a new switch, also for timing before and after). Nothing steps before `ready`;
+   no `ready` within about 3 s, or the constructor throwing, falls back to `ThreadDriver` — exact,
+   since everything is fresh at tick 0. Mid-match (`error`, `messageerror`, `failed`, a refused
+   action, a hash mismatch, no answer within about 2 s): terminate the worker, warn, and go on with
+   a `ThreadDriver` — new bots, slots and an `Rng` seeded from seed and tick, so their memory
+   (`Gunner.noteShots`, the builder's pace) is lost and they may play a little differently from
+   there; the recording stays exact.
+
+   **Around it.** Pause: `localSession.setPaused` also sets `match.halted`; a turn out is applied,
+   none sent while halted. `&speed=` unchanged. `&snapshot=` stays in-thread: `fastForwardTo` runs
+   `takeBotTurns` synchronously with extra bots from `botFor`; `localMatchFor(setup, record,
+worker = phase === null)` in `session.ts`, at its calls in `main.ts`, `tournamentFlow.ts`
+   (`playHere`) and `lobbyFlow.ts`, and `fastForwardTo` asserts a `ThreadDriver`. A tournament's
+   given personalities reach the worker through `dealSeats`' setups; `?personality=` is applied to
+   the setups before `init`. One worker a page, made lazily and re-`init`ed with a new `match`
+   generation for rematches and tournament matches (it saves loading the module, about 50–100 ms).
+   `LocalMatch.dispose()` sends `dispose`: at the match's end, from `localSession.leave()`, and
+   from `matchScreen.ts`'s cleanup through a new optional `Session.dispose?()`.
+
+   **Memory and build.** Two `MatchState`s are well under 1 MB; the cost is the worker's own heap
+   and a second copy of `sim`, `ai` and `config`, a few MB. The bots' working arrays
+   (`computeEnclosure`, `weakestWall`, `MaxFlow`) move to the worker rather than double; not
+   re-entrant, safe in a single-threaded worker. `new Worker(new URL('./bots/botWorker.ts',
+import.meta.url), { type: 'module' })`, `worker: { format: 'es' }` in `client/vite.config.ts`,
+   the entry typed with `/// <reference lib="webworker" />` or a local `declare`, all logic in
+   `BotTable`. Production serves `dist/assets/*.js` as `text/javascript` (`server/src/server.ts`);
+   the desktop app loads the client from `http://localhost`, same origin. The server's and desktop
+   app's esbuild bundles never import `bots/` — checked with a build. The lint ban on
+   `performance` and `Math.random` in `sim` and `ai` is untouched: the timeouts live in the client.
+
+   **Measuring.** The same links before (`&bots=thread`) and after, on the users' machines, since
+   headless Chrome cannot time this: a watched match at eight players with `&perf=1`, one with a
+   person at eight, and one at `&speed=4`; compare "sim" p99 and worst and the stutters
+   (`doubled`, `over33`, `perf.ts`) over the 30 s window. The handler's apply-and-step runs outside
+   the frame's `perf.begin('sim')`: wrap it in `perf.begin`/`perf.end('sim')`, which add to the
+   current frame. Target: "sim" worst under 4 ms at eight players, no stutters added in the build.
+
+   **Risks and open questions.** A refused action must leave the state untouched, which the
+   divergence check relies on — confirm `placePiece`, `fire` and `placeCannon` refuse before they
+   change anything. With eight bots due on one tick the game clock still stalls up to about
+   `plansPerTick` × 50 ms while the screen draws, shots held at `tickFraction` 1; if that still
+   feels bad, the next step is run-ahead for watched matches (`humanPlayer === -1`, no outside
+   input: the worker plans ahead within a window the page grants, say 8 ticks), late answers with a
+   soak the last resort. Module workers are in every current browser; the fallback covers older
+   ones. `BotTable` in the client for now; in `ai` if the harness ever wants it.
+
+   **Work packages**, each ending with `npm run check` and the users' go-ahead:
+   - **W1 — one turn loop.** `botTurns` shared by `LocalMatch.think` and `fastForwardTo`.
+     _Accept:_ `localMatch.test.ts` passes unchanged.
+   - **W2 — `BotDriver` and `ThreadDriver`.** `LocalMatch` a host of drivers, behaviour unchanged.
+     _Accept:_ the "same match over several frames" test passes, recording lines byte-equal.
+   - **W3 — `BotTable` and the messages**, pure, no `Worker`. _Accept:_ tests that `init` gives the
+     page's hash, a `turn` gives exactly `takeBotTurns`' accepted actions, a stale `match` or
+     `tick` is dropped, a refused `before` gives `failed`.
+   - **W4 — `WorkerDriver` on an injectable transport**, with a test transport delivering through
+     `setTimeout` at seeded random delays. _Accept:_ a determinism test — an all-bot match
+     (`seats: [4, 6, 8]`, seed 7, 3 000 ticks) gives recording lines and a final hash equal to the
+     in-thread run; a match with a person whose moves arrive while turns are out replays with no
+     refusals or mismatches; pause stops new turns; `dispose` drops late answers.
+   - **W5 — the real worker**: the entry, Vite's `worker.format`, `&bots=thread`, the `ready`
+     timeout and both fallbacks. _Accept:_ `npm run build` emits a worker asset; the game plays in
+     the dev server, the built server and the desktop app; a worker killed in DevTools falls back
+     with a warning and the match plays on.
+   - **W6 — wiring**: `localMatchFor(…, worker)`, `&snapshot=` in-thread, `Session.dispose`,
+     `halted` for pause, one worker reused across rematches and tournament matches. _Accept:_ the
+     snapshot, rematch, tournament `playHere` and leave-mid-match paths work, and no worker is
+     left running (DevTools' threads).
+   - **W7 — measure and record**: before and after for the links above, in ARCHIVE; the two
+     CLAUDE.md gotchas ("A local match's bots think inside the frame", "Bots share a few plans a
+     tick") brought up to date. _Accept:_ "sim" worst at eight players down from 12–21 ms to the
+     target, no new stutters.
+
+   **Smaller rendering leads** the style pass's performance work found in shared code (ARCHIVE
+   13f): the main castles' crown is redrawn every frame by every style (`drawMainCastles`) —
+   Blueprint and Chocolate now key it, and a keyed version in `theme.ts` would save every style a
+   few hundred vertices; Pixi rebuilds a render group's whole draw list when any `Graphics` in it
+   changes shape, an empty one cleared every frame included (`overlayGfx` and the like) — skipping
+   `clear()` on an empty one, or giving busy stamp layers a render group of their own, would help
+   every style; and `Stamps.place` does not reset `skew`, so a stamp once fitted by a matrix keeps
+   it when reused.
 
 Only open work is kept here. Finished packages move to `ARCHIVE.md` under their old
 numbers — 11.1 scoring, 11.7 team mode, 11.8 the visual pass, 11.9 the themes, 11.10 the

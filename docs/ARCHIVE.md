@@ -6580,3 +6580,47 @@ triangles, is what costs — and its sprites together, the container whole after
 Pixel and Night are ready in well under a second, as every other style, and in a logged match
 of Night, Pixel and Minimal drawn by turns every look was ready before its banner. A round's
 making that a newer one overtakes now stops before drawing its build look.
+
+## 13f. Music at once, a Sharpness setting, and Chocolate's and Blueprint's frames (2026-10-09)
+
+**Music.** The users asked for the music to start as the page opens, where a browser starts no
+sound before a click. The audio context is now made at boot (`app.ts`): where the browser lets
+the site play sound unasked — a site permission, Chrome's own judgement of a much-used site — it
+runs at once; elsewhere it waits suspended and the first gesture resumes it, as before. A cue is
+dropped while the context is not running, since cues started in a suspended context all sounded
+together as it resumed; music may wait in it and starts as it does. The desktop app's game window
+(`play-here`) is given `autoplayPolicy: 'no-user-gesture-required'`, so there the music always
+starts at once. Checked in headless Chrome under both policies: running at load where allowed,
+suspended otherwise.
+
+**Sharpness** (`sharpness.ts`): Sharp or Fast beside the Effects in the menu and pause menu,
+the renderer's resolution the screen's density up to 2 or 1, resized at once mid-match
+(`onSharpness`). On a density-2 screen the board's canvas is 2400x1600 Sharp and 1200x800 Fast for
+a 1200x800 window: a quarter of the pixels to fill.
+
+**Chocolate** was the dearest style at eight players (render about 6 ms, 58–59 fps, 11 700
+vertices rebuilt a frame). Two causes: still things redrawn every frame — the fountains (6 500 of
+the effects layer's 8 200 vertices), the bite marks piling up over a round, the shots, the fall's
+streams, the crowns — and, the larger, Pixi rebuilding the whole stage's draw list every frame,
+because one of the 500 swirl stamps changed shape nearly every frame as each turned on its own
+beat (`_buildInstructions` 178 ms a second in a CPU profile). Now the fountains' still parts are a
+`Graphics` a castle redrawn only as a fountain starts or stops, jets and drips stamped; bites,
+crowns and the fall's streams behind keys; shots stamped in shot order; and the swirls in 16
+render groups whose turns step together a sixteenth apart, so about one group of 30 re-sorts a
+frame. Measured on a quiet machine: render 3.37 ms, 2 470 vertices a frame, 60 fps. Visible
+differences: sizes rounded to an eighth of a pixel, a melted swirl replaced up to a quarter second
+later, a group's swirls stepping together.
+
+**Blueprint** rebuilt about 11 600 vertices a frame: the eraser's smudges (7 300, two ellipses a
+shot-away block redrawn all round), the layer over the guns (4 200: crowns, every fading revision
+cloud, every shot head), and the ship's dashed course and the sealed keeps' fills. Now the smudges
+are one stamped shape placed again only as they change, the crowns keyed, each revision cloud a
+`Graphics` of its own drawn once and faded by its alpha, shot heads stamped, the keeps' fills keyed
+and the ship's course redrawn as it passes a dash. Measured on a quiet machine: render 1.90 ms,
+1 155 vertices a frame (from 2.6 ms). Visible differences: a shot's head now over every trail, a
+landing ring under older breaches' clouds.
+
+Both done by agents on their own files at once, each checked by eye in before and after
+screenshots, then measured again here. What they found in shared code is PLAN §11 item 3's
+smaller leads. **The bots' planning off the page's thread**, the larger lead, was planned in
+detail and is PLAN §11 item 3, to be built in a session of its own.

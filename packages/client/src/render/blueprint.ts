@@ -10,7 +10,8 @@ import { cornerSpot } from './corner.js';
 import { IslandParts } from './islandParts.js';
 import { TitleBlock, titleBlockRect } from './titleBlock.js';
 import { loops, rounded } from './inkline.js';
-import { Memos, viewKey } from './stamps.js';
+import { release } from './release.js';
+import { Memos, StampBook, Stamps, viewKey } from './stamps.js';
 import {
   FlagHoist,
   GhostMotion,
@@ -56,6 +57,8 @@ import { hueNearness } from './hue.js';
 
 /** A mark where a shot landed: rings for a moment, and on a wall a demolition cross. */
 interface Mark {
+  /** Its revision cloud, drawn once and faded by its alpha (`drawMarks`). */
+  cloud: Graphics | null;
   x: number;
   y: number;
   age: number;
@@ -124,7 +127,10 @@ export class BlueprintTheme implements Theme {
    * walls so a block drawn in again covers it; and pencil strokes over a piece just laid,
    * sketched and then inked over.
    */
-  private readonly smudgeGfx = new Graphics();
+  private readonly smudgeStamps = new Stamps();
+  private readonly smudgeBook = new StampBook();
+  /** What the smudges were last placed for: they change only as a block is shot away. */
+  private smudgeKey = '';
   private smudges: { x: number; y: number; round: number }[] = [];
   private pencils: { cells: readonly Cell[]; age: number }[] = [];
   private readonly ruins = new RuinSmoke();
@@ -136,10 +142,39 @@ export class BlueprintTheme implements Theme {
   /** Walls, houses and guns, an island to a `Graphics`, redrawn where they change. */
   private readonly structures = new IslandParts();
   private readonly effectGfx = new Graphics();
+  /**
+   * Sealed keeps' walls filled in, over `effectGfx`, redrawn only as a keep is sealed or
+   * breached; and the drafting compass over them, as it was drawn after them.
+   */
+  private readonly keepGfx = new Graphics();
+  private keepKey = '';
+  private readonly compassGfx = new Graphics();
   /** The guns' barrels, a `Graphics` a gun redrawn only as it turns or kicks (`Memos`). */
   private readonly gunMemo = new Memos();
-  /** What lies over the guns: shots, splashes, the finish. */
+  /** What lies over the guns: the pennants. */
   private readonly lateGfx = new Graphics();
+  /**
+   * The main castles' crowns, over the pennants, redrawn only when one changes: drawn every
+   * frame they were a few hundred vertices rebuilt for nothing.
+   */
+  private readonly crownGfx = new Graphics();
+  private crownKey = '';
+  /** Where the clouds were drawn for: a change of view draws them again. */
+  private cloudKey = '';
+  /** Shots in the air: their trails, the crosses below them, their targets. */
+  private readonly shotGfx = new Graphics();
+  /** The shots' heads over them, stamped (`drawShots`). */
+  private readonly heads = new Stamps();
+  private readonly headBook = new StampBook();
+  /** The rings of their landings. */
+  private readonly ringGfx = new Graphics();
+  /**
+   * The revision clouds round breaches, a `Graphics` each, drawn once and faded by its
+   * alpha: redrawn every frame they fade, about 2,000 vertices a frame at eight players.
+   */
+  private readonly cloudLayer = new Container();
+  /** Over the clouds: fragments, fades and the finish. */
+  private readonly topGfx = new Graphics();
   private readonly overlayGfx = new Graphics();
   /** Each castle's tag lettered over it ("KEEP B-2"), where the tiles are large enough. */
   private readonly tagLayer = new Container();
@@ -167,9 +202,26 @@ export class BlueprintTheme implements Theme {
     this.art = art;
     this.style = art.blueprint;
     layers.terrain.addChild(this.terrainGfx, this.titleBlock.container);
-    layers.territory.addChild(this.scenery.gfx, this.territory.container, this.smudgeGfx);
+    layers.territory.addChild(
+      this.scenery.gfx,
+      this.territory.container,
+      this.smudgeStamps.container,
+    );
     layers.structures.addChild(this.structures.container, this.tagLayer);
-    layers.effects.addChild(this.effectGfx, this.gunMemo.container, this.lateGfx);
+    layers.effects.addChild(
+      this.seaLife.course,
+      this.effectGfx,
+      this.keepGfx,
+      this.compassGfx,
+      this.gunMemo.container,
+      this.lateGfx,
+      this.crownGfx,
+      this.shotGfx,
+      this.heads.container,
+      this.ringGfx,
+      this.cloudLayer,
+      this.topGfx,
+    );
     layers.overlay.addChild(this.overlayGfx);
     return Promise.resolve();
   }
@@ -178,10 +230,21 @@ export class BlueprintTheme implements Theme {
     this.titleBlock.destroy();
     this.gunMemo.destroy();
     this.lateGfx.destroy();
+    this.crownGfx.destroy();
+    this.shotGfx.destroy();
+    this.heads.destroy();
+    this.headBook.destroy();
+    this.ringGfx.destroy();
+    this.topGfx.destroy();
+    release(this.cloudLayer);
     this.territory.destroy();
     this.structures.destroy();
-    this.smudgeGfx.destroy();
+    this.smudgeStamps.destroy();
+    this.smudgeBook.destroy();
+    this.keepGfx.destroy();
+    this.compassGfx.destroy();
     this.scenery.destroy();
+    this.seaLife.course.destroy();
     for (const g of [this.terrainGfx, this.effectGfx, this.overlayGfx]) {
       g.destroy();
     }
@@ -380,19 +443,37 @@ export class BlueprintTheme implements Theme {
 
   /** The eraser's smudges and the pencil's strokes; see `smudgeGfx`. */
   private drawDraftsmanship(state: MatchState, view: ViewTransform, deltaMs: number): void {
-    const t = view.tile;
-    const sm = this.smudgeGfx;
-    sm.clear();
     for (const s of this.smudges) if (s.round < 0) s.round = state.round;
     this.smudges = this.smudges.filter((s) => s.round === state.round);
-    for (const s of this.smudges) {
-      const cx = tileX(view, s.x + 0.5);
-      const cy = tileY(view, s.y + 0.5);
-      sm.ellipse(cx, cy, t * 0.55, t * 0.38);
-      sm.fill({ color: hex(this.art.palette.rockLight), alpha: 0.07 });
-      sm.ellipse(cx + t * 0.1, cy - t * 0.05, t * 0.4, t * 0.24);
-      sm.fill({ color: hex(this.art.palette.rockLight), alpha: 0.07 });
+    // Within a round smudges are only added, so their count says when they change; and each
+    // is one shape stamped. Redrawn every frame in one `Graphics`, they were the style's
+    // costliest drawing: 7,300 vertices a frame at eight players in round three, two
+    // ellipses for every block shot away, and all of them again at each new one.
+    const smudgeKey = `${viewKey(view)}|${state.round}|${this.smudges.length}`;
+    if (smudgeKey !== this.smudgeKey) {
+      this.smudgeKey = smudgeKey;
+      this.placeSmudges(view);
     }
+    this.drawPencils(view, deltaMs);
+  }
+
+  private placeSmudges(view: ViewTransform): void {
+    const t = view.tile;
+    const smudge = this.smudgeBook.get('smudge', t, (sm) => {
+      sm.ellipse(0, 0, t * 0.55, t * 0.38);
+      sm.fill({ color: hex(this.art.palette.rockLight), alpha: 0.07 });
+      sm.ellipse(t * 0.1, -t * 0.05, t * 0.4, t * 0.24);
+      sm.fill({ color: hex(this.art.palette.rockLight), alpha: 0.07 });
+    });
+    this.smudgeStamps.begin();
+    for (const s of this.smudges) {
+      this.smudgeStamps.place(smudge, tileX(view, s.x + 0.5), tileY(view, s.y + 0.5));
+    }
+    this.smudgeStamps.end();
+  }
+
+  private drawPencils(view: ViewTransform, deltaMs: number): void {
+    const t = view.tile;
     const g = this.effectGfx;
     const span = 700;
     for (const p of this.pencils) {
@@ -684,7 +765,7 @@ export class BlueprintTheme implements Theme {
       y >= 0 &&
       x < this.width &&
       this.terrain[y * this.width + x] !== Terrain.Land;
-    this.marks.push({ x, y, age: 0, onWall: debris.length > 0, inSea });
+    this.marks.push({ cloud: null, x, y, age: 0, onWall: debris.length > 0, inSea });
     for (const block of debris) this.smudges.push({ x: block.x, y: block.y, round: -1 });
     for (const block of debris) {
       for (let k = 0; k < 6; k++) {
@@ -720,7 +801,11 @@ export class BlueprintTheme implements Theme {
   drawEffects(state: MatchState, view: ViewTransform, frame: EffectFrame): void {
     const g = this.effectGfx;
     g.clear();
+    this.compassGfx.clear();
     this.lateGfx.clear();
+    this.shotGfx.clear();
+    this.ringGfx.clear();
+    this.topGfx.clear();
     this.seaLife.draw(g, view, this.art, frame.deltaMs);
     this.clock += frame.deltaMs;
     this.titleBlock.container.visible = this.corner !== null;
@@ -741,13 +826,22 @@ export class BlueprintTheme implements Theme {
     this.drawMarks(view, frame.deltaMs);
     this.drawFragments(view, frame.deltaMs);
     this.drawFades(view, frame.deltaMs);
-    this.winnerBanners.draw(this.lateGfx, view, state, this.art, frame.celebrate, frame.deltaMs);
-    this.fireworks.draw(this.lateGfx, view, this.art, frame.celebrate, frame.deltaMs);
+    this.winnerBanners.draw(this.topGfx, view, state, this.art, frame.celebrate, frame.deltaMs);
+    this.fireworks.draw(this.topGfx, view, this.art, frame.celebrate, frame.deltaMs);
   }
 
   /** A sealed keep's walls are filled in solid, as a plan fills what is built. */
   private drawKeeps(state: MatchState, view: ViewTransform, frame: EffectFrame): void {
-    const g = this.effectGfx;
+    let key = viewKey(view);
+    for (const castle of state.castles) {
+      if (frame.castleSealed[castle.id] ?? false) {
+        key += `|${castle.id},${castle.x},${castle.y},${castle.w},${castle.h},${castle.islandId}`;
+      }
+    }
+    if (key === this.keepKey) return;
+    this.keepKey = key;
+    const g = this.keepGfx;
+    g.clear();
     for (const castle of state.castles) {
       if (!(frame.castleSealed[castle.id] ?? false)) continue;
       for (const r of this.keepWalls(view, castle)) g.rect(r.x, r.y, r.w, r.h);
@@ -848,7 +942,7 @@ export class BlueprintTheme implements Theme {
    * swinging an arc once round the new enclosure, then lifted away.
    */
   private drawCompasses(state: MatchState, view: ViewTransform, frame: EffectFrame): void {
-    const g = this.effectGfx;
+    const g = this.compassGfx;
     const t = view.tile;
     const span = this.style.compassMs;
     frame.castleSealed.forEach((sealed, id) => {
@@ -886,15 +980,34 @@ export class BlueprintTheme implements Theme {
     }
   }
 
+  /** The main castles' crowns (`drawMainCastles`), drawn again only when one changes. */
+  private drawCrowns(state: MatchState, view: ViewTransform, frame: EffectFrame): void {
+    // Everything `drawMainCastles` reads: each player's main castle, where it stands, and
+    // whether it is sealed.
+    let key = viewKey(view);
+    for (const player of state.players) {
+      key += `|${player.id},${player.eliminated},${player.startingCastleId}`;
+      if (player.eliminated || player.startingCastleId === null) continue;
+      const castle = state.castles.find((c) => c.id === player.startingCastleId);
+      if (castle === undefined) continue;
+      key += `,${castle.x},${castle.y},${castle.w},${castle.h},${frame.castleSealed[castle.id] === true}`;
+    }
+    if (key === this.crownKey) return;
+    this.crownKey = key;
+    this.crownGfx.clear();
+    drawMainCastles(this.crownGfx, view, state, this.art, frame.castleSealed);
+  }
+
   /**
    * Shots as a projectile symbol — a ring with a cross — riding a dashed trajectory
    * from the gun, with a small cross on the ground below.
    */
   private drawShots(state: MatchState, view: ViewTransform, frame: EffectFrame): void {
-    const g = this.lateGfx;
+    const g = this.shotGfx;
     const t = view.tile;
     const now = state.tick + frame.tickFraction;
-    drawMainCastles(g, view, state, this.art, frame.castleSealed);
+    this.drawCrowns(state, view, frame);
+    this.heads.begin();
     const trailAlpha = 0.45 * Math.min(1, Math.sqrt(6 / Math.max(1, state.shots.length)));
     for (const shot of state.shots) {
       const p = shotProgress(shot, now);
@@ -922,15 +1035,23 @@ export class BlueprintTheme implements Theme {
       g.moveTo(gx - s, gy + s).lineTo(gx + s, gy - s);
       g.stroke({ width: 1, color: colour, alpha: 0.5 });
       const head = at(p);
-      const r = t * (0.2 + 0.08 * Math.min(1, shotLift(shot, p) / 3));
-      g.circle(head.x, head.y, r);
-      g.fill({ color: hex(this.art.palette.shadow) });
-      g.stroke({ width: 1.5, color: colour });
-      g.moveTo(head.x - r, head.y).lineTo(head.x + r, head.y);
-      g.moveTo(head.x, head.y - r).lineTo(head.x, head.y + r);
-      g.stroke({ width: 1, color: colour });
+      // The projectile stamped, by its colour and its radius to an eighth of a pixel: a
+      // ring is a hundred vertices, and redrawn for every shot in the air each frame the
+      // heads were most of what this style rebuilt (about 1,800 vertices at eight players).
+      const exact = t * (0.2 + 0.08 * Math.min(1, shotLift(shot, p) / 3));
+      const r = Math.round(exact * 8) / 8;
+      const projectile = this.headBook.get(`${colour}|${r}`, t, (h) => {
+        h.circle(0, 0, r);
+        h.fill({ color: hex(this.art.palette.shadow) });
+        h.stroke({ width: 1.5, color: colour });
+        h.moveTo(-r, 0).lineTo(r, 0);
+        h.moveTo(0, -r).lineTo(0, r);
+        h.stroke({ width: 1, color: colour });
+      });
+      this.heads.place(projectile, head.x, head.y);
       drawShotTarget(g, view, shot, p, this.art, frame.humanPlayer);
     }
+    this.heads.end();
   }
 
   /**
@@ -938,8 +1059,15 @@ export class BlueprintTheme implements Theme {
    * marking the block demolished, fading as the breach is left to smoulder.
    */
   private drawMarks(view: ViewTransform, deltaMs: number): void {
-    const g = this.lateGfx;
+    const g = this.ringGfx;
     const t = view.tile;
+    const key = viewKey(view);
+    if (key !== this.cloudKey) {
+      // The board moved: every cloud is drawn again where it now stands.
+      this.cloudKey = key;
+      for (const mark of this.marks) mark.cloud?.clear();
+      for (const mark of this.marks) if (mark.cloud !== null) this.drawCloud(mark, view);
+    }
     const linger = this.art.generators.fx.smoulderMs;
     for (const mark of this.marks) {
       mark.age += deltaMs;
@@ -957,59 +1085,81 @@ export class BlueprintTheme implements Theme {
       }
       if (!mark.onWall) continue;
       const life = 1 - mark.age / linger;
-      if (life <= 0) continue;
-      // A revision cloud round the block shot away, and its delta tag, as an architect
-      // marks a change to a drawing.
-      const red = hex(this.art.palette.uiInvalid);
-      const r = t * 0.62;
-      const bumps = 8;
-      const turn = (mark.x * 7 + mark.y * 3) % 8;
-      for (let k = 0; k <= bumps; k++) {
-        const a = ((k + turn / 8) / bumps) * Math.PI * 2;
-        const px = cx + Math.cos(a) * r;
-        const py = cy + Math.sin(a) * r;
-        if (k === 0) {
-          g.moveTo(px, py);
-          continue;
-        }
-        // Each scallop three points of its curve rather than a curve: the cloud is redrawn
-        // every frame it fades, at eight players for every breach on the board.
-        const prev = a - (Math.PI * 2) / bumps;
-        const m = a - Math.PI / bumps;
-        const qx = cx + Math.cos(m) * r * 1.38;
-        const qy = cy + Math.sin(m) * r * 1.38;
-        const ax = cx + Math.cos(prev) * r;
-        const ay = cy + Math.sin(prev) * r;
-        for (const u of [1 / 3, 2 / 3, 1]) {
-          const v = 1 - u;
-          g.lineTo(
-            v * v * ax + 2 * v * u * qx + u * u * px,
-            v * v * ay + 2 * v * u * qy + u * u * py,
-          );
-        }
+      if (life <= 0) {
+        if (mark.cloud !== null) mark.cloud.visible = false;
+        continue;
       }
-      g.stroke({ width: 1.5, color: red, alpha: life });
-      const tx = cx + r * 1.05;
-      const ty = cy - r * 1.05;
-      const side = t * 0.34;
-      g.poly([
-        tx,
-        ty - side * 0.6,
-        tx + side * 0.5,
-        ty + side * 0.3,
-        tx - side * 0.5,
-        ty + side * 0.3,
-      ]);
-      g.stroke({ width: 1, color: red, alpha: life });
-      g.moveTo(tx, ty - side * 0.2).lineTo(tx, ty + side * 0.15);
-      g.stroke({ width: 1, color: red, alpha: life });
+      if (mark.cloud === null) {
+        mark.cloud = new Graphics();
+        this.cloudLayer.addChild(mark.cloud);
+        this.drawCloud(mark, view);
+      }
+      // Faded by the cloud's alpha rather than its strokes': the same product per vertex.
+      mark.cloud.alpha = life;
     }
-    this.marks = this.marks.filter((m) => m.age < (m.onWall ? Math.max(linger, RING_MS) : RING_MS));
+    this.marks = this.marks.filter((m) => {
+      const keep = m.age < (m.onWall ? Math.max(linger, RING_MS) : RING_MS);
+      if (!keep && m.cloud !== null) m.cloud.destroy();
+      return keep;
+    });
+  }
+
+  /** A revision cloud round a block shot away, at full strength; see `drawMarks`. */
+  private drawCloud(mark: Mark, view: ViewTransform): void {
+    const g = mark.cloud as Graphics;
+    const t = view.tile;
+    const cx = tileX(view, mark.x + 0.5);
+    const cy = tileY(view, mark.y + 0.5);
+    // A revision cloud round the block shot away, and its delta tag, as an architect
+    // marks a change to a drawing.
+    const red = hex(this.art.palette.uiInvalid);
+    const r = t * 0.62;
+    const bumps = 8;
+    const turn = (mark.x * 7 + mark.y * 3) % 8;
+    for (let k = 0; k <= bumps; k++) {
+      const a = ((k + turn / 8) / bumps) * Math.PI * 2;
+      const px = cx + Math.cos(a) * r;
+      const py = cy + Math.sin(a) * r;
+      if (k === 0) {
+        g.moveTo(px, py);
+        continue;
+      }
+      // Each scallop three points of its curve rather than a curve: the cloud was redrawn
+      // every frame it faded, at eight players for every breach on the board.
+      const prev = a - (Math.PI * 2) / bumps;
+      const m = a - Math.PI / bumps;
+      const qx = cx + Math.cos(m) * r * 1.38;
+      const qy = cy + Math.sin(m) * r * 1.38;
+      const ax = cx + Math.cos(prev) * r;
+      const ay = cy + Math.sin(prev) * r;
+      for (const u of [1 / 3, 2 / 3, 1]) {
+        const v = 1 - u;
+        g.lineTo(
+          v * v * ax + 2 * v * u * qx + u * u * px,
+          v * v * ay + 2 * v * u * qy + u * u * py,
+        );
+      }
+    }
+    g.stroke({ width: 1.5, color: red });
+    const tx = cx + r * 1.05;
+    const ty = cy - r * 1.05;
+    const side = t * 0.34;
+    g.poly([
+      tx,
+      ty - side * 0.6,
+      tx + side * 0.5,
+      ty + side * 0.3,
+      tx - side * 0.5,
+      ty + side * 0.3,
+    ]);
+    g.stroke({ width: 1, color: red });
+    g.moveTo(tx, ty - side * 0.2).lineTo(tx, ty + side * 0.15);
+    g.stroke({ width: 1, color: red });
   }
 
   /** Pieces of line thrown up by a destroyed block, tumbling as they fall. */
   private drawFragments(view: ViewTransform, deltaMs: number): void {
-    const g = this.lateGfx;
+    const g = this.topGfx;
     const life = this.art.generators.fx.debrisMs;
     const dt = deltaMs / 1000;
     const half = view.tile * 0.12;
@@ -1030,7 +1180,7 @@ export class BlueprintTheme implements Theme {
 
   /** A block the sweep took, its outline breaking into dashes and fading. */
   private drawFades(view: ViewTransform, deltaMs: number): void {
-    const g = this.lateGfx;
+    const g = this.topGfx;
     const span = this.art.flat.crumbleMs;
     const t = view.tile;
     for (const fade of this.fades) {

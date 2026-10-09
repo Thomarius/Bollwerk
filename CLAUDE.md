@@ -156,6 +156,10 @@ Full detail in PLAN.md §1. The parts that surprise people:
 **Done** (2026-10-09; the latest release **v0.8.5**, 2026-10-09, protocol 20, which a test
 session needs the server rebuilt and every page reloaded for):
 
+- **Performance and sound** (ARCHIVE 13e, 13f): Random looks that came round again fixed
+  (Pixel's and Night's never finished warming); a Sharpness setting (Sharp or Fast, the render
+  resolution); Chocolate's and Blueprint's frames cut to the other styles'; the music starting as
+  the page opens where the browser allows, always in the desktop app's window.
 - **The style pass** (ARCHIVE 12zt–12zz, 13a, 13b): every style but Minimal reviewed in the same
   screenshots and finished in nine packages — readability first (S1), then Parchment, Blueprint,
   Pixel and Night, Toy bricks, Stained glass and Cyberpunk made things of their setting (castles,
@@ -233,8 +237,9 @@ session needs the server rebuilt and every page reloaded for):
   piece and German checked in play by the user (ARCHIVE 12n–12t).
 
 **Next** — PLAN §11: the tournament's play-testing (T8), more test games towards a first
-feature-ready version, two rendering leads the style pass left (item 3: Chocolate's cost,
-Blueprint's vertices), and bots that miss as people do (combat accuracy, measured against the
+feature-ready version, **the bots' planning moved to a Web Worker in local matches** (item 3,
+planned in detail in seven work packages, to be built in a session of its own), and bots that
+miss as people do (combat accuracy, measured against the
 testers' recordings; how is not yet decided). **The bot learning work is paused**; when it
 resumes, `docs/BOT_LEARNING.md` §6 says where — first, learning the choice of wall rather
 than only the cell. French is not to be done. Signing the Windows app was explained (PLAN
@@ -395,6 +400,13 @@ its header but the simulation does not — so the server stamps each header with
 - **`motionReduced()` is called per particle and per point**: it once read storage and built
   a media query at every call, 48 ms a frame in Opera. It is cached in `motion.ts`; anything
   else read that often must be too.
+- **A new look's first render is warmed a piece at a time** (`Scene.warmChains`): a container's
+  drawings one by one, its sprites together. One chain a sprite made Pixel's and Night's six
+  thousand tiles six thousand chains, a minute and a half of warming, and their random looks never
+  arrived in time (ARCHIVE 13e).
+- **Pixi rebuilds a render group's whole draw list when any `Graphics` in it changes shape**:
+  500 stamps each changing shape on their own beat cost Chocolate 3 ms a frame until they were
+  put in render groups of their own (ARCHIVE 13f).
 - **A local match's bots think inside the frame**: one bot planning its walls takes 15 to
   50 ms. `LocalMatch` spreads a tick's turns over frames (8 ms a frame) without changing an
   action or its tick.

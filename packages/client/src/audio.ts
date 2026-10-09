@@ -12,9 +12,10 @@ import { store, stored } from './storage.js';
  * reads the match; it never touches it.
  *
  * **A browser will not start an `AudioContext` without a user gesture.** The context is
- * therefore created lazily on the first click or keypress, and every call before that
- * is silently dropped rather than queued: a burst of cues arriving all at once the
- * moment sound switches on is worse than having missed them.
+ * made as the page opens and runs at once where the browser allows it; elsewhere it waits,
+ * suspended, for the first click or keypress. Every cue before it runs is silently
+ * dropped rather than queued: a burst of cues arriving all at once the moment sound
+ * switches on is worse than having missed them.
  *
  * **Missing files are silent**, which is what lets the game ship and play before a
  * single sound exists. Note that "missing" cannot be decided from the HTTP status: the
@@ -107,11 +108,11 @@ export class Audio {
   }
 
   /**
-   * Starts the audio context, if a user gesture is in progress.
+   * Starts the audio context: running at once where the browser allows sound unasked, or
+   * where a user gesture is in progress; otherwise made and left suspended for the next.
    *
    * Safe to call on every click: it does its work once, and resuming an already
-   * running context is free. Loading begins here rather than at boot because there is
-   * no point fetching sound for a player who never interacts.
+   * running context is free. The sound is fetched from the first call, at boot.
    */
   unlock(): void {
     if (this.ctx === null) {
@@ -150,7 +151,11 @@ export class Audio {
 
   play(cue: SfxCue, gain = 1): void {
     const entry = this.manifest.sfx[cue];
-    if (!entry || this.ctx === null || this.master === null) return;
+    // Not while the context waits for a gesture: cues started in a suspended context all
+    // sounded at once as it resumed. Music may wait in it — it starts as the context does.
+    if (!entry || this.ctx === null || this.master === null || this.ctx.state !== 'running') {
+      return;
+    }
 
     const now = this.ctx.currentTime * 1000;
     if (now - (this.lastStarted.get(cue) ?? -Infinity) < MIN_REPEAT_MS) return;

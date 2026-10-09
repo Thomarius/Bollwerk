@@ -6,6 +6,7 @@ import type { CameraShot } from '../camera.js';
 import type { DrainWash, SealGlow } from '../seal.js';
 import type { Look } from '../transition.js';
 import { withDrawBudget } from './islandParts.js';
+import { renderResolution } from '../sharpness.js';
 
 import { BlueprintTheme } from './blueprint.js';
 import { BricksTheme } from './bricks.js';
@@ -246,7 +247,8 @@ export class Scene {
       // Under the looks' own backdrops, and only ever seen before the first is drawn.
       background: hex(looks.build.art.palette.waterMid),
       antialias: false,
-      resolution: Math.min(2, globalThis.devicePixelRatio || 1),
+      // The screen's density, or 1 when the player chose Fast (`sharpness.ts`).
+      resolution: renderResolution(),
       autoDensity: true,
       width: globalThis.innerWidth,
       height: globalThis.innerHeight,
@@ -557,7 +559,8 @@ export class Scene {
    * whenever the window was the height that limited the tile size.
    */
   resize(state: MatchState, width: number, height: number, topInset = 0): void {
-    this.app.renderer.resize(width, height);
+    // At the sharpness as it stands, which the pause menu may have changed since.
+    this.app.renderer.resize(width, height, renderResolution());
     const usable = Math.max(1, height - topInset);
     const tile = Math.max(1, Math.floor(Math.min(width / state.width, usable / state.height)));
     this.view = {

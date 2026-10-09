@@ -14,6 +14,7 @@ import { matchPalette, playerCssColour, useMatchPalette } from './colours.js';
 import { matchShapes, playerShape, useMatchShapes } from './shapes.js';
 import { NetworkBadge } from './network.js';
 import { WatchingStrip } from './watching.js';
+import { onSharpness } from './sharpness.js';
 import { LookRotation, openLookGallery } from './looks.js';
 import { t } from './i18n.js';
 import { Hud } from './hud.js';
@@ -263,6 +264,8 @@ export async function runSession(
   };
   fit();
   globalThis.addEventListener('resize', fit);
+  // A sharpness chosen in the pause menu is the window resized at the new resolution.
+  const stopSharpness = onSharpness(fit);
 
   // No hidden keys: the end screen has a button back to the menu, and sound its switch in
   // the corner. R once did the first and M the second, unannounced, at the user's request
@@ -343,6 +346,7 @@ export async function runSession(
     watching.destroy();
     hud.useSkin(null);
     globalThis.removeEventListener('resize', fit);
+    stopSharpness();
     scene.destroy();
   };
 

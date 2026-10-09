@@ -1,6 +1,6 @@
 import type { ArtConfig, ChocolateStyleConfig } from '@bollwerk/config';
 import { Structure, type Cannon, type Castle, type MatchState, type Shot } from '@bollwerk/sim';
-import { Graphics } from 'pixi.js';
+import { Container, Graphics, Matrix, type GraphicsContext } from 'pixi.js';
 
 import { motionReduced } from '../motion.js';
 import { perf } from '../perf.js';
@@ -61,7 +61,23 @@ interface Swirl {
   life: number;
   size: number;
   turn: number;
+  /** Its group of stamps (`SWIRL_GROUPS`), whose turns step together. */
+  group: number;
+  /** Its turn in whole steps of a sixty-fourth, past its group's share of one. */
+  quarter: number;
+  /** The stamp it showed last frame, kept until its group next steps. */
+  shown?: GraphicsContext;
 }
+
+/**
+ * The swirls are dealt into this many groups, each a render group of its own. A stamp given
+ * another shape makes Pixi gather its whole render group again, and with five hundred swirls
+ * each stepping its turn on its own beat that was every frame, three times what the rest of
+ * the board costs to gather. A group's swirls step together, the groups a sixteenth of a
+ * step apart, so a frame gathers one group of some thirty; a swirl melted away is replaced
+ * as its group next steps, within a quarter of a second.
+ */
+const SWIRL_GROUPS = 16;
 
 /** Something thrown up — a crumb, a drop of chocolate, a sprinkle — in tile coordinates. */
 interface Bit {
@@ -209,7 +225,10 @@ export class ChocolateTheme extends ShapeTheme implements Theme {
   private readonly seaLife = new ChocolateSeaLife();
 
   private readonly terrainGfx = new Graphics();
-  /** The river's moving surface and the splats, under everything else: redrawn each frame. */
+  /** The fall's streams, still: drawn again only when the board moves (`drawFallStill`). */
+  private readonly fallGfx = new Graphics();
+  private fallDrawn = '';
+  /** What moves on the fall — gloss, ripples, the splash — over the streams, each frame. */
   private readonly flowGfx = new Graphics();
   /** Sealed ground, an island to a `Graphics`, redrawn where it changes. */
   private readonly territory = new IslandParts(1, 'territory');
@@ -222,6 +241,11 @@ export class ChocolateTheme extends ShapeTheme implements Theme {
   /** Walls, houses and guns, an island to a `Graphics`, redrawn where they change. */
   private readonly structures = new IslandParts();
   private readonly effectGfx = new Graphics();
+  /** The bite marks, between what lies under them and over them: redrawn as they change. */
+  private readonly biteGfx = new Graphics();
+  private bitesDrawn = '';
+  /** The effects over the bite marks: melting blocks, ruins' smoke, the castles to choose. */
+  private readonly effectTopGfx = new Graphics();
   /** Splats on open ground: drawn again when one lands or a round fades them. */
   private readonly splatGfx = new Graphics();
   private splatsDrawn = '';
@@ -232,11 +256,39 @@ export class ChocolateTheme extends ShapeTheme implements Theme {
    * in sixteen seconds, a step every quarter second. Stroked anew each frame they were
    * 35 000 vertices at eight players.
    */
-  private readonly swirlStamps = new Stamps();
+  private readonly swirlGroups = Array.from({ length: SWIRL_GROUPS }, () => {
+    const stamps = new Stamps();
+    stamps.container.enableRenderGroup();
+    return stamps;
+  });
+  private readonly swirlLayer = new Container();
+  /** Each swirl group's turn, in steps, as last drawn: a change is the group's beat. */
+  private readonly swirlBeats: number[] = [];
   private readonly book = new StampBook();
+  /**
+   * The swirls' stamps by size and step, as the book holds them, kept in an array for the
+   * tile they were drawn at: looked up by name, five hundred keys a frame were built and
+   * hashed for nothing.
+   */
+  private swirlContexts: (GraphicsContext | undefined)[] = [];
+  private swirlTile = 0;
+  /** The main castles' crowns: the shared mark, drawn again only as one changes. */
+  private readonly crownGfx = new Graphics();
+  private crownKey = '';
+  /**
+   * The fountains' still parts, a `Graphics` a castle redrawn only as it starts or stops
+   * (`Memos`), and their moving jets and drips as stamps over them. Drawn anew each frame
+   * they were some 8 000 vertices at eight players, most of what this style rebuilt.
+   */
+  private readonly fountainMemo = new Memos();
+  private readonly fountainStamps = new Stamps();
   /** The guns' barrels, a `Graphics` a gun redrawn only as it turns or kicks (`Memos`). */
   private readonly gunMemo = new Memos();
-  /** What lies over the guns: shots, splashes, the finish. */
+  /** The shots in flight, over the guns (`drawShots`). */
+  private readonly shotStamps = new Stamps();
+  /** A shot's twisted end, from the unit triangle to its corners: one matrix, reused. */
+  private readonly corners = new Matrix();
+  /** What lies over the shots: where one's own will land, splashes, the finish. */
   private readonly lateGfx = new Graphics();
   private readonly overlayGfx = new Graphics();
 
@@ -266,6 +318,7 @@ export class ChocolateTheme extends ShapeTheme implements Theme {
 
   constructor(private readonly seed = 1) {
     super();
+    for (const group of this.swirlGroups) this.swirlLayer.addChild(group.container);
   }
 
   init(layers: ThemeLayers, art: ArtConfig): Promise<void> {
@@ -275,12 +328,23 @@ export class ChocolateTheme extends ShapeTheme implements Theme {
     layers.terrain.addChild(
       this.terrainGfx,
       this.splatGfx,
-      this.swirlStamps.container,
+      this.swirlLayer,
+      this.fallGfx,
       this.flowGfx,
     );
     layers.territory.addChild(this.scenery.gfx, this.territory.container);
     layers.structures.addChild(this.structures.container);
-    layers.effects.addChild(this.effectGfx, this.gunMemo.container, this.lateGfx);
+    layers.effects.addChild(
+      this.effectGfx,
+      this.biteGfx,
+      this.effectTopGfx,
+      this.crownGfx,
+      this.fountainMemo.container,
+      this.fountainStamps.container,
+      this.gunMemo.container,
+      this.shotStamps.container,
+      this.lateGfx,
+    );
     layers.overlay.addChild(this.overlayGfx);
     return Promise.resolve();
   }
@@ -288,13 +352,26 @@ export class ChocolateTheme extends ShapeTheme implements Theme {
   destroy(): void {
     this.territory.destroy();
     this.splatGfx.destroy();
-    this.swirlStamps.destroy();
+    for (const group of this.swirlGroups) group.destroy();
+    this.swirlLayer.destroy();
     this.book.destroy();
     this.gunMemo.destroy();
+    this.fountainMemo.destroy();
+    this.fountainStamps.destroy();
+    this.shotStamps.destroy();
     this.lateGfx.destroy();
     this.structures.destroy();
     this.scenery.destroy();
-    for (const g of [this.terrainGfx, this.flowGfx, this.effectGfx, this.overlayGfx]) {
+    for (const g of [
+      this.terrainGfx,
+      this.fallGfx,
+      this.flowGfx,
+      this.crownGfx,
+      this.effectGfx,
+      this.biteGfx,
+      this.effectTopGfx,
+      this.overlayGfx,
+    ]) {
       g.destroy();
     }
   }
@@ -515,45 +592,73 @@ export class ChocolateTheme extends ShapeTheme implements Theme {
     // Swirls, carried east on the current, melting in and out.
     const target = Math.min(500, Math.floor(this.seaCells.length / this.style.swirlTiles));
     while (this.swirls.length < target && this.seaCells.length > 0) {
-      this.swirls.push(this.newSwirl(still ? 0.5 : Math.random()));
+      const group = Math.floor(Math.random() * SWIRL_GROUPS);
+      this.swirls.push(this.newSwirl(still ? 0.5 : Math.random(), group));
     }
     const dt = still ? 0 : deltaMs / 1000;
-    const stamps = this.swirlStamps;
-    stamps.begin();
+    // The book draws its stamps afresh for a new tile size, and so must this, at once: the
+    // old ones are destroyed.
+    let fresh = false;
+    if (t !== this.swirlTile) {
+      this.swirlTile = t;
+      this.swirlContexts = [];
+      fresh = true;
+    }
+    // Which groups step this frame: their swirls may take another stamp.
+    const beat = this.clock / 2600 / (TAU / 64);
+    const steps: number[] = [];
+    const stepping: boolean[] = [];
+    for (let k = 0; k < SWIRL_GROUPS; k++) {
+      const step = Math.round(k / SWIRL_GROUPS + beat);
+      steps.push(step);
+      stepping.push(fresh || this.swirlBeats[k] !== step);
+      this.swirlBeats[k] = step;
+      this.swirlGroups[k]!.begin();
+    }
+    const fall = this.fall;
     for (let i = 0; i < this.swirls.length; i++) {
-      const s = this.swirls[i]!;
+      let s = this.swirls[i]!;
       s.age += still ? 0 : deltaMs;
       s.x += this.style.currentTilesPerSecond * dt;
       s.y += Math.sin(this.clock / 1400 + s.turn * 3) * 0.08 * dt;
+      const stamps = this.swirlGroups[s.group]!;
       if (s.age >= s.life || this.land(Math.floor(s.x), Math.floor(s.y))) {
-        this.swirls[i] = this.newSwirl(0);
-        continue;
+        if (!stepping[s.group] && s.shown !== undefined) {
+          // Gone, its place in the group kept, unseen, until the group steps.
+          stamps.place(s.shown, tileX(view, s.x), tileY(view, s.y), { alpha: 0 });
+          continue;
+        }
+        s = this.newSwirl(0, s.group);
+        this.swirls[i] = s;
       }
-      // None across the fall's pool and cliff, where the current does not run.
-      const fall = this.fall;
-      if (
-        fall !== null &&
-        Math.abs(s.x - fall.x) < fall.size / 2 &&
-        Math.abs(s.y - fall.y) < fall.size / 2
-      ) {
-        continue;
-      }
-      const alpha = Math.sin((Math.PI * s.age) / s.life);
-      const level = Math.max(0, Math.min(2, Math.floor(alpha * 3)));
       // Drawn a twentieth of a tile apart in size and scaled the rest of the way.
       const size = Math.round(s.size * 20) / 20;
-      const step =
-        Math.round(((((s.turn + this.clock / 2600) % TAU) + TAU) % TAU) / (TAU / 64)) % 64;
-      const swirl = this.book.get(`swirl|${size}|${step}`, t, (k) =>
-        this.drawSwirl(k, t * size, (step / 64) * TAU, t),
-      );
+      const step = (((s.quarter + steps[s.group]!) % 64) + 64) % 64;
+      const index = Math.round(s.size * 20) * 64 + step;
+      let swirl = this.swirlContexts[index];
+      if (swirl === undefined) {
+        swirl = this.book.get(`swirl|${size}|${step}`, t, (k) =>
+          this.drawSwirl(k, t * size, (step / 64) * TAU, t),
+        );
+        this.swirlContexts[index] = swirl;
+      }
+      s.shown = swirl;
+      // None across the fall's pool and cliff, where the current does not run: there it is
+      // placed unseen, so the stamps after it in its group keep theirs.
+      const hidden =
+        fall !== null &&
+        Math.abs(s.x - fall.x) < fall.size / 2 &&
+        Math.abs(s.y - fall.y) < fall.size / 2;
+      const alpha = Math.sin((Math.PI * s.age) / s.life);
+      const level = Math.max(0, Math.min(2, Math.floor(alpha * 3)));
       stamps.place(swirl, tileX(view, s.x), tileY(view, s.y), {
         scale: s.size / size,
-        alpha: 0.14 + 0.13 * level,
+        alpha: hidden ? 0 : 0.14 + 0.13 * level,
       });
     }
-    stamps.end();
+    for (const group of this.swirlGroups) group.end();
 
+    this.drawFallStill(view);
     if (this.fall !== null) this.drawFall(view, this.fall);
   }
 
@@ -601,40 +706,50 @@ export class ChocolateTheme extends ShapeTheme implements Theme {
     }
   }
 
-  private newSwirl(age: number): Swirl {
+  /** A new swirl in `group`, its turn one of the group's sixty-four. */
+  private newSwirl(age: number, group: number): Swirl {
     const at = this.seaCells[Math.floor(Math.random() * this.seaCells.length)]!;
     const life = this.style.swirlMs * (0.7 + Math.random() * 0.6);
+    const quarter = Math.floor(Math.random() * 64);
     return {
       x: at.x + Math.random(),
       y: at.y + Math.random(),
       age: age * life,
       life,
       size: 0.3 + Math.random() * 0.35,
-      turn: Math.random() * Math.PI * 2,
+      turn: (quarter + group / SWIRL_GROUPS) * (TAU / 64),
+      group,
+      quarter,
     };
+  }
+
+  /** The fall's three streams: where each stands and how wide it is. */
+  private streams(f: { cx: number; sheet: number }): { x: number; w: number }[] {
+    return [-0.68, 0, 0.68].map((across, k) => ({
+      x: f.cx + across * f.sheet,
+      w: f.sheet * (k === 1 ? 0.3 : 0.24),
+    }));
   }
 
   /**
    * The chocolate pouring over the lip in three streams, each a glossy rope lit down its
-   * left side, gloss running down it, and a splash where it lands: a crown of drops thrown
-   * up and ripples spreading on the pool. Redrawn each frame with the river's surface; a
-   * few hundred vertices.
+   * left side: still, so drawn once for the board and under what moves on it (`drawFall`).
    */
-  private drawFall(view: ViewTransform, fall: TimerSpot): void {
-    const g = this.flowGfx;
+  private drawFallStill(view: ViewTransform): void {
+    const fall = this.fall;
+    const key = fall === null ? '' : `${viewKey(view)}|${fall.x},${fall.y},${fall.size}`;
+    if (key === this.fallDrawn) return;
+    this.fallDrawn = key;
+    const g = this.fallGfx;
+    g.clear();
+    if (fall === null) return;
     const { palette } = this.art;
     const t = view.tile;
     const f = this.fallShape(view, fall);
-    const still = motionReduced();
     const body = hex(palette.waterShallow);
     const shade = hex(palette.waterMid);
     const gloss = hex(palette.waterFoam);
-    const phase = (period: number, k: number): number =>
-      still ? 0.5 : (((this.clock / period + hash(k, 42)) % 1) + 1) % 1;
-    const streams = [-0.68, 0, 0.68].map((across, k) => ({
-      x: f.cx + across * f.sheet,
-      w: f.sheet * (k === 1 ? 0.3 : 0.24),
-    }));
+    const streams = this.streams(f);
     // The river on the ledge, gathering to the streams, and each stream curling over the lip.
     for (const s of streams) {
       g.roundRect(s.x - s.w * 1.15, f.lip - t * 0.42, s.w * 2.3, t * 0.48, s.w);
@@ -673,6 +788,21 @@ export class ChocolateTheme extends ShapeTheme implements Theme {
       g.lineTo(s.x - s.w * 0.75, f.poolY - t * 0.1);
     }
     g.stroke({ width: Math.max(1, t * 0.08), color: gloss, alpha: 0.75, cap: 'round' });
+  }
+
+  /**
+   * What moves on the fall, each frame over its streams: gloss running down them, and a
+   * splash where each lands, a crown of drops thrown up and ripples spreading on the pool.
+   */
+  private drawFall(view: ViewTransform, fall: TimerSpot): void {
+    const g = this.flowGfx;
+    const t = view.tile;
+    const f = this.fallShape(view, fall);
+    const still = motionReduced();
+    const gloss = hex(this.art.palette.waterFoam);
+    const phase = (period: number, k: number): number =>
+      still ? 0.5 : (((this.clock / period + hash(k, 42)) % 1) + 1) % 1;
+    const streams = this.streams(f);
     // Gloss running down: short glints, each stream on its own beat.
     streams.forEach((s, k) => {
       for (let j = 0; j < 2; j++) {
@@ -1142,6 +1272,7 @@ export class ChocolateTheme extends ShapeTheme implements Theme {
     perf.end('flow');
     const g = this.effectGfx;
     g.clear();
+    this.effectTopGfx.clear();
     this.lateGfx.clear();
     this.seaLife.draw(g, view, this.art, frame.deltaMs);
     drawDrain(g, view, frame.drain, this.art);
@@ -1150,9 +1281,10 @@ export class ChocolateTheme extends ShapeTheme implements Theme {
     this.scenery.drawPuffs(g, view, frame.deltaMs);
     this.drawShine(view);
     this.drawBites(state, view);
+    const top = this.effectTopGfx;
     this.drawMelts(view, frame.deltaMs);
-    this.ruins.draw(g, view, state, hex(this.art.palette.rockLight), null, frame.deltaMs);
-    drawChoices(g, view, frame.choices, this.art);
+    this.ruins.draw(top, view, state, hex(this.art.palette.rockLight), null, frame.deltaMs);
+    drawChoices(top, view, frame.choices, this.art);
     this.drawFountains(state, view, frame);
     this.drawBarrels(state, view, frame.deltaMs);
     this.drawShots(state, view, frame);
@@ -1237,19 +1369,33 @@ export class ChocolateTheme extends ShapeTheme implements Theme {
     }
   }
 
-  /** Bite marks on the blocks either side of a breach, for the rest of the round. */
+  /**
+   * Bite marks on the blocks either side of a breach, for the rest of the round. Hundreds
+   * of arcs by the end of a round at eight players, some 4 000 vertices, so drawn again only
+   * when a bite comes or goes or a block beside one does: the key names every tile read.
+   */
   private drawBites(state: MatchState, view: ViewTransform): void {
-    this.bites = this.bites.filter((b) => b.round === state.round);
-    if (this.bites.length === 0) return;
-    const g = this.effectGfx;
-    const t = view.tile;
-    const r = t * 0.17;
+    if (this.bites.some((b) => b.round !== state.round)) {
+      this.bites = this.bites.filter((b) => b.round === state.round);
+    }
     const wall = (x: number, y: number): boolean =>
       x >= 0 &&
       y >= 0 &&
       x < state.width &&
       y < state.height &&
       state.structure[y * state.width + x] === Structure.Wall;
+    let key = viewKey(view);
+    for (const b of this.bites) {
+      key += `|${b.x},${b.y}:${+wall(b.x, b.y)}${+wall(b.x + 1, b.y)}${+wall(b.x - 1, b.y)}`;
+      key += `${+wall(b.x, b.y + 1)}${+wall(b.x, b.y - 1)}`;
+    }
+    if (key === this.bitesDrawn) return;
+    this.bitesDrawn = key;
+    const g = this.biteGfx;
+    g.clear();
+    if (this.bites.length === 0) return;
+    const t = view.tile;
+    const r = t * 0.17;
     for (const b of this.bites) {
       if (wall(b.x, b.y)) continue;
       const left = tileX(view, b.x);
@@ -1278,7 +1424,7 @@ export class ChocolateTheme extends ShapeTheme implements Theme {
 
   /** The sweep's blocks: sagging into a puddle of their coating that sinks away. */
   private drawMelts(view: ViewTransform, deltaMs: number): void {
-    const g = this.effectGfx;
+    const g = this.effectTopGfx;
     const t = view.tile;
     for (const m of this.melts) {
       m.age += deltaMs;
@@ -1302,50 +1448,51 @@ export class ChocolateTheme extends ShapeTheme implements Theme {
    * running down over the tiers, beads of it sliding down each stream. Started by sealing
    * and stopped by a breach, as a flag is hoisted and lowered, so "sealed" is the chocolate
    * moving.
+   *
+   * What stands still — the basin's chocolate, the pools and the gloss — is a castle's
+   * `Memos` entry, redrawn only while the fountain starts or stops; the jet and the drips are
+   * stamps, a drip drawn once for each eighth of a pixel of its length. Nothing of a
+   * fountain's touches another's or its own gloss, so the order of the parts is free.
    */
   private drawFountains(state: MatchState, view: ViewTransform, frame: EffectFrame): void {
-    const g = this.effectGfx;
     const t = view.tile;
-    const { palette } = this.art;
-    const flow = hex(palette.waterShallow);
+    const flow = hex(this.art.palette.waterShallow);
     const still = motionReduced();
-    drawMainCastles(g, view, state, this.art, frame.castleSealed);
+    this.drawCrowns(state, view, frame.castleSealed);
     this.fountains.update(frame.castleSealed, this.clock, this.art);
+    const memo = this.fountainMemo;
+    const stamps = this.fountainStamps;
+    const where = viewKey(view);
+    memo.begin();
+    stamps.begin();
     for (const castle of state.castles) {
       const running = this.fountains.raised(castle.id, this.clock, this.art);
       if (running === null) continue;
       const c = this.cake(view, castle);
-      g.ellipse(c.cx, c.bowlY - c.bowlR * 0.05, c.bowlR * 0.75 * running, c.bowlR * 0.3 * running);
-      g.fill({ color: flow });
+      const key = `${where}|${castle.x},${castle.y},${castle.w},${castle.h}|${running}`;
+      memo.draw(castle.id, key, (g) => this.drawFountainStill(g, view, c, running));
       // The jet, bobbing, from the stem's top into the basin.
       const jetTop = c.bowlY - c.bowlR * (1.6 + 0.8 * running);
       const bob = still ? 0 : Math.sin(this.clock / 180 + castle.id) * t * 0.05;
-      g.circle(c.cx, jetTop + bob, t * 0.11 * running);
-      g.fill({ color: flow });
-      // The chocolate overflowing: a pool round the basin's stem on the upper tier, a thin
-      // collar where it pools at that tier's foot, and a few thin drips that swell and
-      // shrink between them. A glaze over each whole tier hid the owner's icing, so a sealed
-      // cake read as plain brown, less owned than a breached one (the style review).
+      const r = Math.round(t * 0.11 * running * 8) / 8;
+      const jet = this.book.get(`jet|${r}`, t, (g) => {
+        g.circle(0, 0, r);
+        g.fill({ color: flow });
+      });
+      stamps.place(jet, c.cx, jetTop + bob);
+      // A few thin drips between the pools, swelling and shrinking.
       const swell = (k: number): number =>
         still ? 0.8 : 0.65 + 0.35 * Math.sin(this.clock / 700 + k * 1.9 + castle.id);
       const upperFoot = c.top1 + (c.lip1 - c.top1) * 0.5;
-      g.ellipse(
-        c.cx,
-        c.top2 + (c.lip2 - c.top2) * 0.6,
-        c.half2 * 0.45 * running,
-        (c.lip2 - c.top2) * 0.28 * running,
-      );
-      g.roundRect(
-        c.cx - c.half2 * 1.05 * running,
-        upperFoot - t * 0.05,
-        c.half2 * 2.1 * running,
-        t * 0.12 * running,
-        t * 0.06,
-      );
       const drop = (x: number, from: number, length: number): void => {
-        const w = t * 0.11;
-        g.roundRect(x - w / 2, from - t * 0.04, w, length, w / 2);
-        g.circle(x, from + length - w * 0.3, w * 0.6);
+        const long = Math.round(length * 8) / 8;
+        const drip = this.book.get(`drip|${long}`, t, (g) => {
+          const w = t * 0.11;
+          g.roundRect(-w / 2, -t * 0.04, w, long, w / 2);
+          g.circle(0, long - w * 0.3, w * 0.6);
+          g.fill({ color: flow });
+        });
+        stamps.place(drip, x, from);
       };
       [-0.5, 0.5].forEach((s2, k) =>
         drop(c.cx + c.half2 * s2, c.lip2, (upperFoot - c.lip2) * swell(k) * running),
@@ -1353,16 +1500,60 @@ export class ChocolateTheme extends ShapeTheme implements Theme {
       [-0.6, 0.6].forEach((s2, k) =>
         drop(c.cx + c.half1 * s2, c.lip1, (c.foot1 - c.lip1) * 0.7 * swell(k + 3) * running),
       );
-      g.fill({ color: flow });
-      // The gloss on it.
-      g.ellipse(
-        c.cx - c.half2 * 0.15,
-        c.top2 + (c.lip2 - c.top2) * 0.5,
-        c.half2 * 0.18 * running,
-        t * 0.04 * running,
-      );
-      g.fill({ color: hex(palette.waterFoam), alpha: 0.7 });
     }
+    memo.end();
+    stamps.end();
+  }
+
+  /**
+   * A fountain's still parts: the chocolate in the basin, a pool round the basin's stem on
+   * the upper tier, a thin collar where it pools at that tier's foot, and the gloss. A glaze
+   * over each whole tier hid the owner's icing, so a sealed cake read as plain brown, less
+   * owned than a breached one (the style review).
+   */
+  private drawFountainStill(g: Graphics, view: ViewTransform, c: Cake, running: number): void {
+    const t = view.tile;
+    const { palette } = this.art;
+    const flow = hex(palette.waterShallow);
+    g.ellipse(c.cx, c.bowlY - c.bowlR * 0.05, c.bowlR * 0.75 * running, c.bowlR * 0.3 * running);
+    g.fill({ color: flow });
+    const upperFoot = c.top1 + (c.lip1 - c.top1) * 0.5;
+    g.ellipse(
+      c.cx,
+      c.top2 + (c.lip2 - c.top2) * 0.6,
+      c.half2 * 0.45 * running,
+      (c.lip2 - c.top2) * 0.28 * running,
+    );
+    g.roundRect(
+      c.cx - c.half2 * 1.05 * running,
+      upperFoot - t * 0.05,
+      c.half2 * 2.1 * running,
+      t * 0.12 * running,
+      t * 0.06,
+    );
+    g.fill({ color: flow });
+    g.ellipse(
+      c.cx - c.half2 * 0.15,
+      c.top2 + (c.lip2 - c.top2) * 0.5,
+      c.half2 * 0.18 * running,
+      t * 0.04 * running,
+    );
+    g.fill({ color: hex(palette.waterFoam), alpha: 0.7 });
+  }
+
+  /** The main castles' crowns (`drawMainCastles`), drawn again only when one changes. */
+  private drawCrowns(state: MatchState, view: ViewTransform, sealed: readonly boolean[]): void {
+    let key = viewKey(view);
+    for (const player of state.players) {
+      if (player.eliminated || player.startingCastleId === null) continue;
+      const castle = state.castles.find((c) => c.id === player.startingCastleId);
+      if (castle === undefined) continue;
+      key += `|${player.id}:${castle.x},${castle.y},${castle.w},${castle.h},${sealed[castle.id] === true}`;
+    }
+    if (key === this.crownKey) return;
+    this.crownKey = key;
+    this.crownGfx.clear();
+    drawMainCastles(this.crownGfx, view, state, this.art, sealed);
   }
 
   /**
@@ -1430,46 +1621,72 @@ export class ChocolateTheme extends ShapeTheme implements Theme {
     }
   }
 
-  /** Shots: a bonbon in foil of the owner's colour, its twisted ends spinning, over its shadow. */
+  /**
+   * Shots: a bonbon in foil of the owner's colour, its twisted ends spinning, over its
+   * shadow. Stamps, placed in the order drawn, shot over shot: the shadow and the bonbon
+   * drawn once for each eighth of a pixel of their size, each twisted end a triangle drawn
+   * once and laid by its three corners. Drawn anew each frame they were some 2 000 vertices
+   * in a salvo at eight players. The marks where one's own shots will land lie over them all
+   * (`lateGfx`), as each lay over its own shot.
+   */
   private drawShots(state: MatchState, view: ViewTransform, frame: EffectFrame): void {
     const g = this.lateGfx;
+    const stamps = this.shotStamps;
     const t = view.tile;
+    const ink = this.ink(view);
     const now = state.tick + frame.tickFraction;
+    const triangle = this.book.get('triangle', t, (k) => {
+      k.poly([0, 0, 1, 0, 0, 1]);
+      k.fill({ color: 0xffffff });
+    });
+    stamps.begin();
     for (const shot of state.shots) {
       const p = shotProgress(shot, now);
       const gx = tileX(view, shot.fromX + (shot.toX - shot.fromX) * p + 0.5);
       const gy = tileY(view, shot.fromY + (shot.toY - shot.fromY) * p + 0.5);
       const lift = shotLift(shot, p);
       const high = Math.min(1, lift / 3);
-      g.ellipse(gx, gy, t * (0.28 - 0.12 * high), t * (0.14 - 0.06 * high));
-      g.fill({ color: 0x000000, alpha: 0.28 - 0.14 * high });
+      const rx = Math.round(t * (0.28 - 0.12 * high) * 8) / 8;
+      const shade = this.book.get(`shotShadow|${rx}`, t, (k) => {
+        k.ellipse(0, 0, rx, rx / 2);
+        k.fill({ color: 0x000000 });
+      });
+      // A stamp laid as a twisted end last frame keeps its skew, which `place` leaves alone.
+      stamps.place(shade, gx, gy, { alpha: 0.28 - 0.14 * high }).skew.set(0, 0);
       const hy = tileY(view, shot.fromY + (shot.toY - shot.fromY) * p + 0.5 - lift);
       const r = t * (0.2 + 0.1 * high);
       const spin = p * Math.PI * 5 + shot.id;
       const ux = Math.cos(spin);
       const uy = Math.sin(spin) * 0.6;
+      const light = this.colour(shot.owner, 'light');
       for (const side of [1, -1]) {
         const bx = gx + ux * r * 0.8 * side;
         const by = hy + uy * r * 0.8 * side;
         const tx = gx + ux * r * 1.9 * side;
         const ty = hy + uy * r * 1.9 * side;
-        g.poly([
+        // The unit triangle's corners carried to the end's: its base and its two tips.
+        this.corners.set(
+          tx - uy * r * 0.7 - bx,
+          ty + ux * r * 0.7 - by,
+          tx + uy * r * 0.7 - bx,
+          ty - ux * r * 0.7 - by,
           bx,
           by,
-          tx - uy * r * 0.7,
-          ty + ux * r * 0.7,
-          tx + uy * r * 0.7,
-          ty - ux * r * 0.7,
-        ]);
+        );
+        stamps.place(triangle, 0, 0, { tint: light }).setFromMatrix(this.corners);
       }
-      g.fill({ color: this.colour(shot.owner, 'light') });
-      g.circle(gx, hy, r);
-      g.fill({ color: this.colour(shot.owner, 'base') });
-      g.stroke({ width: this.ink(view), color: hex(this.art.palette.shadow), alpha: 0.8 });
-      g.circle(gx - r * 0.35, hy - r * 0.35, r * 0.28);
-      g.fill({ color: 0xffffff, alpha: 0.85 });
+      const radius = Math.round(r * 8) / 8;
+      const bonbon = this.book.get(`bonbon|${shot.owner}|${radius}`, t, (k) => {
+        k.circle(0, 0, radius);
+        k.fill({ color: this.colour(shot.owner, 'base') });
+        k.stroke({ width: ink, color: hex(this.art.palette.shadow), alpha: 0.8 });
+        k.circle(-radius * 0.35, -radius * 0.35, radius * 0.28);
+        k.fill({ color: 0xffffff, alpha: 0.85 });
+      });
+      stamps.place(bonbon, gx, hy).skew.set(0, 0);
       drawShotTarget(g, view, shot, p, this.art, frame.humanPlayer);
     }
+    stamps.end();
   }
 
   private drawRings(view: ViewTransform, deltaMs: number): void {

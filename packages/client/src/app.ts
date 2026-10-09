@@ -53,7 +53,10 @@ globalThis.addEventListener('unhandledrejection', (event) =>
  * A browser will not start an audio context without a user gesture, so the first
  * click or keypress anywhere is what switches it on — the menu's own buttons are
  * usually that gesture, but `?autostart=1` skips the menu entirely and then the first
- * input in the match does it instead.
+ * input in the match does it instead. It is tried at once as well: a browser that lets
+ * the site play sound unasked (a permission given it, the desktop app's window) starts
+ * the music as the page opens; one that does not leaves the context waiting, and the
+ * first gesture resumes it (the users' wish, 2026-10-09).
  */
 export const audio = new Audio(defaultConfigBundle.audio);
 
@@ -62,6 +65,8 @@ const unlock = (): void => audio.unlock();
 globalThis.addEventListener('pointerdown', unlock, { capture: true });
 
 globalThis.addEventListener('keydown', unlock, { capture: true });
+
+unlock();
 
 /**
  * A sound switch on every screen, showing whether sound is on. Mute is remembered by the

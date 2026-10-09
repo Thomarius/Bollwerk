@@ -17,6 +17,7 @@ import { REFRESH_MS, gamesMarkup, parseRoomList } from './browser.js';
 import { isLanguage, languageOptions, saveLanguage, setLanguage, t } from './i18n.js';
 import { SplitTitle } from './decor.js';
 import { saveEffects, storedEffects } from './motion.js';
+import { parseSharpness, saveSharpness, sharpnessOptions, storedSharpness } from './sharpness.js';
 import { EFFECTS } from './pause.js';
 import { app, showError, audio } from './app.js';
 import { preferredStyles, saveStyles, storedName, saveName } from './prefs.js';
@@ -146,6 +147,7 @@ export function showMenu(notice: string | null = null): void {
       <div class="look" data-look="combat">${t('menu.combatLook')} ${lookPicker('combat')}</div>
       <label>${t('settings.language')} <select id="language">${languageOptions()}</select></label>
       <label>${t('settings.effects')} <select id="effects">${EFFECTS.map(([value, key]) => `<option value="${value}">${t(key)}</option>`).join('')}</select></label>
+      <label>${t('settings.sharpness')} <select id="sharpness">${sharpnessOptions()}</select></label>
       <div class="split tournament-row">
         <button id="new-tournament">${t('menu.newTournament')}</button>
         <button id="resume-tournament"${savedTournaments().length === 0 ? ' disabled' : ''}>${t('menu.resumeTournament')}</button>
@@ -195,8 +197,15 @@ export function showMenu(notice: string | null = null): void {
     showMenu(notice);
   });
   const effectsField = document.querySelector<HTMLSelectElement>('#effects');
-  // The two volumes, under the looks and Effects (PLAN 11.18 Y4).
-  effectsField?.closest('label')?.after(volumeSliders(audio));
+  const sharpnessField = document.querySelector<HTMLSelectElement>('#sharpness');
+  // The two volumes, under the looks, the Effects and the Sharpness (PLAN 11.18 Y4).
+  sharpnessField?.closest('label')?.after(volumeSliders(audio));
+  if (sharpnessField) {
+    sharpnessField.value = storedSharpness();
+    sharpnessField.addEventListener('change', () =>
+      saveSharpness(parseSharpness(sharpnessField.value)),
+    );
+  }
   if (effectsField) {
     effectsField.value = storedEffects();
     effectsField.addEventListener('change', () =>

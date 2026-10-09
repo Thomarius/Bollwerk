@@ -10,6 +10,7 @@ import {
 } from './i18n.js';
 import { escape } from './html.js';
 import { saveEffects, storedEffects, type EffectsLevel } from './motion.js';
+import { parseSharpness, saveSharpness, sharpnessOptions, storedSharpness } from './sharpness.js';
 import { refreshVolumeSliders, volumeSliders, type VolumeTarget } from './volume.js';
 
 /**
@@ -116,6 +117,7 @@ export class PauseControls {
       `<button class="resume">${t('pause.resume')}</button>` +
       `<div class="settings">` +
       `<label>${t('settings.effects')} <select class="effects">${options}</select></label>` +
+      `<label>${t('settings.sharpness')} <select class="sharpness">${sharpnessOptions()}</select></label>` +
       `<label>${t('settings.language')} <select class="language">${languageOptions()}</select></label>` +
       `<button class="sound quiet"></button>` +
       (actions.looks === undefined
@@ -132,6 +134,13 @@ export class PauseControls {
     this.overlay.querySelector('.settings')?.after(this.sliders);
     const effects = this.overlay.querySelector<HTMLSelectElement>('.effects')!;
     effects.value = storedEffects();
+    // Taken at once: the match redraws at the new resolution (`onSharpness`).
+    const sharpness = this.overlay.querySelector<HTMLSelectElement>('.sharpness')!;
+    sharpness.value = storedSharpness();
+    sharpness.addEventListener('change', () => {
+      actions.click();
+      saveSharpness(parseSharpness(sharpness.value));
+    });
     this.showSound();
 
     this.overlay.querySelector('.resume')?.addEventListener('click', () => {
