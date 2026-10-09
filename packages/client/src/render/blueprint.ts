@@ -1,13 +1,15 @@
 import type { ArtConfig, BlueprintStyleConfig } from '@bollwerk/config';
 import { Structure, Terrain, type MatchState, type Shot } from '@bollwerk/sim';
-import { Graphics } from 'pixi.js';
+import { Container, Graphics, Text } from 'pixi.js';
 
+import { t as t_ } from '../i18n.js';
 import { motionReduced } from '../motion.js';
 import type { TimerSpot } from '../timerSpot.js';
 
 import { cornerSpot } from './corner.js';
 import { IslandParts } from './islandParts.js';
-import { TitleBlock } from './titleBlock.js';
+import { TitleBlock, titleBlockRect } from './titleBlock.js';
+import { loops, rounded } from './inkline.js';
 import { Memos, viewKey } from './stamps.js';
 import {
   FlagHoist,
@@ -139,6 +141,12 @@ export class BlueprintTheme implements Theme {
   /** What lies over the guns: shots, splashes, the finish. */
   private readonly lateGfx = new Graphics();
   private readonly overlayGfx = new Graphics();
+  /** Each castle's tag lettered over it ("KEEP B-2"), where the tiles are large enough. */
+  private readonly tagLayer = new Container();
+  private readonly tags: Text[] = [];
+  /** When each castle was last seen sealing, for the drafting compass's arc round it. */
+  private readonly sealing = new Map<number, number>();
+  private sealedBefore: readonly boolean[] = [];
 
   private terrain: Uint8Array | null = null;
   private width = 0;
@@ -160,7 +168,7 @@ export class BlueprintTheme implements Theme {
     this.style = art.blueprint;
     layers.terrain.addChild(this.terrainGfx, this.titleBlock.container);
     layers.territory.addChild(this.scenery.gfx, this.territory.container, this.smudgeGfx);
-    layers.structures.addChild(this.structures.container);
+    layers.structures.addChild(this.structures.container, this.tagLayer);
     layers.effects.addChild(this.effectGfx, this.gunMemo.container, this.lateGfx);
     layers.overlay.addChild(this.overlayGfx);
     return Promise.resolve();
@@ -177,6 +185,8 @@ export class BlueprintTheme implements Theme {
     for (const g of [this.terrainGfx, this.effectGfx, this.overlayGfx]) {
       g.destroy();
     }
+    for (const tag of this.tags) tag.destroy();
+    this.tagLayer.destroy();
   }
 
   /**
@@ -200,12 +210,6 @@ export class BlueprintTheme implements Theme {
 
   private faceFraction(): number {
     return this.art.generators.wall.frontFacePx / this.art.tileSizePx;
-  }
-
-  /** Height of a castle's front face, in tiles: the pixel keep's, in proportion. */
-  private castleFace(castle: { h: number }): number {
-    const { frontFacePx } = this.art.generators.wall;
-    return (castle.h * (frontFacePx + 2)) / (this.art.tileSizePx * 3);
   }
 
   // ------------------------------------------------------------------ terrain
@@ -283,6 +287,43 @@ export class BlueprintTheme implements Theme {
         color: hex(palette.grassLight),
         alpha: this.style.gridAlpha * (major ? 2 : 1),
       });
+    }
+
+    // Contour lines on the land, as a site plan surveys it: rings in from the coast at a
+    // few distances, rounded as ground is, thin under everything built.
+    const inland = landDepth(state);
+    for (const k of this.style.landContourTiles) {
+      const high = (x: number, y: number): boolean =>
+        land(x, y) && (inland[y * state.width + x] as number) >= k;
+      const cells: Cell[] = [];
+      for (let i = 0; i < inland.length; i++) {
+        if ((inland[i] as number) < k) continue;
+        const x = i % state.width;
+        cells.push({ x, y: (i - x) / state.width });
+      }
+      const contour = loops(outline(cells, high, view), (px, py) =>
+        high(Math.floor((px - tileX(view, 0)) / t), Math.floor((py - tileY(view, 0)) / t)),
+      );
+      for (const loop of contour)
+        g.poly(
+          rounded(loop, 3).flatMap((p) => [p.x, p.y]),
+          true,
+        );
+      g.stroke({ width: 1, color: hex(palette.rockLight), alpha: 0.28 });
+    }
+
+    // A graphic scale over the title block, in tiles, its spans alternately filled.
+    if (this.corner !== null) {
+      const box = titleBlockRect(view, this.corner);
+      const span = t;
+      const spans = Math.max(2, Math.min(5, Math.floor((box.w * 0.8) / span)));
+      const sx = box.x;
+      const sy = box.y - t * 0.55;
+      for (let k = 0; k < spans; k++) {
+        g.rect(sx + k * span, sy, span, t * 0.18);
+        if (k % 2 === 0) g.fill({ color: hex(palette.uiInk), alpha: 0.7 });
+        g.stroke({ width: 1, color: hex(palette.uiInk), alpha: 0.8 });
+      }
     }
 
     // The coast as a bold contour.
@@ -374,6 +415,48 @@ export class BlueprintTheme implements Theme {
   drawStructures(state: MatchState, view: ViewTransform): void {
     this.scenery.refresh(state, view, this.art);
     this.structures.draw(state, view, (g, island) => this.drawIsland(g, island, view));
+    this.letterTags(state, view);
+  }
+
+  /**
+   * Each castle's tag over its plan, as a drawing labels its rooms: the island's letter and
+   * the castle's number on it. Only where the tiles are large enough to read it.
+   */
+  private letterTags(state: MatchState, view: ViewTransform): void {
+    const t = view.tile;
+    const shown = t >= this.style.tagMinTilePx;
+    this.tagLayer.visible = shown;
+    if (!shown) return;
+    while (this.tags.length < state.castles.length) {
+      const tag = new Text({
+        text: '',
+        style: {
+          fontFamily: 'Consolas, "Lucida Console", "Courier New", monospace',
+          fontSize: 24,
+          fill: hex(this.art.palette.uiInk),
+          letterSpacing: 1,
+        },
+      });
+      tag.anchor.set(0.5, 1);
+      this.tags.push(tag);
+      this.tagLayer.addChild(tag);
+    }
+    const numbers = new Map<number, number>();
+    this.tags.forEach((tag, n) => {
+      const castle = state.castles[n];
+      tag.visible = castle !== undefined;
+      if (castle === undefined) return;
+      const number = (numbers.get(castle.islandId) ?? 0) + 1;
+      numbers.set(castle.islandId, number);
+      const text = t_('plan.keep', {
+        tag: `${String.fromCharCode(64 + castle.islandId)}-${number}`,
+      });
+      if (tag.text !== text) tag.text = text;
+      tag.scale.set((t * 0.3) / 24);
+      tag.alpha = 0.75;
+      tag.x = tileX(view, castle.x + castle.w / 2);
+      tag.y = tileY(view, castle.y) - t * 0.06;
+    });
   }
 
   /** One island's structures, for `IslandParts`: the board holds that island's alone. */
@@ -414,61 +497,148 @@ export class BlueprintTheme implements Theme {
     );
     g.stroke({ width: 1, color: hex(palette.rockDark) });
 
-    // Castles: a keep in plan, with round towers at its corners, over a front face.
+    // Castles as an architect plans a keep: its walls cut through and drawn at their
+    // thickness, round towers at the corners, a door in the south wall with its swing, a
+    // stair in the room; a player's main castle with its outline doubled. A sealed keep's
+    // walls are filled solid (`drawKeeps`), as a plan fills what is built.
     for (const castle of state.castles) {
       const owner = castle.islandId - 1;
-      const x = tileX(view, castle.x);
-      const y = tileY(view, castle.y);
-      const w = castle.w * t;
-      const h = castle.h * t;
-      const inset = t * 0.15;
-      const drop = this.castleFace(castle) * t;
-      const lip = y + h - inset - drop;
-      g.rect(x + inset, lip, w - inset * 2, drop);
-      g.fill({ color: this.colour(owner, 'dark'), alpha: 0.7 });
-      g.stroke({ width: 1, color: this.colour(owner, 'base') });
-      g.rect(x + inset, y + inset, w - inset * 2, lip - y - inset);
-      g.fill({ color: hex(palette.grassMid) });
-      g.stroke({ width: line, color: this.colour(owner, 'light') });
-      for (const [cx, cy] of [
-        [x + inset, y + inset],
-        [x + w - inset, y + inset],
-        [x + inset, lip],
-        [x + w - inset, lip],
-      ] as const) {
-        g.circle(cx, cy, t * 0.22);
-      }
-      g.fill({ color: hex(palette.grassMid) });
-      g.stroke({ width: line * 0.75, color: this.colour(owner, 'light') });
+      const main = state.players[owner]?.startingCastleId === castle.id;
+      this.drawKeepPlan(g, view, castle, owner, main);
     }
 
-    // Guns: survey marks — a ring with its crosshair running out past it.
+    // Guns as emplacements in plan: an octagonal platform on the gun's square, its
+    // centreline and swing drawn with the barrel (`drawBarrels`). Silenced: the platform
+    // dashed and crossed out, as work struck from a drawing.
     for (const cannon of state.cannons) {
+      cannonBase(g, view, cannon, null, this.colour(cannon.owner, 'light'));
       const cx = tileX(view, cannon.x + cannon.w / 2);
       const cy = tileY(view, cannon.y + cannon.h / 2);
-      const r = (Math.min(cannon.w, cannon.h) * t) / 2 - t * 0.2;
-      cannonBase(g, view, cannon, null, this.colour(cannon.owner, 'light'));
-      if (!cannon.active) {
-        // Silenced: a dashed ring and no crosshair, as a mark struck from the plan. In the
-        // owner's ink at full weight: a hairline of dark rock all but vanished on the sheet.
-        for (let k = 0; k < 12; k += 2) {
-          // Each dash begins a path of its own: a bare arc would join it by a line to
-          // wherever the last path ended, which drew a stroke across the board.
-          const a = (k / 12) * Math.PI * 2;
-          g.moveTo(cx + Math.cos(a) * r, cy + Math.sin(a) * r);
-          g.arc(cx, cy, r, a, ((k + 1) / 12) * Math.PI * 2);
-          g.stroke({ width: line, color: this.colour(cannon.owner, 'light'), alpha: 0.85 });
-        }
+      const r = (Math.min(cannon.w, cannon.h) * t) / 2 - t * 0.16;
+      const corners: [number, number][] = [];
+      for (let k = 0; k < 8; k++) {
+        const a = ((k + 0.5) / 8) * Math.PI * 2;
+        corners.push([cx + Math.cos(a) * r, cy + Math.sin(a) * r]);
+      }
+      const ink = this.colour(cannon.owner, 'light');
+      if (cannon.active) {
+        g.poly(corners.flat());
+        g.fill({ color: hex(palette.grassMid) });
+        g.stroke({ width: line, color: ink });
+        // The mount's ring inside the platform.
+        g.circle(cx, cy, r * 0.42);
+        g.stroke({ width: 1, color: this.colour(cannon.owner, 'base'), alpha: 0.8 });
         continue;
       }
-      g.circle(cx, cy, r);
-      g.fill({ color: hex(palette.grassMid) });
-      g.stroke({ width: line, color: this.colour(cannon.owner, 'light') });
-      const reach = r + t * 0.25;
-      g.moveTo(cx - reach, cy).lineTo(cx + reach, cy);
-      g.moveTo(cx, cy - reach).lineTo(cx, cy + reach);
-      g.stroke({ width: 1, color: this.colour(cannon.owner, 'base'), alpha: 0.8 });
+      const edges = corners.map(([x1, y1], k) => {
+        const [x2, y2] = corners[(k + 1) % 8] as [number, number];
+        return { x1, y1, x2, y2 };
+      });
+      trace(
+        g,
+        edges.flatMap((s) => dashed(s, t * 0.16, t * 0.12)),
+      );
+      g.stroke({ width: line, color: ink, alpha: 0.85 });
+      const d = r * 0.6;
+      g.moveTo(cx - d, cy - d).lineTo(cx + d, cy + d);
+      g.moveTo(cx - d, cy + d).lineTo(cx + d, cy - d);
+      g.stroke({ width: 1.5, color: ink, alpha: 0.85 });
     }
+  }
+
+  /** The cut walls of a keep in plan, as rectangles, the door's gap left open. */
+  private keepWalls(
+    view: ViewTransform,
+    castle: { x: number; y: number; w: number; h: number },
+  ): { x: number; y: number; w: number; h: number }[] {
+    const t = view.tile;
+    const x = tileX(view, castle.x) + t * 0.16;
+    const y = tileY(view, castle.y) + t * 0.16;
+    const w = castle.w * t - t * 0.32;
+    const h = castle.h * t - t * 0.32;
+    const k = t * 0.22;
+    const door = t * 0.42;
+    const half = (w - door) / 2;
+    return [
+      { x, y, w, h: k },
+      { x, y: y + k, w: k, h: h - k * 2 },
+      { x: x + w - k, y: y + k, w: k, h: h - k * 2 },
+      { x, y: y + h - k, w: half, h: k },
+      { x: x + w - half, y: y + h - k, w: half, h: k },
+    ];
+  }
+
+  /** One keep's plan, for `IslandParts`; its walls filled when sealed by `drawKeeps`. */
+  private drawKeepPlan(
+    g: Graphics,
+    view: ViewTransform,
+    castle: { x: number; y: number; w: number; h: number },
+    owner: number,
+    main: boolean,
+  ): void {
+    const { palette } = this.art;
+    const t = view.tile;
+    const line = this.style.lineWidthPx;
+    const ink = this.colour(owner, 'light');
+    const walls = this.keepWalls(view, castle);
+    const x = tileX(view, castle.x) + t * 0.16;
+    const y = tileY(view, castle.y) + t * 0.16;
+    const w = castle.w * t - t * 0.32;
+    const h = castle.h * t - t * 0.32;
+    const k = t * 0.22;
+    // The room, clean paper.
+    g.rect(x, y, w, h);
+    g.fill({ color: hex(palette.grassMid) });
+    // The walls cut through, hatched as a section is until they are built (sealed).
+    for (const r of walls) g.rect(r.x, r.y, r.w, r.h);
+    g.fill({ color: this.colour(owner, 'dark'), alpha: 0.5 });
+    trace(
+      g,
+      walls.flatMap((r) => hatch(r, t * 0.12, '/')),
+    );
+    g.stroke({ width: 1, color: this.colour(owner, 'base'), alpha: 0.75 });
+    for (const r of walls) g.rect(r.x, r.y, r.w, r.h);
+    g.stroke({ width: 1, color: ink });
+    if (main) {
+      // A main castle's outline doubled, as a plan marks the principal building.
+      const m = t * 0.08;
+      g.rect(x - m, y - m, w + m * 2, h + m * 2);
+      g.stroke({ width: 1, color: ink });
+    }
+    // Round towers at the corners, their own wall's thickness inside.
+    for (const [cx, cy] of [
+      [x, y],
+      [x + w, y],
+      [x, y + h],
+      [x + w, y + h],
+    ] as const) {
+      g.circle(cx, cy, t * 0.24);
+      g.fill({ color: hex(palette.grassMid) });
+      g.stroke({ width: line * 0.75, color: ink });
+      g.circle(cx, cy, t * 0.11);
+      g.stroke({ width: 1, color: ink, alpha: 0.7 });
+    }
+    // The door's swing: its leaf standing open from the west jamb, the arc it sweeps.
+    const door = t * 0.42;
+    const hinge = { x: x + (w - door) / 2, y: y + h - k };
+    g.moveTo(hinge.x, hinge.y).lineTo(hinge.x, hinge.y - door);
+    g.stroke({ width: 1.5, color: ink });
+    g.moveTo(hinge.x, hinge.y - door);
+    g.arc(hinge.x, hinge.y, door, -Math.PI / 2, 0);
+    g.stroke({ width: 1, color: ink, alpha: 0.6 });
+    // A stair in the north-east of the room: its treads, and the arrow going up.
+    const sw = w * 0.22;
+    const sx = x + w - k - sw - t * 0.08;
+    const sy = y + k + t * 0.08;
+    const sh = h * 0.36;
+    g.rect(sx, sy, sw, sh);
+    for (let n = 1; n < 5; n++) {
+      g.moveTo(sx, sy + (sh * n) / 5).lineTo(sx + sw, sy + (sh * n) / 5);
+    }
+    g.moveTo(sx + sw / 2, sy + sh - t * 0.04).lineTo(sx + sw / 2, sy + t * 0.06);
+    g.moveTo(sx + sw / 2 - sw * 0.25, sy + t * 0.16).lineTo(sx + sw / 2, sy + t * 0.06);
+    g.lineTo(sx + sw / 2 + sw * 0.25, sy + t * 0.16);
+    g.stroke({ width: 1, color: ink, alpha: 0.75 });
   }
 
   /**
@@ -575,21 +745,13 @@ export class BlueprintTheme implements Theme {
     this.fireworks.draw(this.lateGfx, view, this.art, frame.celebrate, frame.deltaMs);
   }
 
-  /** A sealed keep's plan is filled in, solid; a breached one is left in outline. */
+  /** A sealed keep's walls are filled in solid, as a plan fills what is built. */
   private drawKeeps(state: MatchState, view: ViewTransform, frame: EffectFrame): void {
     const g = this.effectGfx;
-    const t = view.tile;
     for (const castle of state.castles) {
       if (!(frame.castleSealed[castle.id] ?? false)) continue;
-      const owner = castle.islandId - 1;
-      const x = tileX(view, castle.x);
-      const y = tileY(view, castle.y);
-      const w = castle.w * t;
-      const h = castle.h * t;
-      const inset = t * 0.45;
-      const drop = this.castleFace(castle) * t;
-      g.rect(x + inset, y + inset, w - inset * 2, h - inset - drop - t * 0.15 - inset);
-      g.fill({ color: this.colour(owner, 'base'), alpha: 0.85 });
+      for (const r of this.keepWalls(view, castle)) g.rect(r.x, r.y, r.w, r.h);
+      g.fill({ color: this.colour(castle.islandId - 1, 'base'), alpha: 0.9 });
     }
   }
 
@@ -626,6 +788,29 @@ export class BlueprintTheme implements Theme {
           }
         }
         g.stroke({ width: Math.max(1.5, t * 0.12), color: colour });
+        if (!cannon.active) return;
+        // Its centreline, dash and dot, run on past the muzzle as a plan draws an axis,
+        // and a dashed arc either side of it for the swing the mount allows.
+        const ink = this.colour(cannon.owner, 'base');
+        const pattern = [0.22, 0.07, 0.03, 0.07];
+        let d = -0.6;
+        for (let n = 0; d < 1.7; n++) {
+          const on = n % 2 === 0;
+          const step = pattern[n % 4] as number;
+          if (on) {
+            g.moveTo(tileX(view, cx + sx * d), tileY(view, cy + sy * d));
+            g.lineTo(tileX(view, cx + sx * (d + step)), tileY(view, cy + sy * (d + step)));
+          }
+          d += step;
+        }
+        const r = t * 0.8;
+        const mid = aim.angle - Math.PI / 2;
+        for (let k = -3; k < 3; k += 2) {
+          const a = mid + (k / 3) * 0.6;
+          g.moveTo(tileX(view, cx) + Math.cos(a) * r, tileY(view, cy) + Math.sin(a) * r);
+          g.arc(tileX(view, cx), tileY(view, cy), r, a, a + 0.2);
+        }
+        g.stroke({ width: 1, color: ink, alpha: 0.6 });
       });
     }
     memo.end();
@@ -637,6 +822,7 @@ export class BlueprintTheme implements Theme {
     const g = this.lateGfx;
     const t = view.tile;
     this.flags.update(frame.castleSealed, this.clock, this.art);
+    this.drawCompasses(state, view, frame);
     for (const castle of state.castles) {
       const raised = this.flags.raised(castle.id, this.clock, this.art);
       if (raised === null) continue;
@@ -654,6 +840,49 @@ export class BlueprintTheme implements Theme {
       } else {
         g.fill({ color: this.colour(owner, 'light') });
       }
+    }
+  }
+
+  /**
+   * The drafting compass, as a ring is sealed: its needle set in the keep, its pencil leg
+   * swinging an arc once round the new enclosure, then lifted away.
+   */
+  private drawCompasses(state: MatchState, view: ViewTransform, frame: EffectFrame): void {
+    const g = this.effectGfx;
+    const t = view.tile;
+    const span = this.style.compassMs;
+    frame.castleSealed.forEach((sealed, id) => {
+      if (sealed && this.sealedBefore[id] === false) this.sealing.set(id, this.clock);
+    });
+    this.sealedBefore = [...frame.castleSealed];
+    for (const [id, at] of this.sealing) {
+      const k = (this.clock - at) / span;
+      const castle = state.castles.find((c) => c.id === id);
+      if (k >= 1 || castle === undefined) {
+        this.sealing.delete(id);
+        continue;
+      }
+      const owner = castle.islandId - 1;
+      const ink = this.colour(owner, 'light');
+      const cx = tileX(view, castle.x + castle.w / 2);
+      const cy = tileY(view, castle.y + castle.h / 2);
+      const r = t * 3.6;
+      const swept = Math.min(1, k / 0.8) * Math.PI * 2;
+      const start = -Math.PI / 2;
+      const fade = k < 0.8 ? 1 : 1 - (k - 0.8) / 0.2;
+      g.moveTo(cx + Math.cos(start) * r, cy + Math.sin(start) * r);
+      g.arc(cx, cy, r, start, start + swept);
+      g.stroke({ width: 1.5, color: ink, alpha: 0.7 * fade });
+      // The instrument: two legs from a hinge over the middle of the swing.
+      const px = cx + Math.cos(start + swept) * r;
+      const py = cy + Math.sin(start + swept) * r;
+      const hx = (cx + px) / 2 - Math.sin(start + swept) * t * 0.3;
+      const hy = (cy + py) / 2 - t * 1.4;
+      g.moveTo(cx, cy).lineTo(hx, hy).lineTo(px, py);
+      g.moveTo(hx, hy).lineTo(hx, hy - t * 0.5);
+      g.stroke({ width: 2, color: hex(this.art.palette.uiInk), alpha: 0.8 * fade });
+      g.circle(hx, hy, t * 0.12);
+      g.fill({ color: hex(this.art.palette.uiInk), alpha: 0.8 * fade });
     }
   }
 
@@ -729,10 +958,51 @@ export class BlueprintTheme implements Theme {
       if (!mark.onWall) continue;
       const life = 1 - mark.age / linger;
       if (life <= 0) continue;
-      const s = t * 0.35;
-      g.moveTo(cx - s, cy - s).lineTo(cx + s, cy + s);
-      g.moveTo(cx - s, cy + s).lineTo(cx + s, cy - s);
-      g.stroke({ width: 1.5, color: hex(this.art.palette.uiInvalid), alpha: life });
+      // A revision cloud round the block shot away, and its delta tag, as an architect
+      // marks a change to a drawing.
+      const red = hex(this.art.palette.uiInvalid);
+      const r = t * 0.62;
+      const bumps = 8;
+      const turn = (mark.x * 7 + mark.y * 3) % 8;
+      for (let k = 0; k <= bumps; k++) {
+        const a = ((k + turn / 8) / bumps) * Math.PI * 2;
+        const px = cx + Math.cos(a) * r;
+        const py = cy + Math.sin(a) * r;
+        if (k === 0) {
+          g.moveTo(px, py);
+          continue;
+        }
+        // Each scallop three points of its curve rather than a curve: the cloud is redrawn
+        // every frame it fades, at eight players for every breach on the board.
+        const prev = a - (Math.PI * 2) / bumps;
+        const m = a - Math.PI / bumps;
+        const qx = cx + Math.cos(m) * r * 1.38;
+        const qy = cy + Math.sin(m) * r * 1.38;
+        const ax = cx + Math.cos(prev) * r;
+        const ay = cy + Math.sin(prev) * r;
+        for (const u of [1 / 3, 2 / 3, 1]) {
+          const v = 1 - u;
+          g.lineTo(
+            v * v * ax + 2 * v * u * qx + u * u * px,
+            v * v * ay + 2 * v * u * qy + u * u * py,
+          );
+        }
+      }
+      g.stroke({ width: 1.5, color: red, alpha: life });
+      const tx = cx + r * 1.05;
+      const ty = cy - r * 1.05;
+      const side = t * 0.34;
+      g.poly([
+        tx,
+        ty - side * 0.6,
+        tx + side * 0.5,
+        ty + side * 0.3,
+        tx - side * 0.5,
+        ty + side * 0.3,
+      ]);
+      g.stroke({ width: 1, color: red, alpha: life });
+      g.moveTo(tx, ty - side * 0.2).lineTo(tx, ty + side * 0.15);
+      g.stroke({ width: 1, color: red, alpha: life });
     }
     this.marks = this.marks.filter((m) => m.age < (m.onWall ? Math.max(linger, RING_MS) : RING_MS));
   }
@@ -903,4 +1173,38 @@ function drawBlueprintScenery(
     }
   }
   g.stroke({ width: 1, color: hex(art.palette.rockMid), alpha: 0.7 });
+}
+
+/** How far each land tile lies from the sea, in tiles, 4-connected: 1 on the coast. */
+function landDepth(state: MatchState): Uint16Array {
+  const { width, height, terrain } = state;
+  const depth = new Uint16Array(terrain.length);
+  const queue: number[] = [];
+  for (let i = 0; i < terrain.length; i++) {
+    if (terrain[i] !== Terrain.Land) continue;
+    const x = i % width;
+    const y = (i - x) / width;
+    const coastal =
+      x === 0 ||
+      y === 0 ||
+      x === width - 1 ||
+      y === height - 1 ||
+      terrain[i - 1] !== Terrain.Land ||
+      terrain[i + 1] !== Terrain.Land ||
+      terrain[i - width] !== Terrain.Land ||
+      terrain[i + width] !== Terrain.Land;
+    if (!coastal) continue;
+    depth[i] = 1;
+    queue.push(i);
+  }
+  for (let head = 0; head < queue.length; head++) {
+    const i = queue[head] as number;
+    const x = i % width;
+    for (const j of [x > 0 ? i - 1 : -1, x < width - 1 ? i + 1 : -1, i - width, i + width]) {
+      if (j < 0 || j >= terrain.length || terrain[j] !== Terrain.Land || depth[j] !== 0) continue;
+      depth[j] = (depth[i] as number) + 1;
+      queue.push(j);
+    }
+  }
+  return depth;
 }

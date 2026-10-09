@@ -1283,7 +1283,10 @@
     "seaHatchAlpha": 0.22,
     "territoryAlpha": 0.4,
     "shipEveryMs": 18000,
-    "shipTilesPerSecond": 0.45
+    "shipTilesPerSecond": 0.45,
+    "landContourTiles": [2, 4],
+    "tagMinTilePx": 16,
+    "compassMs": 1400
   },
   "night": {
     "torchPoolTiles": 4.4,

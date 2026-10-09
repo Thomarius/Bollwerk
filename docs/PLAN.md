@@ -779,13 +779,20 @@ it cannot go. A placed piece throws sparks off its outer edges.
 
 **Blueprint** (`blueprint.ts`), for either look: an architect's plan in ink on blue
 paper. A drafting grid over the whole sheet, heavier every few tiles; the sea hatched as
-a plan marks water, the coast a bold white contour. Walls are outlined and hatched
-inside, as walls are on a plan, and stand up to the pixel style's height; castles are a
-keep in plan with round corner towers, filled in while sealed and flying a pennant;
-guns are survey marks with an arrowhead barrel, silenced ones a dashed ring in the owner's ink. Sealed
-ground is cross-hatched in the owner's ink inside a dashed boundary. Shots are a
-projectile symbol riding a dashed trajectory; a block shot away is crossed out in red
-for as long as the pixel breach would smoulder. The piece in hand is dashed, as proposed
+a plan marks water, the coast a bold white contour, **contour lines** surveyed on the land
+(`landContourTiles`), and a **graphic scale** over the title block. Walls are outlined and
+hatched inside, as walls are on a plan, and stand up to the pixel style's height; **castles
+are a keep drawn as a plan**: its walls cut through at their thickness, hatched until it is
+sealed and then filled solid, round corner towers, a door in the south wall with its swing, a
+stair with its arrow, a main castle's outline doubled, a pennant flying while sealed, and a
+**tag** lettered over it ("KEEP B-2", "BURG B-2") where tiles are large enough
+(`tagMinTilePx`); **guns are emplacements in plan**, an octagonal platform with the mount's
+ring, an arrowhead barrel on a dash-dot centreline and a dashed arc of its swing, a silenced
+one dashed and crossed out. Sealed ground is cross-hatched in the owner's ink inside a
+dashed boundary, and as a ring seals **a drafting compass** swings an arc once round it
+(`compassMs`). Shots are a projectile symbol riding a dashed trajectory; a block shot away
+is ringed by a **red revision cloud with its delta tag** for as long as the pixel breach
+would smoulder. The piece in hand is dashed, as proposed
 construction is — hatched where it fits, crossed out where it does not. Player colours
 are the shared hues washed toward white, so they read on blue.
 
@@ -1565,12 +1572,7 @@ work, item 2, is **paused** after a first learned fit (ARCHIVE 12z), its next st
 
    - **S1 — Readability first** — done (ARCHIVE 12zu).
    - **S2 — Parchment** — done (ARCHIVE 12zv).
-   - **S3 — Blueprint** (an architect's plan). Castles as real plans: solid wall thickness, a
-     door's swing, a stair symbol, a tag ("KEEP A-1"), the main castle double-lined; guns as
-     octagonal platforms with a dash-dot centreline and a dashed arc of their swing; a breach
-     as a scalloped red revision cloud with a delta tag; contours on the land, a north arrow and
-     a scale bar by the title block; a drafting compass swinging an arc round a newly sealed
-     ring.
+   - **S3 — Blueprint** — done (ARCHIVE 12zw).
    - **S4 — Pixel and Night**, which share their sprites. Pixel: a pixel-sprite keep for the
      main castle under the crown; iron shot with a smoke trail; fields, a track from each gate,
      sheep that scatter from a hit; sandbags round a gun and a pile of balls that empties as it

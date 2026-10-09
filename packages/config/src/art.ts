@@ -178,6 +178,12 @@ export const BlueprintStyleSchema = z.strictObject({
   /** A ship's plan on its dashed course crossing the outer ocean now and then (`render/ocean.ts`), one at a time. */
   shipEveryMs: z.number().int().positive(),
   shipTilesPerSecond: z.number().positive(),
+  /** Contour lines on the land, at these distances inland from the coast in tiles (S3). */
+  landContourTiles: z.array(z.number().positive()),
+  /** Each castle's tag ("KEEP B-2") is lettered only from this tile size up, where it reads. */
+  tagMinTilePx: z.number().positive(),
+  /** The drafting compass swinging its arc round a ring as it seals, for so long. */
+  compassMs: z.number().int().positive(),
 });
 export type BlueprintStyleConfig = z.infer<typeof BlueprintStyleSchema>;
 

@@ -71,13 +71,8 @@ export class TitleBlock {
     const inked = Math.min(1, (this.inking += step) / INK_MS);
     const stamped = Math.min(1, (this.stamping += step) / STAMP_MS);
 
-    // Wider than the square it is given, kept to its right edge: lettered small enough to
-    // fit the square, it could not be read.
+    const { x, y, w, h } = titleBlockRect(view, spot);
     const s = spot.size * view.tile;
-    const w = s * 1.25;
-    const h = s * 0.72;
-    const x = tileX(view, spot.x) + s * 0.48 - w;
-    const y = tileY(view, spot.y) + s * 0.46 - h;
     const ink = hex(art.palette.uiInk);
     const line = Math.max(1, art.blueprint.lineWidthPx);
     const rows = [0.42, 0.72];
@@ -186,4 +181,19 @@ export class TitleBlock {
   destroy(): void {
     release(this.container);
   }
+}
+
+/**
+ * Where the title block stands, in pixels: wider than the square it is given, kept to its
+ * right edge — lettered small enough to fit the square, it could not be read. The scale bar
+ * over it is drawn from the same.
+ */
+export function titleBlockRect(
+  view: ViewTransform,
+  spot: TimerSpot,
+): { x: number; y: number; w: number; h: number } {
+  const s = spot.size * view.tile;
+  const w = s * 1.25;
+  const h = s * 0.72;
+  return { x: tileX(view, spot.x) + s * 0.48 - w, y: tileY(view, spot.y) + s * 0.46 - h, w, h };
 }

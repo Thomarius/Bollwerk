@@ -6225,3 +6225,33 @@ grid's staircase, which no old map has (the style review, 12zt). Now:
 
 At eight players, watched with `&perf=1`: 60 fps, render 1.45 ms a frame (Office 2.09), 4 200
 vertices rebuilt a frame.
+
+## 12zw. The style pass, S3: Blueprint (2026-10-09)
+
+Blueprint's castles were Minimal's square with a dot at each corner and its guns a ringed
+crosshair (the style review, 12zt). Now the sheet is drawn as an architect draws:
+
+- **Castles as plans of a keep**: the walls cut through at their thickness, hatched as a
+  section until the keep is sealed and then filled solid in the owner's ink (`drawKeeps`, the
+  same rectangles, `keepWalls`); round towers at the corners with their own wall inside; the
+  door left open in the south wall with its leaf and the quarter arc it sweeps; a stair in the
+  room, treads and an arrow going up; a main castle's outline doubled. Each keep tagged over
+  it, "KEEP B-2" ("BURG B-2" in German): the island's letter and the castle's number, lettered
+  only from 16-pixel tiles up, where it reads (`tagMinTilePx`).
+- **Guns as emplacements**: an octagonal platform on the gun's square with the mount's ring;
+  with the barrel, its centreline in dash and dot run on past the muzzle and a dashed arc
+  either side for the swing (`Memos`, redrawn as it turns); silenced, the platform dashed and
+  crossed out.
+- **A breach ringed by a red revision cloud** and its delta tag, where it was a red cross —
+  eight scallops of three points each rather than curves, since it is redrawn every frame it
+  fades.
+- **A drafting compass** as a ring seals: needle in the keep, its pencil leg swinging one arc
+  round the enclosure at the ring's radius over `compassMs`, then lifted away; timed from the
+  sealed flag's change rather than the pennant's hoist, which is over in 0.7 s.
+- **Contour lines on the land**, two rings in from the coast (`landContourTiles`), rounded
+  (`inkline.ts`'s loops, cut three times), and **a graphic scale** over the title block, whose
+  rectangle is now one function (`titleBlockRect`) for both.
+
+At eight players, watched with `&perf=1`: 60 fps, render 2.62 ms a frame against 2.45 ms
+before the package. Blueprint already rebuilt about 11 600 vertices a frame before it —
+against Parchment's 4 200 — which is worth a look of its own one day.

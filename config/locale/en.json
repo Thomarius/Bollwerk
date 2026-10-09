@@ -98,6 +98,7 @@
   "looks.randomHint": "A new style every round",
   "plan.sheet": "SHEET {round} OF {cap}",
   "plan.sheetOpen": "SHEET {round}",
+  "plan.keep": "KEEP {tag}",
   "plan.final": "FINAL",
   "round.label": "round {round}",
   "round.labelOf": "round {round} / {cap}",

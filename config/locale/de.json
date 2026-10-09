@@ -98,6 +98,7 @@
   "looks.randomHint": "Jede Runde eine neue Optik",
   "plan.sheet": "BLATT {round} VON {cap}",
   "plan.sheetOpen": "BLATT {round}",
+  "plan.keep": "BURG {tag}",
   "plan.final": "ENDFASSUNG",
   "round.label": "Runde {round}",
   "round.labelOf": "Runde {round} / {cap}",
