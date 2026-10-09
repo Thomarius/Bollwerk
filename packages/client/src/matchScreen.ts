@@ -126,15 +126,19 @@ export async function runSession(
    * build look the "Rebuild" after it will. Each goes on screen once its old one is out
    * of sight (`Scene.prepare`).
    */
+  let lookRuns = 0;
   const prepareNextLooks = async (): Promise<void> => {
     if (session.state.phase === 'game_over') return;
+    // A newer round's preparation ends this one: one still making its combat look when the
+    // next began went on to draw a build look, and threw it away unshown (ARCHIVE 13e).
+    const run = ++lookRuns;
     const turn = rotation;
     let combat = scene.styles.combat;
     if (turn.isRandom('combat')) {
       combat = turn.next('combat', scene.styles.build);
       await scene.prepare('combat', lookFor(combat));
     }
-    if (turn.isRandom('build') && turn === rotation) {
+    if (turn.isRandom('build') && turn === rotation && run === lookRuns) {
       await scene.prepare('build', lookFor(turn.next('build', combat)));
     }
   };

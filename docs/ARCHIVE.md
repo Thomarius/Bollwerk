@@ -6559,3 +6559,24 @@ tabs (12zr, protocol 20, so v0.8.4 pages and servers cannot meet it); fair seati
 teams of two and the compact hex for three (12zs, 13c); the crown smaller and the style pass,
 every style but Minimal reviewed and finished (12zt–12zz, 13a, 13b). The game's rules and bots
 unchanged.
+
+## 13e. Random looks repeated: Pixel's and Night's never finished making (2026-10-09)
+
+The user watched a three-player bot match with Random for both looks and listed the 21 looks
+shown: five times a look came round in the style it had the round before, and Pixel, Night and
+Electric never came at all. The bag itself was sound — 2 000 matches simulated through
+`LookRotation`, drawn as the match screen draws, first repeated on the twentieth look, after all
+nineteen. Logged in the page instead: every style's next look was made and ready within half a
+second, but Pixel's and Night's never were. Their board layers were done at once; the first
+render offscreen (`warmChains`) split every container of more than one child into a chain a
+child, and their tile layers are six thousand sprites — 6 336 and 6 423 chains, one a frame,
+each hiding all its siblings: a minute and a half and more, long after the banner. A look not
+ready by its banner is not put on screen, so the old one came round again, and the next round's
+making dropped the unfinished one with its style; a making overtaken still went on to draw a
+build look and threw it away (Noir, in the log), which is where Electric went.
+
+Now only a container's drawings are warmed one by one — their first render, cutting them into
+triangles, is what costs — and its sprites together, the container whole after its drawings;
+Pixel and Night are ready in well under a second, as every other style, and in a logged match
+of Night, Pixel and Minimal drawn by turns every look was ready before its banner. A round's
+making that a newer one overtakes now stops before drawing its build look.

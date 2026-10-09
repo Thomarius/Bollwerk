@@ -795,11 +795,18 @@ export class Scene {
     const layers = only === undefined ? BOARD_LAYERS : [only];
     return layers.flatMap((name) => {
       const layer = slot.layers[name];
-      return layer.children.flatMap((part) =>
-        part.constructor === Container && part.children.length > 1
-          ? part.children.map((piece) => [layer, part, piece])
-          : [[layer, part]],
-      );
+      return layer.children.flatMap((part) => {
+        if (part.constructor !== Container || part.children.length <= 1) return [[layer, part]];
+        // Each drawing a piece of its own, since its first render is what costs: cutting it
+        // into triangles. Sprites cost nothing to warm and go together, the part whole after
+        // its drawings: one chain a sprite made Pixel's and Night's six thousand tiles six
+        // thousand chains, each hiding all the others, and a new look in either was still
+        // warming a minute and a half later, long after its banner — so the old look came
+        // round again in its place and the style drawn for it was lost (ARCHIVE 13e).
+        const drawings = part.children.filter((piece) => piece instanceof Graphics);
+        const rest = drawings.length < part.children.length ? [[layer, part]] : [];
+        return [...drawings.map((piece) => [layer, part, piece]), ...rest];
+      });
     });
   }
 
