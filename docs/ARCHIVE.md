@@ -6194,3 +6194,34 @@ style's own idiom, every fix seen before and after at two or three players and a
 Done by four agents on disjoint files at once, each checking by eye, then reviewed whole;
 Office's timer, in the shared stylesheet, and Glass's ship, in the shared sea life, were done
 last. Nothing per frame was added that is not stamped or memoised as its style already did.
+
+## 12zv. The style pass, S2: Parchment (2026-10-09)
+
+Parchment's castles and guns were Minimal's box and disc on paper, and its coast the tile
+grid's staircase, which no old map has (the style review, 12zt). Now:
+
+- **A coast drawn by hand.** The tile edges joined into loops, walked with the land on their
+  left so islands touching only at a corner stay apart (`loops` in `inkline.ts`, tested), their
+  corners cut twice by Chaikin's method, and wavered across their course by two slow sines of
+  the position (`coastWaverTiles`), so a line bends rather than shivers. The land is filled
+  inside that line rather than tile by tile, the pale shallows and the engraver's contour drawn
+  the same way, the shallows under the land's coastal tiles so a corner the line cuts off shows
+  shallows, not open sea. Stipple along the sea side of every coast, two rows (`stippleTiles`).
+- **Rhumb lines**, sixteen, from the compass rose across the sea and under the land
+  (`rhumbAlpha`); **island names** in italic Georgia across the foot of each island, under the
+  paper's grain, from a list of twelve Latin names shuffled by the seed (`islandNames`), never
+  under eleven pixels high.
+- **Castles as a chart's vignettes** in elevation: two round towers with conical roofs, their
+  shaded sides hatched, a crenellated curtain and its arched gate, a swallowtail pennant; a main
+  castle a walled town, a keep with its spire behind a lower curtain. Drawn per island
+  (`IslandParts`), which a castle chosen always redraws, since its ring of walls comes with it.
+  The wax seal smaller and pressed on the lower right, clear of the gate and the keep.
+- **Guns as engraved cannon** from above: a banded bronze barrel in the owner's colour, swelling
+  at the breech, flared at the muzzle, a cascabel behind, on a hatched wooden trail with two
+  spoked wheels, all of it turning with the aim and kicking back on a shot (`Memos`, redrawn
+  only as it turns or kicks); silenced, the same faded, struck through with one stroke.
+- **Stone coursing** on the wall tops — a bed joint and staggered joints — where each block's
+  own square had read as floor tiles; **ink blots** with flicked splashes.
+
+At eight players, watched with `&perf=1`: 60 fps, render 1.45 ms a frame (Office 2.09), 4 200
+vertices rebuilt a frame.

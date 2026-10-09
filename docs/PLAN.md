@@ -791,14 +791,22 @@ are the shared hues washed toward white, so they read on blue.
 
 **Parchment** (`parchment.ts`), for either look, and the one light style: an old map in
 ink and watercolour. Generated paper grain, a few stains and darkened edges; a sea
-washed a faded grey-green against the warm paper of the land, a bold ink coast with an
-engraver's contour rippling out from it, wave strokes on the open sea, and a compass rose
-in the sea's bottom-right corner, clear of the HUD and the big timer (`roseSpot`). Walls are inked stone, their faces cross-hatched,
-casting a shadow on the paper; castles are drawn with battlements and a gate. Sealed
+washed a faded grey-green against the warm paper of the land, **a coast drawn by hand** —
+the tile grid's staircase rounded off and wavering as a pen follows a shore (`inkline.ts`),
+stippled along its sea side, the shallows and the engraver's contour drawn the same way —
+wave strokes on the open sea, **rhumb lines** radiating from a compass rose in the sea's
+bottom-right corner, clear of the HUD and the big timer (`roseSpot`), and **each island named**
+in italic script across the foot of its land (`islandNames`, shuffled by the seed). Walls are
+inked stone, coursed, their faces cross-hatched, casting a shadow on the paper; **castles are a
+chart's vignettes**, two round towers with conical roofs either side of a crenellated curtain
+and its arched gate, a pennant flying, and a main castle a walled town, a keep and its spire
+behind the curtain; **guns are engraved cannon** from above, a banded bronze barrel flared at
+the muzzle on a carriage with two spoked wheels, turning with the aim, a silenced one faded and
+struck through with one stroke. Sealed
 ground is an uneven watercolour wash pooling at its edge, inside a dotted border, and a
 sealed castle bears **a wax seal in its owner's colour**, pressed on as it seals and
 cracking in two when it is breached. Shots are ink dots on a dotted course and leave ink
-stains that fade over `fx.craterRounds`. Its colours are ink dark enough to read on
+blots, flicked splashes about them, that fade over `fx.craterRounds`. Its colours are ink dark enough to read on
 paper, `uiInk` included, which the shared helpers draw their warnings in.
 
 **Toy bricks** (`bricks.ts`, `art.bricks`), for either look: the board built of studded
@@ -1556,12 +1564,7 @@ work, item 2, is **paused** after a first learned fit (ARCHIVE 12z), its next st
    at once (ARCHIVE 12zt). The packages, one at a time, in order:
 
    - **S1 — Readability first** — done (ARCHIVE 12zu).
-   - **S2 — Parchment** (an old sea chart). A hand-drawn coast through `jitter()` with
-     stippled shore and engraved contour rings, in place of the tile staircase; castles as map
-     vignettes, two round towers with conical roofs and a pennant, the main castle a little
-     walled town with spires; guns as engraved cannon from above, flared muzzle and spoked
-     wheels, a silenced one faded and struck through; stone coursing on the walls; rhumb lines
-     from the compass rose; island names in italic script; ink blots with satellite drops.
+   - **S2 — Parchment** — done (ARCHIVE 12zv).
    - **S3 — Blueprint** (an architect's plan). Castles as real plans: solid wall thickness, a
      door's swing, a stair symbol, a tag ("KEEP A-1"), the main castle double-lined; guns as
      octagonal platforms with a dash-dot centreline and a dashed arc of their swing; a breach

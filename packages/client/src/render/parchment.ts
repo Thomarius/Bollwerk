@@ -1,6 +1,6 @@
 import type { ArtConfig, ParchmentStyleConfig } from '@bollwerk/config';
 import { Rng, Structure, Terrain, type MatchState, type Shot } from '@bollwerk/sim';
-import { Graphics, Sprite, Texture } from 'pixi.js';
+import { Container, Graphics, Sprite, Text, Texture } from 'pixi.js';
 
 import { timerSpot } from '../timerSpot.js';
 
@@ -49,6 +49,7 @@ import { SceneryLayer } from './sceneryLayer.js';
 import { hatch, outline, trace, wallGeometry, type Segment } from './walls.js';
 import { cannonBase } from './cannonBase.js';
 import { roseSpot } from './corner.js';
+import { along, loops, rounded, wavered, type Point } from './inkline.js';
 
 /** An ink stain where a shot came down on land, fading over the rounds after. */
 interface Stain {
@@ -151,6 +152,9 @@ export class ParchmentTheme implements Theme {
   private readonly overlayGfx = new Graphics();
   private grain: Sprite | null = null;
   private grainKey = '';
+  /** Each island's name in script across its land, under the paper's grain. */
+  private readonly nameLayer = new Container();
+  private readonly names: Text[] = [];
 
   private terrain: Uint8Array | null = null;
   private width = 0;
@@ -175,7 +179,7 @@ export class ParchmentTheme implements Theme {
     this.art = art;
     this.style = art.parchment;
     this.layers = layers;
-    layers.terrain.addChild(this.terrainGfx, this.roseGfx);
+    layers.terrain.addChild(this.terrainGfx, this.roseGfx, this.nameLayer);
     layers.territory.addChild(this.scenery.gfx, this.territory.container, this.stainGfx);
     layers.structures.addChild(this.structures.container);
     layers.effects.addChild(this.effectGfx, this.gunMemo.container, this.lateGfx);
@@ -200,6 +204,8 @@ export class ParchmentTheme implements Theme {
     }
     this.grain?.texture.destroy(true);
     this.grain?.destroy();
+    for (const name of this.names) name.destroy();
+    this.nameLayer.destroy();
   }
 
   private colour(player: number, shade: 'base' | 'light' | 'dark'): number {
@@ -208,11 +214,6 @@ export class ParchmentTheme implements Theme {
 
   private faceFraction(): number {
     return this.art.generators.wall.frontFacePx / this.art.tileSizePx;
-  }
-
-  private castleFace(castle: { h: number }): number {
-    const { frontFacePx } = this.art.generators.wall;
-    return (castle.h * (frontFacePx + 2)) / (this.art.tileSizePx * 3);
   }
 
   /** Paper as the owner's ink tints it: a wall's top, a castle's roof. */
@@ -249,16 +250,50 @@ export class ParchmentTheme implements Theme {
         ? deepest
         : (depth[(y + marginY) * w + (x + marginX)] as number);
 
-    // Paler water in the shallows, as a map colours its coasts.
+    // A point on the screen to its tile, for the loops' sense of which side is which.
+    const tileOf = (px: number, py: number): { x: number; y: number } => ({
+      x: Math.floor((px - tileX(view, 0)) / t),
+      y: Math.floor((py - tileY(view, 0)) / t),
+    });
+    // A pen's waver along a coast: slow, so a line bends rather than shivers.
+    const s0 = (this.seed % 97) * 0.37;
+    const wobble = (px: number, py: number): number =>
+      Math.sin((px * 0.29) / t + (py * 0.13) / t + s0) * 0.6 +
+      Math.sin((px * 0.07) / t - (py * 0.21) / t + s0 * 2) * 0.4;
+    const waver = this.style.coastWaverTiles * t;
+    const inked = (segments: Segment[], inside: (x: number, y: number) => boolean): Point[][] =>
+      loops(segments, (px, py) => {
+        const c = tileOf(px, py);
+        return inside(c.x, c.y);
+      }).map((loop) => wavered(rounded(loop, 2), waver, wobble));
+    const shape = (loop: readonly Point[]): number[] => loop.flatMap((p) => [p.x, p.y]);
+
+    // Paler water in the shallows, as a map colours its coasts: a band round every coast,
+    // its edge drawn by hand as the coast is, and under the land, so where the drawn coast
+    // rounds a corner off a tile the shallows show there and not the open sea.
+    const shallow = (x: number, y: number): boolean => land(x, y) || depthAt(x, y) <= 1.5;
+    const band: Cell[] = [];
     for (let y = -marginY; y < h - marginY; y++) {
-      for (let x = -marginX; x < w - marginX; x++) {
-        if (land(x, y) || depthAt(x, y) > 1.5) continue;
-        g.rect(tileX(view, x), tileY(view, y), t, t);
-      }
+      for (let x = -marginX; x < w - marginX; x++) if (shallow(x, y)) band.push({ x, y });
     }
+    for (const loop of inked(outline(band, shallow, view), shallow)) g.poly(shape(loop), true);
     g.fill({ color: hex(palette.waterShallow), alpha: 0.6 });
 
-    // The engraver's contours, rippling out from every coast.
+    // Rhumb lines from the compass rose across the sea, as a portolan chart's, under the
+    // land so they run on only over the water.
+    const spot = this.roseSpotFor(state, view);
+    if (spot !== null) {
+      const cx = tileX(view, spot.x);
+      const cy = tileY(view, spot.y);
+      const reach = Math.hypot(w, h) * t;
+      for (let k = 0; k < 16; k++) {
+        const angle = (k / 16) * Math.PI * 2;
+        g.moveTo(cx, cy).lineTo(cx + Math.sin(angle) * reach, cy - Math.cos(angle) * reach);
+      }
+      g.stroke({ width: 1, color: hex(palette.rockDark), alpha: this.style.rhumbAlpha });
+    }
+
+    // The engraver's contours, rippling out from every coast, drawn by hand as the coast is.
     this.style.contourTiles.forEach((k, n) => {
       const lines: Segment[] = [];
       for (let y = -marginY; y < h - marginY; y++) {
@@ -282,7 +317,9 @@ export class ParchmentTheme implements Theme {
           }
         }
       }
-      trace(g, lines);
+      for (const loop of inked(lines, (x, y) => land(x, y) || depthAt(x, y) < k)) {
+        g.poly(shape(loop), true);
+      }
       g.stroke({ width: 1, color: hex(palette.waterFoam), alpha: 0.45 - n * 0.15 });
     });
 
@@ -307,43 +344,112 @@ export class ParchmentTheme implements Theme {
     }
     g.stroke({ width: 1, color: hex(palette.waterFoam), alpha: 0.5 });
 
-    // Land as lighter paper, washed faintly in the colour of whose it is.
-    for (let player = 0; player <= state.players.length; player++) {
+    // Land as lighter paper inside a coast drawn by hand — the tile grid's staircase
+    // rounded off and wavering as a pen follows a shore — washed faintly in the colour of
+    // whose island it is, the coast inked bold and stippled along its sea side.
+    const coasts: Point[][] = [];
+    for (let island = 0; island <= state.players.length; island++) {
       const cells: Cell[] = [];
       for (let i = 0; i < state.terrain.length; i++) {
-        if (state.terrain[i] !== Terrain.Land || state.islandId[i] !== player) continue;
+        if (state.terrain[i] !== Terrain.Land || state.islandId[i] !== island) continue;
         const x = i % state.width;
         cells.push({ x, y: (i - x) / state.width });
       }
       if (cells.length === 0) continue;
-      for (const c of cells) g.rect(tileX(view, c.x), tileY(view, c.y), t, t);
+      const mine = (x: number, y: number): boolean =>
+        land(x, y) && state.islandId[y * state.width + x] === island;
+      const drawn = inked(outline(cells, mine, view), mine);
+      for (const loop of drawn) g.poly(shape(loop), true);
       g.fill({ color: hex(palette.grassMid) });
-      if (player === 0) continue;
-      for (const c of cells) g.rect(tileX(view, c.x), tileY(view, c.y), t, t);
-      g.fill({ color: this.colour(player - 1, 'base'), alpha: 0.07 });
+      if (island > 0) {
+        for (const loop of drawn) g.poly(shape(loop), true);
+        g.fill({ color: this.colour(island - 1, 'base'), alpha: 0.07 });
+      }
+      coasts.push(...drawn);
     }
-
-    // The coast in a bold line of ink.
-    const coast: Cell[] = [];
-    for (let i = 0; i < state.terrain.length; i++) {
-      if (state.terrain[i] !== Terrain.Land) continue;
-      const x = i % state.width;
-      coast.push({ x, y: (i - x) / state.width });
+    for (const loop of coasts) g.poly(shape(loop), true);
+    g.stroke({ width: this.style.inkWidthPx * 1.6, color: hex(palette.rockDark), join: 'round' });
+    // The stipple: dots just off the coast on its sea side, a second fainter row beyond,
+    // as an engraver shaded the shallows. Loops run with the land on their left.
+    const dot = Math.max(1, t * 0.07);
+    for (const loop of coasts) {
+      along(loop, this.style.stippleTiles * t).forEach((p, n) => {
+        const off = t * (0.2 + jitter(p.x, p.y, 7) * 0.08);
+        g.rect(p.x - p.dy * off - dot / 2, p.y + p.dx * off - dot / 2, dot, dot);
+        if (n % 2 === 1) return;
+        const far = t * (0.42 + jitter(p.x, p.y, 8) * 0.1);
+        g.rect(p.x - p.dy * far - dot / 2, p.y + p.dx * far - dot / 2, dot, dot);
+      });
     }
-    trace(g, outline(coast, land, view));
-    g.stroke({ width: this.style.inkWidthPx * 1.6, color: hex(palette.rockDark) });
+    g.fill({ color: hex(palette.rockDark), alpha: 0.5 });
 
-    this.drawRose(state, view);
+    this.drawRose(view, spot);
+    this.letterNames(state, view);
     this.layGrain(view, marginX, marginY, w, h);
   }
 
-  /** A compass rose in a corner of the sea, clear of the big timer (`roseSpot`). */
-  private drawRose(state: MatchState, view: ViewTransform): void {
-    const g = this.roseGfx;
-    g.clear();
+  /** Where the compass rose stands, in the sea's corner clear of the big timer, if anywhere. */
+  private roseSpotFor(state: MatchState, view: ViewTransform): ReturnType<typeof roseSpot> {
     const right = Math.floor((view.width - view.originX) / view.tile) - state.width;
     const bottom = Math.floor((view.height - view.originY) / view.tile) - state.height;
-    const spot = roseSpot(state, right, bottom, timerSpot(state));
+    return roseSpot(state, right, bottom, timerSpot(state));
+  }
+
+  /**
+   * Each island's name lettered in script across the foot of its land, as a chart names
+   * its coasts: drawn from the style's list in an order the match seed shuffles, set
+   * under the paper's grain so it reads as printed with the map.
+   */
+  private letterNames(state: MatchState, view: ViewTransform): void {
+    const t = view.tile;
+    const pool = new Rng(this.seed ^ 0x5a1).shuffle([...this.style.islandNames]);
+    const islands = state.players.length;
+    while (this.names.length < islands) {
+      const name = new Text({
+        text: '',
+        style: {
+          fontFamily: 'Georgia, "Times New Roman", serif',
+          fontStyle: 'italic',
+          fontSize: 32,
+          fill: hex(this.art.palette.rockDark),
+          letterSpacing: 2,
+        },
+      });
+      name.anchor.set(0.5);
+      this.names.push(name);
+      this.nameLayer.addChild(name);
+    }
+    this.names.forEach((name, n) => {
+      name.visible = n < islands;
+      if (n >= islands) return;
+      let minX = Infinity;
+      let maxX = -Infinity;
+      let maxY = -Infinity;
+      for (let i = 0; i < state.islandId.length; i++) {
+        if (state.islandId[i] !== n + 1 || state.terrain[i] !== Terrain.Land) continue;
+        const x = i % state.width;
+        const y = (i - x) / state.width;
+        minX = Math.min(minX, x);
+        maxX = Math.max(maxX, x + 1);
+        maxY = Math.max(maxY, y + 1);
+      }
+      if (maxY < 0) {
+        name.visible = false;
+        return;
+      }
+      const text = pool[n % pool.length] as string;
+      if (name.text !== text) name.text = text;
+      name.scale.set(Math.max(t * 0.72, 11) / 32);
+      name.alpha = this.style.nameAlpha;
+      name.x = tileX(view, (minX + maxX) / 2);
+      name.y = tileY(view, maxY - 1.7);
+    });
+  }
+
+  /** A compass rose in a corner of the sea, clear of the big timer (`roseSpot`). */
+  private drawRose(view: ViewTransform, spot: ReturnType<typeof roseSpot>): void {
+    const g = this.roseGfx;
+    g.clear();
     this.seaLife.rose = spot;
     if (spot === null) return;
     const ink = hex(this.art.palette.rockDark);
@@ -521,7 +627,6 @@ export class ParchmentTheme implements Theme {
   private drawIsland(g: Graphics, state: MatchState, view: ViewTransform): void {
     const { palette } = this.art;
     const t = view.tile;
-    const ink = this.style.inkWidthPx;
     const wallOf = (x: number, y: number): number =>
       x >= 0 && y >= 0 && x < state.width && y < state.height
         ? state.structure[y * state.width + x] === Structure.Wall
@@ -582,69 +687,160 @@ export class ParchmentTheme implements Theme {
     g.fill({ color: hex(palette.rockLight), alpha: 0.6 });
     g.stroke({ width: 1, color: hex(palette.rockMid) });
 
-    // Castles: a keep as old maps draw one, battlements along its roof and a gate in
-    // its hatched front face.
+    // Castles as an old chart draws a town, in elevation: two round towers with conical
+    // roofs either side of a crenellated curtain and its gate, shaded in hatching; a
+    // player's main castle a walled town, a keep with its spire rising behind the curtain.
     for (const castle of state.castles) {
       const owner = castle.islandId - 1;
-      const x = tileX(view, castle.x);
-      const y = tileY(view, castle.y);
-      const w = castle.w * t;
-      const h = castle.h * t;
-      const inset = t * 0.12;
-      const drop = this.castleFace(castle) * t;
-      const lip = y + h - inset - drop;
-      const dark = this.colour(owner, 'dark');
-      g.rect(x + inset, lip, w - inset * 2, drop);
-      g.fill({ color: mixed(this.colour(owner, 'base'), hex(palette.rockDark), 0.25) });
-      trace(g, [
-        ...hatch({ x: x + inset, y: lip, w: w - inset * 2, h: drop }, t * 0.16, '/'),
-        ...hatch({ x: x + inset, y: lip, w: w - inset * 2, h: drop }, t * 0.16, '\\'),
-      ]);
-      g.stroke({ width: 1, color: hex(palette.rockDark), alpha: 0.45 });
-      const gate = w * 0.16;
-      g.rect(x + w / 2 - gate / 2, lip + drop * 0.25, gate, drop * 0.75);
-      g.fill({ color: hex(palette.rockDark) });
-      g.rect(x + inset, lip, w - inset * 2, drop);
-      g.stroke({ width: ink, color: dark });
-
-      // The roof, with merlons standing along its north edge.
-      const top = y + inset + t * 0.2;
-      g.rect(x + inset, top, w - inset * 2, lip - top);
-      g.fill({ color: this.paper(owner, 0.35) });
-      g.stroke({ width: ink, color: dark });
-      const merlons = 5;
-      const mw = (w - inset * 2) / (merlons * 2 - 1);
-      for (let k = 0; k < merlons; k++) {
-        g.rect(x + inset + k * 2 * mw, y + inset, mw, t * 0.2);
-      }
-      g.fill({ color: this.paper(owner, 0.35) });
-      g.stroke({ width: 1, color: dark });
+      const main = state.players[owner]?.startingCastleId === castle.id;
+      this.drawCastle(g, view, castle, owner, main);
     }
 
-    // Guns: a round carriage in the owner's colour. The barrel turns, so it is an effect.
+    // Guns stand on their square; the gun itself, carriage, wheels and barrel, turns with
+    // its aim, so it is drawn with the barrel (`drawGuns`).
     for (const cannon of state.cannons) {
-      const cx = tileX(view, cannon.x + cannon.w / 2);
-      const cy = tileY(view, cannon.y + cannon.h / 2);
       cannonBase(
         g,
         view,
         cannon,
         this.paper(cannon.owner, 0.3),
         this.colour(cannon.owner, 'dark'),
-        1,
+        cannon.active ? 0.8 : 0.35,
       );
-      const r = (Math.min(cannon.w, cannon.h) * t) / 2 - t * 0.22;
-      g.circle(cx, cy, r);
-      g.fill({ color: cannon.active ? this.paper(cannon.owner, 0.5) : hex(palette.grassDark) });
-      g.stroke({
-        width: ink,
-        color: cannon.active ? this.colour(cannon.owner, 'dark') : hex(palette.rockMid),
-      });
-      if (cannon.active) continue;
-      // Silenced: struck through lightly in ink, as a map marks what is lost.
-      trace(g, hatch({ x: cx - r, y: cy - r, w: r * 2, h: r * 2 }, t * 0.3, '/'));
-      g.stroke({ width: 1, color: hex(palette.rockMid), alpha: 0.6 });
     }
+  }
+
+  /** One castle as a chart's vignette, its towers and curtain in the owner's colours. */
+  private drawCastle(
+    g: Graphics,
+    view: ViewTransform,
+    castle: { x: number; y: number; w: number; h: number },
+    owner: number,
+    main: boolean,
+  ): void {
+    const { palette } = this.art;
+    const t = view.tile;
+    const ink = this.style.inkWidthPx;
+    const x = tileX(view, castle.x);
+    const y = tileY(view, castle.y);
+    const w = castle.w * t;
+    const h = castle.h * t;
+    const dark = this.colour(owner, 'dark');
+    const stone = this.paper(owner, 0.3);
+    const roof = mixed(this.colour(owner, 'base'), hex(palette.rockDark), 0.15);
+    const hatchInk = { width: 1, color: hex(palette.rockDark), alpha: 0.4 };
+    const ground = y + h - t * 0.14;
+    /** A conical roof over a tower from `left` to `right`, its tip `rise` above `eave`. */
+    const cone = (left: number, right: number, eave: number, rise: number): void => {
+      g.poly([left - w * 0.03, eave, (left + right) / 2, eave - rise, right + w * 0.03, eave]);
+      g.fill({ color: roof });
+      g.stroke({ width: ink, color: dark, join: 'round' });
+      // Its shaded side, hatched.
+      trace(
+        g,
+        hatch(
+          { x: (left + right) / 2, y: eave - rise * 0.6, w: (right - left) / 2, h: rise * 0.6 },
+          t * 0.12,
+          '/',
+        ),
+      );
+      g.stroke(hatchInk);
+    };
+
+    if (main) {
+      // The keep behind the curtain, tall, with a spire and its pennant.
+      const kl = x + w * 0.37;
+      const kr = x + w * 0.63;
+      const eave = y + h * 0.3;
+      g.rect(kl, eave, kr - kl, ground - eave);
+      g.fill({ color: stone });
+      g.stroke({ width: ink, color: dark });
+      g.rect(x + w * 0.47, eave + h * 0.1, w * 0.06, h * 0.1);
+      g.fill({ color: hex(palette.rockDark) });
+      cone(kl, kr, eave, h * 0.32);
+      this.pennant(g, (kl + kr) / 2, eave - h * 0.32, t, owner, dark);
+    }
+
+    // The curtain between the towers, crenellated, its gate arched in the middle.
+    const cl = x + w * 0.18;
+    const cr = x + w * 0.82;
+    const top = ground - h * (main ? 0.36 : 0.42);
+    g.rect(cl, top, cr - cl, ground - top);
+    g.fill({ color: stone });
+    trace(
+      g,
+      hatch(
+        { x: cl, y: top + (ground - top) * 0.55, w: cr - cl, h: (ground - top) * 0.45 },
+        t * 0.14,
+        '\\',
+      ),
+    );
+    g.stroke(hatchInk);
+    g.rect(cl, top, cr - cl, ground - top);
+    g.stroke({ width: ink, color: dark });
+    const merlons = 4;
+    const mw = (cr - cl) / (merlons * 2 - 1);
+    for (let k = 0; k < merlons; k++) g.rect(cl + k * 2 * mw, top - t * 0.12, mw, t * 0.12);
+    g.fill({ color: stone });
+    g.stroke({ width: 1, color: dark });
+    const gw = w * 0.16;
+    const gx = x + w / 2 - gw / 2;
+    const gTop = ground - (ground - top) * 0.62;
+    g.moveTo(gx, ground).lineTo(gx, gTop + gw / 2);
+    g.arc(gx + gw / 2, gTop + gw / 2, gw / 2, Math.PI, 0);
+    g.lineTo(gx + gw, ground).closePath();
+    g.fill({ color: hex(palette.rockDark) });
+
+    // The two round towers, a slit in each, conical roofs; a pennant on the first.
+    const tw = w * 0.24;
+    const eave = ground - h * (main ? 0.5 : 0.58);
+    for (const left of [x + w * 0.06, x + w * 0.94 - tw]) {
+      g.rect(left, eave, tw, ground - eave);
+      g.fill({ color: stone });
+      trace(
+        g,
+        hatch({ x: left + tw * 0.55, y: eave, w: tw * 0.45, h: ground - eave }, t * 0.12, '/'),
+      );
+      g.stroke(hatchInk);
+      g.rect(left, eave, tw, ground - eave);
+      g.stroke({ width: ink, color: dark });
+      g.rect(left + tw * 0.42, eave + (ground - eave) * 0.3, tw * 0.16, (ground - eave) * 0.22);
+      g.fill({ color: hex(palette.rockDark) });
+      cone(left, left + tw, eave, h * 0.26);
+    }
+    if (!main) this.pennant(g, x + w * 0.06 + tw / 2, eave - h * 0.26, t, owner, dark);
+    // The ground line the town stands on.
+    g.moveTo(x + w * 0.02, ground).lineTo(x + w * 0.98, ground);
+    g.stroke({ width: ink, color: dark });
+  }
+
+  /** A swallowtail pennant on a short staff, flying east from `x, top`. */
+  private pennant(
+    g: Graphics,
+    x: number,
+    top: number,
+    t: number,
+    owner: number,
+    dark: number,
+  ): void {
+    const staff = t * 0.28;
+    g.moveTo(x, top).lineTo(x, top - staff);
+    g.stroke({ width: 1, color: dark });
+    const fy = top - staff;
+    g.poly([
+      x,
+      fy,
+      x + t * 0.36,
+      fy + t * 0.03,
+      x + t * 0.26,
+      fy + t * 0.08,
+      x + t * 0.36,
+      fy + t * 0.14,
+      x,
+      fy + t * 0.13,
+    ]);
+    g.fill({ color: this.colour(owner, 'base') });
+    g.stroke({ width: 1, color: dark, join: 'round' });
   }
 
   /** Inked stone: tops in paper tinted by the owner, blocks outlined, faces cross-hatched. */
@@ -669,9 +865,17 @@ export class ParchmentTheme implements Theme {
       ...wall.faces.flatMap((r) => hatch(r, t * 0.16, '\\')),
     ]);
     g.stroke({ width: 1, color: hex(palette.rockDark), alpha: 0.4 * alpha });
-    // Each stone's outline, fainter than the wall's.
-    const inset = Math.max(1, t * 0.1);
-    for (const r of wall.tops) g.rect(r.x + inset, r.y + inset, r.w - inset * 2, r.h - inset * 2);
+    // The stones coursed as a mason lays them: a bed joint across each block, the joints
+    // above and below it staggered from block to block, fainter than the wall's outline.
+    // Each block's own square outline read as floor tiles, not stone.
+    for (const block of wall.blocks) {
+      const r = { x: block.left, y: block.top, w: t, h: block.lip - block.top };
+      const mid = r.y + r.h / 2;
+      const off = (block.x + block.y) % 2 === 0 ? 0.3 : 0.7;
+      g.moveTo(r.x, mid).lineTo(r.x + r.w, mid);
+      g.moveTo(r.x + r.w * off, r.y).lineTo(r.x + r.w * off, mid);
+      g.moveTo(r.x + r.w * (1 - off), mid).lineTo(r.x + r.w * (1 - off), r.y + r.h);
+    }
     g.stroke({ width: 1, color: dark, alpha: 0.4 * alpha });
     trace(g, [...wall.faceEdges, ...wall.rim]);
     g.stroke({ width: this.style.inkWidthPx, color: dark, alpha });
@@ -799,6 +1003,20 @@ export class ParchmentTheme implements Theme {
       const cx = tileX(view, stain.x + 0.5);
       const cy = tileY(view, stain.y + 0.5);
       g.circle(cx, cy, t * 0.26);
+      // Splashes thrown out from the blot, tapering, as ink flicked from a pen.
+      for (let k = 0; k < 4; k++) {
+        const angle = jitter(stain.seed, k, 4) * Math.PI * 2;
+        const reach = t * (0.45 + jitter(stain.seed, k, 5) * 0.25);
+        const side = t * 0.07;
+        g.poly([
+          cx + Math.cos(angle + Math.PI / 2) * side,
+          cy + Math.sin(angle + Math.PI / 2) * side,
+          cx + Math.cos(angle) * reach,
+          cy + Math.sin(angle) * reach,
+          cx + Math.cos(angle - Math.PI / 2) * side,
+          cy + Math.sin(angle - Math.PI / 2) * side,
+        ]);
+      }
       for (let k = 0; k < 7; k++) {
         const angle = jitter(stain.seed, k, 1) * Math.PI * 2;
         const d = t * (0.3 + jitter(stain.seed, k, 2) * 0.3);
@@ -843,9 +1061,16 @@ export class ParchmentTheme implements Theme {
     this.fades = this.fades.filter((fade) => fade.age < span);
   }
 
-  /** Barrels in ink, from the carriage toward the last target, kicking back on firing. */
+  /**
+   * Guns as an engraver draws a cannon from above: a bronze barrel in the owner's ink,
+   * swelling at the breech, banded, flared at the muzzle, a knob behind; on a wooden
+   * carriage whose trail runs back from it, two spoked wheels at its sides. All of it
+   * turns with the aim, so it is redrawn only as it turns or kicks (`Memos`). A silenced
+   * gun is the same drawing faded, struck through with one stroke of the pen.
+   */
   private drawBarrels(state: MatchState, view: ViewTransform, deltaMs: number): void {
     const t = view.tile;
+    const { palette } = this.art;
     const memo = this.gunMemo;
     memo.begin();
     for (const cannon of state.cannons) {
@@ -856,24 +1081,82 @@ export class ParchmentTheme implements Theme {
       const key = `${viewKey(view)}|${cannon.x},${cannon.y},${cannon.w},${cannon.h},${cannon.owner},${cannon.active}|${aim.angle}|${aim.firedAgo < RECOIL_MS ? aim.firedAgo : '-'}`;
       memo.draw(cannon.id, key, (g) => {
         const kick = Math.max(0, 1 - aim.firedAgo / RECOIL_MS);
-        const length = cannon.active ? 0.95 - 0.3 * kick : 0.5;
-        const cx = cannon.x + cannon.w / 2;
-        const cy = cannon.y + cannon.h / 2;
-        const ex = tileX(view, cx + Math.sin(aim.angle) * length);
-        const ey = tileY(view, cy - Math.cos(aim.angle) * length);
-        const colour = cannon.active
-          ? this.colour(cannon.owner, 'dark')
-          : hex(this.art.palette.rockMid);
-        g.moveTo(tileX(view, cx), tileY(view, cy)).lineTo(ex, ey);
+        const u = Math.min(cannon.w, cannon.h) * t * 0.5;
+        const cx = tileX(view, cannon.x + cannon.w / 2);
+        const cy = tileY(view, cannon.y + cannon.h / 2);
+        const sin = Math.sin(aim.angle);
+        const cos = Math.cos(aim.angle);
+        /** Along the barrel `a` and across it `s`, in units of half the gun, to the screen. */
+        const p = (a: number, s: number): [number, number] => [
+          cx + (sin * a + cos * s) * u,
+          cy + (-cos * a + sin * s) * u,
+        ];
+        const poly = (points: [number, number][]): void => {
+          g.poly(points.flat());
+        };
+        const alpha = cannon.active ? 1 : 0.45;
+        const ink = cannon.active ? this.colour(cannon.owner, 'dark') : hex(palette.rockMid);
+        const wood = cannon.active ? this.paper(cannon.owner, 0.25) : hex(palette.grassDark);
+        const line = { width: 1, color: ink, alpha, join: 'round' as const };
+
+        // The carriage's trail, back from the axle, hatched as wood is.
+        poly([p(0.15, -0.26), p(0.15, 0.26), p(-0.85, 0.14), p(-0.85, -0.14)]);
+        g.fill({ color: wood, alpha });
+        g.stroke(line);
+        for (const a of [-0.2, -0.45, -0.7]) {
+          g.moveTo(...p(a, -0.2 + (0.15 - a) * 0.06)).lineTo(...p(a, 0.2 - (0.15 - a) * 0.06));
+        }
+        g.stroke({ ...line, alpha: alpha * 0.5 });
+        // The wheels either side, seen from above: their rims, and a spoke or two showing.
+        for (const side of [-1, 1]) {
+          const rim: [number, number][] = [];
+          for (let k = 0; k < 10; k++) {
+            const r = (k / 10) * Math.PI * 2;
+            rim.push(p(0.05 + Math.cos(r) * 0.36, side * (0.42 + Math.sin(r) * 0.09)));
+          }
+          poly(rim);
+          g.fill({ color: wood, alpha });
+          g.stroke(line);
+          for (const a of [-0.2, 0.05, 0.3])
+            g.moveTo(...p(a, side * 0.35)).lineTo(...p(a, side * 0.49));
+          g.stroke({ ...line, alpha: alpha * 0.7 });
+        }
+        // The barrel, kicked back by a shot: breech, chase, the flare of the muzzle.
+        const back = -0.25 * kick;
+        const b = (a: number, s: number): [number, number] => p(a + back, s);
+        poly([
+          b(-0.5, -0.22),
+          b(0.2, -0.17),
+          b(0.9, -0.13),
+          b(0.98, -0.18),
+          b(1.04, -0.18),
+          b(1.04, 0.18),
+          b(0.98, 0.18),
+          b(0.9, 0.13),
+          b(0.2, 0.17),
+          b(-0.5, 0.22),
+        ]);
+        g.fill({
+          color: cannon.active ? this.colour(cannon.owner, 'base') : hex(palette.rockLight),
+          alpha,
+        });
+        g.stroke(line);
+        // Its bands, and the shading along one flank.
+        for (const a of [-0.3, 0.2, 0.86]) g.moveTo(...b(a, -0.2)).lineTo(...b(a, 0.2));
+        g.moveTo(...b(-0.45, 0.12)).lineTo(...b(0.85, 0.08));
+        g.stroke({ ...line, alpha: alpha * 0.7 });
+        // The cascabel, the knob at the breech.
+        g.circle(...b(-0.6, 0), u * 0.09);
+        g.fill({ color: ink, alpha });
+        if (cannon.active) return;
+        // Silenced: struck through with one stroke of the pen.
+        g.moveTo(...p(0.7, -0.7)).lineTo(...p(-0.7, 0.7));
         g.stroke({
-          width: Math.max(2, t * (cannon.active ? 0.24 : 0.16)),
-          color: colour,
+          width: Math.max(1.5, t * 0.08),
+          color: hex(palette.rockDark),
+          alpha: 0.7,
           cap: 'round',
         });
-        if (!cannon.active) return;
-        g.circle(ex, ey, t * 0.13);
-        g.fill({ color: this.paper(cannon.owner, 0.5) });
-        g.stroke({ width: 1, color: colour });
       });
     }
     memo.end();
@@ -893,10 +1176,12 @@ export class ParchmentTheme implements Theme {
       const raised = this.flags.raised(castle.id, this.clock, this.art);
       if (raised === null) continue;
       const owner = castle.islandId - 1;
-      const cx = tileX(view, castle.x + castle.w / 2);
-      const cy = tileY(view, castle.y + (castle.h - this.castleFace(castle)) / 2 + 0.1);
+      // Pressed on the vignette's lower right, over a tower's foot, where it hides
+      // neither the gate nor a main castle's keep.
+      const cx = tileX(view, castle.x + castle.w * 0.78);
+      const cy = tileY(view, castle.y + castle.h * 0.66);
       const breaking = this.flags.lowering(castle.id);
-      const base = t * 0.5;
+      const base = t * 0.38;
       const r = breaking ? base : base * (1 + 1.2 * (1 - raised) * (1 - raised));
       const alpha = breaking ? raised : Math.min(1, raised * 2);
       const apart = breaking ? (1 - raised) * t * 0.3 : 0;

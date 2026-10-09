@@ -1344,7 +1344,25 @@
     "shipEveryMs": 18000,
     "shipTilesPerSecond": 0.4,
     "serpentEveryMs": 26000,
-    "serpentMs": 5000
+    "serpentMs": 5000,
+    "coastWaverTiles": 0.08,
+    "stippleTiles": 0.42,
+    "rhumbAlpha": 0.14,
+    "islandNames": [
+      "Insula Rubra",
+      "Terra Alta",
+      "Insula Fortis",
+      "Mons Aureus",
+      "Portus Novus",
+      "Insula Silvae",
+      "Terra Ventorum",
+      "Insula Leonis",
+      "Castellum Maris",
+      "Insula Aquilae",
+      "Terra Incognita",
+      "Insula Serena"
+    ],
+    "nameAlpha": 0.42
   },
   "bricks": {
     "studScale": 0.34,

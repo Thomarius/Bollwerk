@@ -299,6 +299,18 @@ export const ParchmentStyleSchema = z.strictObject({
   /** A sea serpent's coils arching out of the water and back, now and then, for so long. */
   serpentEveryMs: z.number().int().positive(),
   serpentMs: z.number().int().positive(),
+  /**
+   * How far the coast and its contours waver across their course, in tiles: a pen's hand
+   * along a coast, where the tile grid drew a staircase (S2).
+   */
+  coastWaverTiles: z.number().nonnegative(),
+  /** The stipple dotted along the sea side of every coast, a dot this many tiles apart. */
+  stippleTiles: z.number().positive(),
+  /** The rhumb lines radiating from the compass rose across the open sea. */
+  rhumbAlpha: z.number().min(0).max(1),
+  /** Each island's name, lettered in script across its land, and how faint. */
+  islandNames: z.array(z.string().min(1).max(24)).min(8),
+  nameAlpha: z.number().min(0).max(1),
 });
 export type ParchmentStyleConfig = z.infer<typeof ParchmentStyleSchema>;
 
