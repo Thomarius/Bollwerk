@@ -1309,6 +1309,33 @@ white above a grey band, a hatched shadow cast; its finish ink drops and a neckt
 The thirteen shape-drawn styles share `walls.ts`: the wall geometry (tops, faces, rim), and
 hatching laid on one lattice so neighbouring tiles hatch as one fill.
 
+**The style pass's last touches** (S8, S9; ARCHIVE 13b). **Sakura's walls are roofed** as its
+keeps are: a dark ridge capped in light along the wall's run, round corners and tees, rows of
+round tiles down to each eave, a hip where two eaves meet, dark tile-ends along every eave and a
+gold shachihoko where a run ends, a wall two thick one broad roof; its **guns are bronze
+barrels**, banded, on red-brown lacquered carriages bound in gold, the owner's crest a lozenge on
+the front (a disc reads as a shot), a silenced gun a pale hemp cloth tied over barrel and bed.
+**Opera's walls are a keyboard**: two narrow keys a block in a case of the owner's colour, an
+ivory front edge, glossy black keys in groups of two and three counted along the run, the keys
+breathing the owner's light so a wall never reads as the sealed score's cream. **Office's walls
+are woven-fabric partitions** (a weave `FillPattern` over the owner's colour) under a bold
+aluminium cap, aluminium strips between panels, now and then a photo, a calendar page or cream
+sticky notes pinned on — never in a player's colour. **Halloween's walls are crypt stone** laid
+irregularly, two or three stones a block, joints dark, the owner's spirit-light glowing in the
+mortar round each block's edge, rarely a carved skull or ivy. **Under the sea's pufferfish rest
+in reef nests** of sandstone cast with the owner's dark, strata and a worn hollow, barnacles
+crusting the rocks. **Chocolate's walls are bar segments**, each scored with a raised inner
+square, drips hashed one or two to a block; its shallows run smooth along the coast to a cream
+rim; its fall pours in three glossy streams into a cream-rimmed pool; gummy bears and gingerbread
+houses stand among the lollipops. **Oktoberfest's pretzels are salted in the owner's colour**
+inside a ring of it, and a hit crate throws bottles in it. **Christmas at small tiles** keeps one
+ribbon cross a present and fainter tartan, so walls never merge with sealed ground. **Electric's
+rain thins over land.** **Noir's HUD is a comic page**: each player a dark panel in heavy ink
+with white gutters, the phase and the big timer caption boxes in ink, the timer turning white
+on black, never red, in its last seconds. **Toy bricks' score bar** sets each player's shape on
+a light stud tile, so the blue player's reads on blue. **Stained glass's trees** are leaded
+crowns of four leaf panes over a short trunk.
+
 **Scenery on open land** (`scenery.ts`, `art.scenery`), in every style: copses of trees and
 pines with bushes at their edges, and a few lone trees, bushes and boulders, placed from
 the seed alone so every look puts them on the same tiles — only a step in from the coast,
@@ -1612,41 +1639,13 @@ work, item 2, is **paused** after a first learned fit (ARCHIVE 12z), its next st
    12y); step 3's first run learned a fit about as good as the hand-made one (ARCHIVE 12z),
    and the work is **paused** (2026-10-07), its next steps in BOT_LEARNING.md §6.
 
-3. **The style pass** (the user's, 2026-10-09; ARCHIVE 12zt): the newest styles feel far
-   more finished than the older ones, whose castles and guns are still Minimal's box and
-   disc in other colours. Every style was reviewed in the same three screenshots (build,
-   close combat, eight players) against its code; Minimal stays as it is. What the finished
-   styles share is the checklist for the rest: **castles as buildings of the setting, lit or
-   alive while sealed** and put out by a breach; **guns as objects of the setting in three
-   moods**, ready, firing and silenced, silenced readable at a glance; **walls as a material
-   with structure** in the owner's colour; **sealed ground with a pattern of its own**, not a
-   tint; **a hit with the setting's vocabulary** (debris in the owner's colour, a mark never
-   in it, a sea splash); **a projectile from the setting**; **life on the land and the outer
-   sea**. Every change within "Drawing a style cheaply" (CLAUDE.md), each package checked
-   with `&perf=1` at eight players. The crown stays one shared mark, so a random look each
-   round never changes which castle counts; it was made smaller and set at the castle's foot
-   at once (ARCHIVE 12zt). The packages, one at a time, in order:
-
-   - **S1 — Readability first** — done (ARCHIVE 12zu).
-   - **S2 — Parchment** — done (ARCHIVE 12zv).
-   - **S3 — Blueprint** — done (ARCHIVE 12zw).
-   - **S4 — Pixel and Night** — done (ARCHIVE 12zx).
-   - **S5 — Toy bricks** — done (ARCHIVE 12zy).
-   - **S6 — Stained glass** — done (ARCHIVE 12zz).
-   - **S7 — Cyberpunk** — done (ARCHIVE 13a).
-   - **S8 — The middle styles' walls and guns.** Sakura's walls with a roof ridge along their
-     run, tile rows to the eaves, round tile-ends and a gold ornament at a run's end, and its
-     guns bronze barrels on lacquered carriages with the owner's crest; Opera's keys in
-     pairs with black keys in their true pattern; Office's partitions in woven fabric with a
-     bold aluminium top and pinned photos and notes; Halloween's crypt in irregular stones
-     with glowing mortar on the blocks' edges; Under the sea's gun nest in sandstone and
-     barnacles.
-   - **S9 — Finishing touches.** Noir's chrome as comic panels with gutters and a caption-box
-     timer; Oktoberfest's pretzels salted in the owner's colour and bottles in it from a hit
-     crate; Chocolate's walls as scored segments with varied drips, gummy bears and a
-     gingerbread house among the lollipops, a cream rim for the shallows, a waterfall that
-     reads; Christmas's presents one ribbon cross a block at small tiles; Electric's rain
-     thinner over land.
+3. **Rendering leads from the style pass** (2026-10-09). The style pass itself is done (ARCHIVE
+   12zt–12zz, 13a, 13b: every style but Minimal reviewed and its castles, guns, walls and
+   life made things of its setting). Two costs it measured and left: **Chocolate** is the
+   dearest style at eight players, about 6 ms of render a frame and 58–59 fps, the same before
+   and after S9 — its effects and the river's flow are most of it; and **Blueprint** rebuilds
+   about 11 600 vertices a frame, nearly three times Parchment's, from before S3. Each wants a
+   look with `&perf=1` at the `Graphics` it names, not a guess.
 
 Only open work is kept here. Finished packages move to `ARCHIVE.md` under their old
 numbers — 11.1 scoring, 11.7 team mode, 11.8 the visual pass, 11.9 the themes, 11.10 the

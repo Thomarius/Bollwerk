@@ -6485,3 +6485,46 @@ At eight players, watched with `&perf=1` in the 30 s window: render 2.67–2.75 
 (worst 6.1–7.3) against 2.66 (7.0) before; effects 1.18–1.31 ms against 1.09; 8 393–8 401
 vertices rebuilt a frame against 10 653 — the castles' cores and their glow, drawn into the
 effects' `Graphics` every frame, are stamps now. 60 fps throughout.
+
+## 13b. The style pass, S8 and S9: the middle styles' walls and guns, and the last touches (2026-10-09)
+
+The style pass's last two packages, done together by four agents on separate files at once, no
+config or shared render file touched (their tunables named constants in each style file), then
+reviewed whole. What each look became is PLAN §7's "The style pass's last touches".
+
+**S8.** Sakura's walls roofed (`drawRoofs`): a two-thick wall first drew a ladder of ridges and
+a three-thick one a lattice, so a thick wall is one broad roof, ridged on the seam between its
+blocks; the ridge darkened and doubled in width when at eight players the seams drew the run;
+the shachihoko shrunk when at eight players they read as bananas. Its guns bronze on lacquered
+carriages, the crest a lozenge because a disc with a pale rim is what a Sakura shot looks like,
+the muzzle bead dropped for the same reason; silenced, a hemp cloth tied over them. Opera's
+keyboard (`drawKeys`): pure ivory keys left red and magenta walls alike at eight players, so the
+keys take 40% of the owner's light. Office's partitions (`drawPartitions`, `drawPinned`): the
+weave at 0.5 greyed the owner's colour, 0.35 kept it; the pinned things white, cream or grey and
+the red pin gone, since a red mark reads as a shot. Halloween's crypt (`drawCrypt`,
+`cryptStones`): darker stone with the owner's cast, so S1's lift for a dusk-hued owner rose from
+0.35 to 0.45; skulls in the stone's own tone, never white; ivy a green no player has. Under the
+sea's nests (`drawNest`): opaque at 0.8 they still hid the seagrass, 0.62 shows it; round
+barnacles with a dark middle looked like eyes, so they are slit hexagons.
+
+**S9.** Chocolate: bar segments with hashed drips; the shallows three smooth strokes along the
+coast where they were stepped circles; the fall in three streams and a cream-rimmed pool; gummy
+bears 1.3 times a lollipop, since at its size one read as a crumb. Oktoberfest: pretzels salted
+in the owner's colour inside a ring of it, now one stamp per height and owner; bottles from a hit
+crate in it. Christmas below 18-pixel tiles: one ribbon cross a present, the tartan's bands
+fainter, its fine lines gone. Electric: one raindrop in three over land, chosen by its place in
+the list so a streak never flickers at a coast. Noir's HUD as a comic page, all CSS
+(`body.hud-noir`): the phase label a caption box set as a table, since in German it pushed the
+clock onto its line; a team marked by a white rule inside its panel, an underline having run
+through the names; the urgent timer white on black with a beat of its own, the shared one
+flashing red. Toy bricks' score bar: every shape on a light stud tile, a team member's swatch
+too. Stained glass's trees: four leaf panes, three reading as a fleur-de-lis and five too fine at
+eight players.
+
+**Measured** afterwards on a quiet machine, eight players, `&perf=1`: every changed style at 60
+fps but Chocolate, 58–59 — and Chocolate measured the same with S9's file swapped out (render
+6.10 ms before, 5.98 after), so its cost is older; it and Blueprint's vertices are PLAN §11's
+item 3. Render a frame: Sakura 2.66 ms, Opera 2.79, Office 1.81, Halloween 2.55, Under the sea
+3.22, Oktoberfest 2.84, Christmas 1.85, Electric 1.83, Noir 1.62, Stained glass 1.72, Toy bricks
+1.73. Not seen in motion: a shot taking one of the new walls' blocks, a player out in the new
+walls; the silenced Sakura guns were seen with every third gun forced silent for a moment.

@@ -114,6 +114,13 @@ interface Figure {
 /** How a gun feels: watching, throwing, or melted while silenced. */
 type Mood = 'ready' | 'throw' | 'melted';
 
+/**
+ * Below this tile size in pixels (eight players on a laptop's screen give about twelve) the
+ * presents keep one short ribbon cross and the tartan drops its thin lines, so walls and
+ * sealed ground do not both read as a plaid grid (S9). Chosen by eye at two and eight players.
+ */
+const SMALL_TILE = 18;
+
 const THROW_MS = 360;
 const BURST_MS = 220;
 const SPLASH_MS = 700;
@@ -502,14 +509,20 @@ export class ChristmasTheme extends ShapeTheme implements Theme {
         if (x % 2 === 0) g.rect(tileX(view, x + 0.3), tileY(view, y), t * 0.4, t);
         if (y % 2 === 0) g.rect(tileX(view, x), tileY(view, y + 0.3), t, t * 0.4);
       }
-      g.fill({ color: this.colour(player, 'dark'), alpha: 0.35 });
-      for (const { x, y } of cells) {
-        const left = tileX(view, x);
-        const top = tileY(view, y);
-        g.moveTo(left + t * 0.88, top).lineTo(left + t * 0.88, top + t);
-        g.moveTo(left, top + t * 0.88).lineTo(left + t, top + t * 0.88);
+      // At small tiles the thin lines, a pixel wide whatever the tile, ruled the floor into
+      // the same grid as the presents' ribbons and seams, and walls and sealed ground merged
+      // at eight players (S9): there the bands are fainter and the lines left out.
+      const small = t < SMALL_TILE;
+      g.fill({ color: this.colour(player, 'dark'), alpha: small ? 0.2 : 0.35 });
+      if (!small) {
+        for (const { x, y } of cells) {
+          const left = tileX(view, x);
+          const top = tileY(view, y);
+          g.moveTo(left + t * 0.88, top).lineTo(left + t * 0.88, top + t);
+          g.moveTo(left, top + t * 0.88).lineTo(left + t, top + t * 0.88);
+        }
+        g.stroke({ width: Math.max(1, t * 0.05), color: this.colour(player, 'light'), alpha: 0.7 });
       }
-      g.stroke({ width: Math.max(1, t * 0.05), color: this.colour(player, 'light'), alpha: 0.7 });
       const edge = outline(cells, owned, view);
       trace(g, edge);
       g.stroke({ width: Math.max(1.5, t * 0.1), color: this.colour(player, 'base') });
@@ -567,18 +580,33 @@ export class ChristmasTheme extends ShapeTheme implements Theme {
     g.fill({ color: dead ? DEAD : this.colour(player, 'base') });
     for (const r of wall.faces) g.rect(r.x, r.y, r.w, r.h);
     g.fill({ color: dead ? mixed(DEAD, 0x000000, 0.3) : this.colour(player, 'dark') });
-    // Each box's wrapping pattern, a dot of the lighter shade in two corners.
-    if (!dead) {
+    // Each box's wrapping pattern, a dot of the lighter shade in two corners: left out at
+    // small tiles, where it was only more grid (S9).
+    const small = t < SMALL_TILE;
+    if (!dead && !small) {
       for (const b of wall.blocks) {
         g.rect(b.left + t * 0.15, b.top + t * 0.12, t * 0.12, t * 0.12);
         g.rect(b.left + t * 0.72, b.lip - t * 0.26, t * 0.12, t * 0.12);
       }
       g.fill({ color: this.colour(player, 'light'), alpha: 0.6 });
     }
-    // The ribbon, across and down the top, and on down the face.
+    // The ribbon, across and down the top, and on down the face. At small tiles one cross
+    // on the top alone, short of the box's edges, so the ribbons do not join into a lattice.
     const ribbon = Math.max(1, t * 0.09);
     for (const b of wall.blocks) {
       const mid = (b.top + b.lip) / 2;
+      if (small) {
+        const cx = b.left + t / 2;
+        const reach = t * 0.28;
+        g.rect(cx - reach, mid - ribbon / 2, reach * 2, ribbon);
+        g.rect(
+          cx - ribbon / 2,
+          mid - Math.min(reach, (b.lip - b.top) * 0.4),
+          ribbon,
+          Math.min(reach, (b.lip - b.top) * 0.4) * 2,
+        );
+        continue;
+      }
       g.rect(b.left, mid - ribbon / 2, t, ribbon);
       g.rect(b.left + t / 2 - ribbon / 2, b.top, ribbon, (b.faced ? b.top + t : b.lip) - b.top);
     }

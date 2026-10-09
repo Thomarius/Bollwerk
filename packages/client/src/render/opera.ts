@@ -49,7 +49,7 @@ import {
   mixed,
   shotProgress,
 } from './theme.js';
-import { outline, trace, wallGeometry } from './walls.js';
+import { outline, trace, wallGeometry, type WallBlock } from './walls.js';
 import { cannonBase } from './cannonBase.js';
 import { ShapeTheme } from './shapeTheme.js';
 
@@ -130,6 +130,14 @@ const BRASS_DARK = 0x8a6a1a;
  */
 const TARNISH = 0x7d8a72;
 const TARNISH_DARK = 0x3e4838;
+/**
+ * How much of the owner's light colour the white keys take: enough that a wall of them never
+ * reads as the cream page of a sealed score beside it, little enough that they are still
+ * ivory. 0.25, tried first, left red and magenta walls alike at eight players; 0.4 by eye.
+ */
+const KEY_TINT = 0.4;
+/** The case's rail behind the keys, as a fraction of their depth: the owner's colour at eight players. */
+const KEY_RAIL = 0.34;
 
 /** How Opera sends off the winners (PLAN 11.19 Z4). */
 const FINISH: FinishLook = { spark: 'roses', flag: 'lyre' };
@@ -798,9 +806,13 @@ export class OperaTheme extends ShapeTheme implements Theme {
   }
 
   /**
-   * Walls as piano keys: each block a key in the owner's colour, polished along its top, the
-   * black keys across the seams in a keyboard's true pattern — none between E and F, or B
-   * and C — so a run reads as a keyboard whichever way it goes; standing to the shared height.
+   * Walls as a keyboard (S8): each block two narrow white keys running across the run, a
+   * lighter ivory nosing at their front, set in a case of the owner's colour — a rail at
+   * their back, the bed showing in the gaps between them, the key slip down the wall's face
+   * — and the glossy black keys between them in a keyboard's true pattern, groups of two and
+   * three, counted on from block to block along the run. A run across the board is played
+   * from the south, its rail at the back; one down the board from the east, its rail at the
+   * left. A block's two keys share a wider gap with the next block's, so a shot takes a pair.
    * A player's who is out (`player` -1) has keys gone grey and dusty, a broken string curling
    * off one here and there.
    */
@@ -814,48 +826,121 @@ export class OperaTheme extends ShapeTheme implements Theme {
     const { palette } = this.art;
     const t = view.tile;
     const dead = player < 0;
-    const key = dead ? hex(palette.rockMid) : this.colour(player, 'base');
-    const keyLight = dead ? hex(palette.rockLight) : this.colour(player, 'light');
-    const keyDark = dead ? hex(palette.rockDark) : this.colour(player, 'dark');
+    const caseColour = dead ? hex(palette.rockMid) : this.colour(player, 'base');
+    const caseDark = dead ? hex(palette.rockDark) : this.colour(player, 'dark');
+    const caseLight = dead ? hex(palette.rockLight) : this.colour(player, 'light');
+    // The keys' ivory takes a breath of the owner's light, so a wall is never the page of
+    // the score it stands on.
+    const ivory = dead ? hex(palette.rockLight) : mixed(IVORY, caseLight, KEY_TINT);
+    const nosing = dead ? mixed(hex(palette.rockLight), 0xffffff, 0.3) : 0xfffbf2;
+    const black = dead ? hex(palette.rockDark) : EBONY;
     const wall = wallGeometry(cells, joins, view, this.faceFraction());
+    const column = (x: number, y: number): boolean => !joins(x + 1, y) && !joins(x - 1, y);
+    const gap = Math.max(1, t * 0.05);
+    const rail = (h: number): number => Math.max(2, h * KEY_RAIL);
 
+    // The case: the whole top in the owner's colour, its slip down the face darker.
     for (const r of wall.tops) g.rect(r.x, r.y, r.w, r.h);
-    g.fill({ color: key });
+    g.fill({ color: caseColour });
     for (const r of wall.faces) g.rect(r.x, r.y, r.w, r.h);
-    g.fill({ color: keyDark });
-    // The polish along each key.
+    g.fill({ color: caseDark });
+    // The rail's lit edge, where the keys go in under it.
     for (const b of wall.blocks) {
       const h = b.lip - b.top;
-      g.rect(b.left + t * 0.12, b.top + h * 0.1, t * 0.18, h * 0.8);
+      if (column(b.x, b.y)) g.rect(b.left + rail(t) - gap, b.top, gap, h);
+      else g.rect(b.left, b.top + rail(h) - gap, t, gap);
     }
-    g.fill({ color: keyLight, alpha: 0.5 });
-    // The gaps between keys.
-    for (const b of wall.blocks)
-      g.rect(b.left, b.top, t, b.lip - b.top + (b.faced ? wall.face : 0));
-    g.stroke({ width: 1, color: this.dark, alpha: 0.75 });
-    // The black keys, across the seams: along a row at the back of the keys, down a column
-    // at their left.
+    g.fill({ color: caseLight, alpha: 0.7 });
+    // Two white keys a block; the gap at a block's edge twice that between its keys.
+    const keys = (
+      b: WallBlock,
+      each: (x: number, y: number, w: number, h: number) => void,
+    ): void => {
+      const h = b.lip - b.top;
+      if (column(b.x, b.y)) {
+        const x0 = b.left + rail(t);
+        for (let i = 0; i < 2; i++) {
+          const y0 = b.top + (h / 2) * i + (i === 0 ? gap : gap / 2);
+          each(x0, y0, b.left + t - gap - x0, h / 2 - gap * 1.5);
+        }
+      } else {
+        const y0 = b.top + rail(h);
+        for (let i = 0; i < 2; i++) {
+          const x0 = b.left + (t / 2) * i + (i === 0 ? gap : gap / 2);
+          each(x0, y0, t / 2 - gap * 1.5, b.lip - gap * 0.5 - y0);
+        }
+      }
+    };
+    for (const b of wall.blocks) keys(b, (x, y, w, h) => g.rect(x, y, w, h));
+    g.fill({ color: ivory });
+    // The nosing: a lighter band at each key's front, where a finger lands.
+    for (const b of wall.blocks) {
+      const across = column(b.x, b.y);
+      keys(b, (x, y, w, h) => {
+        if (across) g.rect(x + w * 0.82, y, w * 0.18, h);
+        else g.rect(x, y + h * 0.82, w, h * 0.18);
+      });
+    }
+    g.fill({ color: nosing });
+    // The black keys, between keys n and n + 1 counted along the run: from the rail two
+    // thirds of the way to the front, none between E and F or B and C.
     for (const b of wall.blocks) {
       const h = b.lip - b.top;
-      if (joins(b.x + 1, b.y) && blackAfter(b.x)) {
-        g.roundRect(b.left + t * 0.84, b.top, t * 0.32, h * 0.5, t * 0.05);
-      }
-      const column = !joins(b.x + 1, b.y) && !joins(b.x - 1, b.y);
-      if (column && joins(b.x, b.y + 1) && blackAfter(b.y)) {
-        g.roundRect(b.left, b.top + t * 0.84, t * 0.5, t * 0.32, t * 0.05);
+      const across = column(b.x, b.y);
+      for (let i = 0; i < 2; i++) {
+        const n = 2 * (across ? b.y : b.x) + i;
+        if (!blackAfter(n)) continue;
+        if (i === 1 && !(across ? joins(b.x, b.y + 1) : joins(b.x + 1, b.y))) continue;
+        if (across) {
+          const y = b.top + (h / 2) * (i + 1);
+          g.roundRect(
+            b.left + rail(t) - gap,
+            y - t * 0.14,
+            (t - rail(t)) * 0.62,
+            t * 0.28,
+            t * 0.04,
+          );
+        } else {
+          const x = b.left + (t / 2) * (i + 1);
+          g.roundRect(
+            x - t * 0.14,
+            b.top + rail(h) - gap,
+            t * 0.28,
+            (h - rail(h)) * 0.62,
+            t * 0.04,
+          );
+        }
       }
     }
-    g.fill({ color: dead ? hex(palette.rockDark) : EBONY });
+    g.fill({ color: black });
+    // Their gloss: a streak of light down each.
     for (const b of wall.blocks) {
-      if (joins(b.x + 1, b.y) && blackAfter(b.x)) {
-        g.rect(b.left + t * 0.88, b.top + 1, t * 0.06, (b.lip - b.top) * 0.4);
-      }
-      const column = !joins(b.x + 1, b.y) && !joins(b.x - 1, b.y);
-      if (column && joins(b.x, b.y + 1) && blackAfter(b.y)) {
-        g.rect(b.left + 1, b.top + t * 0.88, t * 0.4, t * 0.06);
+      const h = b.lip - b.top;
+      const across = column(b.x, b.y);
+      for (let i = 0; i < 2; i++) {
+        const n = 2 * (across ? b.y : b.x) + i;
+        if (!blackAfter(n)) continue;
+        if (i === 1 && !(across ? joins(b.x, b.y + 1) : joins(b.x + 1, b.y))) continue;
+        if (across) {
+          const y = b.top + (h / 2) * (i + 1);
+          g.rect(
+            b.left + rail(t) + t * 0.04,
+            y - t * 0.09,
+            (t - rail(t)) * 0.45,
+            Math.max(1, t * 0.05),
+          );
+        } else {
+          const x = b.left + (t / 2) * (i + 1);
+          g.rect(
+            x - t * 0.09,
+            b.top + rail(h) + t * 0.04,
+            Math.max(1, t * 0.05),
+            (h - rail(h)) * 0.45,
+          );
+        }
       }
     }
-    g.fill({ color: 0xffffff, alpha: 0.18 });
+    g.fill({ color: 0xffffff, alpha: dead ? 0.12 : 0.35 });
     if (dead) {
       // Dust, and a broken string curling off a key or two.
       for (const b of wall.blocks) {

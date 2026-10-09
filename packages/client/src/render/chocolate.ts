@@ -138,6 +138,23 @@ const SNAP_MS = 700;
 /** Candy for the sprinkles: neutral sweet-shop colours, so none reads as a player's. */
 const SPRINKLES = [0xfffaf0, 0xffb3cf, 0xa8e6ff, 0xfff07a, 0xc9a7ff, 0xffc48a] as const;
 
+/**
+ * Of the lollipops, the share drawn as a gingerbread house and as a gummy bear instead,
+ * chosen by eye (S9): a house or two to an island, a bear in a handful of lollipops.
+ */
+const GINGERBREAD_SHARE = 0.08;
+const GUMMY_SHARE = 0.25;
+/** A gummy bear's size against a lollipop's, by eye. */
+const GUMMY_SCALE = 1.3;
+
+/**
+ * How far each band of the shallows reaches out from the coast, in tiles: the lighter
+ * river, the shallows and the cream rim. Chosen by eye at two and eight players (S9): the
+ * rim shows a quarter of a tile past the biscuit crumb, and the outer band stays under the
+ * two tiles that the narrowest channel at eight players leaves either side.
+ */
+const SHALLOW_REACH = [1.6, 0.9, 0.55] as const;
+
 /** Lollipops and candy floss, pastel, so none reads as a player's colour on the board. */
 const CANDY = [0xffa8cc, 0xa8dcff, 0xffe08a, 0xc8b0ff] as const;
 
@@ -311,10 +328,11 @@ export class ChocolateTheme extends ShapeTheme implements Theme {
         queue.push(y * w + x);
       }
     }
+    // Only the first two rings are needed: they keep the swirls off the coast.
     for (let head = 0; head < queue.length; head++) {
       const i = queue[head]!;
       const d = depth[i]!;
-      if (d >= 4) continue;
+      if (d >= 2) continue;
       const x = i % w;
       const y = (i - x) / w;
       for (const [dx, dy] of [
@@ -330,39 +348,39 @@ export class ChocolateTheme extends ShapeTheme implements Theme {
         queue.push(ny * w + nx);
       }
     }
-    const bands = [
-      hex(palette.waterShallow),
-      mixed(hex(palette.waterShallow), hex(palette.waterMid), 0.55),
-      hex(palette.waterMid),
-      mixed(hex(palette.waterMid), hex(palette.waterDeep), 0.6),
-      hex(palette.waterDeep),
-    ];
-    // The deep river everywhere, then each lighter band nearer the land laid over it in
-    // overlapping rounds, so the shallows curve with the coast rather than step in tiles.
     this.seaCells = [];
-    g.rect(tileX(view, x0), tileY(view, y0), w * t, h * t);
-    g.fill({ color: bands[4]! });
-    for (let band = 3; band >= 0; band--) {
-      for (let y = 0; y < h; y++) {
-        for (let x = 0; x < w; x++) {
-          if (depth[y * w + x] !== band + 1) continue;
-          g.circle(tileX(view, x + x0 + 0.5), tileY(view, y + y0 + 0.5), t * 0.8);
-        }
-      }
-      g.fill({ color: bands[band]! });
-    }
     for (let y = 0; y < h; y++) {
       for (let x = 0; x < w; x++) {
         const d = depth[y * w + x]!;
         if (d < 0 || d >= 2) this.seaCells.push({ x: x + x0, y: y + y0 });
       }
     }
-
-    // The meadow: mint sugar grass, a lighter patch here and there, tufts and a glint of sugar.
     const ground: Cell[] = [];
     for (let y = 0; y < state.height; y++) {
       for (let x = 0; x < state.width; x++) if (land(x, y)) ground.push({ x, y });
     }
+    const coast = outline(ground, land, view);
+
+    // The deep river everywhere, then the shallows as bands along the coast, each the coast
+    // stroked wide with round ends, so they follow it smoothly and two islands' shallows
+    // meeting in a channel merge into one even band. They were rings of a circle a tile,
+    // four of them stepping darker outwards, which read as a muddy halo and, at eight
+    // players, as heavy stepped blotches between the islands (S9). Opaque, so overlapping
+    // strokes do not darken where they cross. Outermost a lighter river, then the shallows,
+    // then a rim of cream where the chocolate laps the shore.
+    g.rect(tileX(view, x0), tileY(view, y0), w * t, h * t);
+    g.fill({ color: hex(palette.waterDeep) });
+    const bands: [number, number][] = [
+      [SHALLOW_REACH[0], mixed(hex(palette.waterDeep), hex(palette.waterMid), 0.6)],
+      [SHALLOW_REACH[1], mixed(hex(palette.waterMid), hex(palette.waterShallow), 0.6)],
+      [SHALLOW_REACH[2], mixed(hex(palette.waterShallow), hex(palette.waterFoam), 0.8)],
+    ];
+    for (const [reach, color] of bands) {
+      trace(g, coast);
+      g.stroke({ width: t * reach * 2, color, cap: 'round', join: 'round' });
+    }
+
+    // The meadow: mint sugar grass, a lighter patch here and there, tufts and a glint of sugar.
     for (const { x, y } of ground) g.rect(tileX(view, x), tileY(view, y), t, t);
     g.fill({ color: hex(palette.grassMid) });
     for (const { x, y } of ground) {
@@ -400,9 +418,6 @@ export class ChocolateTheme extends ShapeTheme implements Theme {
 
     // The shore: a band of biscuit crumb along every coast, wet-dark where the river meets it,
     // and crumbs scattered on it.
-    const coast = outline(ground, land, view);
-    trace(g, coast);
-    g.stroke({ width: t * 0.6, color: hex(palette.shadow), alpha: 0.22, cap: 'square' });
     trace(g, coast);
     g.stroke({ width: t * 0.42, color: hex(palette.sand), cap: 'square' });
     for (const s of coast) {
@@ -431,27 +446,41 @@ export class ChocolateTheme extends ShapeTheme implements Theme {
   }
 
   /**
-   * The fall seen from above: the river pours between two banks of meringue rock and drops
-   * as one sheet into a round pool below, where cream churns. The sheet's streaks and the
-   * churning move (`drawFall`).
+   * The fall's still parts: the river's ledge of dark chocolate, the cliff it pours over,
+   * the round pool below, rimmed in cream, and banks of meringue either side of the lip.
+   * The streams themselves, their gloss and the splash move (`drawFall`). The fall was one
+   * brown sheet on a brown pool, which read as a muddy trapezoid (S9); now dark cliff shows
+   * between lighter streams, and the pool is dark under a cream rim.
    */
   private drawFallLedge(g: Graphics, view: ViewTransform, fall: TimerSpot): void {
     const { palette } = this.art;
+    const t = view.tile;
     const f = this.fallShape(view, fall);
-    // The pool: a deep round basin, its rim lit with cream.
+    const ink = Math.max(1, t * 0.06);
+    // The pool: a deep round basin, a rim of cream round it.
     g.ellipse(f.cx, f.poolY, f.half * 1.15, f.half * 0.55);
-    g.fill({ color: mixed(hex(palette.waterDeep), hex(palette.shadow), 0.3) });
+    g.fill({ color: mixed(hex(palette.waterDeep), hex(palette.shadow), 0.45) });
     g.ellipse(f.cx, f.poolY, f.half * 1.15, f.half * 0.55);
-    g.stroke({ width: Math.max(1, view.tile * 0.08), color: hex(palette.waterFoam), alpha: 0.35 });
+    g.stroke({ width: Math.max(1.5, t * 0.16), color: hex(palette.waterFoam), alpha: 0.85 });
+    // The cliff behind the streams, dark chocolate, wider at its foot.
+    const top = f.lip;
+    const foot = f.poolY;
+    const wide = f.sheet * 1.2;
+    g.poly([f.cx - wide, top, f.cx + wide, top, f.cx + wide * 1.1, foot, f.cx - wide * 1.1, foot]);
+    g.fill({ color: hex(palette.craterDark) });
+    // The ledge the river runs over: its top lighter, its front edge lit.
+    g.roundRect(f.cx - wide, top - t * 0.5, wide * 2, t * 0.5, t * 0.12);
+    g.fill({ color: hex(palette.waterMid) });
+    g.stroke({ width: ink, color: hex(palette.shadow), alpha: 0.6 });
     // The banks: heaps of meringue either side of the lip, peaked and lit.
     for (const side of [-1, 1]) {
       for (let k = 0; k < 3; k++) {
-        const x = f.cx + side * (f.sheet + view.tile * (0.25 + k * 0.32));
-        const y = f.lip - view.tile * (0.05 + 0.18 * k) + view.tile * 0.3 * hash(k, side, 21);
-        const r = view.tile * (0.38 - k * 0.06);
+        const x = f.cx + side * (wide + t * (0.15 + k * 0.32));
+        const y = f.lip - t * (0.05 + 0.18 * k) + t * 0.3 * hash(k, side, 21);
+        const r = t * (0.38 - k * 0.06);
         g.circle(x, y, r);
         g.fill({ color: hex(palette.rockMid) });
-        g.stroke({ width: Math.max(1, view.tile * 0.05), color: hex(palette.rockDark) });
+        g.stroke({ width: Math.max(1, t * 0.05), color: hex(palette.rockDark) });
         g.circle(x - r * 0.3, y - r * 0.35, r * 0.4);
         g.fill({ color: hex(palette.rockLight) });
       }
@@ -498,6 +527,15 @@ export class ChocolateTheme extends ShapeTheme implements Theme {
       s.y += Math.sin(this.clock / 1400 + s.turn * 3) * 0.08 * dt;
       if (s.age >= s.life || this.land(Math.floor(s.x), Math.floor(s.y))) {
         this.swirls[i] = this.newSwirl(0);
+        continue;
+      }
+      // None across the fall's pool and cliff, where the current does not run.
+      const fall = this.fall;
+      if (
+        fall !== null &&
+        Math.abs(s.x - fall.x) < fall.size / 2 &&
+        Math.abs(s.y - fall.y) < fall.size / 2
+      ) {
         continue;
       }
       const alpha = Math.sin((Math.PI * s.age) / s.life);
@@ -576,52 +614,94 @@ export class ChocolateTheme extends ShapeTheme implements Theme {
     };
   }
 
-  /** The chocolate pouring over the lip as one sheet, streaked, and the cream churning below. */
+  /**
+   * The chocolate pouring over the lip in three streams, each a glossy rope lit down its
+   * left side, gloss running down it, and a splash where it lands: a crown of drops thrown
+   * up and ripples spreading on the pool. Redrawn each frame with the river's surface; a
+   * few hundred vertices.
+   */
   private drawFall(view: ViewTransform, fall: TimerSpot): void {
     const g = this.flowGfx;
     const { palette } = this.art;
     const t = view.tile;
     const f = this.fallShape(view, fall);
     const still = motionReduced();
-    // The sheet, lighter at the lip where the light catches it, widening as it falls.
-    const shades = [
-      hex(palette.waterShallow),
-      mixed(hex(palette.waterShallow), hex(palette.waterMid), 0.5),
-      hex(palette.waterMid),
-    ];
-    shades.forEach((colour, k) => {
-      const ya = f.lip + (f.drop * k) / 3;
-      const yb = f.lip + (f.drop * (k + 1)) / 3;
-      const wa = f.sheet * (1 + 0.12 * k);
-      const wb = f.sheet * (1 + 0.12 * (k + 1));
-      g.poly([f.cx - wa, ya, f.cx + wa, ya, f.cx + wb, yb, f.cx - wb, yb]);
-      g.fill({ color: colour });
-    });
-    // Streaks running down it.
-    for (let k = 0; k < 7; k++) {
-      const across = -0.85 + (1.7 * k) / 6;
-      const run = still ? 0.4 : (((this.clock / 650 + hash(k, 42)) % 1) + 1) % 1;
-      const y = f.lip + f.drop * run;
-      const x = f.cx + across * f.sheet * (1 + 0.36 * run);
-      g.moveTo(x, y).lineTo(x + across * t * 0.04, Math.min(f.lip + f.drop, y + t * 0.4));
+    const body = hex(palette.waterShallow);
+    const shade = hex(palette.waterMid);
+    const gloss = hex(palette.waterFoam);
+    const phase = (period: number, k: number): number =>
+      still ? 0.5 : (((this.clock / period + hash(k, 42)) % 1) + 1) % 1;
+    const streams = [-0.68, 0, 0.68].map((across, k) => ({
+      x: f.cx + across * f.sheet,
+      w: f.sheet * (k === 1 ? 0.3 : 0.24),
+    }));
+    // The river on the ledge, gathering to the streams, and each stream curling over the lip.
+    for (const s of streams) {
+      g.roundRect(s.x - s.w * 1.15, f.lip - t * 0.42, s.w * 2.3, t * 0.48, s.w);
     }
-    g.stroke({
-      width: Math.max(1, t * 0.08),
-      color: hex(palette.waterFoam),
-      alpha: 0.5,
-      cap: 'round',
-    });
-    // The lip's glossy edge.
-    g.moveTo(f.cx - f.sheet, f.lip).lineTo(f.cx + f.sheet, f.lip);
-    g.stroke({ width: Math.max(1.5, t * 0.1), color: hex(palette.waterFoam), alpha: 0.7 });
-    // Cream churning where it lands, puffs rising and spreading.
-    for (let k = 0; k < 12; k++) {
-      const phase = still ? 0.5 : (((this.clock / 1000 + hash(k, 43)) % 1) + 1) % 1;
-      const x = f.cx + (hash(k, 44) - 0.5) * f.sheet * 2.4 * (0.6 + phase * 0.6);
-      const y = f.poolY + (hash(k, 45) - 0.3) * t * 0.5 - phase * t * 0.2;
-      g.circle(x, y, t * (0.1 + 0.14 * (1 - phase)));
+    g.fill({ color: body });
+    // The streams, swelling a little as they fall, each ending in the pool.
+    for (const s of streams) {
+      g.poly([
+        s.x - s.w,
+        f.lip,
+        s.x + s.w,
+        f.lip,
+        s.x + s.w * 1.2,
+        f.poolY,
+        s.x - s.w * 1.2,
+        f.poolY,
+      ]);
     }
-    g.fill({ color: hex(palette.waterFoam), alpha: 0.7 });
+    g.fill({ color: body });
+    for (const s of streams) {
+      g.poly([
+        s.x + s.w * 0.35,
+        f.lip,
+        s.x + s.w,
+        f.lip,
+        s.x + s.w * 1.2,
+        f.poolY,
+        s.x + s.w * 0.4,
+        f.poolY,
+      ]);
+    }
+    g.fill({ color: shade });
+    // The light down each stream's left side, and on the curl over the lip.
+    for (const s of streams) {
+      g.moveTo(s.x - s.w * 0.55, f.lip - t * 0.25).lineTo(s.x - s.w * 0.6, f.lip);
+      g.lineTo(s.x - s.w * 0.75, f.poolY - t * 0.1);
+    }
+    g.stroke({ width: Math.max(1, t * 0.08), color: gloss, alpha: 0.75, cap: 'round' });
+    // Gloss running down: short glints, each stream on its own beat.
+    streams.forEach((s, k) => {
+      for (let j = 0; j < 2; j++) {
+        const run = phase(700, k * 2 + j);
+        const y = f.lip + (f.poolY - f.lip) * run;
+        const x = s.x + s.w * (0.05 - 0.2 * run) * (j === 0 ? 1 : -1);
+        g.moveTo(x, y).lineTo(x, Math.min(f.poolY - t * 0.05, y + t * 0.3));
+      }
+    });
+    g.stroke({ width: Math.max(1, t * 0.07), color: 0xffffff, alpha: 0.7, cap: 'round' });
+    // Ripples spreading on the pool from each stream's foot.
+    streams.forEach((s, k) => {
+      const p = phase(1300, k + 10);
+      g.ellipse(s.x, f.poolY + t * 0.05, s.w * (1.3 + p * 1.6), t * (0.12 + p * 0.18));
+      g.stroke({ width: Math.max(1, t * 0.06), color: gloss, alpha: 0.6 * (1 - p) });
+    });
+    // The splash: a foot of cream where each lands, drops thrown up and falling back.
+    for (const s of streams) g.ellipse(s.x, f.poolY, s.w * 1.4, t * 0.13);
+    g.fill({ color: gloss, alpha: 0.9 });
+    streams.forEach((s, k) => {
+      for (let j = 0; j < 3; j++) {
+        const p = phase(600, k * 3 + j + 20);
+        const side = (j - 1) * 0.9 + (hash(k, j, 46) - 0.5) * 0.4;
+        const x = s.x + side * s.w * (1 + p * 1.4);
+        const y = f.poolY - Math.sin(p * Math.PI) * t * (0.3 + 0.15 * hash(k, j, 47));
+        g.circle(x, y, t * 0.085 * (1 - p * 0.5));
+      }
+    });
+    g.fill({ color: gloss, alpha: 0.9 });
   }
 
   // ------------------------------------------------------------------ territory
@@ -802,36 +882,37 @@ export class ChocolateTheme extends ShapeTheme implements Theme {
 
     for (const r of wall.tops) g.rect(r.x, r.y, r.w, r.h);
     g.fill({ color: coat, alpha });
-    // Each square raised a little in the middle, as a bar's are, its groove dark round it.
+    // Each square a bar's segment: the groove dark round it, and inside it a raised square
+    // scored into the top, lit on its upper and left edges and shaded on the others, as a
+    // moulded bar's are. Every block once carried the same curl of gloss, which repeated
+    // down every wall like a stamp (S9); the shine that slides across now and then is gloss
+    // enough.
+    const bevel = Math.max(1, t * 0.055);
     for (const b of wall.blocks) {
-      const inset = t * 0.15;
-      g.roundRect(
-        b.left + inset,
-        b.top + inset,
-        t - inset * 2,
-        b.lip - b.top - inset * 2,
-        t * 0.08,
-      );
+      const inset = t * 0.2;
+      g.rect(b.left + inset, b.top + inset, t - inset * 2, b.lip - b.top - inset * 2);
     }
-    g.fill({ color: coatLight, alpha: 0.35 * alpha });
+    g.fill({ color: coatLight, alpha: 0.28 * alpha });
     for (const b of wall.blocks) g.rect(b.left, b.top, t, b.lip - b.top);
     g.stroke({ width: Math.max(1, t * 0.06), color: coatDark, alpha: 0.8 * alpha });
-    // The gloss on each square.
     for (const b of wall.blocks) {
-      const h = b.lip - b.top;
-      g.moveTo(b.left + t * 0.24, b.top + h * 0.55).quadraticCurveTo(
-        b.left + t * 0.24,
-        b.top + h * 0.24,
-        b.left + t * 0.55,
-        b.top + h * 0.24,
-      );
+      const inset = t * 0.2;
+      const x1 = b.left + inset;
+      const y1 = b.top + inset;
+      const x2 = b.left + t - inset;
+      const y2 = b.lip - inset;
+      g.moveTo(x1, y2).lineTo(x1, y1).lineTo(x2, y1);
     }
-    g.stroke({
-      width: Math.max(1, t * 0.08),
-      color: 0xffffff,
-      alpha: (bloom ? 0.15 : 0.5) * alpha,
-      cap: 'round',
-    });
+    g.stroke({ width: bevel, color: 0xffffff, alpha: (bloom ? 0.2 : 0.55) * alpha });
+    for (const b of wall.blocks) {
+      const inset = t * 0.2;
+      const x1 = b.left + inset;
+      const y1 = b.top + inset;
+      const x2 = b.left + t - inset;
+      const y2 = b.lip - inset;
+      g.moveTo(x2, y1).lineTo(x2, y2).lineTo(x1, y2);
+    }
+    g.stroke({ width: bevel, color: coatDark, alpha: 0.75 * alpha });
 
     // The bar cut through, down its face: coating, filling, chocolate.
     const face = wall.face;
@@ -841,15 +922,26 @@ export class ChocolateTheme extends ShapeTheme implements Theme {
     g.fill({ color: bloom ? hex(palette.rockMid) : hex(palette.rockLight), alpha });
     for (const r of wall.faces) g.rect(r.x, r.y + r.h * 0.48, r.w, r.h * 0.52);
     g.fill({ color: chocolate, alpha });
-    // Drips of coating running down over the chocolate.
+    // Drips of coating running down over the chocolate: none on most blocks, one on some and
+    // two on a few, each placed, sized and run to its own length by the block's hash, so no
+    // two neighbours drip alike (S9). A bead of coating swells at the lip where each starts.
     if (!bloom) {
       for (const b of wall.blocks) {
-        if (!b.faced || hash(b.x, b.y, 90) > this.style.dripShare) continue;
-        const x = b.left + t * (0.25 + 0.5 * hash(b.x, b.y, 91));
-        const length = face * (0.45 + 0.4 * hash(b.x, b.y, 92));
-        const w = t * 0.13;
-        g.rect(x - w / 2, b.lip, w, length);
-        g.circle(x, b.lip + length, w * 0.62);
+        if (!b.faced) continue;
+        const roll = hash(b.x, b.y, 90);
+        if (roll > this.style.dripShare) continue;
+        const two = roll < this.style.dripShare * 0.35;
+        for (let k = 0; k < (two ? 2 : 1); k++) {
+          // Two drips keep to their own halves of the block; one may fall anywhere on it.
+          const from = two ? 0.14 + k * 0.44 : 0.16;
+          const span = two ? 0.28 : 0.68;
+          const x = b.left + t * (from + span * hash(b.x, b.y, 91 + k * 4));
+          const length = face * (0.3 + 0.6 * hash(b.x, b.y, 92 + k * 4));
+          const w = t * (0.08 + 0.08 * hash(b.x, b.y, 93 + k * 4));
+          g.rect(x - w / 2, b.lip, w, length);
+          g.circle(x, b.lip + length, w * 0.62);
+          g.ellipse(x, b.lip, w * 1.1, w * 0.45);
+        }
       }
       g.fill({ color: coatDark, alpha });
     }
@@ -1627,7 +1719,7 @@ export class ChocolateTheme extends ShapeTheme implements Theme {
 
 /**
  * Chocolate's scenery, all sweets, none like a wall, a gun or a bonbon in flight: a tree a
- * lollipop with a swirl, a pine a tall swirl of soft meringue, a bush a puff of candy floss,
+ * lollipop with a swirl, or now and then a gummy bear or a gingerbread house, a pine a tall swirl of soft meringue, a bush a puff of candy floss,
  * a boulder a cookie lying flat with its chips.
  */
 function drawChocolateScenery(
@@ -1643,7 +1735,14 @@ function drawChocolateScenery(
     const cx = tileX(view, item.x + 0.5);
     const cy = tileY(view, item.y + 0.5);
     const candy = CANDY[item.variant % CANDY.length]!;
-    if (item.kind === 'tree') {
+    // A lollipop's place is now and then taken by a gummy bear or a gingerbread house, so a
+    // copse is not row after row of the same lollipop (S9); by the tile's hash, so it stays.
+    const pick = hash(item.x, item.y, 150);
+    if (item.kind === 'tree' && pick < GINGERBREAD_SHARE) {
+      drawGingerbread(g, cx, cy, t, art);
+    } else if (item.kind === 'tree' && pick < GINGERBREAD_SHARE + GUMMY_SHARE) {
+      drawGummyBear(g, cx, cy, t, candy, art);
+    } else if (item.kind === 'tree') {
       g.ellipse(cx + t * 0.08, cy + t * 0.36, t * 0.22, t * 0.08);
       g.fill({ color: hex(palette.shadow), alpha: 0.25 });
       g.moveTo(cx, cy + t * 0.36).lineTo(cx, cy - t * 0.05);
@@ -1705,4 +1804,81 @@ function drawChocolateScenery(
       g.fill({ color: hex(palette.craterDark) });
     }
   }
+}
+
+/** A gummy bear sitting up, in a candy pastel, lit from the top left. */
+function drawGummyBear(
+  g: Graphics,
+  cx: number,
+  cy: number,
+  t: number,
+  candy: number,
+  art: ArtConfig,
+): void {
+  const { palette } = art;
+  // A little larger than a tile's sweets, or it read as a crumb beside the lollipops.
+  const u = t * GUMMY_SCALE;
+  g.ellipse(cx + t * 0.06, cy + t * 0.44, t * 0.24, t * 0.08);
+  g.fill({ color: hex(palette.shadow), alpha: 0.25 });
+  // Legs, body, arms, head and ears, as one soft shape.
+  g.circle(cx - u * 0.11, cy + u * 0.27, u * 0.08);
+  g.circle(cx + u * 0.11, cy + u * 0.27, u * 0.08);
+  g.ellipse(cx, cy + u * 0.12, u * 0.15, u * 0.18);
+  g.circle(cx - u * 0.16, cy + u * 0.06, u * 0.065);
+  g.circle(cx + u * 0.16, cy + u * 0.06, u * 0.065);
+  g.circle(cx - u * 0.11, cy - u * 0.25, u * 0.06);
+  g.circle(cx + u * 0.11, cy - u * 0.25, u * 0.06);
+  g.circle(cx, cy - u * 0.13, u * 0.14);
+  g.fill({ color: candy, alpha: 0.92 });
+  // A deeper shade on the belly, where the jelly is thickest, and the glint of its gloss.
+  g.ellipse(cx + u * 0.02, cy + u * 0.16, u * 0.08, u * 0.1);
+  g.fill({ color: mixed(candy, hex(palette.shadow), 0.18), alpha: 0.5 });
+  g.circle(cx - u * 0.06, cy - u * 0.18, u * 0.035);
+  g.circle(cx - u * 0.08, cy + u * 0.04, u * 0.03);
+  g.fill({ color: 0xffffff, alpha: 0.8 });
+}
+
+/**
+ * A gingerbread house: biscuit walls, a roof edged in piped icing with gumdrops on its
+ * ridge, a door and two iced windows. Biscuit brown, never a player's colour, and nothing
+ * like the cakes, which are the castles.
+ */
+function drawGingerbread(g: Graphics, cx: number, cy: number, t: number, art: ArtConfig): void {
+  const { palette } = art;
+  const biscuit = mixed(hex(palette.sand), hex(palette.craterMid), 0.35);
+  const baked = mixed(hex(palette.sand), hex(palette.craterMid), 0.6);
+  const icing = hex(palette.rockLight);
+  const ink = Math.max(1, t * 0.05);
+  g.ellipse(cx + t * 0.08, cy + t * 0.38, t * 0.36, t * 0.09);
+  g.fill({ color: hex(palette.shadow), alpha: 0.25 });
+  // The walls.
+  const left = cx - t * 0.3;
+  const top = cy - t * 0.02;
+  g.rect(left, top, t * 0.6, t * 0.38);
+  g.fill({ color: biscuit });
+  g.stroke({ width: ink, color: baked });
+  // The roof, two slopes over the eaves, with its icing scalloped along them.
+  const eave = top + t * 0.02;
+  const ridge = cy - t * 0.42;
+  g.poly([cx - t * 0.4, eave, cx, ridge, cx + t * 0.4, eave]);
+  g.fill({ color: baked });
+  for (let k = 0; k <= 4; k++) {
+    const f = k / 4;
+    g.circle(cx - t * 0.4 * (1 - f), eave + (ridge - eave) * f, t * 0.05);
+    g.circle(cx + t * 0.4 * (1 - f), eave + (ridge - eave) * f, t * 0.05);
+  }
+  g.fill({ color: icing });
+  // Gumdrops on the ridge, in the candy pastels.
+  for (const [k, dx] of [-0.08, 0.08].entries()) {
+    g.circle(cx + t * dx, ridge + t * 0.12, t * 0.045);
+    g.fill({ color: CANDY[k + 1]! });
+  }
+  // A door and two windows, framed in icing.
+  g.roundRect(cx - t * 0.06, top + t * 0.16, t * 0.12, t * 0.22, t * 0.05);
+  g.fill({ color: hex(palette.craterMid) });
+  for (const dx of [-0.2, 0.12]) g.rect(cx + t * dx, top + t * 0.08, t * 0.08, t * 0.08);
+  g.fill({ color: hex(palette.uiAccent), alpha: 0.85 });
+  g.stroke({ width: ink, color: icing });
+  g.moveTo(left, top + t * 0.38).lineTo(left + t * 0.6, top + t * 0.38);
+  g.stroke({ width: ink, color: icing });
 }

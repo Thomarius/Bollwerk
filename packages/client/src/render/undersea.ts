@@ -1,5 +1,5 @@
 import type { ArtConfig, UnderseaStyleConfig } from '@bollwerk/config';
-import { Structure, type Castle, type MatchState, type Shot } from '@bollwerk/sim';
+import { Structure, type Cannon, type Castle, type MatchState, type Shot } from '@bollwerk/sim';
 import { Container, Graphics } from 'pixi.js';
 
 import { motionReduced } from '../motion.js';
@@ -141,6 +141,14 @@ const WOOD = 0x5c4a36;
 const WOOD_LIGHT = 0x7a6448;
 const BRASS = 0xb08a4a;
 const KELP = 0x6a7a3a;
+/** The gun nests' sandstone, before the owner's cast. */
+const SANDSTONE = 0xc8a878;
+/** Barnacles: a cream shell, pale on the rocks without being white as a bubble is. */
+const BARNACLE = 0xe8dcc0;
+/** How much of the owner's dark colour is in a nest's sandstone, so the nest says whose. */
+const NEST_CAST = 0.3;
+/** How opaque a nest's slab is: enough to read as stone, little enough that the seagrass shows. */
+const NEST_ALPHA = 0.62;
 const SILVER = 0xc9d8e0;
 /** The octopus on the wreck: mottled taupe, a colour no player has. */
 const OCTOPUS = 0x9a7a66;
@@ -759,7 +767,6 @@ export class UnderseaTheme extends ShapeTheme implements Theme {
 
   /** One island's structures, for `IslandParts`: the board holds that island's alone. */
   private drawIsland(g: Graphics, state: MatchState, view: ViewTransform): void {
-    const t = view.tile;
     const wallAt = (x: number, y: number): number =>
       x >= 0 && y >= 0 && x < state.width && y < state.height
         ? state.structure[y * state.width + x] === Structure.Wall
@@ -780,37 +787,78 @@ export class UnderseaTheme extends ShapeTheme implements Theme {
 
     for (const castle of state.castles) this.drawPalace(g, view, castle);
 
-    // Guns sit in a nest of rock on the shared square; the pufferfish over it is drawn with
-    // the effects, turned to its target.
-    for (const cannon of state.cannons) {
-      cannonBase(
-        g,
-        view,
-        cannon,
-        hex(this.art.palette.rockDark),
-        this.colour(cannon.owner, 'base'),
-      );
-      for (let k = 0; k < 6; k++) {
-        const a = (k / 6) * Math.PI * 2 + 0.3;
-        const r = Math.min(cannon.w, cannon.h) * t * 0.4;
-        const x = tileX(view, cannon.x + cannon.w / 2) + Math.cos(a) * r;
-        const y = tileY(view, cannon.y + cannon.h / 2) + Math.sin(a) * r;
-        const s = t * (0.1 + 0.05 * (k % 2));
-        g.poly([
-          x - s,
-          y,
-          x - s * 0.4,
-          y - s,
-          x + s,
-          y - s * 0.6,
-          x + s * 0.8,
-          y + s * 0.7,
-          x - s * 0.3,
-          y + s,
-        ]);
+    for (const cannon of state.cannons) this.drawNest(g, view, cannon);
+  }
+
+  /**
+   * A gun's reef nest, under the pufferfish drawn with the effects: on the shared square, a
+   * slab of sandstone with a cast of the owner's dark colour — warm, where grey rock at the
+   * same strength hid the seagrass and read as a hole — laid in strata, a hollow worn where
+   * the fish sits, and the ring of rocks round it crusted with barnacles. The fish over it,
+   * drained grey when silenced, stands out against the warm stone.
+   */
+  private drawNest(g: Graphics, view: ViewTransform, cannon: Cannon): void {
+    const t = view.tile;
+    const { palette } = this.art;
+    const ink = hex(palette.shadow);
+    const stone = mixed(SANDSTONE, this.colour(cannon.owner, 'dark'), NEST_CAST);
+    cannonBase(g, view, cannon, stone, this.colour(cannon.owner, 'base'), NEST_ALPHA);
+    const cx = tileX(view, cannon.x + cannon.w / 2);
+    const cy = tileY(view, cannon.y + cannon.h / 2);
+    const size = Math.min(cannon.w, cannon.h) * t;
+    const left = tileX(view, cannon.x + 0.1);
+    const right = tileX(view, cannon.x + cannon.w - 0.1);
+    // The strata, two wavering lines across the slab.
+    for (const f of [0.3, 0.72]) {
+      const y = tileY(view, cannon.y) + size * f;
+      g.moveTo(left, y);
+      for (let k = 1; k <= 4; k++) {
+        g.lineTo(left + ((right - left) * k) / 4, y + (k % 2 === 0 ? -1 : 1) * t * 0.04);
       }
-      g.fill({ color: hex(this.art.palette.rockMid) });
     }
+    g.stroke({ width: Math.max(1, t * 0.04), color: mixed(stone, ink, 0.35), alpha: 0.6 });
+    // The hollow the fish has worn.
+    g.ellipse(cx, cy + size * 0.04, size * 0.3, size * 0.24);
+    g.fill({ color: mixed(stone, ink, 0.3), alpha: 0.45 });
+    // The ring of rocks, and barnacles on every other one: a pale cone, its dark mouth.
+    const barnacles: [number, number, number][] = [];
+    for (let k = 0; k < 6; k++) {
+      const a = (k / 6) * Math.PI * 2 + 0.3;
+      const r = size * 0.4;
+      const x = cx + Math.cos(a) * r;
+      const y = cy + Math.sin(a) * r;
+      const s = t * (0.13 + 0.06 * (k % 2));
+      g.poly([
+        x - s,
+        y,
+        x - s * 0.4,
+        y - s,
+        x + s,
+        y - s * 0.6,
+        x + s * 0.8,
+        y + s * 0.7,
+        x - s * 0.3,
+        y + s,
+      ]);
+      if (k % 2 === 1) barnacles.push([x - s * 0.2, y - s * 0.2, s * 0.45]);
+      if (hash(cannon.x + k, cannon.y, 760) < 0.5)
+        barnacles.push([x + s * 0.4, y + s * 0.3, s * 0.3]);
+    }
+    g.fill({ color: mixed(hex(palette.rockMid), SANDSTONE, 0.3) });
+    g.stroke({ width: Math.max(0.75, t * 0.03), color: ink, alpha: 0.45, join: 'round' });
+    // A barnacle seen from above: a cone of shell, its plates' mouth a dark slit.
+    for (const [x, y, r] of barnacles) {
+      const points: number[] = [];
+      for (let k = 0; k < 6; k++) {
+        const a = (k / 6) * Math.PI * 2;
+        points.push(x + Math.cos(a) * r, y + Math.sin(a) * r);
+      }
+      g.poly(points);
+    }
+    g.fill({ color: BARNACLE });
+    g.stroke({ width: Math.max(0.75, t * 0.02), color: ink, alpha: 0.5 });
+    for (const [x, y, r] of barnacles) g.ellipse(x, y, r * 0.4, r * 0.12);
+    g.fill({ color: ink, alpha: 0.75 });
   }
 
   /**

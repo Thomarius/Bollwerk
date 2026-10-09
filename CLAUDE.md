@@ -157,6 +157,13 @@ Full detail in PLAN.md §1. The parts that surprise people:
 tree is at protocol 20, which a test session needs the server rebuilt and every page
 reloaded for):
 
+- **The style pass** (ARCHIVE 12zt–12zz, 13a, 13b): every style but Minimal reviewed in the same
+  screenshots and finished in nine packages — readability first (S1), then Parchment, Blueprint,
+  Pixel and Night, Toy bricks, Stained glass and Cyberpunk made things of their setting (castles,
+  guns, walls, sealed ground, life), then the middle styles' walls and guns and the last touches;
+  the main castle's crown, still one shared mark, smaller and at the castle's foot.
+- **Fair seating** (ARCHIVE 12zs): three teams of two on a ring of six, four teams of two on
+  one of the grid's four fair seatings (`teamLayouts`).
 - **The third feedback** (ARCHIVE 12zr): a tournament's lobby is one screen for the host and
   their teammates, a Match tab (the map, the seats, who plays in place of which bot) and a
   Tournament tab (the standings, the bracket as an icon beside them), opening on the match.
@@ -227,9 +234,8 @@ reloaded for):
   piece and German checked in play by the user (ARCHIVE 12n–12t).
 
 **Next** — PLAN §11: the tournament's play-testing (T8), more test games towards a first
-feature-ready version, **the style pass** (item 3: nine work packages, S1 readability first,
-then the older styles' castles and guns made things of their setting — Parchment, Blueprint,
-Pixel and Night, Toy bricks, Stained glass, Cyberpunk; the crown stays shared), and bots that miss as people do (combat accuracy, measured against the
+feature-ready version, two rendering leads the style pass left (item 3: Chocolate's cost,
+Blueprint's vertices), and bots that miss as people do (combat accuracy, measured against the
 testers' recordings; how is not yet decided). **The bot learning work is paused**; when it
 resumes, `docs/BOT_LEARNING.md` §6 says where — first, learning the choice of wall rather
 than only the cell. French is not to be done. Signing the Windows app was explained (PLAN

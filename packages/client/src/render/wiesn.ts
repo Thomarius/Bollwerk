@@ -44,7 +44,11 @@ const PRETZEL_STRANDS: readonly (readonly [number, number])[][] = (() => {
   ];
 })();
 
-/** A pretzel, turned by `angle`, `size` its half-width in pixels, glazed brown, salted. */
+/**
+ * A pretzel, turned by `angle`, `size` its half-width in pixels, glazed brown, salted. A
+ * `salt` colour salts it in coarse crystals of that colour, ringed in white so a dark one
+ * still shows on the glaze: a pretzel in flight is salted in its owner's colour (S9).
+ */
 export function drawPretzel(
   g: Graphics,
   x: number,
@@ -52,6 +56,7 @@ export function drawPretzel(
   size: number,
   angle: number,
   alpha = 1,
+  salt: number | null = null,
 ): void {
   const c = Math.cos(angle);
   const s = Math.sin(angle);
@@ -93,9 +98,15 @@ export function drawPretzel(
     [0.38, -0.32],
   ] as const) {
     const [px, py] = at(u, v);
-    g.rect(px - size * 0.04, py - size * 0.04, size * 0.08, size * 0.08);
+    const r = salt === null ? size * 0.04 : size * 0.075;
+    g.rect(px - r, py - r, r * 2, r * 2);
   }
-  g.fill({ color: 0xffffff, alpha: 0.9 * alpha });
+  if (salt === null) {
+    g.fill({ color: 0xffffff, alpha: 0.9 * alpha });
+  } else {
+    g.fill({ color: salt, alpha });
+    g.stroke({ width: Math.max(1, size * 0.04), color: 0xffffff, alpha: 0.9 * alpha });
+  }
 }
 
 /** A heart's outline, `w` wide, centred on (x, y). */

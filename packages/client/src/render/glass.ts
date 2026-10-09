@@ -1375,13 +1375,7 @@ function drawGlassScenery(
     const cx = tileX(view, item.x + 0.5);
     const cy = tileY(view, item.y + 0.5);
     if (item.kind === 'tree') {
-      g.rect(cx - t * 0.06, cy, t * 0.12, t * 0.32);
-      g.fill({ color: 0x6b4423 });
-      g.circle(cx, cy - t * 0.05, t * 0.32);
-      g.fill({ color: hex(palette.grassLight) });
-      g.moveTo(cx - t * 0.32, cy - t * 0.05).lineTo(cx + t * 0.32, cy - t * 0.05);
-      g.circle(cx, cy - t * 0.05, t * 0.32);
-      g.stroke({ width: lead, color: hex(palette.shadow) });
+      drawGlassTree(g, cx, cy, t, item.variant, palette, lead);
     } else if (item.kind === 'pine') {
       g.poly([cx, cy - t * 0.4, cx + t * 0.3, cy + t * 0.25, cx - t * 0.3, cy + t * 0.25]);
       g.fill({ color: mixed(hex(palette.grassDark), hex(palette.grassLight), 0.4) });
@@ -1418,6 +1412,71 @@ function drawGlassScenery(
       g.stroke({ width: lead, color: hex(palette.shadow) });
     }
   }
+}
+
+/**
+ * Where a glass tree's crown is cut into leaf panes, as angles round it from the left of
+ * its foot over the top to the right of it (y down, so a half turn is the left): four
+ * panes fanning from the foot, as a window's tree is leaded. Three read as a fleur-de-lis
+ * beside the bushes, five were too fine to tell apart at eight players.
+ */
+const TREE_PANE_CUTS = [0.67, 1.08, 1.5, 1.92, 2.33].map((turns) => turns * Math.PI);
+
+/**
+ * A tree as a window draws one: a round crown cut into leaf panes fanning from its foot,
+ * two greens in turn — one sunlit towards gold, so the crown stands out of the green panes
+ * of the land under it — over a short brown trunk. `variant` mirrors it, so a copse is not
+ * stamped alike. Leaded only from 20-pixel tiles, as the fleurs-de-lis are: at eight
+ * players' size the lead round every pane made the crown a black blot.
+ */
+function drawGlassTree(
+  g: Graphics,
+  cx: number,
+  cy: number,
+  t: number,
+  variant: number,
+  palette: ArtConfig['palette'],
+  lead: number,
+): void {
+  const r = t * 0.32;
+  const oy = cy - t * 0.1;
+  // The foot of the fan, on the chord the crown's flattened bottom makes.
+  const fy = oy + r * 0.82;
+  const trunk = [
+    cx - t * 0.07,
+    fy,
+    cx + t * 0.07,
+    fy,
+    cx + t * 0.1,
+    cy + t * 0.4,
+    cx - t * 0.1,
+    cy + t * 0.4,
+  ];
+  g.poly(trunk);
+  g.fill({ color: 0x6b4423 });
+  const sunlit = mixed(hex(palette.grassLight), hex(palette.uiAccent), 0.35);
+  const shaded = mixed(hex(palette.grassLight), hex(palette.grassMid), 0.25);
+  const flip = variant % 2 === 0 ? 1 : -1;
+  const panes: number[][] = [];
+  for (let k = 0; k + 1 < TREE_PANE_CUTS.length; k++) {
+    const from = TREE_PANE_CUTS[k]!;
+    const to = TREE_PANE_CUTS[k + 1]!;
+    const pane = [cx, fy];
+    const steps = 4;
+    for (let s = 0; s <= steps; s++) {
+      const a = from + ((to - from) * s) / steps;
+      pane.push(cx + flip * Math.cos(a) * r, oy + Math.sin(a) * r);
+    }
+    panes.push(pane);
+    g.poly(pane);
+    g.fill({ color: k % 2 === 0 ? sunlit : shaded });
+  }
+  if (t < 20) return;
+  const ink = hex(palette.shadow);
+  g.poly(trunk);
+  g.stroke({ width: Math.max(1, lead * 0.7), color: ink, join: 'round' });
+  for (const pane of panes) g.poly(pane);
+  g.stroke({ width: Math.max(1, lead * 0.7), color: ink, join: 'round' });
 }
 
 /** The width of the light's gradient, in texture pixels. */

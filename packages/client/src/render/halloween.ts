@@ -48,7 +48,7 @@ import {
   type ViewTransform,
   mixed,
 } from './theme.js';
-import { outline, trace, wallGeometry } from './walls.js';
+import { outline, trace, wallGeometry, type WallBlock } from './walls.js';
 import { cannonBase } from './cannonBase.js';
 import { ShapeTheme } from './shapeTheme.js';
 import { hueNearness } from './hue.js';
@@ -139,6 +139,20 @@ const RING_MS = 900;
 const SINK_MS = 900;
 const MATERIALISE_MS = 520;
 const SPLASH_MS = 600;
+
+/**
+ * How much of the owner's colour is in the crypt's stone. Dark stone with a cast, so the
+ * glowing mortar carries ownership; at 0.4 over pale stone the walls were pastel tiles
+ * (the style review).
+ */
+const STONE_CAST = 0.38;
+/** How far an owner of the dusk's own hue has their stone lifted towards the light (S1). */
+const KIN_LIFT = 0.45;
+/** The share of blocks with a skull carved in them, and with ivy down their face. */
+const SKULL_ODDS = 0.02;
+const IVY_ODDS = 0.035;
+/** Ivy, a deep green so dark it never reads as the green player's. */
+const IVY = 0x34502c;
 
 /** Autumn for the leaves that fall instead of snow. */
 const LEAVES = [0xff9a1f, 0xc2410c, 0xe0b040, 0x8a3a1a] as const;
@@ -729,10 +743,12 @@ export class HalloweenTheme extends ShapeTheme implements Theme {
   }
 
   /**
-   * Walls of crypt stone: each block cut stone with a cast of the owner's colour, the
-   * mortar between them glowing with spirit-light in it, standing up to the shared height,
-   * a cobweb in a corner here and there. A player's who is out (`player` -1) is plain grey
-   * stone, its light gone out and its webs thick.
+   * Walls of crypt stone: each block laid as two or three irregular stones, by a hash of the
+   * tile, their joints dark; the stone dark, with a cast of the owner's colour, so the
+   * mortar round each block — glowing with spirit-light in the owner's light — carries who
+   * owns it and shows a shot takes one block. Standing up to the shared height; a crack, a
+   * cobweb in a corner here and there, and rarely a carved skull or a trail of ivy. A
+   * player's who is out (`player` -1) is plain grey stone, its light gone out, webs thick.
    */
   private drawCrypt(
     g: Graphics,
@@ -745,82 +761,156 @@ export class HalloweenTheme extends ShapeTheme implements Theme {
     const { palette } = this.art;
     const t = view.tile;
     const dead = player < 0;
+    const shadow = hex(palette.shadow);
     // An owner whose hue is the dusk land's own (violet at eight players) built walls that
     // sank into the ground: its stone is lifted towards the light and the land round the
     // wall darkened, in proportion, so the other owners look as they did.
     const kin = dead ? 0 : hueNearness(this.colour(player, 'base'), hex(palette.grassMid), 40);
     const stone = dead
-      ? hex(palette.rockMid)
+      ? mixed(hex(palette.rockDark), hex(palette.rockMid), 0.5)
       : mixed(
-          mixed(hex(palette.rockMid), this.colour(player, 'base'), 0.4),
+          mixed(hex(palette.rockDark), this.colour(player, 'base'), STONE_CAST),
           hex(palette.rockLight),
-          0.35 * kin,
+          KIN_LIFT * kin,
         );
     const stoneDark = dead
-      ? hex(palette.rockDark)
-      : mixed(hex(palette.rockDark), this.colour(player, 'dark'), 0.4);
-    const spirit = dead ? hex(palette.rockDark) : this.colour(player, 'light');
+      ? mixed(hex(palette.rockDark), shadow, 0.3)
+      : mixed(shadow, this.colour(player, 'dark'), STONE_CAST);
+    const spirit = dead ? mixed(hex(palette.rockDark), shadow, 0.5) : this.colour(player, 'light');
     const wall = wallGeometry(cells, joins, view, this.faceFraction());
+    const laid = wall.blocks.map((b) => cryptStones(b, t, wall.face));
 
     if (kin > 0) {
       trace(g, wall.rim);
-      g.stroke({ width: t * 0.3, color: hex(palette.shadow), alpha: 0.6 * kin * alpha });
+      g.stroke({ width: t * 0.3, color: shadow, alpha: 0.6 * kin * alpha });
     }
     for (const r of wall.tops) g.rect(r.x, r.y, r.w, r.h);
     g.fill({ color: stone, alpha });
     for (const r of wall.faces) g.rect(r.x, r.y, r.w, r.h);
     g.fill({ color: stoneDark, alpha });
-    // Each block's face cut a little proud, lit along its upper edge.
-    for (const b of wall.blocks) {
-      const inset = t * 0.14;
-      g.rect(b.left + inset, b.top + inset, t - inset * 2, Math.max(1, (b.lip - b.top) * 0.18));
-    }
-    g.fill({ color: hex(palette.rockLight), alpha: 0.22 * alpha });
+    // One stone in each block weathered paler, another sunk in shade, so the stones read
+    // apart before their joints do.
+    for (const l of laid) g.poly(l.stones[l.pale] as number[]);
+    g.fill({ color: hex(palette.rockLight), alpha: 0.12 * alpha });
+    for (const l of laid) g.poly(l.stones[l.shaded] as number[]);
+    g.fill({ color: shadow, alpha: 0.22 * alpha });
     // A crack across one block in a few.
     for (const b of wall.blocks) {
-      if (hash(b.x, b.y, 240) > 0.18) continue;
+      if (hash(b.x, b.y, 240) > 0.12) continue;
       const h = b.lip - b.top;
       g.moveTo(b.left + t * 0.25, b.top + h * 0.3)
         .lineTo(b.left + t * 0.45, b.top + h * 0.55)
         .lineTo(b.left + t * 0.4, b.top + h * 0.8);
     }
-    g.stroke({ width: Math.max(1, t * 0.04), color: hex(palette.shadow), alpha: 0.6 * alpha });
-    // The mortar, glowing: a soft halo, then the bright seam, round every block and across
-    // the faces.
+    g.stroke({ width: Math.max(1, t * 0.04), color: shadow, alpha: 0.6 * alpha });
+    // The joints between the stones of a block, dark: only the mortar round a block glows.
+    for (const l of laid) {
+      for (const [x1, y1, x2, y2] of l.joints) g.moveTo(x1, y1).lineTo(x2, y2);
+    }
+    g.stroke({ width: Math.max(1, t * 0.06), color: shadow, alpha: 0.85 * alpha });
+    // The mortar, glowing: a soft halo, then the bright seam, round every block.
     const seams = (): void => {
       for (const b of wall.blocks)
         g.rect(b.left, b.top, t, b.lip - b.top + (b.faced ? wall.face : 0));
-      trace(g, wall.strips);
     };
     if (!dead) {
       seams();
-      g.stroke({ width: t * 0.18, color: spirit, alpha: 0.22 * alpha });
+      g.stroke({ width: t * 0.2, color: spirit, alpha: 0.26 * alpha });
     }
     seams();
-    g.stroke({ width: Math.max(1, t * 0.05), color: spirit, alpha: 0.9 * alpha });
+    g.stroke({ width: Math.max(1, t * 0.06), color: spirit, alpha: 0.95 * alpha });
     trace(g, wall.rim);
     trace(g, wall.faceEdges);
-    g.stroke({ width: this.ink(view), color: hex(palette.shadow), alpha: 0.8 * alpha });
-    // Cobwebs in the upper left corner of a block, a few spokes and threads across them.
-    const share = dead ? 0.5 : this.style.cobwebShare;
-    if (alpha === 1) {
-      for (const b of wall.blocks) {
-        if (hash(b.x, b.y, 241) > share) continue;
-        const s = t * 0.45;
-        const ox = b.left;
-        const oy = b.top;
-        for (const a of [0, Math.PI / 6, Math.PI / 3, Math.PI / 2]) {
-          g.moveTo(ox, oy).lineTo(ox + Math.cos(a) * s, oy + Math.sin(a) * s);
-        }
-        for (const f of [0.45, 0.8]) {
-          g.moveTo(ox + s * f, oy);
-          for (const a of [Math.PI / 6, Math.PI / 3, Math.PI / 2]) {
-            g.lineTo(ox + Math.cos(a) * s * f, oy + Math.sin(a) * s * f);
-          }
+    g.stroke({ width: this.ink(view), color: shadow, alpha: 0.8 * alpha });
+    if (alpha === 1) this.drawCryptDetail(g, view, wall.blocks, wall.face, stone, dead);
+  }
+
+  /**
+   * A crypt's odd details: cobwebs in the upper left corner of a block, a few spokes and
+   * threads across them; and, rarely, a skull carved in a stone, or ivy trailing down a face.
+   * The skull is cut in the stone's own paler tone, never white, so it reads as carving and
+   * not as a ghost or a shot.
+   */
+  private drawCryptDetail(
+    g: Graphics,
+    view: ViewTransform,
+    blocks: readonly WallBlock[],
+    face: number,
+    stone: number,
+    dead: boolean,
+  ): void {
+    const t = view.tile;
+    const shadow = hex(this.art.palette.shadow);
+    const skulls = blocks.filter((b) => hash(b.x, b.y, 246) < SKULL_ODDS);
+    for (const b of skulls) {
+      const cx = b.left + t / 2;
+      const cy = b.top + (b.lip - b.top) * 0.45;
+      g.circle(cx, cy - t * 0.04, t * 0.15);
+      g.roundRect(cx - t * 0.09, cy + t * 0.04, t * 0.18, t * 0.1, t * 0.03);
+    }
+    g.fill({ color: mixed(stone, hex(this.art.palette.rockLight), 0.4) });
+    for (const b of skulls) {
+      const cx = b.left + t / 2;
+      const cy = b.top + (b.lip - b.top) * 0.45;
+      for (const s of [-1, 1]) g.circle(cx + s * t * 0.06, cy - t * 0.03, t * 0.04);
+      g.poly([cx, cy + t * 0.01, cx - t * 0.02, cy + t * 0.05, cx + t * 0.02, cy + t * 0.05]);
+    }
+    g.fill({ color: shadow, alpha: 0.85 });
+    for (const b of skulls) {
+      const cx = b.left + t / 2;
+      const cy = b.top + (b.lip - b.top) * 0.45;
+      for (const dx of [-0.03, 0.03])
+        g.moveTo(cx + dx * t, cy + t * 0.08).lineTo(cx + dx * t, cy + t * 0.14);
+    }
+    g.stroke({ width: Math.max(1, t * 0.025), color: shadow, alpha: 0.7 });
+
+    // Ivy, from the top over the lip and down the face, where there is one.
+    if (!dead) {
+      const ivy = blocks.filter((b) => b.faced && hash(b.x, b.y, 247) < IVY_ODDS);
+      const leaves: [number, number, number][] = [];
+      for (const b of ivy) {
+        const x0 = b.left + t * (0.2 + 0.5 * hash(b.x, b.y, 248));
+        const y0 = b.top + (b.lip - b.top) * 0.35;
+        const y1 = b.lip + face * 0.9;
+        g.moveTo(x0, y0).bezierCurveTo(
+          x0 + t * 0.12,
+          y0 + (y1 - y0) * 0.35,
+          x0 - t * 0.12,
+          y0 + (y1 - y0) * 0.65,
+          x0 + t * 0.04,
+          y1,
+        );
+        for (let k = 0; k < 4; k++) {
+          const f = (k + 0.5) / 4;
+          leaves.push([x0 + (k % 2 === 0 ? 1 : -1) * t * 0.07, y0 + (y1 - y0) * f, k]);
         }
       }
-      g.stroke({ width: 1, color: 0xf4f0ff, alpha: 0.55 });
+      g.stroke({ width: Math.max(1, t * 0.03), color: 0x2c3a22 });
+      for (const [x, y, k] of leaves) {
+        const s = t * 0.07;
+        const d = k % 2 === 0 ? 1 : -1;
+        g.poly([x - d * s * 0.6, y, x, y - s, x + d * s, y - s * 0.2, x, y + s * 0.7]);
+      }
+      g.fill({ color: IVY });
     }
+
+    const share = dead ? 0.5 : this.style.cobwebShare;
+    for (const b of blocks) {
+      if (hash(b.x, b.y, 241) > share) continue;
+      const s = t * 0.45;
+      const ox = b.left;
+      const oy = b.top;
+      for (const a of [0, Math.PI / 6, Math.PI / 3, Math.PI / 2]) {
+        g.moveTo(ox, oy).lineTo(ox + Math.cos(a) * s, oy + Math.sin(a) * s);
+      }
+      for (const f of [0.45, 0.8]) {
+        g.moveTo(ox + s * f, oy);
+        for (const a of [Math.PI / 6, Math.PI / 3, Math.PI / 2]) {
+          g.lineTo(ox + Math.cos(a) * s * f, oy + Math.sin(a) * s * f);
+        }
+      }
+    }
+    g.stroke({ width: 1, color: 0xf4f0ff, alpha: 0.55 });
   }
 
   private house(view: ViewTransform, castle: Castle): House {
@@ -1611,4 +1701,63 @@ function drawHalloweenScenery(
       g.stroke({ width: 1, color: hex(palette.rockDark) });
     }
   }
+}
+
+/**
+ * A crypt block's stones, by a hash of its tile: its top cut by one joint, upright or
+ * across, or by a joint across and another down from it — each joint a little askew, so the
+ * stones are irregular — and its face, where it has one, by an upright joint. Polygons as
+ * flat point lists, the joints as segments, and which stone is paler and which in shade.
+ */
+function cryptStones(
+  b: WallBlock,
+  t: number,
+  face: number,
+): {
+  stones: number[][];
+  joints: [number, number, number, number][];
+  pale: number;
+  shaded: number;
+} {
+  const L = b.left;
+  const R = b.left + t;
+  const T = b.top;
+  const B = b.lip;
+  const h = B - T;
+  const pick = hash(b.x, b.y, 250);
+  const at = (salt: number): number => 0.35 + 0.3 * hash(b.x, b.y, salt);
+  const skew = (salt: number): number => (hash(b.x, b.y, salt) - 0.5) * 0.24;
+  const stones: number[][] = [];
+  const joints: [number, number, number, number][] = [];
+  if (pick < 0.34) {
+    const a = L + at(251) * t;
+    const a2 = a + skew(252) * t;
+    stones.push([L, T, a, T, a2, B, L, B], [a, T, R, T, R, B, a2, B]);
+    joints.push([a, T, a2, B]);
+  } else {
+    const c = T + at(253) * h;
+    const c2 = c + skew(254) * h;
+    if (pick < 0.67) {
+      stones.push([L, T, R, T, R, c2, L, c], [L, c, R, c2, R, B, L, B]);
+      joints.push([L, c, R, c2]);
+    } else {
+      // A third stone: the lower course split, the joint down from the one across.
+      const f = at(255);
+      const xa = L + f * t;
+      const ya = c + (c2 - c) * f;
+      const xb = xa + skew(256) * t;
+      stones.push(
+        [L, T, R, T, R, c2, L, c],
+        [L, c, xa, ya, xb, B, L, B],
+        [xa, ya, R, c2, R, B, xb, B],
+      );
+      joints.push([L, c, R, c2], [xa, ya, xb, B]);
+    }
+  }
+  if (b.faced && face > 2) {
+    const x = L + (0.25 + 0.5 * hash(b.x, b.y, 257)) * t;
+    joints.push([x, B, x, B + face]);
+  }
+  const pale = Math.floor(hash(b.x, b.y, 258) * stones.length) % stones.length;
+  return { stones, joints, pale, shaded: (pale + 1) % stones.length };
 }

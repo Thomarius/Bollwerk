@@ -1563,8 +1563,29 @@ body.hud-bricks #hud .roster .team .player::before {
   content: none;
 }
 
+/* A member's swatch a light tile with its colour inside, as the shapes are: a light outline
+   alone left the blue member's an empty square on the blue plate, and a ring outside the
+   swatch is clipped by the entry's edge. */
 body.hud-bricks #hud .roster .team .player b {
-  outline: 1px solid #e8f1ff;
+  box-sizing: border-box;
+  border: 2px solid #e8f1ff;
+  box-shadow: inset 0 0 0 1px #0c2a5c;
+}
+
+/* Each shape set on a light one-stud tile, rimmed in the plate's deep blue: on the blue
+   plate the blue player's square was only its thin white rim, and the light rim every bar
+   gives a shape vanishes on a light tile, so here it is dark. */
+body.hud-bricks #hud .roster .line .shape {
+  box-sizing: border-box;
+  padding: 2px;
+  border-radius: 3px;
+  background: #e8f1ff;
+  box-shadow: 0 2px 0 #0c2a5c;
+}
+
+body.hud-bricks #hud .roster .line .shape path {
+  stroke: #0c2a5c;
+  stroke-width: 2px;
 }
 
 @keyframes island-banner-in {
@@ -4128,20 +4149,114 @@ body.hud-noir {
   --hud-font: Impact, 'Arial Black', 'Helvetica Neue', sans-serif;
 }
 
-/* The big timer in heavy white capitals inked round, a hatched shadow under them. */
+/* The bar a strip of a comic page (S9): white paper, its edge inked, and on it a panel for
+   the phase and one for each player or team, dark grey under a faint halftone, each in a
+   heavy ink border, white gutters between. The panels grow to fill the strip, as a page's
+   panels do, rather than leaving the paper bare between the phase and the roster. The
+   gutters and borders are thin, since the 64-pixel bar must hold a name over a score. */
+body.hud-noir #hud .bar {
+  gap: 6px;
+  align-items: stretch;
+  padding: 4px 6px;
+  background: #f4f2ec;
+  border-bottom: 3px solid #0a0a0d;
+}
+
+body.hud-noir #hud .phase,
+body.hud-noir #hud .roster > li {
+  border: 2px solid #0a0a0d;
+  outline: 1px solid #0a0a0d;
+  background-color: #1c1c21;
+  background-image: radial-gradient(circle, #ffffff12 0 1px, transparent 1.4px);
+  background-size: 5px 5px;
+}
+
+/* The phase's label a caption box at the panel's top left, pale and lettered in ink, as a
+   comic's narration; the clock and the round in white beneath it. */
+body.hud-noir #hud .phase {
+  padding: 0 0.5rem 0 0;
+}
+
+/* A table, so it shrinks to its label yet keeps the clock on the line below it, where a
+   German label beside the clock made the phase's panel half the bar. */
+body.hud-noir #hud .phase strong {
+  display: table;
+  margin-bottom: 1px;
+  padding: 1px 0.4rem;
+  border-right: 2px solid #0a0a0d;
+  border-bottom: 2px solid #0a0a0d;
+  background: #f4f2ec;
+  color: #0a0a0d;
+  letter-spacing: 0.08em;
+}
+
+body.hud-noir #hud .phase .timer {
+  margin-left: 0.5rem;
+}
+
+body.hud-noir #hud .roster {
+  flex: 1 1 auto;
+  gap: 6px;
+}
+
+/* The player's colour a band down the panel's inner edge, inside the ink, so the border
+   stays the page's. */
+body.hud-noir #hud .roster > li {
+  flex: 1 1 auto;
+  justify-content: center;
+  padding: 0 0.4rem 0 calc(0.4rem + 4px);
+}
+
+body.hud-noir #hud .roster > .player {
+  border-left: 2px solid #0a0a0d;
+  box-shadow: inset 4px 0 0 var(--who);
+}
+
+/* A team's panel: its letter in a small caption box, the members' names under it. */
+body.hud-noir #hud .roster .letter {
+  padding: 0 0.25rem;
+  background: #f4f2ec;
+  color: #0a0a0d;
+}
+
+/* Your team's panel ruled white inside its ink: a band under it ran through the names. */
+body.hud-noir #hud .roster .team.mine {
+  box-shadow: inset 0 0 0 2px #f4f2ec;
+}
+
+/* The big timer a caption box (S9): a pale rectangle in an ink border, its figures in ink,
+   a hard shadow cast. A little see-through, so it sits on the harbour rather than over it.
+   In the last seconds it turns over, white on black, as the narration does for a shout —
+   not red, since in Noir the players' colours are the only colour. */
 body.hud-noir .big-timer {
-  color: rgb(244 242 236 / 90%);
+  padding: 0.04em 0.22em 0;
+  border: 3px solid #0a0a0d;
+  background: rgb(244 242 236 / 82%);
+  box-shadow: 5px 5px 0 rgb(10 10 13 / 80%);
+  color: #0a0a0d;
   font-family: Impact, 'Arial Black', sans-serif;
-  -webkit-text-stroke: 3px #0a0a0d;
-  paint-order: stroke fill;
-  text-shadow: 4px 4px 0 rgb(10 10 13 / 70%);
+  letter-spacing: 0.04em;
+  text-shadow: none;
 }
 
 body.hud-noir .big-timer.urgent {
-  color: #ffffff;
-  text-shadow:
-    4px 4px 0 rgb(10 10 13 / 70%),
-    0 0 14px rgb(255 255 255 / 70%);
+  border-color: #f4f2ec;
+  background: rgb(10 10 13 / 90%);
+  box-shadow: 5px 5px 0 rgb(244 242 236 / 55%);
+  color: #f4f2ec;
+}
+
+body.hud-noir .big-timer.beat {
+  animation-name: noir-timer-beat;
+}
+
+@keyframes noir-timer-beat {
+  0% {
+    transform: translate(-50%, -50%) scale(1.3);
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(1);
+  }
 }
 
 /* Island banners a caption box, white, inked; the stamps a black box

@@ -140,6 +140,7 @@ const WOOD_DARK = 0x5a3a1c;
 const KEG = 0xa8692e;
 const BRASS = 0xd9b24a;
 const CAP = 0xd9b24a;
+/** Bottles of no one's: green and brown glass. */
 const BOTTLES = [0x3c7a3a, 0x6b3a14] as const;
 /** The tent's canvas, between the stripes in the owner's colour. */
 const CANVAS = 0xfbf5e6;
@@ -850,8 +851,13 @@ export class OktoberfestTheme extends ShapeTheme implements Theme {
           age: 0,
           life: this.art.generators.fx.debrisMs * 1.4,
           floor: block.y + 0.85 + Math.random() * 0.3,
-          size: bottle ? 0.13 : 0.06,
-          colour: bottle ? BOTTLES[k % 2]! : CAP,
+          size: bottle ? 0.17 : 0.06,
+          // The bottles in the crate's owner's colour, so whose crate burst shows (S9).
+          colour: !bottle
+            ? CAP
+            : block.owner < 0
+              ? BOTTLES[k % 2]!
+              : this.colour(block.owner, k % 2 === 0 ? 'base' : 'dark'),
           kind: bottle ? 'bottle' : 'cap',
           angle: Math.random() * Math.PI * 2,
           spin: (Math.random() - 0.5) * 14,
@@ -1102,12 +1108,17 @@ export class OktoberfestTheme extends ShapeTheme implements Theme {
       }
       g.fill({ color: this.colour(shot.owner, 'light'), alpha: 0.7 });
       const size = t * (0.3 + 0.1 * high);
-      g.circle(here.x, here.y, size * 1.05);
-      g.fill({ color: this.colour(shot.owner, 'base'), alpha: 0.45 });
-      // Drawn for a few heights between low and high, and scaled the rest of the way.
+      // Drawn for a few heights between low and high, and scaled the rest of the way; a stamp
+      // an owner, since each is salted in its owner's colour inside a ring of it. The ring was
+      // a faint wash and the salt white, which read as a brown blob in flight (S9).
       const tier = Math.round(high * 4) / 4;
       const drawn = t * (0.3 + 0.1 * tier);
-      const pretzel = this.book.get(`pretzel|${tier}`, t, (k) => drawPretzel(k, 0, 0, drawn, 0));
+      const pretzel = this.book.get(`pretzel|${tier}|${shot.owner}`, t, (k) => {
+        k.circle(0, 0, drawn * 1.08);
+        k.fill({ color: this.colour(shot.owner, 'base'), alpha: 0.35 });
+        k.stroke({ width: Math.max(1.5, drawn * 0.14), color: this.colour(shot.owner, 'base') });
+        drawPretzel(k, 0, 0, drawn, 0, 1, this.colour(shot.owner, 'base'));
+      });
       stamps.place(pretzel, here.x, here.y, {
         rotation: motionReduced() ? 0 : this.clock / 110 + shot.id,
         scale: size / drawn,
@@ -1168,6 +1179,11 @@ export class OktoberfestTheme extends ShapeTheme implements Theme {
         g.stroke({ width: Math.max(2, s * 0.8), color: b.colour, alpha, cap: 'round' });
         g.moveTo(x + c * s * 0.4, y + sn * s * 0.4).lineTo(x + c * s * 1.1, y + sn * s * 1.1);
         g.stroke({ width: Math.max(1, s * 0.35), color: b.colour, alpha, cap: 'round' });
+        // The glass's glint and the crown cap on its neck.
+        g.moveTo(x - c * s * 0.7, y - sn * s * 0.7).lineTo(x + c * s * 0.1, y + sn * s * 0.1);
+        g.stroke({ width: Math.max(1, s * 0.22), color: 0xffffff, alpha: 0.6 * alpha });
+        g.circle(x + c * s * 1.15, y + sn * s * 1.15, Math.max(1, s * 0.25));
+        g.fill({ color: CAP, alpha });
       } else {
         g.circle(x, y, s);
         g.fill({ color: b.colour, alpha });

@@ -119,6 +119,12 @@ interface SkyBolt {
   age: number;
 }
 
+/**
+ * Over land, one raindrop in this many is drawn: the full rain over the board hid it in the
+ * build phase (S9). Chosen by eye in a rainy match at three and eight players.
+ */
+const RAIN_OVER_LAND = 3;
+
 /** A raindrop or a hailstone falling, in tiles on screen. */
 interface Drop {
   x: number;
@@ -1558,7 +1564,7 @@ export class ElectricTheme extends ShapeTheme implements Theme {
         k.fill({ color: 0xf0f4f8 });
       });
       const dt = deltaMs / 1000;
-      for (const d of this.drops) {
+      for (const [n, d] of this.drops.entries()) {
         d.y += d.speed * dt;
         d.x += d.speed * 0.3 * dt;
         if (d.y > (hail ? d.floor + 0.3 : rows)) {
@@ -1568,8 +1574,17 @@ export class ElectricTheme extends ShapeTheme implements Theme {
         }
         // A hailstone bounces once where it lands, then is gone.
         const y = hail && d.y > d.floor ? d.floor - (d.y - d.floor) : d.y;
-        this.dropStamps.place(hail ? stone : streak, d.x * t, view.top + y * t, {
-          alpha: hail ? 0.9 : 0.5,
+        // Over land the rain is thinned, one streak in RAIN_OVER_LAND kept and fainter, so
+        // the board reads through it in the build phase; the sea keeps the whole storm (S9).
+        // By the drop's place in the list, so a streak does not flicker as it crosses a coast.
+        const sx = d.x * t;
+        const sy = view.top + y * t;
+        const onLand =
+          !hail &&
+          this.land(Math.floor((sx - view.originX) / t), Math.floor((sy - view.originY) / t));
+        if (onLand && n % RAIN_OVER_LAND !== 0) continue;
+        this.dropStamps.place(hail ? stone : streak, sx, sy, {
+          alpha: hail ? 0.9 : onLand ? 0.35 : 0.5,
         });
       }
     }

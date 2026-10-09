@@ -1,6 +1,6 @@
 import type { ArtConfig, OfficeStyleConfig } from '@bollwerk/config';
 import { Structure, type Castle, type MatchState, type Shot } from '@bollwerk/sim';
-import { Graphics } from 'pixi.js';
+import { FillPattern, Graphics, Texture } from 'pixi.js';
 
 import { motionReduced } from '../motion.js';
 import { perf } from '../perf.js';
@@ -48,7 +48,7 @@ import {
   type ViewTransform,
   shotProgress,
 } from './theme.js';
-import { outline, trace, wallGeometry, type Segment } from './walls.js';
+import { outline, trace, wallGeometry, type Segment, type WallBlock } from './walls.js';
 import { ShapeTheme } from './shapeTheme.js';
 
 /** Something with a place and an age: a crashed plane, shreds, a flat-pack unfolding. */
@@ -134,6 +134,17 @@ const SCREEN_OFF = 0x1a1c20;
 const SCREEN_ON = 0xd4ecff;
 const CARDBOARD = 0xb88a58;
 const RED_INK = 0xd03a3a;
+/** Sticky notes in cream, never yellow, which would read as the amber player's. */
+const CREAM = 0xf2e9cc;
+/**
+ * The aluminium cap round a partition's top, in tiles: bold enough that walls read as framed
+ * panels rather than coloured tiles at eight players.
+ */
+const CAP_TILES = 0.17;
+/** How strongly the weave shows over the fabric's colour; more and the owner's colour greys. */
+const WEAVE_ALPHA = 0.35;
+/** The share of panels with something pinned on. */
+const PINNED_ODDS = 0.1;
 
 /** How Office sends off the winners: sticky notes from the poppers, a necktie for a flag. */
 const FINISH: FinishLook = { spark: 'memo', flag: 'necktie' };
@@ -158,6 +169,9 @@ export class OfficeTheme extends ShapeTheme implements Theme {
   private weather: Weather = 'clear';
   /** Life on the outer carpet (`seaLife.ts`). */
   private readonly seaLife = new OfficeSeaLife();
+
+  /** The partitions' woven fabric, laid over the owner's colour (`weave`). */
+  private fabricWeave: FillPattern | null = null;
 
   private readonly terrainGfx = new Graphics();
   /** Coffee where shots came down: redrawn when one is added or fades a round. */
@@ -215,6 +229,7 @@ export class OfficeTheme extends ShapeTheme implements Theme {
     this.art = art;
     this.style = art.office;
     this.weather = weatherFor(this.seed, art.pixel.weatherOdds);
+    this.fabricWeave ??= weave();
     layers.terrain.addChild(this.terrainGfx, this.stainGfx, this.flowGfx);
     layers.territory.addChild(this.scenery.gfx, this.territory.container);
     layers.structures.addChild(this.structures.container);
@@ -239,6 +254,8 @@ export class OfficeTheme extends ShapeTheme implements Theme {
     this.shredStamps.destroy();
     this.haze.destroy();
     this.book.destroy();
+    this.fabricWeave?.texture.destroy(true);
+    this.fabricWeave = null;
     for (const g of [
       this.terrainGfx,
       this.stainGfx,
@@ -629,10 +646,12 @@ export class OfficeTheme extends ShapeTheme implements Theme {
   }
 
   /**
-   * Walls as cubicle partitions: each block a fabric panel in the owner's colour, flecked
-   * as office fabric is, a seam between panels so a shot visibly takes one, an aluminium
-   * cap along the top and a kick plate at the foot of each face; standing to the shared
-   * height. Here and there a memo is pinned on. A player's who is out (`player` -1) has
+   * Walls as cubicle partitions: each block a panel of woven fabric in the owner's colour —
+   * the weave a pattern laid over the colour (`weave`), so it costs a rectangle a block — an
+   * aluminium seam between panels so a shot visibly takes one, a bold aluminium cap round
+   * the top and a kick plate at the foot of each face; standing to the shared height. Now and
+   * then something is pinned on: a photo, a calendar page, sticky notes, all white or cream,
+   * so nothing pinned is taken for a player's colour. A player's who is out (`player` -1) has
    * theirs under grey dust sheets: restructured.
    */
   private drawPartitions(
@@ -653,28 +672,29 @@ export class OfficeTheme extends ShapeTheme implements Theme {
     g.fill({ color: fabric });
     for (const r of wall.faces) g.rect(r.x, r.y, r.w, r.h);
     g.fill({ color: fabricDark });
-    // The weave's flecks.
-    for (const b of wall.blocks) {
-      for (let k = 0; k < 3; k++) {
-        g.rect(
-          b.left + t * (0.15 + 0.7 * hash(b.x, b.y * 3 + k, 740)),
-          b.top + (b.lip - b.top) * (0.15 + 0.7 * hash(b.x, b.y * 3 + k, 741)),
-          Math.max(1, t * 0.06),
-          Math.max(1, t * 0.06),
-        );
-      }
+    if (!dead && this.fabricWeave !== null) {
+      // The weave, over tops and faces alike; fainter on the faces, already in shade.
+      for (const r of wall.tops) g.rect(r.x, r.y, r.w, r.h);
+      g.fill({ fill: this.fabricWeave, alpha: WEAVE_ALPHA });
+      for (const r of wall.faces) g.rect(r.x, r.y, r.w, r.h * 0.62);
+      g.fill({ fill: this.fabricWeave, alpha: WEAVE_ALPHA * 0.6 });
     }
-    g.fill({ color: dead ? hex(palette.rockLight) : this.colour(player, 'light'), alpha: 0.4 });
     // The kick plates along the foot of each face.
     for (const r of wall.faces) g.rect(r.x, r.y + r.h * 0.62, r.w, r.h * 0.38);
     g.fill({ color: 0x5a5d63 });
-    // The seams between panels, where the next one runs on.
-    for (const b of wall.blocks) {
-      if (joins(b.x + 1, b.y))
-        g.moveTo(b.left + t, b.top).lineTo(b.left + t, b.lip + (b.faced ? wall.face : 0));
-      if (joins(b.x, b.y + 1)) g.moveTo(b.left, b.top + t).lineTo(b.left + t, b.top + t);
-    }
-    g.stroke({ width: Math.max(1, t * 0.08), color: ALUMINIUM, alpha: 0.9 });
+    // The seams between panels, where the next one runs on: an aluminium strip in a dark
+    // gap, so a shot visibly takes one panel through the weave.
+    const seams = (): void => {
+      for (const b of wall.blocks) {
+        if (joins(b.x + 1, b.y))
+          g.moveTo(b.left + t, b.top).lineTo(b.left + t, b.lip + (b.faced ? wall.face : 0));
+        if (joins(b.x, b.y + 1)) g.moveTo(b.left, b.top + t).lineTo(b.left + t, b.top + t);
+      }
+    };
+    seams();
+    g.stroke({ width: Math.max(2, t * 0.14), color: this.dark, alpha: 0.55 });
+    seams();
+    g.stroke({ width: Math.max(1, t * 0.07), color: ALUMINIUM });
     if (dead) {
       // The dust sheets, thrown over and folded.
       for (const b of wall.blocks) {
@@ -683,30 +703,113 @@ export class OfficeTheme extends ShapeTheme implements Theme {
       }
       g.stroke({ width: 1, color: hex(palette.rockLight), alpha: 0.7 });
     } else {
-      // A memo pinned on here and there.
-      for (const b of wall.blocks) {
-        if (hash(b.x, b.y, 742) > 0.06) continue;
-        const mx = b.left + t * 0.3;
-        const my = b.top + (b.lip - b.top) * 0.2;
-        g.rect(mx, my, t * 0.34, t * 0.38);
-      }
-      g.fill({ color: PAPER });
-      for (const b of wall.blocks) {
-        if (hash(b.x, b.y, 742) > 0.06) continue;
-        g.circle(
-          b.left + t * 0.47,
-          b.top + (b.lip - b.top) * 0.2 + t * 0.04,
-          Math.max(1, t * 0.05),
-        );
-      }
-      g.fill({ color: RED_INK });
+      this.drawPinned(g, view, wall.blocks);
     }
-    // The aluminium cap round the top, and the ink of the faces.
+    // The aluminium cap round the top: a rail in ink, the metal on it, a line of light along
+    // it; bold, so the panels read as framed partitions and not as coloured tiles.
+    const cap = Math.max(2.5, t * CAP_TILES);
+    const ink = Math.max(1, this.ink(view) * 0.6);
     trace(g, wall.rim);
-    g.stroke({ width: Math.max(1.5, t * 0.12), color: ALUMINIUM, cap: 'square' });
+    g.stroke({ width: cap + ink * 2, color: this.dark, alpha: 0.8, cap: 'square' });
     trace(g, wall.rim);
+    g.stroke({ width: cap, color: ALUMINIUM, cap: 'square' });
+    trace(g, wall.rim);
+    g.stroke({ width: Math.max(1, cap * 0.3), color: STEEL, cap: 'square' });
     trace(g, wall.faceEdges);
-    g.stroke({ width: Math.max(1, this.ink(view) * 0.6), color: this.dark, alpha: 0.8 });
+    g.stroke({ width: ink, color: this.dark, alpha: 0.8 });
+  }
+
+  /**
+   * What is pinned on a partition here and there, by a hash of the block: a photo in a white
+   * border, a calendar page, or two sticky notes. White, cream and greys only — a yellow
+   * note would read as the amber player's, a red pin as a shot's mark.
+   */
+  private drawPinned(g: Graphics, view: ViewTransform, blocks: readonly WallBlock[]): void {
+    const t = view.tile;
+    const pinned = blocks
+      .filter((b) => hash(b.x, b.y, 742) < PINNED_ODDS)
+      .map((b) => {
+        const room = Math.min(t, b.lip - b.top);
+        const pick = hash(b.x, b.y, 743);
+        return {
+          kind: pick < 0.4 ? 'notes' : pick < 0.72 ? 'photo' : 'calendar',
+          x: b.left + t * (0.45 + 0.1 * hash(b.x, b.y, 744)),
+          y: b.top + room * 0.5,
+          u: room,
+          turn: (hash(b.x, b.y, 745) - 0.5) * 0.35,
+        };
+      });
+    if (pinned.length === 0) return;
+    // A shadow under each, so it stands off the fabric.
+    for (const p of pinned) {
+      const w = p.kind === 'notes' ? 0.5 : 0.4;
+      tilted(g, p.x + t * 0.04, p.y + t * 0.05, p.u * w, p.u * 0.46, p.turn);
+    }
+    g.fill({ color: this.dark, alpha: 0.3 });
+    for (const p of pinned) {
+      if (p.kind === 'photo') tilted(g, p.x, p.y, p.u * 0.42, p.u * 0.36, p.turn);
+      if (p.kind === 'calendar') tilted(g, p.x, p.y, p.u * 0.36, p.u * 0.44, p.turn);
+    }
+    g.fill({ color: PAPER });
+    for (const p of pinned) {
+      if (p.kind !== 'notes') continue;
+      tilted(g, p.x - p.u * 0.1, p.y - p.u * 0.06, p.u * 0.28, p.u * 0.28, p.turn - 0.2);
+      tilted(g, p.x + p.u * 0.1, p.y + p.u * 0.08, p.u * 0.28, p.u * 0.28, p.turn + 0.15);
+    }
+    g.fill({ color: CREAM });
+    // The photo's picture: grey sky and a darker hill, no colour in it.
+    for (const p of pinned) {
+      if (p.kind === 'photo') tilted(g, p.x, p.y + p.u * 0.02, p.u * 0.32, p.u * 0.22, p.turn);
+    }
+    g.fill({ color: 0xa9afb7 });
+    for (const p of pinned) {
+      if (p.kind !== 'photo') continue;
+      const c = Math.cos(p.turn);
+      const s = Math.sin(p.turn);
+      const at = (dx: number, dy: number): [number, number] => [
+        p.x + (dx * c - dy * s) * p.u,
+        p.y + (dx * s + dy * c) * p.u,
+      ];
+      g.poly([...at(-0.16, 0.13), ...at(-0.04, -0.02), ...at(0.05, 0.07), ...at(0.16, 0.13)]);
+    }
+    g.fill({ color: 0x6b7178 });
+    // The calendar's header, and the pins.
+    for (const p of pinned) {
+      if (p.kind !== 'calendar') continue;
+      const c = Math.cos(p.turn);
+      const s = Math.sin(p.turn);
+      tilted(g, p.x + s * p.u * 0.17, p.y - c * p.u * 0.17, p.u * 0.36, p.u * 0.1, p.turn);
+    }
+    for (const p of pinned) {
+      if (p.kind === 'notes') continue;
+      const lift = p.kind === 'photo' ? 0.13 : 0.17;
+      g.circle(
+        p.x + Math.sin(p.turn) * p.u * lift,
+        p.y - Math.cos(p.turn) * p.u * lift,
+        Math.max(1, t * 0.045),
+      );
+    }
+    g.fill({ color: 0x3a3d44 });
+    // Writing: the calendar's grid of days and a scribble on each note.
+    for (const p of pinned) {
+      const c = Math.cos(p.turn);
+      const s = Math.sin(p.turn);
+      const line = (x1: number, y1: number, x2: number, y2: number): void => {
+        g.moveTo(p.x + (x1 * c - y1 * s) * p.u, p.y + (x1 * s + y1 * c) * p.u).lineTo(
+          p.x + (x2 * c - y2 * s) * p.u,
+          p.y + (x2 * s + y2 * c) * p.u,
+        );
+      };
+      if (p.kind === 'calendar') {
+        for (const y of [0.0, 0.08, 0.16]) line(-0.14, y, 0.14, y);
+        for (const x of [-0.05, 0.05]) line(x, -0.07, x, 0.19);
+      } else if (p.kind === 'notes') {
+        line(-0.2, -0.1, -0.02, -0.1);
+        line(-0.2, -0.04, -0.06, -0.04);
+        line(0.02, 0.06, 0.2, 0.06);
+      }
+    }
+    g.stroke({ width: Math.max(0.75, t * 0.025), color: 0x80858c });
   }
 
   private desk(view: ViewTransform, castle: Castle): Desk {
@@ -1639,4 +1742,46 @@ function drawOfficeScenery(
       g.fill({ color: PAPER });
     }
   }
+}
+
+/** A rectangle `w` by `h` about its middle, turned by `turn`, as a polygon. */
+function tilted(g: Graphics, x: number, y: number, w: number, h: number, turn: number): void {
+  const c = Math.cos(turn);
+  const s = Math.sin(turn);
+  const at = (dx: number, dy: number): [number, number] => [
+    x + dx * c - dy * s,
+    y + dx * s + dy * c,
+  ];
+  g.poly([...at(-w / 2, -h / 2), ...at(w / 2, -h / 2), ...at(w / 2, h / 2), ...at(-w / 2, h / 2)]);
+}
+
+/**
+ * Woven fabric as a pattern drawn once on a small canvas and laid into the partitions as a
+ * fill in screen space, as Noir's hatching is: a basket weave of light threads and dark gaps
+ * on nothing, so the owner's colour shows through it and one pattern serves every owner.
+ */
+function weave(): FillPattern {
+  const size = 8;
+  const canvas = document.createElement('canvas');
+  canvas.width = canvas.height = size;
+  const ctx = canvas.getContext('2d');
+  if (ctx !== null) {
+    for (let cy = 0; cy < 2; cy++) {
+      for (let cx = 0; cx < 2; cx++) {
+        const x = cx * 4;
+        const y = cy * 4;
+        const across = (cx + cy) % 2 === 0;
+        for (let k = 0; k < 2; k++) {
+          // A thread lit along one side and shaded along the other.
+          ctx.fillStyle = 'rgba(255,255,255,0.55)';
+          if (across) ctx.fillRect(x, y + k * 2, 4, 1);
+          else ctx.fillRect(x + k * 2, y, 1, 4);
+          ctx.fillStyle = 'rgba(0,0,0,0.45)';
+          if (across) ctx.fillRect(x, y + k * 2 + 1, 4, 1);
+          else ctx.fillRect(x + k * 2 + 1, y, 1, 4);
+        }
+      }
+    }
+  }
+  return new FillPattern({ texture: Texture.from(canvas), repetition: 'repeat' });
 }

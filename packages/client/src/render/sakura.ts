@@ -1,5 +1,5 @@
 import type { ArtConfig, SakuraStyleConfig } from '@bollwerk/config';
-import { Structure, type Castle, type MatchState, type Shot } from '@bollwerk/sim';
+import { Structure, type Cannon, type Castle, type MatchState, type Shot } from '@bollwerk/sim';
 import { Graphics } from 'pixi.js';
 
 import { motionReduced } from '../motion.js';
@@ -48,7 +48,7 @@ import {
   mixed,
 } from './theme.js';
 import { MAPLE, PETALS, drawCloudCurl, drawCrest, drawMapleLeaf, drawPetal } from './ukiyo.js';
-import { outline, trace, wallGeometry, type Segment } from './walls.js';
+import { outline, trace, wallGeometry, type Segment, type WallBlock } from './walls.js';
 import { cannonBase } from './cannonBase.js';
 import { ShapeTheme } from './shapeTheme.js';
 
@@ -134,15 +134,37 @@ const PRESS_MS = 460;
 const FADE_MS = 500;
 const SMOKE_MS = 700;
 
-/** Lacquer, bronze, gold and the cloth thrown over a silenced gun. */
-const LACQUER = 0x1d1a1f;
+/**
+ * The carriage's lacquered wood, red-brown rather than black — at eight players a black
+ * stand read as a box — its wheels, bronze, gold, and the bleached hemp cloth thrown over a
+ * silenced gun, pale so a silenced gun is a pale mound at a glance where a live one is a
+ * bronze bar.
+ */
+const WOOD = 0x6b3320;
+const WOOD_LIGHT = 0x9a5434;
+const WHEEL = 0x3b2116;
 const BRONZE = 0xa9783a;
+const BRONZE_LIGHT = 0xe0b46a;
 const BRONZE_DARK = 0x5a3c1c;
 const GOLD = 0xd9b24a;
-const CLOTH = 0x5a6478;
+const CLOTH = 0xc9cbd2;
+const CLOTH_SHADE = 0x8d93a3;
+/** The barrel's bands, as a fraction of its length and of its bore: breech, trunnions, chase. */
+const BARREL_BANDS = [
+  [0.14, 1.15],
+  [0.45, 1.1],
+  [0.75, 1.05],
+] as const;
 /** The paper white the clouds and the pressing are drawn in. */
 const PAPER = 0xf6f1e3;
 const MOSS = 0x5f7a3a;
+/**
+ * Where the rows of round tiles run across a roof, as fractions of its eave, and the grooves
+ * between them: three rows a block, which still read as rows at eight players' 13-pixel tiles
+ * where four ran together.
+ */
+const ROOF_ROWS = [1 / 6, 1 / 2, 5 / 6] as const;
+const ROOF_GROOVES = [1 / 3, 2 / 3] as const;
 
 /** How Sakura sends off the winners (PLAN 11.19 Z4). */
 const FINISH: FinishLook = { spark: 'blossom', flag: 'nobori' };
@@ -702,7 +724,6 @@ export class SakuraTheme extends ShapeTheme implements Theme {
 
   /** One island's structures, for `IslandParts`: the board holds that island's alone. */
   private drawIsland(g: Graphics, state: MatchState, view: ViewTransform): void {
-    const t = view.tile;
     const wallAt = (x: number, y: number): number =>
       x >= 0 && y >= 0 && x < state.width && y < state.height
         ? state.structure[y * state.width + x] === Structure.Wall
@@ -723,28 +744,72 @@ export class SakuraTheme extends ShapeTheme implements Theme {
 
     for (const castle of state.castles) this.drawKeep(g, view, castle);
 
-    // Guns: a black lacquered stand, rimmed in gold and banded in the owner's colour, its
-    // bronze barrel turned with the effects.
-    for (const cannon of state.cannons) {
-      const cx = tileX(view, cannon.x + cannon.w / 2);
-      const cy = tileY(view, cannon.y + cannon.h / 2);
-      const r = Math.min(cannon.w, cannon.h) * t * 0.36;
-      cannonBase(
-        g,
-        view,
-        cannon,
-        this.colour(cannon.owner, 'dark'),
-        this.colour(cannon.owner, 'base'),
-      );
-      g.ellipse(cx + t * 0.08, cy + r * 0.9, r * 1.05, r * 0.3);
-      g.fill({ color: this.sumi, alpha: 0.3 });
-      g.roundRect(cx - r, cy - r * 0.75, r * 2, r * 1.5, r * 0.3);
-      g.fill({ color: LACQUER });
-      g.stroke({ width: Math.max(1, t * 0.05), color: GOLD, alpha: 0.85 });
-      g.rect(cx - r, cy + r * 0.1, r * 2, r * 0.32);
-      g.fill({ color: this.colour(cannon.owner, cannon.active ? 'base' : 'dark') });
-      g.circle(cx, cy - r * 0.1, r * 0.3);
-      g.fill({ color: BRONZE_DARK });
+    // Guns: a carriage of lacquered wood on two wheels, the owner's crest on its front;
+    // its bronze barrel is turned with the effects.
+    for (const cannon of state.cannons) this.drawCarriage(g, view, cannon);
+  }
+
+  /**
+   * A gun's carriage (S8): a block of red-brown lacquered wood bound in gold, on two spoked
+   * wheels, with the owner's crest (mon) on its front — a lozenge quartered in paper, the
+   * Takeda's, since a disc with a pale rim is what a shot looks like here.
+   */
+  private drawCarriage(g: Graphics, view: ViewTransform, cannon: Cannon): void {
+    const t = view.tile;
+    const ink = this.ink(view);
+    const cx = tileX(view, cannon.x + cannon.w / 2);
+    const cy = tileY(view, cannon.y + cannon.h / 2);
+    const r = Math.min(cannon.w, cannon.h) * t * 0.36;
+    cannonBase(
+      g,
+      view,
+      cannon,
+      this.colour(cannon.owner, 'dark'),
+      this.colour(cannon.owner, 'base'),
+    );
+    g.ellipse(cx + t * 0.08, cy + r * 0.85, r * 1.1, r * 0.28);
+    g.fill({ color: this.sumi, alpha: 0.3 });
+    // The cheeks of the carriage, a wheel at either side of it.
+    const wheelR = r * 0.36;
+    const wheelY = cy + r * 0.42;
+    for (const s of [-1, 1]) g.circle(cx + s * r * 0.8, wheelY, wheelR);
+    g.fill({ color: WHEEL });
+    g.stroke({ width: ink, color: this.sumi, alpha: 0.85 });
+    if (t >= 16) {
+      for (const s of [-1, 1]) {
+        const wx = cx + s * r * 0.8;
+        for (let k = 0; k < 3; k++) {
+          const a = (k * Math.PI) / 3;
+          const ux = Math.cos(a) * wheelR * 0.8;
+          const uy = Math.sin(a) * wheelR * 0.8;
+          g.moveTo(wx - ux, wheelY - uy).lineTo(wx + ux, wheelY + uy);
+        }
+      }
+      g.stroke({ width: 1, color: WOOD_LIGHT, alpha: 0.8 });
+    }
+    for (const s of [-1, 1]) g.circle(cx + s * r * 0.8, wheelY, Math.max(1, wheelR * 0.3));
+    g.fill({ color: GOLD });
+    // The bed the barrel lies in, lit along its top, bound in gold at its corners.
+    g.roundRect(cx - r * 0.62, cy - r * 0.55, r * 1.24, r * 1.12, r * 0.16);
+    g.fill({ color: WOOD });
+    g.stroke({ width: ink, color: this.sumi, alpha: 0.85 });
+    g.moveTo(cx - r * 0.5, cy - r * 0.44).lineTo(cx + r * 0.5, cy - r * 0.44);
+    g.stroke({ width: Math.max(1, t * 0.05), color: WOOD_LIGHT });
+    for (const s of [-1, 1]) {
+      g.rect(cx + s * r * 0.62 - (s > 0 ? r * 0.2 : 0), cy - r * 0.55, r * 0.2, r * 0.14);
+      g.rect(cx + s * r * 0.62 - (s > 0 ? r * 0.2 : 0), cy + r * 0.43, r * 0.2, r * 0.14);
+    }
+    g.fill({ color: GOLD });
+    // The crest, in the owner's colour whether live or silenced: it says whose the gun is.
+    const my = cy + r * 0.2;
+    const mr = r * 0.3;
+    g.poly([cx, my - mr, cx + mr * 0.8, my, cx, my + mr, cx - mr * 0.8, my]);
+    g.fill({ color: this.colour(cannon.owner, 'base') });
+    g.stroke({ width: Math.max(1, ink * 0.8), color: PAPER, alpha: 0.9, join: 'miter' });
+    if (t >= 16) {
+      g.moveTo(cx, my - mr).lineTo(cx, my + mr);
+      g.moveTo(cx - mr * 0.8, my).lineTo(cx + mr * 0.8, my);
+      g.stroke({ width: Math.max(1, t * 0.035), color: PAPER, alpha: 0.9 });
     }
   }
 
@@ -777,17 +842,7 @@ export class SakuraTheme extends ShapeTheme implements Theme {
     const snowy = this.weather === 'snow';
     for (const r of wall.tops) g.rect(r.x, r.y, r.w, r.h);
     g.fill({ color: snowy ? mixed(cap, 0xffffff, 0.5) : cap, alpha });
-    // The rows of round tiles running down each cap, lit along their crowns.
-    for (const b of wall.blocks) {
-      const h = b.lip - b.top;
-      for (const f of [0.25, 0.5, 0.75]) {
-        g.moveTo(b.left + t * f, b.top + h * 0.12).lineTo(b.left + t * f, b.lip - h * 0.12);
-      }
-    }
-    g.stroke({ width: Math.max(1, t * 0.06), color: capLight, alpha: 0.5 * alpha });
-    // The seam between blocks.
-    for (const b of wall.blocks) g.rect(b.left, b.top, t, b.lip - b.top);
-    g.stroke({ width: 1, color: capDark, alpha: 0.7 * alpha });
+    this.drawRoofs(g, view, wall.blocks, joins, capLight, capDark, dead, alpha);
     // The faces: plaster under the eave's shadow, on a footing of stone.
     for (const b of wall.blocks) {
       if (!b.faced) continue;
@@ -831,6 +886,192 @@ export class SakuraTheme extends ShapeTheme implements Theme {
     trace(g, wall.rim);
     trace(g, wall.faceEdges);
     g.stroke({ width: this.ink(view), color: this.sumi, alpha: 0.85 * alpha });
+  }
+
+  /**
+   * The caps as roofs, the keeps' language carried along the wall: a ridge down the run,
+   * found from the block's joins — through a straight block, turning at a corner, branching
+   * at a tee — and from it the rows of round tiles running down to each eave, a hip where two
+   * eaves meet, the row of dark round tile-ends along every eave, and a gold ornament where a
+   * run ends. A wall two blocks thick is one broad roof, its ridge on the seam between them.
+   * A block is still one roof section with its seam, so a shot takes one.
+   */
+  private drawRoofs(
+    g: Graphics,
+    view: ViewTransform,
+    blocks: readonly WallBlock[],
+    joins: (x: number, y: number) => boolean,
+    light: number,
+    dark: number,
+    dead: boolean,
+    alpha: number,
+  ): void {
+    const t = view.tile;
+    // Each block's open sides, its ridge and the apex its hips run down from, worked out
+    // once for every pass below.
+    const roofs = blocks.map((b) => {
+      const { x, y } = b;
+      const h = b.lip - b.top;
+      const right = b.left + t;
+      const bottom = b.top + h;
+      const up = joins(x, y - 1);
+      const down = joins(x, y + 1);
+      const west = joins(x - 1, y);
+      const east = joins(x + 1, y);
+      const across = west || east;
+      const along = up || down;
+      // Two thick across the run: the pair share one ridge, on the seam between them.
+      const pairBelow = across && !up && down && !joins(x, y + 2);
+      const pairAbove = across && up && !down && !joins(x, y - 2);
+      const pairRight = along && !west && east && !joins(x + 2, y);
+      const pairLeft = along && west && !east && !joins(x - 2, y);
+      const ry = pairBelow ? bottom : pairAbove ? b.top : b.top + h / 2;
+      const rx = pairRight ? right : pairLeft ? b.left : b.left + t / 2;
+      // The joins the ridge runs on through: not the one that is the wall's thickness, and
+      // none inside a wall thicker still — a join with wall on both sides of it along its
+      // length — where ridges a block apart drew a lattice of little boxes.
+      const pairedAcross = pairAbove || pairBelow;
+      const pairedAlong = pairLeft || pairRight;
+      const thickV = (dy: number): boolean =>
+        (joins(x - 1, y) && joins(x - 1, y + dy)) || (joins(x + 1, y) && joins(x + 1, y + dy));
+      const thickH = (dx: number): boolean =>
+        (joins(x, y - 1) && joins(x + dx, y - 1)) || (joins(x, y + 1) && joins(x + dx, y + 1));
+      const runN = up && !pairAbove && (pairedAlong || !thickV(-1));
+      const runS = down && !pairBelow && (pairedAlong || !thickV(1));
+      const runW = west && !pairLeft && (pairedAcross || !thickH(-1));
+      const runE = east && !pairRight && (pairedAcross || !thickH(1));
+      const runs = [runN, runS, runW, runE].filter(Boolean).length;
+      return {
+        b,
+        right,
+        bottom,
+        rx,
+        ry,
+        n: !up,
+        s: !down,
+        w: !west,
+        e: !east,
+        runN,
+        runS,
+        runW,
+        runE,
+        // A run's end, or a lone block; not a block inside a thick wall, which has no ridge.
+        end: runs === 1 || (runs === 0 && !up && !down && !west && !east),
+      };
+    });
+    type Roof = (typeof roofs)[number];
+    // Lines down the slopes at fractions `fs` of each eave, from the eave in to the ridge,
+    // cut short where a hip runs down to a corner between two eaves.
+    const rows = (r: Roof, fs: readonly number[]): void => {
+      const { b, right, bottom, rx, ry } = r;
+      const hip = (p: number, from: number, to: number): number =>
+        Math.min(1, Math.max(0, (p - from) / (to - from)));
+      for (const f of fs) {
+        const px = b.left + t * f;
+        const py = b.top + (bottom - b.top) * f;
+        let k = 1;
+        if (r.w && px < rx) k = Math.min(k, hip(px, b.left, rx));
+        if (r.e && px > rx) k = Math.min(k, hip(px, right, rx));
+        if (r.n) g.moveTo(px, b.top).lineTo(px, b.top + (ry - b.top) * k * 0.92);
+        if (r.s) g.moveTo(px, bottom).lineTo(px, bottom - (bottom - ry) * k * 0.92);
+        k = 1;
+        if (r.n && py < ry) k = Math.min(k, hip(py, b.top, ry));
+        if (r.s && py > ry) k = Math.min(k, hip(py, bottom, ry));
+        if (r.w) g.moveTo(b.left, py).lineTo(b.left + (rx - b.left) * k * 0.92, py);
+        if (r.e) g.moveTo(right, py).lineTo(right - (right - rx) * k * 0.92, py);
+        // Inside a wall three thick there is no eave: the rows run straight across.
+        if (!r.n && !r.s && !r.w && !r.e) g.moveTo(px, b.top).lineTo(px, bottom);
+      }
+    };
+    // The grooves between the rows, then the rows' crowns, lit.
+    for (const r of roofs) rows(r, ROOF_GROOVES);
+    g.stroke({ width: Math.max(1, t * 0.05), color: dark, alpha: 0.55 * alpha });
+    for (const r of roofs) rows(r, ROOF_ROWS);
+    g.stroke({ width: Math.max(1, t * 0.08), color: light, alpha: 0.55 * alpha });
+    // The seam between blocks.
+    for (const r of roofs) g.rect(r.b.left, r.b.top, t, r.bottom - r.b.top);
+    g.stroke({ width: 1, color: dark, alpha: 0.55 * alpha });
+    // Hips, down from the ridge's end to each corner where two eaves meet.
+    for (const r of roofs) {
+      const { b, right, bottom, rx, ry } = r;
+      if (r.n && r.w) g.moveTo(rx, ry).lineTo(b.left, b.top);
+      if (r.n && r.e) g.moveTo(rx, ry).lineTo(right, b.top);
+      if (r.s && r.w) g.moveTo(rx, ry).lineTo(b.left, bottom);
+      if (r.s && r.e) g.moveTo(rx, ry).lineTo(right, bottom);
+    }
+    g.stroke({ width: Math.max(1, t * 0.06), color: dark, alpha: 0.8 * alpha });
+    // The ridge, from its apex to every side the wall runs on through, so it follows the
+    // run round its corners; dark, capped with a line of light.
+    const ridge = (): void => {
+      for (const r of roofs) {
+        const { b, right, bottom, rx, ry } = r;
+        if (r.runN) g.moveTo(rx, ry).lineTo(rx, b.top);
+        if (r.runS) g.moveTo(rx, ry).lineTo(rx, bottom);
+        if (r.runW) g.moveTo(rx, ry).lineTo(b.left, ry);
+        if (r.runE) g.moveTo(rx, ry).lineTo(right, ry);
+      }
+    };
+    // Darker than the seams and twice as wide, so at eight players the ridge, not the
+    // seams, is what draws the run.
+    ridge();
+    g.stroke({
+      width: Math.max(2.5, t * 0.2),
+      color: mixed(dark, this.sumi, 0.35),
+      alpha,
+      cap: 'round',
+    });
+    ridge();
+    g.stroke({ width: Math.max(1, t * 0.06), color: light, alpha: 0.9 * alpha });
+    // The round tile-ends along every eave, dark against the cap.
+    const end = Math.max(0.8, t * 0.075);
+    for (const r of roofs) {
+      const { b, right, bottom } = r;
+      for (const f of ROOF_ROWS) {
+        const px = b.left + t * f;
+        const py = b.top + (bottom - b.top) * f;
+        if (r.n) g.circle(px, b.top + end * 1.2, end);
+        if (r.s) g.circle(px, bottom - end * 1.2, end);
+        if (r.w) g.circle(b.left + end * 1.2, py, end);
+        if (r.e) g.circle(right - end * 1.2, py, end);
+      }
+    }
+    g.fill({ color: mixed(dark, this.sumi, 0.45), alpha });
+    // A gold ornament (shachihoko) rearing at the end of every run, and on a lone block,
+    // as on the keeps' ridges; weathered on a player's who is out.
+    // A wall two thick ends in two blocks with one apex between them: one ornament there.
+    const seen = new Set<string>();
+    const ends = roofs.filter((r) => {
+      const key = `${r.rx},${r.ry}`;
+      if (!r.end || seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+    if (ends.length === 0) return;
+    const curl = (): void => {
+      for (const r of ends) {
+        // Its tail turned out over the end, where the run comes from the east.
+        const dx = r.runE && !r.runW ? -1 : 1;
+        g.moveTo(r.rx, r.ry);
+        g.quadraticCurveTo(
+          r.rx + dx * t * 0.16,
+          r.ry - t * 0.04,
+          r.rx + dx * t * 0.1,
+          r.ry - t * 0.22,
+        );
+      }
+    };
+    curl();
+    g.stroke({
+      width: Math.max(2.5, t * 0.15),
+      color: this.sumi,
+      alpha: 0.8 * alpha,
+      cap: 'round',
+    });
+    curl();
+    const gold = dead ? mixed(GOLD, hex(this.art.palette.rockMid), 0.65) : GOLD;
+    g.stroke({ width: Math.max(1.5, t * 0.09), color: gold, alpha, cap: 'round' });
+    for (const r of ends) g.circle(r.rx, r.ry, Math.max(1, t * 0.07));
+    g.fill({ color: gold, alpha });
   }
 
   private keep(view: ViewTransform, castle: Castle): Keep {
@@ -1164,34 +1405,67 @@ export class SakuraTheme extends ShapeTheme implements Theme {
         const r = Math.min(cannon.w, cannon.h) * t * 0.36;
         const cx = tileX(view, cannon.x + cannon.w / 2);
         const cy = tileY(view, cannon.y + cannon.h / 2) - r * 0.1;
-        const kick = Math.max(0, 1 - aim.firedAgo / RECOIL_MS);
-        const length = cannon.active ? t * (0.95 - 0.3 * kick) : t * 0.6;
-        const dx = cannon.active ? Math.sin(aim.angle) : 0.35;
-        const dy = cannon.active ? -Math.cos(aim.angle) : 0.75;
-        const ex = cx + dx * length;
-        const ey = cy + dy * length * 0.8;
-        g.moveTo(cx, cy).lineTo(ex, ey);
-        g.stroke({ width: Math.max(3, t * 0.3), color: this.sumi, cap: 'round' });
-        g.moveTo(cx, cy).lineTo(ex, ey);
-        g.stroke({ width: Math.max(2, t * 0.22), color: BRONZE, cap: 'round' });
-        g.circle(ex, ey, Math.max(1.5, t * 0.13));
-        g.fill({ color: BRONZE_DARK });
         if (!cannon.active) {
-          // The cloth thrown over it, falling in folds.
-          g.moveTo(cx - r * 0.9, cy + r * 0.55);
-          g.quadraticCurveTo(cx - r * 0.7, cy - r * 0.6, cx, cy - r * 0.55);
-          g.quadraticCurveTo(cx + r * 0.7, cy - r * 0.6, cx + r * 0.9, cy + r * 0.55);
-          g.lineTo(cx + r * 0.45, cy + r * 0.4);
-          g.lineTo(cx, cy + r * 0.6);
-          g.lineTo(cx - r * 0.45, cy + r * 0.4);
+          // The cloth thrown over the gun and its bed, falling in folds to a hem above the
+          // crest and the wheels, so whose it is still shows; tied with a cord.
+          g.moveTo(cx - r * 0.95, cy + r * 0.45);
+          g.quadraticCurveTo(cx - r * 0.85, cy - r * 0.75, cx, cy - r * 0.72);
+          g.quadraticCurveTo(cx + r * 0.85, cy - r * 0.75, cx + r * 0.95, cy + r * 0.45);
+          g.lineTo(cx + r * 0.55, cy + r * 0.3);
+          g.lineTo(cx + r * 0.2, cy + r * 0.42);
+          g.lineTo(cx - r * 0.2, cy + r * 0.3);
+          g.lineTo(cx - r * 0.55, cy + r * 0.42);
           g.closePath();
           g.fill({ color: CLOTH });
-          g.stroke({ width: Math.max(1, t * 0.05), color: this.sumi, alpha: 0.8, join: 'round' });
-          g.moveTo(cx - r * 0.3, cy - r * 0.4).lineTo(cx - r * 0.4, cy + r * 0.4);
-          g.moveTo(cx + r * 0.3, cy - r * 0.4).lineTo(cx + r * 0.4, cy + r * 0.4);
-          g.stroke({ width: 1, color: this.sumi, alpha: 0.4 });
+          g.stroke({ width: Math.max(1, t * 0.06), color: this.sumi, alpha: 0.85, join: 'round' });
+          g.moveTo(cx - r * 0.35, cy - r * 0.55).lineTo(cx - r * 0.5, cy + r * 0.35);
+          g.moveTo(cx + r * 0.3, cy - r * 0.55).lineTo(cx + r * 0.4, cy + r * 0.32);
+          g.stroke({ width: Math.max(1, t * 0.05), color: CLOTH_SHADE });
+          g.moveTo(cx - r * 0.75, cy - r * 0.1).quadraticCurveTo(
+            cx,
+            cy + r * 0.05,
+            cx + r * 0.75,
+            cy - r * 0.1,
+          );
+          g.stroke({ width: Math.max(1, t * 0.05), color: this.sumi, alpha: 0.75 });
           return;
         }
+        const kick = Math.max(0, 1 - aim.firedAgo / RECOIL_MS);
+        const length = t * (0.95 - 0.3 * kick);
+        const dx = Math.sin(aim.angle);
+        const dy = -Math.cos(aim.angle);
+        const ex = cx + dx * length;
+        const ey = cy + dy * length * 0.8;
+        // Across the barrel, for its bands; the barrel is foreshortened as the board is.
+        const norm = Math.hypot(dx, dy * 0.8) || 1;
+        const nx = (-dy * 0.8) / norm;
+        const ny = dx / norm;
+        const bore = Math.max(2.5, t * 0.26);
+        g.moveTo(cx, cy).lineTo(ex, ey);
+        g.stroke({ width: bore + Math.max(1.5, t * 0.08), color: this.sumi, cap: 'round' });
+        g.moveTo(cx, cy).lineTo(ex, ey);
+        g.stroke({ width: bore, color: BRONZE, cap: 'round' });
+        // The light along its upper side, then its bands — at the breech, the trunnions and
+        // the chase — and the muzzle's swell; a band, not a disc, since a round bead at the
+        // muzzle reads as a shot.
+        const lift = bore * 0.22;
+        const ux = (ny > 0 ? -nx : nx) * lift;
+        const uy = -Math.abs(ny) * lift;
+        g.moveTo(cx + (ex - cx) * 0.15 + ux, cy + (ey - cy) * 0.15 + uy);
+        g.lineTo(cx + (ex - cx) * 0.8 + ux, cy + (ey - cy) * 0.8 + uy);
+        g.stroke({ width: Math.max(1, t * 0.06), color: BRONZE_LIGHT, alpha: 0.85 });
+        for (const [f, span] of BARREL_BANDS) {
+          const bx = cx + (ex - cx) * f;
+          const by = cy + (ey - cy) * f;
+          const w = (bore * span) / 2;
+          g.moveTo(bx - nx * w, by - ny * w).lineTo(bx + nx * w, by + ny * w);
+        }
+        g.stroke({ width: Math.max(1, t * 0.07), color: BRONZE_DARK });
+        g.moveTo(ex - nx * bore * 0.68, ey - ny * bore * 0.68).lineTo(
+          ex + nx * bore * 0.68,
+          ey + ny * bore * 0.68,
+        );
+        g.stroke({ width: Math.max(1.5, t * 0.11), color: BRONZE_DARK, cap: 'round' });
         if (aim.firedAgo < SMOKE_MS) {
           const k = aim.firedAgo / SMOKE_MS;
           drawCloudCurl(
