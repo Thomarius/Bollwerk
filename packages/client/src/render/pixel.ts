@@ -1,5 +1,5 @@
 import type { ArtConfig, ArtStyle } from '@bollwerk/config';
-import { Structure, Terrain, type MatchState, type Shot } from '@bollwerk/sim';
+import { Rng, Structure, Terrain, type MatchState, type Shot } from '@bollwerk/sim';
 import { BlurFilter, Container, Graphics, Sprite, Texture } from 'pixi.js';
 
 import { bloomWanted, motionReduced } from '../motion.js';
@@ -9,12 +9,14 @@ import type { TimerSpot } from '../timerSpot.js';
 import { cornerSpot } from './corner.js';
 import { SEA_NE, SEA_NW, SEA_SE, SEA_SW, filletCorners } from './pixel/coast.js';
 import { daylight, shadowCast, weatherFor, type Weather } from './pixel/atmosphere.js';
+import { PILE_CORNERS, pileCorner, ringCorners, spreadOut, type RingCorner } from './pixel/life.js';
 import { OceanLife } from './pixel/ocean.js';
 import { release } from './release.js';
-import { SceneryTracker } from './scenery.js';
+import { SceneryTracker, placeScenery } from './scenery.js';
 import { Discs, SpritePool, StampBook, Stamps } from './stamps.js';
 import { seaDepth } from './ocean.js';
 import {
+  CASTLE_CHIMNEY,
   CASTLE_WINDOWS,
   E,
   FILLET_CORNERS,
@@ -137,6 +139,44 @@ interface Cloud {
   blobs: { dx: number; dy: number; r: number }[];
   reach: number;
 }
+
+/** A sheep grazing an island's open land, in tile coordinates at its feet. */
+interface Sheep {
+  x: number;
+  y: number;
+  /** Where it is walking to; where it stands while it grazes. */
+  tx: number;
+  ty: number;
+  speed: number;
+  /** Until it moves on, once there. */
+  restMs: number;
+  grazing: boolean;
+  left: boolean;
+  island: number;
+  /** Through its steps, for the walk. */
+  stepMs: number;
+}
+
+/** A mason walking off from a piece just laid, in tile coordinates at his feet. */
+interface Mason {
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
+  age: number;
+}
+
+/**
+ * A brazier on the outer corner of a sealed ring, at Night, on the wall block `index`, which
+ * must still stand for it to burn.
+ */
+interface Brazier extends RingCorner {
+  /** The castle whose torches it burns with: lit while that castle is sealed. */
+  castleId: number;
+}
+
+/** The balls in the pile beside a gun at the start of a round, one gone with each shot. */
+const PILE = 3;
 
 /** How long each recoil and muzzle-flash frame is held. */
 const FX_FRAME_MS = 50;
@@ -290,6 +330,39 @@ export class PixelTheme implements Theme {
   private readonly flags = new FlagHoist();
   /** The piece in hand, drawn as the wall it would make. */
   private readonly ghostLayer = new Container();
+  /**
+   * Sheep and masons, over the ground but under the walls (the territory layer), so neither
+   * can ever hide a wall, a gun or a castle: one walking into a wall goes behind it.
+   */
+  private readonly flockLayer = new Container();
+  private sheep: Sheep[] = [];
+  private masons: Mason[] = [];
+  /**
+   * What lies on a castle under the shared marks: its lights and its chimney's smoke, and
+   * Night's braziers on the walls. Below the effects' drawing, so the crown at a castle's
+   * foot and the marks where shots will land stay on top of them.
+   */
+  private readonly lightLayer = new Container();
+  /** The phase as last drawn: masons come only to a piece laid in the build. */
+  private phase = '';
+  private board: MatchState | null = null;
+  /** Shots each gun has fired this round, by cannon id, for the pile of balls beside it. */
+  private readonly fired = new Map<number, number>();
+  /** Each castle's chimney: whether it is sealed, and since when, for the wisps in the air. */
+  private readonly chimneys = new Map<number, { sealed: boolean; since: number }>();
+  private braziers: Brazier[] = [];
+  /** Each island's middle, which a gun's sandbags face away from; for the board it was of. */
+  private centres: { of: Uint8Array | null; at: Map<number, { x: number; y: number }> } = {
+    of: null,
+    at: new Map(),
+  };
+  /**
+   * Night's lighthouse beams, a soft wedge drawn once and only turned (`Stamps`): brightest
+   * at the lamp and fading to its reach, its edges soft, where a flat grey wedge was a shape
+   * laid on the sea rather than light.
+   */
+  private readonly beamStamps = new Stamps();
+  private readonly beamBook = new StampBook();
 
   /** Remembered from the last draw, since impacts arrive without the board. */
   private terrain: Uint8Array | null = null;
@@ -338,6 +411,8 @@ export class PixelTheme implements Theme {
       this.ghostLayer,
       this.courtLayer,
       this.craterLayer,
+      this.flockLayer,
+      this.lightLayer,
     ]) {
       this.pools.set(layer, new SpritePool());
     }
@@ -346,12 +421,16 @@ export class PixelTheme implements Theme {
       this.courtLayer,
       this.craterLayer,
       this.sceneryLayer,
+      this.flockLayer,
       this.daylightGfx,
       this.territoryGfx,
       this.groundLight,
       this.groundDiscs.container,
+      this.beamStamps.container,
     );
-    for (const light of [this.groundLight, this.groundDiscs.container]) light.blendMode = 'add';
+    for (const light of [this.groundLight, this.groundDiscs.container, this.beamStamps.container]) {
+      light.blendMode = 'add';
+    }
     for (const light of [this.airLight, this.airDiscs.container]) light.blendMode = 'add';
     if (this.torchlit && bloomWanted()) {
       // High effects: the light bloomed by a real blur rather than only the wider shapes.
@@ -394,6 +473,10 @@ export class PixelTheme implements Theme {
     release(this.courtLayer);
     release(this.sceneryLayer);
     release(this.craterLayer);
+    release(this.flockLayer);
+    release(this.lightLayer);
+    this.beamStamps.destroy();
+    this.beamBook.destroy();
     // The frames share one atlas that none of them owns: released with them, or it stays
     // uploaded for the page's life (PLAN 11.23).
     const sources = new Set([...this.textures.values()].map((texture) => texture.source));
@@ -545,13 +628,15 @@ export class PixelTheme implements Theme {
           this.place(this.tileLayer, KEY.beach(mask), view, x, y).tint = beachTint(owner);
       }
     }
+    this.layoutFarmland(state, view);
     this.terrainLayer.addChild(this.tileLayer, this.seaGfx, this.cornerGfx);
     this.islandId = state.islandId;
     this.corner = cornerSpot(state, view);
     this.ocean.corner = this.corner;
     this.ocean.layout(state, view, this.art);
     this.weather = this.torchlit ? 'clear' : weatherFor(state.seed, this.art.pixel.weatherOdds);
-    this.layoutNight(state);
+    this.layoutNight(state, view);
+    this.layoutSheep(state);
     this.scenery.sync(state, this.art.scenery);
     this.layoutScenery();
     this.drawn = {
@@ -561,6 +646,115 @@ export class PixelTheme implements Theme {
       y1: state.height + marginY,
     };
     this.layoutCraters();
+  }
+
+  /**
+   * Life on the land, laid into the terrain once from the seed, under everything built: a
+   * dirt track running south from each castle's gate, and on each island's open land a few
+   * fields in strips, tilled earth and a crop coming up row by row. Kept clear of the trees
+   * and of each other, and two tiles in from the coast, so a field is never taken for a beach.
+   */
+  private layoutFarmland(state: MatchState, view: ViewTransform): void {
+    const { width: w, height: h } = state;
+    const rng = new Rng((state.seed ^ 0xf1e1d5) >>> 0);
+    const land = (x: number, y: number): boolean =>
+      x >= 0 && y >= 0 && x < w && y < h && state.terrain[y * w + x] === Terrain.Land;
+    const blocked = new Uint8Array(w * h);
+    for (const item of placeScenery(state, this.art.scenery)) blocked[item.index] = 1;
+    const block = (x0: number, y0: number, x1: number, y1: number): void => {
+      for (let y = Math.max(0, y0); y <= Math.min(h - 1, y1); y++) {
+        for (let x = Math.max(0, x0); x <= Math.min(w - 1, x1); x++) blocked[y * w + x] = 1;
+      }
+    };
+    const tint = (index: number, wash: number): number => {
+      const owner = (state.islandId[index] as number) - 1;
+      return owner >= 0 ? washed(playerColour(this.art, owner, 'base'), wash) : 0xffffff;
+    };
+
+    const [shortest, longest] = this.art.pixel.trackTiles;
+    for (const castle of state.castles) {
+      const gate = castle.x + castle.w / 2;
+      const length = shortest + rng.nextInt(Math.max(1, longest - shortest + 1));
+      let run = 0;
+      while (run < length) {
+        const y = castle.y + castle.h + run;
+        const clear = [Math.floor(gate - 0.5), Math.floor(gate)].every(
+          (x) => land(x, y) && land(x, y + 1) && blocked[y * w + x] === 0,
+        );
+        if (!clear) break;
+        run++;
+      }
+      // Wandering a little, a quarter tile aside at a time, never more than half a tile off.
+      let offset = 0;
+      for (let k = 0; k < run; k++) {
+        const y = castle.y + castle.h + k;
+        const shift = k === 0 ? 0 : ([-4, 0, 4][rng.nextInt(3)] as number);
+        const bend = Math.abs(offset + shift) > 8 ? 0 : shift;
+        const sprite = this.place(
+          this.tileLayer,
+          KEY.track(bend, k === run - 1),
+          view,
+          gate - 0.5 + offset / this.art.tileSizePx,
+          y,
+        );
+        offset += bend;
+        // At Night pale earth stood out of the dark ground as a white stripe.
+        sprite.tint = this.torchlit ? 0x707070 : tint(y * w + Math.floor(gate), 0.9);
+      }
+      block(castle.x - 1, castle.y - 1, castle.x + castle.w, castle.y + castle.h + run);
+    }
+
+    const islands = new Map<number, Cell[]>();
+    for (let y = 1; y < h - 1; y++) {
+      for (let x = 1; x < w - 1; x++) {
+        const i = y * w + x;
+        if (state.terrain[i] !== Terrain.Land) continue;
+        const id = state.islandId[i] as number;
+        const list = islands.get(id) ?? [];
+        list.push({ x, y });
+        islands.set(id, list);
+      }
+    }
+    // Open land two tiles in from the sea: a field's edge on the beach read as more beach.
+    const inland = (x: number, y: number): boolean => {
+      for (let dy = -2; dy <= 2; dy++) {
+        for (let dx = -2; dx <= 2; dx++) if (!land(x + dx, y + dy)) return false;
+      }
+      return true;
+    };
+    for (const [id, cells] of [...islands.entries()].sort((a, b) => a[0] - b[0])) {
+      for (let n = 0; n < this.art.pixel.fieldsPerIsland; n++) {
+        for (let attempt = 0; attempt < 16; attempt++) {
+          const at = cells[rng.nextInt(cells.length)] as Cell;
+          const fw = 3 + rng.nextInt(2);
+          const fh = 2 + rng.nextInt(3);
+          let fits = true;
+          for (let y = at.y; y < at.y + fh && fits; y++) {
+            for (let x = at.x; x < at.x + fw && fits; x++) {
+              fits =
+                inland(x, y) &&
+                blocked[y * w + x] === 0 &&
+                (state.islandId[y * w + x] as number) === id;
+            }
+          }
+          if (!fits) continue;
+          const first = rng.nextInt(2);
+          for (let y = at.y; y < at.y + fh; y++) {
+            const kind = (y - at.y + first) % 2 === 0 ? 'tilled' : 'crop';
+            for (let x = at.x; x < at.x + fw; x++) {
+              const sprite = this.place(this.tileLayer, KEY.field(kind, (x + y) % 2), view, x, y);
+              // At Night pale strips beside a wall read as paving: they sink into the dark.
+              sprite.tint = this.torchlit ? 0x8c8c8c : tint(y * w + x, 0.88);
+              // A little of the grass through it, so a field is ground and not a patch
+              // laid on it that could pass for paving.
+              sprite.alpha = 0.8;
+            }
+          }
+          block(at.x - 1, at.y - 1, at.x + fw, at.y + fh);
+          break;
+        }
+      }
+    }
   }
 
   /**
@@ -619,6 +813,7 @@ export class PixelTheme implements Theme {
     const g = this.territoryGfx;
     g.clear();
     dimEliminated(g, state, view, hex(this.art.palette.shadow));
+    this.layoutBraziers(state);
     if (this.scenery.sync(state, this.art.scenery)) this.layoutScenery();
   }
 
@@ -672,16 +867,25 @@ export class PixelTheme implements Theme {
       }
     }
 
+    const mains = mainCastles(state);
     for (const castle of state.castles) {
+      // The main castle's larger keep, and its roof gilded over the tint, which turns gold
+      // the owner's colour; the shared crown at its foot stays as it is.
+      const main = mains.has(castle.id);
       const sprite = this.place(
         this.structureLayer,
-        KEY.castle,
+        main ? KEY.mainCastle : KEY.castle,
         view,
         castle.x,
         castle.y,
         castle.w,
       );
       sprite.tint = washed(playerColour(this.art, castle.islandId - 1, 'base'), 0.35);
+      if (main) {
+        const gilt = this.place(this.structureLayer, KEY.gilt, view, castle.x, castle.y, castle.w);
+        // At Night the gold catches only the torchlight, not shining out of the dark.
+        if (this.torchlit) gilt.tint = 0xa89c8c;
+      }
     }
 
     for (const cannon of state.cannons) {
@@ -697,6 +901,20 @@ export class PixelTheme implements Theme {
         ? washed(playerColour(this.art, cannon.owner, 'base'), 0.3)
         : hex(this.art.palette.rockDark);
       sprite.alpha = cannon.active ? 1 : 0.7;
+      // Sandbags on the side facing away from the island's middle, out toward the sea and
+      // the enemy; greyed with the rest of a silenced gun.
+      const bags = this.place(
+        this.structureLayer,
+        KEY.sandbags(this.outward(state, cannon)),
+        view,
+        cannon.x,
+        cannon.y,
+        cannon.w,
+      );
+      if (!cannon.active) {
+        bags.tint = 0x8a8a8a;
+        bags.alpha = 0.8;
+      }
     }
 
     // Snow lies on every top edge a wall shows, and along the top of each castle: drawn
@@ -719,6 +937,39 @@ export class PixelTheme implements Theme {
       g.fill({ color: 0xf4f7ff, alpha: 0.85 });
       this.structureLayer.addChild(g);
     }
+  }
+
+  /**
+   * Which of eight ways (0 east, clockwise) a gun faces away from its island's middle: where
+   * its sandbags go, and its pile of balls opposite.
+   */
+  private outward(
+    state: MatchState,
+    cannon: { x: number; y: number; w: number; h: number },
+  ): number {
+    if (this.centres.of !== state.islandId) {
+      const sums = new Map<number, { x: number; y: number; n: number }>();
+      for (let i = 0; i < state.islandId.length; i++) {
+        const id = state.islandId[i] as number;
+        if (id === 0 || state.terrain[i] !== Terrain.Land) continue;
+        const sum = sums.get(id) ?? { x: 0, y: 0, n: 0 };
+        sum.x += i % state.width;
+        sum.y += Math.floor(i / state.width);
+        sum.n++;
+        sums.set(id, sum);
+      }
+      this.centres = {
+        of: state.islandId,
+        at: new Map([...sums].map(([id, s]) => [id, { x: s.x / s.n + 0.5, y: s.y / s.n + 0.5 }])),
+      };
+    }
+    const gx = cannon.x + cannon.w / 2;
+    const gy = cannon.y + cannon.h / 2;
+    const island = state.islandId[Math.floor(gy) * state.width + Math.floor(gx)] as number;
+    const centre = this.centres.at.get(island);
+    if (centre === undefined) return 2;
+    const angle = Math.atan2(gy - centre.y, gx - centre.x);
+    return (((Math.round(angle / (Math.PI / 4)) % 8) + 8) % 8) as number;
   }
 
   /**
@@ -781,6 +1032,7 @@ export class PixelTheme implements Theme {
       y >= 0 &&
       x < this.width &&
       this.terrain[y * this.width + x] !== Terrain.Land;
+    this.scatter(x, y);
     if (inSea) {
       this.splash(x, y);
       return;
@@ -850,6 +1102,7 @@ export class PixelTheme implements Theme {
    */
   noteLanding(cells: readonly Cell[], owner: number): void {
     this.landings.add(cells, owner);
+    if (this.phase === 'build') this.sendMason(cells);
     // Whatever stood there is knocked flat: leaves, or chips of the boulder.
     for (const item of this.scenery.take(cells, this.width)) {
       const { palette } = this.art;
@@ -893,6 +1146,45 @@ export class PixelTheme implements Theme {
         }
       }
     }
+  }
+
+  /**
+   * A mason walks off from a piece just laid, out of one of its open sides onto ground with
+   * nothing built on it, if it has one.
+   */
+  private sendMason(cells: readonly Cell[]): void {
+    const state = this.board;
+    if (state === null || this.art.pixel.masons === 0) return;
+    const inPiece = new Set(cells.map((c) => `${c.x},${c.y}`));
+    const exits: { x: number; y: number; dx: number; dy: number }[] = [];
+    for (const cell of cells) {
+      for (const [dx, dy] of [
+        [0, -1],
+        [1, 0],
+        [0, 1],
+        [-1, 0],
+      ] as const) {
+        const nx = cell.x + dx;
+        const ny = cell.y + dy;
+        if (inPiece.has(`${nx},${ny}`)) continue;
+        if (nx < 0 || ny < 0 || nx >= state.width || ny >= state.height) continue;
+        const i = ny * state.width + nx;
+        if (state.terrain[i] !== Terrain.Land || state.structure[i] !== Structure.Empty) continue;
+        exits.push({ x: cell.x, y: cell.y, dx, dy });
+      }
+    }
+    const exit = exits[Math.floor(Math.random() * exits.length)];
+    if (exit === undefined) return;
+    const side = (Math.random() - 0.5) * 0.5;
+    const speed = 0.55;
+    this.masons.push({
+      x: exit.x + 0.5 + exit.dx * 0.7 + (exit.dy !== 0 ? side : 0),
+      y: exit.y + 0.6 + exit.dy * 0.7 + (exit.dx !== 0 ? side * 0.5 : 0),
+      vx: (exit.dx + (exit.dy !== 0 ? side : 0)) * speed,
+      vy: exit.dy * speed * 0.8 + (exit.dx !== 0 ? side * 0.2 : 0),
+      age: 0,
+    });
+    if (this.masons.length > this.art.pixel.masons) this.masons.shift();
   }
 
   /** Rings on the water, and spray thrown up and falling back. */
@@ -957,6 +1249,7 @@ export class PixelTheme implements Theme {
 
   noteShot(shot: Shot): void {
     const angle = this.aims.fire(shot);
+    this.fired.set(shot.cannonId, (this.fired.get(shot.cannonId) ?? 0) + 1);
     // Smoke from the muzzle, blown out along the barrel and then drifting off. The
     // shot's origin is the tile at the gun's centre, so the muzzle is half a tile on
     // from there plus the barrel's length.
@@ -981,15 +1274,21 @@ export class PixelTheme implements Theme {
     g.clear();
 
     this.clock += frame.deltaMs;
+    this.phase = state.phase;
+    this.board = state;
     this.animateWater(frame.deltaMs);
     this.empty(this.effectLayer);
+    this.empty(this.lightLayer);
+    this.empty(this.flockLayer);
     this.effectLayer.addChild(
       this.cloudStamps.container,
+      this.lightLayer,
       g,
       this.airLight,
       this.airDiscs.container,
     );
     this.age(state);
+    this.beamStamps.begin();
     this.groundLight.clear();
     this.airLight.clear();
     this.groundDiscs.begin(view.tile);
@@ -1003,8 +1302,13 @@ export class PixelTheme implements Theme {
     this.drawSnow(view, frame.deltaMs, still);
     this.drawReflections(state, view, frame.castleSealed, still);
     if (this.torchlit) this.drawTorchlight(state, view, frame);
+    if (this.torchlit) this.drawBraziers(state, view);
     this.drawNight(view, frame.deltaMs, still);
+    this.beamStamps.end();
     this.drawWindows(state, view, frame);
+    this.drawChimneys(state, view, frame, still);
+    this.drawSheep(state, view, frame.deltaMs, still);
+    this.drawMasons(view, frame.deltaMs);
 
     drawDrain(g, view, frame.drain, this.art);
     drawSealGlow(g, view, frame.sealGlow, this.art);
@@ -1038,16 +1342,48 @@ export class PixelTheme implements Theme {
       // A parabolic lift sells the lob. The shot still lands exactly on impactTick.
       const lift = shotLift(shot, t);
 
-      // A short fading trail behind the ball, along the same arc.
+      // A short trail behind the ball along the same arc, of pooled sprites: by day the
+      // smoke of the powder, thinning behind it; at Night embers shed by the burning ball,
+      // flickering, over a fainter smoke.
       const distance = Math.hypot(shot.toX - shot.fromX, shot.toY - shot.fromY);
       const back = distance > 0 ? trail / distance : 0;
-      for (let k = 3; k >= 1; k--) {
-        const tk = t - (back * k) / 3;
+      const puffs = 4;
+      for (let k = puffs; k >= 1; k--) {
+        const tk = t - (back * k) / puffs;
         if (tk <= 0) continue;
-        const px = shot.fromX + (shot.toX - shot.fromX) * tk;
-        const py = shot.fromY + (shot.toY - shot.fromY) * tk - shotLift(shot, tk);
-        g.circle(tileX(view, px + 0.5), tileY(view, py + 0.5), view.tile * (0.2 - k * 0.04));
-        g.fill({ color: hex(this.art.palette.rockLight), alpha: 0.45 - k * 0.12 });
+        const px = shot.fromX + (shot.toX - shot.fromX) * tk + 0.5;
+        const py = shot.fromY + (shot.toY - shot.fromY) * tk - shotLift(shot, tk) + 0.5;
+        const size = 0.24 + 0.07 * k;
+        const puff = this.place(
+          this.effectLayer,
+          KEY.smoke((shot.id + k) % 2),
+          view,
+          px - size / 2,
+          py - size / 2,
+          size,
+        );
+        puff.tint = this.torchlit ? 0x5a6070 : 0xd8d8dc;
+        puff.alpha = (this.torchlit ? 0.3 : 0.55) * (1 - k / (puffs + 1));
+      }
+      if (this.torchlit) {
+        for (let k = 1; k <= 5; k++) {
+          const tk = t - (back * k) / 4;
+          if (tk <= 0) continue;
+          const wobble = Math.sin(this.clock / 50 + k * 2.3 + shot.id);
+          const px = shot.fromX + (shot.toX - shot.fromX) * tk + 0.5 + wobble * 0.1;
+          const py =
+            shot.fromY + (shot.toY - shot.fromY) * tk - shotLift(shot, tk) + 0.5 + k * 0.03;
+          const size = 0.3 * (1 - k * 0.1);
+          const spark = this.place(
+            this.effectLayer,
+            KEY.ember,
+            view,
+            px - size / 2,
+            py - size / 2,
+            size,
+          );
+          spark.alpha = Math.max(0, (1 - k / 6) * (0.75 + 0.25 * wobble));
+        }
       }
 
       // Height sold twice: the ball grows as it nears the top of its arc, as if
@@ -1058,7 +1394,14 @@ export class PixelTheme implements Theme {
       g.fill({ color: hex(this.art.palette.shadow), alpha: 0.4 - 0.2 * height });
 
       const size = 0.6 * (1 + 0.55 * height);
-      const ball = this.place(this.effectLayer, KEY.shot, view, 0, 0, size);
+      const ball = this.place(
+        this.effectLayer,
+        this.torchlit ? KEY.burningShot : KEY.shot,
+        view,
+        0,
+        0,
+        size,
+      );
       ball.x = tileX(view, x + 0.5) - (view.tile * size) / 2;
       ball.y = tileY(view, y + 0.5 - lift) - (view.tile * size) / 2;
       if (this.torchlit) {
@@ -1620,7 +1963,7 @@ export class PixelTheme implements Theme {
    * the fireflies wander, and for each island a lighthouse on the sea off the corner of it
    * farthest from the middle of the map, where it looks out over open water.
    */
-  private layoutNight(state: MatchState): void {
+  private layoutNight(state: MatchState, view: ViewTransform): void {
     this.land = [];
     this.lighthouses = [];
     this.fireflies = [];
@@ -1654,10 +1997,17 @@ export class PixelTheme implements Theme {
         { x: box.x1 + 1, y: box.y1 + 1 },
         { x: box.x0 - 1, y: box.y1 + 1 },
       ];
+      // The tower stands two tiles high, so the tile above its foot must be sea too.
       const far = corners
-        .filter((c) => sea(c.x, c.y))
+        .filter((c) => sea(c.x, c.y) && sea(c.x, c.y - 1))
         .sort((a, b) => Math.hypot(b.x - mx, b.y - my) - Math.hypot(a.x - mx, a.y - my))[0];
       if (far !== undefined) this.lighthouses.push(far);
+    }
+    // Drawn once with the terrain, in its render group: only the lamp's glow and the beam
+    // change from frame to frame.
+    for (const spot of this.lighthouses) {
+      const tower = this.place(this.tileLayer, KEY.lighthouse, view, spot.x, spot.y - 1);
+      tower.height = view.tile * 2;
     }
     const count = Math.round((this.land.length * this.art.pixel.firefliesPerHundredTiles) / 100);
     for (let k = 0; k < count; k++) {
@@ -1724,9 +2074,13 @@ export class PixelTheme implements Theme {
       }
     }
 
-    // Lighthouses: a white tower on a rock, its lamp lit, the beam turning over the water.
+    // Lighthouses: the tower is a sprite with the terrain; its lamp glows and its beam turns
+    // over the water.
     const turn = still ? 0 : (this.clock / this.art.pixel.beamTurnMs) * Math.PI * 2;
     const fullReach = t * this.art.pixel.beamTiles;
+    const beam = this.beamBook.get('beam', t, (g) =>
+      drawBeam(g, t, fullReach, this.art.night.beamAlpha),
+    );
     // The screen, clear of the HUD bar: the sea is drawn past it, out of sight.
     const bounds = {
       x0: t * 0.5,
@@ -1735,32 +2089,24 @@ export class PixelTheme implements Theme {
       y1: view.height - t * 0.5,
     };
     this.lighthouses.forEach((spot, k) => {
+      // The lamp room, near the top of the two-tile sprite.
       const cx = tileX(view, spot.x + 0.5);
-      const cy = tileY(view, spot.y + 0.5);
-      sea.ellipse(cx, cy + t * 0.25, t * 0.4, t * 0.18);
-      sea.fill({ color: hex(palette.rockDark) });
-      sea.rect(cx - t * 0.12, cy - t * 0.45, t * 0.24, t * 0.7);
-      sea.fill({ color: hex(palette.rockLight) });
-      sea.rect(cx - t * 0.12, cy - t * 0.15, t * 0.24, t * 0.12);
-      sea.fill({ color: hex(palette.emberCool) });
-      sea.circle(cx, cy - t * 0.5, t * 0.1);
-      sea.fill({ color: hex(palette.emberHot) });
+      const cy = tileY(view, spot.y - 1 + 5 / 16);
       const angle = turn + k * 1.9;
-      const width = 0.16;
       // Not past the edge of the screen: a lighthouse near it swung its beam off the
-      // screen and under the HUD bar (the style review).
-      const reach = Math.min(fullReach, beamRoom(cx, cy - t * 0.5, angle, bounds));
-      if (reach <= 0) return;
-      this.groundLight.poly([
-        cx,
-        cy - t * 0.5,
-        cx + Math.cos(angle - width) * reach,
-        cy - t * 0.5 + Math.sin(angle - width) * reach,
-        cx + Math.cos(angle + width) * reach,
-        cy - t * 0.5 + Math.sin(angle + width) * reach,
-      ]);
-      this.groundLight.fill({ color: hex(palette.emberHot), alpha: 0.16 });
-      this.airDiscs.disc(cx, cy - t * 0.5, t * 0.35, hex(palette.emberMid), 0.3);
+      // screen and under the HUD bar (the style review). Shortened whole, so a beam near
+      // the edge is a smaller wedge rather than one cut off square.
+      const reach = Math.min(fullReach, beamRoom(cx, cy, angle, bounds));
+      if (reach > t * 0.5) {
+        this.beamStamps.place(beam, cx, cy, {
+          rotation: angle,
+          scale: reach / fullReach,
+          tint: hex(palette.emberHot),
+        });
+      }
+      const pulse = still ? 1 : 0.85 + 0.15 * Math.sin(this.clock / 300 + k);
+      this.airDiscs.disc(cx, cy, t * 0.45, hex(palette.emberMid), 0.3 * pulse);
+      this.airDiscs.disc(cx, cy, t * 0.2, hex(palette.emberHot), 0.35 * pulse);
     });
 
     // Fireflies wandering and winking; none when motion is reduced.
@@ -1786,32 +2132,386 @@ export class PixelTheme implements Theme {
    * torches — and with them, on Night, a little light spilling out.
    */
   private drawWindows(state: MatchState, view: ViewTransform, frame: EffectFrame): void {
-    const g = this.effectGfx;
     const glow = this.art.pixel.windowGlowAlpha;
-    const warm = hex(this.art.palette.emberHot);
+    const mains = mainCastles(state);
     for (const castle of state.castles) {
       if (!(frame.castleSealed[castle.id] ?? false)) continue;
+      // Every window and slit in one sprite, over the castle's own, flickering as one.
+      const flicker = 0.85 + 0.15 * Math.sin(this.clock / 230 + castle.id * 1.3);
+      const lit = this.place(
+        this.lightLayer,
+        KEY.lights(mains.has(castle.id)),
+        view,
+        castle.x,
+        castle.y,
+        castle.w,
+      );
+      lit.alpha = glow * flicker;
+      if (!this.torchlit) continue;
       const w = castle.w * view.tile;
       const h = castle.h * view.tile;
-      const left = tileX(view, castle.x);
-      const top = tileY(view, castle.y);
-      CASTLE_WINDOWS.forEach((window, k) => {
-        const flicker = 0.85 + 0.15 * Math.sin(this.clock / 230 + castle.id * 1.3 + k * 2.1);
-        const x = left + window.x * w;
-        const y = top + window.y * h;
-        g.rect(x, y, Math.max(1, window.w * w), Math.max(1, window.h * h));
-        g.fill({ color: warm, alpha: glow * flicker });
-        if (this.torchlit) {
-          this.airDiscs.disc(
-            x + (window.w * w) / 2,
-            y + (window.h * h) / 2,
-            view.tile * 0.3,
-            hex(this.art.palette.emberMid),
-            0.18 * flicker,
-          );
-        }
+      // At Night a little light spilling from the keep's windows.
+      CASTLE_WINDOWS.slice(0, 2).forEach((window, k) => {
+        this.airDiscs.disc(
+          tileX(view, castle.x) + (window.x + window.w / 2) * w,
+          tileY(view, castle.y) + (window.y + window.h / 2) * h,
+          view.tile * 0.32,
+          hex(this.art.palette.emberMid),
+          0.2 * (0.85 + 0.15 * Math.sin(this.clock / 230 + castle.id * 1.3 + k * 2.1)),
+        );
       });
     }
+  }
+
+  /**
+   * A sealed castle's chimney smokes: a slow wisp rising from the keep's roof, thinning as
+   * it goes. A breach stops it — the wisps in the air rise on and thin away, no new one
+   * follows — and sealing again starts it, from the chimney up. Pooled sprites of one puff.
+   */
+  private drawChimneys(
+    state: MatchState,
+    view: ViewTransform,
+    frame: EffectFrame,
+    still: boolean,
+  ): void {
+    const period = this.art.pixel.chimneySmokeMs;
+    const tint = this.torchlit ? 0x8a90a0 : 0xe2e2e6;
+    for (const castle of state.castles) {
+      const sealed = frame.castleSealed[castle.id] ?? false;
+      let chimney = this.chimneys.get(castle.id);
+      if (chimney === undefined) {
+        // As first seen: smoking already if sealed, and nothing in the air if not.
+        chimney = { sealed, since: -Infinity };
+        this.chimneys.set(castle.id, chimney);
+      } else if (chimney.sealed !== sealed) {
+        chimney.sealed = sealed;
+        chimney.since = this.clock;
+      }
+      if (!sealed && this.clock - chimney.since > period) continue;
+      for (let k = 0; k < 3; k++) {
+        const t = still ? (k + 0.5) / 3 : (this.clock / period + k / 3 + castle.id * 0.37) % 1;
+        const born = this.clock - t * period;
+        if (sealed ? born < chimney.since : born >= chimney.since) continue;
+        const x =
+          castle.x + CASTLE_CHIMNEY.x * castle.w + Math.sin(t * 5 + castle.id) * 0.06 + t * 0.15;
+        const y = castle.y + CASTLE_CHIMNEY.y * castle.h - t * 0.95;
+        const size = 0.24 + 0.36 * t;
+        const wisp = this.place(
+          this.lightLayer,
+          KEY.smoke(k % 2),
+          view,
+          x - size / 2,
+          y - size / 2,
+          size,
+        );
+        wisp.tint = tint;
+        wisp.alpha = 0.8 * (1 - t) * Math.min(1, t * 6);
+      }
+    }
+  }
+
+  /**
+   * Night's braziers, burning on the outer corners of each island's sealed rings with the
+   * castle they guard: alight with its torches, out with them at a breach. A small flame of
+   * three frames, its light on the wall top, and a faint pool on the ground outside the
+   * corner, drawn in the territory layer as the torches' pools are.
+   */
+  private drawBraziers(state: MatchState, view: ViewTransform): void {
+    const glow = this.art.night.brazierGlowAlpha;
+    const warm = hex(this.art.palette.emberMid);
+    for (const [k, brazier] of this.braziers.entries()) {
+      if (state.structure[brazier.index] !== Structure.Wall) continue;
+      const bx = brazier.x + 0.5 + brazier.dx * 0.2;
+      const by = brazier.y + 0.5 + brazier.dy * 0.2;
+      const size = 0.5;
+      this.place(this.lightLayer, KEY.brazier, view, bx - size / 2, by - size / 2, size);
+      const lit = this.torches.get(brazier.castleId)?.lit ?? 0;
+      if (lit <= 0) continue;
+      const flicker =
+        0.8 +
+        0.12 * Math.sin(this.clock / this.art.night.torchFlickerMs + k * 1.7) +
+        0.08 * Math.sin(this.clock / 61 + k * 3.1);
+      const frameNo = Math.floor(this.clock / 110 + k) % 3;
+      const fire = this.place(
+        this.lightLayer,
+        KEY.flame(frameNo),
+        view,
+        bx - 0.19,
+        by - 0.5,
+        0.375,
+      );
+      fire.height = (view.tile * 0.5 * 8) / 6;
+      fire.alpha = lit;
+      const x = tileX(view, bx);
+      const y = tileY(view, by - 0.2);
+      this.airDiscs.disc(x, y, view.tile * 0.5 * flicker, warm, 0.25 * lit * flicker);
+      // The pool on the ground beyond the corner, where the wall does not cover it.
+      for (const r of [1, 0.6]) {
+        this.groundDiscs.disc(
+          tileX(view, bx + brazier.dx * 0.4),
+          tileY(view, by + brazier.dy * 0.4),
+          view.tile * 1.3 * r,
+          warm,
+          glow * 0.5 * lit * flicker,
+        );
+      }
+    }
+  }
+
+  /**
+   * Night's braziers placed afresh with the territory: on the outer corners of each sealed
+   * ring — a wall block with the ring running on along both sides of it and sealed ground
+   * between them, nothing outside it — and no more than `braziersPerIsland` to an island,
+   * spread round its rings as far apart as they will go.
+   */
+  private layoutBraziers(state: MatchState): void {
+    this.braziers = [];
+    if (!this.torchlit) return;
+    const byOwner = new Map<number, RingCorner[]>();
+    for (const corner of ringCorners(state)) {
+      byOwner.set(corner.owner, [...(byOwner.get(corner.owner) ?? []), corner]);
+    }
+    for (const [owner, corners] of byOwner) {
+      for (const corner of spreadOut(corners, this.art.night.braziersPerIsland, 3)) {
+        // It burns with the nearest castle of its island: that castle's ring, as a rule.
+        let nearest = Infinity;
+        let castleId = -1;
+        for (const castle of state.castles) {
+          if (castle.islandId !== owner) continue;
+          const d = Math.hypot(
+            castle.x + castle.w / 2 - corner.x,
+            castle.y + castle.h / 2 - corner.y,
+          );
+          if (d < nearest) {
+            nearest = d;
+            castleId = castle.id;
+          }
+        }
+        if (castleId >= 0) this.braziers.push({ ...corner, castleId });
+      }
+    }
+  }
+
+  /**
+   * Sheep on each island's open land by day, two or three to a flock, placed from the seed
+   * so a look made again puts them back where they were; after that they wander as they
+   * like. None at Night: they are folded.
+   */
+  private layoutSheep(state: MatchState): void {
+    this.sheep = [];
+    if (this.torchlit) return;
+    const rng = new Rng((state.seed ^ 0x5bee9) >>> 0);
+    const islands = new Map<number, Cell[]>();
+    for (let i = 0; i < state.terrain.length; i++) {
+      const x = i % state.width;
+      const y = (i - x) / state.width;
+      if (
+        !this.pasture(state, x, y) ||
+        !this.pasture(state, x + 1, y) ||
+        !this.pasture(state, x, y + 1)
+      )
+        continue;
+      const id = state.islandId[i] as number;
+      const list = islands.get(id) ?? [];
+      list.push({ x, y });
+      islands.set(id, list);
+    }
+    const [fewest, most] = this.art.pixel.sheepPerIsland;
+    for (const [island, cells] of [...islands.entries()].sort((a, b) => a[0] - b[0])) {
+      const centre = cells[rng.nextInt(cells.length)] as Cell;
+      const near = cells.filter(
+        (c) => Math.abs(c.x - centre.x) <= 2 && Math.abs(c.y - centre.y) <= 2,
+      );
+      const count = fewest + rng.nextInt(Math.max(1, most - fewest + 1));
+      for (let k = 0; k < count; k++) {
+        const at = near[rng.nextInt(near.length)] as Cell;
+        const x = at.x + 0.25 + rng.nextFloat() * 0.5;
+        const y = at.y + 0.4 + rng.nextFloat() * 0.4;
+        this.sheep.push({
+          x,
+          y,
+          tx: x,
+          ty: y,
+          speed: 0,
+          restMs: rng.nextFloat() * 4000,
+          grazing: rng.nextFloat() < 0.6,
+          left: rng.nextFloat() < 0.5,
+          island,
+          stepMs: 0,
+        });
+      }
+    }
+  }
+
+  /**
+   * Ground a sheep may stand on: open land, nothing built on it and nobody's sealed ground.
+   * Kept off the walls, the guns, the castles and the courts, so a sheep never stands where
+   * it could be mistaken for part of the game.
+   */
+  private pasture(state: MatchState, x: number, y: number): boolean {
+    const tx = Math.floor(x);
+    const ty = Math.floor(y);
+    if (tx < 0 || ty < 0 || tx >= state.width || ty >= state.height) return false;
+    const i = ty * state.width + tx;
+    return (
+      state.terrain[i] === Terrain.Land &&
+      state.structure[i] === Structure.Empty &&
+      (state.territory[i] as number) === 0
+    );
+  }
+
+  /**
+   * The sheep: ambling a tile or two, then grazing a while, then on again; running from a
+   * shot landing near (`noteImpact`), and moving off at once from ground built on or
+   * sealed under them, or out of sight if there is no pasture left near.
+   */
+  private drawSheep(state: MatchState, view: ViewTransform, deltaMs: number, still: boolean): void {
+    if (this.torchlit) return;
+    const dt = deltaMs / 1000;
+    const amble = this.art.pixel.sheepTilesPerSecond;
+    const w = (view.tile * 12) / 16;
+    const h = (view.tile * 10) / 16;
+    for (const sheep of this.sheep) {
+      if (!this.pasture(state, sheep.x, sheep.y) && !this.pasture(state, sheep.tx, sheep.ty)) {
+        const refuge = this.nearestPasture(state, sheep);
+        if (refuge === null) continue;
+        sheep.tx = refuge.x;
+        sheep.ty = refuge.y;
+        sheep.speed = amble * 4;
+      }
+      const dx = sheep.tx - sheep.x;
+      const dy = sheep.ty - sheep.y;
+      const d = Math.hypot(dx, dy);
+      const moving = d > 0.02 && !still;
+      if (moving) {
+        const stepTiles = Math.min(d, sheep.speed * dt);
+        const nx = sheep.x + (dx / d) * stepTiles;
+        const ny = sheep.y + (dy / d) * stepTiles;
+        // Not on into ground built on since it set off, unless it is leaving such ground.
+        if (this.pasture(state, sheep.x, sheep.y) && !this.pasture(state, nx, ny)) {
+          sheep.tx = sheep.x;
+          sheep.ty = sheep.y;
+        } else {
+          sheep.x = nx;
+          sheep.y = ny;
+        }
+        sheep.left = dx < 0;
+        sheep.stepMs += deltaMs * (sheep.speed / amble);
+      } else if (!still) {
+        sheep.restMs -= deltaMs;
+        if (sheep.restMs <= 0) this.wander(state, sheep, amble);
+      }
+      const pose = moving ? 1 + (Math.floor(sheep.stepMs / 180) % 2) : sheep.grazing ? 3 : 0;
+      const sprite = this.place(this.flockLayer, KEY.sheep(pose, sheep.left), view, 0, 0);
+      sprite.width = w;
+      sprite.height = h;
+      sprite.x = Math.round(tileX(view, sheep.x) - w / 2);
+      sprite.y = Math.round(tileY(view, sheep.y) - h * 0.85);
+    }
+  }
+
+  /** A sheep moves on: somewhere a tile or two off it can walk to over open pasture. */
+  private wander(state: MatchState, sheep: Sheep, amble: number): void {
+    sheep.restMs = 2500 + Math.random() * 6000;
+    sheep.grazing = Math.random() < 0.65;
+    for (let attempt = 0; attempt < 6; attempt++) {
+      const angle = Math.random() * Math.PI * 2;
+      const reach = 0.6 + Math.random() * 1.4;
+      const tx = sheep.x + Math.cos(angle) * reach;
+      const ty = sheep.y + Math.sin(angle) * reach * 0.7;
+      if (!this.walkable(state, sheep, tx, ty)) continue;
+      sheep.tx = tx;
+      sheep.ty = ty;
+      sheep.speed = amble * (0.8 + Math.random() * 0.4);
+      return;
+    }
+  }
+
+  /** Whether the way from a sheep to (`tx`, `ty`) is pasture of its own island all along. */
+  private walkable(state: MatchState, sheep: Sheep, tx: number, ty: number): boolean {
+    for (let k = 1; k <= 4; k++) {
+      const x = sheep.x + ((tx - sheep.x) * k) / 4;
+      const y = sheep.y + ((ty - sheep.y) * k) / 4;
+      if (!this.pasture(state, x, y)) return false;
+      if ((state.islandId[Math.floor(y) * state.width + Math.floor(x)] as number) !== sheep.island)
+        return false;
+    }
+    return true;
+  }
+
+  /** The middle of the nearest tile of pasture on a sheep's island, within a few tiles. */
+  private nearestPasture(state: MatchState, sheep: Sheep): Cell | null {
+    const sx = Math.floor(sheep.x);
+    const sy = Math.floor(sheep.y);
+    for (let r = 1; r <= 5; r++) {
+      let best: Cell | null = null;
+      let bestD = Infinity;
+      for (let y = sy - r; y <= sy + r; y++) {
+        for (let x = sx - r; x <= sx + r; x++) {
+          if (Math.max(Math.abs(x - sx), Math.abs(y - sy)) !== r) continue;
+          if (!this.pasture(state, x, y)) continue;
+          if ((state.islandId[y * state.width + x] as number) !== sheep.island) continue;
+          const d = Math.hypot(x + 0.5 - sheep.x, y + 0.6 - sheep.y);
+          if (d < bestD) {
+            bestD = d;
+            best = { x: x + 0.5, y: y + 0.6 };
+          }
+        }
+      }
+      if (best !== null) return best;
+    }
+    return null;
+  }
+
+  /** Sheep near a shot coming down run from it, as far as open pasture goes that way. */
+  private scatter(x: number, y: number): void {
+    const state = this.board;
+    if (state === null) return;
+    const run = this.art.pixel.sheepTilesPerSecond * 5;
+    for (const sheep of this.sheep) {
+      const dx = sheep.x - (x + 0.5);
+      const dy = sheep.y - (y + 0.5);
+      const d = Math.hypot(dx, dy);
+      if (d > 3.5) continue;
+      const ux = d > 0.01 ? dx / d : Math.random() - 0.5;
+      const uy = d > 0.01 ? dy / d : Math.random() - 0.5;
+      let reach = 0;
+      for (let step = 0.25; step <= 2.5; step += 0.25) {
+        if (!this.walkable(state, sheep, sheep.x + ux * step, sheep.y + uy * step)) break;
+        reach = step;
+      }
+      if (reach === 0) continue;
+      sheep.tx = sheep.x + ux * reach;
+      sheep.ty = sheep.y + uy * reach;
+      sheep.speed = run;
+      sheep.restMs = 1500 + Math.random() * 1500;
+      sheep.grazing = false;
+    }
+  }
+
+  /**
+   * Masons at a piece just laid: one comes from it with his hod on his shoulder and walks
+   * off over open ground, fading as he goes. Under the walls, so a wall hides him rather
+   * than he it; at most `masons` at once, the oldest going first.
+   */
+  private drawMasons(view: ViewTransform, deltaMs: number): void {
+    const life = this.art.pixel.masonMs;
+    const dt = deltaMs / 1000;
+    const w = (view.tile * 8) / 16;
+    const h = (view.tile * 12) / 16;
+    for (const mason of this.masons) {
+      mason.age += deltaMs;
+      mason.x += mason.vx * dt;
+      mason.y += mason.vy * dt;
+      const frameNo = Math.floor(mason.age / 140) % 2;
+      const sprite = this.place(this.flockLayer, KEY.mason(frameNo, mason.vx < 0), view, 0, 0);
+      sprite.width = w;
+      sprite.height = h;
+      sprite.x = Math.round(tileX(view, mason.x) - w / 2);
+      sprite.y = Math.round(tileY(view, mason.y) - h * 0.9);
+      sprite.alpha = Math.min(1, mason.age / 150, (life - mason.age) / 400);
+    }
+    this.masons = this.masons.filter((mason) => mason.age < life);
   }
 
   /**
@@ -2047,6 +2747,8 @@ export class PixelTheme implements Theme {
   private age(state: MatchState): void {
     if (state.round === this.round) return;
     this.round = state.round;
+    // The piles beside the guns are full again for the new round.
+    this.fired.clear();
     const rounds = this.art.generators.fx.craterRounds;
     this.craters = this.craters.filter((c) => this.round - c.round < rounds);
     this.layoutCraters();
@@ -2090,6 +2792,23 @@ export class PixelTheme implements Theme {
       // Back at once, then home a frame at a time.
       const kick = Math.floor(aim.firedAgo / FX_FRAME_MS);
       const recoil = kick < recoilFrames ? recoilFrames - 1 - kick : 0;
+      // The pile of balls in the corner away from the sandbags, one gone with each shot this
+      // round's barrage; a silenced gun has none to hand.
+      if (cannon.active) {
+        const left =
+          state.phase === 'combat' ? Math.max(0, PILE - (this.fired.get(cannon.id) ?? 0)) : PILE;
+        if (left > 0) {
+          const corner = PILE_CORNERS[pileCorner(this.outward(state, cannon))] as [number, number];
+          this.place(
+            this.effectLayer,
+            KEY.balls(left),
+            view,
+            cannon.x + corner[0] * (cannon.w - 0.5),
+            cannon.y + corner[1] * (cannon.h - 0.5),
+            0.5,
+          );
+        }
+      }
       // The carriage runs back with the barrel, and a silenced one stands dark.
       const bed = this.place(
         this.effectLayer,
@@ -2277,6 +2996,15 @@ export class PixelTheme implements Theme {
   }
 }
 
+/** The castles chosen as their players' main castles, by id. */
+function mainCastles(state: MatchState): Set<number> {
+  const ids = new Set<number>();
+  for (const player of state.players) {
+    if (player.startingCastleId !== null) ids.add(player.startingCastleId);
+  }
+  return ids;
+}
+
 /**
  * A castle's torches one frame on: catching over `igniteMs` while it is sealed, going out
  * five times as fast once it is not, and doused — smoke to be puffed — at the moment a
@@ -2300,6 +3028,28 @@ export function nextTorch(
 function glint(n: number): number {
   const v = Math.sin(n * 12.9898 + 78.233) * 43758.5453;
   return v - Math.floor(v);
+}
+
+/**
+ * A lighthouse's beam, pointing east from the origin for `reach` pixels: nested wedges, each
+ * narrower than the last, in bands fading with distance, so it is brightest along its middle
+ * and near the lamp and has no hard edge. Drawn once at a tile size, in white, for a stamp.
+ */
+function drawBeam(g: Graphics, tile: number, reach: number, alpha: number): void {
+  const widths = [0.2, 0.15, 0.1, 0.055];
+  const bands = 12;
+  const start = tile * 0.25;
+  for (const half of widths) {
+    for (let i = 0; i < bands; i++) {
+      const r0 = start + ((reach - start) * i) / bands;
+      const r1 = start + ((reach - start) * (i + 1)) / bands;
+      const fade = 1 - (i + 0.5) / bands;
+      const c = Math.cos(half);
+      const s = Math.sin(half);
+      g.poly([c * r0, -s * r0, c * r1, -s * r1, c * r1, s * r1, c * r0, s * r0]);
+      g.fill({ color: 0xffffff, alpha: (alpha / widths.length) * fade * fade });
+    }
+  }
 }
 
 /** How far a beam from (x, y) at `angle` runs before it leaves `bounds`, in pixels. */

@@ -1231,7 +1231,7 @@
       "smoulderMs": 2600,
       "muzzleSmokeMs": 950,
       "muzzleSmokePuffs": 3,
-      "shotTrailLengthPx": 6,
+      "shotTrailLengthPx": 14,
       "debrisPerTile": 6,
       "debrisMs": 650,
       "shakePx": 5,
@@ -1296,7 +1296,10 @@
     "muzzleLightTiles": 2.2,
     "muzzleLightMs": 220,
     "shotGlowTiles": 0.55,
-    "breachGlowAlpha": 0.18
+    "breachGlowAlpha": 0.18,
+    "braziersPerIsland": 3,
+    "brazierGlowAlpha": 0.2,
+    "beamAlpha": 0.7
   },
   "pixel": {
     "glintsPerTileSecond": 0.012,
@@ -1329,7 +1332,14 @@
     "beamTurnMs": 9000,
     "windmillTurnMs": 9000,
     "windmillRainTurnMs": 4000,
-    "lanternSwingMs": 2600
+    "lanternSwingMs": 2600,
+    "fieldsPerIsland": 2,
+    "trackTiles": [2, 3],
+    "sheepPerIsland": [2, 3],
+    "sheepTilesPerSecond": 0.3,
+    "chimneySmokeMs": 3400,
+    "masons": 8,
+    "masonMs": 1700
   },
   "scenery": {
     "clustersPerHundredTiles": 1.8,

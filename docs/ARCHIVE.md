@@ -6255,3 +6255,56 @@ crosshair (the style review, 12zt). Now the sheet is drawn as an architect draws
 At eight players, watched with `&perf=1`: 60 fps, render 2.62 ms a frame against 2.45 ms
 before the package. Blueprint already rebuilt about 11 600 vertices a frame before it —
 against Parchment's 4 200 — which is worth a look of its own one day.
+
+## 12zx. The style pass, S4: Pixel and Night (2026-10-09)
+
+Medieval and Night share one renderer and one atlas of sprites generated at boot (`pixel.ts`,
+`pixel/generators.ts`), so the package was one. The style review (12zt) found them the most
+finished of the styles but with nothing alive on the land, a shot of pale grey chips that read
+as stone, a main castle known only by the crown, and at Night a lighthouse the size of a
+candle under a flat grey wedge. Now:
+
+- **The main castle** has a sprite of its own: a larger keep, rising over the curtain's north
+  side, under a gilded roof — the four slopes in gold leaf, lit and shaded as the stone ones
+  are, with a finial on the apex — laid over the tinted sprite untinted, since gold tinted by
+  the owner is not gold (`KEY.mainCastle`, `KEY.gilt`). Gilding only the hips, tried first,
+  drew an X across the keep, which reads as struck through. Old gold rather than the UI's
+  yellow, which made the roof a marker; dimmed at Night. The crown at its foot is unchanged.
+- **Iron shot**: a dark ball, a pixel of light on its shoulder and a lighter rim beneath so it
+  reads over the dark sea, trailing powder smoke — four pooled puffs along the arc, thinning
+  (`shotTrailLengthPx` 6 to 14). At Night a **burning ball** shedding embers over a fainter
+  smoke, as well as the glow it had.
+- **Life on the land**, laid into the terrain's render group once from the seed: a dirt track
+  wandering two or three tiles south from each castle's gate, a quarter tile aside at a time
+  (straight, it read as a pole lying under the castle), and two fields an island in strips of
+  tilled earth and crop, two tiles in from the sea, clear of the trees, at 0.8 alpha so the
+  grass shows through and a field is never taken for paving; darkened at Night, where pale
+  strips beside a wall did read as paving. **Sheep** by day, two or three to an island,
+  placed from the seed, ambling and grazing, running from a shot landing within three and a
+  half tiles, and moving off ground built on or sealed under them. **Masons** with a hod walk
+  off from each piece laid in the build, eight at most. Both are pooled sprites in the
+  territory layer, under the walls, and keep to open ground, so neither can hide a wall, a gun
+  or a castle.
+- **Guns**: sandbags over the outward side of the pit's ring, away from the island's middle,
+  inside the gun's own square (a shade under the sand: brighter, they read as gold rings
+  marking the gun); a pile of three balls in the corner across from them, one gone with each
+  shot of the barrage and full again next round, the bottom right taken first so two left
+  stand one on the other — side by side, with their lit pixels, they looked out of the dark at
+  Night as a pair of eyes. A silenced gun has no pile and grey sandbags.
+- **A sealed castle's chimney smokes**, a slow wisp of three pooled puffs; a breach stops it —
+  the wisps in the air rise on, no new one follows — and sealing starts it from the chimney.
+- **Lit means sealed, more of it**: the keep's windows, the front towers' and two arrow slits in
+  the curtain, one untinted sprite over a sealed castle in place of four rectangles a frame.
+  At Night **braziers** burn on the outer corners of each island's sealed rings, three at most,
+  spread as far apart as they go, alight with the torches of the castle they guard, with a
+  faint pool on the ground outside the corner (`pixel/life.ts`, tested by picture).
+- **Night's lighthouse** is a sprite a tile wide and two high with the terrain — a tower banded
+  red and white on its rock, a gallery, the lamp room lit under a pointed cap — and its beam a
+  warm soft wedge, nested wedges in bands fading from the lamp, drawn once and only turned and
+  scaled (`Stamps`), still shortened to stay on the screen.
+
+At eight players, watched with `&perf=1` in the 30 s window: Medieval rendered 3.32 ms a frame
+(worst 7.4), against 3.76 (7.8) before, effects 1.66 ms against 1.62, 5 863 vertices rebuilt a
+frame against 5 955; Night 3.61 ms (7.6) against 3.86 (7.4), effects 1.93 against 1.69, 5 940
+vertices against 6 408 — the windows and the lighthouses moved out of the redrawn `Graphics`
+into sprites. 60 fps throughout.

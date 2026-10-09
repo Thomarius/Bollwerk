@@ -207,6 +207,12 @@ export const NightStyleSchema = z.strictObject({
   shotGlowTiles: z.number().positive(),
   /** A smouldering breach's glow on the ground at its brightest. */
   breachGlowAlpha: z.number().min(0).max(1),
+  /** Braziers burning on the outer corners of each island's sealed rings, at most. */
+  braziersPerIsland: z.number().int().nonnegative(),
+  /** A brazier's light on the ground round it at its brightest. */
+  brazierGlowAlpha: z.number().min(0).max(1),
+  /** A lighthouse's beam at its brightest, by the lamp, fading toward its reach. */
+  beamAlpha: z.number().min(0).max(1),
 });
 export type NightStyleConfig = z.infer<typeof NightStyleSchema>;
 
@@ -269,6 +275,19 @@ export const PixelStyleSchema = z.strictObject({
   windmillRainTurnMs: z.number().int().positive(),
   /** Night's fishing boat in the corner: one swing of the lantern on its mast. */
   lanternSwingMs: z.number().int().positive(),
+  /** Patches of field on each island's open land, in strips of tilled earth and crop. */
+  fieldsPerIsland: z.number().int().nonnegative(),
+  /** A dirt track south from each castle's gate, the shortest and the longest. */
+  trackTiles: z.tuple([z.number().int().nonnegative(), z.number().int().nonnegative()]),
+  /** Sheep grazing each island's open land by day, the fewest and the most. */
+  sheepPerIsland: z.tuple([z.number().int().nonnegative(), z.number().int().nonnegative()]),
+  /** A sheep's amble; it runs from a shot landing near at several times this. */
+  sheepTilesPerSecond: z.number().positive(),
+  /** A wisp of smoke from a sealed castle's chimney, from the roof until it has thinned away. */
+  chimneySmokeMs: z.number().int().positive(),
+  /** Masons walking off from a piece just laid: the most at once, and how long each walks. */
+  masons: z.number().int().nonnegative(),
+  masonMs: z.number().int().positive(),
 });
 export type PixelStyleConfig = z.infer<typeof PixelStyleSchema>;
 

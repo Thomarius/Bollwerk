@@ -416,11 +416,25 @@ is committed except audio.
 with a warm pool of light on the ground round them, doused with a puff of smoke by a
 breach and lit again by sealing, so lit reads as sealed across the map; muzzle flashes
 light the ground round a gun, shots glow as burning shot, and a smouldering breach
-glows. The light on the ground is drawn in the territory layer, under the walls, so it
+glows. A sealed castle's keep windows and the arrow slits in its towers and curtain burn
+warm, dark once breached — lit means sealed — and braziers burn on the outer corners of
+each island's sealed rings, three at most and spread round them, alight with the torches of
+the castle they guard (`braziersPerIsland`). Shots are burning balls that shed embers over a
+faint smoke. The light on the ground is drawn in the territory layer, under the walls, so it
 never colours them. On the sea, a path of moonlight shimmers down the deeper band of
-open ocean, a lighthouse stands off the outward corner of every island with its beam
-turning over the water (lit into the ground, like the pools), and fireflies wink over the
-land.
+open ocean, a lighthouse — a tower banded red and white on its rock, a tile wide and two
+high, its lamp room lit — stands off the outward corner of every island with a warm beam
+turning over the water, brightest by the lamp and soft at its edges (a wedge drawn once and
+only turned, `beamAlpha`), and fireflies wink over the land.
+
+**Life on the pixel style's land** (`art.pixel`): laid into the terrain once from the
+seed, under everything built, a dirt track wanders a few tiles south from each castle's
+gate and each island has a couple of fields in strips, tilled earth and a crop by turns,
+kept two tiles in from the sea and clear of the trees. By day two or three sheep graze each
+island's open land, ambling and grazing, and run from a shot landing near; a mason with his
+hod walks off from each piece laid in the build, eight at most. Sheep and masons go in the
+territory layer, under the walls, and keep off walls, guns, castles and sealed ground, so
+neither can hide anything that counts.
 
 **The pixel style's day and weather** (`pixel/atmosphere.ts`, `art.pixel`): the light
 follows the round, morning gold at the first, plain at noon, sunset at the last, as a
@@ -723,15 +737,22 @@ Overtime rings the board in a pulsing red border. All shared effects are drawn a
 both styles where they carry information.
 
 **Combat, in pixel style.** Barrels turn to their target, recoil and flash; destroyed
-wall throws debris in its owner's colour; shots trail; the board shakes, but only when a
-shot breaks your own wall. The flat style stays plain, as the one to debug against.
+wall throws debris in its owner's colour; shots are dark iron balls trailing powder smoke;
+the board shakes, but only when a shot breaks your own wall. Sandbags ring each gun's pit
+on the side facing away from its island's middle, and a pile of three balls lies in the
+corner across from them, one gone with each shot of the barrage and full again the next
+round; a silenced gun has none and its sandbags grey with it. The flat style stays plain,
+as the one to debug against.
 
 **The pixel style is the cinematic one**, since it is the default combat look. Light falls
 from the north: a wall block with nothing to its south shows a dark front face under a
 light lip, and walls, castles and guns cast a shadow onto the ground south of them. Sealed
 ground is paved in the owner's colour rather than tinted. Castles are a curtain wall
 round a paved court, a round tower at each corner and a keep under a hipped roof, its
-windows lit while the castle is sealed; guns stand in a stone pit on a wooden carriage
+windows and slits lit while the castle is sealed and its chimney smoking, a slow wisp that
+a breach stops — the wisps in the air rise on, no new one follows; the main castle has a
+larger keep under a gilded roof with a finial, gold laid over the tinted sprite, so the
+sprite itself says which castle counts, the shared crown at its foot unchanged; guns stand in a stone pit on a wooden carriage
 that turns and runs back with the barrel, the wood untinted and the iron in the owner's
 colour. The coast is a beach of its own sprite, tinted only faintly so it reads as sand,
 rounded where the land turns outward and filled in where it turns in (`coast.ts`) — never
@@ -1573,13 +1594,7 @@ work, item 2, is **paused** after a first learned fit (ARCHIVE 12z), its next st
    - **S1 — Readability first** — done (ARCHIVE 12zu).
    - **S2 — Parchment** — done (ARCHIVE 12zv).
    - **S3 — Blueprint** — done (ARCHIVE 12zw).
-   - **S4 — Pixel and Night**, which share their sprites. Pixel: a pixel-sprite keep for the
-     main castle under the crown; iron shot with a smoke trail; fields, a track from each gate,
-     sheep that scatter from a hit; sandbags round a gun and a pile of balls that empties as it
-     fires; smoke from a sealed castle's chimney, stopping at a breach; masons at a placed
-     piece. Night: lit slits and windows on sealed castles, braziers on sealed walls' outer
-     corners, burning shot with embers, a real lighthouse with a warm beam, the moon's
-     reflection as a broken shimmer.
+   - **S4 — Pixel and Night** — done (ARCHIVE 12zx).
    - **S5 — Toy bricks.** The castle a built tower of bricks — crenellation bricks with
      studs, an arched door, a window brick, a hinged flag panel; the gun a toy cannon, a
      bracket brick on two wheel plates, its barrel brick in the owner's colour, lowered and
