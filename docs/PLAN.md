@@ -868,14 +868,24 @@ toy bricks and never after any maker's trademark.
 Land and sea are cut into irregular panes a few tiles each (`panes.ts`: the tiles round a
 jittered grid of points, never across the coast), each its own shade, held in near-black
 lead, with a heavier came along every coast and light falling through as a sheen in each
-pane's corner; one pane a tile, tried first, read as a mosaic. Sealed ground lights the
-same panes in the owner's colour. Walls are blocks of the owner's glass leaded one by one,
-so a shot visibly takes one, standing to the pixel style's height; castles are rose
-windows, guns grey glass mounts ringed in the owner's colour, shots glowing beads; a hit
-throws shards and a piece set down catches a glint. A glass ship and a leaping fish on the
-sea, a title of leaded panes, a banner of jewel panes, a HUD of lead under a strip of
-coloured glass. Its palette is a sapphire sea, emerald land and warm gold; the player
-colours are the shared ones.
+pane's corner; one pane a tile, tried first, read as a mosaic. The glass is hand-blown —
+faint streaks and seed bubbles from the seed, a pattern laid into every pane (`FillPattern`)
+— and painted in a pale grisaille, two wave crests on each sea pane and a leaf's veins on each
+land pane. **The light moves**: a slow, wide shaft of warm light sweeps across the window, a
+gradient drawn once and only carried across, added over the land and sealed ground but under
+the walls, so no owner's colour changes; and a few panes, chosen from the seed, shimmer.
+Sealed ground lights the same panes in the owner's colour. Walls are jewels of the owner's
+glass leaded one by one — a cabochon with a bevel and a sheen on its dome — so a shot visibly
+takes one, standing to the pixel style's height. Castles are rose windows, a ring of stone
+tracery pierced by trefoils round petals of the owner's glass, the gold centre lit and glowing
+only while sealed and a petal cracked in lead by a breach; a main castle's rose has more
+petals and a gilt rim. Guns are lancets — a pointed arch leaded into three panes of the
+owner's glass — on the plain square, with a barrel of amber glass edged in lead; silenced,
+the glass clouds grey. Shots are glowing beads; a hit throws shards and a piece set down
+catches a glint. Bushes are fleurs-de-lis. A leaded glass ship, a leaping fish and now and
+then a pair of painted doves on the outer sea, a title of leaded panes, a banner of jewel
+panes, a HUD of lead under a strip of coloured glass. Its palette is a sapphire sea, emerald
+land and warm gold; the player colours are the shared ones.
 
 **Chocolate** (`chocolate.ts`, `art.chocolate`), for either look, the one whose material
 moves: a sweet-shop land on a river of milk chocolate, kept light so it is never near Night
@@ -1607,11 +1617,7 @@ work, item 2, is **paused** after a first learned fit (ARCHIVE 12z), its next st
    - **S3 — Blueprint** — done (ARCHIVE 12zw).
    - **S4 — Pixel and Night** — done (ARCHIVE 12zx).
    - **S5 — Toy bricks** — done (ARCHIVE 12zy).
-   - **S6 — Stained glass.** A slow shaft of warm light sweeping the window; glass with streaks
-     and seed bubbles, painted waves and leaf veins (`FillPattern`); walls as jewel blocks with
-     a sheen and an inner bevel; rose windows with trefoil tracery, their centre glowing only
-     while sealed, cracked by a breach; guns as lancet mounts with amber glass barrels, cloudy
-     grey when silenced; fleurs-de-lis, doves and a ship that reads.
+   - **S6 — Stained glass** — done (ARCHIVE 12zz).
    - **S7 — Cyberpunk.** Castles as server towers — stepped roof, vents, antennas with a
      blinking tip, a neon sign strip, the core a reactor ring; guns as hex turrets, twin rails,
      a coil charging between shots; a lit sealed floor (`FillPattern`) with a neon edge; a city

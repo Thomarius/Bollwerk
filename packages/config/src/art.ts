@@ -407,6 +407,20 @@ export const GlassStyleSchema = z.strictObject({
   /** A ship of glass crossing the outer ocean now and then, one at a time. */
   shipEveryMs: z.number().int().positive(),
   shipTilesPerSecond: z.number().positive(),
+  /** A pair of painted doves flying across the outer ocean now and then. */
+  doveEveryMs: z.number().int().positive(),
+  doveTilesPerSecond: z.number().positive(),
+  /** The shaft of warm light sweeping the window: its strength, added, and one crossing's time. */
+  lightAlpha: z.number().min(0).max(1),
+  lightSweepMs: z.number().int().positive(),
+  /** How wide the shaft is, as a fraction of the window's width. */
+  lightWidth: z.number().positive().max(1),
+  /** One pane in so many shimmers, brightening and fading, and how strongly. */
+  shimmerOneIn: z.number().int().min(1),
+  shimmerAlpha: z.number().min(0).max(1),
+  /** The streaks and seed bubbles in the glass, and the painted waves and leaf veins. */
+  textureAlpha: z.number().min(0).max(1),
+  paintAlpha: z.number().min(0).max(1),
 });
 export type GlassStyleConfig = z.infer<typeof GlassStyleSchema>;
 

@@ -1,6 +1,6 @@
 import type { ArtConfig } from '@bollwerk/config';
 import type { MatchState } from '@bollwerk/sim';
-import type { Graphics } from 'pixi.js';
+import type { Container, Graphics, GraphicsContext } from 'pixi.js';
 
 import { motionReduced } from '../motion.js';
 
@@ -15,6 +15,7 @@ import {
   type OuterOcean,
 } from './ocean.js';
 import { drawBat } from './spooky.js';
+import { StampBook, Stamps } from './stamps.js';
 import { hex, tileX, tileY, type ViewTransform } from './theme.js';
 import { drawCrest } from './ukiyo.js';
 import { GOLD, drawQuaver, drawSwan } from './music.js';
@@ -514,73 +515,94 @@ export class BricksSeaLife extends OceanDrawn {
 }
 
 /**
- * Stained glass: now and then a fish of coloured glass leaping from the sea and back, and a
- * ship of glass under a leaded sail crossing — every piece held in its lead, as the window is.
+ * Stained glass: now and then a fish of coloured glass leaping from the sea and back, a ship
+ * of glass under leaded sails crossing, and a pair of painted doves flying over — every piece
+ * held in its lead, as the window is. Each is a shape drawn once for the tile size and only
+ * placed, turned and flipped (`Stamps`), where the ship and the fish were cut into triangles
+ * every frame; only the fish's rings on the water are drawn afresh.
  */
 export class GlassSeaLife extends OceanDrawn {
   private readonly ships = new Crossings();
+  private readonly doves = new Crossings();
   private readonly fish = new Surfacings();
+  private readonly stamps = new Stamps();
+  private readonly book = new StampBook();
+
+  /** The stamps, for the theme to put in its layers: over the sea, under everything else. */
+  get container(): Container {
+    return this.stamps.container;
+  }
 
   override layout(state: MatchState, view: ViewTransform, art: ArtConfig): void {
     super.layout(state, view, art);
     this.ships.layout(this.ocean, art.glass.shipEveryMs);
+    this.doves.layout(this.ocean, art.glass.doveEveryMs);
+  }
+
+  override draw(g: Graphics, view: ViewTransform, art: ArtConfig, deltaMs: number): void {
+    // Begun and ended here, so a motion reduced mid-match hides what was placed before.
+    this.stamps.begin();
+    super.draw(g, view, art, deltaMs);
+    this.stamps.end();
+  }
+
+  destroy(): void {
+    this.stamps.destroy();
+    this.book.destroy();
   }
 
   protected frame(g: Graphics, view: ViewTransform, art: ArtConfig, deltaMs: number): void {
     const s = art.glass;
     const pal = art.palette;
     const t = view.tile;
-    const lead = { width: Math.max(1, t * s.leadTiles), color: hex(pal.shadow) };
-
-    this.ships.step(this.ocean, deltaMs, s.shipEveryMs, s.shipTilesPerSecond, 1.2);
     // Never smaller than about twenty pixels a unit, under a heavier lead: at eight players'
     // tile size the ship was fifteen pixels of colour and read as a glitch (S1).
     const u = Math.max(t, 20);
-    const shipLead = { width: Math.max(1.5, u * s.leadTiles * 1.5), color: lead.color };
-    for (const ship of this.ships.items) {
-      if (this.behind(ship.x, ship.y)) continue;
-      const x = tileX(view, ship.x);
-      const y = tileY(view, ship.y + Math.sin(this.clock / 600 + ship.x) * 0.04);
-      g.poly([x - u * 0.7, y, x + u * 0.75, y, x + u * 0.5, y + u * 0.3, x - u * 0.5, y + u * 0.3]);
-      g.fill({ color: hex(pal.sand) });
-      g.stroke(shipLead);
-      // The hull leaded into three panes, as the window's glass is.
-      for (const at of [-0.2, 0.25]) {
-        g.moveTo(x + u * at, y);
-        g.lineTo(x + u * at * 0.9, y + u * 0.3);
+
+    this.ships.step(this.ocean, deltaMs, s.shipEveryMs, s.shipTilesPerSecond, 1.4);
+    const ship = this.book.get(`ship|${u}`, t, (k) => drawGlassShip(k, u, art));
+    for (const boat of this.ships.items) {
+      if (this.behind(boat.x, boat.y)) continue;
+      const roll = Math.sin(this.clock / 700 + boat.x) * 0.05;
+      const y = tileY(view, boat.y + Math.sin(this.clock / 600 + boat.x) * 0.04);
+      this.stamps.place(ship, tileX(view, boat.x), y, {
+        rotation: roll,
+        scale: boat.dir,
+        scaleY: 1,
+      });
+    }
+
+    // Doves in a pair, painted white glass, beating their wings as they go: two frames.
+    this.doves.step(this.ocean, deltaMs, s.doveEveryMs, s.doveTilesPerSecond, 1);
+    const dove = [0, 1].map((k) =>
+      this.book.get(`dove${k}|${u}`, t, (d) => drawDove(d, u * 1.3, k === 0, art)),
+    );
+    for (const flight of this.doves.items) {
+      for (const [n, [ax, ay]] of [
+        [0, 0],
+        [-0.9, -0.45],
+      ].entries()) {
+        const x = flight.x + flight.dir * (ax as number);
+        if (this.behind(x, flight.y)) continue;
+        const bob = Math.sin(this.clock / 240 + n * 1.7) * 0.06;
+        const wing = Math.sin(this.clock / 110 + n * 1.7) > 0 ? 0 : 1;
+        this.stamps.place(
+          dove[wing] as GraphicsContext,
+          tileX(view, x),
+          tileY(view, flight.y - 0.3 + (ay as number) + bob),
+          { scale: flight.dir, scaleY: 1 },
+        );
       }
-      g.stroke(shipLead);
-      const mast = x - ship.dir * u * 0.05;
-      g.poly([mast, y - u * 1.0, mast + ship.dir * u * 0.6, y - u * 0.15, mast, y - u * 0.15]);
-      g.fill({ color: hex(pal.uiInk), alpha: 0.9 });
-      g.stroke(shipLead);
-      g.poly([mast, y - u * 0.85, mast - ship.dir * u * 0.4, y - u * 0.15, mast, y - u * 0.15]);
-      g.fill({ color: hex(pal.emberMid), alpha: 0.9 });
-      g.stroke(shipLead);
     }
 
     this.fish.step(this.ocean, deltaMs, s.fishEveryMs, s.fishMs);
+    const fish = this.book.get(`fish|${t}`, t, (k) => drawGlassFish(k, t, art));
     for (const f of this.fish.items) {
       if (this.behind(f.x, f.y)) continue;
       const k = f.ageMs / s.fishMs;
       const x = tileX(view, f.x + f.dir * (k - 0.5) * 1.4);
       const y = tileY(view, f.y) - Math.sin(Math.PI * k) * t * 0.9;
-      const tilt = f.dir * (k - 0.5) * 1.6;
-      const along = (d: number, side: number): [number, number] => [
-        x + Math.cos(tilt) * d * f.dir - Math.sin(tilt) * side,
-        y + Math.sin(tilt) * d * f.dir + Math.cos(tilt) * side,
-      ];
-      g.poly([
-        ...along(0.32 * t, 0),
-        ...along(0, -0.14 * t),
-        ...along(-0.22 * t, 0),
-        ...along(0, 0.14 * t),
-      ]);
-      g.fill({ color: hex(pal.emberMid) });
-      g.stroke(lead);
-      g.poly([...along(-0.22 * t, 0), ...along(-0.4 * t, -0.12 * t), ...along(-0.4 * t, 0.12 * t)]);
-      g.fill({ color: hex(pal.emberCool) });
-      g.stroke(lead);
+      this.stamps.place(fish, x, y, { rotation: f.dir * (k - 0.5) * 1.6, scale: f.dir, scaleY: 1 });
       // Rings on the water where it leaves and where it goes back in.
       for (const [at, when] of [
         [-0.7, 0],
@@ -598,6 +620,154 @@ export class GlassSeaLife extends OceanDrawn {
       }
     }
   }
+}
+
+/**
+ * A ship of leaded glass, facing right, its waterline at the origin: a hull of amber glass
+ * in three panes over a strip of pale sea, a main sail and a jib of cream glass, each sail
+ * leaded across into panes, a lead mast with a gold pennant. Neutral colours, so nothing
+ * passing reads as a player's.
+ */
+function drawGlassShip(g: Graphics, u: number, art: ArtConfig): void {
+  const pal = art.palette;
+  const lead = { width: Math.max(1.5, u * art.glass.leadTiles * 1.5), color: hex(pal.shadow) };
+  const fine = { width: Math.max(1, u * art.glass.leadTiles), color: hex(pal.shadow) };
+  // The sea at its bow and stern, a pane of foam.
+  g.poly([-u * 0.95, u * 0.22, u * 0.95, u * 0.22, u * 0.8, u * 0.4, -u * 0.8, u * 0.4]);
+  g.fill({ color: hex(pal.waterFoam), alpha: 0.75 });
+  g.stroke(fine);
+  // The hull: a raised stern, a sheer down to the waist, a bow raking forward.
+  const hull = [
+    -u * 0.78,
+    -u * 0.12,
+    -u * 0.5,
+    -u * 0.04,
+    u * 0.55,
+    -u * 0.04,
+    u * 0.88,
+    -u * 0.16,
+    u * 0.6,
+    u * 0.3,
+    -u * 0.58,
+    u * 0.3,
+  ];
+  g.poly(hull);
+  g.fill({ color: hex(pal.emberCool) });
+  // Its panes lighter towards the bow, as light through thinner glass.
+  g.poly([
+    -u * 0.15,
+    -u * 0.04,
+    u * 0.55,
+    -u * 0.04,
+    u * 0.88,
+    -u * 0.16,
+    u * 0.6,
+    u * 0.3,
+    -u * 0.1,
+    u * 0.3,
+  ]);
+  g.fill({ color: hex(pal.emberMid), alpha: 0.85 });
+  g.poly([
+    u * 0.25,
+    -u * 0.04,
+    u * 0.55,
+    -u * 0.04,
+    u * 0.88,
+    -u * 0.16,
+    u * 0.6,
+    u * 0.3,
+    u * 0.28,
+    u * 0.3,
+  ]);
+  g.fill({ color: hex(pal.emberHot), alpha: 0.5 });
+  g.poly(hull);
+  g.moveTo(-u * 0.15, -u * 0.04).lineTo(-u * 0.1, u * 0.3);
+  g.moveTo(u * 0.25, -u * 0.04).lineTo(u * 0.28, u * 0.3);
+  g.moveTo(-u * 0.68, u * 0.12).lineTo(u * 0.74, u * 0.12);
+  g.stroke(lead);
+  // The mast, and the main sail bellying forward, leaded across into three panes.
+  g.moveTo(0, -u * 0.04).lineTo(0, -u * 1.15);
+  g.stroke({ ...lead, width: lead.width * 1.3 });
+  const sail = [
+    -u * 0.04,
+    -u * 1.0,
+    u * 0.42,
+    -u * 0.92,
+    u * 0.5,
+    -u * 0.55,
+    u * 0.44,
+    -u * 0.18,
+    -u * 0.04,
+    -u * 0.16,
+  ];
+  g.poly(sail);
+  g.fill({ color: hex(pal.uiInk) });
+  g.poly([-u * 0.04, -u * 0.58, u * 0.5, -u * 0.55, u * 0.44, -u * 0.18, -u * 0.04, -u * 0.16]);
+  g.fill({ color: hex(pal.rockLight), alpha: 0.9 });
+  g.poly(sail);
+  g.moveTo(-u * 0.04, -u * 0.58).lineTo(u * 0.5, -u * 0.55);
+  g.moveTo(u * 0.22, -u * 0.96).lineTo(u * 0.22, -u * 0.17);
+  g.stroke(lead);
+  // A jib behind the mast, gold, and a pennant at the masthead.
+  g.poly([-u * 0.06, -u * 0.95, -u * 0.06, -u * 0.18, -u * 0.6, -u * 0.18]);
+  g.fill({ color: hex(pal.uiAccent) });
+  g.stroke(lead);
+  g.poly([0, -u * 1.15, -u * 0.38, -u * 1.07, 0, -u * 1.0]);
+  g.fill({ color: hex(pal.emberMid) });
+  g.stroke(fine);
+}
+
+/**
+ * A dove of painted white glass, flying right, seen from the side: body, head and a fan of
+ * tail, a gold beak, its wing raised or lowered, every piece in its lead.
+ */
+function drawDove(g: Graphics, u: number, up: boolean, art: ArtConfig): void {
+  const pal = art.palette;
+  // A fine lead: the window's own, round shapes this small, made the dove a dark speck.
+  const lead = { width: Math.max(1, u * art.glass.leadTiles * 0.6), color: hex(pal.shadow) };
+  const white = hex(pal.uiInk);
+  // The far wing, darker, behind the body.
+  g.poly(
+    up
+      ? [-u * 0.02, -u * 0.04, -u * 0.3, -u * 0.42, u * 0.06, -u * 0.06]
+      : [-u * 0.02, u * 0.02, -u * 0.26, u * 0.32, u * 0.06, u * 0.04],
+  );
+  g.fill({ color: hex(pal.rockMid) });
+  g.stroke(lead);
+  // Tail, body and head.
+  g.poly([-u * 0.2, 0, -u * 0.46, -u * 0.1, -u * 0.46, u * 0.08]);
+  g.fill({ color: hex(pal.rockLight) });
+  g.stroke(lead);
+  g.ellipse(0, 0, u * 0.24, u * 0.1);
+  g.fill({ color: white });
+  g.stroke(lead);
+  g.circle(u * 0.24, -u * 0.07, u * 0.08);
+  g.fill({ color: white });
+  g.stroke(lead);
+  g.poly([u * 0.31, -u * 0.09, u * 0.4, -u * 0.06, u * 0.31, -u * 0.04]);
+  g.fill({ color: hex(pal.uiAccent) });
+  // The near wing, raised over its back or swept down.
+  g.poly(
+    up
+      ? [-u * 0.1, -u * 0.04, -u * 0.06, -u * 0.5, u * 0.14, -u * 0.04]
+      : [-u * 0.1, u * 0.02, -u * 0.02, u * 0.4, u * 0.14, u * 0.02],
+  );
+  g.fill({ color: white });
+  g.stroke(lead);
+  g.moveTo(-u * 0.02, up ? -u * 0.04 : u * 0.02).lineTo(-u * 0.05, up ? -u * 0.4 : u * 0.3);
+  g.stroke({ ...lead, width: lead.width * 0.7, alpha: 0.7 });
+}
+
+/** A fish of coloured glass, facing right: an amber body and an orange tail, leaded. */
+function drawGlassFish(g: Graphics, t: number, art: ArtConfig): void {
+  const pal = art.palette;
+  const lead = { width: Math.max(1, t * art.glass.leadTiles), color: hex(pal.shadow) };
+  g.poly([0.32 * t, 0, 0, -0.14 * t, -0.22 * t, 0, 0, 0.14 * t]);
+  g.fill({ color: hex(pal.emberMid) });
+  g.stroke(lead);
+  g.poly([-0.22 * t, 0, -0.4 * t, -0.12 * t, -0.4 * t, 0.12 * t]);
+  g.fill({ color: hex(pal.emberCool) });
+  g.stroke(lead);
 }
 
 /**

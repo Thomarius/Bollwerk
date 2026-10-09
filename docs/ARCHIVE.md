@@ -6359,3 +6359,61 @@ At eight players, watched with `&perf=1` in the 30 s window: render 1.50–1.79 
 four runs (worst 7.1–15.7, one spike), against 1.50–1.56 (worst 6.0–7.3) before; effects
 0.59–0.64 ms against 0.62–0.71; 4 113–4 157 vertices rebuilt a frame against 3 989–4 100, most
 of them the crane and the sea life as before. 60 fps throughout.
+
+## 12zz. The style pass, S6: Stained glass (2026-10-09)
+
+Stained glass's panes were flat fills with no painted detail, its walls Minimal's squares
+with a corner of light, its guns Minimal's disc with a white bar, its bushes green discs, and
+its light never moved; the rose windows were the one strong idea (the style review, 12zt).
+Now the window is lit and painted:
+
+- **Moving light**: a shaft of warm light, a fifth of the window wide, sweeping across it
+  once in `lightSweepMs` (38 s) and round again, falling from the upper left — a gradient
+  drawn once on a canvas and stretched, one sprite only moved, added (`lightAlpha` 0.16,
+  tinted `emberHot`). It lies over the land and sealed ground but under the walls, so no
+  wall's colour changes and walls still stand apart from sealed ground. One pane in nine,
+  chosen from the seed, **shimmers**: the panes are white in six groups drawn with the
+  terrain, each group faded on its own slow beat (`shimmerOneIn`, `shimmerAlpha`), rather
+  than a `Graphics` a pane.
+- **Glass with texture**: streaks and seed bubbles drawn from the seed on a canvas and laid
+  into every pane as a fill in screen space (`FillPattern`, as Noir's hatching), a rectangle
+  a run of a row; sealed ground takes it too. Painted strokes in a pale grisaille on every
+  pane of four tiles or more that holds its own middle, so none crosses its lead: two wave
+  crests on the sea, a leaf's midrib and veins on the land (`paintAlpha`). At eight players
+  the first streaks, long and strong, read as scratches across the sea; they were made
+  shorter and fainter and the pattern's alpha lowered (`textureAlpha` 0.5 to 0.42, paint 0.3
+  to 0.24).
+- **Walls as jewels**: each block's top bevelled — an inner band lit on its upper and left
+  sides, dark on the others — a glow of lighter glass in its dome and a sheen high on it,
+  over the dark face; still leaded block by block, so a shot takes one.
+- **Rose windows with tracery**: a ring of stone pierced by trefoils of the owner's palest
+  glass round the petals (stone grey: pale stone hid the pale trefoils). The centre is dark
+  old gold in the structures; while sealed, as `FlagHoist` says, it is lit gold with a hot
+  core, glowing on a slow breath (an added `Discs` stamp); breached — seen sealed, then not,
+  forgotten when castles are chosen — a crack in lead runs across one petal, the glass clouded
+  between its arms. Both are a `Graphics` a castle redrawn only when they change (`Memos`). A
+  main castle's rose has twelve petals and trefoils where the others have eight, a ring tinged
+  with gilt and a gilt rim; the shared crown at its foot is unchanged.
+- **Guns as lancets**: on the plain square (`cannonBase`) a pointed arch, equilateral,
+  leaded into two lights and a head of the owner's glass, a sheen down the left; a barrel of
+  amber glass edged in lead with a streak of light along it (`Memos`, as before). Silenced,
+  the lancet's glass is cloudy grey under a milky film and the barrel short and grey: at
+  eight players a live gun is a coloured arch with an amber bar, a silenced one a grey arch.
+  A muzzle disc, tried, was dropped, as a round bead at every barrel's end could be taken for
+  a shot. The cannon-placing ghost is the lancet's outline over its square.
+- **Scenery and life**: bushes are fleurs-de-lis, green glass and one in three gold, leaded
+  finer than the window and not at all below 20-pixel tiles, where a pixel of lead round a
+  glyph of six made a black blot. On the outer sea a pair of painted doves now and then
+  (`doveEveryMs`, `doveTilesPerSecond`), white glass with gold beaks, two wing positions; the
+  ship redrawn as a leaded glass ship — an amber hull in three panes on a pane of foam, a
+  cream main sail leaded into panes, a gold jib and pennant; ship, doves and fish are now
+  stamped (`Stamps` in `GlassSeaLife`), where the ship and fish were cut into triangles
+  every frame. The doves were first drawn under the window's lead and came out dark specks;
+  their lead is finer and they are larger.
+
+Shared files: `seaLife.ts` only within `GlassSeaLife`, and its imports.
+
+At eight players, watched with `&perf=1` in the 30 s window: render 1.32–1.36 ms a frame
+(worst 7.1–8.3) against 1.06 (5.1) before, effects 0.57–0.58 ms against 0.45, 3 019 vertices
+rebuilt a frame against 2 684 — the added sprite and shimmer layers, and the amber barrels'
+streak. 60 fps throughout.

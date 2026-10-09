@@ -1453,7 +1453,16 @@
     "fishEveryMs": 9000,
     "fishMs": 1400,
     "shipEveryMs": 20000,
-    "shipTilesPerSecond": 0.45
+    "shipTilesPerSecond": 0.45,
+    "doveEveryMs": 16000,
+    "doveTilesPerSecond": 2.2,
+    "lightAlpha": 0.16,
+    "lightSweepMs": 38000,
+    "lightWidth": 0.22,
+    "shimmerOneIn": 9,
+    "shimmerAlpha": 0.12,
+    "textureAlpha": 0.42,
+    "paintAlpha": 0.24
   },
   "chocolate": {
     "swirlTiles": 7,

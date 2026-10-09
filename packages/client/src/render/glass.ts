@@ -1,13 +1,13 @@
 import type { ArtConfig, GlassStyleConfig } from '@bollwerk/config';
 import { Structure, Terrain, type MatchState, type Shot } from '@bollwerk/sim';
-import { Graphics } from 'pixi.js';
+import { Container, FillPattern, Graphics, Sprite, Texture } from 'pixi.js';
 
 import { motionReduced } from '../motion.js';
 import type { TimerSpot } from '../timerSpot.js';
 
 import { cornerSpot } from './corner.js';
 import { IslandParts } from './islandParts.js';
-import { Memos, viewKey } from './stamps.js';
+import { Discs, Memos, viewKey } from './stamps.js';
 import {
   FlagHoist,
   GhostMotion,
@@ -48,10 +48,11 @@ import { GlassSeaLife } from './seaLife.js';
 import type { SceneryItem } from './scenery.js';
 import { SceneryLayer } from './sceneryLayer.js';
 import { paneOf, paneShade } from './panes.js';
+import { hash } from './noise.js';
 import { outline, trace, wallGeometry } from './walls.js';
 import { cannonBase } from './cannonBase.js';
+import { release } from './release.js';
 
-/** A shard of glass thrown out by a shot or the sweep, spinning as it falls. */
 /** How long the hourglass takes to turn over as a phase begins. */
 const TURN_MS = 700;
 
@@ -65,6 +66,7 @@ const PHASE_MS: Partial<
   build: 'buildMs',
 };
 
+/** A shard of glass thrown out by a shot or the sweep, spinning as it falls. */
 interface Shard {
   x: number;
   y: number;
@@ -91,6 +93,8 @@ interface Glint {
 }
 
 const RECOIL_MS = 160;
+/** How many beats the shimmering panes are shared among. */
+const SHIMMER_GROUPS = 6;
 const RIPPLE_MS = 520;
 const GLINT_MS = 340;
 
@@ -117,6 +121,20 @@ export class GlassTheme implements Theme {
   private readonly seaLife = new GlassSeaLife();
 
   private readonly terrainGfx = new Graphics();
+  /**
+   * A few panes of the window shimmering, brightening and fading: drawn once with the
+   * terrain, in a handful of groups each on its own beat, and only faded each frame.
+   */
+  private readonly shimmer = new Container();
+  /** The streaks and seed bubbles in the glass, drawn once for the match's seed. */
+  private grain: { seed: number; pattern: FillPattern } | null = null;
+  private readonly oldGrains: FillPattern[] = [];
+  /**
+   * The shaft of warm light sweeping the window: a soft gradient drawn once on a canvas,
+   * one sprite only moved, added over the land and sealed ground but under the walls, so
+   * no wall's colour is touched.
+   */
+  private readonly light = new Sprite();
   /** The hourglass in the corner (PLAN 11.24), drawn about its middle so it can turn over. */
   private readonly hourglassGfx = new Graphics();
   private hourglass: TimerSpot | null = null;
@@ -136,6 +154,15 @@ export class GlassTheme implements Theme {
   private readonly effectGfx = new Graphics();
   /** The guns' barrels, a `Graphics` a gun redrawn only as it turns or kicks (`Memos`). */
   private readonly gunMemo = new Memos();
+  /**
+   * What sealing changes on a rose window — its gold centre lit, or a petal cracked by a
+   * breach — a `Graphics` a castle, redrawn only when that changes (`Memos`).
+   */
+  private readonly roseMemo = new Memos();
+  /** The glow round a lit rose's centre, added. */
+  private readonly roseGlow = new Discs();
+  /** Castles seen sealed since they were last chosen: unsealed again, they are breached. */
+  private readonly wasSealed = new Set<number>();
   /** What lies over the guns: shots, splashes, the finish. */
   private readonly lateGfx = new Graphics();
   private readonly overlayGfx = new Graphics();
@@ -155,16 +182,38 @@ export class GlassTheme implements Theme {
   init(layers: ThemeLayers, art: ArtConfig): Promise<void> {
     this.art = art;
     this.style = art.glass;
-    layers.terrain.addChild(this.terrainGfx, this.hourglassGfx);
-    layers.territory.addChild(this.territory.container, this.scenery.gfx);
+    // Made here, not with the theme, which is also made where there is no page to draw on.
+    this.light.texture = lightShaft();
+    this.shimmer.blendMode = 'add';
+    this.light.blendMode = 'add';
+    this.light.anchor.set(0.5);
+    this.roseGlow.container.blendMode = 'add';
+    layers.terrain.addChild(this.terrainGfx, this.shimmer, this.hourglassGfx);
+    layers.territory.addChild(this.territory.container, this.scenery.gfx, this.light);
     layers.structures.addChild(this.structures.container);
-    layers.effects.addChild(this.effectGfx, this.gunMemo.container, this.lateGfx);
+    layers.effects.addChild(
+      this.seaLife.container,
+      this.effectGfx,
+      this.roseMemo.container,
+      this.roseGlow.container,
+      this.gunMemo.container,
+      this.lateGfx,
+    );
     layers.overlay.addChild(this.overlayGfx);
     return Promise.resolve();
   }
 
   destroy(): void {
     this.gunMemo.destroy();
+    this.roseMemo.destroy();
+    this.roseGlow.destroy();
+    this.seaLife.destroy();
+    const shaft = this.light.texture;
+    this.light.destroy();
+    shaft.destroy(true);
+    for (const p of [...this.oldGrains, this.grain?.pattern]) p?.texture.destroy(true);
+    this.grain = null;
+    release(this.shimmer);
     this.lateGfx.destroy();
     this.territory.destroy();
     this.structures.destroy();
@@ -199,7 +248,16 @@ export class GlassTheme implements Theme {
     paneAt: (x: number, y: number) => number,
     dark: number,
     light: number,
-    options: { alpha?: number; sheen?: number; lead?: number; edged?: boolean } = {},
+    options: {
+      alpha?: number;
+      sheen?: number;
+      lead?: number;
+      edged?: boolean;
+      /** The glass's own grain, laid over the panes before the lead. */
+      grain?: FillPattern | null;
+      /** Painted on each pane big enough to take it: waves on the sea, veins on the land. */
+      paint?: { kind: 'waves' | 'veins'; colour: number; alpha: number };
+    } = {},
   ): void {
     const t = view.tile;
     const alpha = options.alpha ?? 1;
@@ -218,6 +276,15 @@ export class GlassTheme implements Theme {
       const shade = 0.25 + this.style.paneVariance * (paneShade(pane) - 0.5);
       g.fill({ color: mixed(dark, light, shade), alpha });
     }
+    // The streaks and bubbles of hand-blown glass, a pattern laid over the panes in runs of a
+    // row, so a fill is a few vertices a run rather than a shape a bubble.
+    if (options.grain) {
+      for (const r of rowRuns(cells)) {
+        g.rect(tileX(view, r.x), tileY(view, r.y), r.w * t, t);
+      }
+      g.fill({ fill: options.grain, alpha: this.style.textureAlpha * alpha });
+    }
+    if (options.paint) this.paint(g, view, byPane, options.paint);
     // The light through each pane: a sheen in the corner of its first tile, row by row.
     for (const tiles of byPane.values()) {
       const first = tiles.reduce((a, b) => (b.y < a.y || (b.y === a.y && b.x < a.x) ? b : a));
@@ -256,6 +323,71 @@ export class GlassTheme implements Theme {
     });
   }
 
+  /**
+   * The glass painter's strokes, in a pale grisaille: on each sea pane of four tiles or more
+   * two short wave crests, on each land pane a leaf's midrib and its veins — set about the
+   * pane's middle, kept within its tiles, and turned by the pane's own hash so no two lie
+   * alike. Drawn with the terrain, never per frame.
+   */
+  private paint(
+    g: Graphics,
+    view: ViewTransform,
+    byPane: ReadonlyMap<number, Cell[]>,
+    paint: { kind: 'waves' | 'veins'; colour: number; alpha: number },
+  ): void {
+    const t = view.tile;
+    for (const [pane, tiles] of byPane) {
+      if (tiles.length < 4) continue;
+      let sx = 0;
+      let sy = 0;
+      for (const c of tiles) {
+        sx += c.x + 0.5;
+        sy += c.y + 0.5;
+      }
+      const mx = sx / tiles.length;
+      const my = sy / tiles.length;
+      // Only where the pane holds its own middle, so a stroke never crosses its lead.
+      if (!tiles.some((c) => c.x === Math.floor(mx) && c.y === Math.floor(my))) continue;
+      const cx = tileX(view, mx);
+      const cy = tileY(view, my);
+      const turn = hash(pane, 7, 11);
+      if (paint.kind === 'waves') {
+        // Two crests, one over the other, each a little run of three humps.
+        const span = t * 0.55;
+        for (const row of [-0.22, 0.2]) {
+          const y = cy + row * t + (turn - 0.5) * t * 0.2;
+          const x0 = cx - span + row * t * 0.6;
+          g.moveTo(x0, y);
+          for (let k = 0; k < 3; k++) {
+            const a = x0 + ((2 * span) / 3) * k;
+            g.quadraticCurveTo(a + span / 6, y - t * 0.14, a + span / 3, y);
+          }
+        }
+      } else {
+        // A leaf's midrib on a slant, and two pairs of veins off it towards its tip.
+        const angle = -0.6 + turn * 1.2 - Math.PI / 4;
+        const len = t * 0.6;
+        const ux = Math.cos(angle);
+        const uy = Math.sin(angle);
+        g.moveTo(cx - ux * len, cy - uy * len).lineTo(cx + ux * len, cy + uy * len);
+        for (const at of [-0.25, 0.25]) {
+          const bx = cx + ux * len * at;
+          const by = cy + uy * len * at;
+          for (const side of [-1, 1]) {
+            const va = angle + side * 0.7;
+            g.moveTo(bx, by).lineTo(bx + Math.cos(va) * len * 0.45, by + Math.sin(va) * len * 0.45);
+          }
+        }
+      }
+    }
+    g.stroke({
+      width: Math.max(1, t * 0.05),
+      color: paint.colour,
+      alpha: paint.alpha,
+      cap: 'round',
+    });
+  }
+
   // ------------------------------------------------------------------ terrain
 
   drawTerrain(state: MatchState, view: ViewTransform): void {
@@ -289,11 +421,23 @@ export class GlassTheme implements Theme {
         else sea.push({ x, y });
       }
     }
+    const grain = this.grainFor(state.seed);
+    const pale = hex(palette.waterFoam);
     this.glass(g, view, sea, paneAt, hex(palette.waterDeep), hex(palette.waterShallow), {
       sheen: 0.6,
       lead: 0.8,
+      grain,
+      paint: { kind: 'waves', colour: pale, alpha: this.style.paintAlpha },
     });
-    this.glass(g, view, ground, paneAt, hex(palette.grassDark), hex(palette.grassLight));
+    this.glass(g, view, ground, paneAt, hex(palette.grassDark), hex(palette.grassLight), {
+      grain,
+      paint: {
+        kind: 'veins',
+        colour: mixed(hex(palette.grassLight), 0xffffff, 0.35),
+        alpha: this.style.paintAlpha,
+      },
+    });
+    this.layShimmer(state, view, [...sea, ...ground], paneAt);
     // A faint tint of the owner over each island, as the other styles give.
     for (let player = 1; player <= state.players.length; player++) {
       let any = false;
@@ -307,6 +451,42 @@ export class GlassTheme implements Theme {
     // The heavier came along every coast, which holds the land's glass to the sea's.
     trace(g, outline(ground, land, view));
     g.stroke({ width: this.lead(view) * this.style.coastLead, color: hex(palette.shadow) });
+  }
+
+  /** The grain for this match, drawn for its seed the first time it is asked for. */
+  private grainFor(seed: number): FillPattern {
+    if (this.grain?.seed !== seed) {
+      // An old one is kept to the end, since a part drawn with it may not be drawn again.
+      if (this.grain !== null) this.oldGrains.push(this.grain.pattern);
+      this.grain = { seed, pattern: glassGrain(seed) };
+    }
+    return this.grain.pattern;
+  }
+
+  /**
+   * One pane in `shimmerOneIn`, chosen from the seed, white over its glass in one of a few
+   * groups, each faded on its own slow beat in `drawEffects`: a few panes catching the
+   * light, here and there, where every pane on its own beat would be a Graphics a pane.
+   */
+  private layShimmer(
+    state: MatchState,
+    view: ViewTransform,
+    cells: readonly Cell[],
+    paneAt: (x: number, y: number) => number,
+  ): void {
+    const t = view.tile;
+    while (this.shimmer.children.length < SHIMMER_GROUPS) this.shimmer.addChild(new Graphics());
+    const groups = this.shimmer.children as Graphics[];
+    for (const g of groups) g.clear();
+    const used = new Set<number>();
+    for (const { x, y } of cells) {
+      const pane = paneAt(x, y);
+      if (hash(pane, state.seed, 21) * this.style.shimmerOneIn >= 1) continue;
+      const group = Math.floor(hash(pane, state.seed, 22) * SHIMMER_GROUPS) % SHIMMER_GROUPS;
+      (groups[group] as Graphics).rect(tileX(view, x), tileY(view, y), t, t);
+      used.add(group);
+    }
+    for (const n of used) (groups[n] as Graphics).fill({ color: 0xfff6dc });
   }
 
   // ------------------------------------------------------------------ territory
@@ -343,6 +523,7 @@ export class GlassTheme implements Theme {
           alpha: this.style.territoryAlpha,
           sheen: 1.6,
           edged: true,
+          grain: this.grain?.pattern ?? null,
         },
       );
     }
@@ -401,56 +582,139 @@ export class GlassTheme implements Theme {
       g.stroke({ width: 1, color: hex(palette.shadow) });
     }
 
-    // Castles: a rose window — petals of the owner's glass round a gold centre, leaded.
     for (const castle of state.castles) {
-      const owner = castle.islandId - 1;
-      const cx = tileX(view, castle.x + castle.w / 2);
-      const cy = tileY(view, castle.y + castle.h / 2) - this.faceFraction() * t * 0.4;
-      const r = (Math.min(castle.w, castle.h) * t) / 2 - t * 0.08;
-      g.circle(cx + t * 0.06, cy + t * 0.12, r);
-      g.fill({ color: 0x000000, alpha: 0.35 });
-      const petals = 8;
-      for (let k = 0; k < petals; k++) {
-        const a0 = (k / petals) * Math.PI * 2;
-        const a1 = ((k + 1) / petals) * Math.PI * 2;
-        g.moveTo(cx, cy).arc(cx, cy, r, a0, a1).lineTo(cx, cy);
-        g.fill({ color: this.colour(owner, k % 2 === 0 ? 'base' : 'light') });
-      }
-      for (let k = 0; k < petals; k++) {
-        const a = (k / petals) * Math.PI * 2;
-        g.moveTo(cx, cy).lineTo(cx + Math.cos(a) * r, cy + Math.sin(a) * r);
-      }
-      g.circle(cx, cy, r);
-      g.circle(cx, cy, r * 0.55);
-      g.stroke({ width: this.lead(view), color: hex(palette.shadow) });
-      g.circle(cx, cy, r * 0.28);
-      g.fill({ color: hex(palette.uiAccent) });
-      g.stroke({ width: this.lead(view), color: hex(palette.shadow) });
-      g.circle(cx - r * 0.35, cy - r * 0.4, r * 0.14);
-      g.fill({ color: 0xffffff, alpha: 0.45 });
+      const main = state.players[castle.islandId - 1]?.startingCastleId === castle.id;
+      this.drawRose(g, view, castle, main);
     }
 
-    // Guns: a round mount of grey glass in its lead, ringed in the owner's colour.
+    // Guns: a lancet of the owner's glass on the plain square testers need to see the gun's
+    // footprint by; silenced, its glass clouds to grey, which reads at eight players' size.
     for (const cannon of state.cannons) {
-      const cx = tileX(view, cannon.x + cannon.w / 2);
-      const cy = tileY(view, cannon.y + cannon.h / 2) - this.faceFraction() * t * 0.4;
-      const r = Math.min(cannon.w, cannon.h) * t * 0.36;
       cannonBase(g, view, cannon, this.colour(cannon.owner, 'dark'), hex(palette.shadow));
-      g.circle(cx + t * 0.05, cy + t * 0.1, r);
+      const cx = tileX(view, cannon.x + cannon.w / 2);
+      const foot = tileY(view, cannon.y + cannon.h) - t * 0.2;
+      const w = Math.min(cannon.w, cannon.h) * t * 0.5;
+      const h = Math.min(cannon.w, cannon.h) * t * 0.8;
+      const spring = foot - h + w * 0.86;
+      // Its shadow, then the three panes: two lights below, the pointed head above.
+      g.poly(lancet(cx + t * 0.05, foot + t * 0.08, w, h));
       g.fill({ color: 0x000000, alpha: 0.3 });
-      g.circle(cx, cy, r);
-      g.fill({ color: hex(cannon.active ? palette.rockMid : palette.rockDark) });
-      g.circle(cx, cy, r * 0.72);
-      g.fill({ color: this.colour(cannon.owner, cannon.active ? 'base' : 'dark') });
-      g.circle(cx, cy, r);
-      g.circle(cx, cy, r * 0.72);
-      g.stroke({ width: this.lead(view), color: hex(palette.shadow) });
+      const cloud = hex(palette.rockMid);
+      const panes = cannon.active
+        ? [
+            this.colour(cannon.owner, 'base'),
+            this.colour(cannon.owner, 'light'),
+            mixed(this.colour(cannon.owner, 'light'), 0xffffff, 0.3),
+          ]
+        : [cloud, mixed(cloud, hex(palette.rockLight), 0.3), mixed(cloud, 0xffffff, 0.15)];
+      g.rect(cx - w / 2, spring, w / 2, foot - spring);
+      g.fill({ color: panes[0] as number });
+      g.rect(cx, spring, w / 2, foot - spring);
+      g.fill({ color: panes[1] as number });
+      g.poly(lancet(cx, spring, w, h - (foot - spring)));
+      g.fill({ color: panes[2] as number });
+      if (!cannon.active) {
+        // Cloudy: a milky film across the glass, lighter towards the top.
+        g.poly(lancet(cx, foot, w, h));
+        g.fill({ color: hex(palette.rockLight), alpha: 0.35 });
+      } else {
+        // The light through it, a sheen down the left light.
+        g.rect(cx - w * 0.36, spring + (foot - spring) * 0.12, w * 0.1, (foot - spring) * 0.6);
+        g.fill({ color: 0xffffff, alpha: 0.45 });
+      }
+      g.poly(lancet(cx, foot, w, h));
+      g.moveTo(cx - w / 2, spring).lineTo(cx + w / 2, spring);
+      g.moveTo(cx, spring).lineTo(cx, foot);
+      g.stroke({ width: this.lead(view) * 1.4, color: hex(palette.shadow), join: 'round' });
     }
   }
 
   /**
-   * Walls as blocks of the owner's glass, standing up as the pixel style's do: a top lit
-   * through, a darker face, every block leaded on its own.
+   * A castle as a rose window: a ring of stone tracery pierced by small trefoils of pale
+   * glass, petals of the owner's glass within it, leaded, round a gold centre left unlit
+   * here — it is lit over the window while the castle is sealed (`drawRoses`). A main
+   * castle's rose is the grander, more petals and trefoils inside a gilt rim.
+   */
+  private drawRose(
+    g: Graphics,
+    view: ViewTransform,
+    castle: MatchState['castles'][number],
+    main: boolean,
+  ): void {
+    const { palette } = this.art;
+    const owner = castle.islandId - 1;
+    const { cx, cy, r } = this.roseAt(view, castle);
+    const lead = this.lead(view);
+    const shadow = hex(palette.shadow);
+    const petals = main ? 12 : 8;
+    const inner = r * 0.74;
+    g.circle(cx + view.tile * 0.06, cy + view.tile * 0.12, r);
+    g.fill({ color: 0x000000, alpha: 0.35 });
+    // The tracery: a ring of stone, its trefoils of the owner's palest glass.
+    g.circle(cx, cy, r);
+    // Stone grey rather than pale, so the trefoils' pale glass shows in it as openings.
+    const stone = hex(palette.rockMid);
+    g.fill({ color: main ? mixed(stone, hex(palette.uiAccent), 0.35) : stone });
+    const lobe = r * 0.085;
+    const glassLight = mixed(this.colour(owner, 'light'), 0xffffff, 0.55);
+    for (let k = 0; k < petals; k++) {
+      const a = ((k + 0.5) / petals) * Math.PI * 2;
+      const tx = cx + Math.cos(a) * r * 0.87;
+      const ty = cy + Math.sin(a) * r * 0.87;
+      // Three lobes round the point, the first pointing out from the rose.
+      for (let n = 0; n < 3; n++) {
+        const b = a + (n / 3) * Math.PI * 2;
+        g.circle(tx + Math.cos(b) * lobe * 0.9, ty + Math.sin(b) * lobe * 0.9, lobe);
+      }
+    }
+    g.fill({ color: glassLight });
+    // The petals: wedges of the owner's glass, alternately lit.
+    for (let k = 0; k < petals; k++) {
+      const a0 = (k / petals) * Math.PI * 2;
+      const a1 = ((k + 1) / petals) * Math.PI * 2;
+      g.moveTo(cx, cy).arc(cx, cy, inner, a0, a1).lineTo(cx, cy);
+      g.fill({ color: this.colour(owner, k % 2 === 0 ? 'base' : 'light') });
+    }
+    // The cusps where the petals meet the ring, a scallop of stone, and the lead.
+    for (let k = 0; k < petals; k++) {
+      const a = (k / petals) * Math.PI * 2;
+      g.moveTo(cx + Math.cos(a) * inner * 0.32, cy + Math.sin(a) * inner * 0.32);
+      g.lineTo(cx + Math.cos(a) * inner, cy + Math.sin(a) * inner);
+    }
+    g.circle(cx, cy, inner);
+    g.circle(cx, cy, inner * 0.6);
+    g.stroke({ width: lead, color: shadow });
+    g.circle(cx, cy, r);
+    g.stroke({ width: lead * (main ? 1.4 : 1.2), color: shadow });
+    if (main) {
+      g.circle(cx, cy, r + lead * 1.2);
+      g.stroke({ width: Math.max(1.5, lead * 1.2), color: hex(palette.uiAccent) });
+    }
+    // The centre, unlit: dark old gold.
+    g.circle(cx, cy, inner * 0.32);
+    g.fill({ color: mixed(hex(palette.craterMid), hex(palette.sand), 0.45) });
+    g.stroke({ width: lead, color: shadow });
+  }
+
+  /** Where a castle's rose stands, and its radius, in screen pixels. */
+  private roseAt(
+    view: ViewTransform,
+    castle: MatchState['castles'][number],
+  ): { cx: number; cy: number; r: number } {
+    const t = view.tile;
+    return {
+      cx: tileX(view, castle.x + castle.w / 2),
+      cy: tileY(view, castle.y + castle.h / 2) - this.faceFraction() * t * 0.4,
+      r: (Math.min(castle.w, castle.h) * t) / 2 - t * 0.08,
+    };
+  }
+
+  /**
+   * Walls as jewels of the owner's glass, standing up as the pixel style's do: each block's
+   * top a cabochon — bevelled, lit along its upper and left edges and dark along the others,
+   * a glow in its dome and a bright sheen high on it — over a darker face, every block leaded
+   * on its own, so a shot visibly takes one. Minimal's flat squares with a corner of light
+   * did not say glass (the style review).
    */
   private drawGlassWall(
     g: Graphics,
@@ -466,19 +730,48 @@ export class GlassTheme implements Theme {
     g.fill({ color: this.colour(player, 'base'), alpha });
     for (const r of wall.faces) g.rect(r.x, r.y, r.w, r.h);
     g.fill({ color: this.colour(player, 'dark'), alpha });
-    // The light through each block's top.
+    // The bevel: an inner band round each top, lit on the side the light comes from.
+    const bevel = t * 0.14;
     for (const b of wall.blocks) {
+      const x = b.left;
+      const y = b.top;
       const h = b.lip - b.top;
+      const i = Math.min(bevel, h * 0.3);
+      g.poly([x, y, x + t, y, x + t - i, y + i, x + i, y + i, x + i, y + h - i, x, y + h]);
+    }
+    g.fill({ color: this.colour(player, 'light'), alpha: 0.55 * alpha });
+    for (const b of wall.blocks) {
+      const x = b.left;
+      const y = b.top;
+      const h = b.lip - b.top;
+      const i = Math.min(bevel, h * 0.3);
       g.poly([
-        b.left + t * 0.14,
-        b.top + h * 0.16,
-        b.left + t * 0.6,
-        b.top + h * 0.16,
-        b.left + t * 0.14,
-        b.top + h * 0.62,
+        x + t,
+        y,
+        x + t,
+        y + h,
+        x,
+        y + h,
+        x + i,
+        y + h - i,
+        x + t - i,
+        y + h - i,
+        x + t - i,
+        y + i,
       ]);
     }
-    g.fill({ color: 0xffffff, alpha: this.style.sheenAlpha * 1.6 * alpha });
+    g.fill({ color: this.colour(player, 'dark'), alpha: 0.7 * alpha });
+    // The dome: a glow of lighter glass in the middle, and the sheen of the light on it.
+    for (const b of wall.blocks) {
+      const h = b.lip - b.top;
+      g.ellipse(b.left + t * 0.5, b.top + h * 0.5, t * 0.27, h * 0.26);
+    }
+    g.fill({ color: this.colour(player, 'light'), alpha: 0.4 * alpha });
+    for (const b of wall.blocks) {
+      const h = b.lip - b.top;
+      g.ellipse(b.left + t * 0.4, b.top + h * 0.36, t * 0.13, h * 0.08);
+    }
+    g.fill({ color: 0xffffff, alpha: 0.65 * alpha });
     // The lead round each block, top and face, so a shot visibly takes one.
     for (const b of wall.blocks) {
       g.rect(b.left, b.top, t, b.lip - b.top + (b.faced ? wall.face : 0));
@@ -694,11 +987,114 @@ export class GlassTheme implements Theme {
     drawChoices(g, view, frame.choices, this.art);
     this.drawBarrels(state, view, frame.deltaMs);
     this.drawFlags(state, view, frame);
+    this.drawRoses(state, view, frame);
+    this.moveLight(view);
     this.drawShots(state, view, frame);
     this.drawRipples(view, frame.deltaMs);
     this.drawShards(view, frame.deltaMs);
     this.winnerBanners.draw(this.lateGfx, view, state, this.art, frame.celebrate, frame.deltaMs);
     this.fireworks.draw(this.lateGfx, view, this.art, frame.celebrate, frame.deltaMs);
+  }
+
+  /**
+   * The light through the window: the shaft carried slowly across it, from off one side to
+   * off the other and round again, and the shimmering panes faded each on their group's
+   * beat. Only moved and faded — nothing here is drawn again.
+   */
+  private moveLight(view: ViewTransform): void {
+    const still = motionReduced();
+    const w = view.width;
+    const h = view.height;
+    const reach = Math.hypot(w, h) * 1.2;
+    const phase = still ? 0.4 : (this.clock % this.style.lightSweepMs) / this.style.lightSweepMs;
+    const width = w * this.style.lightWidth;
+    this.light.position.set(-width + (w + 2 * width) * phase, h / 2);
+    this.light.scale.set(width / LIGHT_TEXTURE_PX, reach / 4);
+    // Falling from the upper left, as the sun through a south window in the afternoon.
+    this.light.rotation = 0.42;
+    this.light.alpha = this.style.lightAlpha;
+    this.light.tint = hex(this.art.palette.emberHot);
+    this.shimmer.children.forEach((g, n) => {
+      const beat = still ? 0.5 : 0.5 + 0.5 * Math.sin(this.clock / (2300 + n * 370) + n * 1.9);
+      g.alpha = this.style.shimmerAlpha * beat * beat * beat;
+    });
+  }
+
+  /**
+   * What sealing changes on a rose: sealed — the flag up, as `FlagHoist` says — its gold
+   * centre lit, glowing softly on a slow breath; breached, a crack in lead across one petal,
+   * the centre dark. A `Graphics` a castle, drawn again only when that changes (`Memos`),
+   * and the glow a stamped disc, added.
+   */
+  private drawRoses(state: MatchState, view: ViewTransform, frame: EffectFrame): void {
+    const { palette } = this.art;
+    const memo = this.roseMemo;
+    const lead = this.lead(view);
+    const still = motionReduced();
+    memo.begin();
+    this.roseGlow.begin(view.tile);
+    for (const castle of state.castles) {
+      const sealed = frame.castleSealed[castle.id] === true;
+      // A castle chosen afresh — a continue's, or the opening — has not been breached.
+      if (state.phase === 'castle_select') this.wasSealed.delete(castle.id);
+      if (sealed) this.wasSealed.add(castle.id);
+      const raised = this.flags.raised(castle.id, this.clock, this.art);
+      const lit = raised !== null && !this.flags.lowering(castle.id);
+      const cracked = !sealed && this.wasSealed.has(castle.id);
+      if (!lit && !cracked) continue;
+      const { cx, cy, r } = this.roseAt(view, castle);
+      const inner = r * 0.74;
+      const petals = state.players[castle.islandId - 1]?.startingCastleId === castle.id ? 12 : 8;
+      memo.draw(castle.id, `${viewKey(view)}|${cx},${cy}|${lit}|${cracked}|${petals}`, (g) => {
+        if (lit) {
+          g.circle(cx, cy, inner * 0.32);
+          g.fill({ color: hex(palette.uiAccent) });
+          g.circle(cx, cy, inner * 0.17);
+          g.fill({ color: hex(palette.emberHot) });
+          g.circle(cx, cy, inner * 0.32);
+          g.stroke({ width: lead, color: hex(palette.shadow) });
+          g.circle(cx - inner * 0.1, cy - inner * 0.12, inner * 0.06);
+          g.fill({ color: 0xffffff, alpha: 0.85 });
+          return;
+        }
+        // The crack: across the petal the castle's own number picks, from the centre's
+        // ring out to the tracery, a jag with a branch off it.
+        const k = castle.id % petals;
+        const a = ((k + 0.5) / petals) * Math.PI * 2;
+        const along = (d: number, side: number): [number, number] => [
+          cx + Math.cos(a) * d - Math.sin(a) * side,
+          cy + Math.sin(a) * d + Math.cos(a) * side,
+        ];
+        // The broken pane clouds between the crack's arms, under the lead of it.
+        g.poly([
+          ...along(inner * 0.32, 0),
+          ...along(inner * 0.52, inner * 0.08),
+          ...along(inner * 0.74, inner * 0.2),
+          ...along(inner, inner * 0.06),
+          ...along(inner * 0.7, -inner * 0.04),
+        ]);
+        g.fill({ color: hex(palette.rockLight), alpha: 0.55 });
+        g.moveTo(...along(inner * 0.32, 0));
+        g.lineTo(...along(inner * 0.52, inner * 0.08));
+        g.lineTo(...along(inner * 0.7, -inner * 0.04));
+        g.lineTo(...along(r * 0.95, inner * 0.06));
+        g.moveTo(...along(inner * 0.52, inner * 0.08));
+        g.lineTo(...along(inner * 0.74, inner * 0.2));
+        g.stroke({ width: Math.max(1.5, lead * 1.4), color: hex(palette.shadow), join: 'round' });
+      });
+      if (lit) {
+        const breath = still ? 1 : 0.8 + 0.2 * Math.sin(this.clock / 900 + castle.id);
+        this.roseGlow.disc(
+          cx,
+          cy,
+          inner * 0.62,
+          hex(palette.uiAccent),
+          0.32 * breath * (raised ?? 1),
+        );
+      }
+    }
+    memo.end();
+    this.roseGlow.end();
   }
 
   /** A piece set in its lead: a glint of light runs across its panes. */
@@ -720,7 +1116,11 @@ export class GlassTheme implements Theme {
     this.glints = this.glints.filter((glint) => glint.age < GLINT_MS);
   }
 
-  /** Barrels: a dark bar of glass from the mount, turning to its target, kicking on firing. */
+  /**
+   * Barrels: a rod of amber glass edged in lead, from the middle of the lancet, turning to
+   * its target and kicking on firing, a streak of light along it; silenced, short and
+   * clouded grey like its lancet.
+   */
   private drawBarrels(state: MatchState, view: ViewTransform, deltaMs: number): void {
     const t = view.tile;
     const { palette } = this.art;
@@ -740,14 +1140,30 @@ export class GlassTheme implements Theme {
         const ex = tileX(view, cx + Math.sin(aim.angle) * length);
         const ey = tileY(view, cy - Math.cos(aim.angle) * length);
         const width = Math.max(3, t * 0.3);
-        g.moveTo(tileX(view, cx), tileY(view, cy)).lineTo(ex, ey);
+        const sx = tileX(view, cx);
+        const sy = tileY(view, cy);
+        g.moveTo(sx, sy).lineTo(ex, ey);
         g.stroke({ width: width + this.lead(view) * 2, color: hex(palette.shadow), cap: 'round' });
-        g.moveTo(tileX(view, cx), tileY(view, cy)).lineTo(ex, ey);
+        g.moveTo(sx, sy).lineTo(ex, ey);
         g.stroke({
           width,
-          color: hex(cannon.active ? palette.rockLight : palette.rockMid),
+          color: cannon.active
+            ? hex(palette.emberMid)
+            : mixed(hex(palette.rockMid), hex(palette.rockLight), 0.3),
           cap: 'round',
         });
+        if (cannon.active) {
+          // The light along it, a little to one side of its axis.
+          const nx = -Math.cos(aim.angle) * width * 0.22;
+          const ny = -Math.sin(aim.angle) * width * 0.22;
+          g.moveTo(sx + nx + (ex - sx) * 0.2, sy + ny + (ey - sy) * 0.2);
+          g.lineTo(sx + nx + (ex - sx) * 0.85, sy + ny + (ey - sy) * 0.85);
+          g.stroke({
+            width: Math.max(1, width * 0.25),
+            color: hex(palette.emberHot),
+            cap: 'round',
+          });
+        }
       });
     }
     memo.end();
@@ -891,13 +1307,19 @@ export class GlassTheme implements Theme {
 
     if (state.phase === 'cannon_place' && ghost.footprint) {
       const colour = ghost.valid ? hex(palette.uiValid) : hex(palette.uiInvalid);
-      const cx = tileX(view, anchor.x + ghost.footprint.w / 2);
-      const cy = tileY(view, anchor.y + ghost.footprint.h / 2);
-      const r = Math.min(ghost.footprint.w, ghost.footprint.h) * t * 0.36;
-      g.circle(cx, cy, r);
-      g.fill({ color: colour, alpha: 0.25 });
+      // The lancet it will be, in outline over its square.
+      const { w: fw, h: fh } = ghost.footprint;
+      const cx = tileX(view, anchor.x + fw / 2);
+      const foot = tileY(view, anchor.y + fh) - t * 0.2;
+      const size = Math.min(fw, fh) * t;
+      g.rect(tileX(view, anchor.x), tileY(view, anchor.y), fw * t, fh * t);
+      g.fill({ color: colour, alpha: 0.18 });
+      g.poly(lancet(cx, foot, size * 0.5, size * 0.8));
+      g.fill({ color: colour, alpha: 0.3 });
       g.stroke({ width: Math.max(1.5, t * 0.1), color: colour });
       if (!ghost.valid) {
+        const r = size * 0.36;
+        const cy = tileY(view, anchor.y + fh / 2);
         g.moveTo(cx - r, cy + r).lineTo(cx + r, cy - r);
         g.stroke({ width: Math.max(1.5, t * 0.1), color: colour });
       }
@@ -910,9 +1332,34 @@ export class GlassTheme implements Theme {
 }
 
 /**
+ * A fleur-de-lis's outline, in units of its size about its middle, y down: the tall middle
+ * petal, the two curled out and down either side, the band across, and the foot below.
+ */
+const FLEUR: readonly (readonly [number, number])[] = (() => {
+  const right: [number, number][] = [
+    [0.22, -0.62],
+    [0.2, -0.3],
+    [0.12, -0.1],
+    [0.3, -0.38],
+    [0.52, -0.66],
+    [0.72, -0.52],
+    [0.66, -0.26],
+    [0.52, -0.3],
+    [0.42, -0.1],
+    [0.45, -0.1],
+    [0.45, 0.08],
+    [0.15, 0.08],
+    [0.32, 0.44],
+    [0.12, 0.4],
+  ];
+  const left = right.map(([x, y]): [number, number] => [-x, y]).reverse();
+  return [[0, -1], ...right, [0, 0.22], ...left];
+})();
+
+/**
  * Stained glass's scenery, in glass too: a tree a round pane of green leaded over a brown
- * stem, a pine a leaded triangle, a bush a small green roundel — one in three a flower, a
- * roundel of gold — and a boulder a grey pane of rough glass.
+ * stem, a pine a leaded triangle, a bush a fleur-de-lis in green glass — one in three gold —
+ * and a boulder a grey pane of rough glass.
  */
 function drawGlassScenery(
   g: Graphics,
@@ -940,10 +1387,22 @@ function drawGlassScenery(
       g.fill({ color: mixed(hex(palette.grassDark), hex(palette.grassLight), 0.4) });
       g.stroke({ width: lead, color: hex(palette.shadow) });
     } else if (item.kind === 'bush') {
+      // A fleur-de-lis, the window's own flower: green glass, one in three gold.
       const flower = item.variant % 3 === 1;
-      g.circle(cx, cy, t * 0.18);
-      g.fill({ color: flower ? hex(palette.uiAccent) : hex(palette.grassLight) });
-      g.stroke({ width: lead, color: hex(palette.shadow) });
+      const u = t * 0.44;
+      g.poly(FLEUR.flatMap(([x, y]) => [cx + x * u, cy + y * u]));
+      g.fill({
+        color: flower
+          ? hex(palette.uiAccent)
+          : mixed(hex(palette.grassLight), hex(palette.rockLight), 0.25),
+      });
+      // Leaded finer than the window, and not at all at eight players' tile size, where a
+      // pixel of lead round a glyph of six made it a black blot.
+      if (t >= 20) {
+        g.poly(FLEUR.flatMap(([x, y]) => [cx + x * u, cy + y * u]));
+        g.moveTo(cx - u * 0.45, cy - u * 0.1).lineTo(cx + u * 0.45, cy - u * 0.1);
+        g.stroke({ width: Math.max(1, lead * 0.6), color: hex(palette.shadow), join: 'round' });
+      }
     } else {
       g.poly([
         cx - t * 0.3,
@@ -959,4 +1418,121 @@ function drawGlassScenery(
       g.stroke({ width: lead, color: hex(palette.shadow) });
     }
   }
+}
+
+/** The width of the light's gradient, in texture pixels. */
+const LIGHT_TEXTURE_PX = 128;
+
+/**
+ * The shaft of light, across its width: nothing at the edges, rising softly to a warm core,
+ * white so the sprite's tint colours it. Drawn once, on a canvas, for every size it is
+ * stretched to, since a gradient made of nested shapes shows its steps.
+ */
+function lightShaft(): Texture {
+  const canvas = document.createElement('canvas');
+  canvas.width = LIGHT_TEXTURE_PX;
+  canvas.height = 4;
+  const ctx = canvas.getContext('2d');
+  if (ctx !== null) {
+    const ramp = ctx.createLinearGradient(0, 0, LIGHT_TEXTURE_PX, 0);
+    for (let k = 0; k <= 16; k++) {
+      const x = k / 16;
+      // A raised cosine, flattened at the top: a shaft with a body, soft at both edges.
+      const v = Math.min(1, 1.25 * (0.5 - 0.5 * Math.cos(x * Math.PI * 2)));
+      ramp.addColorStop(x, `rgba(255,255,255,${v.toFixed(3)})`);
+    }
+    ctx.fillStyle = ramp;
+    ctx.fillRect(0, 0, LIGHT_TEXTURE_PX, 4);
+  }
+  return Texture.from(canvas);
+}
+
+/**
+ * Hand-blown glass, as a pattern laid over every pane: long faint streaks where the glass
+ * was drawn out, and seed bubbles trapped in it, each a pale rim with a dark fleck — from
+ * the match's seed, so it lies the same every time the board is drawn. Drawn once on a
+ * canvas and laid in as a fill in screen space (`FillPattern`), as Noir's hatching is: a few
+ * vertices a run of tiles, where bubbles drawn as shapes would be thousands.
+ */
+function glassGrain(seed: number): FillPattern {
+  const size = 192;
+  const canvas = document.createElement('canvas');
+  canvas.width = canvas.height = size;
+  const ctx = canvas.getContext('2d');
+  let n = 0;
+  const next = (): number => hash(seed, n++, 31);
+  if (ctx !== null) {
+    ctx.lineCap = 'round';
+    // Streaks, drawn across the tile's edge and again a tile over, so the pattern joins.
+    for (let k = 0; k < 9; k++) {
+      const x = next() * size;
+      const y = next() * size;
+      const len = size * (0.15 + next() * 0.2);
+      const bend = (next() - 0.5) * 16;
+      const light = k % 3 !== 0;
+      ctx.strokeStyle = light ? 'rgba(255,255,255,0.16)' : 'rgba(0,0,0,0.18)';
+      ctx.lineWidth = 0.8 + next() * 1.2;
+      for (const ox of [-size, 0, size]) {
+        for (const oy of [-size, 0, size]) {
+          ctx.beginPath();
+          ctx.moveTo(x + ox, y + oy);
+          ctx.quadraticCurveTo(x + ox + len / 2, y + oy + bend, x + ox + len, y + oy + len * 0.35);
+          ctx.stroke();
+        }
+      }
+    }
+    // Seed bubbles, a few larger among many small.
+    for (let k = 0; k < 34; k++) {
+      const x = 3 + next() * (size - 6);
+      const y = 3 + next() * (size - 6);
+      const r = next() < 0.2 ? 1.8 + next() * 1.2 : 0.7 + next() * 0.8;
+      ctx.fillStyle = 'rgba(255,255,255,0.12)';
+      ctx.beginPath();
+      ctx.arc(x, y, r, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(255,255,255,0.55)';
+      ctx.lineWidth = 0.7;
+      ctx.beginPath();
+      ctx.arc(x, y, r, Math.PI * 0.9, Math.PI * 1.7);
+      ctx.stroke();
+      ctx.fillStyle = 'rgba(0,0,0,0.3)';
+      ctx.beginPath();
+      ctx.arc(x + r * 0.35, y + r * 0.35, Math.max(0.4, r * 0.3), 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+  return new FillPattern({ texture: Texture.from(canvas), repetition: 'repeat' });
+}
+
+/** Cells joined into runs along their rows, so a fill over them is a rectangle a run. */
+function rowRuns(cells: readonly Cell[]): { x: number; y: number; w: number }[] {
+  const sorted = [...cells].sort((a, b) => a.y - b.y || a.x - b.x);
+  const runs: { x: number; y: number; w: number }[] = [];
+  for (const c of sorted) {
+    const last = runs[runs.length - 1];
+    if (last !== undefined && last.y === c.y && last.x + last.w === c.x) last.w++;
+    else runs.push({ x: c.x, y: c.y, w: 1 });
+  }
+  return runs;
+}
+
+/**
+ * A lancet's outline, `w` wide and `h` tall from its foot at (`cx`, `foot`): straight sides
+ * up to an equilateral pointed arch, each side of the arch an arc about the other's foot.
+ */
+function lancet(cx: number, foot: number, w: number, h: number): number[] {
+  const head = w * 0.866;
+  const spring = foot - Math.max(0, h - head);
+  const points = [cx - w / 2, foot, cx - w / 2, spring];
+  const steps = 6;
+  for (let k = 1; k <= steps; k++) {
+    const a = Math.PI + (k / steps) * (Math.PI / 3);
+    points.push(cx + w / 2 + Math.cos(a) * w, spring + Math.sin(a) * w);
+  }
+  for (let k = 1; k <= steps; k++) {
+    const a = (5 * Math.PI) / 3 + (k / steps) * (Math.PI / 3);
+    points.push(cx - w / 2 + Math.cos(a) * w, spring + Math.sin(a) * w);
+  }
+  points.push(cx + w / 2, foot);
+  return points;
 }
