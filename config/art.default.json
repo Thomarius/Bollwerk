@@ -1652,9 +1652,8 @@
     "mistBanks": 7,
     "mistAlpha": 0.13,
     "steamVents": 6,
-    "impactFrameMs": 90,
     "wordMs": 900,
-    "wordChance": 0.15,
+    "wordChance": 0.4,
     "lightningEveryMs": 7000,
     "boatEveryMs": 22000,
     "boatTilesPerSecond": 0.9

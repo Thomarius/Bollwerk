@@ -4094,19 +4094,15 @@ body.hud-christmas .final-stamp {
   text-shadow: 0 1px 0 #0006;
 }
 
-/* Noir: the banner the shadow of venetian blinds falling across the board, slats of light and
-   dark, lettered across in heavy white capitals inked thick, its lines in a comic's caption
-   boxes; the HUD black comic panels with white gutters. */
+/* Noir: the banner a plain strip of ink ruled in white, as a comic's panel border, lettered
+   across in heavy white capitals inked thick, its lines in a comic's caption boxes; the HUD
+   black comic panels with white gutters. The shadow of venetian blinds it once was, slats of
+   light and dark the whole screen wide, was too busy (the tournament tests, 2026-10-09). */
 .phase-call.banner-noir {
-  border-top: 4px solid #0a0a0d;
-  border-bottom: 4px solid #0a0a0d;
-  background-color: #1a1a1e;
-  background-image: repeating-linear-gradient(
-    176deg,
-    #e8e4da 0 10px,
-    #e8e4da 10px 12px,
-    #16161a 12px 22px
-  );
+  border-top: 3px solid #f4f2ec;
+  border-bottom: 3px solid #f4f2ec;
+  box-shadow: 0 0 0 3px #0a0a0d;
+  background: #0e0e11;
   color: #f4f2ec;
   font-family: Impact, 'Arial Black', 'Helvetica Neue', sans-serif;
   letter-spacing: 0.08em;
@@ -4149,16 +4145,18 @@ body.hud-noir {
   --hud-font: Impact, 'Arial Black', 'Helvetica Neue', sans-serif;
 }
 
-/* The bar a strip of a comic page (S9): white paper, its edge inked, and on it a panel for
-   the phase and one for each player or team, dark grey under a faint halftone, each in a
-   heavy ink border, white gutters between. The panels grow to fill the strip, as a page's
-   panels do, rather than leaving the paper bare between the phase and the roster. The
+/* The bar a strip of a comic page (S9): dark grey, its edge inked, and on it a panel for
+   the phase and one for each player or team, darker under a faint halftone, each in a heavy
+   ink border. The white paper it was first, between the panels, glared above the night's
+   dark board (the tournament tests, 2026-10-09). The phase stands at the left and the roster at
+   the right, as in every other style: grown to fill the strip, as a page's panels do, the
+   bar alone changed its layout as the looks changed (the tournament tests, 2026-10-09). The
    gutters and borders are thin, since the 64-pixel bar must hold a name over a score. */
 body.hud-noir #hud .bar {
   gap: 6px;
   align-items: stretch;
   padding: 4px 6px;
-  background: #f4f2ec;
+  background: #2a2a2f;
   border-bottom: 3px solid #0a0a0d;
 }
 
@@ -4195,14 +4193,12 @@ body.hud-noir #hud .phase .timer {
 }
 
 body.hud-noir #hud .roster {
-  flex: 1 1 auto;
   gap: 6px;
 }
 
 /* The player's colour a band down the panel's inner edge, inside the ink, so the border
    stays the page's. */
 body.hud-noir #hud .roster > li {
-  flex: 1 1 auto;
   justify-content: center;
   padding: 0 0.4rem 0 calc(0.4rem + 4px);
 }

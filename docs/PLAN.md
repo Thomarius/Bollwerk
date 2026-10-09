@@ -1296,8 +1296,9 @@ flash; **a silenced one stands in the dark**, cross-hatched, its barrel down. Sh
 lines. **A hit is a cel-shaded blast** in three hard tones of white and grey, inked, bricks flying
 in the owner's colour, smoke in outlined puffs, a crater on the ground; **a share of wall hits
 (`wordChance`) and every breach letter a sound word**, in the reader's language (`noir.words`:
-BLAM!, KRAK! — BUMM!, KRACH!), and are held for an **impact frame**: the screen flashed white,
-speed lines bursting from the hit in ink (`impactFrameMs`, none with motion reduced). Weather from
+BLAM!, KRAK! — BUMM!, KRACH!). The words were once held for an impact frame, the screen flashed
+white with speed lines; the testers found the flashes too much and liked the words, so the frame
+went and the words came oftener, 0.15 of wall hits to 0.4 (2026-10-09). Weather from
 the seed: **rain** in slanting strokes by default, fog banks in a foggy match, a dry night with
 the drains steaming in a clear one; **the final round a thunderstorm**, heavier rain and lightning
 struck twice (`lightningEveryMs`), its dusk a darkening rather than orange. The sea black harbour
@@ -1305,9 +1306,10 @@ water, the city's lamps broken in it, foam inked along stone quays with bollards
 lamp posts, water towers, crates, a bin with a cat, parked forties cars and hydrants — nothing
 lit, since a lamp burning is a sealed club's; a harbour tug crosses the outer sea, its wheelhouse
 lit, smoke from its funnel. **A detective stands in the corner** under a lamp, trench coat and
-fedora in silhouette, turning his head now and then, faster at the climax. Its banner is **the
-shadow of venetian blinds** across the board, lettered in white capitals inked thick, its lines
-in caption boxes; its HUD black comic panels with white gutters; its title blocky capitals lit
+fedora in silhouette, turning his head now and then, faster at the climax. Its banner is **a plain
+strip of ink ruled in white**, lettered in white capitals inked thick, its lines in caption boxes
+(the shadow of venetian blinds it was first, slats across the whole screen, too busy for the
+testers, 2026-10-09); its HUD black comic panels with white gutters; its title blocky capitals lit
 white above a grey band, a hatched shadow cast; its finish ink drops and a necktie for a flag.
 
 The thirteen shape-drawn styles share `walls.ts`: the wall geometry (tops, faces, rim), and

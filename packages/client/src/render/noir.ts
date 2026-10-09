@@ -189,8 +189,7 @@ function cobbles(): FillPattern {
  * and the club's sign sputter out; a silenced gun stands in the dark, hatched over; a player
  * who is out has their island blacked out, the club closed. Walls are brick in the owner's
  * colour, castles speakeasies under a neon sign, guns rooftop guns with searchlights. A hit
- * is a cel-shaded blast — a big one held for an impact frame and lettered with a sound word —
- * bricks flying, smoke curling. Rain, fog or a dry night with the drains steaming; the final
+ * is a cel-shaded blast — a big one lettered with a sound word — bricks flying, smoke curling. Rain, fog or a dry night with the drains steaming; the final
  * round a thunderstorm. A detective under a lamp stands in the corner.
  */
 export class NoirTheme extends ShapeTheme implements Theme {
@@ -234,7 +233,7 @@ export class NoirTheme extends ShapeTheme implements Theme {
   /** Sound words, lettered; a few kept and lettered again, never made one a hit. */
   private readonly wordLayer = new Container();
   private readonly wordPool: Text[] = [];
-  /** Over all: an impact frame, a lightning flash. */
+  /** Over all: the final round's lightning. */
   private readonly flashGfx = new Graphics();
   private readonly overlayGfx = new Graphics();
 
@@ -255,8 +254,6 @@ export class NoirTheme extends ShapeTheme implements Theme {
   private thrown: Thrown[] = [];
   private words: Word[] = [];
   private drops: Drop[] = [];
-  /** The impact frame under way: where, and how long it has held. */
-  private impact: Aged | null = null;
   /** The lightning: when the next strike comes, and how long the one under way has lit. */
   private nextStrike = 0;
   private strike = -1;
@@ -652,11 +649,15 @@ export class NoirTheme extends ShapeTheme implements Theme {
     for (const block of debris) {
       for (let k = 0; k < 6; k++) this.throwBrick(block.x + 0.5, block.y + 0.4, block.owner - 1);
     }
-    // A heavy hit now and then: the impact frame and a sound word.
+    // A heavy hit now and then: a sound word.
     if (Math.random() < this.style.wordChance) this.bigMoment(x + 0.5, y);
   }
 
-  /** A big moment at a spot: the impact frame held there, and a sound word lettered over it. */
+  /**
+   * A big moment at a spot: a sound word lettered over it. It once also flashed the screen
+   * white for an impact frame, speed lines bursting from the hit, which the testers found too
+   * much at every few hits (2026-10-09): the words, which they liked, come oftener instead.
+   */
   private bigMoment(x: number, y: number): void {
     if (this.words.length >= WORDS_AT_ONCE) return;
     const all = text('noir.words').split('|');
@@ -667,7 +668,6 @@ export class NoirTheme extends ShapeTheme implements Theme {
       text: all[Math.floor(Math.random() * all.length)] ?? 'BLAM!',
       tilt: (Math.random() - 0.5) * 0.4,
     });
-    if (!motionReduced()) this.impact = { x, y, age: 0 };
   }
 
   private smoke(x: number, y: number, count: number): void {
@@ -1179,37 +1179,12 @@ export class NoirTheme extends ShapeTheme implements Theme {
   }
 
   /**
-   * Over everything, briefly: a big hit's impact frame — the screen flashed white, speed lines
-   * bursting from the hit in ink — and the final round's lightning, the whole scene white for a
-   * blink, struck twice. None of it with motion reduced: it is a flash.
+   * Over everything, briefly: the final round's lightning, the whole scene white for a blink,
+   * struck twice. Not with motion reduced: it is a flash.
    */
   private drawFlashes(state: MatchState, view: ViewTransform, deltaMs: number): void {
     const g = this.flashGfx;
-    const t = view.tile;
-    if (motionReduced()) {
-      this.impact = null;
-      return;
-    }
-    const impact = this.impact;
-    if (impact !== null) {
-      impact.age += deltaMs;
-      const k = impact.age / this.style.impactFrameMs;
-      if (k >= 1) this.impact = null;
-      else {
-        g.rect(0, 0, view.width, view.height);
-        g.fill({ color: 0xffffff, alpha: 0.55 * (1 - k) });
-        const cx = tileX(view, impact.x);
-        const cy = tileY(view, impact.y);
-        const reach = Math.max(view.width, view.height);
-        for (let n = 0; n < 18; n++) {
-          const a = (n / 18) * Math.PI * 2 + hash(n, 0, 7140) * 0.3;
-          const from = t * (1.2 + hash(n, 1, 7141));
-          g.moveTo(cx + Math.cos(a) * from, cy + Math.sin(a) * from);
-          g.lineTo(cx + Math.cos(a) * reach, cy + Math.sin(a) * reach);
-        }
-        g.stroke({ width: Math.max(2, t * 0.12), color: NOIR_INK, alpha: 0.7 * (1 - k) });
-      }
-    }
+    if (motionReduced()) return;
     if (!climax(state)) {
       this.strike = -1;
       return;

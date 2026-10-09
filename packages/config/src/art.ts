@@ -802,8 +802,6 @@ export const NoirStyleSchema = z.strictObject({
   mistAlpha: z.number().min(0).max(1),
   /** Drains steaming on a dry night. */
   steamVents: z.number().int().nonnegative(),
-  /** How long a big hit's impact frame holds the screen. */
-  impactFrameMs: z.number().int().positive(),
   /** How long a sound word stays on the board, and the share of wall hits that get one. */
   wordMs: z.number().int().positive(),
   wordChance: z.number().min(0).max(1),

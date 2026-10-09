@@ -6631,3 +6631,29 @@ Released the same day as v0.8.5 for its fixes: Random looks that came round agai
 music starting at once where the browser allows and always in the desktop app's window, a
 Sharpness setting, and Chocolate's and Blueprint's frames cut to the other styles' (13f). Protocol
 20 as v0.8.5; the game's rules and bots unchanged.
+
+## 13h. The tournament tests' feedback: the end for teammates, and Noir calmed (2026-10-09)
+
+**A teammate stuck after the last match.** Between matches a teammate's page leaves the summary
+when the host's page sends the room the next match's table. After the last match — the
+tournament won, or the host's team out — there is no next table: the host's page closed the room
+and showed the end to the host alone, and the teammate waited on "The host goes on" for good,
+holding a save from before the final. Now the host's page sends the finished save alone as the
+room closes (`tournamentEnd`, protocol 21, the server passing it on as `tournamentSave` only from
+the host and only once the match is over), and a teammate's page shows the same end screen
+(`showEnding`, shared). As a safety net, a summary whose host has left — any room's, not only a
+tournament's — drops the waiting button, leaving Back to menu.
+
+**Noir**, four complaints of the testers: the top bar stretched its panels across the whole
+width where every other style sets the phase left and the roster right (now as the others); its
+white paper glared above the dark board (now dark grey); the impact frame, a white flash with
+ink speed lines at a share of hits, was too much, while the sound words were liked — the frame is
+gone (`impactFrameMs` removed) and the words come at 0.4 of wall hits rather than 0.15; and the
+banner's venetian-blind slats were too busy — now a plain strip of ink ruled in white. The final
+round's lightning is kept. Checked by eye in screenshots; the teammate's end is tested at the
+room, not yet seen in play with two pages.
+
+**A tournament seemingly lost across versions** was not: a save lives in the local storage of the
+address the game is played at, port included, so a page at another port or in another browser
+starts with an empty list. The save from 0.8.4 was intact in the desktop app's storage and reads
+under 0.8.6.
