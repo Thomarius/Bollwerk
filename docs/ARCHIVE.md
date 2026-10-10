@@ -6684,3 +6684,10 @@ random a look keeps its style rather than take the other's, so every banner stil
 something. `LookRotation` reads the favourites at every banner and starts a new cycle when they
 change, so hearts given in the pause menu's gallery count from the next banner. Checked with two
 pages against a built server, and the gallery by eye.
+
+## 13j. v0.8.7 (2026-10-10)
+
+Released for the tournament tests' feedback — the end shown to the teammates too, and Noir
+calmed (13h) — and for the Ready button and favourite looks (13i), both tested and approved by
+the user. Protocol 21, so a v0.8.6 page cannot join a v0.8.7 room; the game's rules and bots
+unchanged.

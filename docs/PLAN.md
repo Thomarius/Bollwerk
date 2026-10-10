@@ -1579,7 +1579,7 @@ every resolution against an independent search, not only on unit pictures.
 
 ## 11. Open work
 
-**Where to start (2026-10-09).** The latest release is **v0.8.6** (2026-10-09, protocol 20).
+**Where to start (2026-10-10).** The latest release is **v0.8.7** (2026-10-10, protocol 21).
 Up to **v0.8.3**: the game and online play, bots as skill levels and personalities, the styles
 with their corner pieces, random looks every round, English and German, the desktop app, UPnP,
 the balance soak and the rendering work (ARCHIVE 12h–12v), the refactoring (12w) and stronger
@@ -1588,7 +1588,9 @@ bots (12x, 12y). **v0.8.4**: tournament mode ([`TOURNAMENT.md`](./TOURNAMENT.md)
 (12zn). **v0.8.5** (13d): the shared tournament lobby (12zr), team seating for three and four
 teams of two (12zs, 13c) and the style pass, every style but Minimal finished (12zt–12zz, 13a,
 13b). **v0.8.6** (13g): Random looks no longer repeat (13e), a Sharpness setting, the music at
-once where allowed, and Chocolate's and Blueprint's frames cut (13f).
+once where allowed, and Chocolate's and Blueprint's frames cut (13f). **v0.8.7** (13j): the
+tournament's end shown to teammates and Noir calmed (13h), a Ready button for a room's guests
+and favourite looks for Random (13i).
 
 **The tournament's play-testing round, T8, is under way**, its findings triaged with the users
 first. **Next to build**: item 3, the bots' planning moved off the page's thread in local matches,
