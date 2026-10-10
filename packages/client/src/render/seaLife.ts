@@ -24,6 +24,7 @@ import { drawFish } from './reef.js';
 import { ARC_HALO, drawArc, jag } from './spark.js';
 import { INK, PAPER, drawPieEye } from './toon.js';
 import { GOLD as YULE_GOLD, NIGHT, SNOW, SNOW_SHADE } from './yule.js';
+import { clearDrawn } from './clearDrawn.js';
 
 /**
  * Life on the outer ocean in the styles drawn from shapes (PLAN 11.16 O1), as Medieval and
@@ -274,7 +275,7 @@ export class BlueprintSeaLife extends OceanDrawn {
   private plot(key: string, draw: (g: Graphics) => void): void {
     if (key === this.courseKey) return;
     this.courseKey = key;
-    this.course.clear();
+    clearDrawn(this.course);
     draw(this.course);
   }
 

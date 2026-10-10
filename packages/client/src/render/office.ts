@@ -32,7 +32,7 @@ import {
   drawOvertimeBorder,
   drawDrain,
   drawSealGlow,
-  drawMainCastles,
+  MainCastles,
   drawShotTarget,
   hex,
   shotLift,
@@ -50,6 +50,7 @@ import {
 } from './theme.js';
 import { outline, trace, wallGeometry, type Segment, type WallBlock } from './walls.js';
 import { ShapeTheme } from './shapeTheme.js';
+import { clearDrawn } from './clearDrawn.js';
 
 /** Something with a place and an age: a crashed plane, shreds, a flat-pack unfolding. */
 interface Aged {
@@ -193,6 +194,13 @@ export class OfficeTheme extends ShapeTheme implements Theme {
   private readonly copierStamps = new Stamps();
   private readonly book = new StampBook();
   private readonly effectGfx = new Graphics();
+  /**
+   * The main castles' crowns, over the offices working, redrawn only when one changes: drawn
+   * every frame they were a few hundred vertices rebuilt for nothing.
+   */
+  private readonly crowns = new MainCastles();
+  /** The planes' shadows and targets, a `Graphics` of their own to stay over the crowns. */
+  private readonly shotGfx = new Graphics();
   /** The paper planes in flight, stamps of one plane a colour, turned along their course. */
   private readonly planeStamps = new Stamps();
   /** Everything over the planes: paper flying, shreds, drips, the tubes, the finish. */
@@ -236,6 +244,8 @@ export class OfficeTheme extends ShapeTheme implements Theme {
     layers.effects.addChild(
       this.copierStamps.container,
       this.effectGfx,
+      this.crowns.gfx,
+      this.shotGfx,
       this.planeStamps.container,
       this.lateGfx,
       this.shredStamps.container,
@@ -261,6 +271,8 @@ export class OfficeTheme extends ShapeTheme implements Theme {
       this.stainGfx,
       this.flowGfx,
       this.effectGfx,
+      this.crowns.gfx,
+      this.shotGfx,
       this.lateGfx,
       this.overlayGfx,
     ]) {
@@ -285,7 +297,7 @@ export class OfficeTheme extends ShapeTheme implements Theme {
     this.height = state.height;
     this.scenery.refresh(state, view, this.art, true);
     const g = this.terrainGfx;
-    g.clear();
+    clearDrawn(g);
     const { palette } = this.art;
     const t = view.tile;
     const land = (x: number, y: number): boolean => this.land(x, y);
@@ -433,7 +445,7 @@ export class OfficeTheme extends ShapeTheme implements Theme {
     if (key === this.stainsDrawn) return;
     this.stainsDrawn = key;
     const g = this.stainGfx;
-    g.clear();
+    clearDrawn(g);
     const t = view.tile;
     const { palette } = this.art;
     for (const s of this.stains) {
@@ -960,12 +972,13 @@ export class OfficeTheme extends ShapeTheme implements Theme {
     this.clock += frame.deltaMs;
     perf.begin('flow');
     this.drawStains(state, view);
-    this.flowGfx.clear();
+    clearDrawn(this.flowGfx);
     if (this.cooler !== null) this.drawCooler(this.flowGfx, view, this.cooler);
     perf.end('flow');
     const g = this.effectGfx;
-    g.clear();
-    this.lateGfx.clear();
+    clearDrawn(g);
+    clearDrawn(this.shotGfx);
+    clearDrawn(this.lateGfx);
     this.seaLife.draw(g, view, this.art, frame.deltaMs);
     drawDrain(g, view, frame.drain, this.art);
     drawSealGlow(g, view, frame.sealGlow, this.art);
@@ -973,7 +986,7 @@ export class OfficeTheme extends ShapeTheme implements Theme {
     this.ruins.draw(g, view, state, 0xc9ccd1, null, frame.deltaMs);
     drawChoices(g, view, frame.choices, this.art);
     this.drawWorking(state, view, frame);
-    drawMainCastles(g, view, state, this.art, frame.castleSealed);
+    this.crowns.draw(view, state, this.art, frame.castleSealed);
     this.drawCopiers(state, view, frame.deltaMs);
     this.drawShots(state, view, frame);
     this.drawCrashes(view, frame.deltaMs);
@@ -1165,7 +1178,7 @@ export class OfficeTheme extends ShapeTheme implements Theme {
 
   /** Shots: paper planes in the owner's colour, nose along their course, a shadow below. */
   private drawShots(state: MatchState, view: ViewTransform, frame: EffectFrame): void {
-    const g = this.effectGfx;
+    const g = this.shotGfx;
     const t = view.tile;
     const now = state.tick + frame.tickFraction;
     const at = (shot: Shot, p: number): { gx: number; gy: number; x: number; y: number } => {
@@ -1466,7 +1479,7 @@ export class OfficeTheme extends ShapeTheme implements Theme {
 
   drawOverlay(state: MatchState, view: ViewTransform, ghost: Ghost, humanPlayer: number): void {
     const g = this.overlayGfx;
-    g.clear();
+    clearDrawn(g);
     const t = view.tile;
     const { palette } = this.art;
     const now = performance.now();

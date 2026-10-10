@@ -44,7 +44,7 @@ import {
   drawOvertimeBorder,
   drawDrain,
   drawSealGlow,
-  drawMainCastles,
+  MainCastles,
   drawShotTarget,
   hex,
   playerColour,
@@ -64,6 +64,7 @@ import {
   mixed,
   shotProgress,
 } from './theme.js';
+import { clearDrawn } from './clearDrawn.js';
 
 interface Blast {
   x: number;
@@ -255,6 +256,10 @@ export class PixelTheme implements Theme {
   }[] = [];
   private readonly overlayGfx = new Graphics();
   private readonly effectGfx = new Graphics();
+  /** The main castles' crowns, over the effects, redrawn only when one changes. */
+  private readonly crowns = new MainCastles();
+  /** What lies over the crowns: the shots' shadows and targets, and the fragments. */
+  private readonly aboveCrownsGfx = new Graphics();
 
   /** Water sprites are kept so the sea can be animated without rebuilding the map. */
   private waterSprites: Sprite[] = [];
@@ -461,6 +466,8 @@ export class PixelTheme implements Theme {
     this.overlayGfx.destroy();
     release(this.ghostLayer);
     this.effectGfx.destroy();
+    this.crowns.gfx.destroy();
+    this.aboveCrownsGfx.destroy();
     this.groundLight.destroy();
     this.airLight.destroy();
     this.groundDiscs.destroy();
@@ -811,7 +818,7 @@ export class PixelTheme implements Theme {
       sprite.alpha = 1;
     }
     const g = this.territoryGfx;
-    g.clear();
+    clearDrawn(g);
     dimEliminated(g, state, view, hex(this.art.palette.shadow));
     this.layoutBraziers(state);
     if (this.scenery.sync(state, this.art.scenery)) this.layoutScenery();
@@ -822,7 +829,7 @@ export class PixelTheme implements Theme {
     this.empty(this.structureLayer);
     // Shadows first, under everything that casts them.
     const shade = this.shade;
-    shade.clear();
+    clearDrawn(shade);
     this.structureLayer.addChild(shade);
     this.dropShadows(shade, state, view);
 
@@ -920,7 +927,7 @@ export class PixelTheme implements Theme {
     // Snow lies on every top edge a wall shows, and along the top of each castle: drawn
     // with the walls rather than every frame, since it moves only when they do.
     // The weather from the seed, as `drawTerrain` sets it: the walls may be drawn first.
-    this.snowCaps.clear();
+    clearDrawn(this.snowCaps);
     if (!this.torchlit && weatherFor(state.seed, this.art.pixel.weatherOdds) === 'snow') {
       const g = this.snowCaps;
       const cap = Math.max(2, Math.round(view.tile * 0.2));
@@ -1271,7 +1278,8 @@ export class PixelTheme implements Theme {
 
   drawEffects(state: MatchState, view: ViewTransform, frame: EffectFrame): void {
     const g = this.effectGfx;
-    g.clear();
+    clearDrawn(g);
+    clearDrawn(this.aboveCrownsGfx);
 
     this.clock += frame.deltaMs;
     this.phase = state.phase;
@@ -1284,13 +1292,15 @@ export class PixelTheme implements Theme {
       this.cloudStamps.container,
       this.lightLayer,
       g,
+      this.crowns.gfx,
+      this.aboveCrownsGfx,
       this.airLight,
       this.airDiscs.container,
     );
     this.age(state);
     this.beamStamps.begin();
-    this.groundLight.clear();
-    this.airLight.clear();
+    clearDrawn(this.groundLight);
+    clearDrawn(this.airLight);
     this.groundDiscs.begin(view.tile);
     this.airDiscs.begin(view.tile);
     const still = motionReduced();
@@ -1334,7 +1344,8 @@ export class PixelTheme implements Theme {
 
     const now = state.tick + frame.tickFraction;
     const trail = this.art.generators.fx.shotTrailLengthPx / this.art.tileSizePx;
-    drawMainCastles(g, view, state, this.art, frame.castleSealed);
+    this.crowns.draw(view, state, this.art, frame.castleSealed);
+    const above = this.aboveCrownsGfx;
     for (const shot of state.shots) {
       const t = shotProgress(shot, now);
       const x = shot.fromX + (shot.toX - shot.fromX) * t;
@@ -1390,8 +1401,8 @@ export class PixelTheme implements Theme {
       // coming toward the viewer, and its shadow on the ground shrinks and fades.
       const height = Math.min(1, lift / 3);
       const shadow = view.tile * 0.25 * (1 - 0.45 * height);
-      g.circle(tileX(view, x + 0.5), tileY(view, y + 0.5), shadow);
-      g.fill({ color: hex(this.art.palette.shadow), alpha: 0.4 - 0.2 * height });
+      above.circle(tileX(view, x + 0.5), tileY(view, y + 0.5), shadow);
+      above.fill({ color: hex(this.art.palette.shadow), alpha: 0.4 - 0.2 * height });
 
       const size = 0.6 * (1 + 0.55 * height);
       const ball = this.place(
@@ -1413,7 +1424,7 @@ export class PixelTheme implements Theme {
         this.airDiscs.disc(bx, by, glow * 0.5, hex(this.art.palette.emberHot), 0.35);
       }
 
-      drawShotTarget(g, view, shot, t, this.art, frame.humanPlayer);
+      drawShotTarget(above, view, shot, t, this.art, frame.humanPlayer);
     }
 
     const frames = this.art.generators.fx.explosionFrames;
@@ -1435,8 +1446,8 @@ export class PixelTheme implements Theme {
       f.y += f.vy * dt;
       f.vy += 9 * dt;
       const size = Math.max(1, view.tile * 0.16);
-      g.rect(tileX(view, f.x) - size / 2, tileY(view, f.y) - size / 2, size, size);
-      g.fill({ color: f.colour, alpha: Math.max(0, 1 - f.age / life) });
+      above.rect(tileX(view, f.x) - size / 2, tileY(view, f.y) - size / 2, size, size);
+      above.fill({ color: f.colour, alpha: Math.max(0, 1 - f.age / life) });
     }
     this.fragments = this.fragments.filter((f) => f.age < life);
     this.groundDiscs.end();
@@ -1451,7 +1462,7 @@ export class PixelTheme implements Theme {
    */
   private drawSea(view: ViewTransform, deltaMs: number, still: boolean): void {
     const g = this.seaGfx;
-    g.clear();
+    clearDrawn(g);
     if (still) {
       this.glints = [];
       this.crests = [];
@@ -1592,7 +1603,7 @@ export class PixelTheme implements Theme {
    */
   private drawDaylight(state: MatchState, view: ViewTransform): void {
     const g = this.daylightGfx;
-    g.clear();
+    clearDrawn(g);
     if (this.torchlit) return;
     const { x0, y0, x1, y1 } = this.drawn;
     const area = (): void => {
@@ -1616,7 +1627,7 @@ export class PixelTheme implements Theme {
   /** The corner's piece: the windmill by day, the fishing boat at Night. */
   private drawCorner(state: MatchState, view: ViewTransform, still: boolean): void {
     const g = this.cornerGfx;
-    g.clear();
+    clearDrawn(g);
     const spot = this.corner;
     if (spot === null) return;
     // Laid out on a grid of 40 by 40 of the art's own pixels, the spot's square, each as
@@ -2961,8 +2972,8 @@ export class PixelTheme implements Theme {
 
   drawOverlay(state: MatchState, view: ViewTransform, ghost: Ghost, humanPlayer: number): void {
     const g = this.overlayGfx;
-    g.clear();
-    this.ghostShadow.clear();
+    clearDrawn(g);
+    clearDrawn(this.ghostShadow);
     this.empty(this.ghostLayer);
     drawOvertimeBorder(g, state, view, this.art, performance.now());
 

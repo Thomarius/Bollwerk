@@ -1,9 +1,10 @@
 import type { ArtConfig, ArtStyle } from '@bollwerk/config';
 import { findReadyCannon, type MatchState, type Shot } from '@bollwerk/sim';
-import type { Container, Graphics } from 'pixi.js';
+import { Graphics, type Container } from 'pixi.js';
 
 import type { DrainWash, SealGlow } from '../seal.js';
 
+import { viewKey } from './stamps.js';
 import { PETALS, drawPetal } from './ukiyo.js';
 import { drawLyre, drawRose } from './music.js';
 import { drawGingerHeart, drawPretzel } from './wiesn.js';
@@ -482,6 +483,38 @@ export function drawMainCastles(
       for (const [x, y] of crack.slice(1)) g.lineTo(left + x! * width, base + y! * width);
       g.stroke({ width: rim, color: 0x0a0a12, alpha: 0.9, join: 'round' });
     }
+  }
+}
+
+/**
+ * The main castles' crowns (`drawMainCastles`) in a `Graphics` of their own, drawn again
+ * only when one changes: drawn into a layer cleared every frame, every style cut the same
+ * crowns into triangles sixty times a second (ARCHIVE 13f). A style puts `gfx` where it drew
+ * the crowns, what it drew after them in a `Graphics` above.
+ */
+export class MainCastles {
+  readonly gfx = new Graphics();
+  private key = '';
+
+  draw(
+    view: ViewTransform,
+    state: MatchState,
+    art: ArtConfig,
+    castleSealed: readonly boolean[],
+  ): void {
+    // Everything `drawMainCastles` reads: each player's main castle, where it stands, and
+    // whether it is sealed.
+    let key = viewKey(view);
+    for (const player of state.players) {
+      if (player.eliminated || player.startingCastleId === null) continue;
+      const castle = state.castles.find((c) => c.id === player.startingCastleId);
+      if (castle === undefined) continue;
+      key += `|${player.id}:${castle.x},${castle.y},${castle.w},${castle.h},${castleSealed[castle.id] === true}`;
+    }
+    if (key === this.key) return;
+    this.key = key;
+    this.gfx.clear();
+    drawMainCastles(this.gfx, view, state, art, castleSealed);
   }
 }
 

@@ -348,6 +348,7 @@ export async function runSession(
     globalThis.removeEventListener('resize', fit);
     stopSharpness();
     scene.destroy();
+    session.dispose?.();
   };
 
   /** The intermission whose banner is showing, by the tick it ends on. */

@@ -13,10 +13,12 @@ score among those still standing wins.
 - 2–8 players, free-for-all or in equal teams; bots of ten skill levels fill any empty seat
 - Tournaments: your team against a field of named bot teams, through a league and a single-
   or double-elimination knockout, with friends joining your team; saved between matches
-- Play alone on your own computer, with friends on your home network, or over the internet
+- Play alone on your own computer, with friends on your home network, or over the internet;
+  offline, the bots think in the background, so the game keeps a steady 60 frames a second
+- Guests in a room say when they are ready, and the host starts once everyone is
 - Nineteen visual styles — Medieval, Minimal, Night, Cyberpunk, Blueprint, Parchment, Toy
   bricks, Stained glass, Chocolate, Halloween, Sakura, Oktoberfest, Opera, Office, Under the sea, Electric, Cartoon, Christmas and Noir — one for building and one for combat, swapped by the
-  banners as in Rampart
+  banners as in Rampart, or a random one every round from the styles you mark as favourites
 - In English and German, chosen in the menu
 - Awards at the end of every match, and a rematch in one click
 - Played with the mouse alone; How to play in the menu shows the rules in pictures
@@ -170,8 +172,9 @@ tools/screenshots.sh /tmp/shots     # the client in fixed states, against the de
 The dev server has no game server behind it, so its lobby is always a local table.
 The client takes query parameters for development: `?autostart=1&players=4&seed=3` skips
 the menu, `&snapshot=build&round=3` jumps to a phase, `&teams=2` seats teams of two,
-`&watch=1&level=8` fills every seat with Level 8 bots, `&style=flat` picks a style, and
-`&speed=10` runs the clock faster.
+`&watch=1&level=8` fills every seat with Level 8 bots, `&style=flat` picks a style,
+`&speed=10` runs the clock faster, `&perf=1` shows where a frame's time goes, and
+`&bots=thread` keeps an offline match's bots on the page's thread rather than in their worker.
 
 See [`docs/PLAN.md`](docs/PLAN.md) for the design and what is still open, and
 [`docs/ARCHIVE.md`](docs/ARCHIVE.md) for how each decision was reached — with the

@@ -32,7 +32,7 @@ import {
   drawOvertimeBorder,
   drawDrain,
   drawSealGlow,
-  drawMainCastles,
+  MainCastles,
   drawShotTarget,
   hex,
   shotLift,
@@ -52,6 +52,7 @@ import {
 import { outline, trace, wallGeometry, type WallBlock } from './walls.js';
 import { cannonBase } from './cannonBase.js';
 import { ShapeTheme } from './shapeTheme.js';
+import { clearDrawn } from './clearDrawn.js';
 
 /** Something with a place and an age: rings of sound, a sour note, a chord, a glissando. */
 interface Aged {
@@ -207,6 +208,13 @@ export class OperaTheme extends ShapeTheme implements Theme {
    */
   private readonly coilStamps = new Stamps();
   private readonly effectGfx = new Graphics();
+  /** The main castles' crowns: the shared mark, drawn again only as one changes. */
+  private readonly crowns = new MainCastles();
+  /**
+   * What the effects drew after the crowns — the houses playing, the horns, the shots' glows
+   * and targets — kept over them now the crowns are a `Graphics` of their own.
+   */
+  private readonly aboveCrownsGfx = new Graphics();
   /** The notes in flight, stamps drawn once a colour and rocked. */
   private readonly noteStamps = new Stamps();
   /** Everything over the notes in flight: rings, keys, sour notes, spotlights, the finish. */
@@ -257,6 +265,8 @@ export class OperaTheme extends ShapeTheme implements Theme {
     layers.effects.addChild(
       this.coilStamps.container,
       this.effectGfx,
+      this.crowns.gfx,
+      this.aboveCrownsGfx,
       this.noteStamps.container,
       this.lateGfx,
     );
@@ -279,6 +289,8 @@ export class OperaTheme extends ShapeTheme implements Theme {
       this.blotGfx,
       this.flowGfx,
       this.effectGfx,
+      this.crowns.gfx,
+      this.aboveCrownsGfx,
       this.overlayGfx,
     ]) {
       g.destroy();
@@ -307,7 +319,7 @@ export class OperaTheme extends ShapeTheme implements Theme {
     this.height = state.height;
     this.scenery.refresh(state, view, this.art, true);
     const g = this.terrainGfx;
-    g.clear();
+    clearDrawn(g);
     const { palette } = this.art;
     const t = view.tile;
     const land = (x: number, y: number): boolean => this.land(x, y);
@@ -455,7 +467,7 @@ export class OperaTheme extends ShapeTheme implements Theme {
       [this.stavesCalm, false],
       [this.stavesSwell, true],
     ] as const) {
-      g.clear();
+      clearDrawn(g);
       for (let n = 0; n < staves; n++) {
         for (let line = 0; line < 5; line++) {
           for (let x = x0 - wave; x <= x0 + w + step; x += step) {
@@ -468,7 +480,7 @@ export class OperaTheme extends ShapeTheme implements Theme {
       g.stroke({ width: 1, color: hex(this.art.palette.waterFoam), alpha: 0.32 });
     }
     const mask = this.staveMask;
-    mask.clear();
+    clearDrawn(mask);
     for (let ly = 0; ly < h; ly++) {
       let from = -1;
       for (let lx = 0; lx <= w; lx++) {
@@ -493,7 +505,7 @@ export class OperaTheme extends ShapeTheme implements Theme {
     if (key === this.blotsDrawn) return;
     this.blotsDrawn = key;
     const g = this.blotGfx;
-    g.clear();
+    clearDrawn(g);
     const t = view.tile;
     for (const b of this.blots) {
       const fade = 1 - (state.round - b.round) / rounds;
@@ -549,7 +561,7 @@ export class OperaTheme extends ShapeTheme implements Theme {
    */
   private drawFlow(state: MatchState, view: ViewTransform, deltaMs: number): void {
     const g = this.flowGfx;
-    g.clear();
+    clearDrawn(g);
     const t = view.tile;
     const { palette } = this.art;
     const still = motionReduced();
@@ -1102,15 +1114,16 @@ export class OperaTheme extends ShapeTheme implements Theme {
     this.drawFlow(state, view, frame.deltaMs);
     perf.end('flow');
     const g = this.effectGfx;
-    g.clear();
-    this.lateGfx.clear();
+    clearDrawn(g);
+    clearDrawn(this.aboveCrownsGfx);
+    clearDrawn(this.lateGfx);
     this.seaLife.draw(g, view, this.art, frame.deltaMs);
     drawDrain(g, view, frame.drain, this.art);
     drawSealGlow(g, view, frame.sealGlow, this.art);
     this.scenery.drawPuffs(g, view, frame.deltaMs);
     this.ruins.draw(g, view, state, 0xc8c0d0, null, frame.deltaMs);
     drawChoices(g, view, frame.choices, this.art);
-    drawMainCastles(g, view, state, this.art, frame.castleSealed);
+    this.crowns.draw(view, state, this.art, frame.castleSealed);
     this.drawPlaying(state, view, frame);
     this.drawHorns(state, view, frame.deltaMs);
     this.drawShots(state, view, frame);
@@ -1130,7 +1143,7 @@ export class OperaTheme extends ShapeTheme implements Theme {
    * as the light goes down — so "sealed" is the house playing.
    */
   private drawPlaying(state: MatchState, view: ViewTransform, frame: EffectFrame): void {
-    const g = this.effectGfx;
+    const g = this.aboveCrownsGfx;
     const still = motionReduced();
     this.playing.update(frame.castleSealed, this.clock, this.art);
     for (const castle of state.castles) {
@@ -1198,7 +1211,7 @@ export class OperaTheme extends ShapeTheme implements Theme {
    * its bell, the bell turned down.
    */
   private drawHorns(state: MatchState, view: ViewTransform, deltaMs: number): void {
-    const g = this.effectGfx;
+    const g = this.aboveCrownsGfx;
     const t = view.tile;
     const coilOf = (key: string, metal: number, dark: number) =>
       this.book.get(key, t, (k) => {
@@ -1285,7 +1298,7 @@ export class OperaTheme extends ShapeTheme implements Theme {
 
   /** Shots: notes in the owner's colour, rocking as they fly, a glow round each. */
   private drawShots(state: MatchState, view: ViewTransform, frame: EffectFrame): void {
-    const g = this.effectGfx;
+    const g = this.aboveCrownsGfx;
     const t = view.tile;
     const now = state.tick + frame.tickFraction;
     this.noteStamps.begin();
@@ -1467,7 +1480,7 @@ export class OperaTheme extends ShapeTheme implements Theme {
 
   drawOverlay(state: MatchState, view: ViewTransform, ghost: Ghost, humanPlayer: number): void {
     const g = this.overlayGfx;
-    g.clear();
+    clearDrawn(g);
     const t = view.tile;
     const { palette } = this.art;
     const now = performance.now();

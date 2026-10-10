@@ -30,7 +30,7 @@ import {
   drawChoices,
   drawDrain,
   drawFireReticle,
-  drawMainCastles,
+  MainCastles,
   drawOvertimeBorder,
   drawSealGlow,
   drawSealPreview,
@@ -52,6 +52,7 @@ import {
 } from './theme.js';
 import { outline, trace, wallGeometry } from './walls.js';
 import { ShapeTheme } from './shapeTheme.js';
+import { clearDrawn } from './clearDrawn.js';
 
 /** Ink, and the paper white of a lit face. */
 export const NOIR_INK = 0x0a0a0d;
@@ -222,6 +223,11 @@ export class NoirTheme extends ShapeTheme implements Theme {
   /** The clubs, their lamps and the guns, in one: placed nearest last. */
   private readonly figureStamps = new Stamps();
   private figures: Figure[] = [];
+  /**
+   * The main castles' crowns, redrawn only when one changes: under the shots, the first thing
+   * this frame's `effectGfx` would have held, so just below it.
+   */
+  private readonly crowns = new MainCastles();
   private readonly effectGfx = new Graphics();
   private readonly shellStamps = new Stamps();
   private readonly blastStamps = new Stamps();
@@ -282,6 +288,7 @@ export class NoirTheme extends ShapeTheme implements Theme {
       this.underGfx,
       this.beams.container,
       this.figureStamps.container,
+      this.crowns.gfx,
       this.effectGfx,
       this.shellStamps.container,
       this.blastStamps.container,
@@ -319,6 +326,7 @@ export class NoirTheme extends ShapeTheme implements Theme {
       this.terrainGfx,
       this.craterGfx,
       this.underGfx,
+      this.crowns.gfx,
       this.effectGfx,
       this.lateGfx,
       this.flashGfx,
@@ -344,7 +352,7 @@ export class NoirTheme extends ShapeTheme implements Theme {
     this.height = state.height;
     this.scenery.refresh(state, view, this.art, true);
     const g = this.terrainGfx;
-    g.clear();
+    clearDrawn(g);
     const { palette } = this.art;
     const t = view.tile;
     const land = (x: number, y: number): boolean => this.land(x, y);
@@ -461,7 +469,7 @@ export class NoirTheme extends ShapeTheme implements Theme {
     if (key === this.cratersDrawn) return;
     this.cratersDrawn = key;
     const g = this.craterGfx;
-    g.clear();
+    clearDrawn(g);
     const t = view.tile;
     for (const c of this.craters) {
       const fade = 1 - (state.round - c.round) / rounds;
@@ -726,10 +734,10 @@ export class NoirTheme extends ShapeTheme implements Theme {
     this.round = state.round;
     this.clock += frame.deltaMs;
     const under = this.underGfx;
-    under.clear();
-    this.effectGfx.clear();
-    this.lateGfx.clear();
-    this.flashGfx.clear();
+    clearDrawn(under);
+    clearDrawn(this.effectGfx);
+    clearDrawn(this.lateGfx);
+    clearDrawn(this.flashGfx);
     this.glow.begin(view.tile);
     perf.begin('flow');
     this.drawCraters(state, view);
@@ -745,7 +753,7 @@ export class NoirTheme extends ShapeTheme implements Theme {
     this.figures = [];
     this.beams.begin();
     this.drawClubs(state, view, frame);
-    drawMainCastles(this.effectGfx, view, state, this.art, frame.castleSealed);
+    this.crowns.draw(view, state, this.art, frame.castleSealed);
     this.drawGuns(state, view, frame.deltaMs);
     this.beams.end();
     this.figures.sort((a, b) => a.foot - b.foot);
@@ -1212,7 +1220,7 @@ export class NoirTheme extends ShapeTheme implements Theme {
 
   drawOverlay(state: MatchState, view: ViewTransform, ghost: Ghost, humanPlayer: number): void {
     const g = this.overlayGfx;
-    g.clear();
+    clearDrawn(g);
     const t = view.tile;
     const { palette } = this.art;
     const now = performance.now();

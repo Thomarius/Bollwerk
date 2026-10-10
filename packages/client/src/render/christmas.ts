@@ -29,7 +29,7 @@ import {
   drawChoices,
   drawDrain,
   drawFireReticle,
-  drawMainCastles,
+  MainCastles,
   drawOvertimeBorder,
   drawSealGlow,
   drawSealPreview,
@@ -53,6 +53,7 @@ import {
 import { outline, trace, wallGeometry } from './walls.js';
 import { ShapeTheme } from './shapeTheme.js';
 import { GOLD, NIGHT, SNOW, SNOW_SHADE, WARM, drawBow } from './yule.js';
+import { clearDrawn } from './clearDrawn.js';
 
 /** Something with a place and an age: a burst of snow, a splash. */
 interface Aged {
@@ -214,6 +215,11 @@ export class ChristmasTheme extends ShapeTheme implements Theme {
    */
   private readonly figureStamps = new Stamps();
   private figures: Figure[] = [];
+  /**
+   * The main castles' crowns, redrawn only when one changes: under the shots, the first thing
+   * this frame's `effectGfx` would have held, so just below it.
+   */
+  private readonly crowns = new MainCastles();
   private readonly effectGfx = new Graphics();
   private readonly ballStamps = new Stamps();
   private readonly scrapStamps = new Stamps();
@@ -262,6 +268,7 @@ export class ChristmasTheme extends ShapeTheme implements Theme {
     layers.effects.addChild(
       this.underGfx,
       this.figureStamps.container,
+      this.crowns.gfx,
       this.effectGfx,
       this.ballStamps.container,
       this.scrapStamps.container,
@@ -295,6 +302,7 @@ export class ChristmasTheme extends ShapeTheme implements Theme {
       this.terrainGfx,
       this.dentGfx,
       this.underGfx,
+      this.crowns.gfx,
       this.effectGfx,
       this.lateGfx,
       this.overlayGfx,
@@ -311,7 +319,7 @@ export class ChristmasTheme extends ShapeTheme implements Theme {
     this.height = state.height;
     this.scenery.refresh(state, view, this.art, true);
     const g = this.terrainGfx;
-    g.clear();
+    clearDrawn(g);
     const { palette } = this.art;
     const t = view.tile;
     const land = (x: number, y: number): boolean => this.land(x, y);
@@ -407,7 +415,7 @@ export class ChristmasTheme extends ShapeTheme implements Theme {
     if (key === this.dentsDrawn) return;
     this.dentsDrawn = key;
     const g = this.dentGfx;
-    g.clear();
+    clearDrawn(g);
     const t = view.tile;
     for (const d of this.dents) {
       const fade = 1 - (state.round - d.round) / rounds;
@@ -722,9 +730,9 @@ export class ChristmasTheme extends ShapeTheme implements Theme {
     this.round = state.round;
     this.clock += frame.deltaMs;
     const under = this.underGfx;
-    under.clear();
-    this.effectGfx.clear();
-    this.lateGfx.clear();
+    clearDrawn(under);
+    clearDrawn(this.effectGfx);
+    clearDrawn(this.lateGfx);
     this.glow.begin(view.tile);
     perf.begin('flow');
     this.drawDents(state, view);
@@ -739,7 +747,7 @@ export class ChristmasTheme extends ShapeTheme implements Theme {
     drawChoices(under, view, frame.choices, this.art);
     this.figures = [];
     this.drawTrees(state, view, frame);
-    drawMainCastles(this.effectGfx, view, state, this.art, frame.castleSealed);
+    this.crowns.draw(view, state, this.art, frame.castleSealed);
     this.drawSnowmen(state, view, frame.deltaMs);
     // Nearest last; a tree's lights keep their place after it, the sort being stable.
     this.figures.sort((a, b) => a.foot - b.foot);
@@ -1121,7 +1129,7 @@ export class ChristmasTheme extends ShapeTheme implements Theme {
 
   drawOverlay(state: MatchState, view: ViewTransform, ghost: Ghost, humanPlayer: number): void {
     const g = this.overlayGfx;
-    g.clear();
+    clearDrawn(g);
     const t = view.tile;
     const { palette } = this.art;
     const now = performance.now();

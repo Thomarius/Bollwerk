@@ -43,7 +43,7 @@ import {
   drawOvertimeBorder,
   drawDrain,
   drawSealGlow,
-  drawMainCastles,
+  MainCastles,
   drawShotTarget,
   hex,
   mixed,
@@ -62,6 +62,7 @@ import {
 } from './theme.js';
 import { outline, trace, wallGeometry, type Segment } from './walls.js';
 import { ShapeTheme } from './shapeTheme.js';
+import { clearDrawn } from './clearDrawn.js';
 
 /** Something with a place and an age: a column of bubbles, a cloud of silt, a crumble. */
 interface Aged {
@@ -208,6 +209,13 @@ export class UnderseaTheme extends ShapeTheme implements Theme {
   /** The clams, a `Graphics` each, redrawn only while one opens or shuts. */
   private readonly clamMemos = new Memos();
   private readonly effectGfx = new Graphics();
+  /**
+   * The main castles' crowns, over the clams' ground, redrawn only when one changes: drawn
+   * every frame they were a few hundred vertices rebuilt for nothing.
+   */
+  private readonly crowns = new MainCastles();
+  /** The urchins' shadows and targets, a `Graphics` of their own to stay over the crowns. */
+  private readonly shotGfx = new Graphics();
   /** Every small bubble — trails, spit, columns — a stamp of one bubble, scaled and faded. */
   private readonly bubbleStamps = new Stamps();
   /** The urchins in flight, stamps of one urchin a colour, spinning. */
@@ -259,6 +267,8 @@ export class UnderseaTheme extends ShapeTheme implements Theme {
       this.pufferStamps.container,
       this.clamMemos.container,
       this.effectGfx,
+      this.crowns.gfx,
+      this.shotGfx,
       this.bubbleStamps.container,
       this.urchinStamps.container,
       this.lateGfx,
@@ -287,6 +297,8 @@ export class UnderseaTheme extends ShapeTheme implements Theme {
       this.dimpleGfx,
       this.flowGfx,
       this.effectGfx,
+      this.crowns.gfx,
+      this.shotGfx,
       this.lateGfx,
       this.shaftGfx,
       this.overlayGfx,
@@ -312,7 +324,7 @@ export class UnderseaTheme extends ShapeTheme implements Theme {
     this.height = state.height;
     this.scenery.refresh(state, view, this.art, true);
     const g = this.terrainGfx;
-    g.clear();
+    clearDrawn(g);
     const { palette } = this.art;
     const t = view.tile;
     const land = (x: number, y: number): boolean => this.land(x, y);
@@ -467,7 +479,7 @@ export class UnderseaTheme extends ShapeTheme implements Theme {
       wave: number,
       across: boolean,
     ): { w: number; h: number } => {
-      g.clear();
+      clearDrawn(g);
       const repeat = { along: wave * 2, over: spacing * 4 };
       const long = (across ? W : H) + repeat.along * 2;
       const wide = (across ? H : W) + repeat.over * 2;
@@ -491,7 +503,7 @@ export class UnderseaTheme extends ShapeTheme implements Theme {
     const down = draw(this.causticsDown, t * 1.15, t * 2.9, false);
     this.causticFrame = { x: view.originX, y: view.originY, across, down };
     const m = this.causticMask;
-    m.clear();
+    clearDrawn(m);
     for (const { x, y } of ground) m.rect(tileX(view, x), tileY(view, y), t, t);
     m.fill({ color: 0xffffff });
     this.slideCaustics(view);
@@ -516,7 +528,7 @@ export class UnderseaTheme extends ShapeTheme implements Theme {
     if (key === this.dimplesDrawn) return;
     this.dimplesDrawn = key;
     const g = this.dimpleGfx;
-    g.clear();
+    clearDrawn(g);
     const t = view.tile;
     const { palette } = this.art;
     for (const d of this.dimples) {
@@ -1055,13 +1067,14 @@ export class UnderseaTheme extends ShapeTheme implements Theme {
     perf.begin('flow');
     this.slideCaustics(view);
     this.drawDimples(state, view);
-    this.flowGfx.clear();
+    clearDrawn(this.flowGfx);
     if (this.wreck !== null) this.drawWreck(this.flowGfx, view, this.wreck, pressing(state));
     perf.end('flow');
     const g = this.effectGfx;
-    g.clear();
-    this.lateGfx.clear();
-    this.shaftGfx.clear();
+    clearDrawn(g);
+    clearDrawn(this.shotGfx);
+    clearDrawn(this.lateGfx);
+    clearDrawn(this.shaftGfx);
     this.seaLife.draw(g, view, this.art, frame.deltaMs);
     drawDrain(g, view, frame.drain, this.art);
     drawSealGlow(g, view, frame.sealGlow, this.art);
@@ -1070,7 +1083,7 @@ export class UnderseaTheme extends ShapeTheme implements Theme {
     drawChoices(g, view, frame.choices, this.art);
     this.bubbleStamps.begin();
     this.drawClams(state, view, frame);
-    drawMainCastles(g, view, state, this.art, frame.castleSealed);
+    this.crowns.draw(view, state, this.art, frame.castleSealed);
     this.drawPuffers(state, view, frame.deltaMs);
     this.drawShots(state, view, frame);
     this.drawSplashes(view, frame.deltaMs);
@@ -1200,7 +1213,7 @@ export class UnderseaTheme extends ShapeTheme implements Theme {
 
   /** Shots: sea urchins in the owner's colour, spinning, a trail of bubbles behind them. */
   private drawShots(state: MatchState, view: ViewTransform, frame: EffectFrame): void {
-    const g = this.effectGfx;
+    const g = this.shotGfx;
     const t = view.tile;
     const now = state.tick + frame.tickFraction;
     const at = (shot: Shot, p: number): { gx: number; gy: number; x: number; y: number } => {
@@ -1630,7 +1643,7 @@ export class UnderseaTheme extends ShapeTheme implements Theme {
 
   drawOverlay(state: MatchState, view: ViewTransform, ghost: Ghost, humanPlayer: number): void {
     const g = this.overlayGfx;
-    g.clear();
+    clearDrawn(g);
     const t = view.tile;
     const { palette } = this.art;
     const now = performance.now();

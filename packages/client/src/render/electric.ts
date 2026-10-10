@@ -44,7 +44,7 @@ import {
   drawOvertimeBorder,
   drawDrain,
   drawSealGlow,
-  drawMainCastles,
+  MainCastles,
   drawShotTarget,
   hex,
   mixed,
@@ -63,6 +63,7 @@ import {
 } from './theme.js';
 import { hatch, outline, trace, wallGeometry, type Segment } from './walls.js';
 import { ShapeTheme } from './shapeTheme.js';
+import { clearDrawn } from './clearDrawn.js';
 
 /** Something with a place and an age: a flash, a fizz, a short, a puff of smoke. */
 interface Aged {
@@ -216,6 +217,10 @@ export class ElectricTheme extends ShapeTheme implements Theme {
   private readonly globeMemos = new Memos();
   private readonly book = new StampBook();
   private readonly effectGfx = new Graphics();
+  /** The main castles' crowns, over the globes, redrawn only when one changes. */
+  private readonly crowns = new MainCastles();
+  /** Over the crowns and under the balls: the towers' arcs and smoke, the shots' shadows. */
+  private readonly aboveCrownsGfx = new Graphics();
   /** The halos of every arc, added, and bloomed under "Glowing". */
   private readonly glowGfx = new Graphics();
   /** Ball lightning in flight, a stamp of one ball a colour. */
@@ -277,6 +282,8 @@ export class ElectricTheme extends ShapeTheme implements Theme {
     layers.effects.addChild(
       this.globeMemos.container,
       this.effectGfx,
+      this.crowns.gfx,
+      this.aboveCrownsGfx,
       this.ballStamps.container,
       this.lateGfx,
       this.glowGfx,
@@ -303,6 +310,8 @@ export class ElectricTheme extends ShapeTheme implements Theme {
       this.scorchGfx,
       this.flowGfx,
       this.effectGfx,
+      this.crowns.gfx,
+      this.aboveCrownsGfx,
       this.glowGfx,
       this.lateGfx,
       this.flashGfx,
@@ -329,7 +338,7 @@ export class ElectricTheme extends ShapeTheme implements Theme {
     this.height = state.height;
     this.scenery.refresh(state, view, this.art, true);
     const g = this.terrainGfx;
-    g.clear();
+    clearDrawn(g);
     const { palette } = this.art;
     const t = view.tile;
     const land = (x: number, y: number): boolean => this.land(x, y);
@@ -449,7 +458,7 @@ export class ElectricTheme extends ShapeTheme implements Theme {
     if (key === this.scorchesDrawn) return;
     this.scorchesDrawn = key;
     const g = this.scorchGfx;
-    g.clear();
+    clearDrawn(g);
     const t = view.tile;
     const { palette } = this.art;
     for (const s of this.scorches) {
@@ -995,13 +1004,14 @@ export class ElectricTheme extends ShapeTheme implements Theme {
     this.round = state.round;
     this.clock += frame.deltaMs;
     const g = this.effectGfx;
-    g.clear();
-    this.glowGfx.clear();
-    this.lateGfx.clear();
-    this.flashGfx.clear();
+    clearDrawn(g);
+    clearDrawn(this.aboveCrownsGfx);
+    clearDrawn(this.glowGfx);
+    clearDrawn(this.lateGfx);
+    clearDrawn(this.flashGfx);
     perf.begin('flow');
     this.drawScorches(state, view);
-    this.flowGfx.clear();
+    clearDrawn(this.flowGfx);
     if (this.ladder !== null) {
       this.drawLadder(this.flowGfx, this.glowGfx, view, this.ladder, pressing(state));
     }
@@ -1014,7 +1024,7 @@ export class ElectricTheme extends ShapeTheme implements Theme {
     this.ruins.draw(g, view, state, SMOKE, ARC_HALO, frame.deltaMs);
     drawChoices(g, view, frame.choices, this.art);
     this.drawGlobes(state, view, frame);
-    drawMainCastles(g, view, state, this.art, frame.castleSealed);
+    this.crowns.draw(view, state, this.art, frame.castleSealed);
     this.drawCoils(state, view, frame.deltaMs);
     this.drawCrackles(state, view, frame.deltaMs);
     this.drawShots(state, view, frame);
@@ -1092,7 +1102,7 @@ export class ElectricTheme extends ShapeTheme implements Theme {
    * foggy match St. Elmo's fire burns on it; a grounded one smokes.
    */
   private drawCoils(state: MatchState, view: ViewTransform, deltaMs: number): void {
-    const g = this.effectGfx;
+    const g = this.aboveCrownsGfx;
     const glow = this.glowGfx;
     const t = view.tile;
     const still = motionReduced();
@@ -1248,7 +1258,7 @@ export class ElectricTheme extends ShapeTheme implements Theme {
 
   /** Shots: ball lightning in the owner's colour, crackling as it flies, a glow below it. */
   private drawShots(state: MatchState, view: ViewTransform, frame: EffectFrame): void {
-    const g = this.effectGfx;
+    const g = this.aboveCrownsGfx;
     const t = view.tile;
     const now = state.tick + frame.tickFraction;
     const still = motionReduced();
@@ -1615,7 +1625,7 @@ export class ElectricTheme extends ShapeTheme implements Theme {
 
   drawOverlay(state: MatchState, view: ViewTransform, ghost: Ghost, humanPlayer: number): void {
     const g = this.overlayGfx;
-    g.clear();
+    clearDrawn(g);
     const t = view.tile;
     const { palette } = this.art;
     const now = performance.now();

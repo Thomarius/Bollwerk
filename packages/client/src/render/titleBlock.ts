@@ -8,6 +8,7 @@ import type { TimerSpot } from '../timerSpot.js';
 
 import { release } from './release.js';
 import { hex, tileX, tileY, type ViewTransform } from './theme.js';
+import { clearDrawn } from './clearDrawn.js';
 
 /** How long a new round's title block takes to ink in, and the stamp to land. */
 const INK_MS = 1200;
@@ -82,7 +83,7 @@ export class TitleBlock {
     if (key !== this.key) {
       this.key = key;
       const g = this.lines;
-      g.clear();
+      clearDrawn(g);
       // The lines ink in one after another: the frame, its inner rule, the row dividers,
       // the cell's, the north arrow — each from its start to its end.
       const strokes: [number, number, number, number][] = [
@@ -169,7 +170,7 @@ export class TitleBlock {
     letter(this.stampText, words.stamp, stampSize, 0, 0, red, true);
     const sw = this.stampText.width + stampSize * 0.8;
     const sh = stampSize * 1.6;
-    this.stampFrame.clear();
+    clearDrawn(this.stampFrame);
     this.stampFrame.rect(-sw / 2, -sh / 2, sw, sh);
     this.stampFrame.stroke({ width: Math.max(2, stampSize * 0.14), color: red });
     this.stamp.position.set(x + w * 0.5, y + h * 0.55);

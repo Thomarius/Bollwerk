@@ -28,7 +28,7 @@ import {
   drawOvertimeBorder,
   drawDrain,
   drawSealGlow,
-  drawMainCastles,
+  MainCastles,
   drawShotTarget,
   hex,
   mixed,
@@ -50,6 +50,7 @@ import { BricksSeaLife } from './seaLife.js';
 import type { SceneryItem } from './scenery.js';
 import { SceneryLayer } from './sceneryLayer.js';
 import { outline, trace, wallGeometry } from './walls.js';
+import { clearDrawn } from './clearDrawn.js';
 
 /** A brick knocked loose by a shot or the sweep, tumbling as it falls. */
 interface Loose {
@@ -136,6 +137,11 @@ export class BricksTheme implements Theme {
   private readonly effectGfx = new Graphics();
   /** The guns' barrels, a `Graphics` a gun redrawn only as it turns or kicks (`Memos`). */
   private readonly gunMemo = new Memos();
+  /**
+   * The main castles' crowns, over the flags and under the shots, redrawn only when one
+   * changes: drawn every frame they were a few hundred vertices rebuilt for nothing.
+   */
+  private readonly crowns = new MainCastles();
   /** What lies over the guns: shots, splashes, the finish. */
   private readonly lateGfx = new Graphics();
   private readonly overlayGfx = new Graphics();
@@ -173,6 +179,7 @@ export class BricksTheme implements Theme {
       this.effectGfx,
       this.gunMemo.container,
       this.flagMemo.container,
+      this.crowns.gfx,
       this.lateGfx,
       this.stamps.container,
     );
@@ -190,6 +197,7 @@ export class BricksTheme implements Theme {
       this.patterns = null;
     }
     this.lateGfx.destroy();
+    this.crowns.gfx.destroy();
     this.territory.destroy();
     this.structures.destroy();
     this.scenery.destroy();
@@ -228,7 +236,7 @@ export class BricksTheme implements Theme {
     this.terrain = state.terrain;
     this.width = state.width;
     const g = this.terrainGfx;
-    g.clear();
+    clearDrawn(g);
     const { palette } = this.art;
     const t = view.tile;
     const land = (x: number, y: number): boolean =>
@@ -840,11 +848,11 @@ export class BricksTheme implements Theme {
 
   drawEffects(state: MatchState, view: ViewTransform, frame: EffectFrame): void {
     const g = this.effectGfx;
-    g.clear();
-    this.lateGfx.clear();
+    clearDrawn(g);
+    clearDrawn(this.lateGfx);
     this.seaLife.draw(g, view, this.art, frame.deltaMs);
     this.clock += frame.deltaMs;
-    this.craneGfx.clear();
+    clearDrawn(this.craneGfx);
     if (this.crane !== null) this.drawCrane(state, view, this.crane);
     drawDrain(g, view, frame.drain, this.art);
     drawSealGlow(g, view, frame.sealGlow, this.art);
@@ -1184,7 +1192,7 @@ export class BricksTheme implements Theme {
     const g = this.lateGfx;
     const t = view.tile;
     const now = state.tick + frame.tickFraction;
-    drawMainCastles(g, view, state, this.art, frame.castleSealed);
+    this.crowns.draw(view, state, this.art, frame.castleSealed);
     for (const shot of state.shots) {
       const p = shotProgress(shot, now);
       const gx = tileX(view, shot.fromX + (shot.toX - shot.fromX) * p + 0.5);
@@ -1261,7 +1269,7 @@ export class BricksTheme implements Theme {
 
   drawOverlay(state: MatchState, view: ViewTransform, ghost: Ghost, humanPlayer: number): void {
     const g = this.overlayGfx;
-    g.clear();
+    clearDrawn(g);
     const t = view.tile;
     const { palette } = this.art;
     drawOvertimeBorder(g, state, view, this.art, performance.now());

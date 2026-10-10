@@ -40,7 +40,7 @@ import {
   drawOvertimeBorder,
   drawDrain,
   drawSealGlow,
-  drawMainCastles,
+  MainCastles,
   drawShotTarget,
   dimmed,
   hex,
@@ -62,6 +62,7 @@ import {
 import type { SceneryItem } from './scenery.js';
 import { SceneryLayer } from './sceneryLayer.js';
 import { cannonBase } from './cannonBase.js';
+import { clearDrawn } from './clearDrawn.js';
 
 /** A circuit trace on the sea floor, as tile centres in board coordinates. */
 export interface Trace {
@@ -253,6 +254,11 @@ export class CyberpunkTheme implements Theme {
   private readonly gunMemo = new Memos();
   /** Their glow, the same way: added, so where it lies among the glow does not matter. */
   private readonly gunGlow = new Memos();
+  /**
+   * The main castles' crowns, drawn again only as one changes: under the shots, and neither
+   * added nor bloomed, as `lateGfx` they were drawn into first.
+   */
+  private readonly crowns = new MainCastles();
   /** What lies over the guns: shots, splashes, the finish. */
   private readonly lateGfx = new Graphics();
   private readonly effectGlow = new Graphics();
@@ -351,6 +357,7 @@ export class CyberpunkTheme implements Theme {
       this.gunMemo.container,
       // Over the rails, so a coil lights on them, and under the crown and the shots.
       this.lights.container,
+      this.crowns.gfx,
       this.lateGfx,
       this.effectGlow,
       this.gunGlow.container,
@@ -378,6 +385,7 @@ export class CyberpunkTheme implements Theme {
       this.effectGfx,
       this.effectGlow,
       this.effectCore,
+      this.crowns.gfx,
       this.overlayGfx,
       this.overlayGlow,
     ]) {
@@ -399,7 +407,7 @@ export class CyberpunkTheme implements Theme {
     this.terrain = state.terrain;
     this.width = state.width;
     const g = this.terrainGfx;
-    g.clear();
+    clearDrawn(g);
     const { palette } = this.art;
     const land = (x: number, y: number): boolean =>
       x >= 0 &&
@@ -1294,10 +1302,10 @@ export class CyberpunkTheme implements Theme {
   drawEffects(state: MatchState, view: ViewTransform, frame: EffectFrame): void {
     const g = this.effectGfx;
     const glow = this.effectGlow;
-    g.clear();
-    glow.clear();
-    this.effectCore.clear();
-    this.lateGfx.clear();
+    clearDrawn(g);
+    clearDrawn(glow);
+    clearDrawn(this.effectCore);
+    clearDrawn(this.lateGfx);
     this.seaLife.draw(g, view, this.art, frame.deltaMs, glow);
     this.clock += frame.deltaMs;
 
@@ -1323,6 +1331,7 @@ export class CyberpunkTheme implements Theme {
     this.lights.end();
     this.drawPowerDowns(state, view);
     this.drawHolograms(state, view, frame);
+    this.crowns.draw(view, state, this.art, frame.castleSealed);
     this.drawShots(state, view, frame);
     this.drawBursts(view, frame.deltaMs);
     this.drawShorts(view, frame.deltaMs);
@@ -1718,7 +1727,6 @@ export class CyberpunkTheme implements Theme {
     const g = this.lateGfx;
     const glow = this.effectGlow;
     const now = state.tick + frame.tickFraction;
-    drawMainCastles(g, view, state, this.art, frame.castleSealed);
     for (const shot of state.shots) {
       const t = shotProgress(shot, now);
       const at = (tk: number): { x: number; y: number } => ({
@@ -2025,8 +2033,8 @@ export class CyberpunkTheme implements Theme {
    */
   drawOverlay(state: MatchState, view: ViewTransform, ghost: Ghost, humanPlayer: number): void {
     const g = this.overlayGfx;
-    g.clear();
-    this.overlayGlow.clear();
+    clearDrawn(g);
+    clearDrawn(this.overlayGlow);
     drawOvertimeBorder(g, state, view, this.art, performance.now());
     drawSelectable(g, view, ghost, this.art, performance.now());
     drawBuildHints(g, view, ghost, this.art, performance.now());

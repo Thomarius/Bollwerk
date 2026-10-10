@@ -53,7 +53,7 @@ if (params.get('autostart') === '1') {
       : {}),
   };
   const phase = params.get('snapshot');
-  const match = localMatchFor(setup, phase === null);
+  const match = localMatchFor(setup, phase === null, phase === null);
   // &round=N stops at that phase in round N or later, for looking at a match deep in.
   if (phase !== null && PHASES.includes(phase as Phase)) {
     match.fastForwardTo(

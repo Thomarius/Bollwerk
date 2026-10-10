@@ -32,7 +32,7 @@ import {
   drawOvertimeBorder,
   drawDrain,
   drawSealGlow,
-  drawMainCastles,
+  MainCastles,
   drawShotTarget,
   hex,
   shotLift,
@@ -52,6 +52,7 @@ import { outline, trace, wallGeometry, type WallBlock } from './walls.js';
 import { cannonBase } from './cannonBase.js';
 import { ShapeTheme } from './shapeTheme.js';
 import { hueNearness } from './hue.js';
+import { clearDrawn } from './clearDrawn.js';
 
 /** Something with a place and an age: a ghost set free, a ring on the bog, a sinking block. */
 interface Aged {
@@ -198,6 +199,10 @@ export class HalloweenTheme extends ShapeTheme implements Theme {
   /** Walls, houses and guns, an island to a `Graphics`, redrawn where they change. */
   private readonly structures = new IslandParts();
   private readonly effectGfx = new Graphics();
+  /** The main castles' crowns, redrawn only when one changes. */
+  private readonly crowns = new MainCastles();
+  /** The houses' light, drawn over the crowns as it always was (`drawLanterns`). */
+  private readonly lanternGfx = new Graphics();
   /** The guns' barrels, a `Graphics` a gun redrawn only as it turns or kicks (`Memos`). */
   private readonly gunMemo = new Memos();
   /** What lies over the guns: shots, splashes, the finish. */
@@ -256,6 +261,8 @@ export class HalloweenTheme extends ShapeTheme implements Theme {
     layers.structures.addChild(this.structures.container);
     layers.effects.addChild(
       this.effectGfx,
+      this.crowns.gfx,
+      this.lanternGfx,
       this.gunMemo.container,
       this.fogStamps.container,
       this.lateGfx,
@@ -278,6 +285,8 @@ export class HalloweenTheme extends ShapeTheme implements Theme {
       this.scorchGfx,
       this.flowGfx,
       this.effectGfx,
+      this.crowns.gfx,
+      this.lanternGfx,
       this.overlayGfx,
     ]) {
       g.destroy();
@@ -292,7 +301,7 @@ export class HalloweenTheme extends ShapeTheme implements Theme {
     this.height = state.height;
     this.scenery.refresh(state, view, this.art, true);
     const g = this.terrainGfx;
-    g.clear();
+    clearDrawn(g);
     const { palette } = this.art;
     const t = view.tile;
     const land = (x: number, y: number): boolean => this.land(x, y);
@@ -489,7 +498,7 @@ export class HalloweenTheme extends ShapeTheme implements Theme {
   /** Each frame, under everything: the bog's bubbles, bats round the moon, the scorches. */
   private drawFlow(state: MatchState, view: ViewTransform, deltaMs: number): void {
     const g = this.flowGfx;
-    g.clear();
+    clearDrawn(g);
     const t = view.tile;
     const { palette } = this.art;
     const still = motionReduced();
@@ -503,7 +512,7 @@ export class HalloweenTheme extends ShapeTheme implements Theme {
     if (key !== this.scorchesDrawn) {
       this.scorchesDrawn = key;
       const sg = this.scorchGfx;
-      sg.clear();
+      clearDrawn(sg);
       for (const s of this.scorches) {
         const fade = 1 - (state.round - s.round) / rounds;
         sg.circle(tileX(view, s.x + 0.5), tileY(view, s.y + 0.5), t * 0.42);
@@ -1109,8 +1118,9 @@ export class HalloweenTheme extends ShapeTheme implements Theme {
     this.drawFlow(state, view, frame.deltaMs);
     perf.end('flow');
     const g = this.effectGfx;
-    g.clear();
-    this.lateGfx.clear();
+    clearDrawn(g);
+    clearDrawn(this.lanternGfx);
+    clearDrawn(this.lateGfx);
     this.seaLife.draw(g, view, this.art, frame.deltaMs);
     drawDrain(g, view, frame.drain, this.art);
     drawSealGlow(g, view, frame.sealGlow, this.art);
@@ -1209,10 +1219,10 @@ export class HalloweenTheme extends ShapeTheme implements Theme {
    * breach, as a flag is hoisted and lowered, so "sealed" is the house lit up.
    */
   private drawLanterns(state: MatchState, view: ViewTransform, frame: EffectFrame): void {
-    const g = this.effectGfx;
+    const g = this.lanternGfx;
     const t = view.tile;
     const still = motionReduced();
-    drawMainCastles(g, view, state, this.art, frame.castleSealed);
+    this.crowns.draw(view, state, this.art, frame.castleSealed);
     this.lanterns.update(frame.castleSealed, this.clock, this.art);
     for (const castle of state.castles) {
       const lit = this.lanterns.raised(castle.id, this.clock, this.art);
@@ -1541,7 +1551,7 @@ export class HalloweenTheme extends ShapeTheme implements Theme {
 
   drawOverlay(state: MatchState, view: ViewTransform, ghost: Ghost, humanPlayer: number): void {
     const g = this.overlayGfx;
-    g.clear();
+    clearDrawn(g);
     const t = view.tile;
     const { palette } = this.art;
     const now = performance.now();

@@ -31,7 +31,7 @@ import {
   drawOvertimeBorder,
   drawDrain,
   drawSealGlow,
-  drawMainCastles,
+  MainCastles,
   drawShotTarget,
   hex,
   shotLift,
@@ -60,6 +60,7 @@ import {
 } from './wiesn.js';
 import { cannonBase } from './cannonBase.js';
 import { ShapeTheme } from './shapeTheme.js';
+import { clearDrawn } from './clearDrawn.js';
 
 /** Something with a place and an age: a ring on the beer, a burst of foam, a coin, a clink. */
 interface Aged {
@@ -196,6 +197,11 @@ export class OktoberfestTheme extends ShapeTheme implements Theme {
   private mugsDrawn = '';
   /** The kegs, a stamp a colour drawn once and turned to the target (`stamps.ts`). */
   private readonly kegStamps = new Stamps();
+  /**
+   * The main castles' crowns, drawn again only as one changes: over the kegs rather than
+   * under, which nobody can see — a crown is on a tent, a keg on a dray.
+   */
+  private readonly crowns = new MainCastles();
   /** Everything over the kegs: shots' shadows and crumbs, splashes, the band, the finish. */
   private readonly lateGfx = new Graphics();
   /**
@@ -246,6 +252,7 @@ export class OktoberfestTheme extends ShapeTheme implements Theme {
       this.effectGfx,
       this.mugGfx,
       this.kegStamps.container,
+      this.crowns.gfx,
       this.lateGfx,
       this.pretzelStamps.container,
     );
@@ -267,6 +274,7 @@ export class OktoberfestTheme extends ShapeTheme implements Theme {
       this.puddleGfx,
       this.flowGfx,
       this.effectGfx,
+      this.crowns.gfx,
       this.overlayGfx,
     ]) {
       g.destroy();
@@ -285,7 +293,7 @@ export class OktoberfestTheme extends ShapeTheme implements Theme {
     this.height = state.height;
     this.scenery.refresh(state, view, this.art, true);
     const g = this.terrainGfx;
-    g.clear();
+    clearDrawn(g);
     const { palette } = this.art;
     const t = view.tile;
     const land = (x: number, y: number): boolean => this.land(x, y);
@@ -434,7 +442,7 @@ export class OktoberfestTheme extends ShapeTheme implements Theme {
   /** Each frame, under everything: bubbles rising, puddles drying, the Ferris wheel turning. */
   private drawFlow(state: MatchState, view: ViewTransform, deltaMs: number): void {
     const g = this.flowGfx;
-    g.clear();
+    clearDrawn(g);
     const t = view.tile;
     const { palette } = this.art;
     const still = motionReduced();
@@ -447,7 +455,7 @@ export class OktoberfestTheme extends ShapeTheme implements Theme {
     if (key !== this.puddlesDrawn) {
       this.puddlesDrawn = key;
       const pg = this.puddleGfx;
-      pg.clear();
+      clearDrawn(pg);
       for (const p of this.puddles) {
         const fade = 1 - (state.round - p.round) / rounds;
         const cx = tileX(view, p.x + 0.5);
@@ -892,8 +900,8 @@ export class OktoberfestTheme extends ShapeTheme implements Theme {
     this.drawFlow(state, view, frame.deltaMs);
     perf.end('flow');
     const g = this.effectGfx;
-    g.clear();
-    this.lateGfx.clear();
+    clearDrawn(g);
+    clearDrawn(this.lateGfx);
     this.seaLife.draw(g, view, this.art, frame.deltaMs);
     drawDrain(g, view, frame.drain, this.art);
     drawSealGlow(g, view, frame.sealGlow, this.art);
@@ -902,9 +910,7 @@ export class OktoberfestTheme extends ShapeTheme implements Theme {
     this.ruins.draw(g, view, state, 0xd8d0c0, null, frame.deltaMs);
     drawChoices(g, view, frame.choices, this.art);
     this.drawMugs(state, view, frame);
-    // Over the kegs rather than under, which nobody can see: a crown is on a tent, a keg
-    // on a dray.
-    drawMainCastles(this.lateGfx, view, state, this.art, frame.castleSealed);
+    this.crowns.draw(view, state, this.art, frame.castleSealed);
     this.drawKegs(state, view, frame.deltaMs);
     this.drawShots(state, view, frame);
     this.drawRings(view, frame.deltaMs);
@@ -954,7 +960,7 @@ export class OktoberfestTheme extends ShapeTheme implements Theme {
     const key = `${view.tile}|${view.originX}|${view.originY}|${fills.map((m) => `${m.castle.id}:${m.castle.x},${m.castle.y}:${m.fill}`).join(' ')}`;
     if (key === this.mugsDrawn) return;
     this.mugsDrawn = key;
-    g.clear();
+    clearDrawn(g);
     for (const { castle, fill } of fills) {
       const k = this.tent(view, castle);
       drawMass(g, k.cx, k.apex + k.W * 0.06, k.W * 0.52, fill, this.brown);
@@ -1345,7 +1351,7 @@ export class OktoberfestTheme extends ShapeTheme implements Theme {
 
   drawOverlay(state: MatchState, view: ViewTransform, ghost: Ghost, humanPlayer: number): void {
     const g = this.overlayGfx;
-    g.clear();
+    clearDrawn(g);
     const t = view.tile;
     const { palette } = this.art;
     const now = performance.now();

@@ -26,7 +26,7 @@ import {
   drawOvertimeBorder,
   drawDrain,
   drawSealGlow,
-  drawMainCastles,
+  MainCastles,
   drawShotTarget,
   hex,
   shotLift,
@@ -52,6 +52,7 @@ import { SceneryLayer } from './sceneryLayer.js';
 import { outline, trace, wallGeometry } from './walls.js';
 import { cannonBase } from './cannonBase.js';
 import { ShapeTheme } from './shapeTheme.js';
+import { clearDrawn } from './clearDrawn.js';
 
 /** A swirl on the river, carried along by the current, melting back in as it ages. */
 interface Swirl {
@@ -273,8 +274,7 @@ export class ChocolateTheme extends ShapeTheme implements Theme {
   private swirlContexts: (GraphicsContext | undefined)[] = [];
   private swirlTile = 0;
   /** The main castles' crowns: the shared mark, drawn again only as one changes. */
-  private readonly crownGfx = new Graphics();
-  private crownKey = '';
+  private readonly crowns = new MainCastles();
   /**
    * The fountains' still parts, a `Graphics` a castle redrawn only as it starts or stops
    * (`Memos`), and their moving jets and drips as stamps over them. Drawn anew each frame
@@ -338,7 +338,7 @@ export class ChocolateTheme extends ShapeTheme implements Theme {
       this.effectGfx,
       this.biteGfx,
       this.effectTopGfx,
-      this.crownGfx,
+      this.crowns.gfx,
       this.fountainMemo.container,
       this.fountainStamps.container,
       this.gunMemo.container,
@@ -366,7 +366,7 @@ export class ChocolateTheme extends ShapeTheme implements Theme {
       this.terrainGfx,
       this.fallGfx,
       this.flowGfx,
-      this.crownGfx,
+      this.crowns.gfx,
       this.effectGfx,
       this.biteGfx,
       this.effectTopGfx,
@@ -384,7 +384,7 @@ export class ChocolateTheme extends ShapeTheme implements Theme {
     this.height = state.height;
     this.scenery.refresh(state, view, this.art, true);
     const g = this.terrainGfx;
-    g.clear();
+    clearDrawn(g);
     const { palette } = this.art;
     const t = view.tile;
     const land = (x: number, y: number): boolean => this.land(x, y);
@@ -582,7 +582,7 @@ export class ChocolateTheme extends ShapeTheme implements Theme {
   /** The river's surface, each frame: swirls carried on the current, the fall, the splats. */
   private drawFlow(state: MatchState, view: ViewTransform, deltaMs: number): void {
     const g = this.flowGfx;
-    g.clear();
+    clearDrawn(g);
     const t = view.tile;
     const still = motionReduced();
 
@@ -687,7 +687,7 @@ export class ChocolateTheme extends ShapeTheme implements Theme {
     if (key === this.splatsDrawn) return;
     this.splatsDrawn = key;
     const g = this.splatGfx;
-    g.clear();
+    clearDrawn(g);
     const t = view.tile;
     const { palette } = this.art;
     for (const s of this.splats) {
@@ -741,7 +741,7 @@ export class ChocolateTheme extends ShapeTheme implements Theme {
     if (key === this.fallDrawn) return;
     this.fallDrawn = key;
     const g = this.fallGfx;
-    g.clear();
+    clearDrawn(g);
     if (fall === null) return;
     const { palette } = this.art;
     const t = view.tile;
@@ -1271,9 +1271,9 @@ export class ChocolateTheme extends ShapeTheme implements Theme {
     this.drawFlow(state, view, frame.deltaMs);
     perf.end('flow');
     const g = this.effectGfx;
-    g.clear();
-    this.effectTopGfx.clear();
-    this.lateGfx.clear();
+    clearDrawn(g);
+    clearDrawn(this.effectTopGfx);
+    clearDrawn(this.lateGfx);
     this.seaLife.draw(g, view, this.art, frame.deltaMs);
     drawDrain(g, view, frame.drain, this.art);
     drawSealGlow(g, view, frame.sealGlow, this.art);
@@ -1392,7 +1392,7 @@ export class ChocolateTheme extends ShapeTheme implements Theme {
     if (key === this.bitesDrawn) return;
     this.bitesDrawn = key;
     const g = this.biteGfx;
-    g.clear();
+    clearDrawn(g);
     if (this.bites.length === 0) return;
     const t = view.tile;
     const r = t * 0.17;
@@ -1458,7 +1458,7 @@ export class ChocolateTheme extends ShapeTheme implements Theme {
     const t = view.tile;
     const flow = hex(this.art.palette.waterShallow);
     const still = motionReduced();
-    this.drawCrowns(state, view, frame.castleSealed);
+    this.crowns.draw(view, state, this.art, frame.castleSealed);
     this.fountains.update(frame.castleSealed, this.clock, this.art);
     const memo = this.fountainMemo;
     const stamps = this.fountainStamps;
@@ -1539,21 +1539,6 @@ export class ChocolateTheme extends ShapeTheme implements Theme {
       t * 0.04 * running,
     );
     g.fill({ color: hex(palette.waterFoam), alpha: 0.7 });
-  }
-
-  /** The main castles' crowns (`drawMainCastles`), drawn again only when one changes. */
-  private drawCrowns(state: MatchState, view: ViewTransform, sealed: readonly boolean[]): void {
-    let key = viewKey(view);
-    for (const player of state.players) {
-      if (player.eliminated || player.startingCastleId === null) continue;
-      const castle = state.castles.find((c) => c.id === player.startingCastleId);
-      if (castle === undefined) continue;
-      key += `|${player.id}:${castle.x},${castle.y},${castle.w},${castle.h},${sealed[castle.id] === true}`;
-    }
-    if (key === this.crownKey) return;
-    this.crownKey = key;
-    this.crownGfx.clear();
-    drawMainCastles(this.crownGfx, view, state, this.art, sealed);
   }
 
   /**
@@ -1651,8 +1636,7 @@ export class ChocolateTheme extends ShapeTheme implements Theme {
         k.ellipse(0, 0, rx, rx / 2);
         k.fill({ color: 0x000000 });
       });
-      // A stamp laid as a twisted end last frame keeps its skew, which `place` leaves alone.
-      stamps.place(shade, gx, gy, { alpha: 0.28 - 0.14 * high }).skew.set(0, 0);
+      stamps.place(shade, gx, gy, { alpha: 0.28 - 0.14 * high });
       const hy = tileY(view, shot.fromY + (shot.toY - shot.fromY) * p + 0.5 - lift);
       const r = t * (0.2 + 0.1 * high);
       const spin = p * Math.PI * 5 + shot.id;
@@ -1683,7 +1667,7 @@ export class ChocolateTheme extends ShapeTheme implements Theme {
         k.circle(-radius * 0.35, -radius * 0.35, radius * 0.28);
         k.fill({ color: 0xffffff, alpha: 0.85 });
       });
-      stamps.place(bonbon, gx, hy).skew.set(0, 0);
+      stamps.place(bonbon, gx, hy);
       drawShotTarget(g, view, shot, p, this.art, frame.humanPlayer);
     }
     stamps.end();
@@ -1848,7 +1832,7 @@ export class ChocolateTheme extends ShapeTheme implements Theme {
 
   drawOverlay(state: MatchState, view: ViewTransform, ghost: Ghost, humanPlayer: number): void {
     const g = this.overlayGfx;
-    g.clear();
+    clearDrawn(g);
     const t = view.tile;
     const { palette } = this.art;
     drawOvertimeBorder(g, state, view, this.art, performance.now());

@@ -13,6 +13,8 @@ import { type NetworkReading } from './network.js';
 import { type LookChoices } from './looks.js';
 import { t } from './i18n.js';
 import { LocalMatch } from './localMatch.js';
+import { botWorker } from './bots/botWorkerTransport.js';
+import { perf } from './perf.js';
 import { RecordingUpload } from './recordingUpload.js';
 import type { ServerConnection } from './net/connection.js';
 import type { NetworkMatch } from './net/networkMatch.js';
@@ -51,6 +53,8 @@ export interface Session {
    */
   readonly rematch: 'mine' | 'host' | null;
   requestRematch(): void;
+  /** The match screen is gone: whatever still works for the match stops (a local one's bots). */
+  dispose?(): void;
 }
 
 export interface Setup {
@@ -82,12 +86,20 @@ const FIXED_PERSONALITY: Personality | null =
   params.get('personality') === null ? null : parsePersonality(params.get('personality') ?? '');
 
 /**
+ * `&bots=thread` keeps a local match's bots on the page's thread, as they were before the
+ * worker (PLAN §11 item 3): for timing the two, and should a browser's worker misbehave.
+ */
+const BOTS_ON_THREAD = params.get('bots') === 'thread';
+
+/**
  * An offline match on the default rules with the menu's settings over them, recorded
  * for tuning unless `record` is false — a dev shortcut into a phase is not a match
  * anyone played. The recording goes to the server the page came from; see
- * `recordingUpload.ts`.
+ * `recordingUpload.ts`. Its bots think in the page's worker where there is one, unless
+ * `worker` is false: a dev fast-forward needs them on the page's thread.
  */
-export function localMatchFor(setup: Setup, record = true): LocalMatch {
+export function localMatchFor(setup: Setup, record = true, worker = true): LocalMatch {
+  const transport = worker && !BOTS_ON_THREAD ? botWorker() : null;
   return new LocalMatch({
     seed: setup.seed,
     seats: setup.seats,
@@ -100,6 +112,13 @@ export function localMatchFor(setup: Setup, record = true): LocalMatch {
     ...(setup.teamNames === undefined ? {} : { teamNames: setup.teamNames }),
     ruleset: applySettings(defaultConfigBundle.ruleset, setup.settings),
     ...(record ? { record: new RecordingUpload().write } : {}),
+    ...(transport === null ? {} : { worker: transport }),
+    // The worker's answers are applied and stepped between frames: the sim's work still.
+    timed: (work) => {
+      perf.begin('sim');
+      work();
+      perf.end('sim');
+    },
   });
 }
 
@@ -109,8 +128,9 @@ export const DEFAULT_BOT = defaultConfigBundle.server.botLevel;
 export const DEFAULT_PLAYERS = 3;
 
 export function localSession(match: LocalMatch, rematch: (() => void) | null = null): Session {
-  // Not advancing is the whole of a local pause: the bots think inside `advance`, and a
-  // recording gains a line only for a tick that was stepped.
+  // Not advancing is most of a local pause: a recording gains a line only for a tick that
+  // was stepped. The bots' worker may have a turn out, which still lands; `halted` sends
+  // no other.
   let pausedBy: number | null = null;
   return {
     get state() {
@@ -132,12 +152,14 @@ export function localSession(match: LocalMatch, rematch: (() => void) | null = n
     },
     setPaused: (paused) => {
       pausedBy = paused && !match.finished ? match.humanPlayer : null;
+      match.halted = pausedBy !== null;
     },
     status: () => (match.humanPlayer < 0 ? t('watching.status') : ''),
     network: () => null,
-    leave: () => undefined,
+    leave: () => match.dispose(),
     rematch: rematch === null ? null : 'mine',
     requestRematch: () => rematch?.(),
+    dispose: () => match.dispose(),
   };
 }
 

@@ -6691,3 +6691,108 @@ Released for the tournament tests' feedback — the end shown to the teammates t
 calmed (13h) — and for the Ready button and favourite looks (13i), both tested and approved by
 the user. Protocol 21, so a v0.8.6 page cannot join a v0.8.7 room; the game's rules and bots
 unchanged.
+
+## 13k. The bots in a worker, and three rendering leads (2026-10-10)
+
+PLAN §11 item 3, built in one session from its seven work packages, the user having waived the
+check and go-ahead after each.
+
+**Lockstep.** An offline match's bots — a single match, a rematch, a tournament's match played
+here — plan in a Web Worker, and the page waits for them as it waited while they thought over
+several frames, but with the screen drawing. The page alone holds the match: it sends the
+worker a tick's turn with the person's moves on it (`turn`), the worker plays those on its
+mirror, runs the bots in `turnOrder` and steps (`BotTable`, `client/src/bots/`, pure and tested
+without a worker), and answers with the bots' accepted actions and, every 30 ticks, the mirror's
+hash; the page applies them, steps, checks the hash and sends the next turn at once if time is
+owed. Late answers applied ticks on were rejected in the plan: bots would react by the machine's
+speed and a match would no longer follow from its seed. So the bots play action for action as on
+the page's thread, and no soak was needed.
+
+**One turn loop** (W1). `botTurns` takes a tick's turns from a given one, stopping when asked,
+and is called by the worker's `BotTable`, the page's `ThreadDriver` (today's frame-spread loop,
+moved out of `LocalMatch` unchanged) and the dev fast-forward. `LocalMatch` is a host of a
+`BotDriver` (W2): the refactor gave the same recording and hash as the old code, seed 7 at
+`[4, 6, 8]` over 3 000 ticks, and a fast-forward to round 3's combat the same state.
+
+**What changes for a person**: a move made while a turn is out is applied at the start of the
+next tick, where it was applied at once between bot turns; the session already ignored refusals,
+and the recording, being what the page applied, stays exact.
+
+**Fallbacks.** The worker is used where `Worker` exists and the address has no `&bots=thread`.
+No `ready` within 3 s, or no answer within 2 s (and in both cases at least four frames, so a page
+itself blocked is not mistaken for a quiet worker), a `failed`, an error, a refused action or a
+hash mismatch: the worker is ended with a warning and a `ThreadDriver` goes on — from tick 0 the
+very same bots, mid-match new ones seeded from seed and tick, their memory of the match lost. The
+time owed while waiting is dropped rather than played through in a rush. A dev fast-forward
+(`&snapshot=`) keeps the bots on the thread (`localMatchFor(…, worker)`). One worker serves the
+page, each match a new generation, so a late answer is never taken for the next match's; a
+failed worker is ended and the next match makes another. Pause sets `LocalMatch.halted`, so no
+turn is sent; the match screen's cleanup, leaving and the match's end send `dispose`.
+
+**Tests**: `BotTable` gives the page's hash on `init`, exactly `takeBotTurns`' accepted actions
+for 1 500 ticks, drops stale turns and fails on a refused move; `WorkerDriver` over a transport
+of timers at seeded random delays plays the same 3 000 ticks as the thread, line for line and
+hash for hash; a person clicking four moves a frame, most of them while a turn was out,
+replays with no refusal or mismatch; pause sends nothing; a disposed match ignores its late
+answer and the next plays on the same worker; and three failures — never ready, a wrong hash at
+tick 900, an answer lost at tick 300 — fall back with the recording exact.
+
+**Checked in a browser**: a watched match at eight players in the built server and the dev
+server (the worker a 270 kB asset of its own, `worker.format: 'es'`; the server's and desktop
+app's bundles do not contain it); the worker closed from outside mid-match, the page falling
+back after its 2 s and playing on; `&bots=thread` and `&snapshot=` with no worker; leaving
+mid-match and starting another, the one worker reused. The recordings of those matches, the
+fallbacks' included, replayed exact. Not tried: the desktop app, which loads the client from
+`http://localhost` like the built server.
+
+**Measured** (W7) by the user, on an AMD Renoir integrated GPU at 2341x1160, Medieval at eight
+players, seed 7, each window of 30 s opened at the first build banner (`&bots=thread` before,
+none after; answers are applied and stepped between frames, counted to "sim" through
+`LocalMatchOptions.timed`):
+
+| link                   | "sim" p99, before → after | "sim" worst | frames over 33 ms |
+| ---------------------- | ------------------------- | ----------- | ----------------- |
+| watched                | 13.2 → 3.0 ms             | 28.1 → 7.6  | 2 → 1             |
+| a person against seven | 12.0 → 2.7 ms             | 24.5 → 7.7  | 2 → 1             |
+| watched at `&speed=4`  | 15.5 → 4.9 ms             | 34.8 → 17.3 | 22 → 14           |
+
+The page's heap fell from 160–210 MB to 80–140 MB, the bots' memory now the worker's. The
+target, a worst under 4 ms, was met by the p99 but not the worst, and what is left is not the
+bots: timed in Node at eight bots, a tick's `step` costs under 0.25 ms and the hash every 30
+ticks up to 1.3 ms, but the step that ends a build phase, resolving every island, 1.4–7.6 ms
+once a round. That is the simulation's own, a matter for `sim` should it ever be felt.
+
+**Combat juddered with the worker**, the build phase smooth either way, as the user felt it
+though no figure showed it: a tick taken from the clock leaves the accumulator at once, and
+with the worker the state steps only when the answer comes, after the frame is drawn. A frame
+drawn with a turn out — every other frame at 60 fps — showed the tick before at its start
+rather than its end, so shots and banners were drawn at 0, 1.5, 1, 2.5, 2 ticks. `tickFraction`
+is now 1 while a tick is taken but not stepped, and a test checks that the drawn time never
+goes back, with the worker and with the thread spread over frames (which had the same fault,
+rarely seen).
+
+Felt again by the user with the same links: combat and the banners as smooth with the worker
+as with `&bots=thread`. Item 3 closed.
+
+**The smaller rendering leads** (ARCHIVE 13f):
+
+- **The crowns keyed** in every style: `MainCastles` in `theme.ts` holds them in a `Graphics` of
+  their own, redrawn only when one changes, as Blueprint and Chocolate had done alone. Each style
+  places it where it drew the crowns, and what it drew after them in the same `Graphics` moved to
+  one above (`aboveCrownsGfx`, or a named one — Undersea's and Office's `shotGfx`, Sakura's
+  `carpGfx`, Halloween's `lanternGfx`), so the draw order is unchanged; where the crowns came
+  first or last in theirs, no new one was needed. Done by four agents on their own files.
+- **An empty `Graphics` left alone** by its frame's clear: `clear()` marks a drawing changed even
+  when empty, and Pixi then rebuilds its render group's draw list. `clearDrawn` clears only a
+  drawing with something in it (dropping an open path and transform either way), at the 133
+  per-frame clears in the styles.
+- **A stamp's skew reset** by `Stamps.place`: one fitted by a matrix kept its skew when reused,
+  which Chocolate had worked around by hand.
+
+## 13l. v0.9.0 (2026-10-10)
+
+Released for the bots' planning in a Web Worker in local matches — "sim" p99 at eight players
+from 12–16 ms to 3–5 ms, combat as smooth as before by the user's feel — with the crowns keyed,
+empty layers no longer rebuilt and a stamp's skew reset (13k). A minor version rather than a
+patch for the change in how every offline match runs. Protocol 21 as v0.8.7, so the two play
+together; the game's rules and bots unchanged.

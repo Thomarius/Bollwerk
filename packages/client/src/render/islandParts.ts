@@ -3,6 +3,7 @@ import { Container, Graphics } from 'pixi.js';
 
 import { release } from './release.js';
 import type { ViewTransform } from './theme.js';
+import { clearDrawn } from './clearDrawn.js';
 
 /**
  * A theme's structures drawn an island to a `Graphics` (PLAN 11.22), so a shot landing
@@ -107,7 +108,7 @@ export class IslandParts {
       }
       drawn++;
       entry.key = key;
-      for (const g of entry.layers) g.clear();
+      for (const g of entry.layers) clearDrawn(g);
       drawPart(
         entry.layers[0] as Graphics,
         this.partOf(state, cells, castles, cannons),

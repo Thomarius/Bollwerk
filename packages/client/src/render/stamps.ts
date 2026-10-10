@@ -50,6 +50,8 @@ export class Stamps {
     g.position.set(x, y);
     g.rotation = options.rotation ?? 0;
     g.scale.set(scale, options.scaleY ?? scale);
+    // A stamp fitted by a matrix (`setFromMatrix`) took a skew too, which reuse kept.
+    g.skew.set(0, 0);
     g.alpha = options.alpha ?? 1;
     g.tint = options.tint ?? 0xffffff;
     return g;

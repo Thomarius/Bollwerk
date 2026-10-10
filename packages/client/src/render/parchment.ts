@@ -26,7 +26,7 @@ import {
   drawOvertimeBorder,
   drawDrain,
   drawSealGlow,
-  drawMainCastles,
+  MainCastles,
   drawShotTarget,
   hex,
   mixed,
@@ -50,6 +50,7 @@ import { hatch, outline, trace, wallGeometry, type Segment } from './walls.js';
 import { cannonBase } from './cannonBase.js';
 import { roseSpot } from './corner.js';
 import { along, loops, rounded, wavered, type Point } from './inkline.js';
+import { clearDrawn } from './clearDrawn.js';
 
 /** An ink stain where a shot came down on land, fading over the rounds after. */
 interface Stain {
@@ -147,8 +148,15 @@ export class ParchmentTheme implements Theme {
   private readonly effectGfx = new Graphics();
   /** The guns' barrels, a `Graphics` a gun redrawn only as it turns or kicks (`Memos`). */
   private readonly gunMemo = new Memos();
-  /** What lies over the guns: shots, splashes, the finish. */
+  /** What lies over the guns: the wax seals, under the crowns. */
   private readonly lateGfx = new Graphics();
+  /** The main castles' crowns: the shared mark, drawn again only as one changes. */
+  private readonly crowns = new MainCastles();
+  /**
+   * What lies over the crowns: shots, splashes, the finish — drawn after them into
+   * `lateGfx` before the crowns became a `Graphics` of their own.
+   */
+  private readonly aboveCrownsGfx = new Graphics();
   private readonly overlayGfx = new Graphics();
   private grain: Sprite | null = null;
   private grainKey = '';
@@ -182,7 +190,13 @@ export class ParchmentTheme implements Theme {
     layers.terrain.addChild(this.terrainGfx, this.roseGfx, this.nameLayer);
     layers.territory.addChild(this.scenery.gfx, this.territory.container, this.stainGfx);
     layers.structures.addChild(this.structures.container);
-    layers.effects.addChild(this.effectGfx, this.gunMemo.container, this.lateGfx);
+    layers.effects.addChild(
+      this.effectGfx,
+      this.gunMemo.container,
+      this.lateGfx,
+      this.crowns.gfx,
+      this.aboveCrownsGfx,
+    );
     layers.overlay.addChild(this.overlayGfx);
     return Promise.resolve();
   }
@@ -198,6 +212,8 @@ export class ParchmentTheme implements Theme {
       this.roseGfx,
       this.stainGfx,
       this.effectGfx,
+      this.crowns.gfx,
+      this.aboveCrownsGfx,
       this.overlayGfx,
     ]) {
       g.destroy();
@@ -229,7 +245,7 @@ export class ParchmentTheme implements Theme {
     this.terrain = state.terrain;
     this.width = state.width;
     const g = this.terrainGfx;
-    g.clear();
+    clearDrawn(g);
     const { palette } = this.art;
     const t = view.tile;
     const land = (x: number, y: number): boolean =>
@@ -449,7 +465,7 @@ export class ParchmentTheme implements Theme {
   /** A compass rose in a corner of the sea, clear of the big timer (`roseSpot`). */
   private drawRose(view: ViewTransform, spot: ReturnType<typeof roseSpot>): void {
     const g = this.roseGfx;
-    g.clear();
+    clearDrawn(g);
     this.seaLife.rose = spot;
     if (spot === null) return;
     const ink = hex(this.art.palette.rockDark);
@@ -962,8 +978,9 @@ export class ParchmentTheme implements Theme {
 
   drawEffects(state: MatchState, view: ViewTransform, frame: EffectFrame): void {
     const g = this.effectGfx;
-    g.clear();
-    this.lateGfx.clear();
+    clearDrawn(g);
+    clearDrawn(this.lateGfx);
+    clearDrawn(this.aboveCrownsGfx);
     this.seaLife.draw(g, view, this.art, frame.deltaMs);
     this.clock += frame.deltaMs;
     if (state.round !== this.round) {
@@ -982,10 +999,18 @@ export class ParchmentTheme implements Theme {
     this.drawFades(view, frame.deltaMs);
     this.drawBarrels(state, view, frame.deltaMs);
     this.drawSeals(state, view, frame);
+    this.crowns.draw(view, state, this.art, frame.castleSealed);
     this.drawShots(state, view, frame);
     this.drawDrops(view, frame.deltaMs);
-    this.winnerBanners.draw(this.lateGfx, view, state, this.art, frame.celebrate, frame.deltaMs);
-    this.fireworks.draw(this.lateGfx, view, this.art, frame.celebrate, frame.deltaMs);
+    this.winnerBanners.draw(
+      this.aboveCrownsGfx,
+      view,
+      state,
+      this.art,
+      frame.celebrate,
+      frame.deltaMs,
+    );
+    this.fireworks.draw(this.aboveCrownsGfx, view, this.art, frame.celebrate, frame.deltaMs);
   }
 
   /** Ink splashed where shots came down on land, fading over the rounds after. */
@@ -995,7 +1020,7 @@ export class ParchmentTheme implements Theme {
     if (key === this.stainsDrawn) return;
     this.stainsDrawn = key;
     const g = this.stainGfx;
-    g.clear();
+    clearDrawn(g);
     const t = view.tile;
     const rounds = this.art.generators.fx.craterRounds;
     for (const stain of this.stains) {
@@ -1223,10 +1248,9 @@ export class ParchmentTheme implements Theme {
 
   /** Shots as ink dots on a dotted course, like a route marked on a map. */
   private drawShots(state: MatchState, view: ViewTransform, frame: EffectFrame): void {
-    const g = this.lateGfx;
+    const g = this.aboveCrownsGfx;
     const t = view.tile;
     const now = state.tick + frame.tickFraction;
-    drawMainCastles(g, view, state, this.art, frame.castleSealed);
     for (const shot of state.shots) {
       const p = shotProgress(shot, now);
       const at = (tk: number): { x: number; y: number } => ({
@@ -1257,7 +1281,7 @@ export class ParchmentTheme implements Theme {
 
   /** Drops of ink and chips of stone flying, and gun smoke drifting as washes of ink. */
   private drawDrops(view: ViewTransform, deltaMs: number): void {
-    const g = this.lateGfx;
+    const g = this.aboveCrownsGfx;
     const dt = deltaMs / 1000;
     for (const d of this.drops) {
       d.age += deltaMs;
@@ -1280,7 +1304,7 @@ export class ParchmentTheme implements Theme {
 
   drawOverlay(state: MatchState, view: ViewTransform, ghost: Ghost, humanPlayer: number): void {
     const g = this.overlayGfx;
-    g.clear();
+    clearDrawn(g);
     const t = view.tile;
     const { palette } = this.art;
     drawOvertimeBorder(g, state, view, this.art, performance.now());

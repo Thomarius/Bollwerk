@@ -29,7 +29,7 @@ import {
   drawChoices,
   drawDrain,
   drawFireReticle,
-  drawMainCastles,
+  MainCastles,
   drawOvertimeBorder,
   drawSealGlow,
   drawSealPreview,
@@ -52,6 +52,7 @@ import {
 import { INK, PAPER, drawCloud, drawGlove, drawPieEye, drawStar, inkWidth } from './toon.js';
 import { outline, trace, wallGeometry } from './walls.js';
 import { ShapeTheme } from './shapeTheme.js';
+import { clearDrawn } from './clearDrawn.js';
 
 /** Something with a place and an age: a burst, a splash, a puff. */
 interface Aged {
@@ -188,6 +189,11 @@ export class CartoonTheme extends ShapeTheme implements Theme {
   private readonly castleStamps = new Stamps();
   private readonly cannonStamps = new Stamps();
   /** Over the figures: the crown, where a shot will land. */
+  /**
+   * The main castles' crowns, redrawn only when one changes: under the shots, the first thing
+   * this frame's `effectGfx` would have held, so just below it.
+   */
+  private readonly crowns = new MainCastles();
   private readonly effectGfx = new Graphics();
   private readonly bombStamps = new Stamps();
   /** Puffs, bricks, stars, bursts, notes and Zs. */
@@ -261,6 +267,7 @@ export class CartoonTheme extends ShapeTheme implements Theme {
       this.underGfx,
       this.castleStamps.container,
       this.cannonStamps.container,
+      this.crowns.gfx,
       this.effectGfx,
       this.bombStamps.container,
       this.puffStamps.container,
@@ -300,6 +307,7 @@ export class CartoonTheme extends ShapeTheme implements Theme {
       this.terrainGfx,
       this.craterGfx,
       this.underGfx,
+      this.crowns.gfx,
       this.effectGfx,
       this.lateGfx,
       this.filmGfx,
@@ -347,7 +355,7 @@ export class CartoonTheme extends ShapeTheme implements Theme {
     this.height = state.height;
     this.scenery.refresh(state, view, this.art, true);
     const g = this.terrainGfx;
-    g.clear();
+    clearDrawn(g);
     const { palette } = this.art;
     const t = view.tile;
     const land = (x: number, y: number): boolean => this.land(x, y);
@@ -489,7 +497,7 @@ export class CartoonTheme extends ShapeTheme implements Theme {
     if (key === this.cratersDrawn) return;
     this.cratersDrawn = key;
     const g = this.craterGfx;
-    g.clear();
+    clearDrawn(g);
     const t = view.tile;
     for (const c of this.craters) {
       const fade = 1 - (state.round - c.round) / rounds;
@@ -817,9 +825,9 @@ export class CartoonTheme extends ShapeTheme implements Theme {
     this.round = state.round;
     this.advance(state, frame.deltaMs);
     const under = this.underGfx;
-    under.clear();
-    this.effectGfx.clear();
-    this.lateGfx.clear();
+    clearDrawn(under);
+    clearDrawn(this.effectGfx);
+    clearDrawn(this.lateGfx);
     perf.begin('flow');
     this.drawCraters(state, view);
     this.drawWaves(view);
@@ -835,7 +843,7 @@ export class CartoonTheme extends ShapeTheme implements Theme {
     drawChoices(under, view, frame.choices, this.art);
     this.puffStamps.begin();
     this.drawCastles(state, view, frame);
-    drawMainCastles(this.effectGfx, view, state, this.art, frame.castleSealed);
+    this.crowns.draw(view, state, this.art, frame.castleSealed);
     this.drawCannons(state, view, frame.deltaMs);
     this.drawShots(state, view, frame);
     this.drawBursts(view, frame.deltaMs);
@@ -1288,7 +1296,7 @@ export class CartoonTheme extends ShapeTheme implements Theme {
       this.vignette.height = view.height - view.top;
     }
     const g = this.filmGfx;
-    g.clear();
+    clearDrawn(g);
     if (motionReduced()) {
       this.grainStamps.begin();
       this.grainStamps.end();
@@ -1347,7 +1355,7 @@ export class CartoonTheme extends ShapeTheme implements Theme {
 
   drawOverlay(state: MatchState, view: ViewTransform, ghost: Ghost, humanPlayer: number): void {
     const g = this.overlayGfx;
-    g.clear();
+    clearDrawn(g);
     const t = view.tile;
     const { palette } = this.art;
     const now = performance.now();

@@ -30,7 +30,7 @@ import {
   drawOvertimeBorder,
   drawDrain,
   drawSealGlow,
-  drawMainCastles,
+  MainCastles,
   drawShotTarget,
   hex,
   mixed,
@@ -54,6 +54,7 @@ import { SceneryLayer } from './sceneryLayer.js';
 import { dashed, hatch, outline, trace, wallGeometry, type Segment } from './walls.js';
 import { cannonBase } from './cannonBase.js';
 import { hueNearness } from './hue.js';
+import { clearDrawn } from './clearDrawn.js';
 
 /** A mark where a shot landed: rings for a moment, and on a wall a demolition cross. */
 interface Mark {
@@ -157,8 +158,7 @@ export class BlueprintTheme implements Theme {
    * The main castles' crowns, over the pennants, redrawn only when one changes: drawn every
    * frame they were a few hundred vertices rebuilt for nothing.
    */
-  private readonly crownGfx = new Graphics();
-  private crownKey = '';
+  private readonly crowns = new MainCastles();
   /** Where the clouds were drawn for: a change of view draws them again. */
   private cloudKey = '';
   /** Shots in the air: their trails, the crosses below them, their targets. */
@@ -215,7 +215,7 @@ export class BlueprintTheme implements Theme {
       this.compassGfx,
       this.gunMemo.container,
       this.lateGfx,
-      this.crownGfx,
+      this.crowns.gfx,
       this.shotGfx,
       this.heads.container,
       this.ringGfx,
@@ -230,7 +230,7 @@ export class BlueprintTheme implements Theme {
     this.titleBlock.destroy();
     this.gunMemo.destroy();
     this.lateGfx.destroy();
-    this.crownGfx.destroy();
+    this.crowns.gfx.destroy();
     this.shotGfx.destroy();
     this.heads.destroy();
     this.headBook.destroy();
@@ -285,7 +285,7 @@ export class BlueprintTheme implements Theme {
     this.terrain = state.terrain;
     this.width = state.width;
     const g = this.terrainGfx;
-    g.clear();
+    clearDrawn(g);
     const { palette } = this.art;
     const t = view.tile;
     const land = (x: number, y: number): boolean =>
@@ -800,12 +800,12 @@ export class BlueprintTheme implements Theme {
 
   drawEffects(state: MatchState, view: ViewTransform, frame: EffectFrame): void {
     const g = this.effectGfx;
-    g.clear();
-    this.compassGfx.clear();
-    this.lateGfx.clear();
-    this.shotGfx.clear();
-    this.ringGfx.clear();
-    this.topGfx.clear();
+    clearDrawn(g);
+    clearDrawn(this.compassGfx);
+    clearDrawn(this.lateGfx);
+    clearDrawn(this.shotGfx);
+    clearDrawn(this.ringGfx);
+    clearDrawn(this.topGfx);
     this.seaLife.draw(g, view, this.art, frame.deltaMs);
     this.clock += frame.deltaMs;
     this.titleBlock.container.visible = this.corner !== null;
@@ -841,7 +841,7 @@ export class BlueprintTheme implements Theme {
     if (key === this.keepKey) return;
     this.keepKey = key;
     const g = this.keepGfx;
-    g.clear();
+    clearDrawn(g);
     for (const castle of state.castles) {
       if (!(frame.castleSealed[castle.id] ?? false)) continue;
       for (const r of this.keepWalls(view, castle)) g.rect(r.x, r.y, r.w, r.h);
@@ -980,24 +980,6 @@ export class BlueprintTheme implements Theme {
     }
   }
 
-  /** The main castles' crowns (`drawMainCastles`), drawn again only when one changes. */
-  private drawCrowns(state: MatchState, view: ViewTransform, frame: EffectFrame): void {
-    // Everything `drawMainCastles` reads: each player's main castle, where it stands, and
-    // whether it is sealed.
-    let key = viewKey(view);
-    for (const player of state.players) {
-      key += `|${player.id},${player.eliminated},${player.startingCastleId}`;
-      if (player.eliminated || player.startingCastleId === null) continue;
-      const castle = state.castles.find((c) => c.id === player.startingCastleId);
-      if (castle === undefined) continue;
-      key += `,${castle.x},${castle.y},${castle.w},${castle.h},${frame.castleSealed[castle.id] === true}`;
-    }
-    if (key === this.crownKey) return;
-    this.crownKey = key;
-    this.crownGfx.clear();
-    drawMainCastles(this.crownGfx, view, state, this.art, frame.castleSealed);
-  }
-
   /**
    * Shots as a projectile symbol — a ring with a cross — riding a dashed trajectory
    * from the gun, with a small cross on the ground below.
@@ -1006,7 +988,7 @@ export class BlueprintTheme implements Theme {
     const g = this.shotGfx;
     const t = view.tile;
     const now = state.tick + frame.tickFraction;
-    this.drawCrowns(state, view, frame);
+    this.crowns.draw(view, state, this.art, frame.castleSealed);
     this.heads.begin();
     const trailAlpha = 0.45 * Math.min(1, Math.sqrt(6 / Math.max(1, state.shots.length)));
     for (const shot of state.shots) {
@@ -1202,7 +1184,7 @@ export class BlueprintTheme implements Theme {
 
   drawOverlay(state: MatchState, view: ViewTransform, ghost: Ghost, humanPlayer: number): void {
     const g = this.overlayGfx;
-    g.clear();
+    clearDrawn(g);
     const t = view.tile;
     const { palette } = this.art;
     drawOvertimeBorder(g, state, view, this.art, performance.now());

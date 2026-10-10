@@ -4,6 +4,7 @@ import { Graphics } from 'pixi.js';
 
 import { SceneryTracker, type SceneryItem } from './scenery.js';
 import { ClearingPuffs, type Cell, type ViewTransform } from './theme.js';
+import { clearDrawn } from './clearDrawn.js';
 
 /** How a style draws what stands: every item, with the board it stands on. */
 export type DrawScenery = (
@@ -33,7 +34,7 @@ export class SceneryLayer {
   refresh(state: MatchState, view: ViewTransform, art: ArtConfig, force = false): void {
     this.width = state.width;
     if (!this.tracker.sync(state, art.scenery) && !force) return;
-    this.gfx.clear();
+    clearDrawn(this.gfx);
     this.draw(this.gfx, view, this.tracker.visible(), state);
   }
 

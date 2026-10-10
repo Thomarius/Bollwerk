@@ -50,6 +50,7 @@ Client dev query parameters: `?autostart=1&players=3&seed=7` (a random seed with
 `&snapshot=build` to jump to a phase (`&round=N` for one deep in a match, `&idle=1` to
 leave your seat undriven on the way, so you are soon knocked out), `&speed=10`,
 `&perf=1` for the frame-time readout (ARCHIVE 12n: a fixed 30 s window, Copy for the figures),
+`&bots=thread` to keep a local match's bots off their worker (ARCHIVE 13k),
 `&style=flat|pixel|night|cyberpunk|blueprint|parchment|bricks|glass|chocolate|halloween|sakura|oktoberfest|opera|office|undersea|electric|cartoon|christmas|noir` for both looks (a one-look style sets only its own)
 (`&buildStyle=`, `&combatStyle=` for one), `&watch=1&level=8` to observe a bot match (`&personality=offensive` fixes every bot's),
 `&rounds=12` for the round cap, `&teams=2` for teams of two in seat order, `&lang=de` for a
@@ -153,9 +154,13 @@ Full detail in PLAN.md §1. The parts that surprise people:
 
 ## Status
 
-**Done** (2026-10-10; the latest release **v0.8.7**, 2026-10-10, protocol 21, which a test
+**Done** (2026-10-10; the latest release **v0.9.0**, 2026-10-10, protocol 21, which a test
 session needs the server rebuilt and every page reloaded for):
 
+- **The bots in a worker** (ARCHIVE 13k, 2026-10-10): a local match's bots plan in a Web
+  Worker in lockstep with the page, every action on the tick it had on the page's thread, with
+  fallbacks to the thread; and three rendering leads, the crowns keyed (`MainCastles`), an empty
+  `Graphics` left alone by its frame's clear (`clearDrawn`), and a stamp's skew reset.
 - **Ready and favourite looks** (ARCHIVE 13i, 2026-10-10): a room's guests say Ready, and the
   host's Start waits for them all (the server refuses it too); styles hearted in the gallery,
   ♥ All and ♥ None, and Random draws only from the favourites, or from all with none.
@@ -240,9 +245,7 @@ session needs the server rebuilt and every page reloaded for):
   piece and German checked in play by the user (ARCHIVE 12n–12t).
 
 **Next** — PLAN §11: the tournament's play-testing (T8), more test games towards a first
-feature-ready version, **the bots' planning moved to a Web Worker in local matches** (item 3,
-planned in detail in seven work packages, to be built in a session of its own), and bots that
-miss as people do (combat accuracy, measured against the
+feature-ready version, and bots that miss as people do (combat accuracy, measured against the
 testers' recordings; how is not yet decided). **The bot learning work is paused**; when it
 resumes, `docs/BOT_LEARNING.md` §6 says where — first, learning the choice of wall rather
 than only the cell. French is not to be done. Signing the Windows app was explained (PLAN
@@ -413,14 +416,20 @@ its header but the simulation does not — so the server stamps each header with
 - **Pixi rebuilds a render group's whole draw list when any `Graphics` in it changes shape**:
   500 stamps each changing shape on their own beat cost Chocolate 3 ms a frame until they were
   put in render groups of their own (ARCHIVE 13f).
-- **A local match's bots think inside the frame**: one bot planning its walls takes 15 to
-  50 ms. `LocalMatch` spreads a tick's turns over frames (8 ms a frame) without changing an
-  action or its tick.
+- **A local match's bots think in a Web Worker, in lockstep** (ARCHIVE 13k): one bot
+  planning its walls takes 15 to 50 ms. The page holds the match and sends each tick's turn
+  with the person's moves on it; the worker's `BotTable` (`client/src/bots/`) plays them on a
+  mirror, runs the bots and answers with their actions, and only then does the page step — so
+  bots play action for action as on the page's thread. A move made while a turn is out lands on
+  the next tick. `&bots=thread`, a dev fast-forward and every fallback put them on the page's
+  thread (`ThreadDriver`, a tick's turns spread over frames at 8 ms); a worker that fails or goes
+  quiet is replaced with a warning, mid-match by new bots, the recording still exact.
 - **Bots share a few plans a tick** (`PlanningSlots`, `ai.plansPerTick`): every player is dealt
   the same pieces, so bots of one level fall due to plan on the same ticks. Every driver —
   room, `LocalMatch`, harness — gives a table's bots one `PlanningSlots` and calls them in
-  `turnOrder` (`takeBotTurns`; `LocalMatch` spreads one tick's over frames in the same
-  order); a bot made without one is never held back (ARCHIVE 12p).
+  `turnOrder` (`takeBotTurns`; locally `botTurns`, in the worker's `BotTable` or the page's
+  `ThreadDriver`, which spreads one tick's over frames in the same order); a bot made without
+  one is never held back (ARCHIVE 12p).
 - **`computeEnclosure`, `weakestWall` and `MaxFlow` keep their working arrays between
   calls** (ARCHIVE 12w): nothing they return is one of them, and they are not re-entrant.
   A cache of a bot's plan lasts one turn (`Look`, `SealPlanner`), never a tick: bots act
@@ -451,6 +460,10 @@ card does not help with that (ARCHIVE 12n). So a style **never redraws what has 
 - **Still most of the time**: `Memos` — a `Graphics` per thing redrawn when its key changes;
   the guns' barrels, which move only when firing. The key must name everything drawn.
 - **Changing at a hit or a round**: its own `Graphics` behind a key (blots, stains, the Maß).
+- **The crowns**: `MainCastles` (`theme.ts`), keyed, in its own `Graphics` at the place they are
+  drawn, what came after them in a `Graphics` above (ARCHIVE 13k).
+- **Cleared every frame**: `clearDrawn`, never `clear()` — an empty `Graphics` cleared still marks
+  its render group's draw list to be rebuilt.
 - **Thousands of sprites** beside something redrawn each frame: a render group of their own
   (Medieval's `tileLayer`), or Pixi gathers and packs every one of them again each frame.
 

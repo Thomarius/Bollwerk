@@ -24,7 +24,7 @@ import {
   drawOvertimeBorder,
   drawDrain,
   drawSealGlow,
-  drawMainCastles,
+  MainCastles,
   drawShotTarget,
   hex,
   playerColour,
@@ -43,6 +43,7 @@ import {
 import { FlatSeaLife } from './seaLife.js';
 import type { SceneryItem } from './scenery.js';
 import { SceneryLayer } from './sceneryLayer.js';
+import { clearDrawn } from './clearDrawn.js';
 
 interface Impact {
   x: number;
@@ -98,6 +99,10 @@ export class FlatTheme implements Theme {
   /** Walls, houses and guns, an island to a `Graphics`, redrawn where they change. */
   private readonly structures = new IslandParts();
   private readonly effectGfx = new Graphics();
+  /** The main castles' crowns, over the flags, redrawn only when one changes. */
+  private readonly crowns = new MainCastles();
+  /** What lies over the crowns: shots, impacts, crumbles. */
+  private readonly aboveCrownsGfx = new Graphics();
   private readonly overlayGfx = new Graphics();
 
   private impacts: Impact[] = [];
@@ -115,7 +120,7 @@ export class FlatTheme implements Theme {
     layers.terrain.addChild(this.terrainGfx, this.buoyGfx);
     layers.territory.addChild(this.scenery.gfx, this.territory.container);
     layers.structures.addChild(this.structures.container);
-    layers.effects.addChild(this.effectGfx);
+    layers.effects.addChild(this.effectGfx, this.crowns.gfx, this.aboveCrownsGfx);
     layers.overlay.addChild(this.overlayGfx);
     return Promise.resolve();
   }
@@ -124,7 +129,14 @@ export class FlatTheme implements Theme {
     this.territory.destroy();
     this.structures.destroy();
     this.scenery.destroy();
-    for (const g of [this.terrainGfx, this.buoyGfx, this.effectGfx, this.overlayGfx]) {
+    for (const g of [
+      this.terrainGfx,
+      this.buoyGfx,
+      this.effectGfx,
+      this.crowns.gfx,
+      this.aboveCrownsGfx,
+      this.overlayGfx,
+    ]) {
       g.destroy();
     }
   }
@@ -155,7 +167,7 @@ export class FlatTheme implements Theme {
     this.seaLife.layout(state, view, this.art);
     this.scenery.refresh(state, view, this.art, true);
     const g = this.terrainGfx;
-    g.clear();
+    clearDrawn(g);
     // Tinted per island, which is the only thing that makes ownership readable
     // before anything has been built.
     for (let player = 0; player < state.players.length; player++) {
@@ -332,10 +344,10 @@ export class FlatTheme implements Theme {
   }
 
   drawEffects(state: MatchState, view: ViewTransform, frame: EffectFrame): void {
-    this.buoyGfx.clear();
+    clearDrawn(this.buoyGfx);
     if (this.buoy !== null) this.drawBuoy(state, view, this.buoy, frame.deltaMs);
     const g = this.effectGfx;
-    g.clear();
+    clearDrawn(g);
     this.seaLife.draw(g, view, this.art, frame.deltaMs);
     const now = state.tick + frame.tickFraction;
     this.clock += frame.deltaMs;
@@ -350,7 +362,19 @@ export class FlatTheme implements Theme {
     this.fireworks.draw(g, view, this.art, frame.celebrate, frame.deltaMs);
     this.drawFlags(state, view, frame);
 
-    drawMainCastles(g, view, state, this.art, frame.castleSealed);
+    this.crowns.draw(view, state, this.art, frame.castleSealed);
+    this.drawAboveCrowns(state, view, frame, now);
+  }
+
+  /** Shots, impacts and crumbles, over the crowns. */
+  private drawAboveCrowns(
+    state: MatchState,
+    view: ViewTransform,
+    frame: EffectFrame,
+    now: number,
+  ): void {
+    const g = this.aboveCrownsGfx;
+    clearDrawn(g);
     for (const shot of state.shots) {
       const t = shotProgress(shot, now);
       const x = shot.fromX + (shot.toX - shot.fromX) * t;
@@ -430,7 +454,7 @@ export class FlatTheme implements Theme {
 
   drawOverlay(state: MatchState, view: ViewTransform, ghost: Ghost, humanPlayer: number): void {
     const g = this.overlayGfx;
-    g.clear();
+    clearDrawn(g);
     drawOvertimeBorder(g, state, view, this.art, performance.now());
 
     drawSelectable(g, view, ghost, this.art, performance.now());

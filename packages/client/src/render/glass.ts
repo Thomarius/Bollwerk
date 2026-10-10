@@ -26,7 +26,7 @@ import {
   drawOvertimeBorder,
   drawDrain,
   drawSealGlow,
-  drawMainCastles,
+  MainCastles,
   drawShotTarget,
   hex,
   playerColour,
@@ -52,6 +52,7 @@ import { hash } from './noise.js';
 import { outline, trace, wallGeometry } from './walls.js';
 import { cannonBase } from './cannonBase.js';
 import { release } from './release.js';
+import { clearDrawn } from './clearDrawn.js';
 
 /** How long the hourglass takes to turn over as a phase begins. */
 const TURN_MS = 700;
@@ -163,8 +164,15 @@ export class GlassTheme implements Theme {
   private readonly roseGlow = new Discs();
   /** Castles seen sealed since they were last chosen: unsealed again, they are breached. */
   private readonly wasSealed = new Set<number>();
-  /** What lies over the guns: shots, splashes, the finish. */
+  /** What lies over the guns: the pennants, under the crowns. */
   private readonly lateGfx = new Graphics();
+  /** The main castles' crowns, over the pennants, redrawn only when one changes. */
+  private readonly crowns = new MainCastles();
+  /**
+   * What lies over the crowns: shots, splashes, the finish. Apart from `lateGfx` since the
+   * crowns left it for a `Graphics` of their own, between the two.
+   */
+  private readonly aboveCrownsGfx = new Graphics();
   private readonly overlayGfx = new Graphics();
 
   private terrain: Uint8Array | null = null;
@@ -198,6 +206,8 @@ export class GlassTheme implements Theme {
       this.roseGlow.container,
       this.gunMemo.container,
       this.lateGfx,
+      this.crowns.gfx,
+      this.aboveCrownsGfx,
     );
     layers.overlay.addChild(this.overlayGfx);
     return Promise.resolve();
@@ -215,6 +225,8 @@ export class GlassTheme implements Theme {
     this.grain = null;
     release(this.shimmer);
     this.lateGfx.destroy();
+    this.crowns.gfx.destroy();
+    this.aboveCrownsGfx.destroy();
     this.territory.destroy();
     this.structures.destroy();
     this.scenery.destroy();
@@ -398,7 +410,7 @@ export class GlassTheme implements Theme {
     this.terrain = state.terrain;
     this.width = state.width;
     const g = this.terrainGfx;
-    g.clear();
+    clearDrawn(g);
     const { palette } = this.art;
     const t = view.tile;
     const land = (x: number, y: number): boolean =>
@@ -477,7 +489,7 @@ export class GlassTheme implements Theme {
     const t = view.tile;
     while (this.shimmer.children.length < SHIMMER_GROUPS) this.shimmer.addChild(new Graphics());
     const groups = this.shimmer.children as Graphics[];
-    for (const g of groups) g.clear();
+    for (const g of groups) clearDrawn(g);
     const used = new Set<number>();
     for (const { x, y } of cells) {
       const pane = paneAt(x, y);
@@ -969,13 +981,14 @@ export class GlassTheme implements Theme {
   // ------------------------------------------------------------------ effects
 
   drawEffects(state: MatchState, view: ViewTransform, frame: EffectFrame): void {
-    this.hourglassGfx.clear();
+    clearDrawn(this.hourglassGfx);
     if (this.hourglass !== null) {
       this.drawHourglass(state, view, this.hourglass, frame.deltaMs);
     }
     const g = this.effectGfx;
-    g.clear();
-    this.lateGfx.clear();
+    clearDrawn(g);
+    clearDrawn(this.lateGfx);
+    clearDrawn(this.aboveCrownsGfx);
     this.seaLife.draw(g, view, this.art, frame.deltaMs);
     this.clock += frame.deltaMs;
     drawDrain(g, view, frame.drain, this.art);
@@ -992,8 +1005,15 @@ export class GlassTheme implements Theme {
     this.drawShots(state, view, frame);
     this.drawRipples(view, frame.deltaMs);
     this.drawShards(view, frame.deltaMs);
-    this.winnerBanners.draw(this.lateGfx, view, state, this.art, frame.celebrate, frame.deltaMs);
-    this.fireworks.draw(this.lateGfx, view, this.art, frame.celebrate, frame.deltaMs);
+    this.winnerBanners.draw(
+      this.aboveCrownsGfx,
+      view,
+      state,
+      this.art,
+      frame.celebrate,
+      frame.deltaMs,
+    );
+    this.fireworks.draw(this.aboveCrownsGfx, view, this.art, frame.celebrate, frame.deltaMs);
   }
 
   /**
@@ -1194,10 +1214,10 @@ export class GlassTheme implements Theme {
 
   /** Shots: a bead of the owner's glass, lit from within, over its shadow. */
   private drawShots(state: MatchState, view: ViewTransform, frame: EffectFrame): void {
-    const g = this.lateGfx;
+    const g = this.aboveCrownsGfx;
     const t = view.tile;
     const now = state.tick + frame.tickFraction;
-    drawMainCastles(g, view, state, this.art, frame.castleSealed);
+    this.crowns.draw(view, state, this.art, frame.castleSealed);
     for (const shot of state.shots) {
       const p = shotProgress(shot, now);
       const gx = tileX(view, shot.fromX + (shot.toX - shot.fromX) * p + 0.5);
@@ -1220,7 +1240,7 @@ export class GlassTheme implements Theme {
   }
 
   private drawRipples(view: ViewTransform, deltaMs: number): void {
-    const g = this.lateGfx;
+    const g = this.aboveCrownsGfx;
     const t = view.tile;
     for (const s of this.ripples) {
       s.age += deltaMs;
@@ -1237,7 +1257,7 @@ export class GlassTheme implements Theme {
 
   /** Shards: thin triangles of glass spinning as they fall, glinting, bouncing once. */
   private drawShards(view: ViewTransform, deltaMs: number): void {
-    const g = this.lateGfx;
+    const g = this.aboveCrownsGfx;
     const t = view.tile;
     const dt = deltaMs / 1000;
     for (const s of this.shards) {
@@ -1270,7 +1290,7 @@ export class GlassTheme implements Theme {
 
   drawOverlay(state: MatchState, view: ViewTransform, ghost: Ghost, humanPlayer: number): void {
     const g = this.overlayGfx;
-    g.clear();
+    clearDrawn(g);
     const t = view.tile;
     const { palette } = this.art;
     drawOvertimeBorder(g, state, view, this.art, performance.now());

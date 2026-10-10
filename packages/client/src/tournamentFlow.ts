@@ -237,7 +237,7 @@ function playHere(open: Open, progress: Progress): void {
   // `&snapshot=PHASE` (and `&round=`, `&idle=1`) as `?autostart` has them, for looking at a
   // tournament's match deep in — `game_over` plays it out at once, its result counted.
   const phase = params.get('snapshot');
-  const match = localMatchFor(setup, phase === null);
+  const match = localMatchFor(setup, phase === null, phase === null);
   if (phase !== null && PHASES.includes(phase as Phase)) {
     match.fastForwardTo(
       phase as Phase,
