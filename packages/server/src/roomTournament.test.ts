@@ -163,6 +163,10 @@ describe("a tournament's room", () => {
     r.join(guest, 'Mausica');
     r.handle(guest, { type: 'start' });
     expect(r.started).toBe(false);
+    // The teammate says they are ready, as at any table.
+    r.handle(host, { type: 'start' });
+    expect(r.started).toBe(false);
+    r.handle(guest, { type: 'ready', ready: true });
     r.handle(host, { type: 'start' });
     expect(r.started).toBe(true);
     const snapshot = host.latest('snapshot').snapshot;
@@ -186,6 +190,7 @@ describe("a tournament's room", () => {
     r.handle(host, { type: 'tournament', table: table(), save: SAVE });
     const guest = new Listener('g');
     r.join(guest, 'Mausica');
+    r.handle(guest, { type: 'ready', ready: true });
     r.handle(host, { type: 'start' });
     // Mid-match, the next table waits.
     r.handle(host, { type: 'tournament', table: table({ stage: 'Final' }), save: SAVE });
@@ -216,6 +221,7 @@ describe("a tournament's room", () => {
     r.handle(host, { type: 'tournament', table: table(), save: SAVE });
     const guest = new Listener('g');
     r.join(guest, 'Mausica');
+    r.handle(guest, { type: 'ready', ready: true });
     r.handle(host, { type: 'start' });
     const ENDED = '{"version":1,"ended":true}';
     // Mid-match, the end waits; and a guest has no tournament to end.

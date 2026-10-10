@@ -156,6 +156,9 @@ Full detail in PLAN.md §1. The parts that surprise people:
 **Done** (2026-10-09; the latest release **v0.8.6**, 2026-10-09, protocol 20, which a test
 session needs the server rebuilt and every page reloaded for):
 
+- **Ready and favourite looks** (ARCHIVE 13i, 2026-10-10): a room's guests say Ready, and the
+  host's Start waits for them all (the server refuses it too); styles hearted in the gallery,
+  ♥ All and ♥ None, and Random draws only from the favourites, or from all with none.
 - **Performance and sound** (ARCHIVE 13e, 13f): Random looks that came round again fixed
   (Pixel's and Night's never finished warming); a Sharpness setting (Sharp or Fast, the render
   resolution); Chocolate's and Blueprint's frames cut to the other styles'; the music starting as

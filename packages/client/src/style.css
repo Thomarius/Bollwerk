@@ -1686,6 +1686,15 @@ body.hud-bricks #hud .roster .line .shape path {
   color: #f0a0a0;
 }
 
+.seats .tag.ready {
+  opacity: 1;
+  color: #9ee09e;
+}
+
+.seats .tag.unready {
+  color: #f0c890;
+}
+
 /* What the tier does, since its name says nothing to a new player. */
 .seats .blurb {
   flex-basis: 100%;
@@ -4322,6 +4331,42 @@ body.hud-noir .embers i {
   font-family: var(--hud-font, inherit);
 }
 
+.look-gallery .head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+/* Heart all, heart none: small, beside the title, out of the way of choosing. */
+.look-gallery .hearts {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.look-gallery .hearts button {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.25rem 0.6rem;
+  border: 1px solid color-mix(in srgb, var(--hud-muted, var(--muted)) 50%, transparent);
+  background: transparent;
+  color: var(--hud-muted, var(--muted));
+  font-size: 12px;
+  letter-spacing: 0.05em;
+}
+
+.look-gallery .hearts button:hover {
+  border-color: var(--hud-accent, var(--accent));
+  color: var(--hud-ink, var(--ink));
+}
+
+.look-gallery .hearts svg {
+  width: 0.9rem;
+  height: 0.9rem;
+  color: #ff5a7a;
+}
+
 .look-gallery h2 {
   margin: 0;
   font-size: 1.2rem;
@@ -4411,6 +4456,35 @@ body.hud-noir .embers i {
 .look-gallery .card .name {
   font-size: 12px;
   letter-spacing: 0.05em;
+}
+
+/* A favourite's heart, in the corner opposite the badges; clicking it does not choose. */
+.look-gallery .heart {
+  position: absolute;
+  top: 0.3rem;
+  left: 0.3rem;
+  display: grid;
+  place-items: center;
+  width: 1.6rem;
+  height: 1.6rem;
+  border-radius: 50%;
+  background: rgb(10 10 18 / 55%);
+  color: rgb(255 255 255 / 80%);
+  /* Above the hovered card's playing picture, which would hide it just as it is wanted. */
+  z-index: 1;
+}
+
+.look-gallery .heart svg {
+  width: 1.05rem;
+  height: 1.05rem;
+}
+
+.look-gallery .heart:hover {
+  color: #ff8aa0;
+}
+
+.look-gallery .heart.on {
+  color: #ff5a7a;
 }
 
 /* Which look a card is chosen for: corner badges, building's above combat's. */

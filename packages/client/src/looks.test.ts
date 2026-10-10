@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   chooseLook,
+  drawnFrom,
   galleryMarkup,
   lookName,
   lookOptions,
@@ -97,7 +98,91 @@ describe('random looks, round by round', () => {
   });
 });
 
+describe('favourites', () => {
+  function onScreen(rotation: LookRotation, count: number): string[] {
+    const { build, combat } = rotation.opening();
+    const shown = [build, combat];
+    while (shown.length < count) {
+      const look = shown.length % 2 === 0 ? 'build' : 'combat';
+      shown.push(rotation.next(look, shown.at(-1) as never));
+    }
+    return shown;
+  }
+
+  it('draws a look from the favourites made for it, or from all its styles with none', () => {
+    expect(drawnFrom('build', ['noir', 'flat'])).toEqual(
+      stylesFor('build').filter((s) => s === 'noir' || s === 'flat'),
+    );
+    expect(drawnFrom('combat', [])).toEqual(stylesFor('combat'));
+    // A favourite of the other look's only is no favourite of this one's.
+    const buildOnly = stylesFor('build').find((s) => !stylesFor('combat').includes(s));
+    if (buildOnly !== undefined)
+      expect(drawnFrom('combat', [buildOnly])).toEqual(stylesFor('combat'));
+  });
+
+  it('draws only the favourites, each once a cycle, and every banner still changes', () => {
+    const hearted = ['noir', 'flat', 'sakura'] as const;
+    const rotation = new LookRotation(
+      { build: 'random', combat: 'random' },
+      sequence(0.3, 0.8),
+      () => hearted,
+    );
+    const shown = onScreen(rotation, 30);
+    expect(new Set(shown)).toEqual(new Set(hearted));
+    for (let i = 1; i < shown.length; i++) expect(shown[i]).not.toBe(shown[i - 1]);
+  });
+
+  it('with one favourite, uses that one alone, for both looks', () => {
+    const rotation = new LookRotation({ build: 'random', combat: 'random' }, sequence(0.5), () => [
+      'noir',
+    ]);
+    expect(new Set(onScreen(rotation, 8))).toEqual(new Set(['noir']));
+    // Even when the other look is chosen as that very style.
+    const beside = new LookRotation({ build: 'noir', combat: 'random' }, sequence(0.5), () => [
+      'noir',
+    ]);
+    expect(new Set(onScreen(beside, 8))).toEqual(new Set(['noir']));
+  });
+
+  it('with two favourites, keeps each look in its own rather than repeat a banner', () => {
+    const rotation = new LookRotation({ build: 'random', combat: 'random' }, sequence(0.5), () => [
+      'noir',
+      'flat',
+    ]);
+    const shown = onScreen(rotation, 10);
+    for (let i = 1; i < shown.length; i++) expect(shown[i]).not.toBe(shown[i - 1]);
+  });
+
+  it('follows the favourites as they change, from the next banner', () => {
+    let hearted: string[] = ['noir'];
+    const rotation = new LookRotation(
+      { build: 'office', combat: 'random' },
+      sequence(0.5),
+      () => hearted as never,
+    );
+    expect(rotation.next('combat')).toBe('noir');
+    hearted = ['sakura'];
+    expect(rotation.next('combat')).toBe('sakura');
+    hearted = [];
+    const all = Array.from({ length: 6 }, () => rotation.next('combat'));
+    expect(new Set(all).size).toBeGreaterThan(1);
+  });
+});
+
 describe('the gallery', () => {
+  it('hearts the favourites, every card but random, which has none', () => {
+    const html = galleryMarkup({ build: 'pixel', combat: 'random' }, 'build', ['noir']);
+    const card = (choice: string): string => {
+      const at = html.indexOf(`data-choice="${choice}"`);
+      return html.slice(at, html.indexOf('</button>', at));
+    };
+    expect(card('noir')).toContain('class="heart on" role="checkbox" aria-checked="true"');
+    expect(card('pixel')).toContain('class="heart" role="checkbox" aria-checked="false"');
+    expect(card('random')).not.toContain('heart');
+    expect(html).toContain('class="hearts-all"');
+    expect(html).toContain('class="hearts-none"');
+  });
+
   it('lists random and every style, marks the chosen card and badges both looks', () => {
     const html = galleryMarkup({ build: 'pixel', combat: 'halloween' }, 'combat');
     expect(html).toContain('data-choice="random"');

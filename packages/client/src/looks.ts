@@ -11,6 +11,7 @@ import {
 import { LivePreview } from './galleryLive.js';
 import { t } from './i18n.js';
 import { escape } from './html.js';
+import { store, stored } from './storage.js';
 import { stylePreview } from './stylePreview.js';
 
 /**
@@ -19,6 +20,10 @@ import { stylePreview } from './stylePreview.js';
  * style's picture serves both, a switch at its top saying which look is being chosen; the
  * menu keeps a picture of each with arrows to step through them without opening it, and
  * the pause menu opens the same gallery to change the looks mid-match.
+ *
+ * A style may be hearted as a favourite, and random then draws only from the favourites —
+ * one set for both looks, each look drawing from those made for it, or from all its styles
+ * when none is.
  */
 
 export type LookChoice = ArtStyle | 'random';
@@ -71,6 +76,33 @@ export function chooseLook(
   return fallback;
 }
 
+/** Where the hearted styles are kept: the page's own, as the looks are. */
+const FAVOURITES_KEY = 'bollwerk.favourites';
+
+/** The hearted styles, in the styles' own order; anything stale or hand-typed dropped. */
+export function storedFavourites(): ArtStyle[] {
+  try {
+    const raw: unknown = JSON.parse(stored(FAVOURITES_KEY) ?? '[]');
+    return Array.isArray(raw) ? ArtStyleSchema.options.filter((style) => raw.includes(style)) : [];
+  } catch {
+    return [];
+  }
+}
+
+export function saveFavourites(styles: readonly ArtStyle[]): void {
+  store(FAVOURITES_KEY, JSON.stringify(ArtStyleSchema.options.filter((s) => styles.includes(s))));
+}
+
+/**
+ * The styles a random `look` draws from: the favourites made for it, or every style made
+ * for it when none is. A single favourite is then the only style the look ever takes.
+ */
+export function drawnFrom(look: ArtLook, favourites: readonly ArtStyle[]): ArtStyle[] {
+  const all = stylesFor(look);
+  const hearted = all.filter((style) => favourites.includes(style));
+  return hearted.length > 0 ? hearted : [...all];
+}
+
 /**
  * The styles a match is drawn in, look after look (PLAN 11.23): a chosen style stays as it
  * is, and "random" brings a new one at every banner that shows its look, repeating none
@@ -83,16 +115,24 @@ export function chooseLook(
  * the styles last shown to its end, so a look never comes back in the style it had, and
  * two looks one after the other are never the same, so every banner changes something. Cosmetic, and the page's own, so an ordinary
  * random source.
+ *
+ * Random draws from the favourites (`drawnFrom`), read afresh at every banner: hearted
+ * mid-match, they count from the next. Too few of them for both rules, a look keeps its
+ * style rather than following the other's, so every banner still changes something where
+ * there are two.
  */
 export class LookRotation {
   /** What is left of the current cycle, in the order it will be drawn. */
   private cycle: ArtStyle[] = [];
   /** The style each look was last given, which a new cycle keeps to its end. */
   private last: Partial<Record<ArtLook, ArtStyle>> = {};
+  /** The favourites the cycle was made from: changed, it is made again. */
+  private madeFrom = '';
 
   constructor(
     private readonly choices: LookChoices,
     private readonly random: () => number = Math.random,
+    private readonly favourites: () => readonly ArtStyle[] = storedFavourites,
   ) {}
 
   /** Whether any look changes from banner to banner. */
@@ -118,27 +158,40 @@ export class LookRotation {
   next(look: ArtLook, beside: ArtStyle | null = null): ArtStyle {
     const choice = this.choices[look];
     if (choice !== RANDOM) return choice;
+    const favourites = this.favourites();
+    if (favourites.join() !== this.madeFrom) this.cycle = [];
+    const from = drawnFrom(look, favourites);
     const fits = (style: ArtStyle): boolean =>
-      styleServes(style, look) && style !== this.last[look] && style !== beside;
+      from.includes(style) && style !== this.last[look] && style !== beside;
     let at = this.cycle.findIndex(fits);
     if (at < 0) {
-      this.cycle = this.shuffled();
+      this.cycle = this.shuffled(favourites);
       at = this.cycle.findIndex(fits);
     }
-    // Only with a single style to draw from does the last one have to come again.
-    if (at < 0) at = this.cycle.findIndex((style) => styleServes(style, look));
-    const style = at < 0 ? stylesFor(look)[0]! : this.cycle.splice(at, 1)[0]!;
+    // Only with few styles to draw from does the last one have to come again — rather
+    // than the other look's, so the banner still changes something — and with one, both.
+    if (at < 0) at = this.cycle.findIndex((style) => from.includes(style) && style !== beside);
+    if (at < 0) at = this.cycle.findIndex((style) => from.includes(style));
+    const style = at < 0 ? from[0]! : this.cycle.splice(at, 1)[0]!;
     this.last[look] = style;
     return style;
   }
 
-  /** A new cycle: every style a random look may take, but a chosen look's own. */
-  private shuffled(): ArtStyle[] {
+  /**
+   * A new cycle: every style a random look may take, but a chosen look's own — unless it
+   * is the only favourite that look has.
+   */
+  private shuffled(favourites: readonly ArtStyle[]): ArtStyle[] {
+    this.madeFrom = favourites.join();
     const looks = (['build', 'combat'] as const).filter((look) => this.choices[look] === RANDOM);
-    const chosen = Object.values(this.choices);
-    const pool = ArtStyleSchema.options.filter(
-      (style) => !chosen.includes(style) && looks.some((look) => styleServes(style, look)),
-    );
+    const chosen: readonly string[] = Object.values(this.choices);
+    const drawn = new Set<ArtStyle>();
+    for (const look of looks) {
+      const from = drawnFrom(look, favourites);
+      const others = from.filter((style) => !chosen.includes(style));
+      for (const style of others.length > 0 ? others : from) drawn.add(style);
+    }
+    const pool = ArtStyleSchema.options.filter((style) => drawn.has(style));
     for (let i = pool.length - 1; i > 0; i--) {
       const j = Math.min(i, Math.floor(this.random() * (i + 1)));
       [pool[i], pool[j]] = [pool[j]!, pool[i]!];
@@ -185,8 +238,20 @@ export const RANDOM_PICTURE =
       `</svg>`,
   );
 
+/** A heart, drawn rather than a glyph, which not every look's font has: filled when hearted. */
+function heart(on: boolean): string {
+  return (
+    `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20.5s-7.6-4.6-9.5-9.3C1.1 7.7 3.3 4.2 6.8 4.2c2.2 0 3.7 1.3 5.2 3.1 1.5-1.8 3-3.1 5.2-3.1 3.5 0 5.7 3.5 4.3 7-1.9 4.7-9.5 9.3-9.5 9.3z" ` +
+    `fill="${on ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>`
+  );
+}
+
 /** The gallery's inside, apart so a test can read it without a page. */
-export function galleryMarkup(choices: LookChoices, active: ArtLook): string {
+export function galleryMarkup(
+  choices: LookChoices,
+  active: ArtLook,
+  favourites: readonly ArtStyle[] = [],
+): string {
   const tab = (look: ArtLook, label: string): string =>
     `<button class="tab${look === active ? ' active' : ''}" data-look="${look}">` +
     `${label} <b>${escape(lookName(choices[look]))}</b></button>`;
@@ -202,15 +267,24 @@ export function galleryMarkup(choices: LookChoices, active: ArtLook): string {
       const chosen = choices[active] === choice ? ' chosen' : '';
       // What random means is not obvious from a die: a new style at every round.
       const hint = choice === RANDOM ? ` title="${escape(t('looks.randomHint'))}"` : '';
+      // Random draws from the hearted, so it has no heart of its own.
+      const on = choice !== RANDOM && favourites.includes(choice);
+      const mark =
+        choice === RANDOM
+          ? ''
+          : `<span class="heart${on ? ' on' : ''}" role="checkbox" aria-checked="${on}" title="${escape(t('looks.favourite'))}">${heart(on)}</span>`;
       return (
         `<button class="card${chosen}" data-choice="${choice}"${hint}>` +
         `<img alt="" data-preview="${choice}" />` +
-        `<span class="name">${escape(lookName(choice))}</span>${badges}</button>`
+        `<span class="name">${escape(lookName(choice))}</span>${badges}${mark}</button>`
       );
     })
     .join('');
   return (
-    `<div class="panel"><h2>${t('looks.title')}</h2>` +
+    `<div class="panel"><div class="head"><h2>${t('looks.title')}</h2>` +
+    `<div class="hearts" title="${escape(t('looks.favouritesHint'))}">` +
+    `<button class="hearts-all">${heart(true)} ${t('looks.heartAll')}</button>` +
+    `<button class="hearts-none">${heart(false)} ${t('looks.heartNone')}</button></div></div>` +
     `<div class="tabs">${tab('build', t('looks.build'))}${tab('combat', t('looks.combat'))}</div>` +
     `<div class="cards">${cards}</div>` +
     `<button class="done">${t('looks.done')}</button></div>`
@@ -242,6 +316,13 @@ export interface GalleryOptions {
 export function openLookGallery(options: GalleryOptions): void {
   const choices = { ...options.choices };
   let active = options.active;
+  let favourites = storedFavourites();
+  const favour = (styles: readonly ArtStyle[]): void => {
+    click();
+    favourites = [...styles];
+    saveFavourites(favourites);
+    render();
+  };
   const click = options.click ?? ((): void => undefined);
   const root = document.createElement('div');
   root.className = 'look-gallery';
@@ -268,7 +349,7 @@ export function openLookGallery(options: GalleryOptions): void {
   const render = (): void => {
     live.hide();
     hovered = null;
-    root.innerHTML = galleryMarkup(choices, active);
+    root.innerHTML = galleryMarkup(choices, active, favourites);
     for (const image of root.querySelectorAll<HTMLImageElement>('img[data-preview]')) {
       const choice = image.dataset.preview as LookChoice;
       void lookPicture(choice).then(
@@ -296,6 +377,25 @@ export function openLookGallery(options: GalleryOptions): void {
       click();
       active = tab.dataset.look === 'combat' ? 'combat' : 'build';
       render();
+      return;
+    }
+    // A heart is inside its card, so it is asked first: hearting a style does not choose it.
+    const hearted = target.closest<HTMLElement>('.heart');
+    const style = ArtStyleSchema.safeParse(hearted?.closest<HTMLElement>('.card')?.dataset.choice);
+    if (hearted !== null && style.success) {
+      favour(
+        favourites.includes(style.data)
+          ? favourites.filter((s) => s !== style.data)
+          : [...favourites, style.data],
+      );
+      return;
+    }
+    if (target.closest('.hearts-all') !== null) {
+      favour(ArtStyleSchema.options);
+      return;
+    }
+    if (target.closest('.hearts-none') !== null) {
+      favour([]);
       return;
     }
     const card = target.closest<HTMLElement>('.card');

@@ -167,6 +167,14 @@ export class Room {
     };
   }
 
+  /**
+   * Whether every guest has said they are ready, so the host may start. The host's own
+   * Start is their ready, and the bots are always ready.
+   */
+  get everyoneReady(): boolean {
+    return this.seats.every((seat) => seat.playerId === this.hostId || seat.bot || seat.ready);
+  }
+
   get empty(): boolean {
     return this.seats.every((seat) => seat.connection === null);
   }
@@ -254,6 +262,8 @@ export class Room {
         if (seat.playerId !== this.hostId) return;
         if (this.tournament !== null && this.tournament.seats[seat.playerId]?.level !== null)
           return;
+        // The host's button stays off until then; this turns away a page that sends anyway.
+        if (!this.everyoneReady) return;
         this.start();
         return;
       case 'rematch':
@@ -449,6 +459,7 @@ export class Room {
       const other = this.seats.find((s) => s.playerId === to);
       mover.playerId = to;
       if (other !== undefined) other.playerId = from;
+      this.unready(mover, other);
       this.sendWelcome(mover);
       if (other !== undefined) this.sendWelcome(other);
       return;
@@ -459,11 +470,21 @@ export class Room {
     if (other !== undefined) other.playerId = from;
     if (hostWas === from) this.hostId = to;
     else if (hostWas === to && other !== undefined) this.hostId = from;
+    this.unready(mover, other);
     const fromLevel = this.botLevels[from] as number;
     this.botLevels[from] = this.botLevels[to] as number;
     this.botLevels[to] = fromLevel;
     this.sendWelcome(mover);
     if (other !== undefined) this.sendWelcome(other);
+  }
+
+  /**
+   * Whoever was moved says again that they are ready: what they agreed to was their seat,
+   * and with it their team. A change of settings keeps everyone ready, or the host trying
+   * a few would have every guest clicking again after each.
+   */
+  private unready(...moved: (Seat | undefined)[]): void {
+    for (const seat of moved) if (seat !== undefined) seat.ready = false;
   }
 
   // --------------------------------------------------------------------- match

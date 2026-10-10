@@ -138,7 +138,29 @@ describe('lobby', () => {
     );
     expect(asGuest).not.toContain('bot-select');
     expect(asGuest).not.toContain('id="begin"');
-    expect(asGuest).toContain('Waiting for the host');
+    expect(asGuest).toContain('id="ready" data-ready="true">Ready</button>');
+  });
+
+  it('has a guest say they are ready, and take it back, where the host starts', () => {
+    const ready = { ...seat(1, 'Bo'), ready: true };
+    const html = lobbyMarkup(view({ humanPlayer: 1, seats: [seat(0, 'Ada'), ready] }));
+    expect(html).toContain('id="ready" class="quiet" data-ready="false">Not ready</button>');
+    expect(html).toContain('Waiting for the host');
+  });
+
+  it('shows everyone who is ready, and keeps the host waiting for the rest', () => {
+    const seats = [seat(0, 'Ada'), { ...seat(1, 'Bo'), ready: true }, seat(2, 'Cy'), seat(3, 'Di')];
+    const html = lobbyMarkup(view({ seats }));
+    // The host's own row says nothing: their Start is their ready.
+    expect(rows(html)[0]).not.toContain('ready');
+    expect(rows(html)[1]).toContain('<em class="tag ready">ready</em>');
+    expect(rows(html)[2]).toContain('<em class="tag unready">not ready</em>');
+    expect(html).toContain('id="begin" disabled');
+    expect(html).toContain('Waiting for 2 players to be ready.');
+    const one = lobbyMarkup(view({ seats: seats.slice(0, 3) }));
+    expect(one).toContain('Waiting for 1 player to be ready.');
+    const all = lobbyMarkup(view({ seats: seats.map((s) => ({ ...s, ready: true })) }));
+    expect(all).toContain('id="begin">');
   });
 
   it('marks your own seat, the host, and anyone who has dropped', () => {

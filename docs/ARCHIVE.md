@@ -6657,3 +6657,30 @@ room, not yet seen in play with two pages.
 address the game is played at, port included, so a page at another port or in another browser
 starts with an empty list. The save from 0.8.4 was intact in the desktop app's storage and reads
 under 0.8.6.
+
+## 13i. A Ready button, and favourite looks (2026-10-10)
+
+Two features asked for together, their questions settled with the user before building.
+
+**Ready.** A room's guests now say they are ready where the host's Start is (Ready, then Not
+ready to take it back), every seat but the host's shows `ready` or `not ready`, and the host's
+Start stays off with "Waiting for N players to be ready" until none is left. The host's Start is
+their own ready, and bots are always ready. The server refuses a `start` while any guest is not
+ready (`Room.everyoneReady`), not only the button. The `ready` flag and message had been in the
+protocol since the first rooms, stored and cleared but never read; no new message, so protocol
+21 as 13h. Being moved by the host to another seat asks for ready again — the seat is the team
+agreed to — while a change of settings keeps everyone ready, or a host trying a few would have
+every guest clicking after each. A tournament's teammates ready up as any guest; a match's end
+asks again of everyone, as before; a guest who leaves no longer holds the table up. A local
+table has no guests and no ready.
+
+**Favourite looks**, declined in 12b while there were ten styles and asked for now at nineteen.
+A heart in each card's corner of the gallery but Random's, with ♥ All and ♥ None beside the
+title; clicking a heart never chooses the style. One set for both looks, kept in the browser
+(`bollwerk.favourites`), never sent. Random draws only from the favourites made for its look
+(`drawnFrom`), or from all its styles when none is; one favourite is the only style used, for
+both looks if both are random, even the one a fixed look has. With two favourites and both looks
+random a look keeps its style rather than take the other's, so every banner still changes
+something. `LookRotation` reads the favourites at every banner and starts a new cycle when they
+change, so hearts given in the pause menu's gallery count from the next banner. Checked with two
+pages against a built server, and the gallery by eye.

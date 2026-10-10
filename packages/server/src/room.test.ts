@@ -838,6 +838,64 @@ describe('seating, chosen by the host', () => {
   });
 });
 
+describe('ready', () => {
+  const latest = (client: TestClient) => {
+    const room = client.received.filter((m) => m.type === 'room').at(-1);
+    if (room?.type !== 'room') throw new Error('no room');
+    return room;
+  };
+
+  it('starts only once every guest is ready, the host and the bots never asked', () => {
+    const r = room(4, 1);
+    const host = new TestClient('h');
+    const a = new TestClient('a');
+    const b = new TestClient('b');
+    r.join(host, 'Ada');
+    r.join(a, 'Bo');
+    r.join(b, 'Cy');
+    r.handle(host, { type: 'start' });
+    expect(r.started).toBe(false);
+    r.handle(a, { type: 'ready', ready: true });
+    r.handle(b, { type: 'ready', ready: true });
+    // Ready, then not after all: still refused.
+    r.handle(b, { type: 'ready', ready: false });
+    expect(latest(host).seats.map((s) => [s.name, s.ready])).toEqual([
+      ['Ada', false],
+      ['Bo', true],
+      ['Cy', false],
+    ]);
+    r.handle(host, { type: 'start' });
+    expect(r.started).toBe(false);
+    r.handle(b, { type: 'ready', ready: true });
+    // A setting changed keeps everyone ready.
+    r.handle(host, { type: 'configure', settings: { maxRounds: 10 } });
+    r.handle(host, { type: 'start' });
+    expect(r.started).toBe(true);
+  });
+
+  it('asks again of whoever the host moves, and of nobody else', () => {
+    const r = room(4, 1);
+    const host = new TestClient('h');
+    const a = new TestClient('a');
+    const b = new TestClient('b');
+    r.join(host, 'Ada');
+    r.join(a, 'Bo');
+    r.join(b, 'Cy');
+    r.handle(a, { type: 'ready', ready: true });
+    r.handle(b, { type: 'ready', ready: true });
+    r.handle(host, { type: 'configure', move: { from: 1, to: 3 } });
+    expect(latest(host).seats.map((s) => [s.name, s.ready])).toEqual([
+      ['Ada', false],
+      ['Bo', false],
+      ['Cy', true],
+    ]);
+    // A guest who leaves no longer holds the table up.
+    r.leave(a);
+    r.handle(host, { type: 'start' });
+    expect(r.started).toBe(true);
+  });
+});
+
 describe('a rematch', () => {
   it('brings everyone back to the lobby as it was, with a new map, at the host’s word', () => {
     const r = room(3, 5);
@@ -874,7 +932,11 @@ describe('a rematch', () => {
     expect(lobby.hostBot).toBe(5);
     expect(lobby.seed).not.toBe(seedBefore.seed);
 
-    // And a new match starts from it, as the first did.
+    // And a new match starts from it, as the first did, once the guest is ready again.
+    expect(lobby.seats.find((s) => s.name === 'Bo')?.ready).toBe(false);
+    r.handle(host, { type: 'start' });
+    expect(r.started).toBe(false);
+    r.handle(guest, { type: 'ready', ready: true });
     r.handle(host, { type: 'start' });
     expect(r.started).toBe(true);
     expect(guest.received.filter((m) => m.type === 'snapshot')).toHaveLength(2);

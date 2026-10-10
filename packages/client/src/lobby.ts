@@ -246,6 +246,12 @@ function seatRow(
       seat.playerId === view.humanPlayer ? `<em class="tag you">${t('lobby.tagYou')}</em>` : '',
       isHostSeat ? `<em class="tag">${t('lobby.tagHost')}</em>` : '',
       seat.connected ? '' : `<em class="tag away">${t('lobby.tagAway')}</em>`,
+      // Every guest says when they are ready; the host's Start is theirs.
+      isHostSeat
+        ? ''
+        : seat.ready
+          ? `<em class="tag ready">${t('lobby.tagReady')}</em>`
+          : `<em class="tag unready">${t('lobby.tagNotReady')}</em>`,
     ].join('');
     const mine = seat.playerId === view.humanPlayer ? ' you' : '';
     // The host may hand their own seat to a bot and watch: with nobody else at the
@@ -309,12 +315,33 @@ function seatLists(view: LobbyView, rows: readonly string[]): string {
   return `<div class="team-columns">${columns}</div>`;
 }
 
+/** The guests who have not yet said they are ready: the host may not start until none. */
+export function notReady(view: LobbyView): number {
+  return view.seats.filter((seat) => seat.playerId !== view.hostId && !seat.isBot && !seat.ready)
+    .length;
+}
+
 /** Whether the table can start as it stands, and if not, why not. */
 export function startBlocked(view: LobbyView): string | null {
   if (!teamsBalanced([...view.teams], view.settings.teamSize)) {
     return t('lobby.teamsUnequal', { n: view.settings.teamSize });
   }
+  const waiting = notReady(view);
+  if (waiting > 0) return t('lobby.waitingReady', { n: waiting });
   return null;
+}
+
+/**
+ * A guest's button where the host's Start is: Ready, and once ready a way back, with the
+ * wait for the host beside it.
+ */
+function readyControl(view: LobbyView): string {
+  const ready = view.seats.find((seat) => seat.playerId === view.humanPlayer)?.ready === true;
+  if (!ready) return `<button id="ready" data-ready="true">${t('lobby.ready')}</button>`;
+  return (
+    `<button id="ready" class="quiet" data-ready="false">${t('lobby.notReady')}</button>` +
+    `<p class="note">${t('lobby.waiting')}</p>`
+  );
 }
 
 /** The two tabs' buttons, the open one marked. */
@@ -334,11 +361,9 @@ export function lobbyMarkup(view: LobbyView): string {
 
   const blocked = startBlocked(view);
   const start = !hosts
-    ? `<p class="note">${t('lobby.waiting')}</p>`
-    : view.tournament
-      ? `<button id="begin">${t('tournament.play')}</button>`
-      : `<button id="begin"${blocked === null ? '' : ' disabled'}>${t('lobby.start')}</button>` +
-        (blocked === null ? '' : `<p class="note warn">${escape(blocked)}</p>`);
+    ? readyControl(view)
+    : `<button id="begin"${blocked === null ? '' : ' disabled'}>${t(view.tournament ? 'tournament.play' : 'lobby.start')}</button>` +
+      (blocked === null ? '' : `<p class="note warn">${escape(blocked)}</p>`);
   const roomNote =
     view.tournament && hosts && view.code !== null
       ? `<p class="note">${escape(t('tournament.roomNote'))}</p>`

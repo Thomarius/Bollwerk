@@ -54,6 +54,8 @@ export interface LobbyHandlers {
   /** The person in seat `from` to seat `to`, swapping with whoever sits there. */
   move(from: number, to: number): void;
   start(): void;
+  /** A guest saying they are ready, or not after all; a local table has no guests. */
+  ready?(ready: boolean): void;
   /** A tab chosen, to be kept open as the lobby is drawn again. */
   tab?(tab: LobbyTab): void;
 }
@@ -138,6 +140,11 @@ export function drawLobby(view: LobbyView, on: LobbyHandlers): void {
   document.querySelector('#begin')?.addEventListener('click', () => {
     audio.play('select');
     on.start();
+  });
+  const ready = document.querySelector<HTMLButtonElement>('#ready');
+  ready?.addEventListener('click', () => {
+    audio.play('select');
+    on.ready?.(ready.dataset.ready === 'true');
   });
   // A tournament's tabs, switched in place: the lobby is drawn again only when it changes.
   const tabs = [...document.querySelectorAll<HTMLButtonElement>('.lobby-tabs .tab')];
@@ -454,6 +461,7 @@ function roomLobby(
         connection.close();
         playLocally(common, tableOf(current));
       },
+      ready: (ready) => connection.send({ type: 'ready', ready }),
       tab: (chosen) => (tab = chosen),
     });
     if (same) wireBracket(tournament!.save, tournament!.progress);
