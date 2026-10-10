@@ -64,6 +64,8 @@ import {
 import { hatch, outline, trace, wallGeometry, type Segment } from './walls.js';
 import { ShapeTheme } from './shapeTheme.js';
 import { clearDrawn } from './clearDrawn.js';
+import { release } from './release.js';
+import { TerrainStrips, whole, type TerrainPass, type TerrainPlan } from './terrainStrips.js';
 
 /** Something with a place and an age: a flash, a fizz, a short, a puff of smoke. */
 interface Aged {
@@ -194,7 +196,8 @@ export class ElectricTheme extends ShapeTheme implements Theme {
   /** Life on the outer sea (`seaLife.ts`). */
   private readonly seaLife = new ElectricSeaLife();
 
-  private readonly terrainGfx = new Graphics();
+  /** The sea and the rock, in strips of rows (`TerrainStrips`). */
+  private readonly terrainStrips = new TerrainStrips();
   /** Lichtenberg burns where shots struck the rock: redrawn when one is added or fades. */
   private readonly scorchGfx = new Graphics();
   private scorchesDrawn = '';
@@ -272,7 +275,7 @@ export class ElectricTheme extends ShapeTheme implements Theme {
     if (bloomWanted()) {
       this.glowGfx.filters = [new BlurFilter({ strength: 5, quality: 2, resolution: 0.5 })];
     }
-    layers.terrain.addChild(this.terrainGfx, this.scorchGfx, this.flowGfx);
+    layers.terrain.addChild(this.terrainStrips.container, this.scorchGfx, this.flowGfx);
     layers.territory.addChild(
       this.scenery.gfx,
       this.territory.container,
@@ -305,8 +308,8 @@ export class ElectricTheme extends ShapeTheme implements Theme {
     this.dropStamps.destroy();
     this.mist.destroy();
     this.book.destroy();
+    release(this.terrainStrips.container);
     for (const g of [
-      this.terrainGfx,
       this.scorchGfx,
       this.flowGfx,
       this.effectGfx,
@@ -333,12 +336,15 @@ export class ElectricTheme extends ShapeTheme implements Theme {
   // ------------------------------------------------------------------ terrain
 
   drawTerrain(state: MatchState, view: ViewTransform): void {
+    this.terrainStrips.draw(state, view, () => this.planTerrain(state, view));
+  }
+
+  /** The terrain's passes over strips of rows (`TerrainStrips`), and what they share. */
+  private planTerrain(state: MatchState, view: ViewTransform): TerrainPlan {
     this.terrain = state.terrain;
     this.width = state.width;
     this.height = state.height;
     this.scenery.refresh(state, view, this.art, true);
-    const g = this.terrainGfx;
-    clearDrawn(g);
     const { palette } = this.art;
     const t = view.tile;
     const land = (x: number, y: number): boolean => this.land(x, y);
@@ -350,78 +356,23 @@ export class ElectricTheme extends ShapeTheme implements Theme {
     const y0 = -marginY;
     const x1 = state.width + marginX;
     const y1 = state.height + marginY;
-    g.rect(tileX(view, x0), tileY(view, y0), (x1 - x0) * t, (y1 - y0) * t);
-    g.fill({ color: hex(palette.waterDeep) });
     const near = (x: number, y: number, r: number): boolean => {
       for (let dy = -r; dy <= r; dy++) {
         for (let dx = -r; dx <= r; dx++) if (land(x + dx, y + dy)) return true;
       }
       return false;
     };
-    for (const [r, colour] of [
-      [3, palette.waterMid],
-      [1, palette.waterShallow],
-    ] as const) {
-      for (let y = -r; y < state.height + r; y++) {
-        for (let x = -r; x < state.width + r; x++) {
-          if (land(x, y) || !near(x, y, r)) continue;
-          g.circle(tileX(view, x + 0.5), tileY(view, y + 0.5), t * 0.8);
-        }
+    // The breakers reach three rows past the board, which a narrow margin may not.
+    const reach = 3;
+    /** The rock's tiles in the strip's rows. */
+    const ground = (from: number, to: number): Cell[] => {
+      const cells: Cell[] = [];
+      for (let y = Math.max(0, from); y < Math.min(state.height, to); y++) {
+        for (let x = 0; x < state.width; x++) if (land(x, y)) cells.push({ x, y });
       }
-      g.fill({ color: hex(colour) });
-    }
-    // Whitecaps whipped up by the wind, all leaning one way.
-    for (let y = y0; y < y1; y++) {
-      for (let x = x0; x < x1; x++) {
-        if (land(x, y) || hash(x, y, 1000) > 0.07) continue;
-        const sx = tileX(view, x + hash(x, y, 1001) * 0.6);
-        const sy = tileY(view, y + 0.3 + hash(x, y, 1002) * 0.5);
-        g.moveTo(sx, sy)
-          .lineTo(sx + t * 0.18, sy - t * 0.07)
-          .lineTo(sx + t * 0.4, sy);
-      }
-    }
-    g.stroke({ width: Math.max(1, t * 0.05), color: hex(palette.waterFoam), alpha: 0.22 });
-
-    // The rock: dark slate, flagged here and there with lighter stone, cracked.
-    const ground: Cell[] = [];
-    for (let y = 0; y < state.height; y++) {
-      for (let x = 0; x < state.width; x++) if (land(x, y)) ground.push({ x, y });
-    }
-    for (const { x, y } of ground) g.rect(tileX(view, x), tileY(view, y), t, t);
-    g.fill({ color: hex(palette.grassMid) });
-    for (const { x, y } of ground) {
-      if (hash(x >> 1, y >> 1, 1003) > 0.4) continue;
-      g.rect(tileX(view, x), tileY(view, y), t, t);
-    }
-    g.fill({ color: hex(palette.grassLight), alpha: 0.35 });
-    for (const { x, y } of ground) {
-      if (hash(x, y, 1004) > 0.16) continue;
-      const sx = tileX(view, x + 0.15 + hash(x, y, 1005) * 0.3);
-      const sy = tileY(view, y + 0.2 + hash(x, y, 1006) * 0.5);
-      g.moveTo(sx, sy)
-        .lineTo(sx + t * 0.25, sy + t * 0.12)
-        .lineTo(sx + t * 0.32, sy + t * 0.38);
-    }
-    g.stroke({ width: Math.max(1, t * 0.05), color: hex(palette.grassDark), alpha: 0.8 });
-    // A faint tint of the owner over each island, as the other styles give.
-    for (let player = 1; player <= state.players.length; player++) {
-      let any = false;
-      for (const { x, y } of ground) {
-        if (state.islandId[y * state.width + x] !== player) continue;
-        g.rect(tileX(view, x), tileY(view, y), t, t);
-        any = true;
-      }
-      if (any) g.fill({ color: this.colour(player - 1, 'base'), alpha: 0.06 });
-    }
-    // Surf breaking white along the rock, and its dark wet edge.
-    const coast = outline(ground, land, view);
-    trace(g, coast);
-    g.stroke({ width: t * 0.22, color: hex(palette.waterFoam), alpha: 0.3, cap: 'square' });
-    trace(g, coast);
-    g.stroke({ width: Math.max(1.5, t * 0.08), color: hex(palette.sand), cap: 'square' });
-    trace(g, coast);
-    g.stroke({ width: 1, color: this.dark, alpha: 0.7, cap: 'square' });
+      return cells;
+    };
+    const all = ground(0, state.height);
 
     // The Jacob's ladder's place, in the corner the compass rose takes in Parchment.
     this.ladder = cornerSpot(state, view);
@@ -435,7 +386,7 @@ export class ElectricTheme extends ShapeTheme implements Theme {
     let bx0 = state.width;
     let bx1 = -1;
     let by0 = state.height;
-    for (const { x, y } of ground) {
+    for (const { x, y } of all) {
       bx0 = Math.min(bx0, x);
       bx1 = Math.max(bx1, x);
       by0 = Math.min(by0, y);
@@ -448,6 +399,93 @@ export class ElectricTheme extends ShapeTheme implements Theme {
           Math.abs(c.y + 0.5 - this.ladder.y) > this.ladder.size),
     );
     this.scorchesDrawn = '';
+
+    return {
+      rows: [Math.min(y0, -reach), Math.max(y1, state.height + reach)],
+      passes: [
+        whole((g) => {
+          g.rect(tileX(view, x0), tileY(view, y0), (x1 - x0) * t, (y1 - y0) * t);
+          g.fill({ color: hex(palette.waterDeep) });
+        }),
+        ...(
+          [
+            [3, palette.waterMid],
+            [1, palette.waterShallow],
+          ] as const
+        ).map(([r, colour]): TerrainPass => (g, from, to) => {
+          for (let y = Math.max(from, -r); y < Math.min(to, state.height + r); y++) {
+            for (let x = -r; x < state.width + r; x++) {
+              if (land(x, y) || !near(x, y, r)) continue;
+              g.circle(tileX(view, x + 0.5), tileY(view, y + 0.5), t * 0.8);
+            }
+          }
+          g.fill({ color: hex(colour) });
+        }),
+        // Whitecaps whipped up by the wind, all leaning one way.
+        (g, from, to) => {
+          for (let y = Math.max(from, y0); y < Math.min(to, y1); y++) {
+            for (let x = x0; x < x1; x++) {
+              if (land(x, y) || hash(x, y, 1000) > 0.07) continue;
+              const sx = tileX(view, x + hash(x, y, 1001) * 0.6);
+              const sy = tileY(view, y + 0.3 + hash(x, y, 1002) * 0.5);
+              g.moveTo(sx, sy)
+                .lineTo(sx + t * 0.18, sy - t * 0.07)
+                .lineTo(sx + t * 0.4, sy);
+            }
+          }
+          g.stroke({ width: Math.max(1, t * 0.05), color: hex(palette.waterFoam), alpha: 0.22 });
+        },
+        // The rock: dark slate, flagged here and there with lighter stone, cracked.
+        (g, from, to) => {
+          for (const { x, y } of ground(from, to)) g.rect(tileX(view, x), tileY(view, y), t, t);
+          g.fill({ color: hex(palette.grassMid) });
+        },
+        (g, from, to) => {
+          for (const { x, y } of ground(from, to)) {
+            if (hash(x >> 1, y >> 1, 1003) > 0.4) continue;
+            g.rect(tileX(view, x), tileY(view, y), t, t);
+          }
+          g.fill({ color: hex(palette.grassLight), alpha: 0.35 });
+        },
+        (g, from, to) => {
+          for (const { x, y } of ground(from, to)) {
+            if (hash(x, y, 1004) > 0.16) continue;
+            const sx = tileX(view, x + 0.15 + hash(x, y, 1005) * 0.3);
+            const sy = tileY(view, y + 0.2 + hash(x, y, 1006) * 0.5);
+            g.moveTo(sx, sy)
+              .lineTo(sx + t * 0.25, sy + t * 0.12)
+              .lineTo(sx + t * 0.32, sy + t * 0.38);
+          }
+          g.stroke({ width: Math.max(1, t * 0.05), color: hex(palette.grassDark), alpha: 0.8 });
+        },
+        // A faint tint of the owner over each island, as the other styles give.
+        (g, from, to) => {
+          const cells = ground(from, to);
+          for (let player = 1; player <= state.players.length; player++) {
+            let any = false;
+            for (const { x, y } of cells) {
+              if (state.islandId[y * state.width + x] !== player) continue;
+              g.rect(tileX(view, x), tileY(view, y), t, t);
+              any = true;
+            }
+            if (any) g.fill({ color: this.colour(player - 1, 'base'), alpha: 0.06 });
+          }
+        },
+        // Surf breaking white along the rock, and its dark wet edge.
+        (g, from, to) => {
+          trace(g, outline(ground(from, to), land, view));
+          g.stroke({ width: t * 0.22, color: hex(palette.waterFoam), alpha: 0.3, cap: 'square' });
+        },
+        (g, from, to) => {
+          trace(g, outline(ground(from, to), land, view));
+          g.stroke({ width: Math.max(1.5, t * 0.08), color: hex(palette.sand), cap: 'square' });
+        },
+        (g, from, to) => {
+          trace(g, outline(ground(from, to), land, view));
+          g.stroke({ width: 1, color: this.dark, alpha: 0.7, cap: 'square' });
+        },
+      ],
+    };
   }
 
   /** The burns, drawn again only when one comes or fades. */

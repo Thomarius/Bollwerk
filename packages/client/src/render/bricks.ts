@@ -51,6 +51,8 @@ import type { SceneryItem } from './scenery.js';
 import { SceneryLayer } from './sceneryLayer.js';
 import { outline, trace, wallGeometry } from './walls.js';
 import { clearDrawn } from './clearDrawn.js';
+import { release } from './release.js';
+import { TerrainStrips, whole, type TerrainPlan } from './terrainStrips.js';
 
 /** A brick knocked loose by a shot or the sweep, tumbling as it falls. */
 interface Loose {
@@ -119,7 +121,8 @@ export class BricksTheme implements Theme {
   private readonly seaLife = new BricksSeaLife();
   private style!: BricksStyleConfig;
 
-  private readonly terrainGfx = new Graphics();
+  /** The baseplates and the land, in strips of rows (`TerrainStrips`). */
+  private readonly terrainStrips = new TerrainStrips();
   /** The crane on its barge in the corner (PLAN 11.24), redrawn each frame as it works. */
   private readonly craneGfx = new Graphics();
   private crane: TimerSpot | null = null;
@@ -172,7 +175,7 @@ export class BricksTheme implements Theme {
   init(layers: ThemeLayers, art: ArtConfig): Promise<void> {
     this.art = art;
     this.style = art.bricks;
-    layers.terrain.addChild(this.terrainGfx, this.craneGfx);
+    layers.terrain.addChild(this.terrainStrips.container, this.craneGfx);
     layers.territory.addChild(this.territory.container, this.scenery.gfx);
     layers.structures.addChild(this.structures.container);
     layers.effects.addChild(
@@ -201,9 +204,8 @@ export class BricksTheme implements Theme {
     this.territory.destroy();
     this.structures.destroy();
     this.scenery.destroy();
-    for (const g of [this.terrainGfx, this.craneGfx, this.effectGfx, this.overlayGfx]) {
-      g.destroy();
-    }
+    release(this.terrainStrips.container);
+    for (const g of [this.craneGfx, this.effectGfx, this.overlayGfx]) g.destroy();
   }
 
   private colour(player: number, shade: 'base' | 'light' | 'dark'): number {
@@ -229,14 +231,17 @@ export class BricksTheme implements Theme {
   // ------------------------------------------------------------------ terrain
 
   drawTerrain(state: MatchState, view: ViewTransform): void {
+    this.terrainStrips.draw(state, view, () => this.planTerrain(state, view));
+  }
+
+  /** The terrain's passes over strips of rows (`TerrainStrips`), and what they share. */
+  private planTerrain(state: MatchState, view: ViewTransform): TerrainPlan {
     this.crane = cornerSpot(state, view);
     this.seaLife.corner = this.crane;
     this.seaLife.layout(state, view, this.art);
     this.scenery.refresh(state, view, this.art, true);
     this.terrain = state.terrain;
     this.width = state.width;
-    const g = this.terrainGfx;
-    clearDrawn(g);
     const { palette } = this.art;
     const t = view.tile;
     const land = (x: number, y: number): boolean =>
@@ -253,81 +258,115 @@ export class BricksTheme implements Theme {
     const y0 = -marginY;
     const x1 = state.width + marginX;
     const y1 = state.height + marginY;
-    const sea = (): void => {
+    const sea = (g: Graphics): void => {
       g.rect(tileX(view, x0), tileY(view, y0), (x1 - x0) * t, (y1 - y0) * t);
     };
-    sea();
-    g.fill({ color: hex(palette.waterMid) });
-    // A plate of shallow water one tile out from the coast, as a toy harbour's lighter plate:
-    // the coast reads from afar without anything moving on the sea.
-    for (let y = y0; y < y1; y++) {
-      for (let x = x0; x < x1; x++) {
-        if (land(x, y)) continue;
-        let near = false;
-        for (let dy = -1; dy <= 1 && !near; dy++) {
-          for (let dx = -1; dx <= 1 && !near; dx++) near = land(x + dx, y + dy);
-        }
-        if (near) g.rect(tileX(view, x), tileY(view, y), t, t);
-      }
-    }
-    g.fill({ color: hex(palette.waterShallow), alpha: this.style.shallowPlateAlpha });
-    // The joins between baseplates, a darker seam every few tiles, as plates laid side by side.
     const every = this.style.plateSeamTiles;
-    for (let x = Math.ceil(x0 / every) * every; x < x1; x += every) {
-      g.moveTo(tileX(view, x), tileY(view, y0)).lineTo(tileX(view, x), tileY(view, y1));
-    }
-    for (let y = Math.ceil(y0 / every) * every; y < y1; y += every) {
-      g.moveTo(tileX(view, x0), tileY(view, y)).lineTo(tileX(view, x1), tileY(view, y));
-    }
-    g.stroke({
+    const seam = {
       width: Math.max(1, t * 0.08),
       color: hex(palette.shadow),
       alpha: this.style.plateSeamAlpha,
-    });
+    };
     // The sea's studs, every other tile so it stays calm: a pattern of round studs drawn once
     // for the tile size, since circles of a few pixels drawn as shapes come out as diamonds,
     // and a fill is a handful of vertices where a stud a shape was dozens.
     const old = this.patterns;
-    this.patterns = {
+    const patterns = {
       sea: studPattern(view, 2, palette.waterShallow, this.style.studScale),
       land: studPattern(view, 1, palette.grassLight, this.style.studScale),
     };
-    sea();
-    g.fill({ fill: this.patterns.sea, alpha: this.style.seaStudAlpha });
-
-    // The land's plate, raised: a darker edge where it drops to the sea on its south.
-    const cells: Cell[] = [];
-    for (let i = 0; i < state.terrain.length; i++) {
-      if (state.terrain[i] !== Terrain.Land) continue;
-      const x = i % state.width;
-      cells.push({ x, y: (i - x) / state.width });
-      g.rect(tileX(view, x), tileY(view, (i - x) / state.width), t, t);
-    }
-    g.fill({ color: hex(palette.grassMid) });
-    for (const { x, y } of cells) {
-      if (land(x, y + 1)) continue;
-      g.rect(tileX(view, x), tileY(view, y + 1), t, t * 0.22);
-    }
-    g.fill({ color: hex(palette.grassDark) });
-    // A faint tint of the owner on each island, as the other styles give.
-    for (let player = 1; player <= state.players.length; player++) {
-      let any = false;
-      for (const { x, y } of cells) {
-        if (state.islandId[y * state.width + x] !== player) continue;
-        g.rect(tileX(view, x), tileY(view, y), t, t);
-        any = true;
+    this.patterns = patterns;
+    // The old patterns' textures only once nothing is filled with them any more: the strips
+    // that were are emptied before anything renders again.
+    if (old !== null) for (const p of [old.sea, old.land]) p.texture.destroy(true);
+    /** The land's cells in the strip's rows. */
+    const cells = (from: number, to: number): Cell[] => {
+      const out: Cell[] = [];
+      for (let y = Math.max(0, from); y < Math.min(state.height, to); y++) {
+        for (let x = 0; x < state.width; x++) if (land(x, y)) out.push({ x, y });
       }
-      if (any) g.fill({ color: this.colour(player - 1, 'base'), alpha: 0.06 });
-    }
-    // The land's studs, every tile, from the same kind of pattern.
-    for (const { x, y } of cells) g.rect(tileX(view, x), tileY(view, y), t, t);
-    g.fill({ fill: this.patterns.land, alpha: this.style.landStudAlpha });
-    trace(g, outline(cells, land, view));
-    g.stroke({ width: 1, color: hex(palette.grassDark) });
+      return out;
+    };
     // Gulls wheel over the outer ocean, placed afresh with the board.
     this.gulls.layout(outerOcean(state, view), this.style.gulls, [1.5, 3]);
-    // The old patterns' textures only once nothing is filled with them any more.
-    if (old !== null) for (const p of [old.sea, old.land]) p.texture.destroy(true);
+
+    return {
+      rows: [y0, y1],
+      passes: [
+        whole((g) => {
+          sea(g);
+          g.fill({ color: hex(palette.waterMid) });
+        }),
+        // A plate of shallow water one tile out from the coast, as a toy harbour's lighter plate:
+        // the coast reads from afar without anything moving on the sea.
+        (g, from, to) => {
+          for (let y = from; y < to; y++) {
+            for (let x = x0; x < x1; x++) {
+              if (land(x, y)) continue;
+              let near = false;
+              for (let dy = -1; dy <= 1 && !near; dy++) {
+                for (let dx = -1; dx <= 1 && !near; dx++) near = land(x + dx, y + dy);
+              }
+              if (near) g.rect(tileX(view, x), tileY(view, y), t, t);
+            }
+          }
+          g.fill({ color: hex(palette.waterShallow), alpha: this.style.shallowPlateAlpha });
+        },
+        // The joins between baseplates, a darker seam every few tiles, as plates laid side by side.
+        // The seams down the window are kept whole and those across it go by strip: one paint,
+        // so where they cross it does not matter which came first.
+        whole((g) => {
+          for (let x = Math.ceil(x0 / every) * every; x < x1; x += every) {
+            g.moveTo(tileX(view, x), tileY(view, y0)).lineTo(tileX(view, x), tileY(view, y1));
+          }
+          g.stroke(seam);
+        }),
+        (g, from, to) => {
+          for (let y = Math.ceil(from / every) * every; y < to; y += every) {
+            g.moveTo(tileX(view, x0), tileY(view, y)).lineTo(tileX(view, x1), tileY(view, y));
+          }
+          g.stroke(seam);
+        },
+        whole((g) => {
+          sea(g);
+          g.fill({ fill: patterns.sea, alpha: this.style.seaStudAlpha });
+        }),
+        // The land's plate, raised: a darker edge where it drops to the sea on its south.
+        (g, from, to) => {
+          for (const { x, y } of cells(from, to)) g.rect(tileX(view, x), tileY(view, y), t, t);
+          g.fill({ color: hex(palette.grassMid) });
+        },
+        (g, from, to) => {
+          for (const { x, y } of cells(from, to)) {
+            if (land(x, y + 1)) continue;
+            g.rect(tileX(view, x), tileY(view, y + 1), t, t * 0.22);
+          }
+          g.fill({ color: hex(palette.grassDark) });
+        },
+        // A faint tint of the owner on each island, as the other styles give.
+        (g, from, to) => {
+          const strip = cells(from, to);
+          for (let player = 1; player <= state.players.length; player++) {
+            let any = false;
+            for (const { x, y } of strip) {
+              if (state.islandId[y * state.width + x] !== player) continue;
+              g.rect(tileX(view, x), tileY(view, y), t, t);
+              any = true;
+            }
+            if (any) g.fill({ color: this.colour(player - 1, 'base'), alpha: 0.06 });
+          }
+        },
+        // The land's studs, every tile, from the same kind of pattern.
+        (g, from, to) => {
+          for (const { x, y } of cells(from, to)) g.rect(tileX(view, x), tileY(view, y), t, t);
+          g.fill({ fill: patterns.land, alpha: this.style.landStudAlpha });
+        },
+        (g, from, to) => {
+          trace(g, outline(cells(from, to), land, view));
+          g.stroke({ width: 1, color: hex(palette.grassDark) });
+        },
+      ],
+    };
   }
 
   // ------------------------------------------------------------------ territory

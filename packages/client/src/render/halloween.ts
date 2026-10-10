@@ -53,6 +53,8 @@ import { cannonBase } from './cannonBase.js';
 import { ShapeTheme } from './shapeTheme.js';
 import { hueNearness } from './hue.js';
 import { clearDrawn } from './clearDrawn.js';
+import { release } from './release.js';
+import { TerrainStrips, whole, type TerrainPass, type TerrainPlan } from './terrainStrips.js';
 
 /** Something with a place and an age: a ghost set free, a ring on the bog, a sinking block. */
 interface Aged {
@@ -182,7 +184,8 @@ export class HalloweenTheme extends ShapeTheme implements Theme {
   /** Life on the outer sea (`seaLife.ts`). */
   private readonly seaLife = new HalloweenSeaLife();
 
-  private readonly terrainGfx = new Graphics();
+  /** The bog and the land, in strips of rows (`TerrainStrips`). */
+  private readonly terrainStrips = new TerrainStrips();
   /** The bog's bubbles, the bats round the moon and the scorches: redrawn each frame. */
   private readonly flowGfx = new Graphics();
   /** The scorches, drawn again only when one comes or fades a round further. */
@@ -252,7 +255,7 @@ export class HalloweenTheme extends ShapeTheme implements Theme {
     // Medieval's weather, drawn from the seed: fog thickens the fog, snow falls as leaves.
     this.weather = weatherFor(this.seed, art.pixel.weatherOdds);
     layers.terrain.addChild(
-      this.terrainGfx,
+      this.terrainStrips.container,
       this.scorchGfx,
       this.flowGfx,
       this.bubbleStamps.container,
@@ -280,8 +283,8 @@ export class HalloweenTheme extends ShapeTheme implements Theme {
     this.territory.destroy();
     this.structures.destroy();
     this.scenery.destroy();
+    release(this.terrainStrips.container);
     for (const g of [
-      this.terrainGfx,
       this.scorchGfx,
       this.flowGfx,
       this.effectGfx,
@@ -296,12 +299,15 @@ export class HalloweenTheme extends ShapeTheme implements Theme {
   // ------------------------------------------------------------------ terrain
 
   drawTerrain(state: MatchState, view: ViewTransform): void {
+    this.terrainStrips.draw(state, view, () => this.planTerrain(state, view));
+  }
+
+  /** The terrain's passes over strips of rows (`TerrainStrips`), and what they share. */
+  private planTerrain(state: MatchState, view: ViewTransform): TerrainPlan {
     this.terrain = state.terrain;
     this.width = state.width;
     this.height = state.height;
     this.scenery.refresh(state, view, this.art, true);
-    const g = this.terrainGfx;
-    clearDrawn(g);
     const { palette } = this.art;
     const t = view.tile;
     const land = (x: number, y: number): boolean => this.land(x, y);
@@ -350,106 +356,147 @@ export class HalloweenTheme extends ShapeTheme implements Theme {
       mixed(hex(palette.waterMid), hex(palette.waterDeep), 0.6),
       hex(palette.waterDeep),
     ];
-    g.rect(tileX(view, x0), tileY(view, y0), w * t, h * t);
-    g.fill({ color: bands[4]! });
-    for (let band = 3; band >= 0; band--) {
-      for (let y = 0; y < h; y++) {
-        for (let x = 0; x < w; x++) {
-          if (depth[y * w + x] !== band + 1) continue;
-          g.circle(tileX(view, x + x0 + 0.5), tileY(view, y + y0 + 0.5), t * 0.8);
-        }
-      }
-      g.fill({ color: bands[band]! });
-    }
-    // Scum on the bog: pale green flecks here and there.
     this.bogCells = [];
     for (let y = 0; y < h; y++) {
       for (let x = 0; x < w; x++) {
         const d = depth[y * w + x]!;
-        if (d === 0) continue;
-        if (d < 0 || d >= 2) this.bogCells.push({ x: x + x0, y: y + y0 });
-        if (hash(x + x0, y + y0, 200) > 0.12) continue;
-        g.ellipse(
-          tileX(view, x + x0 + hash(x, y, 201)),
-          tileY(view, y + y0 + hash(x, y, 202)),
-          t * 0.18,
-          t * 0.07,
-        );
+        if (d !== 0 && (d < 0 || d >= 2)) this.bogCells.push({ x: x + x0, y: y + y0 });
       }
     }
-    g.fill({ color: hex(palette.waterFoam), alpha: 0.12 });
-
-    // The land: dusky dead grass, lighter patches, dark tufts, autumn leaves strewn.
-    const ground: Cell[] = [];
-    for (let y = 0; y < state.height; y++) {
-      for (let x = 0; x < state.width; x++) if (land(x, y)) ground.push({ x, y });
-    }
-    for (const { x, y } of ground) g.rect(tileX(view, x), tileY(view, y), t, t);
-    g.fill({ color: hex(palette.grassMid) });
-    for (const { x, y } of ground) {
-      if (hash(x, y, 1) < 0.22) g.circle(tileX(view, x + 0.5), tileY(view, y + 0.5), t * 0.7);
-    }
-    g.fill({ color: hex(palette.grassLight), alpha: 0.28 });
-    for (const { x, y } of ground) {
-      if (hash(x, y, 2) > 0.4) continue;
-      const px = tileX(view, x) + t * (0.2 + 0.6 * hash(x, y, 3));
-      const py = tileY(view, y) + t * (0.3 + 0.5 * hash(x, y, 4));
-      g.moveTo(px - t * 0.14, py - t * 0.12).lineTo(px, py);
-      g.lineTo(px + t * 0.12, py - t * 0.18);
-      g.moveTo(px, py).lineTo(px + t * 0.03, py - t * 0.22);
-    }
-    g.stroke({ width: Math.max(1, t * 0.06), color: hex(palette.grassDark), cap: 'round' });
-    for (const [k, colour] of LEAVES.entries()) {
-      for (const { x, y } of ground) {
-        if (hash(x, y, 10 + k) > 0.06) continue;
-        const px = tileX(view, x) + t * (0.15 + 0.7 * hash(x, y, 20 + k));
-        const py = tileY(view, y) + t * (0.15 + 0.7 * hash(x, y, 30 + k));
-        g.ellipse(px, py, t * 0.11, t * 0.06);
+    /** The rows of the depth map in the strip, counted from its top. */
+    const span = (from: number, to: number): [number, number] => [from - y0, to - y0];
+    /** The land of the strip's rows, row by row as the whole board's was listed. */
+    const ground = (from: number, to: number): Cell[] => {
+      const cells: Cell[] = [];
+      for (let y = Math.max(0, from); y < Math.min(state.height, to); y++) {
+        for (let x = 0; x < state.width; x++) if (land(x, y)) cells.push({ x, y });
       }
-      g.fill({ color: colour, alpha: 0.75 });
-    }
-    // A faint tint of the owner over each island, as the other styles give.
-    for (let player = 1; player <= state.players.length; player++) {
-      let any = false;
-      for (const { x, y } of ground) {
-        if (state.islandId[y * state.width + x] !== player) continue;
-        g.rect(tileX(view, x), tileY(view, y), t, t);
-        any = true;
-      }
-      if (any) g.fill({ color: this.colour(player - 1, 'base'), alpha: 0.07 });
-    }
-
-    // The shore: a band of mud, darker where the bog laps it, roots poking out of it.
-    const coast = outline(ground, land, view);
-    trace(g, coast);
-    g.stroke({ width: t * 0.6, color: hex(palette.shadow), alpha: 0.3, cap: 'square' });
-    trace(g, coast);
-    g.stroke({ width: t * 0.4, color: hex(palette.sand), cap: 'square' });
-    for (const s of coast) {
-      const key = Math.round(s.x1 * 7 + s.y1 * 13);
-      if (hash(key, 211) > 0.35) continue;
-      const mx = (s.x1 + s.x2) / 2;
-      const my = (s.y1 + s.y2) / 2;
-      const vertical = s.x1 === s.x2;
-      const out = (hash(key, 212) - 0.5) * t * 0.5;
-      g.moveTo(mx, my).quadraticCurveTo(
-        mx + (vertical ? out : t * 0.15),
-        my + (vertical ? t * 0.15 : out),
-        mx + (vertical ? out * 1.4 : t * 0.3),
-        my + (vertical ? t * 0.3 : out * 1.4),
-      );
-    }
-    g.stroke({ width: Math.max(1, t * 0.07), color: hex(palette.craterMid), cap: 'round' });
+      return cells;
+    };
 
     // The moon, in the corner the compass rose takes in Parchment.
     const right = Math.floor((view.width - view.originX) / t) - state.width;
     const bottom = Math.floor((view.height - view.originY) / t) - state.height;
     this.moon = roseSpot(state, right, bottom, timerSpot(state));
     this.seaLife.moon = this.moon;
-    if (this.moon !== null) this.drawMoon(g, view, this.moon);
+    const moon = this.moon;
     this.seaLife.layout(state, view, this.art);
     this.bubbles = [];
     this.layoutFog();
+
+    return {
+      rows: [y0, y0 + h],
+      passes: [
+        whole((g) => {
+          g.rect(tileX(view, x0), tileY(view, y0), w * t, h * t);
+          g.fill({ color: bands[4]! });
+        }),
+        // A band's strips all laid before the next band's, the deepest first.
+        ...[3, 2, 1, 0].map((band): TerrainPass => (g, from, to) => {
+          const [top, end] = span(from, to);
+          for (let y = top; y < end; y++) {
+            for (let x = 0; x < w; x++) {
+              if (depth[y * w + x] !== band + 1) continue;
+              g.circle(tileX(view, x + x0 + 0.5), tileY(view, y + y0 + 0.5), t * 0.8);
+            }
+          }
+          g.fill({ color: bands[band]! });
+        }),
+        // Scum on the bog: pale green flecks here and there.
+        (g, from, to) => {
+          const [top, end] = span(from, to);
+          for (let y = top; y < end; y++) {
+            for (let x = 0; x < w; x++) {
+              if (depth[y * w + x] === 0) continue;
+              if (hash(x + x0, y + y0, 200) > 0.12) continue;
+              g.ellipse(
+                tileX(view, x + x0 + hash(x, y, 201)),
+                tileY(view, y + y0 + hash(x, y, 202)),
+                t * 0.18,
+                t * 0.07,
+              );
+            }
+          }
+          g.fill({ color: hex(palette.waterFoam), alpha: 0.12 });
+        },
+
+        // The land: dusky dead grass, lighter patches, dark tufts, autumn leaves strewn.
+        (g, from, to) => {
+          for (const { x, y } of ground(from, to)) g.rect(tileX(view, x), tileY(view, y), t, t);
+          g.fill({ color: hex(palette.grassMid) });
+        },
+        (g, from, to) => {
+          for (const { x, y } of ground(from, to)) {
+            if (hash(x, y, 1) < 0.22) g.circle(tileX(view, x + 0.5), tileY(view, y + 0.5), t * 0.7);
+          }
+          g.fill({ color: hex(palette.grassLight), alpha: 0.28 });
+        },
+        (g, from, to) => {
+          for (const { x, y } of ground(from, to)) {
+            if (hash(x, y, 2) > 0.4) continue;
+            const px = tileX(view, x) + t * (0.2 + 0.6 * hash(x, y, 3));
+            const py = tileY(view, y) + t * (0.3 + 0.5 * hash(x, y, 4));
+            g.moveTo(px - t * 0.14, py - t * 0.12).lineTo(px, py);
+            g.lineTo(px + t * 0.12, py - t * 0.18);
+            g.moveTo(px, py).lineTo(px + t * 0.03, py - t * 0.22);
+          }
+          g.stroke({ width: Math.max(1, t * 0.06), color: hex(palette.grassDark), cap: 'round' });
+        },
+        // A colour of leaves a pass: they may overlap another colour's.
+        ...[...LEAVES.entries()].map(([k, colour]): TerrainPass => (g, from, to) => {
+          for (const { x, y } of ground(from, to)) {
+            if (hash(x, y, 10 + k) > 0.06) continue;
+            const px = tileX(view, x) + t * (0.15 + 0.7 * hash(x, y, 20 + k));
+            const py = tileY(view, y) + t * (0.15 + 0.7 * hash(x, y, 30 + k));
+            g.ellipse(px, py, t * 0.11, t * 0.06);
+          }
+          g.fill({ color: colour, alpha: 0.75 });
+        }),
+        // A faint tint of the owner over each island, as the other styles give.
+        (g, from, to) => {
+          const cells = ground(from, to);
+          for (let player = 1; player <= state.players.length; player++) {
+            let any = false;
+            for (const { x, y } of cells) {
+              if (state.islandId[y * state.width + x] !== player) continue;
+              g.rect(tileX(view, x), tileY(view, y), t, t);
+              any = true;
+            }
+            if (any) g.fill({ color: this.colour(player - 1, 'base'), alpha: 0.07 });
+          }
+        },
+
+        // The shore: a band of mud, darker where the bog laps it, roots poking out of it.
+        (g, from, to) => {
+          trace(g, outline(ground(from, to), land, view));
+          g.stroke({ width: t * 0.6, color: hex(palette.shadow), alpha: 0.3, cap: 'square' });
+        },
+        (g, from, to) => {
+          trace(g, outline(ground(from, to), land, view));
+          g.stroke({ width: t * 0.4, color: hex(palette.sand), cap: 'square' });
+        },
+        (g, from, to) => {
+          for (const s of outline(ground(from, to), land, view)) {
+            const key = Math.round(s.x1 * 7 + s.y1 * 13);
+            if (hash(key, 211) > 0.35) continue;
+            const mx = (s.x1 + s.x2) / 2;
+            const my = (s.y1 + s.y2) / 2;
+            const vertical = s.x1 === s.x2;
+            const out = (hash(key, 212) - 0.5) * t * 0.5;
+            g.moveTo(mx, my).quadraticCurveTo(
+              mx + (vertical ? out : t * 0.15),
+              my + (vertical ? t * 0.15 : out),
+              mx + (vertical ? out * 1.4 : t * 0.3),
+              my + (vertical ? t * 0.3 : out * 1.4),
+            );
+          }
+          g.stroke({ width: Math.max(1, t * 0.07), color: hex(palette.craterMid), cap: 'round' });
+        },
+        whole((g) => {
+          if (moon !== null) this.drawMoon(g, view, moon);
+        }),
+      ],
+    };
   }
 
   /** A full moon, its glow spread over the bog round it, its seas darker on its face. */

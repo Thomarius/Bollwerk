@@ -49,10 +49,11 @@ import {
   mixed,
   shotProgress,
 } from './theme.js';
-import { outline, trace, wallGeometry, type WallBlock } from './walls.js';
+import { outline, trace, wallGeometry, type Segment, type WallBlock } from './walls.js';
 import { cannonBase } from './cannonBase.js';
 import { ShapeTheme } from './shapeTheme.js';
 import { clearDrawn } from './clearDrawn.js';
+import { TerrainStrips, whole, type TerrainPass, type TerrainPlan } from './terrainStrips.js';
 
 /** Something with a place and an age: rings of sound, a sour note, a chord, a glissando. */
 interface Aged {
@@ -172,7 +173,8 @@ export class OperaTheme extends ShapeTheme implements Theme {
   /** Life on the outer sea (`seaLife.ts`). */
   private readonly seaLife = new OperaSeaLife();
 
-  private readonly terrainGfx = new Graphics();
+  /** The night sea and the stages, in strips of rows (`TerrainStrips`). */
+  private readonly terrainStrips = new TerrainStrips();
   /** Ink where shots came down on the stage: redrawn when one is added or fades a round. */
   private readonly blotGfx = new Graphics();
   private blotsDrawn = '';
@@ -254,7 +256,7 @@ export class OperaTheme extends ShapeTheme implements Theme {
     this.staves.addChild(this.stavesCalm, this.stavesSwell, this.staveMask);
     this.staves.mask = this.staveMask;
     layers.terrain.addChild(
-      this.terrainGfx,
+      this.terrainStrips.container,
       this.blotGfx,
       this.staves,
       this.riderStamps.container,
@@ -284,8 +286,8 @@ export class OperaTheme extends ShapeTheme implements Theme {
     this.riderStamps.destroy();
     this.book.destroy();
     release(this.staves);
+    release(this.terrainStrips.container);
     for (const g of [
-      this.terrainGfx,
       this.blotGfx,
       this.flowGfx,
       this.effectGfx,
@@ -314,12 +316,15 @@ export class OperaTheme extends ShapeTheme implements Theme {
   // ------------------------------------------------------------------ terrain
 
   drawTerrain(state: MatchState, view: ViewTransform): void {
+    this.terrainStrips.draw(state, view, () => this.planTerrain(state, view));
+  }
+
+  /** The terrain's passes over strips of rows (`TerrainStrips`), and what they share. */
+  private planTerrain(state: MatchState, view: ViewTransform): TerrainPlan {
     this.terrain = state.terrain;
     this.width = state.width;
     this.height = state.height;
     this.scenery.refresh(state, view, this.art, true);
-    const g = this.terrainGfx;
-    clearDrawn(g);
     const { palette } = this.art;
     const t = view.tile;
     const land = (x: number, y: number): boolean => this.land(x, y);
@@ -368,78 +373,46 @@ export class OperaTheme extends ShapeTheme implements Theme {
       hex(palette.waterMid),
       hex(palette.waterDeep),
     ];
-    g.rect(tileX(view, x0), tileY(view, y0), w * t, h * t);
-    g.fill({ color: bands[3]! });
-    for (let band = 2; band >= 0; band--) {
-      for (let y = 0; y < h; y++) {
-        for (let x = 0; x < w; x++) {
-          if (depth[y * w + x] !== band + 1) continue;
+    /** The sheet's tiles in the strip's rows, `x` and `y` counted from its corner. */
+    const sheet = (from: number, to: number, each: (x: number, y: number) => void): void => {
+      for (let y = from - y0; y < to - y0; y++) for (let x = 0; x < w; x++) each(x, y);
+    };
+    const shallows = (band: number): TerrainPass => {
+      return (g, from, to) => {
+        sheet(from, to, (x, y) => {
+          if (depth[y * w + x] !== band + 1) return;
           g.circle(tileX(view, x + x0 + 0.5), tileY(view, y + y0 + 0.5), t * 0.8);
-        }
-      }
-      g.fill({ color: bands[band]! });
-    }
-    // A few stars caught in the water.
-    for (let y = 0; y < h; y++) {
-      for (let x = 0; x < w; x++) {
-        if (depth[y * w + x] === 0 || hash(x + x0, y + y0, 500) > 0.02) continue;
-        g.circle(
-          tileX(view, x + x0 + hash(x, y, 501)),
-          tileY(view, y + y0 + hash(x, y, 502)),
-          Math.max(1, t * 0.05),
-        );
-      }
-    }
-    g.fill({ color: 0xfff4d0, alpha: 0.6 });
+        });
+        g.fill({ color: bands[band]! });
+      };
+    };
 
     // The stage: polished boards, their joints staggered.
-    const ground: Cell[] = [];
+    const ground = (from: number, to: number): Cell[] => {
+      const cells: Cell[] = [];
+      for (let y = Math.max(0, from); y < Math.min(state.height, to); y++) {
+        for (let x = 0; x < state.width; x++) if (land(x, y)) cells.push({ x, y });
+      }
+      return cells;
+    };
+    // The coast a row at a time, so that a strip traces its own; the footlights stand at
+    // every other edge of the whole coast, so they are counted along it here.
+    const coast: Segment[][] = [];
+    const lamps: { x: number; y: number; row: number }[] = [];
+    let edges = 0;
     for (let y = 0; y < state.height; y++) {
-      for (let x = 0; x < state.width; x++) if (land(x, y)) ground.push({ x, y });
-    }
-    for (const { x, y } of ground) g.rect(tileX(view, x), tileY(view, y), t, t);
-    g.fill({ color: hex(palette.grassMid) });
-    for (const { x, y } of ground) {
-      if (hash(x, y, 1) < 0.3) g.rect(tileX(view, x), tileY(view, y), t, t);
-    }
-    g.fill({ color: hex(palette.grassLight), alpha: 0.25 });
-    for (const { x, y } of ground) {
-      const left = tileX(view, x);
-      const top = tileY(view, y);
-      for (const f of [0.25, 0.5, 0.75, 1])
-        g.moveTo(left, top + t * f).lineTo(left + t, top + t * f);
-      for (let k = 0; k < 4; k++) {
-        const jx = left + t * (((hash(x, y * 4 + k, 510) * 4) % 1) * 0.9 + 0.05);
-        g.moveTo(jx, top + t * k * 0.25).lineTo(jx, top + t * (k + 1) * 0.25);
+      const row = outline(ground(y, y + 1), land, view);
+      coast.push(row);
+      for (const s of row) {
+        if (edges++ % 2 !== 0) continue;
+        lamps.push({ x: (s.x1 + s.x2) / 2, y: (s.y1 + s.y2) / 2, row: y });
       }
     }
-    g.stroke({ width: 1, color: hex(palette.grassDark), alpha: 0.45 });
-    // A faint tint of the owner over each island, as the other styles give.
-    for (let player = 1; player <= state.players.length; player++) {
-      let any = false;
-      for (const { x, y } of ground) {
-        if (state.islandId[y * state.width + x] !== player) continue;
-        g.rect(tileX(view, x), tileY(view, y), t, t);
-        any = true;
-      }
-      if (any) g.fill({ color: this.colour(player - 1, 'base'), alpha: 0.07 });
-    }
-
-    // The stage's gilded edge, and its footlights along every coast.
-    const coast = outline(ground, land, view);
-    trace(g, coast);
-    g.stroke({ width: t * 0.34, color: hex(palette.sand), cap: 'square' });
-    trace(g, coast);
-    g.stroke({ width: 1, color: this.dark, alpha: 0.6, cap: 'square' });
-    const lamps: { x: number; y: number }[] = [];
-    for (const [n, s] of coast.entries()) {
-      if (n % 2 !== 0) continue;
-      lamps.push({ x: (s.x1 + s.x2) / 2, y: (s.y1 + s.y2) / 2 });
-    }
-    for (const l of lamps) g.circle(l.x, l.y, t * 0.45);
-    g.fill({ color: hex(palette.emberMid), alpha: 0.1 });
-    for (const l of lamps) g.circle(l.x, l.y, t * 0.09);
-    g.fill({ color: hex(palette.emberHot) });
+    const shore = (g: Graphics, from: number, to: number): void => {
+      for (let y = Math.max(0, from); y < Math.min(state.height, to); y++) trace(g, coast[y]!);
+    };
+    const lit = (from: number, to: number): { x: number; y: number }[] =>
+      lamps.filter((l) => l.row >= from && l.row < to);
 
     // The conductor's place, in the corner the compass rose takes in Parchment.
     const right = Math.floor((view.width - view.originX) / t) - state.width;
@@ -450,6 +423,84 @@ export class OperaTheme extends ShapeTheme implements Theme {
     this.layoutRiders();
     this.buildStaves(view);
     this.blotsDrawn = '';
+
+    return {
+      rows: [y0, y0 + h],
+      passes: [
+        whole((g) => {
+          g.rect(tileX(view, x0), tileY(view, y0), w * t, h * t);
+          g.fill({ color: bands[3]! });
+        }),
+        shallows(2),
+        shallows(1),
+        shallows(0),
+        // A few stars caught in the water.
+        (g, from, to) => {
+          sheet(from, to, (x, y) => {
+            if (depth[y * w + x] === 0 || hash(x + x0, y + y0, 500) > 0.02) return;
+            g.circle(
+              tileX(view, x + x0 + hash(x, y, 501)),
+              tileY(view, y + y0 + hash(x, y, 502)),
+              Math.max(1, t * 0.05),
+            );
+          });
+          g.fill({ color: 0xfff4d0, alpha: 0.6 });
+        },
+        (g, from, to) => {
+          for (const { x, y } of ground(from, to)) g.rect(tileX(view, x), tileY(view, y), t, t);
+          g.fill({ color: hex(palette.grassMid) });
+        },
+        (g, from, to) => {
+          for (const { x, y } of ground(from, to)) {
+            if (hash(x, y, 1) < 0.3) g.rect(tileX(view, x), tileY(view, y), t, t);
+          }
+          g.fill({ color: hex(palette.grassLight), alpha: 0.25 });
+        },
+        (g, from, to) => {
+          for (const { x, y } of ground(from, to)) {
+            const left = tileX(view, x);
+            const top = tileY(view, y);
+            for (const f of [0.25, 0.5, 0.75, 1])
+              g.moveTo(left, top + t * f).lineTo(left + t, top + t * f);
+            for (let k = 0; k < 4; k++) {
+              const jx = left + t * (((hash(x, y * 4 + k, 510) * 4) % 1) * 0.9 + 0.05);
+              g.moveTo(jx, top + t * k * 0.25).lineTo(jx, top + t * (k + 1) * 0.25);
+            }
+          }
+          g.stroke({ width: 1, color: hex(palette.grassDark), alpha: 0.45 });
+        },
+        // A faint tint of the owner over each island, as the other styles give.
+        (g, from, to) => {
+          const cells = ground(from, to);
+          for (let player = 1; player <= state.players.length; player++) {
+            let any = false;
+            for (const { x, y } of cells) {
+              if (state.islandId[y * state.width + x] !== player) continue;
+              g.rect(tileX(view, x), tileY(view, y), t, t);
+              any = true;
+            }
+            if (any) g.fill({ color: this.colour(player - 1, 'base'), alpha: 0.07 });
+          }
+        },
+        // The stage's gilded edge, and its footlights along every coast.
+        (g, from, to) => {
+          shore(g, from, to);
+          g.stroke({ width: t * 0.34, color: hex(palette.sand), cap: 'square' });
+        },
+        (g, from, to) => {
+          shore(g, from, to);
+          g.stroke({ width: 1, color: this.dark, alpha: 0.6, cap: 'square' });
+        },
+        (g, from, to) => {
+          for (const l of lit(from, to)) g.circle(l.x, l.y, t * 0.45);
+          g.fill({ color: hex(palette.emberMid), alpha: 0.1 });
+        },
+        (g, from, to) => {
+          for (const l of lit(from, to)) g.circle(l.x, l.y, t * 0.09);
+          g.fill({ color: hex(palette.emberHot) });
+        },
+      ],
+    };
   }
 
   /**

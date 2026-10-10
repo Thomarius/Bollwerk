@@ -53,6 +53,8 @@ import { INK, PAPER, drawCloud, drawGlove, drawPieEye, drawStar, inkWidth } from
 import { outline, trace, wallGeometry } from './walls.js';
 import { ShapeTheme } from './shapeTheme.js';
 import { clearDrawn } from './clearDrawn.js';
+import { release } from './release.js';
+import { TerrainStrips, whole, type TerrainPlan } from './terrainStrips.js';
 
 /** Something with a place and an age: a burst, a splash, a puff. */
 interface Aged {
@@ -164,7 +166,8 @@ export class CartoonTheme extends ShapeTheme implements Theme {
   private weather: Weather = 'clear';
   private readonly seaLife = new CartoonSeaLife();
 
-  private readonly terrainGfx = new Graphics();
+  /** The sea and the paper-white land, in strips of rows (`TerrainStrips`). */
+  private readonly terrainStrips = new TerrainStrips();
   /** Wave crests on the sea, bobbing on the beat. */
   private readonly waveStamps = new Stamps();
   private waves: (Cell & { up: boolean })[] = [];
@@ -252,7 +255,7 @@ export class CartoonTheme extends ShapeTheme implements Theme {
     this.style = art.cartoon;
     this.weather = weatherFor(this.seed, art.pixel.weatherOdds);
     layers.terrain.addChild(
-      this.terrainGfx,
+      this.terrainStrips.container,
       this.waveStamps.container,
       this.craterGfx,
       this.clockMemos.container,
@@ -303,8 +306,8 @@ export class CartoonTheme extends ShapeTheme implements Theme {
     this.book.destroy();
     if (this.vignette.texture !== Texture.EMPTY) this.vignette.texture.destroy(true);
     this.vignette.destroy();
+    release(this.terrainStrips.container);
     for (const g of [
-      this.terrainGfx,
       this.craterGfx,
       this.underGfx,
       this.crowns.gfx,
@@ -350,12 +353,15 @@ export class CartoonTheme extends ShapeTheme implements Theme {
   // ------------------------------------------------------------------ terrain
 
   drawTerrain(state: MatchState, view: ViewTransform): void {
+    this.terrainStrips.draw(state, view, () => this.planTerrain(state, view));
+  }
+
+  /** The terrain's passes over strips of rows (`TerrainStrips`), and what they share. */
+  private planTerrain(state: MatchState, view: ViewTransform): TerrainPlan {
     this.terrain = state.terrain;
     this.width = state.width;
     this.height = state.height;
     this.scenery.refresh(state, view, this.art, true);
-    const g = this.terrainGfx;
-    clearDrawn(g);
     const { palette } = this.art;
     const t = view.tile;
     const land = (x: number, y: number): boolean => this.land(x, y);
@@ -367,54 +373,20 @@ export class CartoonTheme extends ShapeTheme implements Theme {
     const y0 = -marginY;
     const x1 = state.width + marginX;
     const y1 = state.height + marginY;
-    g.rect(tileX(view, x0), tileY(view, y0), (x1 - x0) * t, (y1 - y0) * t);
-    g.fill({ color: hex(palette.waterMid) });
     const near = (x: number, y: number, r: number): boolean => {
       for (let dy = -r; dy <= r; dy++) {
         for (let dx = -r; dx <= r; dx++) if (land(x + dx, y + dy)) return true;
       }
       return false;
     };
-    for (let y = -1; y < state.height + 1; y++) {
-      for (let x = -1; x < state.width + 1; x++) {
-        if (land(x, y) || !near(x, y, 1)) continue;
-        g.circle(tileX(view, x + 0.5), tileY(view, y + 0.5), t * 0.85);
-      }
-    }
-    g.fill({ color: hex(palette.waterShallow) });
-
     // The land: its shadow cast on the sea, then paper white, a tuft of grass here and there.
-    const ground: Cell[] = [];
-    for (let y = 0; y < state.height; y++) {
-      for (let x = 0; x < state.width; x++) if (land(x, y)) ground.push({ x, y });
-    }
-    for (const { x, y } of ground) g.rect(tileX(view, x + 0.14), tileY(view, y + 0.2), t, t);
-    g.fill({ color: INK, alpha: 0.3 });
-    for (const { x, y } of ground) g.rect(tileX(view, x), tileY(view, y), t, t);
-    g.fill({ color: hex(palette.grassMid) });
-    for (const { x, y } of ground) {
-      if (hash(x, y, 2001) > 0.09) continue;
-      const sx = tileX(view, x + 0.3 + hash(x, y, 2002) * 0.4);
-      const sy = tileY(view, y + 0.6 + hash(x, y, 2003) * 0.3);
-      g.moveTo(sx - t * 0.14, sy - t * 0.12).lineTo(sx - t * 0.07, sy);
-      g.moveTo(sx, sy - t * 0.18).lineTo(sx, sy);
-      g.moveTo(sx + t * 0.14, sy - t * 0.12).lineTo(sx + t * 0.07, sy);
-    }
-    g.stroke({ width: Math.max(1, t * 0.05), color: 0x7a7a7a, cap: 'round' });
-    for (const { x, y } of ground) {
-      if (hash(x, y, 2004) > 0.04) continue;
-      g.ellipse(
-        tileX(view, x + 0.3 + hash(x, y, 2005) * 0.4),
-        tileY(view, y + 0.5),
-        t * 0.1,
-        t * 0.06,
-      );
-    }
-    g.stroke({ width: Math.max(1, t * 0.04), color: 0x7a7a7a });
-    // The coast inked round, thick, as everything is.
-    const coast = outline(ground, land, view);
-    trace(g, coast);
-    g.stroke({ width: inkWidth(t), color: INK, cap: 'round', join: 'round' });
+    const ground = (from: number, to: number): Cell[] => {
+      const cells: Cell[] = [];
+      for (let y = Math.max(0, from); y < Math.min(state.height, to); y++) {
+        for (let x = 0; x < state.width; x++) if (land(x, y)) cells.push({ x, y });
+      }
+      return cells;
+    };
 
     // The clock's place, in the corner the compass rose takes in Parchment.
     this.corner = cornerSpot(state, view);
@@ -432,6 +404,63 @@ export class CartoonTheme extends ShapeTheme implements Theme {
     }
     this.wavesStep = -2;
     this.cratersDrawn = '';
+
+    return {
+      rows: [y0, y1],
+      passes: [
+        whole((g) => {
+          g.rect(tileX(view, x0), tileY(view, y0), (x1 - x0) * t, (y1 - y0) * t);
+          g.fill({ color: hex(palette.waterMid) });
+        }),
+        (g, from, to) => {
+          for (let y = Math.max(-1, from); y < Math.min(state.height + 1, to); y++) {
+            for (let x = -1; x < state.width + 1; x++) {
+              if (land(x, y) || !near(x, y, 1)) continue;
+              g.circle(tileX(view, x + 0.5), tileY(view, y + 0.5), t * 0.85);
+            }
+          }
+          g.fill({ color: hex(palette.waterShallow) });
+        },
+        (g, from, to) => {
+          for (const { x, y } of ground(from, to)) {
+            g.rect(tileX(view, x + 0.14), tileY(view, y + 0.2), t, t);
+          }
+          g.fill({ color: INK, alpha: 0.3 });
+        },
+        (g, from, to) => {
+          for (const { x, y } of ground(from, to)) g.rect(tileX(view, x), tileY(view, y), t, t);
+          g.fill({ color: hex(palette.grassMid) });
+        },
+        (g, from, to) => {
+          for (const { x, y } of ground(from, to)) {
+            if (hash(x, y, 2001) > 0.09) continue;
+            const sx = tileX(view, x + 0.3 + hash(x, y, 2002) * 0.4);
+            const sy = tileY(view, y + 0.6 + hash(x, y, 2003) * 0.3);
+            g.moveTo(sx - t * 0.14, sy - t * 0.12).lineTo(sx - t * 0.07, sy);
+            g.moveTo(sx, sy - t * 0.18).lineTo(sx, sy);
+            g.moveTo(sx + t * 0.14, sy - t * 0.12).lineTo(sx + t * 0.07, sy);
+          }
+          g.stroke({ width: Math.max(1, t * 0.05), color: 0x7a7a7a, cap: 'round' });
+        },
+        (g, from, to) => {
+          for (const { x, y } of ground(from, to)) {
+            if (hash(x, y, 2004) > 0.04) continue;
+            g.ellipse(
+              tileX(view, x + 0.3 + hash(x, y, 2005) * 0.4),
+              tileY(view, y + 0.5),
+              t * 0.1,
+              t * 0.06,
+            );
+          }
+          g.stroke({ width: Math.max(1, t * 0.04), color: 0x7a7a7a });
+        },
+        // The coast inked round, thick, as everything is.
+        (g, from, to) => {
+          trace(g, outline(ground(from, to), land, view));
+          g.stroke({ width: inkWidth(t), color: INK, cap: 'round', join: 'round' });
+        },
+      ],
+    };
   }
 
   /** The wave crests, bobbing on the beat, half of them up as the other half go down. */

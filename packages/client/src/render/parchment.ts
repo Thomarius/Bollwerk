@@ -51,6 +51,8 @@ import { cannonBase } from './cannonBase.js';
 import { roseSpot } from './corner.js';
 import { along, loops, rounded, wavered, type Point } from './inkline.js';
 import { clearDrawn } from './clearDrawn.js';
+import { release } from './release.js';
+import { TerrainStrips, whole, type TerrainPass, type TerrainPlan } from './terrainStrips.js';
 
 /** An ink stain where a shot came down on land, fading over the rounds after. */
 interface Stain {
@@ -101,6 +103,12 @@ function jitter(x: number, y: number, salt: number): number {
 /** How this style sends off the winners (PLAN 11.19 Z4). */
 const FINISH: FinishLook = { spark: 'blot', flag: 'swallowtail' };
 
+/** A drawn loop and the row it is drawn with, the strip it falls in (`TerrainStrips`). */
+interface Anchored {
+  row: number;
+  loop: Point[];
+}
+
 /**
  * The parchment look: an old hand-drawn map, in ink and watercolour on sepia paper.
  *
@@ -124,7 +132,8 @@ export class ParchmentTheme implements Theme {
   private style!: ParchmentStyleConfig;
   private readonly seed: number;
 
-  private readonly terrainGfx = new Graphics();
+  /** The sea, its contours and the land, in strips of rows (`TerrainStrips`). */
+  private readonly terrainStrips = new TerrainStrips();
   private readonly roseGfx = new Graphics();
   /** Sealed ground, an island to a `Graphics`, redrawn where it changes. */
   private readonly territory = new IslandParts(1, 'territory');
@@ -187,7 +196,7 @@ export class ParchmentTheme implements Theme {
     this.art = art;
     this.style = art.parchment;
     this.layers = layers;
-    layers.terrain.addChild(this.terrainGfx, this.roseGfx, this.nameLayer);
+    layers.terrain.addChild(this.terrainStrips.container, this.roseGfx, this.nameLayer);
     layers.territory.addChild(this.scenery.gfx, this.territory.container, this.stainGfx);
     layers.structures.addChild(this.structures.container);
     layers.effects.addChild(
@@ -207,8 +216,8 @@ export class ParchmentTheme implements Theme {
     this.territory.destroy();
     this.structures.destroy();
     this.scenery.destroy();
+    release(this.terrainStrips.container);
     for (const g of [
-      this.terrainGfx,
       this.roseGfx,
       this.stainGfx,
       this.effectGfx,
@@ -240,12 +249,15 @@ export class ParchmentTheme implements Theme {
   // ------------------------------------------------------------------ terrain
 
   drawTerrain(state: MatchState, view: ViewTransform): void {
+    this.terrainStrips.draw(state, view, () => this.planTerrain(state, view));
+  }
+
+  /** The terrain's passes over strips of rows (`TerrainStrips`), and what they share. */
+  private planTerrain(state: MatchState, view: ViewTransform): TerrainPlan {
     this.seaLife.layout(state, view, this.art);
     this.scenery.refresh(state, view, this.art, true);
     this.terrain = state.terrain;
     this.width = state.width;
-    const g = this.terrainGfx;
-    clearDrawn(g);
     const { palette } = this.art;
     const t = view.tile;
     const land = (x: number, y: number): boolean =>
@@ -284,6 +296,25 @@ export class ParchmentTheme implements Theme {
       }).map((loop) => wavered(rounded(loop, 2), waver, wobble));
     const shape = (loop: readonly Point[]): number[] => loop.flatMap((p) => [p.x, p.y]);
 
+    // A loop is whole however the rows are cut, so it is drawn in the strip of its topmost
+    // row, kept within the rows drawn: a coast's wobble may take it past the margin.
+    const first = -marginY;
+    const end = h - marginY;
+    const rowOf = (py: number): number => Math.min(end - 1, Math.max(first, tileOf(0, py).y));
+    const anchored = (drawn: Point[][]): Anchored[] =>
+      drawn.map((loop) => ({
+        row: rowOf(loop.reduce((top, p) => Math.min(top, p.y), Infinity)),
+        loop,
+      }));
+    /** A pass laying the loops anchored in the strip's rows, then filling or stroking them. */
+    const loopPass =
+      (drawn: readonly Anchored[], paint: (g: Graphics) => void): TerrainPass =>
+      (g, from, to) => {
+        for (const { row, loop } of drawn) if (row >= from && row < to) g.poly(shape(loop), true);
+        paint(g);
+      };
+    const passes: TerrainPass[] = [];
+
     // Paler water in the shallows, as a map colours its coasts: a band round every coast,
     // its edge drawn by hand as the coast is, and under the land, so where the drawn coast
     // rounds a corner off a tile the shallows show there and not the open sea.
@@ -292,21 +323,28 @@ export class ParchmentTheme implements Theme {
     for (let y = -marginY; y < h - marginY; y++) {
       for (let x = -marginX; x < w - marginX; x++) if (shallow(x, y)) band.push({ x, y });
     }
-    for (const loop of inked(outline(band, shallow, view), shallow)) g.poly(shape(loop), true);
-    g.fill({ color: hex(palette.waterShallow), alpha: 0.6 });
+    passes.push(
+      loopPass(anchored(inked(outline(band, shallow, view), shallow)), (g) =>
+        g.fill({ color: hex(palette.waterShallow), alpha: 0.6 }),
+      ),
+    );
 
     // Rhumb lines from the compass rose across the sea, as a portolan chart's, under the
     // land so they run on only over the water.
     const spot = this.roseSpotFor(state, view);
     if (spot !== null) {
-      const cx = tileX(view, spot.x);
-      const cy = tileY(view, spot.y);
-      const reach = Math.hypot(w, h) * t;
-      for (let k = 0; k < 16; k++) {
-        const angle = (k / 16) * Math.PI * 2;
-        g.moveTo(cx, cy).lineTo(cx + Math.sin(angle) * reach, cy - Math.cos(angle) * reach);
-      }
-      g.stroke({ width: 1, color: hex(palette.rockDark), alpha: this.style.rhumbAlpha });
+      passes.push(
+        whole((g) => {
+          const cx = tileX(view, spot.x);
+          const cy = tileY(view, spot.y);
+          const reach = Math.hypot(w, h) * t;
+          for (let k = 0; k < 16; k++) {
+            const angle = (k / 16) * Math.PI * 2;
+            g.moveTo(cx, cy).lineTo(cx + Math.sin(angle) * reach, cy - Math.cos(angle) * reach);
+          }
+          g.stroke({ width: 1, color: hex(palette.rockDark), alpha: this.style.rhumbAlpha });
+        }),
+      );
     }
 
     // The engraver's contours, rippling out from every coast, drawn by hand as the coast is.
@@ -333,10 +371,12 @@ export class ParchmentTheme implements Theme {
           }
         }
       }
-      for (const loop of inked(lines, (x, y) => land(x, y) || depthAt(x, y) < k)) {
-        g.poly(shape(loop), true);
-      }
-      g.stroke({ width: 1, color: hex(palette.waterFoam), alpha: 0.45 - n * 0.15 });
+      const contour = anchored(inked(lines, (x, y) => land(x, y) || depthAt(x, y) < k));
+      passes.push(
+        loopPass(contour, (g) =>
+          g.stroke({ width: 1, color: hex(palette.waterFoam), alpha: 0.45 - n * 0.15 }),
+        ),
+      );
     });
 
     // Wave strokes on the open sea, seeded so a map always has the same.
@@ -347,23 +387,31 @@ export class ParchmentTheme implements Theme {
         if (!land(x, y) && depthAt(x, y) >= deepest - 1) open.push({ x, y });
       }
     }
-    const waves = Math.round(open.length * this.style.wavesPerSeaTile);
-    for (let k = 0; k < waves && open.length > 0; k++) {
+    const waves: { row: number; cx: number; cy: number }[] = [];
+    const count = Math.round(open.length * this.style.wavesPerSeaTile);
+    for (let k = 0; k < count && open.length > 0; k++) {
       const cell = open[rng.nextInt(open.length)]!;
       const cx = tileX(view, cell.x + rng.nextFloat());
       const cy = tileY(view, cell.y + rng.nextFloat());
-      const r = t * 0.3;
-      g.moveTo(cx - r * 2, cy);
-      g.quadraticCurveTo(cx - r * 1.5, cy - r, cx - r, cy);
-      g.quadraticCurveTo(cx - r * 0.5, cy + r * 0.6, cx, cy);
-      g.quadraticCurveTo(cx + r * 0.5, cy - r, cx + r, cy);
+      waves.push({ row: cell.y, cx, cy });
     }
-    g.stroke({ width: 1, color: hex(palette.waterFoam), alpha: 0.5 });
+    passes.push((g, from, to) => {
+      const r = t * 0.3;
+      for (const { row, cx, cy } of waves) {
+        if (row < from || row >= to) continue;
+        g.moveTo(cx - r * 2, cy);
+        g.quadraticCurveTo(cx - r * 1.5, cy - r, cx - r, cy);
+        g.quadraticCurveTo(cx - r * 0.5, cy + r * 0.6, cx, cy);
+        g.quadraticCurveTo(cx + r * 0.5, cy - r, cx + r, cy);
+      }
+      g.stroke({ width: 1, color: hex(palette.waterFoam), alpha: 0.5 });
+    });
 
     // Land as lighter paper inside a coast drawn by hand — the tile grid's staircase
     // rounded off and wavering as a pen follows a shore — washed faintly in the colour of
-    // whose island it is, the coast inked bold and stippled along its sea side.
-    const coasts: Point[][] = [];
+    // whose island it is, the coast inked bold and stippled along its sea side. A pass for
+    // each fill, as each island's paper and wash were laid in turn.
+    const coasts: Anchored[] = [];
     for (let island = 0; island <= state.players.length; island++) {
       const cells: Cell[] = [];
       for (let i = 0; i < state.terrain.length; i++) {
@@ -374,34 +422,46 @@ export class ParchmentTheme implements Theme {
       if (cells.length === 0) continue;
       const mine = (x: number, y: number): boolean =>
         land(x, y) && state.islandId[y * state.width + x] === island;
-      const drawn = inked(outline(cells, mine, view), mine);
-      for (const loop of drawn) g.poly(shape(loop), true);
-      g.fill({ color: hex(palette.grassMid) });
+      const drawn = anchored(inked(outline(cells, mine, view), mine));
+      passes.push(loopPass(drawn, (g) => g.fill({ color: hex(palette.grassMid) })));
       if (island > 0) {
-        for (const loop of drawn) g.poly(shape(loop), true);
-        g.fill({ color: this.colour(island - 1, 'base'), alpha: 0.07 });
+        const wash = this.colour(island - 1, 'base');
+        passes.push(loopPass(drawn, (g) => g.fill({ color: wash, alpha: 0.07 })));
       }
       coasts.push(...drawn);
     }
-    for (const loop of coasts) g.poly(shape(loop), true);
-    g.stroke({ width: this.style.inkWidthPx * 1.6, color: hex(palette.rockDark), join: 'round' });
+    passes.push(
+      loopPass(coasts, (g) =>
+        g.stroke({
+          width: this.style.inkWidthPx * 1.6,
+          color: hex(palette.rockDark),
+          join: 'round',
+        }),
+      ),
+    );
     // The stipple: dots just off the coast on its sea side, a second fainter row beyond,
     // as an engraver shaded the shallows. Loops run with the land on their left.
     const dot = Math.max(1, t * 0.07);
-    for (const loop of coasts) {
+    const dots: { row: number; x: number; y: number }[] = [];
+    for (const { loop } of coasts) {
       along(loop, this.style.stippleTiles * t).forEach((p, n) => {
+        const row = rowOf(p.y);
         const off = t * (0.2 + jitter(p.x, p.y, 7) * 0.08);
-        g.rect(p.x - p.dy * off - dot / 2, p.y + p.dx * off - dot / 2, dot, dot);
+        dots.push({ row, x: p.x - p.dy * off - dot / 2, y: p.y + p.dx * off - dot / 2 });
         if (n % 2 === 1) return;
         const far = t * (0.42 + jitter(p.x, p.y, 8) * 0.1);
-        g.rect(p.x - p.dy * far - dot / 2, p.y + p.dx * far - dot / 2, dot, dot);
+        dots.push({ row, x: p.x - p.dy * far - dot / 2, y: p.y + p.dx * far - dot / 2 });
       });
     }
-    g.fill({ color: hex(palette.rockDark), alpha: 0.5 });
+    passes.push((g, from, to) => {
+      for (const d of dots) if (d.row >= from && d.row < to) g.rect(d.x, d.y, dot, dot);
+      g.fill({ color: hex(palette.rockDark), alpha: 0.5 });
+    });
 
     this.drawRose(view, spot);
     this.letterNames(state, view);
     this.layGrain(view, marginX, marginY, w, h);
+    return { rows: [first, end], passes };
   }
 
   /** Where the compass rose stands, in the sea's corner clear of the big timer, if anywhere. */

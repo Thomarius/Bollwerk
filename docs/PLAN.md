@@ -1595,9 +1595,9 @@ measured and felt, and three rendering leads (13k).
 
 Tournament mode is finished: its play-testing round, T8, closed with everything working
 (ARCHIVE 13m). The bots' planning is off the page's thread in local matches, measured and felt (ARCHIVE
-13k). Should the wipes still stutter, what is left is each style's terrain drawn as
-one: splitting it by island, in all nineteen styles, would remove the last hitch a new random
-look costs. The bot learning work, item 2, is **paused** after a first learned fit (ARCHIVE
+13k), and every style's terrain is drawn in strips of rows (ARCHIVE 13n). Wipes between
+two heavy looks still drop frames throughout at a large window: item 3, designed and the
+next session's work. The bot learning work, item 2, is **paused** after a first learned fit (ARCHIVE
 12z), its next steps in [`BOT_LEARNING.md`](./BOT_LEARNING.md) §6. French is not to be done
 (the user's decision, 2026-10-06). Still open:
 
@@ -1654,6 +1654,72 @@ look costs. The bot learning work, item 2, is **paused** after a first learned f
    method. Read it before changing how bots build. Steps 1 and 2 are done (ARCHIVE 12x,
    12y); step 3's first run learned a fit about as good as the hand-made one (ARCHIVE 12z),
    and the work is **paused** (2026-10-07), its next steps in BOT_LEARNING.md §6.
+
+3. **Wipes between two heavy looks** (measured 2026-10-10, ARCHIVE 13n; to be built in the next
+   session, the user's decision of that evening). At 2560×1440 on this machine's integrated
+   GPU, with Random looks, a wipe between two of Sakura, Undersea, Chocolate, Halloween or Glass
+   averages 20–22 ms a frame for its whole two seconds and drops about 9.5 frames a second,
+   against about 2 in the rest of play; lighter pairs stay at 60 fps, and at 1600×900 every
+   pair did. The frame's work on the page's thread stays at 8–15 ms, so the cost is the GPU's.
+
+   **Why.** During a wipe both looks are rendered whole: `Scene.applyVisibility` gives each
+   look's root a mask, the arriving look's the window above the banner's line, the leaving
+   look's the window below it. A mask stops pixels being coloured outside it, but every shape of
+   both looks is still sent and processed, and the heavy styles are heavy in exactly that:
+   overlapping bands of discs, thousands of alpha shapes, stamps. None of the five uses a filter
+   (only Cyberpunk's and Electric's glow and Night's lights are blurred), so it is geometry and
+   overdraw, not blur passes.
+
+   **The fix: render only what each look shows.** On every frame of a wipe, each of the two
+   looks hides the pieces of its board that lie wholly on the far side of the line — the
+   arriving look what is wholly below it, the leaving look what is wholly above — and shows
+   them all again when the wipe ends. As the line crosses the board each look draws about its
+   own share, so the wipe should cost about one look, not two.
+
+   - **The pieces** are those the board is already cut into: the terrain's strips
+     (`StripContainer.strips()`, eight strips of rows, every pass of a strip together, Pixel's
+     and Night's strip render groups among them) and the islands' parts of sealed ground and
+     walls (`IslandParts`, an island a `Graphics`, a container a layer). Each needs its extent
+     in board rows: `TerrainStrips` knows each strip's rows (`from`, `to` in `draw`) and keeps
+     them; `IslandParts` keeps its parts' first and last rows from `layout` (the cells of each
+     island). Anything else in a board layer (scenery, stamps, a corner piece) is left shown.
+   - **The line in board rows.** The line is in screen pixels (`LookFrame.lineY`); the board is
+     under the camera (`cameraRoot`: `camera.zoom`, `camera.x/y`, plus the shake's offset,
+     `applyShake`) and the view (`tileY`, `view.originY`, `view.tile`). Convert the line once a
+     frame: `row = ((lineY - camera.y - shakeY) / zoom - view.originY) / view.tile`. A piece is
+     hidden only when it lies a margin beyond it — two tiles, since shapes overhang their row
+     (Opera's discs reach 0.8 of a tile, Sakura's last row of waves one row past the sheet,
+     coast strokes a third of a tile) — so nothing is ever missing at the line.
+   - **The decision as a pure function** (`wipeCull.ts`, say), tested without a DOM as
+     `banners.ts` and `timerSpot.ts` are: given the pieces' row ranges, the line's row, the
+     margin and which side the look is on, which pieces to hide. A few cases: a
+     piece straddling the line stays, one beyond the margin goes, the camera zoomed and shaken.
+   - **Where it runs**: `applyVisibility`, which `showLooks` calls on every frame of a wipe.
+     Set `visible` only on a piece whose state changes: in Pixi v8 a change of visibility
+     rebuilds its render group's draw list (ARCHIVE 13f), so a piece should change at most once
+     a wipe — the line only moves one way — about eight strips and eight islands a look. When
+     the frame is no longer split, everything is shown again; `warmChain`, which hides and
+     restores visibility for its own render, runs between wipes and must find everything shown.
+     Prefer this to Pixi's own culling (`cullable`, `Culler`), which measures the bounds of
+     everything every frame — ten thousand sprites in Pixel.
+   - **Not culled**: the backdrop (one rectangle a look), the effects and the overlay (drawn
+     each frame by the style; the leaving look's overlay is already empty, `NO_GHOST`). If the
+     measurement says the effects matter, a style could skip drawing what lies beyond the line,
+     but that is nineteen styles' `drawEffects` and is a separate step.
+
+   **First, an hour's diagnosis**, so the work goes where the cost is: with
+   `tools/wipes/measure.mjs` (header says how to run it; a visible window at 2560×1440, Random
+   seeded), fix one heavy pair at a time (`&buildStyle=sakura&combatStyle=undersea`), and
+   during its wipes hide one layer of the leaving look at a time from the page
+   (`bollwerkScene.slots.combat.layers.terrain.visible = false` and so on, through
+   `page.evaluate`), to see which layers carry the dropped frames. The same pair with one style
+   for both looks (`&style=sakura`, a single look, no split) is the floor the fix aims at.
+
+   **Measure the result** as the strips were: the old code from a worktree on port 5174 against
+   the new, the same seeded Random sequence, at 2560×1440 (ARCHIVE 13n's run: wipes 9.5 dropped
+   frames a second, the rest of play 1.7–2.1). The aim is wipes near the rest of play. Check the
+   looks by eye in a wipe screenshot, mid-crossing (`tools/screenshots.sh`'s `wipe-` scenes),
+   that nothing is missing at the line, including under a shake and the zoom onto a winner.
 
 Only open work is kept here. Finished packages move to `ARCHIVE.md` under their old
 numbers — 11.1 scoring, 11.7 team mode, 11.8 the visual pass, 11.9 the themes, 11.10 the

@@ -54,6 +54,8 @@ import { outline, trace, wallGeometry } from './walls.js';
 import { ShapeTheme } from './shapeTheme.js';
 import { GOLD, NIGHT, SNOW, SNOW_SHADE, WARM, drawBow } from './yule.js';
 import { clearDrawn } from './clearDrawn.js';
+import { release } from './release.js';
+import { TerrainStrips, whole, type TerrainPass, type TerrainPlan } from './terrainStrips.js';
 
 /** Something with a place and an age: a burst of snow, a splash. */
 interface Aged {
@@ -194,7 +196,8 @@ export class ChristmasTheme extends ShapeTheme implements Theme {
   private weather: Weather = 'clear';
   private readonly seaLife = new ChristmasSeaLife();
 
-  private readonly terrainGfx = new Graphics();
+  /** The sea and the snow, in strips of rows (`TerrainStrips`). */
+  private readonly terrainStrips = new TerrainStrips();
   private readonly dentGfx = new Graphics();
   private dentsDrawn = '';
   /** The snow globe, redrawn only when the window changes or while it is being shaken. */
@@ -258,7 +261,7 @@ export class ChristmasTheme extends ShapeTheme implements Theme {
     this.weather = weatherFor(this.seed, art.pixel.weatherOdds);
     this.glow.container.blendMode = 'add';
     layers.terrain.addChild(
-      this.terrainGfx,
+      this.terrainStrips.container,
       this.dentGfx,
       this.globeMemos.container,
       this.globeFlakes.container,
@@ -298,8 +301,8 @@ export class ChristmasTheme extends ShapeTheme implements Theme {
     this.glow.destroy();
     this.mist.destroy();
     this.book.destroy();
+    release(this.terrainStrips.container);
     for (const g of [
-      this.terrainGfx,
       this.dentGfx,
       this.underGfx,
       this.crowns.gfx,
@@ -314,12 +317,15 @@ export class ChristmasTheme extends ShapeTheme implements Theme {
   // ------------------------------------------------------------------ terrain
 
   drawTerrain(state: MatchState, view: ViewTransform): void {
+    this.terrainStrips.draw(state, view, () => this.planTerrain(state, view));
+  }
+
+  /** The terrain's passes over strips of rows (`TerrainStrips`), and what they share. */
+  private planTerrain(state: MatchState, view: ViewTransform): TerrainPlan {
     this.terrain = state.terrain;
     this.width = state.width;
     this.height = state.height;
     this.scenery.refresh(state, view, this.art, true);
-    const g = this.terrainGfx;
-    clearDrawn(g);
     const { palette } = this.art;
     const t = view.tile;
     const land = (x: number, y: number): boolean => this.land(x, y);
@@ -331,80 +337,108 @@ export class ChristmasTheme extends ShapeTheme implements Theme {
     const y0 = -marginY;
     const x1 = state.width + marginX;
     const y1 = state.height + marginY;
-    g.rect(tileX(view, x0), tileY(view, y0), (x1 - x0) * t, (y1 - y0) * t);
-    g.fill({ color: hex(palette.waterDeep) });
     const near = (x: number, y: number, r: number): boolean => {
       for (let dy = -r; dy <= r; dy++) {
         for (let dx = -r; dx <= r; dx++) if (land(x + dx, y + dy)) return true;
       }
       return false;
     };
+    // The snow: drifts in soft blue shade, glints of frost, and the ice along the shore.
+    const ground = (from: number, to: number): Cell[] => {
+      const cells: Cell[] = [];
+      for (let y = Math.max(0, from); y < Math.min(state.height, to); y++) {
+        for (let x = 0; x < state.width; x++) if (land(x, y)) cells.push({ x, y });
+      }
+      return cells;
+    };
+
+    const passes: TerrainPass[] = [
+      whole((g) => {
+        g.rect(tileX(view, x0), tileY(view, y0), (x1 - x0) * t, (y1 - y0) * t);
+        g.fill({ color: hex(palette.waterDeep) });
+      }),
+    ];
     for (const [r, colour] of [
       [3, palette.waterMid],
       [1, palette.waterShallow],
     ] as const) {
-      for (let y = -r; y < state.height + r; y++) {
-        for (let x = -r; x < state.width + r; x++) {
-          if (land(x, y) || !near(x, y, r)) continue;
-          g.circle(tileX(view, x + 0.5), tileY(view, y + 0.5), t * 0.8);
+      passes.push((g, from, to) => {
+        for (let y = Math.max(-r, from); y < Math.min(state.height + r, to); y++) {
+          for (let x = -r; x < state.width + r; x++) {
+            if (land(x, y) || !near(x, y, r)) continue;
+            g.circle(tileX(view, x + 0.5), tileY(view, y + 0.5), t * 0.8);
+          }
         }
-      }
-      g.fill({ color: hex(colour) });
+        g.fill({ color: hex(colour) });
+      });
     }
-    for (let y = y0; y < y1; y++) {
-      for (let x = x0; x < x1; x++) {
-        if (land(x, y) || near(x, y, 1) || hash(x, y, 3000) > 0.05) continue;
-        const sx = tileX(view, x + hash(x, y, 3001));
-        const sy = tileY(view, y + hash(x, y, 3002));
-        const r = t * (0.04 + 0.05 * hash(x, y, 3003));
-        g.moveTo(sx - r, sy).lineTo(sx + r, sy);
-        g.moveTo(sx, sy - r).lineTo(sx, sy + r);
-      }
-    }
-    g.stroke({ width: Math.max(1, t * 0.035), color: SNOW, alpha: 0.45 });
-
-    // The snow: drifts in soft blue shade, glints of frost, and the ice along the shore.
-    const ground: Cell[] = [];
-    for (let y = 0; y < state.height; y++) {
-      for (let x = 0; x < state.width; x++) if (land(x, y)) ground.push({ x, y });
-    }
-    for (const { x, y } of ground) g.rect(tileX(view, x), tileY(view, y), t, t);
-    g.fill({ color: hex(palette.grassMid) });
-    for (const { x, y } of ground) {
-      if (hash(x >> 1, y >> 1, 3004) > 0.35) continue;
-      g.ellipse(tileX(view, x + 0.5), tileY(view, y + 0.6), t * 0.8, t * 0.32);
-    }
-    g.fill({ color: hex(palette.grassDark), alpha: 0.35 });
-    for (const { x, y } of ground) {
-      if (hash(x, y, 3005) > 0.08) continue;
-      const sx = tileX(view, x + 0.2 + hash(x, y, 3006) * 0.6);
-      const sy = tileY(view, y + 0.2 + hash(x, y, 3007) * 0.6);
-      const r = t * 0.07;
-      g.moveTo(sx - r, sy).lineTo(sx + r, sy);
-      g.moveTo(sx, sy - r).lineTo(sx, sy + r);
-    }
-    g.stroke({ width: Math.max(1, t * 0.03), color: 0xffffff, alpha: 0.9 });
-    for (let player = 1; player <= state.players.length; player++) {
-      let any = false;
-      for (const { x, y } of ground) {
-        if (state.islandId[y * state.width + x] !== player) continue;
-        g.rect(tileX(view, x), tileY(view, y), t, t);
-        any = true;
-      }
-      if (any) g.fill({ color: this.colour(player - 1, 'base'), alpha: 0.04 });
-    }
-    const coast = outline(ground, land, view);
-    trace(g, coast);
-    g.stroke({ width: t * 0.24, color: ICE, alpha: 0.7, cap: 'square' });
-    trace(g, coast);
-    g.stroke({ width: Math.max(1.5, t * 0.07), color: SNOW, cap: 'square' });
-    trace(g, coast);
-    g.stroke({ width: 1, color: NIGHT, alpha: 0.6, cap: 'square' });
+    passes.push(
+      (g, from, to) => {
+        for (let y = from; y < to; y++) {
+          for (let x = x0; x < x1; x++) {
+            if (land(x, y) || near(x, y, 1) || hash(x, y, 3000) > 0.05) continue;
+            const sx = tileX(view, x + hash(x, y, 3001));
+            const sy = tileY(view, y + hash(x, y, 3002));
+            const r = t * (0.04 + 0.05 * hash(x, y, 3003));
+            g.moveTo(sx - r, sy).lineTo(sx + r, sy);
+            g.moveTo(sx, sy - r).lineTo(sx, sy + r);
+          }
+        }
+        g.stroke({ width: Math.max(1, t * 0.035), color: SNOW, alpha: 0.45 });
+      },
+      (g, from, to) => {
+        for (const { x, y } of ground(from, to)) g.rect(tileX(view, x), tileY(view, y), t, t);
+        g.fill({ color: hex(palette.grassMid) });
+      },
+      (g, from, to) => {
+        for (const { x, y } of ground(from, to)) {
+          if (hash(x >> 1, y >> 1, 3004) > 0.35) continue;
+          g.ellipse(tileX(view, x + 0.5), tileY(view, y + 0.6), t * 0.8, t * 0.32);
+        }
+        g.fill({ color: hex(palette.grassDark), alpha: 0.35 });
+      },
+      (g, from, to) => {
+        for (const { x, y } of ground(from, to)) {
+          if (hash(x, y, 3005) > 0.08) continue;
+          const sx = tileX(view, x + 0.2 + hash(x, y, 3006) * 0.6);
+          const sy = tileY(view, y + 0.2 + hash(x, y, 3007) * 0.6);
+          const r = t * 0.07;
+          g.moveTo(sx - r, sy).lineTo(sx + r, sy);
+          g.moveTo(sx, sy - r).lineTo(sx, sy + r);
+        }
+        g.stroke({ width: Math.max(1, t * 0.03), color: 0xffffff, alpha: 0.9 });
+      },
+      (g, from, to) => {
+        const cells = ground(from, to);
+        for (let player = 1; player <= state.players.length; player++) {
+          let any = false;
+          for (const { x, y } of cells) {
+            if (state.islandId[y * state.width + x] !== player) continue;
+            g.rect(tileX(view, x), tileY(view, y), t, t);
+            any = true;
+          }
+          if (any) g.fill({ color: this.colour(player - 1, 'base'), alpha: 0.04 });
+        }
+      },
+      (g, from, to) => {
+        trace(g, outline(ground(from, to), land, view));
+        g.stroke({ width: t * 0.24, color: ICE, alpha: 0.7, cap: 'square' });
+      },
+      (g, from, to) => {
+        trace(g, outline(ground(from, to), land, view));
+        g.stroke({ width: Math.max(1.5, t * 0.07), color: SNOW, cap: 'square' });
+      },
+      (g, from, to) => {
+        trace(g, outline(ground(from, to), land, view));
+        g.stroke({ width: 1, color: NIGHT, alpha: 0.6, cap: 'square' });
+      },
+    );
 
     this.corner = cornerSpot(state, view);
     this.seaLife.corner = this.corner;
     this.seaLife.layout(state, view, this.art);
     this.dentsDrawn = '';
+    return { rows: [y0, y1], passes };
   }
 
   /** Dents in the snow where snowballs came down, drawn again only when one comes or fades. */

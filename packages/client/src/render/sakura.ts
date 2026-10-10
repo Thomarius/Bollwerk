@@ -52,6 +52,8 @@ import { outline, trace, wallGeometry, type Segment, type WallBlock } from './wa
 import { cannonBase } from './cannonBase.js';
 import { ShapeTheme } from './shapeTheme.js';
 import { clearDrawn } from './clearDrawn.js';
+import { release } from './release.js';
+import { TerrainStrips, whole, type TerrainPass, type TerrainPlan } from './terrainStrips.js';
 
 /** Something with a place and an age: a cloud thrown up, a ring on the sea, a block pressed. */
 interface Aged {
@@ -265,7 +267,8 @@ export class SakuraTheme extends ShapeTheme implements Theme {
   /** Life on the outer sea (`seaLife.ts`). */
   private readonly seaLife = new SakuraSeaLife();
 
-  private readonly terrainGfx = new Graphics();
+  /** The sea and the land, in strips of rows (`TerrainStrips`). */
+  private readonly terrainStrips = new TerrainStrips();
   /** The crests on the sea and the blots of ink: redrawn each frame. */
   /** Ink where shots came down on open ground: drawn again when one comes or fades. */
   private readonly flowGfx = new Graphics();
@@ -335,7 +338,7 @@ export class SakuraTheme extends ShapeTheme implements Theme {
     // Medieval's weather, drawn from the seed: fog is the prints' bands of mist, rain
     // Hiroshige's slanting streaks, snow lies on the roofs.
     this.weather = weatherFor(this.seed, art.pixel.weatherOdds);
-    layers.terrain.addChild(this.terrainGfx, this.flowGfx, this.crestStamps.container);
+    layers.terrain.addChild(this.terrainStrips.container, this.flowGfx, this.crestStamps.container);
     layers.territory.addChild(this.scenery.gfx, this.territory.container);
     layers.structures.addChild(this.structures.container);
     layers.effects.addChild(
@@ -359,7 +362,8 @@ export class SakuraTheme extends ShapeTheme implements Theme {
     this.territory.destroy();
     this.structures.destroy();
     this.scenery.destroy();
-    for (const g of [this.terrainGfx, this.flowGfx, this.effectGfx, this.overlayGfx]) {
+    release(this.terrainStrips.container);
+    for (const g of [this.flowGfx, this.effectGfx, this.overlayGfx]) {
       g.destroy();
     }
   }
@@ -371,12 +375,15 @@ export class SakuraTheme extends ShapeTheme implements Theme {
   // ------------------------------------------------------------------ terrain
 
   drawTerrain(state: MatchState, view: ViewTransform): void {
+    this.terrainStrips.draw(state, view, () => this.planTerrain(state, view));
+  }
+
+  /** The terrain's passes over strips of rows (`TerrainStrips`), and what they share. */
+  private planTerrain(state: MatchState, view: ViewTransform): TerrainPlan {
     this.terrain = state.terrain;
     this.width = state.width;
     this.height = state.height;
     this.scenery.refresh(state, view, this.art, true);
-    const g = this.terrainGfx;
-    clearDrawn(g);
     const { palette } = this.art;
     const t = view.tile;
     const land = (x: number, y: number): boolean => this.land(x, y);
@@ -425,17 +432,17 @@ export class SakuraTheme extends ShapeTheme implements Theme {
       mixed(hex(palette.waterMid), hex(palette.waterDeep), 0.5),
       hex(palette.waterDeep),
     ];
-    g.rect(tileX(view, x0), tileY(view, y0), w * t, h * t);
-    g.fill({ color: bands[4]! });
-    for (let band = 3; band >= 0; band--) {
-      for (let y = 0; y < h; y++) {
-        for (let x = 0; x < w; x++) {
-          if (depth[y * w + x] !== band + 1) continue;
-          g.circle(tileX(view, x + x0 + 0.5), tileY(view, y + y0 + 0.5), t * 0.8);
+    const shallows = (band: number): TerrainPass => {
+      return (g, from, to) => {
+        for (let y = from - y0; y < to - y0; y++) {
+          for (let x = 0; x < w; x++) {
+            if (depth[y * w + x] !== band + 1) continue;
+            g.circle(tileX(view, x + x0 + 0.5), tileY(view, y + y0 + 0.5), t * 0.8);
+          }
         }
-      }
-      g.fill({ color: bands[band]! });
-    }
+        g.fill({ color: bands[band]! });
+      };
+    };
     const deep = (x: number, y: number): boolean => {
       const lx = Math.floor(x) - x0;
       const ly = Math.floor(y) - y0;
@@ -443,23 +450,6 @@ export class SakuraTheme extends ShapeTheme implements Theme {
       const d = depth[ly * w + lx]!;
       return d < 0 || d >= 3;
     };
-    // The waves' fish-scale pattern (seigaiha) over the deeper water: rows of arcs, each
-    // row half a scale across from the last, so every arc shows whole.
-    const R = 1;
-    for (let row = 0; y0 + row * R <= y0 + h; row++) {
-      const sy = y0 + row * R;
-      const shift = row % 2 === 0 ? 0 : R;
-      for (let sx = x0 + shift; sx <= x0 + w; sx += R * 2) {
-        if (!deep(sx, sy)) continue;
-        for (const k of [1, 0.68, 0.36]) {
-          const cx = tileX(view, sx);
-          const cy = tileY(view, sy);
-          g.moveTo(cx - R * k * t, cy);
-          g.arc(cx, cy, R * k * t, Math.PI, Math.PI * 2);
-        }
-      }
-    }
-    g.stroke({ width: Math.max(1, t * 0.05), color: hex(palette.waterFoam), alpha: 0.13 });
     this.seaCells = [];
     for (let y = 0; y < h; y++) {
       for (let x = 0; x < w; x++) {
@@ -469,52 +459,117 @@ export class SakuraTheme extends ShapeTheme implements Theme {
     }
 
     // The land: flat pale green as a print lays it, lighter rounds, tufts in a few strokes.
-    const ground: Cell[] = [];
-    for (let y = 0; y < state.height; y++) {
-      for (let x = 0; x < state.width; x++) if (land(x, y)) ground.push({ x, y });
-    }
-    for (const { x, y } of ground) g.rect(tileX(view, x), tileY(view, y), t, t);
-    g.fill({ color: hex(palette.grassMid) });
-    for (const { x, y } of ground) {
-      if (hash(x, y, 1) < 0.2) g.circle(tileX(view, x + 0.5), tileY(view, y + 0.5), t * 0.75);
-    }
-    g.fill({ color: hex(palette.grassLight), alpha: 0.35 });
-    for (const { x, y } of ground) {
-      if (hash(x, y, 2) > 0.25) continue;
-      const px = tileX(view, x) + t * (0.2 + 0.6 * hash(x, y, 3));
-      const py = tileY(view, y) + t * (0.3 + 0.5 * hash(x, y, 4));
-      g.moveTo(px - t * 0.12, py - t * 0.14).quadraticCurveTo(px - t * 0.04, py - t * 0.02, px, py);
-      g.moveTo(px, py).lineTo(px + t * 0.02, py - t * 0.2);
-      g.moveTo(px, py).quadraticCurveTo(px + t * 0.06, py - t * 0.04, px + t * 0.13, py - t * 0.12);
-    }
-    g.stroke({ width: Math.max(1, t * 0.05), color: hex(palette.grassDark), cap: 'round' });
-    // A faint tint of the owner over each island, as the other styles give.
-    for (let player = 1; player <= state.players.length; player++) {
-      let any = false;
-      for (const { x, y } of ground) {
-        if (state.islandId[y * state.width + x] !== player) continue;
-        g.rect(tileX(view, x), tileY(view, y), t, t);
-        any = true;
+    const ground = (from: number, to: number): Cell[] => {
+      const cells: Cell[] = [];
+      for (let y = Math.max(0, from); y < Math.min(state.height, to); y++) {
+        for (let x = 0; x < state.width; x++) if (land(x, y)) cells.push({ x, y });
       }
-      if (any) g.fill({ color: this.colour(player - 1, 'base'), alpha: 0.07 });
-    }
-
-    // The shore: a line of white surf out on the water, then a beach of pale sand.
-    const coast = outline(ground, land, view);
-    trace(g, coast);
-    g.stroke({ width: t * 0.75, color: hex(palette.waterFoam), alpha: 0.4, cap: 'square' });
-    trace(g, coast);
-    g.stroke({ width: t * 0.4, color: hex(palette.sand), cap: 'square' });
+      return cells;
+    };
 
     // Mount Fuji, in the corner the compass rose takes in Parchment.
     const right = Math.floor((view.width - view.originX) / t) - state.width;
     const bottom = Math.floor((view.height - view.originY) / t) - state.height;
     this.fuji = roseSpot(state, right, bottom, timerSpot(state));
     this.seaLife.fuji = this.fuji;
-    if (this.fuji !== null) this.drawFuji(g, view, this.fuji);
+    const fuji = this.fuji;
     this.seaLife.layout(state, view, this.art);
     this.crests = [];
     this.layoutMist();
+
+    return {
+      rows: [y0, y0 + h],
+      passes: [
+        whole((g) => {
+          g.rect(tileX(view, x0), tileY(view, y0), w * t, h * t);
+          g.fill({ color: bands[4]! });
+        }),
+        shallows(3),
+        shallows(2),
+        shallows(1),
+        shallows(0),
+        // The waves' fish-scale pattern (seigaiha) over the deeper water: rows of arcs, each
+        // row half a scale across from the last, so every arc shows whole.
+        (g, from, to) => {
+          const R = 1;
+          // The last row of arcs lies on the sheet's lower edge, past its last row of tiles:
+          // the last strip draws it.
+          const end = to === y0 + h ? to + 1 : to;
+          for (let row = from - y0; y0 + row * R <= y0 + h && y0 + row * R < end; row++) {
+            const sy = y0 + row * R;
+            const shift = row % 2 === 0 ? 0 : R;
+            for (let sx = x0 + shift; sx <= x0 + w; sx += R * 2) {
+              if (!deep(sx, sy)) continue;
+              for (const k of [1, 0.68, 0.36]) {
+                const cx = tileX(view, sx);
+                const cy = tileY(view, sy);
+                g.moveTo(cx - R * k * t, cy);
+                g.arc(cx, cy, R * k * t, Math.PI, Math.PI * 2);
+              }
+            }
+          }
+          g.stroke({ width: Math.max(1, t * 0.05), color: hex(palette.waterFoam), alpha: 0.13 });
+        },
+        (g, from, to) => {
+          for (const { x, y } of ground(from, to)) g.rect(tileX(view, x), tileY(view, y), t, t);
+          g.fill({ color: hex(palette.grassMid) });
+        },
+        (g, from, to) => {
+          for (const { x, y } of ground(from, to)) {
+            if (hash(x, y, 1) < 0.2) {
+              g.circle(tileX(view, x + 0.5), tileY(view, y + 0.5), t * 0.75);
+            }
+          }
+          g.fill({ color: hex(palette.grassLight), alpha: 0.35 });
+        },
+        (g, from, to) => {
+          for (const { x, y } of ground(from, to)) {
+            if (hash(x, y, 2) > 0.25) continue;
+            const px = tileX(view, x) + t * (0.2 + 0.6 * hash(x, y, 3));
+            const py = tileY(view, y) + t * (0.3 + 0.5 * hash(x, y, 4));
+            g.moveTo(px - t * 0.12, py - t * 0.14).quadraticCurveTo(
+              px - t * 0.04,
+              py - t * 0.02,
+              px,
+              py,
+            );
+            g.moveTo(px, py).lineTo(px + t * 0.02, py - t * 0.2);
+            g.moveTo(px, py).quadraticCurveTo(
+              px + t * 0.06,
+              py - t * 0.04,
+              px + t * 0.13,
+              py - t * 0.12,
+            );
+          }
+          g.stroke({ width: Math.max(1, t * 0.05), color: hex(palette.grassDark), cap: 'round' });
+        },
+        // A faint tint of the owner over each island, as the other styles give.
+        (g, from, to) => {
+          const cells = ground(from, to);
+          for (let player = 1; player <= state.players.length; player++) {
+            let any = false;
+            for (const { x, y } of cells) {
+              if (state.islandId[y * state.width + x] !== player) continue;
+              g.rect(tileX(view, x), tileY(view, y), t, t);
+              any = true;
+            }
+            if (any) g.fill({ color: this.colour(player - 1, 'base'), alpha: 0.07 });
+          }
+        },
+        // The shore: a line of white surf out on the water, then a beach of pale sand.
+        (g, from, to) => {
+          trace(g, outline(ground(from, to), land, view));
+          g.stroke({ width: t * 0.75, color: hex(palette.waterFoam), alpha: 0.4, cap: 'square' });
+        },
+        (g, from, to) => {
+          trace(g, outline(ground(from, to), land, view));
+          g.stroke({ width: t * 0.4, color: hex(palette.sand), cap: 'square' });
+        },
+        whole((g) => {
+          if (fuji !== null) this.drawFuji(g, view, fuji);
+        }),
+      ],
+    };
   }
 
   /**

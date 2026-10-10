@@ -53,6 +53,7 @@ import { outline, trace, wallGeometry } from './walls.js';
 import { cannonBase } from './cannonBase.js';
 import { release } from './release.js';
 import { clearDrawn } from './clearDrawn.js';
+import { TerrainStrips, type TerrainPass, type TerrainPlan } from './terrainStrips.js';
 
 /** How long the hourglass takes to turn over as a phase begins. */
 const TURN_MS = 700;
@@ -102,6 +103,18 @@ const GLINT_MS = 340;
 /** How this style sends off the winners (PLAN 11.19 Z4). */
 const FINISH: FinishLook = { spark: 'shard', flag: 'leaded' };
 
+/** How `glass` cuts and finishes its panes. */
+interface GlassOptions {
+  alpha?: number;
+  sheen?: number;
+  lead?: number;
+  edged?: boolean;
+  /** The glass's own grain, laid over the panes before the lead. */
+  grain?: FillPattern | null;
+  /** Painted on each pane big enough to take it: waves on the sea, veins on the land. */
+  paint?: { kind: 'waves' | 'veins'; colour: number; alpha: number };
+}
+
 /**
  * The stained glass look (PLAN 11.18 Y7): the board as a church window. Land and sea cut
  * into irregular panes of a few tiles each (`panes.ts`) — one a tile read as a mosaic —
@@ -121,7 +134,8 @@ export class GlassTheme implements Theme {
   /** Life on the outer ocean (`seaLife.ts`). */
   private readonly seaLife = new GlassSeaLife();
 
-  private readonly terrainGfx = new Graphics();
+  /** The sea's glass and the land's, in strips of rows (`TerrainStrips`). */
+  private readonly terrainStrips = new TerrainStrips();
   /**
    * A few panes of the window shimmering, brightening and fading: drawn once with the
    * terrain, in a handful of groups each on its own beat, and only faded each frame.
@@ -196,7 +210,7 @@ export class GlassTheme implements Theme {
     this.light.blendMode = 'add';
     this.light.anchor.set(0.5);
     this.roseGlow.container.blendMode = 'add';
-    layers.terrain.addChild(this.terrainGfx, this.shimmer, this.hourglassGfx);
+    layers.terrain.addChild(this.terrainStrips.container, this.shimmer, this.hourglassGfx);
     layers.territory.addChild(this.territory.container, this.scenery.gfx, this.light);
     layers.structures.addChild(this.structures.container);
     layers.effects.addChild(
@@ -224,13 +238,14 @@ export class GlassTheme implements Theme {
     for (const p of [...this.oldGrains, this.grain?.pattern]) p?.texture.destroy(true);
     this.grain = null;
     release(this.shimmer);
+    release(this.terrainStrips.container);
     this.lateGfx.destroy();
     this.crowns.gfx.destroy();
     this.aboveCrownsGfx.destroy();
     this.territory.destroy();
     this.structures.destroy();
     this.scenery.destroy();
-    for (const g of [this.terrainGfx, this.hourglassGfx, this.effectGfx, this.overlayGfx]) {
+    for (const g of [this.hourglassGfx, this.effectGfx, this.overlayGfx]) {
       g.destroy();
     }
   }
@@ -260,17 +275,25 @@ export class GlassTheme implements Theme {
     paneAt: (x: number, y: number) => number,
     dark: number,
     light: number,
-    options: {
-      alpha?: number;
-      sheen?: number;
-      lead?: number;
-      edged?: boolean;
-      /** The glass's own grain, laid over the panes before the lead. */
-      grain?: FillPattern | null;
-      /** Painted on each pane big enough to take it: waves on the sea, veins on the land. */
-      paint?: { kind: 'waves' | 'veins'; colour: number; alpha: number };
-    } = {},
+    options: GlassOptions = {},
   ): void {
+    for (const pass of this.glassPasses(view, cells, paneAt, dark, light, options)) {
+      pass(g, -Infinity, Infinity, 0);
+    }
+  }
+
+  /**
+   * `glass` as passes over strips of rows (`TerrainStrips`): a pane is drawn whole in the
+   * strip of its first tile, a tile's lead and grain in its own row's.
+   */
+  private glassPasses(
+    view: ViewTransform,
+    cells: readonly Cell[],
+    paneAt: (x: number, y: number) => number,
+    dark: number,
+    light: number,
+    options: GlassOptions,
+  ): TerrainPass[] {
     const t = view.tile;
     const alpha = options.alpha ?? 1;
     const inside = new Set(cells.map((c) => `${c.x},${c.y}`));
@@ -283,56 +306,85 @@ export class GlassTheme implements Theme {
       if (list === undefined) byPane.set(pane, [c]);
       else list.push(c);
     }
+    const firsts = new Map<number, Cell>();
     for (const [pane, tiles] of byPane) {
-      for (const { x, y } of tiles) g.rect(tileX(view, x), tileY(view, y), t, t);
-      const shade = 0.25 + this.style.paneVariance * (paneShade(pane) - 0.5);
-      g.fill({ color: mixed(dark, light, shade), alpha });
+      firsts.set(
+        pane,
+        tiles.reduce((a, b) => (b.y < a.y || (b.y === a.y && b.x < a.x) ? b : a)),
+      );
     }
-    // The streaks and bubbles of hand-blown glass, a pattern laid over the panes in runs of a
-    // row, so a fill is a few vertices a run rather than a shape a bubble.
-    if (options.grain) {
-      for (const r of rowRuns(cells)) {
-        g.rect(tileX(view, r.x), tileY(view, r.y), r.w * t, t);
+    /** The panes whose first tile lies in the strip's rows. */
+    const panes = (from: number, to: number): Map<number, Cell[]> => {
+      const out = new Map<number, Cell[]>();
+      for (const [pane, tiles] of byPane) {
+        const { y } = firsts.get(pane)!;
+        if (y >= from && y < to) out.set(pane, tiles);
       }
-      g.fill({ fill: options.grain, alpha: this.style.textureAlpha * alpha });
-    }
-    if (options.paint) this.paint(g, view, byPane, options.paint);
-    // The light through each pane: a sheen in the corner of its first tile, row by row.
-    for (const tiles of byPane.values()) {
-      const first = tiles.reduce((a, b) => (b.y < a.y || (b.y === a.y && b.x < a.x) ? b : a));
-      const px = tileX(view, first.x);
-      const py = tileY(view, first.y);
-      g.poly([
-        px + t * 0.14,
-        py + t * 0.14,
-        px + t * 0.85,
-        py + t * 0.14,
-        px + t * 0.14,
-        py + t * 0.85,
-      ]);
-    }
-    g.fill({ color: 0xffffff, alpha: this.style.sheenAlpha * (options.sheen ?? 1) });
-    // The lead: along every edge between two panes, and round the cells when edged.
-    for (const { x, y } of cells) {
-      const here = paneAt(x, y);
-      const px = tileX(view, x);
-      const py = tileY(view, y);
-      const right = has(x + 1, y);
-      const below = has(x, y + 1);
-      if ((right && paneAt(x + 1, y) !== here) || (!right && options.edged)) {
-        g.moveTo(px + t, py).lineTo(px + t, py + t);
-      }
-      if ((below && paneAt(x, y + 1) !== here) || (!below && options.edged)) {
-        g.moveTo(px, py + t).lineTo(px + t, py + t);
-      }
-      if (options.edged && !has(x - 1, y)) g.moveTo(px, py).lineTo(px, py + t);
-      if (options.edged && !has(x, y - 1)) g.moveTo(px, py).lineTo(px + t, py);
-    }
-    g.stroke({
-      width: this.lead(view),
-      color: hex(this.art.palette.shadow),
-      alpha: options.lead ?? 1,
-    });
+      return out;
+    };
+    const rows = (from: number, to: number): Cell[] => cells.filter((c) => c.y >= from && c.y < to);
+    const { grain, paint } = options;
+    return [
+      (g, from, to) => {
+        for (const [pane, tiles] of panes(from, to)) {
+          for (const { x, y } of tiles) g.rect(tileX(view, x), tileY(view, y), t, t);
+          const shade = 0.25 + this.style.paneVariance * (paneShade(pane) - 0.5);
+          g.fill({ color: mixed(dark, light, shade), alpha });
+        }
+      },
+      // The streaks and bubbles of hand-blown glass, a pattern laid over the panes in runs of a
+      // row, so a fill is a few vertices a run rather than a shape a bubble.
+      (g, from, to) => {
+        if (!grain) return;
+        for (const r of rowRuns(rows(from, to))) {
+          g.rect(tileX(view, r.x), tileY(view, r.y), r.w * t, t);
+        }
+        g.fill({ fill: grain, alpha: this.style.textureAlpha * alpha });
+      },
+      (g, from, to) => {
+        if (paint) this.paint(g, view, panes(from, to), paint);
+      },
+      // The light through each pane: a sheen in the corner of its first tile, row by row.
+      (g, from, to) => {
+        for (const pane of panes(from, to).keys()) {
+          const first = firsts.get(pane)!;
+          const px = tileX(view, first.x);
+          const py = tileY(view, first.y);
+          g.poly([
+            px + t * 0.14,
+            py + t * 0.14,
+            px + t * 0.85,
+            py + t * 0.14,
+            px + t * 0.14,
+            py + t * 0.85,
+          ]);
+        }
+        g.fill({ color: 0xffffff, alpha: this.style.sheenAlpha * (options.sheen ?? 1) });
+      },
+      // The lead: along every edge between two panes, and round the cells when edged.
+      (g, from, to) => {
+        for (const { x, y } of rows(from, to)) {
+          const here = paneAt(x, y);
+          const px = tileX(view, x);
+          const py = tileY(view, y);
+          const right = has(x + 1, y);
+          const below = has(x, y + 1);
+          if ((right && paneAt(x + 1, y) !== here) || (!right && options.edged)) {
+            g.moveTo(px + t, py).lineTo(px + t, py + t);
+          }
+          if ((below && paneAt(x, y + 1) !== here) || (!below && options.edged)) {
+            g.moveTo(px, py + t).lineTo(px + t, py + t);
+          }
+          if (options.edged && !has(x - 1, y)) g.moveTo(px, py).lineTo(px, py + t);
+          if (options.edged && !has(x, y - 1)) g.moveTo(px, py).lineTo(px + t, py);
+        }
+        g.stroke({
+          width: this.lead(view),
+          color: hex(this.art.palette.shadow),
+          alpha: options.lead ?? 1,
+        });
+      },
+    ];
   }
 
   /**
@@ -403,14 +455,17 @@ export class GlassTheme implements Theme {
   // ------------------------------------------------------------------ terrain
 
   drawTerrain(state: MatchState, view: ViewTransform): void {
+    this.terrainStrips.draw(state, view, () => this.planTerrain(state, view));
+  }
+
+  /** The terrain's passes over strips of rows (`TerrainStrips`), and what they share. */
+  private planTerrain(state: MatchState, view: ViewTransform): TerrainPlan {
     this.hourglass = cornerSpot(state, view);
     this.seaLife.corner = this.hourglass;
     this.seaLife.layout(state, view, this.art);
     this.scenery.refresh(state, view, this.art, true);
     this.terrain = state.terrain;
     this.width = state.width;
-    const g = this.terrainGfx;
-    clearDrawn(g);
     const { palette } = this.art;
     const t = view.tile;
     const land = (x: number, y: number): boolean =>
@@ -435,34 +490,63 @@ export class GlassTheme implements Theme {
     }
     const grain = this.grainFor(state.seed);
     const pale = hex(palette.waterFoam);
-    this.glass(g, view, sea, paneAt, hex(palette.waterDeep), hex(palette.waterShallow), {
-      sheen: 0.6,
-      lead: 0.8,
-      grain,
-      paint: { kind: 'waves', colour: pale, alpha: this.style.paintAlpha },
-    });
-    this.glass(g, view, ground, paneAt, hex(palette.grassDark), hex(palette.grassLight), {
-      grain,
-      paint: {
-        kind: 'veins',
-        colour: mixed(hex(palette.grassLight), 0xffffff, 0.35),
-        alpha: this.style.paintAlpha,
+    const seaGlass = this.glassPasses(
+      view,
+      sea,
+      paneAt,
+      hex(palette.waterDeep),
+      hex(palette.waterShallow),
+      {
+        sheen: 0.6,
+        lead: 0.8,
+        grain,
+        paint: { kind: 'waves', colour: pale, alpha: this.style.paintAlpha },
       },
-    });
+    );
+    const landGlass = this.glassPasses(
+      view,
+      ground,
+      paneAt,
+      hex(palette.grassDark),
+      hex(palette.grassLight),
+      {
+        grain,
+        paint: {
+          kind: 'veins',
+          colour: mixed(hex(palette.grassLight), 0xffffff, 0.35),
+          alpha: this.style.paintAlpha,
+        },
+      },
+    );
     this.layShimmer(state, view, [...sea, ...ground], paneAt);
-    // A faint tint of the owner over each island, as the other styles give.
-    for (let player = 1; player <= state.players.length; player++) {
-      let any = false;
-      for (const { x, y } of ground) {
-        if (state.islandId[y * state.width + x] !== player) continue;
-        g.rect(tileX(view, x), tileY(view, y), t, t);
-        any = true;
-      }
-      if (any) g.fill({ color: this.colour(player - 1, 'base'), alpha: 0.08 });
-    }
-    // The heavier came along every coast, which holds the land's glass to the sea's.
-    trace(g, outline(ground, land, view));
-    g.stroke({ width: this.lead(view) * this.style.coastLead, color: hex(palette.shadow) });
+    const rows = (from: number, to: number): Cell[] =>
+      ground.filter((c) => c.y >= from && c.y < to);
+
+    return {
+      rows: [-marginY, state.height + marginY],
+      passes: [
+        ...seaGlass,
+        ...landGlass,
+        // A faint tint of the owner over each island, as the other styles give.
+        (g, from, to) => {
+          const cells = rows(from, to);
+          for (let player = 1; player <= state.players.length; player++) {
+            let any = false;
+            for (const { x, y } of cells) {
+              if (state.islandId[y * state.width + x] !== player) continue;
+              g.rect(tileX(view, x), tileY(view, y), t, t);
+              any = true;
+            }
+            if (any) g.fill({ color: this.colour(player - 1, 'base'), alpha: 0.08 });
+          }
+        },
+        // The heavier came along every coast, which holds the land's glass to the sea's.
+        (g, from, to) => {
+          trace(g, outline(rows(from, to), land, view));
+          g.stroke({ width: this.lead(view) * this.style.coastLead, color: hex(palette.shadow) });
+        },
+      ],
+    };
   }
 
   /** The grain for this match, drawn for its seed the first time it is asked for. */

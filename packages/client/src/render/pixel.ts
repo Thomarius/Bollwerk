@@ -65,6 +65,7 @@ import {
   shotProgress,
 } from './theme.js';
 import { clearDrawn } from './clearDrawn.js';
+import { TerrainStrips, whole, type TerrainPlan } from './terrainStrips.js';
 
 interface Blast {
   x: number;
@@ -220,11 +221,12 @@ export class PixelTheme implements Theme {
 
   private terrainLayer!: Container;
   /**
-   * The terrain's sprites, ten thousand at eight players, as a render group of their own
-   * (PLAN 11.22): Pixi then keeps their batch from frame to frame, where in the layer with
-   * the sea's crests, redrawn every frame, it gathered and packed every one of them again.
+   * The terrain's sprites, ten thousand at eight players, in strips of rows (`TerrainStrips`),
+   * each a render group of its own (PLAN 11.22): Pixi then keeps their batch from frame to
+   * frame, where in the layer with the sea's crests, redrawn every frame, it gathered and
+   * packed every one of them again.
    */
-  private readonly tileLayer = new Container({ isRenderGroup: true });
+  private readonly terrainStrips = new TerrainStrips(() => new Container({ isRenderGroup: true }));
   private structureLayer!: Container;
   private effectLayer!: Container;
   /**
@@ -452,7 +454,7 @@ export class PixelTheme implements Theme {
 
   destroy(): void {
     this.terrainLayer?.removeChildren();
-    release(this.tileLayer);
+    release(this.terrainStrips.container);
     // The pooled sprites go with their pools, not twice over with their layers.
     for (const [layer, pool] of this.pools) {
       layer.removeChildren();
@@ -527,8 +529,12 @@ export class PixelTheme implements Theme {
   }
 
   drawTerrain(state: MatchState, view: ViewTransform): void {
+    this.terrainStrips.draw(state, view, () => this.planTerrain(state, view));
+  }
+
+  /** The terrain's passes over strips of rows (`TerrainStrips`), and what they share. */
+  private planTerrain(state: MatchState, view: ViewTransform): TerrainPlan<Container> {
     this.terrainLayer.removeChildren();
-    this.tileLayer.removeChildren();
     this.waterSprites = [];
     this.waterVariants = [];
     this.openSea = [];
@@ -548,10 +554,10 @@ export class PixelTheme implements Theme {
 
     const variants = this.art.generators.terrain.grassVariants;
     const seaVariants = this.art.generators.terrain.waterVariants;
-    const sea = (x: number, y: number): Sprite => {
+    const sea = (parent: Container, x: number, y: number): Sprite => {
       // Scattered by a hash of the tile rather than in a pattern, which would show.
       const variant = (((x * 73856093) ^ (y * 19349663)) >>> 0) % seaVariants;
-      const sprite = this.place(this.tileLayer, KEY.water(0, variant), view, x, y);
+      const sprite = this.place(parent, KEY.water(0, variant), view, x, y);
       this.waterSprites.push(sprite);
       this.waterVariants.push(variant);
       return sprite;
@@ -567,82 +573,93 @@ export class PixelTheme implements Theme {
     const spanX = state.width + marginX * 2;
     const deepest = this.art.generators.terrain.depthShadeTiles;
     const strength = this.art.generators.terrain.depthShadeStrength;
+    const depthAt = (x: number, y: number): number =>
+      depth[(y + marginY) * spanX + (x + marginX)] as number;
+    const isSea = (x: number, y: number): boolean =>
+      x < 0 || y < 0 || x >= state.width || y >= state.height || !land(x, y);
+    // The sea's cells, for the glints and crests, whole before any strip of it is drawn.
     for (let y = -marginY; y < state.height + marginY; y++) {
       for (let x = -marginX; x < state.width + marginX; x++) {
-        const inside = x >= 0 && y >= 0 && x < state.width && y < state.height;
-        const i = y * state.width + x;
-        if (!inside || state.terrain[i] !== Terrain.Land) {
-          const sprite = sea(x, y);
-          // Darker the further from land, so the islands stand in shallows and the
-          // channels between them read as open sea.
-          const d = depth[(y + marginY) * spanX + (x + marginX)] as number;
-          const shade = Math.round(255 * (1 - (strength * Math.max(0, d - 1)) / (deepest - 1)));
-          sprite.tint = (shade << 16) | (shade << 8) | Math.min(255, shade + 24);
-          this.seaCells.push({ x, y });
-          if (d >= 3) this.openSea.push({ x, y });
-
-          let coast = 0;
-          if (land(x, y - 1)) coast |= N;
-          if (land(x + 1, y)) coast |= E;
-          if (land(x, y + 1)) coast |= S;
-          if (land(x - 1, y)) coast |= W;
-          if (coast !== 0) {
-            const surf = this.place(this.tileLayer, KEY.foam(coast), view, x, y);
-            this.surf.push({ sprite: surf, phase: ((x * 7 + y * 11) % 13) / 13 });
-          }
-          // Where the coast turns inward, the corner of the sea is filled with beach.
-          const corners = filletCorners((dx, dy) => land(x + dx, y + dy));
-          for (const corner of FILLET_CORNERS) {
-            if ((corners & corner) === 0) continue;
-            // Tinted for the island across the corner, which the fillet belongs to.
-            const [dx, dy] = ACROSS[corner] as [number, number];
-            const owner = (state.islandId[(y + dy) * state.width + x + dx] as number) - 1;
-            const fillet = this.place(this.tileLayer, KEY.fillet(corner), view, x, y);
-            fillet.tint = beachTint(owner);
-          }
-          continue;
-        }
-
-        // Which sides meet the sea decides the tile; the top nibble carries the
-        // diagonals so a headland does not come out square.
-        let mask = 0;
-        if (!land(x, y - 1)) mask |= N;
-        if (!land(x + 1, y)) mask |= E;
-        if (!land(x, y + 1)) mask |= S;
-        if (!land(x - 1, y)) mask |= W;
-        if (!land(x - 1, y - 1)) mask |= 16;
-        if (!land(x + 1, y - 1)) mask |= 32;
-        if (!land(x + 1, y + 1)) mask |= 64;
-        if (!land(x - 1, y + 1)) mask |= 128;
-
-        // A coast tile's rounded corners show the sea, so it is laid on some.
-        if (mask !== 0) sea(x, y).tint = 0xffffff;
-        const key = mask === 0 ? KEY.grass((x * 7 + y * 13) % variants) : KEY.shore(mask);
-        const sprite = this.place(this.tileLayer, key, view, x, y);
-
-        // Only a hint of the owner's colour. Tinting hard enough to identify an
-        // island by its grass turns the ground muddy and throws away the generated
-        // texture; ownership is carried by the shoreline, the walls and the
-        // territory shading instead.
-        const owner = (state.islandId[i] as number) - 1;
-        if (owner >= 0) {
-          const wash = mask === 0 ? 0.78 : 0.45;
-          sprite.tint = washed(playerColour(this.art, owner, 'base'), wash);
-        }
-        // The beach over it, tinted faintly: sand as hard-tinted as the grass beside it
-        // made the coast a coloured rim rather than a shore.
-        if (mask !== 0)
-          this.place(this.tileLayer, KEY.beach(mask), view, x, y).tint = beachTint(owner);
+        if (!isSea(x, y)) continue;
+        this.seaCells.push({ x, y });
+        if (depthAt(x, y) >= 3) this.openSea.push({ x, y });
       }
     }
-    this.layoutFarmland(state, view);
-    this.terrainLayer.addChild(this.tileLayer, this.seaGfx, this.cornerGfx);
+
+    const tiles = (parent: Container, from: number, to: number): void => {
+      for (let y = from; y < to; y++) {
+        for (let x = -marginX; x < state.width + marginX; x++) {
+          const i = y * state.width + x;
+          if (isSea(x, y)) {
+            const sprite = sea(parent, x, y);
+            // Darker the further from land, so the islands stand in shallows and the
+            // channels between them read as open sea.
+            const d = depthAt(x, y);
+            const shade = Math.round(255 * (1 - (strength * Math.max(0, d - 1)) / (deepest - 1)));
+            sprite.tint = (shade << 16) | (shade << 8) | Math.min(255, shade + 24);
+
+            let coast = 0;
+            if (land(x, y - 1)) coast |= N;
+            if (land(x + 1, y)) coast |= E;
+            if (land(x, y + 1)) coast |= S;
+            if (land(x - 1, y)) coast |= W;
+            if (coast !== 0) {
+              const surf = this.place(parent, KEY.foam(coast), view, x, y);
+              this.surf.push({ sprite: surf, phase: ((x * 7 + y * 11) % 13) / 13 });
+            }
+            // Where the coast turns inward, the corner of the sea is filled with beach.
+            const corners = filletCorners((dx, dy) => land(x + dx, y + dy));
+            for (const corner of FILLET_CORNERS) {
+              if ((corners & corner) === 0) continue;
+              // Tinted for the island across the corner, which the fillet belongs to.
+              const [dx, dy] = ACROSS[corner] as [number, number];
+              const owner = (state.islandId[(y + dy) * state.width + x + dx] as number) - 1;
+              const fillet = this.place(parent, KEY.fillet(corner), view, x, y);
+              fillet.tint = beachTint(owner);
+            }
+            continue;
+          }
+
+          // Which sides meet the sea decides the tile; the top nibble carries the
+          // diagonals so a headland does not come out square.
+          let mask = 0;
+          if (!land(x, y - 1)) mask |= N;
+          if (!land(x + 1, y)) mask |= E;
+          if (!land(x, y + 1)) mask |= S;
+          if (!land(x - 1, y)) mask |= W;
+          if (!land(x - 1, y - 1)) mask |= 16;
+          if (!land(x + 1, y - 1)) mask |= 32;
+          if (!land(x + 1, y + 1)) mask |= 64;
+          if (!land(x - 1, y + 1)) mask |= 128;
+
+          // A coast tile's rounded corners show the sea, so it is laid on some.
+          if (mask !== 0) sea(parent, x, y).tint = 0xffffff;
+          const key = mask === 0 ? KEY.grass((x * 7 + y * 13) % variants) : KEY.shore(mask);
+          const sprite = this.place(parent, key, view, x, y);
+
+          // Only a hint of the owner's colour. Tinting hard enough to identify an
+          // island by its grass turns the ground muddy and throws away the generated
+          // texture; ownership is carried by the shoreline, the walls and the
+          // territory shading instead.
+          const owner = (state.islandId[i] as number) - 1;
+          if (owner >= 0) {
+            const wash = mask === 0 ? 0.78 : 0.45;
+            sprite.tint = washed(playerColour(this.art, owner, 'base'), wash);
+          }
+          // The beach over it, tinted faintly: sand as hard-tinted as the grass beside it
+          // made the coast a coloured rim rather than a shore.
+          if (mask !== 0) this.place(parent, KEY.beach(mask), view, x, y).tint = beachTint(owner);
+        }
+      }
+    };
+
+    this.terrainLayer.addChild(this.terrainStrips.container, this.seaGfx, this.cornerGfx);
     this.islandId = state.islandId;
     this.corner = cornerSpot(state, view);
     this.ocean.corner = this.corner;
     this.ocean.layout(state, view, this.art);
     this.weather = this.torchlit ? 'clear' : weatherFor(state.seed, this.art.pixel.weatherOdds);
-    this.layoutNight(state, view);
+    this.layoutNight(state);
     this.layoutSheep(state);
     this.scenery.sync(state, this.art.scenery);
     this.layoutScenery();
@@ -653,6 +670,23 @@ export class PixelTheme implements Theme {
       y1: state.height + marginY,
     };
     this.layoutCraters();
+
+    return {
+      rows: [-marginY, state.height + marginY],
+      passes: [
+        (parent, from, to) => tiles(parent, from, to),
+        // Over the tiles: the farmland, and at Night the lighthouses' towers, drawn once with
+        // the terrain in its render group, since only the lamp's glow and the beam change
+        // from frame to frame.
+        whole((parent) => {
+          this.layoutFarmland(state, view, parent);
+          for (const spot of this.lighthouses) {
+            const tower = this.place(parent, KEY.lighthouse, view, spot.x, spot.y - 1);
+            tower.height = view.tile * 2;
+          }
+        }),
+      ],
+    };
   }
 
   /**
@@ -661,7 +695,7 @@ export class PixelTheme implements Theme {
    * fields in strips, tilled earth and a crop coming up row by row. Kept clear of the trees
    * and of each other, and two tiles in from the coast, so a field is never taken for a beach.
    */
-  private layoutFarmland(state: MatchState, view: ViewTransform): void {
+  private layoutFarmland(state: MatchState, view: ViewTransform, parent: Container): void {
     const { width: w, height: h } = state;
     const rng = new Rng((state.seed ^ 0xf1e1d5) >>> 0);
     const land = (x: number, y: number): boolean =>
@@ -698,7 +732,7 @@ export class PixelTheme implements Theme {
         const shift = k === 0 ? 0 : ([-4, 0, 4][rng.nextInt(3)] as number);
         const bend = Math.abs(offset + shift) > 8 ? 0 : shift;
         const sprite = this.place(
-          this.tileLayer,
+          parent,
           KEY.track(bend, k === run - 1),
           view,
           gate - 0.5 + offset / this.art.tileSizePx,
@@ -749,7 +783,7 @@ export class PixelTheme implements Theme {
           for (let y = at.y; y < at.y + fh; y++) {
             const kind = (y - at.y + first) % 2 === 0 ? 'tilled' : 'crop';
             for (let x = at.x; x < at.x + fw; x++) {
-              const sprite = this.place(this.tileLayer, KEY.field(kind, (x + y) % 2), view, x, y);
+              const sprite = this.place(parent, KEY.field(kind, (x + y) % 2), view, x, y);
               // At Night pale strips beside a wall read as paving: they sink into the dark.
               sprite.tint = this.torchlit ? 0x8c8c8c : tint(y * w + x, 0.88);
               // A little of the grass through it, so a field is ground and not a patch
@@ -1974,7 +2008,7 @@ export class PixelTheme implements Theme {
    * the fireflies wander, and for each island a lighthouse on the sea off the corner of it
    * farthest from the middle of the map, where it looks out over open water.
    */
-  private layoutNight(state: MatchState, view: ViewTransform): void {
+  private layoutNight(state: MatchState): void {
     this.land = [];
     this.lighthouses = [];
     this.fireflies = [];
@@ -2014,12 +2048,7 @@ export class PixelTheme implements Theme {
         .sort((a, b) => Math.hypot(b.x - mx, b.y - my) - Math.hypot(a.x - mx, a.y - my))[0];
       if (far !== undefined) this.lighthouses.push(far);
     }
-    // Drawn once with the terrain, in its render group: only the lamp's glow and the beam
-    // change from frame to frame.
-    for (const spot of this.lighthouses) {
-      const tower = this.place(this.tileLayer, KEY.lighthouse, view, spot.x, spot.y - 1);
-      tower.height = view.tile * 2;
-    }
+    // Their towers are drawn with the terrain (`planTerrain`).
     const count = Math.round((this.land.length * this.art.pixel.firefliesPerHundredTiles) / 100);
     for (let k = 0; k < count; k++) {
       const at = this.land[Math.floor(Math.random() * this.land.length)] as Cell;

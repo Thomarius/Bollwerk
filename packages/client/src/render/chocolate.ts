@@ -53,6 +53,8 @@ import { outline, trace, wallGeometry } from './walls.js';
 import { cannonBase } from './cannonBase.js';
 import { ShapeTheme } from './shapeTheme.js';
 import { clearDrawn } from './clearDrawn.js';
+import { release } from './release.js';
+import { TerrainStrips, whole, type TerrainPass, type TerrainPlan } from './terrainStrips.js';
 
 /** A swirl on the river, carried along by the current, melting back in as it ages. */
 interface Swirl {
@@ -225,7 +227,8 @@ export class ChocolateTheme extends ShapeTheme implements Theme {
   /** Life on the outer river (`seaLife.ts`). */
   private readonly seaLife = new ChocolateSeaLife();
 
-  private readonly terrainGfx = new Graphics();
+  /** The river, its shallows and the meadow, in strips of rows (`TerrainStrips`). */
+  private readonly terrainStrips = new TerrainStrips();
   /** The fall's streams, still: drawn again only when the board moves (`drawFallStill`). */
   private readonly fallGfx = new Graphics();
   private fallDrawn = '';
@@ -326,7 +329,7 @@ export class ChocolateTheme extends ShapeTheme implements Theme {
     this.style = art.chocolate;
     this.snowy = weatherFor(this.seed, art.pixel.weatherOdds) === 'snow';
     layers.terrain.addChild(
-      this.terrainGfx,
+      this.terrainStrips.container,
       this.splatGfx,
       this.swirlLayer,
       this.fallGfx,
@@ -362,8 +365,8 @@ export class ChocolateTheme extends ShapeTheme implements Theme {
     this.lateGfx.destroy();
     this.structures.destroy();
     this.scenery.destroy();
+    release(this.terrainStrips.container);
     for (const g of [
-      this.terrainGfx,
       this.fallGfx,
       this.flowGfx,
       this.crowns.gfx,
@@ -379,12 +382,15 @@ export class ChocolateTheme extends ShapeTheme implements Theme {
   // ------------------------------------------------------------------ terrain
 
   drawTerrain(state: MatchState, view: ViewTransform): void {
+    this.terrainStrips.draw(state, view, () => this.planTerrain(state, view));
+  }
+
+  /** The terrain's passes over strips of rows (`TerrainStrips`), and what they share. */
+  private planTerrain(state: MatchState, view: ViewTransform): TerrainPlan {
     this.terrain = state.terrain;
     this.width = state.width;
     this.height = state.height;
     this.scenery.refresh(state, view, this.art, true);
-    const g = this.terrainGfx;
-    clearDrawn(g);
     const { palette } = this.art;
     const t = view.tile;
     const land = (x: number, y: number): boolean => this.land(x, y);
@@ -432,11 +438,14 @@ export class ChocolateTheme extends ShapeTheme implements Theme {
         if (d < 0 || d >= 2) this.seaCells.push({ x: x + x0, y: y + y0 });
       }
     }
-    const ground: Cell[] = [];
-    for (let y = 0; y < state.height; y++) {
-      for (let x = 0; x < state.width; x++) if (land(x, y)) ground.push({ x, y });
-    }
-    const coast = outline(ground, land, view);
+    /** The land of the strip's rows, row by row as the whole board's was listed. */
+    const ground = (from: number, to: number): Cell[] => {
+      const cells: Cell[] = [];
+      for (let y = Math.max(0, from); y < Math.min(state.height, to); y++) {
+        for (let x = 0; x < state.width; x++) if (land(x, y)) cells.push({ x, y });
+      }
+      return cells;
+    };
 
     // The deep river everywhere, then the shallows as bands along the coast, each the coast
     // stroked wide with round ends, so they follow it smoothly and two islands' shallows
@@ -445,81 +454,106 @@ export class ChocolateTheme extends ShapeTheme implements Theme {
     // players, as heavy stepped blotches between the islands (S9). Opaque, so overlapping
     // strokes do not darken where they cross. Outermost a lighter river, then the shallows,
     // then a rim of cream where the chocolate laps the shore.
-    g.rect(tileX(view, x0), tileY(view, y0), w * t, h * t);
-    g.fill({ color: hex(palette.waterDeep) });
     const bands: [number, number][] = [
       [SHALLOW_REACH[0], mixed(hex(palette.waterDeep), hex(palette.waterMid), 0.6)],
       [SHALLOW_REACH[1], mixed(hex(palette.waterMid), hex(palette.waterShallow), 0.6)],
       [SHALLOW_REACH[2], mixed(hex(palette.waterShallow), hex(palette.waterFoam), 0.8)],
     ];
-    for (const [reach, color] of bands) {
-      trace(g, coast);
-      g.stroke({ width: t * reach * 2, color, cap: 'round', join: 'round' });
-    }
-
-    // The meadow: mint sugar grass, a lighter patch here and there, tufts and a glint of sugar.
-    for (const { x, y } of ground) g.rect(tileX(view, x), tileY(view, y), t, t);
-    g.fill({ color: hex(palette.grassMid) });
-    for (const { x, y } of ground) {
-      if (hash(x, y, 1) < 0.22) g.circle(tileX(view, x + 0.5), tileY(view, y + 0.5), t * 0.7);
-    }
-    g.fill({ color: hex(palette.grassLight), alpha: 0.35 });
-    for (const { x, y } of ground) {
-      if (hash(x, y, 2) > 0.4) continue;
-      const px = tileX(view, x) + t * (0.2 + 0.6 * hash(x, y, 3));
-      const py = tileY(view, y) + t * (0.3 + 0.5 * hash(x, y, 4));
-      g.moveTo(px - t * 0.12, py - t * 0.14).lineTo(px, py);
-      g.lineTo(px + t * 0.1, py - t * 0.16);
-      g.moveTo(px, py).lineTo(px, py - t * 0.2);
-    }
-    g.stroke({ width: Math.max(1, t * 0.06), color: hex(palette.grassDark), cap: 'round' });
-    for (const { x, y } of ground) {
-      if (hash(x, y, 5) > 0.25) continue;
-      g.circle(
-        tileX(view, x) + t * hash(x, y, 6),
-        tileY(view, y) + t * hash(x, y, 7),
-        Math.max(0.8, t * 0.04),
-      );
-    }
-    g.fill({ color: 0xffffff, alpha: 0.8 });
-    // A faint tint of the owner over each island, as the other styles give.
-    for (let player = 1; player <= state.players.length; player++) {
-      let any = false;
-      for (const { x, y } of ground) {
-        if (state.islandId[y * state.width + x] !== player) continue;
-        g.rect(tileX(view, x), tileY(view, y), t, t);
-        any = true;
-      }
-      if (any) g.fill({ color: this.colour(player - 1, 'base'), alpha: 0.07 });
-    }
-
-    // The shore: a band of biscuit crumb along every coast, wet-dark where the river meets it,
-    // and crumbs scattered on it.
-    trace(g, coast);
-    g.stroke({ width: t * 0.42, color: hex(palette.sand), cap: 'square' });
-    for (const s of coast) {
-      for (const k of [0.25, 0.7]) {
-        const key = Math.round(s.x1 * 7 + s.y1 * 13 + k * 10);
-        if (hash(key, 11) > 0.6) continue;
-        const off = (hash(key, 12) - 0.5) * t * 0.3;
-        const vertical = s.x1 === s.x2;
-        g.circle(
-          s.x1 + (s.x2 - s.x1) * k + (vertical ? off : 0),
-          s.y1 + (s.y2 - s.y1) * k + (vertical ? 0 : off),
-          Math.max(0.8, t * 0.06),
-        );
-      }
-    }
-    g.fill({ color: mixed(hex(palette.sand), hex(palette.craterMid), 0.45) });
 
     // The chocolate fall, in the corner the compass rose takes in Parchment.
     const right = Math.floor((view.width - view.originX) / t) - state.width;
     const bottom = Math.floor((view.height - view.originY) / t) - state.height;
     this.fall = roseSpot(state, right, bottom, timerSpot(state));
     this.seaLife.fall = this.fall;
-    if (this.fall !== null) this.drawFallLedge(g, view, this.fall);
+    const fall = this.fall;
     this.seaLife.layout(state, view, this.art);
     this.swirls = [];
+
+    return {
+      rows: [y0, y0 + h],
+      passes: [
+        whole((g) => {
+          g.rect(tileX(view, x0), tileY(view, y0), w * t, h * t);
+          g.fill({ color: hex(palette.waterDeep) });
+        }),
+        // A band's strips laid down before the next band's, so each stays under the next.
+        ...bands.map(([reach, color]): TerrainPass => (g, from, to) => {
+          trace(g, outline(ground(from, to), land, view));
+          g.stroke({ width: t * reach * 2, color, cap: 'round', join: 'round' });
+        }),
+        // The meadow: mint sugar grass, a lighter patch here and there, tufts and a glint of sugar.
+        (g, from, to) => {
+          for (const { x, y } of ground(from, to)) g.rect(tileX(view, x), tileY(view, y), t, t);
+          g.fill({ color: hex(palette.grassMid) });
+        },
+        (g, from, to) => {
+          for (const { x, y } of ground(from, to)) {
+            if (hash(x, y, 1) < 0.22) g.circle(tileX(view, x + 0.5), tileY(view, y + 0.5), t * 0.7);
+          }
+          g.fill({ color: hex(palette.grassLight), alpha: 0.35 });
+        },
+        (g, from, to) => {
+          for (const { x, y } of ground(from, to)) {
+            if (hash(x, y, 2) > 0.4) continue;
+            const px = tileX(view, x) + t * (0.2 + 0.6 * hash(x, y, 3));
+            const py = tileY(view, y) + t * (0.3 + 0.5 * hash(x, y, 4));
+            g.moveTo(px - t * 0.12, py - t * 0.14).lineTo(px, py);
+            g.lineTo(px + t * 0.1, py - t * 0.16);
+            g.moveTo(px, py).lineTo(px, py - t * 0.2);
+          }
+          g.stroke({ width: Math.max(1, t * 0.06), color: hex(palette.grassDark), cap: 'round' });
+        },
+        (g, from, to) => {
+          for (const { x, y } of ground(from, to)) {
+            if (hash(x, y, 5) > 0.25) continue;
+            g.circle(
+              tileX(view, x) + t * hash(x, y, 6),
+              tileY(view, y) + t * hash(x, y, 7),
+              Math.max(0.8, t * 0.04),
+            );
+          }
+          g.fill({ color: 0xffffff, alpha: 0.8 });
+        },
+        // A faint tint of the owner over each island, as the other styles give.
+        (g, from, to) => {
+          const cells = ground(from, to);
+          for (let player = 1; player <= state.players.length; player++) {
+            let any = false;
+            for (const { x, y } of cells) {
+              if (state.islandId[y * state.width + x] !== player) continue;
+              g.rect(tileX(view, x), tileY(view, y), t, t);
+              any = true;
+            }
+            if (any) g.fill({ color: this.colour(player - 1, 'base'), alpha: 0.07 });
+          }
+        },
+        // The shore: a band of biscuit crumb along every coast, wet-dark where the river meets it,
+        // and crumbs scattered on it.
+        (g, from, to) => {
+          trace(g, outline(ground(from, to), land, view));
+          g.stroke({ width: t * 0.42, color: hex(palette.sand), cap: 'square' });
+        },
+        (g, from, to) => {
+          for (const s of outline(ground(from, to), land, view)) {
+            for (const k of [0.25, 0.7]) {
+              const key = Math.round(s.x1 * 7 + s.y1 * 13 + k * 10);
+              if (hash(key, 11) > 0.6) continue;
+              const off = (hash(key, 12) - 0.5) * t * 0.3;
+              const vertical = s.x1 === s.x2;
+              g.circle(
+                s.x1 + (s.x2 - s.x1) * k + (vertical ? off : 0),
+                s.y1 + (s.y2 - s.y1) * k + (vertical ? 0 : off),
+                Math.max(0.8, t * 0.06),
+              );
+            }
+          }
+          g.fill({ color: mixed(hex(palette.sand), hex(palette.craterMid), 0.45) });
+        },
+        whole((g) => {
+          if (fall !== null) this.drawFallLedge(g, view, fall);
+        }),
+      ],
+    };
   }
 
   /**

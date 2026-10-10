@@ -63,6 +63,7 @@ import {
 import { outline, trace, wallGeometry, type Segment } from './walls.js';
 import { ShapeTheme } from './shapeTheme.js';
 import { clearDrawn } from './clearDrawn.js';
+import { TerrainStrips, whole, type TerrainPass, type TerrainPlan } from './terrainStrips.js';
 
 /** Something with a place and an age: a column of bubbles, a cloud of silt, a crumble. */
 interface Aged {
@@ -178,7 +179,8 @@ export class UnderseaTheme extends ShapeTheme implements Theme {
   /** Life on the outer deep (`seaLife.ts`). */
   private readonly seaLife = new UnderseaSeaLife();
 
-  private readonly terrainGfx = new Graphics();
+  /** The deep, its drop-off and the sand, in strips of rows (`TerrainStrips`). */
+  private readonly terrainStrips = new TerrainStrips();
   /**
    * The light rippling over the sand: two sets of wavy lines drawn once and only slid, each
    * its own way, through a mask of the land, so they cross as caustics do at no cost a frame.
@@ -260,7 +262,12 @@ export class UnderseaTheme extends ShapeTheme implements Theme {
     this.weather = weatherFor(this.seed, art.pixel.weatherOdds);
     this.caustics.addChild(this.causticsAcross, this.causticsDown, this.causticMask);
     this.caustics.mask = this.causticMask;
-    layers.terrain.addChild(this.terrainGfx, this.caustics, this.dimpleGfx, this.flowGfx);
+    layers.terrain.addChild(
+      this.terrainStrips.container,
+      this.caustics,
+      this.dimpleGfx,
+      this.flowGfx,
+    );
     layers.territory.addChild(this.scenery.gfx, this.territory.container);
     layers.structures.addChild(this.structures.container);
     layers.effects.addChild(
@@ -292,8 +299,8 @@ export class UnderseaTheme extends ShapeTheme implements Theme {
     this.bloom.destroy();
     this.book.destroy();
     release(this.caustics);
+    release(this.terrainStrips.container);
     for (const g of [
-      this.terrainGfx,
       this.dimpleGfx,
       this.flowGfx,
       this.effectGfx,
@@ -319,12 +326,15 @@ export class UnderseaTheme extends ShapeTheme implements Theme {
   // ------------------------------------------------------------------ terrain
 
   drawTerrain(state: MatchState, view: ViewTransform): void {
+    this.terrainStrips.draw(state, view, () => this.planTerrain(state, view));
+  }
+
+  /** The terrain's passes over strips of rows (`TerrainStrips`), and what they share. */
+  private planTerrain(state: MatchState, view: ViewTransform): TerrainPlan {
     this.terrain = state.terrain;
     this.width = state.width;
     this.height = state.height;
     this.scenery.refresh(state, view, this.art, true);
-    const g = this.terrainGfx;
-    clearDrawn(g);
     const { palette } = this.art;
     const t = view.tile;
     const land = (x: number, y: number): boolean => this.land(x, y);
@@ -339,8 +349,6 @@ export class UnderseaTheme extends ShapeTheme implements Theme {
     const y1 = state.height + marginY;
     const w = x1 - x0;
     const h = y1 - y0;
-    g.rect(tileX(view, x0), tileY(view, y0), w * t, h * t);
-    g.fill({ color: hex(palette.waterDeep) });
     const reach = 6;
     const depth = new Int8Array(w * h).fill(reach);
     const queue: number[] = [];
@@ -380,87 +388,120 @@ export class UnderseaTheme extends ShapeTheme implements Theme {
       mixed(mid, deep, 0.4),
       mixed(mid, deep, 0.75),
     ];
-    // Deepest first, each band over the last, in discs, so the drop-off curves round the
-    // coast rather than stepping.
-    for (let band = bands.length; band >= 1; band--) {
-      for (let i = 0; i < depth.length; i++) {
-        if (depth[i] !== band) continue;
-        const x = (i % w) + x0;
-        const y = Math.floor(i / w) + y0;
-        g.circle(tileX(view, x + 0.5), tileY(view, y + 0.5), t * 0.78);
-      }
-      g.fill({ color: bands[band - 1]! });
-    }
 
-    // The sand: pale, lighter in drifts, grit in it, and rippled by the current — one line
-    // across each run of a row, so ripples carry on from tile to tile.
-    const ground: Cell[] = [];
-    for (let y = 0; y < state.height; y++) {
-      for (let x = 0; x < state.width; x++) if (land(x, y)) ground.push({ x, y });
-    }
-    for (const { x, y } of ground) g.rect(tileX(view, x), tileY(view, y), t, t);
-    g.fill({ color: hex(palette.grassMid) });
-    for (const { x, y } of ground) {
-      if (hash(x >> 1, y >> 1, 900) > 0.35) continue;
-      g.rect(tileX(view, x), tileY(view, y), t, t);
-    }
-    g.fill({ color: hex(palette.grassLight), alpha: 0.5 });
-    for (let y = 0; y < state.height; y++) {
-      for (let x = 0; x < state.width; x++) {
-        if (!land(x, y) || land(x - 1, y)) continue;
-        let end = x;
-        while (land(end + 1, y)) end++;
-        for (const f of [0.3, 0.75]) {
-          for (let u = x; u <= end + 1; u += 0.25) {
-            const v = y + f + Math.sin(u * 2.1 + y * 0.9 + f * 3) * 0.08;
-            if (u === x) g.moveTo(tileX(view, u), tileY(view, v));
-            else g.lineTo(tileX(view, u), tileY(view, v));
-          }
-        }
+    /** The land of the strip's rows, row by row as the whole board's was listed. */
+    const ground = (from: number, to: number): Cell[] => {
+      const cells: Cell[] = [];
+      for (let y = Math.max(0, from); y < Math.min(state.height, to); y++) {
+        for (let x = 0; x < state.width; x++) if (land(x, y)) cells.push({ x, y });
       }
-    }
-    g.stroke({ width: Math.max(1, t * 0.05), color: hex(palette.grassDark), alpha: 0.4 });
-    for (const { x, y } of ground) {
-      if (hash(x, y, 901) > 0.3) continue;
-      g.circle(
-        tileX(view, x + hash(x, y, 902)),
-        tileY(view, y + hash(x, y, 903)),
-        Math.max(0.8, t * 0.04),
-      );
-    }
-    g.fill({ color: 0xffffff, alpha: 0.6 });
-    // A faint tint of the owner over each island, as the other styles give.
-    for (let player = 1; player <= state.players.length; player++) {
-      let any = false;
-      for (const { x, y } of ground) {
-        if (state.islandId[y * state.width + x] !== player) continue;
-        g.rect(tileX(view, x), tileY(view, y), t, t);
-        any = true;
-      }
-      if (any) g.fill({ color: this.colour(player - 1, 'base'), alpha: 0.06 });
-    }
+      return cells;
+    };
 
-    // The plateau's edge: wet sand darkening to a rocky lip where it drops into the deep.
-    const coast = outline(ground, land, view);
-    trace(g, coast);
-    g.stroke({
-      width: t * 0.32,
-      color: mixed(hex(palette.grassDark), shallow, 0.35),
-      alpha: 0.7,
-      cap: 'square',
-    });
-    trace(g, coast);
-    g.stroke({ width: Math.max(1.5, t * 0.08), color: hex(palette.rockMid), cap: 'square' });
-    trace(g, coast);
-    g.stroke({ width: 1, color: this.dark, alpha: 0.6, cap: 'square' });
-
-    this.layCaustics(state, view, ground);
+    this.layCaustics(state, view, ground(0, state.height));
 
     // The wreck's place, in the corner the compass rose takes in Parchment.
     this.wreck = cornerSpot(state, view);
     this.seaLife.corner = this.wreck;
     this.seaLife.layout(state, view, this.art);
     this.dimplesDrawn = '';
+
+    return {
+      rows: [y0, y1],
+      passes: [
+        whole((g) => {
+          g.rect(tileX(view, x0), tileY(view, y0), w * t, h * t);
+          g.fill({ color: hex(palette.waterDeep) });
+        }),
+        // Deepest first, each band over the last, in discs, so the drop-off curves round the
+        // coast rather than stepping: a band's strips all laid before the next band's.
+        ...bands
+          .map((color, k): TerrainPass => (g, from, to) => {
+            for (let i = (from - y0) * w; i < (to - y0) * w; i++) {
+              if (depth[i] !== k + 1) continue;
+              const x = (i % w) + x0;
+              const y = Math.floor(i / w) + y0;
+              g.circle(tileX(view, x + 0.5), tileY(view, y + 0.5), t * 0.78);
+            }
+            g.fill({ color });
+          })
+          .reverse(),
+
+        // The sand: pale, lighter in drifts, grit in it, and rippled by the current — one line
+        // across each run of a row, so ripples carry on from tile to tile.
+        (g, from, to) => {
+          for (const { x, y } of ground(from, to)) g.rect(tileX(view, x), tileY(view, y), t, t);
+          g.fill({ color: hex(palette.grassMid) });
+        },
+        (g, from, to) => {
+          for (const { x, y } of ground(from, to)) {
+            if (hash(x >> 1, y >> 1, 900) > 0.35) continue;
+            g.rect(tileX(view, x), tileY(view, y), t, t);
+          }
+          g.fill({ color: hex(palette.grassLight), alpha: 0.5 });
+        },
+        (g, from, to) => {
+          for (let y = Math.max(0, from); y < Math.min(state.height, to); y++) {
+            for (let x = 0; x < state.width; x++) {
+              if (!land(x, y) || land(x - 1, y)) continue;
+              let end = x;
+              while (land(end + 1, y)) end++;
+              for (const f of [0.3, 0.75]) {
+                for (let u = x; u <= end + 1; u += 0.25) {
+                  const v = y + f + Math.sin(u * 2.1 + y * 0.9 + f * 3) * 0.08;
+                  if (u === x) g.moveTo(tileX(view, u), tileY(view, v));
+                  else g.lineTo(tileX(view, u), tileY(view, v));
+                }
+              }
+            }
+          }
+          g.stroke({ width: Math.max(1, t * 0.05), color: hex(palette.grassDark), alpha: 0.4 });
+        },
+        (g, from, to) => {
+          for (const { x, y } of ground(from, to)) {
+            if (hash(x, y, 901) > 0.3) continue;
+            g.circle(
+              tileX(view, x + hash(x, y, 902)),
+              tileY(view, y + hash(x, y, 903)),
+              Math.max(0.8, t * 0.04),
+            );
+          }
+          g.fill({ color: 0xffffff, alpha: 0.6 });
+        },
+        // A faint tint of the owner over each island, as the other styles give.
+        (g, from, to) => {
+          const cells = ground(from, to);
+          for (let player = 1; player <= state.players.length; player++) {
+            let any = false;
+            for (const { x, y } of cells) {
+              if (state.islandId[y * state.width + x] !== player) continue;
+              g.rect(tileX(view, x), tileY(view, y), t, t);
+              any = true;
+            }
+            if (any) g.fill({ color: this.colour(player - 1, 'base'), alpha: 0.06 });
+          }
+        },
+
+        // The plateau's edge: wet sand darkening to a rocky lip where it drops into the deep.
+        (g, from, to) => {
+          trace(g, outline(ground(from, to), land, view));
+          g.stroke({
+            width: t * 0.32,
+            color: mixed(hex(palette.grassDark), shallow, 0.35),
+            alpha: 0.7,
+            cap: 'square',
+          });
+        },
+        (g, from, to) => {
+          trace(g, outline(ground(from, to), land, view));
+          g.stroke({ width: Math.max(1.5, t * 0.08), color: hex(palette.rockMid), cap: 'square' });
+        },
+        (g, from, to) => {
+          trace(g, outline(ground(from, to), land, view));
+          g.stroke({ width: 1, color: this.dark, alpha: 0.6, cap: 'square' });
+        },
+      ],
+    };
   }
 
   /**

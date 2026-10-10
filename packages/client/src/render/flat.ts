@@ -44,6 +44,8 @@ import { FlatSeaLife } from './seaLife.js';
 import type { SceneryItem } from './scenery.js';
 import { SceneryLayer } from './sceneryLayer.js';
 import { clearDrawn } from './clearDrawn.js';
+import { release } from './release.js';
+import { TerrainStrips } from './terrainStrips.js';
 
 interface Impact {
   x: number;
@@ -81,7 +83,8 @@ export class FlatTheme implements Theme {
   private readonly seaLife = new FlatSeaLife();
   private style!: FlatStyleConfig;
 
-  private readonly terrainGfx = new Graphics();
+  /** The islands' ground, in strips of rows (`TerrainStrips`). */
+  private readonly terrainStrips = new TerrainStrips();
   /** The buoy in the corner (PLAN 11.24), redrawn each frame as it bobs and blinks. */
   private readonly buoyGfx = new Graphics();
   private buoy: TimerSpot | null = null;
@@ -117,7 +120,7 @@ export class FlatTheme implements Theme {
   init(layers: ThemeLayers, art: ArtConfig): Promise<void> {
     this.art = art;
     this.style = art.flat;
-    layers.terrain.addChild(this.terrainGfx, this.buoyGfx);
+    layers.terrain.addChild(this.terrainStrips.container, this.buoyGfx);
     layers.territory.addChild(this.scenery.gfx, this.territory.container);
     layers.structures.addChild(this.structures.container);
     layers.effects.addChild(this.effectGfx, this.crowns.gfx, this.aboveCrownsGfx);
@@ -129,8 +132,8 @@ export class FlatTheme implements Theme {
     this.territory.destroy();
     this.structures.destroy();
     this.scenery.destroy();
+    release(this.terrainStrips.container);
     for (const g of [
-      this.terrainGfx,
       this.buoyGfx,
       this.effectGfx,
       this.crowns.gfx,
@@ -166,22 +169,31 @@ export class FlatTheme implements Theme {
     this.seaLife.corner = this.buoy;
     this.seaLife.layout(state, view, this.art);
     this.scenery.refresh(state, view, this.art, true);
-    const g = this.terrainGfx;
-    clearDrawn(g);
-    // Tinted per island, which is the only thing that makes ownership readable
-    // before anything has been built.
-    for (let player = 0; player < state.players.length; player++) {
-      let any = false;
-      for (let i = 0; i < state.terrain.length; i++) {
-        if (state.terrain[i] !== Terrain.Land || state.islandId[i] !== player + 1) continue;
-        const x = i % state.width;
-        g.rect(tileX(view, x), tileY(view, (i - x) / state.width), view.tile, view.tile);
-        any = true;
-      }
-      if (any) {
-        g.fill({ color: playerColour(this.art, player, 'dark'), alpha: this.style.landAlpha });
-      }
-    }
+    this.terrainStrips.draw(state, view, () => ({
+      rows: [0, state.height],
+      passes: [
+        // Tinted per island, which is the only thing that makes ownership readable
+        // before anything has been built. The islands never overlap, so a strip's tints
+        // may come before the last strip's.
+        (g, from, to) => {
+          for (let player = 0; player < state.players.length; player++) {
+            let any = false;
+            for (let i = from * state.width; i < to * state.width; i++) {
+              if (state.terrain[i] !== Terrain.Land || state.islandId[i] !== player + 1) continue;
+              const x = i % state.width;
+              g.rect(tileX(view, x), tileY(view, (i - x) / state.width), view.tile, view.tile);
+              any = true;
+            }
+            if (any) {
+              g.fill({
+                color: playerColour(this.art, player, 'dark'),
+                alpha: this.style.landAlpha,
+              });
+            }
+          }
+        },
+      ],
+    }));
   }
 
   drawTerritory(state: MatchState, view: ViewTransform): void {

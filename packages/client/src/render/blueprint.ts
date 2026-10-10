@@ -55,6 +55,7 @@ import { dashed, hatch, outline, trace, wallGeometry, type Segment } from './wal
 import { cannonBase } from './cannonBase.js';
 import { hueNearness } from './hue.js';
 import { clearDrawn } from './clearDrawn.js';
+import { TerrainStrips, whole, type TerrainPass, type TerrainPlan } from './terrainStrips.js';
 
 /** A mark where a shot landed: rings for a moment, and on a wall a demolition cross. */
 interface Mark {
@@ -116,7 +117,8 @@ export class BlueprintTheme implements Theme {
   private readonly seaLife = new BlueprintSeaLife();
   private style!: BlueprintStyleConfig;
 
-  private readonly terrainGfx = new Graphics();
+  /** The sheet, its grid and the land, in strips of rows (`TerrainStrips`). */
+  private readonly terrainStrips = new TerrainStrips();
   /** The drawing's title block, in the corner (PLAN 11.24). */
   private readonly titleBlock = new TitleBlock();
   private corner: TimerSpot | null = null;
@@ -201,7 +203,7 @@ export class BlueprintTheme implements Theme {
   init(layers: ThemeLayers, art: ArtConfig): Promise<void> {
     this.art = art;
     this.style = art.blueprint;
-    layers.terrain.addChild(this.terrainGfx, this.titleBlock.container);
+    layers.terrain.addChild(this.terrainStrips.container, this.titleBlock.container);
     layers.territory.addChild(
       this.scenery.gfx,
       this.territory.container,
@@ -245,7 +247,8 @@ export class BlueprintTheme implements Theme {
     this.compassGfx.destroy();
     this.scenery.destroy();
     this.seaLife.course.destroy();
-    for (const g of [this.terrainGfx, this.effectGfx, this.overlayGfx]) {
+    release(this.terrainStrips.container);
+    for (const g of [this.effectGfx, this.overlayGfx]) {
       g.destroy();
     }
     for (const tag of this.tags) tag.destroy();
@@ -278,14 +281,17 @@ export class BlueprintTheme implements Theme {
   // ------------------------------------------------------------------ terrain
 
   drawTerrain(state: MatchState, view: ViewTransform): void {
+    this.terrainStrips.draw(state, view, () => this.planTerrain(state, view));
+  }
+
+  /** The terrain's passes over strips of rows (`TerrainStrips`), and what they share. */
+  private planTerrain(state: MatchState, view: ViewTransform): TerrainPlan {
     this.corner = cornerSpot(state, view);
     this.seaLife.corner = this.corner;
     this.seaLife.layout(state, view, this.art);
     this.scenery.refresh(state, view, this.art, true);
     this.terrain = state.terrain;
     this.width = state.width;
-    const g = this.terrainGfx;
-    clearDrawn(g);
     const { palette } = this.art;
     const t = view.tile;
     const land = (x: number, y: number): boolean =>
@@ -302,58 +308,80 @@ export class BlueprintTheme implements Theme {
     const y0 = -marginY;
     const x1 = state.width + marginX;
     const y1 = state.height + marginY;
+    /** Each tile of the board's own rows within the strip's, as an index into it. */
+    const board = (from: number, to: number, each: (i: number) => void): void => {
+      for (let y = Math.max(0, from); y < Math.min(state.height, to); y++) {
+        for (let x = 0; x < state.width; x++) each(y * state.width + x);
+      }
+    };
+    const passes: TerrainPass[] = [];
 
     // Water, hatched as a plan marks it.
-    const sea: Segment[] = [];
-    for (let y = y0; y < y1; y++) {
-      for (let x = x0; x < x1; x++) {
-        if (land(x, y)) continue;
-        sea.push(...hatch({ x: tileX(view, x), y: tileY(view, y), w: t, h: t }, t * 0.5, '/'));
+    passes.push((g, from, to) => {
+      const sea: Segment[] = [];
+      for (let y = from; y < to; y++) {
+        for (let x = x0; x < x1; x++) {
+          if (land(x, y)) continue;
+          sea.push(...hatch({ x: tileX(view, x), y: tileY(view, y), w: t, h: t }, t * 0.5, '/'));
+        }
       }
-    }
-    trace(g, sea);
-    g.stroke({ width: 1, color: hex(palette.waterShallow), alpha: this.style.seaHatchAlpha * 2 });
+      trace(g, sea);
+      g.stroke({ width: 1, color: hex(palette.waterShallow), alpha: this.style.seaHatchAlpha * 2 });
+    });
 
-    // Land as clean paper, tinted just enough to say whose island it is.
+    // Land as clean paper, tinted just enough to say whose island it is: a pass for each
+    // fill, as each island's paper and tint were laid in turn.
     for (let player = 0; player <= state.players.length; player++) {
       let any = false;
-      for (let i = 0; i < state.terrain.length; i++) {
-        if (state.terrain[i] !== Terrain.Land || state.islandId[i] !== player) continue;
-        const x = i % state.width;
-        g.rect(tileX(view, x), tileY(view, (i - x) / state.width), t, t);
-        any = true;
+      for (let i = 0; i < state.terrain.length && !any; i++) {
+        any = state.terrain[i] === Terrain.Land && state.islandId[i] === player;
       }
       if (!any) continue;
-      g.fill({ color: hex(palette.grassMid) });
+      const tiles = (g: Graphics, from: number, to: number): void =>
+        board(from, to, (i) => {
+          if (state.terrain[i] !== Terrain.Land || state.islandId[i] !== player) return;
+          const x = i % state.width;
+          g.rect(tileX(view, x), tileY(view, (i - x) / state.width), t, t);
+        });
+      passes.push((g, from, to) => {
+        tiles(g, from, to);
+        g.fill({ color: hex(palette.grassMid) });
+      });
       if (player === 0) continue;
-      for (let i = 0; i < state.terrain.length; i++) {
-        if (state.terrain[i] !== Terrain.Land || state.islandId[i] !== player) continue;
-        const x = i % state.width;
-        g.rect(tileX(view, x), tileY(view, (i - x) / state.width), t, t);
-      }
-      g.fill({ color: this.colour(player - 1, 'dark'), alpha: 0.12 });
+      const tint = this.colour(player - 1, 'dark');
+      passes.push((g, from, to) => {
+        tiles(g, from, to);
+        g.fill({ color: tint, alpha: 0.12 });
+      });
     }
 
-    // The drafting grid over the whole sheet, heavier every few tiles.
+    // The drafting grid over the whole sheet, heavier every few tiles. The upright lines
+    // run through every strip, so they are drawn whole with the first; the last row's
+    // line, on the sheet's lower edge, with the last strip.
     const every = this.style.gridMajorEvery;
     for (const major of [false, true]) {
-      for (let x = x0; x <= x1; x++) {
-        if ((x % every === 0) !== major) continue;
-        g.moveTo(tileX(view, x), tileY(view, y0)).lineTo(tileX(view, x), tileY(view, y1));
-      }
-      for (let y = y0; y <= y1; y++) {
-        if ((y % every === 0) !== major) continue;
-        g.moveTo(tileX(view, x0), tileY(view, y)).lineTo(tileX(view, x1), tileY(view, y));
-      }
-      g.stroke({
-        width: 1,
-        color: hex(palette.grassLight),
-        alpha: this.style.gridAlpha * (major ? 2 : 1),
+      passes.push((g, from, to, strip) => {
+        if (strip === 0) {
+          for (let x = x0; x <= x1; x++) {
+            if ((x % every === 0) !== major) continue;
+            g.moveTo(tileX(view, x), tileY(view, y0)).lineTo(tileX(view, x), tileY(view, y1));
+          }
+        }
+        for (let y = from; y < (to === y1 ? to + 1 : to); y++) {
+          if ((y % every === 0) !== major) continue;
+          g.moveTo(tileX(view, x0), tileY(view, y)).lineTo(tileX(view, x1), tileY(view, y));
+        }
+        g.stroke({
+          width: 1,
+          color: hex(palette.grassLight),
+          alpha: this.style.gridAlpha * (major ? 2 : 1),
+        });
       });
     }
 
     // Contour lines on the land, as a site plan surveys it: rings in from the coast at a
-    // few distances, rounded as ground is, thin under everything built.
+    // few distances, rounded as ground is, thin under everything built. A ring is whole
+    // however the rows are cut, so it is drawn in the strip of its topmost row.
     const inland = landDepth(state);
     for (const k of this.style.landContourTiles) {
       const high = (x: number, y: number): boolean =>
@@ -366,38 +394,55 @@ export class BlueprintTheme implements Theme {
       }
       const contour = loops(outline(cells, high, view), (px, py) =>
         high(Math.floor((px - tileX(view, 0)) / t), Math.floor((py - tileY(view, 0)) / t)),
-      );
-      for (const loop of contour)
-        g.poly(
-          rounded(loop, 3).flatMap((p) => [p.x, p.y]),
-          true,
-        );
-      g.stroke({ width: 1, color: hex(palette.rockLight), alpha: 0.28 });
+      ).map((loop) => {
+        const top = loop.reduce((least, p) => Math.min(least, p.y), Infinity);
+        const row = Math.floor((top - tileY(view, 0)) / t);
+        return { row: Math.min(y1 - 1, Math.max(y0, row)), loop };
+      });
+      passes.push((g, from, to) => {
+        for (const { row, loop } of contour) {
+          if (row < from || row >= to) continue;
+          g.poly(
+            rounded(loop, 3).flatMap((p) => [p.x, p.y]),
+            true,
+          );
+        }
+        g.stroke({ width: 1, color: hex(palette.rockLight), alpha: 0.28 });
+      });
     }
 
     // A graphic scale over the title block, in tiles, its spans alternately filled.
-    if (this.corner !== null) {
-      const box = titleBlockRect(view, this.corner);
-      const span = t;
-      const spans = Math.max(2, Math.min(5, Math.floor((box.w * 0.8) / span)));
-      const sx = box.x;
-      const sy = box.y - t * 0.55;
-      for (let k = 0; k < spans; k++) {
-        g.rect(sx + k * span, sy, span, t * 0.18);
-        if (k % 2 === 0) g.fill({ color: hex(palette.uiInk), alpha: 0.7 });
-        g.stroke({ width: 1, color: hex(palette.uiInk), alpha: 0.8 });
-      }
+    const corner = this.corner;
+    if (corner !== null) {
+      passes.push(
+        whole((g) => {
+          const box = titleBlockRect(view, corner);
+          const span = t;
+          const spans = Math.max(2, Math.min(5, Math.floor((box.w * 0.8) / span)));
+          const sx = box.x;
+          const sy = box.y - t * 0.55;
+          for (let k = 0; k < spans; k++) {
+            g.rect(sx + k * span, sy, span, t * 0.18);
+            if (k % 2 === 0) g.fill({ color: hex(palette.uiInk), alpha: 0.7 });
+            g.stroke({ width: 1, color: hex(palette.uiInk), alpha: 0.8 });
+          }
+        }),
+      );
     }
 
     // The coast as a bold contour.
-    const coast: Cell[] = [];
-    for (let i = 0; i < state.terrain.length; i++) {
-      if (state.terrain[i] !== Terrain.Land) continue;
-      const x = i % state.width;
-      coast.push({ x, y: (i - x) / state.width });
-    }
-    trace(g, outline(coast, land, view));
-    g.stroke({ width: this.style.lineWidthPx, color: hex(palette.rockLight) });
+    passes.push((g, from, to) => {
+      const coast: Cell[] = [];
+      board(from, to, (i) => {
+        if (state.terrain[i] !== Terrain.Land) return;
+        const x = i % state.width;
+        coast.push({ x, y: (i - x) / state.width });
+      });
+      trace(g, outline(coast, land, view));
+      g.stroke({ width: this.style.lineWidthPx, color: hex(palette.rockLight) });
+    });
+
+    return { rows: [y0, y1], passes };
   }
 
   // ------------------------------------------------------------------ territory

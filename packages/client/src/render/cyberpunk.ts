@@ -63,6 +63,7 @@ import type { SceneryItem } from './scenery.js';
 import { SceneryLayer } from './sceneryLayer.js';
 import { cannonBase } from './cannonBase.js';
 import { clearDrawn } from './clearDrawn.js';
+import { TerrainStrips, type TerrainPass, type TerrainPlan } from './terrainStrips.js';
 
 /** A circuit trace on the sea floor, as tile centres in board coordinates. */
 export interface Trace {
@@ -234,7 +235,8 @@ export class CyberpunkTheme implements Theme {
   private style!: CyberpunkStyleConfig;
   private readonly seed: number;
 
-  private readonly terrainGfx = new Graphics();
+  /** The circuit and the land, in strips of rows (`TerrainStrips`). */
+  private readonly terrainStrips = new TerrainStrips();
   /** Sealed ground, an island to a `Graphics` redrawn where it changes: the wash, its lit hex floor over it. */
   private readonly territory = new IslandParts(2, 'territory');
   private readonly ghostMotion = new GhostMotion();
@@ -349,7 +351,7 @@ export class CyberpunkTheme implements Theme {
     ]) {
       lit.blendMode = 'add';
     }
-    layers.terrain.addChild(this.terrainGfx, this.ads);
+    layers.terrain.addChild(this.terrainStrips.container, this.ads);
     layers.territory.addChild(this.scenery.gfx, ...this.territory.containers);
     layers.structures.addChild(...this.structures.containers);
     layers.effects.addChild(
@@ -377,11 +379,11 @@ export class CyberpunkTheme implements Theme {
     this.lights.destroy();
     this.book.destroy();
     release(this.ads);
+    release(this.terrainStrips.container);
     for (const p of [...this.floors.values(), ...this.oldFloors]) p.texture.destroy(true);
     this.floors.clear();
     this.oldFloors.length = 0;
     for (const g of [
-      this.terrainGfx,
       this.effectGfx,
       this.effectGlow,
       this.effectCore,
@@ -400,14 +402,17 @@ export class CyberpunkTheme implements Theme {
   // ------------------------------------------------------------------ terrain
 
   drawTerrain(state: MatchState, view: ViewTransform): void {
+    this.terrainStrips.draw(state, view, () => this.planTerrain(state, view));
+  }
+
+  /** The terrain's passes over strips of rows (`TerrainStrips`), and what they share. */
+  private planTerrain(state: MatchState, view: ViewTransform): TerrainPlan {
     this.billboard = cornerSpot(state, view);
     this.seaLife.corner = this.billboard;
     this.seaLife.layout(state, view, this.art);
     this.scenery.refresh(state, view, this.art, true);
     this.terrain = state.terrain;
     this.width = state.width;
-    const g = this.terrainGfx;
-    clearDrawn(g);
     const { palette } = this.art;
     const land = (x: number, y: number): boolean =>
       x >= 0 &&
@@ -436,69 +441,90 @@ export class CyberpunkTheme implements Theme {
       const count = Math.round(sea * this.style.tracesPerSeaTile);
       this.traces = circuitTraces(depth, w, h, marginX, marginY, count, new Rng(this.seed));
     }
+    const traces = this.traces;
     const trace = hex(palette.waterShallow);
     const line = Math.max(1, Math.round(view.tile / 9));
-    for (const t of this.traces) {
-      for (let k = 1; k < t.points.length; k++) {
-        const a = t.points[k - 1]!;
-        const b = t.points[k]!;
-        g.moveTo(tileX(view, a.x + 0.5), tileY(view, a.y + 0.5));
-        g.lineTo(tileX(view, b.x + 0.5), tileY(view, b.y + 0.5));
-        g.stroke({ width: line, color: trace, alpha: this.traceAlpha(t.depth[k]!) });
+    /** The land's tiles in the strip's rows, as indices into the board. */
+    const ground = (from: number, to: number, each: (i: number, x: number, y: number) => void) => {
+      for (let y = Math.max(0, from); y < Math.min(state.height, to); y++) {
+        for (let x = 0; x < state.width; x++) {
+          const i = y * state.width + x;
+          if (state.terrain[i] === Terrain.Land) each(i, x, y);
+        }
       }
-      // A pad at either end, where the trace would meet a component.
-      for (const end of [0, t.points.length - 1]) {
-        const p = t.points[end]!;
-        g.circle(tileX(view, p.x + 0.5), tileY(view, p.y + 0.5), view.tile * 0.2);
-        g.stroke({ width: line, color: trace, alpha: this.traceAlpha(t.depth[end]!) });
-      }
-    }
+    };
+    const city = this.planCity(state, view);
 
-    // Land as a dark board, tinted just enough to say whose island it is.
-    for (let player = 0; player <= state.players.length; player++) {
-      let any = false;
-      for (let i = 0; i < state.terrain.length; i++) {
-        if (state.terrain[i] !== Terrain.Land || state.islandId[i] !== player) continue;
-        const x = i % state.width;
-        g.rect(tileX(view, x), tileY(view, (i - x) / state.width), view.tile, view.tile);
-        any = true;
-      }
-      if (!any) continue;
-      g.fill({ color: hex(palette.grassMid) });
-      if (player === 0) continue;
-      for (let i = 0; i < state.terrain.length; i++) {
-        if (state.terrain[i] !== Terrain.Land || state.islandId[i] !== player) continue;
-        const x = i % state.width;
-        g.rect(tileX(view, x), tileY(view, (i - x) / state.width), view.tile, view.tile);
-      }
-      g.fill({ color: this.colour(player - 1, 'dark'), alpha: 0.1 });
-    }
-
-    // The grid, one line along the top and left of every land tile.
-    for (let i = 0; i < state.terrain.length; i++) {
-      if (state.terrain[i] !== Terrain.Land) continue;
-      const x = i % state.width;
-      const y = (i - x) / state.width;
-      const left = tileX(view, x);
-      const top = tileY(view, y);
-      g.moveTo(left, top + view.tile)
-        .lineTo(left, top)
-        .lineTo(left + view.tile, top);
-    }
-    g.stroke({ width: 1, color: hex(palette.grassLight), alpha: this.style.gridAlpha });
-
-    // The coast, in the owner's colour but dim: the land's edge is not a wall.
-    for (let player = 1; player <= state.players.length; player++) {
-      for (let i = 0; i < state.terrain.length; i++) {
-        if (state.terrain[i] !== Terrain.Land || state.islandId[i] !== player) continue;
-        const x = i % state.width;
-        const y = (i - x) / state.width;
-        this.edges(g, view, x, y, (nx, ny) => land(nx, ny));
-      }
-      g.stroke({ width: 1, color: this.colour(player - 1, 'base'), alpha: 0.45 });
-    }
-
-    this.drawCity(g, state, view);
+    return {
+      rows: [this.drawn.y0, this.drawn.y1],
+      passes: [
+        // A trace goes with the strip of the row it starts on, all of it: traces keep to
+        // tiles of their own, so none is laid over another, but each one's strokes overlap
+        // where its segments meet, and those keep their order.
+        (g, from, to) => {
+          for (const t of traces) {
+            const start = t.points[0]!.y;
+            if (start < from || start >= to) continue;
+            for (let k = 1; k < t.points.length; k++) {
+              const a = t.points[k - 1]!;
+              const b = t.points[k]!;
+              g.moveTo(tileX(view, a.x + 0.5), tileY(view, a.y + 0.5));
+              g.lineTo(tileX(view, b.x + 0.5), tileY(view, b.y + 0.5));
+              g.stroke({ width: line, color: trace, alpha: this.traceAlpha(t.depth[k]!) });
+            }
+            // A pad at either end, where the trace would meet a component.
+            for (const end of [0, t.points.length - 1]) {
+              const p = t.points[end]!;
+              g.circle(tileX(view, p.x + 0.5), tileY(view, p.y + 0.5), view.tile * 0.2);
+              g.stroke({ width: line, color: trace, alpha: this.traceAlpha(t.depth[end]!) });
+            }
+          }
+        },
+        // Land as a dark board, tinted just enough to say whose island it is. Each player's
+        // tiles are their own, so one strip's fills cannot fall over another's.
+        (g, from, to) => {
+          for (let player = 0; player <= state.players.length; player++) {
+            let any = false;
+            ground(from, to, (i, x, y) => {
+              if (state.islandId[i] !== player) return;
+              g.rect(tileX(view, x), tileY(view, y), view.tile, view.tile);
+              any = true;
+            });
+            if (!any) continue;
+            g.fill({ color: hex(palette.grassMid) });
+            if (player === 0) continue;
+            ground(from, to, (i, x, y) => {
+              if (state.islandId[i] !== player) return;
+              g.rect(tileX(view, x), tileY(view, y), view.tile, view.tile);
+            });
+            g.fill({ color: this.colour(player - 1, 'dark'), alpha: 0.1 });
+          }
+        },
+        // The grid, one line along the top and left of every land tile.
+        (g, from, to) => {
+          ground(from, to, (_i, x, y) => {
+            const left = tileX(view, x);
+            const top = tileY(view, y);
+            g.moveTo(left, top + view.tile)
+              .lineTo(left, top)
+              .lineTo(left + view.tile, top);
+          });
+          g.stroke({ width: 1, color: hex(palette.grassLight), alpha: this.style.gridAlpha });
+        },
+        // The coast, in the owner's colour but dim: the land's edge is not a wall. No two
+        // islands' coasts meet, so each strip may stroke every player's in turn.
+        (g, from, to) => {
+          for (let player = 1; player <= state.players.length; player++) {
+            ground(from, to, (i, x, y) => {
+              if (state.islandId[i] !== player) return;
+              this.edges(g, view, x, y, (nx, ny) => land(nx, ny));
+            });
+            g.stroke({ width: 1, color: this.colour(player - 1, 'base'), alpha: 0.45 });
+          }
+        },
+        ...city,
+      ],
+    };
   }
 
   /**
@@ -507,9 +533,11 @@ export class CyberpunkTheme implements Theme {
    * flickers. On the sea, never the land, so no block can be taken for a wall or hide one,
    * and only where no other island's land is near, so none stands in a channel shots cross;
    * clear of the big timer's square and the corner's billboard. Seeded, and drawn once with
-   * the terrain; the adverts are each a `Graphics` drawn then and only faded after.
+   * the terrain; the adverts are each a `Graphics` drawn then and only faded after. Laid
+   * out here, the seed drawn on in the order it always was; the passes it returns draw each
+   * block with the strip of the tile it stands on.
    */
-  private drawCity(g: Graphics, state: MatchState, view: ViewTransform): void {
+  private planCity(state: MatchState, view: ViewTransform): TerrainPass[] {
     for (const ad of [...this.ads.children]) release(ad);
     const { palette } = this.art;
     const t = view.tile;
@@ -526,8 +554,19 @@ export class CyberpunkTheme implements Theme {
       Math.abs(x + 0.5 - spot.x) < spot.size / 2 + pad &&
       Math.abs(y + 0.5 - spot.y) < spot.size / 2 + pad;
     const rng = new Rng(this.seed ^ 0x5c17ee);
-    const blocks: { x: number; y: number; w: number; h: number; face: number; north: boolean }[] =
-      [];
+    const blocks: {
+      x: number;
+      y: number;
+      w: number;
+      h: number;
+      face: number;
+      north: boolean;
+      /** The tile it stands on, for its strip. */
+      row: number;
+      /** Its windows lit warm and lit cyan, as corners in pairs, and whether it has clutter. */
+      lit: [number[], number[]];
+      clutter: boolean;
+    }[] = [];
     for (let y = 0; y < h; y++) {
       for (let x = 0; x < w; x++) {
         if (state.terrain[y * w + x] === Terrain.Land) continue;
@@ -573,36 +612,22 @@ export class CyberpunkTheme implements Theme {
           h: bh,
           face,
           north: [-1, 0, 1].some((ox) => islandAt(x + ox, y - 1) !== 0),
+          row: y,
+          lit: [[], []],
+          clutter: false,
         });
       }
     }
-    if (blocks.length === 0) return;
+    if (blocks.length === 0) return [];
     const roof = (b: (typeof blocks)[number]): [number, number, number, number] => [
       tileX(view, b.x),
       tileY(view, b.y),
       b.w * t,
       Math.max(1, (b.h - b.face) * t),
     ];
-    // Roofs, then the faces below them, darker, which is what stands a block up; the roof's
-    // back edge catches the light.
-    for (const b of blocks) g.rect(...roof(b));
-    g.fill({ color: hex(palette.sand) });
-    for (const b of blocks) g.rect(...roof(b));
-    g.stroke({ width: 1, color: hex(palette.rockDark) });
-    for (const b of blocks) {
-      const [x, y, w] = roof(b);
-      g.moveTo(x, y).lineTo(x + w, y);
-    }
-    g.stroke({ width: 1, color: hex(palette.rockMid), alpha: 0.8 });
-    for (const b of blocks) {
-      const [x, y, w, h] = roof(b);
-      g.rect(x, y + h, w, b.face * t);
-    }
-    g.fill({ color: hex(palette.grassDark) });
     // Windows in rows along each face, some lit: warm mostly, a few in the sea's cyan.
     // Squares of a pixel or two, so none reads as a shot or a mark.
     const pane = Math.max(1, Math.round(t * 0.06));
-    const lit: [number[], number[]] = [[], []];
     for (const b of blocks) {
       const [left, y, w, h] = roof(b);
       const rows = Math.max(1, Math.floor((b.face * t) / (pane * 2.5)));
@@ -611,25 +636,63 @@ export class CyberpunkTheme implements Theme {
         for (let px = left + pane; px < left + w - pane * 1.5; px += pane * 2.2) {
           const roll = rng.nextFloat();
           if (roll < 0.4) continue;
-          (roll < 0.88 ? lit[0] : lit[1]).push(px, row);
+          (roll < 0.88 ? b.lit[0] : b.lit[1]).push(px, row);
         }
       }
     }
-    for (const [k, colour] of [
-      [0, palette.emberHot],
-      [1, palette.waterFoam],
-    ] as const) {
-      const points = lit[k];
-      for (let i = 0; i < points.length; i += 2) g.rect(points[i]!, points[i + 1]!, pane, pane);
-      g.fill({ color: hex(colour), alpha: 0.75 });
-    }
     // Rooftop clutter on the larger roofs: a vent or a water tank.
-    for (const b of blocks) {
-      if (b.w * b.h < 0.25 || rng.nextFloat() < 0.5) continue;
-      const s = t * 0.14;
-      g.rect(tileX(view, b.x + b.w * 0.3), tileY(view, b.y + b.h * 0.25), s, s);
-    }
-    g.fill({ color: hex(palette.rockDark) });
+    for (const b of blocks) b.clutter = !(b.w * b.h < 0.25 || rng.nextFloat() < 0.5);
+    /** The blocks standing on the strip's rows. */
+    const within = (from: number, to: number): typeof blocks =>
+      blocks.filter((b) => b.row >= from && b.row < to);
+    const passes: TerrainPass[] = [
+      // Roofs, then the faces below them, darker, which is what stands a block up; the roof's
+      // back edge catches the light.
+      (g, from, to) => {
+        for (const b of within(from, to)) g.rect(...roof(b));
+        g.fill({ color: hex(palette.sand) });
+      },
+      (g, from, to) => {
+        for (const b of within(from, to)) g.rect(...roof(b));
+        g.stroke({ width: 1, color: hex(palette.rockDark) });
+      },
+      (g, from, to) => {
+        for (const b of within(from, to)) {
+          const [x, y, w] = roof(b);
+          g.moveTo(x, y).lineTo(x + w, y);
+        }
+        g.stroke({ width: 1, color: hex(palette.rockMid), alpha: 0.8 });
+      },
+      (g, from, to) => {
+        for (const b of within(from, to)) {
+          const [x, y, w, h] = roof(b);
+          g.rect(x, y + h, w, b.face * t);
+        }
+        g.fill({ color: hex(palette.grassDark) });
+      },
+      ...(
+        [
+          [0, palette.emberHot],
+          [1, palette.waterFoam],
+        ] as const
+      ).map(([k, colour]): TerrainPass => (g, from, to) => {
+        for (const b of within(from, to)) {
+          const points = b.lit[k];
+          for (let i = 0; i < points.length; i += 2) {
+            g.rect(points[i]!, points[i + 1]!, pane, pane);
+          }
+        }
+        g.fill({ color: hex(colour), alpha: 0.75 });
+      }),
+      (g, from, to) => {
+        for (const b of within(from, to)) {
+          if (!b.clutter) continue;
+          const s = t * 0.14;
+          g.rect(tileX(view, b.x + b.w * 0.3), tileY(view, b.y + b.h * 0.25), s, s);
+        }
+        g.fill({ color: hex(palette.rockDark) });
+      },
+    ];
 
     // Adverts: a pane of light over a block, in the style's magenta or cyan, with a few bars
     // of text that is no text.
@@ -663,6 +726,7 @@ export class CyberpunkTheme implements Theme {
       ad.stroke({ width: 1, color: colour, alpha: 0.4 });
       this.ads.addChild(ad);
     }
+    return passes;
   }
 
   /** The adverts flicker on their own beats, out now and then for a moment, as cheap signs do. */

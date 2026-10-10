@@ -51,6 +51,8 @@ import {
 import { outline, trace, wallGeometry, type Segment, type WallBlock } from './walls.js';
 import { ShapeTheme } from './shapeTheme.js';
 import { clearDrawn } from './clearDrawn.js';
+import { release } from './release.js';
+import { TerrainStrips, whole, type TerrainPlan } from './terrainStrips.js';
 
 /** Something with a place and an age: a crashed plane, shreds, a flat-pack unfolding. */
 interface Aged {
@@ -174,7 +176,8 @@ export class OfficeTheme extends ShapeTheme implements Theme {
   /** The partitions' woven fabric, laid over the owner's colour (`weave`). */
   private fabricWeave: FillPattern | null = null;
 
-  private readonly terrainGfx = new Graphics();
+  /** The carpet and the linoleum, in strips of rows (`TerrainStrips`). */
+  private readonly terrainStrips = new TerrainStrips();
   /** Coffee where shots came down: redrawn when one is added or fades a round. */
   private readonly stainGfx = new Graphics();
   private stainsDrawn = '';
@@ -238,7 +241,7 @@ export class OfficeTheme extends ShapeTheme implements Theme {
     this.style = art.office;
     this.weather = weatherFor(this.seed, art.pixel.weatherOdds);
     this.fabricWeave ??= weave();
-    layers.terrain.addChild(this.terrainGfx, this.stainGfx, this.flowGfx);
+    layers.terrain.addChild(this.terrainStrips.container, this.stainGfx, this.flowGfx);
     layers.territory.addChild(this.scenery.gfx, this.territory.container);
     layers.structures.addChild(this.structures.container);
     layers.effects.addChild(
@@ -266,8 +269,8 @@ export class OfficeTheme extends ShapeTheme implements Theme {
     this.book.destroy();
     this.fabricWeave?.texture.destroy(true);
     this.fabricWeave = null;
+    release(this.terrainStrips.container);
     for (const g of [
-      this.terrainGfx,
       this.stainGfx,
       this.flowGfx,
       this.effectGfx,
@@ -292,12 +295,15 @@ export class OfficeTheme extends ShapeTheme implements Theme {
   // ------------------------------------------------------------------ terrain
 
   drawTerrain(state: MatchState, view: ViewTransform): void {
+    this.terrainStrips.draw(state, view, () => this.planTerrain(state, view));
+  }
+
+  /** The terrain's passes over strips of rows (`TerrainStrips`), and what they share. */
+  private planTerrain(state: MatchState, view: ViewTransform): TerrainPlan {
     this.terrain = state.terrain;
     this.width = state.width;
     this.height = state.height;
     this.scenery.refresh(state, view, this.art, true);
-    const g = this.terrainGfx;
-    clearDrawn(g);
     const { palette } = this.art;
     const t = view.tile;
     const land = (x: number, y: number): boolean => this.land(x, y);
@@ -310,89 +316,25 @@ export class OfficeTheme extends ShapeTheme implements Theme {
     const y0 = -marginY - (marginY % 2);
     const x1 = state.width + marginX;
     const y1 = state.height + marginY;
-    g.rect(tileX(view, x0), tileY(view, y0), (x1 - x0) * t, (y1 - y0) * t);
-    g.fill({ color: hex(palette.waterMid) });
-    for (let y = y0; y < y1; y += 2) {
-      for (let x = x0; x < x1; x += 2) {
-        if (((x - x0) / 2 + (y - y0) / 2) % 2 === 0) continue;
-        g.rect(tileX(view, x), tileY(view, y), t * 2, t * 2);
+    /** The carpet's tiles of two by two whose top row is in the strip. */
+    const carpet = (from: number, to: number, each: (x: number, y: number) => void): void => {
+      for (let y = from + ((((from - y0) % 2) + 2) % 2); y < to; y += 2) {
+        for (let x = x0; x < x1; x += 2) each(x, y);
       }
-    }
-    g.fill({ color: hex(palette.waterShallow), alpha: 0.45 });
-    for (let y = y0; y < y1; y += 2) {
-      for (let x = x0; x < x1; x += 2) {
-        const across = ((x - x0) / 2 + (y - y0) / 2) % 2 === 0;
-        const left = tileX(view, x);
-        const top = tileY(view, y);
-        for (let k = 1; k <= 3; k++) {
-          const f = (k / 4) * t * 2;
-          if (across) g.moveTo(left + 1, top + f).lineTo(left + t * 2 - 1, top + f);
-          else g.moveTo(left + f, top + 1).lineTo(left + f, top + t * 2 - 1);
-        }
-      }
-    }
-    g.stroke({ width: 1, color: hex(palette.waterDeep), alpha: 0.55 });
-    // Flecks in the pile, and here and there an old stain nobody owns up to.
-    for (let y = y0; y < y1; y++) {
-      for (let x = x0; x < x1; x++) {
-        if (land(x, y) || hash(x, y, 700) > 0.06) continue;
-        g.circle(
-          tileX(view, x + hash(x, y, 701)),
-          tileY(view, y + hash(x, y, 702)),
-          Math.max(0.8, t * 0.05),
-        );
-      }
-    }
-    g.fill({ color: hex(palette.waterFoam), alpha: 0.22 });
-    for (let y = y0; y < y1; y++) {
-      for (let x = x0; x < x1; x++) {
-        if (hash(x, y, 703) > 0.004 || !this.openCarpet(x, y)) continue;
-        g.ellipse(tileX(view, x + 0.5), tileY(view, y + 0.5), t * 0.7, t * 0.45);
-      }
-    }
-    g.fill({ color: hex(palette.craterMid), alpha: 0.18 });
+    };
+    /** Every tile of the strip's rows, out to the window's edge. */
+    const tiles = (from: number, to: number, each: (x: number, y: number) => void): void => {
+      for (let y = from; y < to; y++) for (let x = x0; x < x1; x++) each(x, y);
+    };
 
     // The linoleum: square tiles, a few lighter, scuffed here and there.
-    const ground: Cell[] = [];
-    for (let y = 0; y < state.height; y++) {
-      for (let x = 0; x < state.width; x++) if (land(x, y)) ground.push({ x, y });
-    }
-    for (const { x, y } of ground) g.rect(tileX(view, x), tileY(view, y), t, t);
-    g.fill({ color: hex(palette.grassMid) });
-    for (const { x, y } of ground) {
-      if ((x + y) % 2 === 0) g.rect(tileX(view, x), tileY(view, y), t, t);
-    }
-    g.fill({ color: hex(palette.grassLight), alpha: 0.45 });
-    for (const { x, y } of ground) {
-      g.rect(tileX(view, x), tileY(view, y), t, t);
-    }
-    g.stroke({ width: 1, color: hex(palette.grassDark), alpha: 0.35 });
-    for (const { x, y } of ground) {
-      if (hash(x, y, 710) > 0.12) continue;
-      const sx = tileX(view, x + 0.2 + hash(x, y, 711) * 0.5);
-      const sy = tileY(view, y + 0.3 + hash(x, y, 712) * 0.4);
-      g.moveTo(sx, sy).lineTo(sx + t * 0.25, sy + t * 0.06);
-    }
-    g.stroke({ width: 1, color: hex(palette.grassDark), alpha: 0.5 });
-    // A faint tint of the owner over each island, as the other styles give.
-    for (let player = 1; player <= state.players.length; player++) {
-      let any = false;
-      for (const { x, y } of ground) {
-        if (state.islandId[y * state.width + x] !== player) continue;
-        g.rect(tileX(view, x), tileY(view, y), t, t);
-        any = true;
+    const ground = (from: number, to: number): Cell[] => {
+      const cells: Cell[] = [];
+      for (let y = Math.max(0, from); y < Math.min(state.height, to); y++) {
+        for (let x = 0; x < state.width; x++) if (land(x, y)) cells.push({ x, y });
       }
-      if (any) g.fill({ color: this.colour(player - 1, 'base'), alpha: 0.06 });
-    }
-
-    // The aluminium skirting along every coast, and the cable duct just inside it.
-    const coast = outline(ground, land, view);
-    trace(g, coast);
-    g.stroke({ width: t * 0.26, color: hex(palette.sand), cap: 'square' });
-    trace(g, coast);
-    g.stroke({ width: Math.max(1, t * 0.06), color: 0xf4f5f7, alpha: 0.7, cap: 'square' });
-    trace(g, coast);
-    g.stroke({ width: 1, color: this.dark, alpha: 0.6, cap: 'square' });
+      return cells;
+    };
 
     // The water cooler's place, in the corner the compass rose takes in Parchment.
     const right = Math.floor((view.width - view.originX) / t) - state.width;
@@ -410,9 +352,111 @@ export class OfficeTheme extends ShapeTheme implements Theme {
           this.buckets.push({ x, y });
         }
       }
-      for (const b of this.buckets) this.drawBucket(g, view, b);
     }
     this.stainsDrawn = '';
+
+    return {
+      rows: [y0, y1],
+      passes: [
+        whole((g) => {
+          g.rect(tileX(view, x0), tileY(view, y0), (x1 - x0) * t, (y1 - y0) * t);
+          g.fill({ color: hex(palette.waterMid) });
+        }),
+        (g, from, to) => {
+          carpet(from, to, (x, y) => {
+            if (((x - x0) / 2 + (y - y0) / 2) % 2 === 0) return;
+            g.rect(tileX(view, x), tileY(view, y), t * 2, t * 2);
+          });
+          g.fill({ color: hex(palette.waterShallow), alpha: 0.45 });
+        },
+        (g, from, to) => {
+          carpet(from, to, (x, y) => {
+            const across = ((x - x0) / 2 + (y - y0) / 2) % 2 === 0;
+            const left = tileX(view, x);
+            const top = tileY(view, y);
+            for (let k = 1; k <= 3; k++) {
+              const f = (k / 4) * t * 2;
+              if (across) g.moveTo(left + 1, top + f).lineTo(left + t * 2 - 1, top + f);
+              else g.moveTo(left + f, top + 1).lineTo(left + f, top + t * 2 - 1);
+            }
+          });
+          g.stroke({ width: 1, color: hex(palette.waterDeep), alpha: 0.55 });
+        },
+        // Flecks in the pile, and here and there an old stain nobody owns up to.
+        (g, from, to) => {
+          tiles(from, to, (x, y) => {
+            if (land(x, y) || hash(x, y, 700) > 0.06) return;
+            g.circle(
+              tileX(view, x + hash(x, y, 701)),
+              tileY(view, y + hash(x, y, 702)),
+              Math.max(0.8, t * 0.05),
+            );
+          });
+          g.fill({ color: hex(palette.waterFoam), alpha: 0.22 });
+        },
+        (g, from, to) => {
+          tiles(from, to, (x, y) => {
+            if (hash(x, y, 703) > 0.004 || !this.openCarpet(x, y)) return;
+            g.ellipse(tileX(view, x + 0.5), tileY(view, y + 0.5), t * 0.7, t * 0.45);
+          });
+          g.fill({ color: hex(palette.craterMid), alpha: 0.18 });
+        },
+        (g, from, to) => {
+          for (const { x, y } of ground(from, to)) g.rect(tileX(view, x), tileY(view, y), t, t);
+          g.fill({ color: hex(palette.grassMid) });
+        },
+        (g, from, to) => {
+          for (const { x, y } of ground(from, to)) {
+            if ((x + y) % 2 === 0) g.rect(tileX(view, x), tileY(view, y), t, t);
+          }
+          g.fill({ color: hex(palette.grassLight), alpha: 0.45 });
+        },
+        (g, from, to) => {
+          for (const { x, y } of ground(from, to)) {
+            g.rect(tileX(view, x), tileY(view, y), t, t);
+          }
+          g.stroke({ width: 1, color: hex(palette.grassDark), alpha: 0.35 });
+        },
+        (g, from, to) => {
+          for (const { x, y } of ground(from, to)) {
+            if (hash(x, y, 710) > 0.12) continue;
+            const sx = tileX(view, x + 0.2 + hash(x, y, 711) * 0.5);
+            const sy = tileY(view, y + 0.3 + hash(x, y, 712) * 0.4);
+            g.moveTo(sx, sy).lineTo(sx + t * 0.25, sy + t * 0.06);
+          }
+          g.stroke({ width: 1, color: hex(palette.grassDark), alpha: 0.5 });
+        },
+        // A faint tint of the owner over each island, as the other styles give.
+        (g, from, to) => {
+          const cells = ground(from, to);
+          for (let player = 1; player <= state.players.length; player++) {
+            let any = false;
+            for (const { x, y } of cells) {
+              if (state.islandId[y * state.width + x] !== player) continue;
+              g.rect(tileX(view, x), tileY(view, y), t, t);
+              any = true;
+            }
+            if (any) g.fill({ color: this.colour(player - 1, 'base'), alpha: 0.06 });
+          }
+        },
+        // The aluminium skirting along every coast, and the cable duct just inside it.
+        (g, from, to) => {
+          trace(g, outline(ground(from, to), land, view));
+          g.stroke({ width: t * 0.26, color: hex(palette.sand), cap: 'square' });
+        },
+        (g, from, to) => {
+          trace(g, outline(ground(from, to), land, view));
+          g.stroke({ width: Math.max(1, t * 0.06), color: 0xf4f5f7, alpha: 0.7, cap: 'square' });
+        },
+        (g, from, to) => {
+          trace(g, outline(ground(from, to), land, view));
+          g.stroke({ width: 1, color: this.dark, alpha: 0.6, cap: 'square' });
+        },
+        whole((g) => {
+          for (const b of this.buckets) this.drawBucket(g, view, b);
+        }),
+      ],
+    };
   }
 
   /** Carpet with carpet all round it, where a bucket or a stain may stand clear of the coast. */

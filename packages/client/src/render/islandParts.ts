@@ -50,6 +50,16 @@ export function withDrawBudget(ms: number, draw: () => void): boolean {
   return !cutShort;
 }
 
+/**
+ * Whether a draw under a budget must stop here, having drawn `drawn` parts in this call: one
+ * part is always drawn. Says so to `withDrawBudget`, which then reports the draw cut short.
+ */
+export function outOfBudget(drawn: number): boolean {
+  if (deadline === null || drawn === 0 || performance.now() <= deadline) return false;
+  cutShort = true;
+  return true;
+}
+
 export class IslandParts {
   readonly containers: Container[];
   private parts: { layers: Graphics[]; key: string }[] = [];
@@ -99,11 +109,10 @@ export class IslandParts {
       const key = `${hash >>> 0}|${JSON.stringify(castles)}|${JSON.stringify(cannons)}`;
       const entry = this.parts[part] as { layers: Graphics[]; key: string };
       if (!viewChanged && key === entry.key) continue;
-      if (deadline !== null && drawn > 0 && performance.now() > deadline) {
+      if (outOfBudget(drawn)) {
         // Out of time: drawn at the next call, which the key no longer matching ensures
         // even if the view does not change again.
         entry.key = '';
-        cutShort = true;
         continue;
       }
       drawn++;

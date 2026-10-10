@@ -6,6 +6,7 @@ import type { CameraShot } from '../camera.js';
 import type { DrainWash, SealGlow } from '../seal.js';
 import type { Look } from '../transition.js';
 import { withDrawBudget } from './islandParts.js';
+import { StripContainer } from './terrainStrips.js';
 import { renderResolution } from '../sharpness.js';
 
 import { BlueprintTheme } from './blueprint.js';
@@ -791,15 +792,18 @@ export class Scene {
   /**
    * What of a look's board to render offscreen, a piece at a time: each part of each board
    * layer, and of a part that is a plain container of others — an `IslandParts` layer —
-   * each of those, one island's drawing. The whole look at once was 35 to 135 ms; a whole
-   * part, every island's drawing of it, up to 56 ms (ARCHIVE 12zm).
+   * each of those, one island's drawing; of a style's terrain strips, each strip in every
+   * pass. The whole look at once was 35 to 135 ms; a whole part, every island's drawing of
+   * it, up to 56 ms (ARCHIVE 12zm); a style's whole terrain up to 118 ms (ARCHIVE 13n).
+   * A piece is the things to render together.
    */
   private warmChains(slot: Slot, only?: BoardLayer): Container[][] {
     const layers = only === undefined ? BOARD_LAYERS : [only];
     return layers.flatMap((name) => {
       const layer = slot.layers[name];
-      return layer.children.flatMap((part) => {
-        if (part.constructor !== Container || part.children.length <= 1) return [[layer, part]];
+      return layer.children.flatMap((part): Container[][] => {
+        if (part instanceof StripContainer) return part.strips();
+        if (part.constructor !== Container || part.children.length <= 1) return [[part]];
         // Each drawing a piece of its own, since its first render is what costs: cutting it
         // into triangles. Sprites cost nothing to warm and go together, the part whole after
         // its drawings: one chain a sprite made Pixel's and Night's six thousand tiles six
@@ -807,8 +811,8 @@ export class Scene {
         // warming a minute and a half later, long after its banner — so the old look came
         // round again in its place and the style drawn for it was lost (ARCHIVE 13e).
         const drawings = part.children.filter((piece) => piece instanceof Graphics);
-        const rest = drawings.length < part.children.length ? [[layer, part]] : [];
-        return [...drawings.map((piece) => [layer, part, piece]), ...rest];
+        const rest = drawings.length < part.children.length ? [[part]] : [];
+        return [...drawings.map((piece) => [piece]), ...rest];
       });
     });
   }
@@ -818,24 +822,36 @@ export class Scene {
    * it, so its first render is spread over frames as its drawing is. A piece no longer where
    * it was — drawn again since — is passed over.
    */
-  private warmChain(slot: Slot, chain: readonly Container[]): void {
-    for (let i = 1; i < chain.length; i++) {
-      if (chain[i]?.parent !== chain[i - 1]) return;
+  private warmChain(slot: Slot, piece: readonly Container[]): void {
+    // The piece and everything above it up to the look's root, which alone stay visible.
+    const kept = new Set<Container>();
+    for (const leaf of piece) {
+      let node: Container | null = leaf;
+      while (node !== null && node !== slot.root) {
+        kept.add(node);
+        node = node.parent;
+      }
+      if (node !== slot.root) return;
     }
-    if (chain[0]?.parent !== slot.root) return;
     const hidden: [Container, boolean][] = [];
-    const only = (siblings: readonly Container[], keep: Container | undefined): void => {
+    const only = (siblings: readonly Container[], keep: (child: Container) => boolean): void => {
       for (const child of siblings) {
         hidden.push([child, child.visible]);
-        child.visible = child === keep;
+        child.visible = keep(child);
       }
     };
     only(
       this.all().map((s) => s.root),
-      slot.root,
+      (root) => root === slot.root,
     );
-    only(slot.root.children, chain[0]);
-    for (let i = 1; i < chain.length; i++) only((chain[i - 1] as Container).children, chain[i]);
+    const leaves = new Set(piece);
+    const open = [slot.root];
+    while (open.length > 0) {
+      const node = open.pop() as Container;
+      only(node.children, (child) => kept.has(child));
+      for (const child of node.children)
+        if (kept.has(child) && !leaves.has(child)) open.push(child);
+    }
     this.renderOffscreen();
     for (const [child, visible] of hidden.reverse()) child.visible = visible;
     this.applyVisibility();

@@ -61,6 +61,8 @@ import {
 import { cannonBase } from './cannonBase.js';
 import { ShapeTheme } from './shapeTheme.js';
 import { clearDrawn } from './clearDrawn.js';
+import { release } from './release.js';
+import { TerrainStrips, whole, type TerrainPass, type TerrainPlan } from './terrainStrips.js';
 
 /** Something with a place and an age: a ring on the beer, a burst of foam, a coin, a clink. */
 interface Aged {
@@ -171,7 +173,8 @@ export class OktoberfestTheme extends ShapeTheme implements Theme {
   /** Life on the outer sea (`seaLife.ts`). */
   private readonly seaLife = new OktoberfestSeaLife();
 
-  private readonly terrainGfx = new Graphics();
+  /** The beer and the meadow, in strips of rows (`TerrainStrips`). */
+  private readonly terrainStrips = new TerrainStrips();
   /** The bubbles, the puddles and the Ferris wheel: redrawn each frame. */
   private readonly flowGfx = new Graphics();
   /** The puddles, drawn again only when one comes or dries a round further. */
@@ -245,7 +248,7 @@ export class OktoberfestTheme extends ShapeTheme implements Theme {
     // Medieval's weather, drawn from the seed: it rains at the Wiesn, of course, and now and
     // then it snows; fog is left to the morning after.
     this.weather = weatherFor(this.seed, art.pixel.weatherOdds);
-    layers.terrain.addChild(this.terrainGfx, this.puddleGfx, this.flowGfx);
+    layers.terrain.addChild(this.terrainStrips.container, this.puddleGfx, this.flowGfx);
     layers.territory.addChild(this.scenery.gfx, this.territory.container);
     layers.structures.addChild(this.structures.container);
     layers.effects.addChild(
@@ -269,8 +272,8 @@ export class OktoberfestTheme extends ShapeTheme implements Theme {
     this.lateGfx.destroy();
     this.structures.destroy();
     this.scenery.destroy();
+    release(this.terrainStrips.container);
     for (const g of [
-      this.terrainGfx,
       this.puddleGfx,
       this.flowGfx,
       this.effectGfx,
@@ -288,12 +291,15 @@ export class OktoberfestTheme extends ShapeTheme implements Theme {
   // ------------------------------------------------------------------ terrain
 
   drawTerrain(state: MatchState, view: ViewTransform): void {
+    this.terrainStrips.draw(state, view, () => this.planTerrain(state, view));
+  }
+
+  /** The terrain's passes over strips of rows (`TerrainStrips`), and what they share. */
+  private planTerrain(state: MatchState, view: ViewTransform): TerrainPlan {
     this.terrain = state.terrain;
     this.width = state.width;
     this.height = state.height;
     this.scenery.refresh(state, view, this.art, true);
-    const g = this.terrainGfx;
-    clearDrawn(g);
     const { palette } = this.art;
     const t = view.tile;
     const land = (x: number, y: number): boolean => this.land(x, y);
@@ -341,92 +347,128 @@ export class OktoberfestTheme extends ShapeTheme implements Theme {
       mixed(hex(palette.waterMid), hex(palette.waterDeep), 0.5),
       hex(palette.waterDeep),
     ];
-    g.rect(tileX(view, x0), tileY(view, y0), w * t, h * t);
-    g.fill({ color: bands[4]! });
-    for (let band = 3; band >= 0; band--) {
-      for (let y = 0; y < h; y++) {
-        for (let x = 0; x < w; x++) {
-          if (depth[y * w + x] !== band + 1) continue;
-          g.circle(tileX(view, x + x0 + 0.5), tileY(view, y + y0 + 0.5), t * 0.8);
-        }
-      }
-      g.fill({ color: bands[band]! });
-    }
-    // Light catching the beer here and there, as through a glass held up.
     this.beerCells = [];
     for (let y = 0; y < h; y++) {
       for (let x = 0; x < w; x++) {
         const d = depth[y * w + x]!;
-        if (d === 0) continue;
-        if (d < 0 || d >= 2) this.beerCells.push({ x: x + x0, y: y + y0 });
-        if (hash(x + x0, y + y0, 400) > 0.05) continue;
-        g.ellipse(
-          tileX(view, x + x0 + hash(x, y, 401)),
-          tileY(view, y + y0 + hash(x, y, 402)),
-          t * 0.3,
-          t * 0.06,
-        );
+        if (d !== 0 && (d < 0 || d >= 2)) this.beerCells.push({ x: x + x0, y: y + y0 });
       }
     }
-    g.fill({ color: 0xfff1b0, alpha: 0.25 });
-
+    /** The rows of the depth map in the strip's board rows, `y` counted from its top. */
+    const beerRows = (from: number, to: number, each: (x: number, y: number) => void): void => {
+      for (let y = from - y0; y < to - y0; y++) for (let x = 0; x < w; x++) each(x, y);
+    };
     // The Theresienwiese: meadow trodden lighter in patches, tufts left standing, and the
     // odd scrap of confetti from the parade.
-    const ground: Cell[] = [];
-    for (let y = 0; y < state.height; y++) {
-      for (let x = 0; x < state.width; x++) if (land(x, y)) ground.push({ x, y });
-    }
-    for (const { x, y } of ground) g.rect(tileX(view, x), tileY(view, y), t, t);
-    g.fill({ color: hex(palette.grassMid) });
-    for (const { x, y } of ground) {
-      if (hash(x, y, 1) < 0.22) g.circle(tileX(view, x + 0.5), tileY(view, y + 0.5), t * 0.7);
-    }
-    g.fill({ color: hex(palette.grassLight), alpha: 0.35 });
-    for (const { x, y } of ground) {
-      if (hash(x, y, 2) > 0.3) continue;
-      const px = tileX(view, x) + t * (0.2 + 0.6 * hash(x, y, 3));
-      const py = tileY(view, y) + t * (0.3 + 0.5 * hash(x, y, 4));
-      g.moveTo(px - t * 0.1, py - t * 0.12).lineTo(px, py);
-      g.lineTo(px + t * 0.1, py - t * 0.14);
-    }
-    g.stroke({ width: Math.max(1, t * 0.05), color: hex(palette.grassDark), cap: 'round' });
-    for (const [k, colour] of ICING.entries()) {
-      for (const { x, y } of ground) {
-        if (hash(x, y, 410 + k) > 0.025) continue;
-        const px = tileX(view, x) + t * (0.15 + 0.7 * hash(x, y, 420 + k));
-        const py = tileY(view, y) + t * (0.15 + 0.7 * hash(x, y, 430 + k));
-        g.rect(px, py, t * 0.08, t * 0.05);
+    const ground = (from: number, to: number): Cell[] => {
+      const cells: Cell[] = [];
+      for (let y = Math.max(0, from); y < Math.min(state.height, to); y++) {
+        for (let x = 0; x < state.width; x++) if (land(x, y)) cells.push({ x, y });
       }
-      g.fill({ color: colour, alpha: 0.85 });
-    }
-    // A faint tint of the owner over each island, as the other styles give.
-    for (let player = 1; player <= state.players.length; player++) {
-      let any = false;
-      for (const { x, y } of ground) {
-        if (state.islandId[y * state.width + x] !== player) continue;
-        g.rect(tileX(view, x), tileY(view, y), t, t);
-        any = true;
-      }
-      if (any) g.fill({ color: this.colour(player - 1, 'base'), alpha: 0.07 });
-    }
+      return cells;
+    };
 
-    // The head of foam round every coast, bubbled along its edge.
-    const coast = outline(ground, land, view);
-    trace(g, coast);
-    g.stroke({ width: t * 0.8, color: FOAM, cap: 'square' });
-    for (const s of coast) {
-      const key = Math.round(s.x1 * 7 + s.y1 * 13);
-      for (const f of [0.25, 0.75]) {
-        const px = s.x1 + (s.x2 - s.x1) * f;
-        const py = s.y1 + (s.y2 - s.y1) * f;
-        const out = s.x1 === s.x2 ? (hash(key, 440) - 0.5) * t * 0.5 : 0;
-        const down = s.y1 === s.y2 ? (hash(key, 441) - 0.5) * t * 0.5 : 0;
-        g.circle(px + out, py + down, t * (0.18 + 0.14 * hash(key, f * 10, 442)));
-      }
+    const passes: TerrainPass[] = [
+      whole((g) => {
+        g.rect(tileX(view, x0), tileY(view, y0), w * t, h * t);
+        g.fill({ color: bands[4]! });
+      }),
+    ];
+    for (let band = 3; band >= 0; band--) {
+      passes.push((g, from, to) => {
+        beerRows(from, to, (x, y) => {
+          if (depth[y * w + x] !== band + 1) return;
+          g.circle(tileX(view, x + x0 + 0.5), tileY(view, y + y0 + 0.5), t * 0.8);
+        });
+        g.fill({ color: bands[band]! });
+      });
     }
-    g.fill({ color: FOAM });
-    trace(g, coast);
-    g.stroke({ width: Math.max(1, t * 0.06), color: 0xe8d8b8, alpha: 0.8, cap: 'square' });
+    passes.push(
+      // Light catching the beer here and there, as through a glass held up.
+      (g, from, to) => {
+        beerRows(from, to, (x, y) => {
+          const d = depth[y * w + x]!;
+          if (d === 0) return;
+          if (hash(x + x0, y + y0, 400) > 0.05) return;
+          g.ellipse(
+            tileX(view, x + x0 + hash(x, y, 401)),
+            tileY(view, y + y0 + hash(x, y, 402)),
+            t * 0.3,
+            t * 0.06,
+          );
+        });
+        g.fill({ color: 0xfff1b0, alpha: 0.25 });
+      },
+      (g, from, to) => {
+        for (const { x, y } of ground(from, to)) g.rect(tileX(view, x), tileY(view, y), t, t);
+        g.fill({ color: hex(palette.grassMid) });
+      },
+      (g, from, to) => {
+        for (const { x, y } of ground(from, to)) {
+          if (hash(x, y, 1) < 0.22) g.circle(tileX(view, x + 0.5), tileY(view, y + 0.5), t * 0.7);
+        }
+        g.fill({ color: hex(palette.grassLight), alpha: 0.35 });
+      },
+      (g, from, to) => {
+        for (const { x, y } of ground(from, to)) {
+          if (hash(x, y, 2) > 0.3) continue;
+          const px = tileX(view, x) + t * (0.2 + 0.6 * hash(x, y, 3));
+          const py = tileY(view, y) + t * (0.3 + 0.5 * hash(x, y, 4));
+          g.moveTo(px - t * 0.1, py - t * 0.12).lineTo(px, py);
+          g.lineTo(px + t * 0.1, py - t * 0.14);
+        }
+        g.stroke({ width: Math.max(1, t * 0.05), color: hex(palette.grassDark), cap: 'round' });
+      },
+    );
+    // A pass a colour: one colour's scraps may land on another's.
+    for (const [k, colour] of ICING.entries()) {
+      passes.push((g, from, to) => {
+        for (const { x, y } of ground(from, to)) {
+          if (hash(x, y, 410 + k) > 0.025) continue;
+          const px = tileX(view, x) + t * (0.15 + 0.7 * hash(x, y, 420 + k));
+          const py = tileY(view, y) + t * (0.15 + 0.7 * hash(x, y, 430 + k));
+          g.rect(px, py, t * 0.08, t * 0.05);
+        }
+        g.fill({ color: colour, alpha: 0.85 });
+      });
+    }
+    passes.push(
+      // A faint tint of the owner over each island, as the other styles give.
+      (g, from, to) => {
+        const cells = ground(from, to);
+        for (let player = 1; player <= state.players.length; player++) {
+          let any = false;
+          for (const { x, y } of cells) {
+            if (state.islandId[y * state.width + x] !== player) continue;
+            g.rect(tileX(view, x), tileY(view, y), t, t);
+            any = true;
+          }
+          if (any) g.fill({ color: this.colour(player - 1, 'base'), alpha: 0.07 });
+        }
+      },
+      // The head of foam round every coast, bubbled along its edge.
+      (g, from, to) => {
+        trace(g, outline(ground(from, to), land, view));
+        g.stroke({ width: t * 0.8, color: FOAM, cap: 'square' });
+      },
+      (g, from, to) => {
+        for (const s of outline(ground(from, to), land, view)) {
+          const key = Math.round(s.x1 * 7 + s.y1 * 13);
+          for (const f of [0.25, 0.75]) {
+            const px = s.x1 + (s.x2 - s.x1) * f;
+            const py = s.y1 + (s.y2 - s.y1) * f;
+            const out = s.x1 === s.x2 ? (hash(key, 440) - 0.5) * t * 0.5 : 0;
+            const down = s.y1 === s.y2 ? (hash(key, 441) - 0.5) * t * 0.5 : 0;
+            g.circle(px + out, py + down, t * (0.18 + 0.14 * hash(key, f * 10, 442)));
+          }
+        }
+        g.fill({ color: FOAM });
+      },
+      (g, from, to) => {
+        trace(g, outline(ground(from, to), land, view));
+        g.stroke({ width: Math.max(1, t * 0.06), color: 0xe8d8b8, alpha: 0.8, cap: 'square' });
+      },
+    );
 
     // The Ferris wheel's place, in the corner the compass rose takes in Parchment.
     const right = Math.floor((view.width - view.originX) / t) - state.width;
@@ -435,6 +477,7 @@ export class OktoberfestTheme extends ShapeTheme implements Theme {
     this.seaLife.wheel = this.wheel;
     this.seaLife.layout(state, view, this.art);
     this.bubbles = [];
+    return { rows: [y0, y0 + h], passes };
   }
 
   // ------------------------------------------------------------------ the beer, moving

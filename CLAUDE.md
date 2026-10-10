@@ -157,6 +157,11 @@ Full detail in PLAN.md §1. The parts that surprise people:
 **Done** (2026-10-10; the latest release **v0.9.0**, 2026-10-10, protocol 21, which a test
 session needs the server rebuilt and every page reloaded for):
 
+- **The terrain in strips** (ARCHIVE 13n, 2026-10-10): every style's terrain drawn and first
+  rendered a strip of rows at a time (`TerrainStrips`), pixel for pixel as before, so a new
+  look's terrain no longer costs one long frame. Wipes between two heavy looks at a large
+  window still drop frames throughout: measured, the fix designed for the next session (PLAN §11
+  item 3).
 - **The bots in a worker** (ARCHIVE 13k, 2026-10-10): a local match's bots plan in a Web
   Worker in lockstep with the page, every action on the tick it had on the page's thread, with
   fallbacks to the thread; and three rendering leads, the crowns keyed (`MainCastles`), an empty
@@ -245,7 +250,8 @@ session needs the server rebuilt and every page reloaded for):
   piece and German checked in play by the user (ARCHIVE 12n–12t).
 
 **Next** — PLAN §11: more test games towards a first
-feature-ready version, and bots that miss as people do (combat accuracy, measured against the
+feature-ready version, wipes between heavy looks rendering only what each look shows (item 3,
+the next session's work), and bots that miss as people do (combat accuracy, measured against the
 testers' recordings; how is not yet decided). **The bot learning work is paused**; when it
 resumes, `docs/BOT_LEARNING.md` §6 says where — first, learning the choice of wall rather
 than only the cell. French is not to be done. Signing the Windows app was explained (PLAN
@@ -451,6 +457,11 @@ card does not help with that (ARCHIVE 12n). So a style **never redraws what has 
 
 - **Walls and sealed ground by island**: `IslandParts` (`render/islandParts.ts`) gives the
   style's drawing one island's board and redraws only the island that changed.
+- **The terrain in strips of rows**: `TerrainStrips` (`render/terrainStrips.ts`), a pass for
+  each fill or stroke, each drawn over eight strips of rows, every strip of a pass before the
+  next pass, so the order is as when whole; a hidden look draws and first renders it a strip
+  at a time (ARCHIVE 13n). A new style's terrain is a plan (what is worked out across the
+  board) and its passes.
 - **Sprites in a layer emptied every frame**: from a `SpritePool` (`render/stamps.ts`), not
   `new Sprite`; Medieval made two hundred a frame and left them to the collector (ARCHIVE 12w).
 - **Many alike, moving**: `Stamps` and `StampBook` (`render/stamps.ts`) — a shape drawn once
@@ -475,7 +486,7 @@ A hidden look is rendered once offscreen at the start (`Scene.warmUp`) and prime
 before the banner that brings it (`Scene.prime`): its stale layers drawn and rendered unseen a
 frame's share at a time, so the wipe's first frame has nothing left to do (ARCHIVE 12zm). A new
 random look is made the same way, `IslandParts` drawing under a budget (`withDrawBudget`). Each
-style's terrain is still one drawing, the last hitch a new random look costs.
+style's terrain is drawn in strips of rows (`TerrainStrips`, ARCHIVE 13n), a few a frame.
 
 Check with `&perf=1` at eight players: the readout names the `Graphics` rebuilt most, every
 frame and at worst. Keep the draw order where it shows; what came after a stamped thing goes

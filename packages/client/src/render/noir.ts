@@ -53,6 +53,8 @@ import {
 import { outline, trace, wallGeometry } from './walls.js';
 import { ShapeTheme } from './shapeTheme.js';
 import { clearDrawn } from './clearDrawn.js';
+import { release } from './release.js';
+import { TerrainStrips, whole, type TerrainPass, type TerrainPlan } from './terrainStrips.js';
 
 /** Ink, and the paper white of a lit face. */
 export const NOIR_INK = 0x0a0a0d;
@@ -205,7 +207,8 @@ export class NoirTheme extends ShapeTheme implements Theme {
   private seaHatch: FillPattern | null = null;
   private cobble: FillPattern | null = null;
 
-  private readonly terrainGfx = new Graphics();
+  /** The harbour and the streets, in strips of rows (`TerrainStrips`). */
+  private readonly terrainStrips = new TerrainStrips();
   private readonly craterGfx = new Graphics();
   private cratersDrawn = '';
   private readonly cornerMemos = new Memos();
@@ -281,7 +284,11 @@ export class NoirTheme extends ShapeTheme implements Theme {
     this.cobble = cobbles();
     this.glow.container.blendMode = 'add';
     this.beams.container.blendMode = 'add';
-    layers.terrain.addChild(this.terrainGfx, this.craterGfx, this.cornerMemos.container);
+    layers.terrain.addChild(
+      this.terrainStrips.container,
+      this.craterGfx,
+      this.cornerMemos.container,
+    );
     layers.territory.addChild(this.territory.container, this.scenery.gfx);
     layers.structures.addChild(this.structures.container);
     layers.effects.addChild(
@@ -322,8 +329,8 @@ export class NoirTheme extends ShapeTheme implements Theme {
     this.book.destroy();
     for (const word of this.wordPool) word.destroy(true);
     this.wordLayer.destroy();
+    release(this.terrainStrips.container);
     for (const g of [
-      this.terrainGfx,
       this.craterGfx,
       this.underGfx,
       this.crowns.gfx,
@@ -347,12 +354,15 @@ export class NoirTheme extends ShapeTheme implements Theme {
    * light hatched over. The quays a kerb of pale stone, bollards along them.
    */
   drawTerrain(state: MatchState, view: ViewTransform): void {
+    this.terrainStrips.draw(state, view, () => this.planTerrain(state, view));
+  }
+
+  /** The terrain's passes over strips of rows (`TerrainStrips`), and what they share. */
+  private planTerrain(state: MatchState, view: ViewTransform): TerrainPlan {
     this.terrain = state.terrain;
     this.width = state.width;
     this.height = state.height;
     this.scenery.refresh(state, view, this.art, true);
-    const g = this.terrainGfx;
-    clearDrawn(g);
     const { palette } = this.art;
     const t = view.tile;
     const land = (x: number, y: number): boolean => this.land(x, y);
@@ -363,102 +373,138 @@ export class NoirTheme extends ShapeTheme implements Theme {
     const y0 = -marginY;
     const x1 = state.width + marginX;
     const y1 = state.height + marginY;
-    const sea = (): void => {
+    const sea = (g: Graphics): void => {
       g.rect(tileX(view, x0), tileY(view, y0), (x1 - x0) * t, (y1 - y0) * t);
     };
-    sea();
-    g.fill({ color: hex(palette.waterDeep) });
-    if (this.seaHatch !== null) {
-      sea();
-      g.fill({ fill: this.seaHatch, alpha: 0.05 });
-    }
     const near = (x: number, y: number): boolean => {
       for (let dy = -1; dy <= 1; dy++) {
         for (let dx = -1; dx <= 1; dx++) if (land(x + dx, y + dy)) return true;
       }
       return false;
     };
-    // The water along the quays, a shade lighter.
-    for (let y = -1; y <= state.height; y++) {
-      for (let x = -1; x <= state.width; x++) {
-        if (!land(x, y) && near(x, y)) g.rect(tileX(view, x), tileY(view, y), t, t);
+    /** The tiles of the strip's rows within one of the board, where the quays' water lies. */
+    const quays = (from: number, to: number, each: (x: number, y: number) => void): void => {
+      for (let y = Math.max(-1, from); y < Math.min(state.height + 1, to); y++) {
+        for (let x = -1; x <= state.width; x++) each(x, y);
       }
-    }
-    g.fill({ color: hex(palette.waterMid) });
-    // The city's lamps broken in the water: short pale streaks, one under another.
-    for (let y = -1; y <= state.height; y++) {
-      for (let x = -1; x <= state.width; x++) {
-        if (land(x, y) || !near(x, y) || hash(x, y, 7100) > 0.12) continue;
-        const sx = tileX(view, x + 0.2 + 0.6 * hash(x, y, 7101));
-        const sy = tileY(view, y + 0.15);
-        for (let k = 0; k < 4; k++) {
-          const w = t * (0.32 - k * 0.06);
-          g.rect(sx - w / 2, sy + k * t * 0.2, w, Math.max(1, t * 0.05));
-        }
-      }
-    }
-    g.fill({ color: LAMP, alpha: 0.28 });
-    // Foam inked along the quays in short strokes.
-    for (let y = -1; y <= state.height; y++) {
-      for (let x = -1; x <= state.width; x++) {
-        if (land(x, y) || hash(x, y, 7102) > 0.5) continue;
-        for (const [dx, dy] of [
-          [0, -1],
-          [0, 1],
-          [-1, 0],
-          [1, 0],
-        ] as const) {
-          if (!land(x + dx, y + dy)) continue;
-          const cx = tileX(view, x + 0.5 + dx * 0.3);
-          const cy = tileY(view, y + 0.5 + dy * 0.3);
-          const r = t * 0.22;
-          if (dx === 0) g.moveTo(cx - r, cy).lineTo(cx + r, cy);
-          else g.moveTo(cx, cy - r).lineTo(cx, cy + r);
-        }
-      }
-    }
-    g.stroke({ width: Math.max(1, t * 0.05), color: hex(palette.waterFoam), alpha: 0.55 });
-
-    // The streets: cobbles, wet, and out of the light hatched over.
-    const ground: Cell[] = [];
-    for (let y = 0; y < state.height; y++) {
-      for (let x = 0; x < state.width; x++) if (land(x, y)) ground.push({ x, y });
-    }
-    const paveAll = (): void => {
-      for (const { x, y } of ground) g.rect(tileX(view, x), tileY(view, y), t, t);
     };
-    paveAll();
-    g.fill({ color: hex(palette.grassMid) });
-    if (this.cobble !== null) {
-      paveAll();
-      g.fill({ fill: this.cobble, alpha: 0.55 });
+    /** The streets in the strip's rows. */
+    const ground = (from: number, to: number): Cell[] => {
+      const cells: Cell[] = [];
+      for (let y = Math.max(0, from); y < Math.min(state.height, to); y++) {
+        for (let x = 0; x < state.width; x++) if (land(x, y)) cells.push({ x, y });
+      }
+      return cells;
+    };
+    const pave = (g: Graphics, from: number, to: number): void => {
+      for (const { x, y } of ground(from, to)) g.rect(tileX(view, x), tileY(view, y), t, t);
+    };
+    const { seaHatch, cobble, hatch: shade } = this;
+    const passes: TerrainPass[] = [
+      whole((g) => {
+        sea(g);
+        g.fill({ color: hex(palette.waterDeep) });
+      }),
+    ];
+    if (seaHatch !== null) {
+      passes.push(
+        whole((g) => {
+          sea(g);
+          g.fill({ fill: seaHatch, alpha: 0.05 });
+        }),
+      );
+    }
+    passes.push(
+      // The water along the quays, a shade lighter.
+      (g, from, to) => {
+        quays(from, to, (x, y) => {
+          if (!land(x, y) && near(x, y)) g.rect(tileX(view, x), tileY(view, y), t, t);
+        });
+        g.fill({ color: hex(palette.waterMid) });
+      },
+      // The city's lamps broken in the water: short pale streaks, one under another.
+      (g, from, to) => {
+        quays(from, to, (x, y) => {
+          if (land(x, y) || !near(x, y) || hash(x, y, 7100) > 0.12) return;
+          const sx = tileX(view, x + 0.2 + 0.6 * hash(x, y, 7101));
+          const sy = tileY(view, y + 0.15);
+          for (let k = 0; k < 4; k++) {
+            const w = t * (0.32 - k * 0.06);
+            g.rect(sx - w / 2, sy + k * t * 0.2, w, Math.max(1, t * 0.05));
+          }
+        });
+        g.fill({ color: LAMP, alpha: 0.28 });
+      },
+      // Foam inked along the quays in short strokes.
+      (g, from, to) => {
+        quays(from, to, (x, y) => {
+          if (land(x, y) || hash(x, y, 7102) > 0.5) return;
+          for (const [dx, dy] of [
+            [0, -1],
+            [0, 1],
+            [-1, 0],
+            [1, 0],
+          ] as const) {
+            if (!land(x + dx, y + dy)) continue;
+            const cx = tileX(view, x + 0.5 + dx * 0.3);
+            const cy = tileY(view, y + 0.5 + dy * 0.3);
+            const r = t * 0.22;
+            if (dx === 0) g.moveTo(cx - r, cy).lineTo(cx + r, cy);
+            else g.moveTo(cx, cy - r).lineTo(cx, cy + r);
+          }
+        });
+        g.stroke({ width: Math.max(1, t * 0.05), color: hex(palette.waterFoam), alpha: 0.55 });
+      },
+      // The streets: cobbles, wet, and out of the light hatched over.
+      (g, from, to) => {
+        pave(g, from, to);
+        g.fill({ color: hex(palette.grassMid) });
+      },
+    );
+    if (cobble !== null) {
+      passes.push((g, from, to) => {
+        pave(g, from, to);
+        g.fill({ fill: cobble, alpha: 0.55 });
+      });
     }
     // Puddles, catching a little light.
-    for (const { x, y } of ground) {
-      if (hash(x, y, 7103) > 0.05) continue;
-      g.ellipse(tileX(view, x + 0.5), tileY(view, y + 0.55), t * 0.42, t * 0.16);
+    passes.push((g, from, to) => {
+      for (const { x, y } of ground(from, to)) {
+        if (hash(x, y, 7103) > 0.05) continue;
+        g.ellipse(tileX(view, x + 0.5), tileY(view, y + 0.55), t * 0.42, t * 0.16);
+      }
+      g.fill({ color: hex(palette.grassLight), alpha: 0.18 });
+    });
+    if (shade !== null) {
+      passes.push((g, from, to) => {
+        pave(g, from, to);
+        g.fill({ fill: shade, alpha: this.style.hatchAlpha });
+      });
     }
-    g.fill({ color: hex(palette.grassLight), alpha: 0.18 });
-    if (this.hatch !== null) {
-      paveAll();
-      g.fill({ fill: this.hatch, alpha: this.style.hatchAlpha });
-    }
-    // The quays: a kerb of pale stone, inked, its shadow hatched on the water below it.
-    const coast = outline(ground, land, view);
-    trace(g, coast);
-    g.stroke({ width: t * 0.2, color: STONE_LIT, cap: 'square' });
-    trace(g, coast);
-    g.stroke({ width: Math.max(1.5, t * 0.08), color: NOIR_INK, cap: 'square' });
-    for (const { x, y } of ground) {
-      if (land(x, y + 1) || hash(x, y, 7104) > 0.18) continue;
-      g.circle(tileX(view, x + 0.5), tileY(view, y + 0.82), t * 0.09);
-    }
-    g.fill({ color: NOIR_INK });
+    passes.push(
+      // The quays: a kerb of pale stone, inked, its shadow hatched on the water below it.
+      (g, from, to) => {
+        trace(g, outline(ground(from, to), land, view));
+        g.stroke({ width: t * 0.2, color: STONE_LIT, cap: 'square' });
+      },
+      (g, from, to) => {
+        trace(g, outline(ground(from, to), land, view));
+        g.stroke({ width: Math.max(1.5, t * 0.08), color: NOIR_INK, cap: 'square' });
+      },
+      (g, from, to) => {
+        for (const { x, y } of ground(from, to)) {
+          if (land(x, y + 1) || hash(x, y, 7104) > 0.18) continue;
+          g.circle(tileX(view, x + 0.5), tileY(view, y + 0.82), t * 0.09);
+        }
+        g.fill({ color: NOIR_INK });
+      },
+    );
 
     this.corner = cornerSpot(state, view);
     this.seaLife.corner = this.corner;
     this.seaLife.layout(state, view, this.art);
     this.cratersDrawn = '';
+    return { rows: [y0, y1], passes };
   }
 
   /** Craters where shells came down, scorched and cracked; drawn again only when one comes or fades. */

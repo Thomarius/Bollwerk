@@ -6803,3 +6803,62 @@ The users' play-testing round, TOURNAMENT T8, ran from 2026-10-08 alongside 12zp
 feedback triaged with them and built as it came (12zl, 12zp, 12zr, 12zs, 13h). After several
 more tournaments the user reported that everything works, and closed it: tournament mode is
 done, T1–T8, and PLAN §11 no longer carries it.
+
+## 13n. Every style's terrain in strips of rows, and wipes measured (2026-10-10)
+
+The user reported that look changes still stutter a little, most in the costly styles, Opera and
+Office, and felt it for the whole of a wipe rather than at its start. PLAN §11 had one lead left:
+each style's terrain was one drawing.
+
+**Measured first** with a script driving a watched eight-player match at double speed on this
+machine (Ryzen 4000-series, Radeon Vega 6), recording each frame's interval, its work, the
+effects' and the render's share and whether a wipe was on screen. Headless Chrome told little:
+without a wait for the GPU every frame met 60 fps, and with one (a `readPixels` after each
+render) every frame was inflated. In a visible window at 1600×900 every wipe held 60 fps, Opera
+and Office included, and the banner's line moved by an even step every frame — so the bots'
+lockstep never stalled it; only a new random look's first wipe frame ran long, 50–83 ms. At the
+user's 2560×1440 ordinary play already dropped about three frames a second, and wipes about as
+many, but for those with Sakura. The effects were 1–3 ms of a wipe's frame, so culling them by
+the line, the first idea, would have saved nothing.
+
+**Each style's terrain, whole** (eight players, 1600×900, headless with the GPU waited for): drawn
+in 1–54 ms (Night 54, Glass 46, Opera 43, Pixel 35) and its layer first rendered in 12–118 ms
+(Chocolate 118, Sakura 99, Glass 85, Undersea 79, Opera 74) — one piece each, which neither the
+draw budget (`withDrawBudget`) nor the warming a piece at a time (`Scene.warmChains`) could split.
+
+**Built** (`render/terrainStrips.ts`): `TerrainStrips` draws a style's terrain as a plan —
+whatever is worked out across the board, once — and passes, one for each fill or stroke of the
+old drawing, each over eight strips of rows into a `Graphics` of its own. Every strip of a pass
+comes before any of the next, a container a pass, so the shapes are laid down in the order the
+old loops drew them; a pass with several fills (a tint a player) is one only where its shapes
+never overlap. A drawing the budget cuts short is taken up where it stopped while the board and
+the view are unchanged; any other call draws it all again. `outOfBudget` in `islandParts.ts`
+serves both. The scene warms a strip of every pass together: `warmChain` now takes the pieces to
+render and keeps visible only them and what lies above them. Pixel and Night lay sprites in a
+render group a strip; their farmland and lighthouse towers are a whole pass above the tiles.
+Office and Minimal were converted by hand, the other fifteen by five agents in parallel to the
+same rules, and Pixel and Night by hand.
+
+**Checked pixel for pixel**: each style's terrain extracted on its own at eight players
+(1400×900) and at three (1100×850), before and after — all seventeen drawn styles identical,
+"0 of 255" everywhere; Pixel and Night, whose sea and surf animate, against the old code run
+from a worktree, within the same 2–4 levels two runs of the old code differ by. Sealed ground and
+walls of every style were compared too, since Glass's pane drawing serves its sealed ground as
+well: identical.
+
+**After**: the longest single call drawing a terrain under the budget is the plan and its first
+strip, 2–27 ms (Glass 27, Night 27, Opera 21, Blueprint 17, Pixel 16; the rest 14 or less); each
+piece's first render is a strip, though the headless measurement carries a floor of 15–17 ms an
+offscreen render. **In a visible window at 2560×1440**, the same seeded sequence of Random looks
+through seven wipes, old code against new: frames over 50 ms in wipes 5 → 3, in the rest of play
+11 → 8; over 33 ms 8 → 6 and 23 → 16; dropped frames a second in the rest of play 2.1 → 1.7. One
+run each, so tendencies.
+
+**The same run corrected the earlier finding**: with this sequence's heavy pairs — Sakura with
+Halloween and with Undersea, Cartoon with Undersea, Chocolate with Office and with Glass — the
+wipes averaged 20–22 ms a frame for their whole two seconds and dropped about 9.5 frames a
+second, against about 2 in the rest of play, old code and new alike. That is the stutter the user
+felt. The frame's CPU work stays at 8–15 ms, so it is the GPU's: both looks are rendered whole
+during a wipe, each only masked to its side of the line. Hiding what lies wholly on the other side
+is the lead, now that the terrain's strips and the islands' parts make it possible: designed in
+PLAN §11 item 3, to be built in the next session (the user's decision).
