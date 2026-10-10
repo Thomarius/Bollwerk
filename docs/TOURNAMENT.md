@@ -7,8 +7,8 @@ ordinary match under the current rules. Every match without them is decided by a
 roll.
 
 This file is the design as agreed with the user (2026-10-08) and the plan to build it, in
-work packages. **T1–T7 are built** (ARCHIVE 12ze–12zk); T8, the users' play-testing, is under
-way. Like PLAN.md it says what is configurable and why, and leaves the values to
+work packages. **All eight are done**: T1–T7 built (ARCHIVE 12ze–12zk), and T8, the users'
+play-testing, closed with everything working (ARCHIVE 13m). Like PLAN.md it says what is configurable and why, and leaves the values to
 `config/*.json`. When a package is done, its summary moves to ARCHIVE.md and this file keeps
 only what is still open.
 
@@ -272,11 +272,7 @@ the match starts again cleanly, which a second run with the server confirmed.
 Every text in English and German, an eighth How to play page, the screenshot scenes, and the
 documents brought up to date.
 
-### T8 — Play-testing
-
-- A tournament of each length, played by the user: how long it takes and whether the rolls
-  feel fair.
-- Triaged with the user before anything changes, as every test session is.
+### T8 — Play-testing — done (ARCHIVE 13m)
 
 ---
 

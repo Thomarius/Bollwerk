@@ -6796,3 +6796,10 @@ from 12–16 ms to 3–5 ms, combat as smooth as before by the user's feel — w
 empty layers no longer rebuilt and a stamp's skew reset (13k). A minor version rather than a
 patch for the change in how every offline match runs. Protocol 21 as v0.8.7, so the two play
 together; the game's rules and bots unchanged.
+
+## 13m. The tournament's play-testing closed (2026-10-10)
+
+The users' play-testing round, TOURNAMENT T8, ran from 2026-10-08 alongside 12zp–13l, its
+feedback triaged with them and built as it came (12zl, 12zp, 12zr, 12zs, 13h). After several
+more tournaments the user reported that everything works, and closed it: tournament mode is
+done, T1–T8, and PLAN §11 no longer carries it.

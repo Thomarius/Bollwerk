@@ -189,7 +189,7 @@ session needs the server rebuilt and every page reloaded for):
   over linear level ratings. A match is played at a fixed table (`matchTable`, given names
   and personalities), offline or in a room friends join by code to sit in the host's team
   (protocol 18, `TournamentTable`); one left before its end is played again. Its last work
-  package, T8, is the users' play-testing round, under way.
+  package, T8, the users' play-testing, closed with everything working (ARCHIVE 13m).
 - **The second feedback** (ARCHIVE 12zp): lives, one to five, chosen in the lobby beside the
   rounds and in the tournament (`MatchSettings.continues`, protocol 19); a tournament's
   matches of 1–15 rounds; the archnemesis's teammates at the top level, him one above, carried
@@ -244,7 +244,7 @@ session needs the server rebuilt and every page reloaded for):
   every effect kept; no memory kept by a swap of looks (ARCHIVE 12q); every look, corner
   piece and German checked in play by the user (ARCHIVE 12n–12t).
 
-**Next** — PLAN §11: the tournament's play-testing (T8), more test games towards a first
+**Next** — PLAN §11: more test games towards a first
 feature-ready version, and bots that miss as people do (combat accuracy, measured against the
 testers' recordings; how is not yet decided). **The bot learning work is paused**; when it
 resumes, `docs/BOT_LEARNING.md` §6 says where — first, learning the choice of wall rather

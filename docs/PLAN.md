@@ -1593,8 +1593,8 @@ tournament's end shown to teammates and Noir calmed (13h), a Ready button for a 
 and favourite looks for Random (13i). **v0.9.0** (13l): the bots' planning in a worker in local matches,
 measured and felt, and three rendering leads (13k).
 
-**The tournament's play-testing round, T8, is under way**, its findings triaged with the users
-first. The bots' planning is off the page's thread in local matches, measured and felt (ARCHIVE
+Tournament mode is finished: its play-testing round, T8, closed with everything working
+(ARCHIVE 13m). The bots' planning is off the page's thread in local matches, measured and felt (ARCHIVE
 13k). Should the wipes still stutter, what is left is each style's terrain drawn as
 one: splitting it by island, in all nineteen styles, would remove the last hitch a new random
 look costs. The bot learning work, item 2, is **paused** after a first learned fit (ARCHIVE
