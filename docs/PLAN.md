@@ -1669,15 +1669,11 @@ far behind in building, item 1, the next work. The bot learning work, item 2, is
       the user's rule. It ends the dead guns at no measurable cost (a Level 5 against two
       Level 9s: guns firing 86% → 91%, score 934 → 921 and failed rounds 11.3% → 12.2%, within
       noise, 72 matches each), and does not close the gap in points.
-   3. **The opening, and pace**: measured (ARCHIVE 13u) — a person's time between pieces grows
-      with the piece in hand (Thomas about 650 + 190 ms a cell, Mausica 1050 + 180), a bot's
-      with the piece it last laid (Level 5 420 + 360, Level 1 750 + 500): as quick with one
-      cell, much slower with four and five. Next: charge a bot's time to the piece in hand and
-      fit each level's line to the testers', as aim was fitted (Thomas about Level 5–6, Mausica
-      2–3), then measure pieces a phase by round against the yardstick. Before that:
-      Thomas laid 28 pieces in round 1 against the bots' 17 (later rounds
-      13–19 against 11–17), and round 1's castles decide the guns of every round after. Look
-      at the bots' placement pace and plan in round 1, the round with the smallest pieces.
+   3. **The opening, and pace** — done (ARCHIVE 13v, 2026-10-11): a bot's time goes on the
+      piece in hand, Thomas's pace at about Level 6 and Mausica's at about Level 3, as the user
+      set. It did what the ambition levers could not: territory a round now rises with level
+      (Level 3 149, 6 211, 10 358 points, from 117–146 at every level), castles from 1.3 at Level
+      1 to 2.4 at 10, and the ladder held. To be judged against the testers' next matches.
    4. **More ground and more castles**, by level — the simple levers measured and none raises the
       castles held (ARCHIVE 13u: `maxCastles` never binds, a bolder `widen` and no thickening
       lose, expanding when sealed is within noise): a bot breached every round spends two thirds
@@ -1692,7 +1688,14 @@ far behind in building, item 1, the next work. The bot learning work, item 2, is
       times. So measure
       by points against a fixed field as well as by wins, and against the people's yardstick
       (direction 1), keeping failed rounds in view.
-   5. **Learning the choice of wall** (item 2's first next step, `BOT_LEARNING.md` §6.1):
+   5. **A little knowledge at the higher levels**, the user's preference over superhuman speed
+      (2026-10-11), not obvious to a player, each measured by soak and limited by level: (a) the
+      exact cells it can still lay — the coming pieces' sizes against its pace, where it now
+      uses the bag's average piece — so it commits to a big wall exactly when it will finish
+      (the bolder `widen` of 13u failed by starting walls it did not finish); (b) the next
+      piece when fitting this one, so a repair is laid for the piece that closes it (repairs
+      ran at about two cells a piece, 13u). People see only the piece in hand.
+   6. **Learning the choice of wall** (item 2's first next step, `BOT_LEARNING.md` §6.1):
       the hand-made ladder and `widen` already produce the candidate walls; a learned score
       over their features (value, cost against the cells left, castles gained, guns kept and
       room, slack after) is the general answer if the hand-made steps above stall.

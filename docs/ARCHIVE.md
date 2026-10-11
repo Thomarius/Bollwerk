@@ -7110,3 +7110,31 @@ size of the piece just laid, where a person's time goes on fitting the piece in 
 about as quick as people with a one-cell piece and much slower with four and five cells (a Level
 5's median gap 1.5–1.9 s against Thomas's 1.0–1.6), and lay 13–14 pieces a phase to his 16.
 Nothing changed; the temporary switches were removed.
+
+## 13v. Bots build at people's pace (2026-10-11)
+
+PLAN §11 item 1, direction 3. A person's time between pieces grows with the piece in hand
+(13u); a bot charged its wait after a piece by the size of the piece just laid, and was set far
+slower per cell. **Built**: a bot's time now goes on the piece in hand (`Builder.readyTick`):
+`placementBaseMs + placementPerCellMs × its cells` after its last piece, or after the build phase
+begins — so a bot no longer lays its first piece at once either. **Tuned**, the user's targets:
+Thomas's pace at about Level 6, Mausica's at about Level 3. Anchors, base and per cell, ms: Level
+1 1300 + 200, Level 2 1150 + 190, Level 5 600 + 200, Level 8 400 + 170, Level 10 300 + 150 (were
+750 + 500, 600 + 420, 420 + 360, 360 + 320, 300 + 270). `buildStats.ts` measures the median time
+before a piece by its cells, for recordings and bot tables alike:
+
+|         | 1 cell | 2    | 3    | 4    | 5    |
+| ------- | ------ | ---- | ---- | ---- | ---- |
+| Thomas  | 800    | 967  | 967  | 1267 | 1633 |
+| Level 6 | 733    | 900  | 1100 | 1300 | 1467 |
+| Mausica | 1267   | 1367 | 1533 | 1667 | 2167 |
+| Level 3 | 1167   | 1367 | 1533 | 1733 | 1933 |
+
+**What the ambition levers could not do, pace did** (four-bot tables of one level, six matches
+each): territory points a round Level 1 85, 3 149, 5 194, 6 211, 8 266, 10 358 (all levels 117–146
+before); castles sealed 1.3 at Level 1, 2.0 at 5–6, 2.4 at 10; pieces a phase Level 6 16.0, Thomas
+16.2; in round 1 Level 6 21.3, Thomas 22.3. Failed rounds 8–12%, as before. **The ladder held**:
+Level L against L+1, 24 four-bot matches a pair, wins 2:22, 10:15, 9:15, 8:16, 4:20, 6:18, 4:20,
+7:17, 4:21 (was 6:18, 8:16, 4:20, 3:21, 7:17, 7:17, 10:14, 4:20, 7:17) — gentler in the middle,
+the old near-tie at 7–8 now clear, and Level 1, the slowest builder by far, steeper below 2. The
+sloppy-fit test now steps the clock to the bot's first piece.

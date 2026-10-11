@@ -61,6 +61,16 @@ function covered(state: MatchState, action: Action | null): string {
     .join(' ');
 }
 
+/** The bot's first piece of the phase: a bot takes a piece's time before laying it. */
+function firstPiece(bot: Bot, state: MatchState): Action | null {
+  const rng = new Rng(1);
+  for (; state.tick < state.phaseEndTick; state.tick++) {
+    const action = bot.think(state, rng);
+    if (action !== null) return action;
+  }
+  return null;
+}
+
 describe('a sloppy bot', () => {
   it('settles for a different fit, never the one it would have chosen', () => {
     // A square tried at four turns was the same placement four times, and the repeats
@@ -69,11 +79,11 @@ describe('a sloppy bot', () => {
     const hurried = board();
     const best = covered(
       careful,
-      new Bot(0, { level: 1, personality: BALANCED }, sloppy(0)).think(careful, new Rng(1)),
+      firstPiece(new Bot(0, { level: 1, personality: BALANCED }, sloppy(0)), careful),
     );
     const second = covered(
       hurried,
-      new Bot(0, { level: 1, personality: BALANCED }, sloppy(1)).think(hurried, new Rng(1)),
+      firstPiece(new Bot(0, { level: 1, personality: BALANCED }, sloppy(1)), hurried),
     );
     expect(best).not.toMatch(/^no placement/);
     expect(second).not.toMatch(/^no placement/);

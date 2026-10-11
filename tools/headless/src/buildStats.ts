@@ -16,11 +16,18 @@ import { join } from 'node:path';
 import { parseArgs } from 'node:util';
 
 import { Bot, PlanningSlots, takeBotTurns } from '@bollwerk/ai';
-import { RoundStats, statsOfRecording, type StatRow } from '@bollwerk/analysis';
+import { RoundStats, type StatRow } from '@bollwerk/analysis';
 import { BALANCED, type ConfigBundle } from '@bollwerk/config';
 import { loadConfigBundle } from '@bollwerk/config/node';
-import { parseRecording, setupOfRecorded } from '@bollwerk/protocol';
-import { Rng, createMatch, drainEvents, step } from '@bollwerk/sim';
+import { parseRecording, replayRecording, setupOfRecorded } from '@bollwerk/protocol';
+import {
+  Rng,
+  createMatch,
+  drainEvents,
+  step,
+  type MatchEvent,
+  type MatchState,
+} from '@bollwerk/sim';
 
 import { repoRoot } from './cli.js';
 
@@ -38,6 +45,39 @@ function add(key: string, row: StatRow): void {
   if (group === undefined) groups.set(key, (group = { rows: [], matches: new Set() }));
   group.rows.push(row);
   group.matches.add(row.match);
+}
+
+/** Per group, the time before each piece laid in a build phase, by the piece's cells. */
+const pace = new Map<string, Map<number, number[]>>();
+
+/**
+ * Watches a match for the time each player takes over each piece: from their last piece, or
+ * the build phase's start, to this one — by the size of the piece laid, as a person's time
+ * goes on fitting the piece in hand (ARCHIVE 13v).
+ */
+function paceWatcher(
+  keyOf: (player: number) => string,
+  tickRateHz: number,
+): (state: MatchState, events: readonly MatchEvent[]) => void {
+  const last = new Map<number, number>();
+  return (state, events) => {
+    for (const event of events) {
+      if (event.kind === 'phase_changed') {
+        last.clear();
+        if (event.phase === 'build') for (const p of state.players) last.set(p.id, event.tick);
+      } else if (event.kind === 'piece_placed') {
+        const since = last.get(event.player);
+        last.set(event.player, event.tick);
+        if (since === undefined) continue;
+        const key = keyOf(event.player);
+        let bySize = pace.get(key);
+        if (bySize === undefined) pace.set(key, (bySize = new Map()));
+        let times = bySize.get(event.cells.length);
+        if (times === undefined) bySize.set(event.cells.length, (times = []));
+        times.push(((event.tick - since) * 1000) / tickRateHz);
+      }
+    }
+  };
 }
 
 /** People's names as typed (`--alias You=Thomas`: a local page calls its player "You"). */
@@ -73,7 +113,18 @@ function fromRecordings(
       const setup = setupOfRecorded(header.players[id]);
       return setup === null ? (aliases.get(p.name) ?? p.name) : `bot L${setup.level}`;
     });
-    const { rows, replay } = statsOfRecording(bundle, lines);
+    const sampler = new RoundStats(
+      bundle,
+      header.id,
+      header.seed,
+      (p) => setupOfRecorded(header.players[p]) ?? 'human',
+    );
+    const watch = paceWatcher((p) => keyOf[p] as string, header.ruleset.tickRateHz);
+    const replay = replayRecording(lines, (state, events) => {
+      sampler.observe(state, events);
+      watch(state, events);
+    });
+    const rows = sampler.rows;
     const exact = replay.mismatches.length === 0 && replay.refused === 0;
     console.log(`${header.id} ${exact ? 'exact' : 'DIVERGED'}  ${keyOf.join(' | ')}`);
     if (!exact) continue;
@@ -100,11 +151,14 @@ function fromBots(bundle: ConfigBundle, level: number, matches: number, players:
     const slots = new PlanningSlots(bundle.ai.plansPerTick);
     const bots = state.players.map((p) => new Bot(p.id, setup, bundle.ai, slots));
     const sampler = new RoundStats(bundle, `sim-L${level}-${seed}`, seed, () => setup);
+    const watch = paceWatcher(() => `bot L${String(level).padStart(2)}`, state.ruleset.tickRateHz);
     drainEvents(state);
     while (state.phase !== 'game_over' && state.tick < 200_000) {
       takeBotTurns(state, rng, (player) => bots[player]);
       step(state);
-      sampler.observe(state, drainEvents(state));
+      const events = drainEvents(state);
+      sampler.observe(state, events);
+      watch(state, events);
     }
     for (const row of sampler.rows) add(`bot L${String(level).padStart(2)}`, row);
   }
@@ -197,4 +251,16 @@ for (const [title, value, digits] of [
     });
     console.log(`  ${key.padEnd(30)} ${cells.join(' ')}`);
   }
+}
+
+console.log('\nmedian time before a piece, by its cells (ms):      1      2      3      4      5');
+const median = (xs: readonly number[]): number => {
+  const sorted = [...xs].sort((a, b) => a - b);
+  return sorted.length === 0 ? NaN : (sorted[Math.floor(sorted.length / 2)] as number);
+};
+for (const key of order) {
+  const bySize = pace.get(key);
+  if (bySize === undefined) continue;
+  const cells = [1, 2, 3, 4, 5].map((n) => f(median(bySize.get(n) ?? []), 0).padStart(6));
+  console.log(`  ${key.padEnd(46)} ${cells.join(' ')}`);
 }

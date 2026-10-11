@@ -136,6 +136,18 @@ export class Builder {
   private unreachable = new Set<number>();
 
   private nextPlacementTick = 0;
+  /**
+   * When the piece in hand may be laid: its own time after the last piece, or after the build
+   * phase began — `placementBaseMs + placementPerCellMs × its cells`, as a person's time goes on
+   * fitting the piece in hand (ARCHIVE 13v). Charged after the piece just laid instead, a bot
+   * was as quick as a person with one cell and far slower with five. Null until worked out,
+   * once a piece: looking the piece up every tick was once the bot's largest single cost.
+   */
+  private readyTick: number | null = null;
+  /** The tick of its last piece, or of the build phase's start. */
+  private lastPlacedTick = 0;
+  /** The round whose build phase that start belongs to. */
+  private paceRound = -1;
 
   /** The tightest repair as the plan was made, for a learned fit to weigh (`fitWeights`). */
   private tight: number[] = [];
@@ -168,6 +180,12 @@ export class Builder {
   }
 
   /** Stands down briefly after a fruitless look, rather than retrying every tick. */
+  /** A piece laid: the next one's time runs from now. */
+  private placed(state: MatchState): void {
+    this.lastPlacedTick = state.tick;
+    this.readyTick = null;
+  }
+
   private pause(state: MatchState): void {
     this.nextPlacementTick = state.tick + ticksFor(IDLE_RETRY_MS, state);
   }
@@ -195,7 +213,18 @@ export class Builder {
     // Check the clock before anything else: this runs for every bot on every tick,
     // and looking the piece up first made that lookup the bot's largest single cost.
     if (state.tick < this.nextPlacementTick) return null;
+    if (this.paceRound !== state.round) {
+      this.paceRound = state.round;
+      this.lastPlacedTick = state.tick;
+      this.readyTick = null;
+    }
+    if (this.readyTick !== null && state.tick < this.readyTick) return null;
     const pieceId = currentPieceId(state, this.playerId);
+    if (this.readyTick === null) {
+      this.readyTick =
+        this.lastPlacedTick + ticksFor(this.placementMs(pieceById(pieceId).size), state);
+      if (state.tick < this.readyTick) return null;
+    }
     const look = new Look(state, this.playerId);
 
     // Last round's dead ends mean nothing now that the board has changed.
@@ -269,8 +298,7 @@ export class Builder {
       return null;
     }
 
-    this.nextPlacementTick =
-      state.tick + ticksFor(this.placementMs(pieceById(pieceId).size), state);
+    this.placed(state);
     return { kind: 'place_piece', player: this.playerId, ...placement };
   }
 
@@ -936,8 +964,7 @@ export class Builder {
       this.pause(state);
       return null;
     }
-    this.nextPlacementTick =
-      state.tick + ticksFor(this.placementMs(pieceById(pieceId).size), state);
+    this.placed(state);
     return { kind: 'place_piece', player: this.playerId, ...placement };
   }
 

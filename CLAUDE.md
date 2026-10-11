@@ -167,7 +167,9 @@ session needs the server rebuilt and every page reloaded for):
   and nearness weighed in choosing whom to shoot (`rivalDistanceExponent`). Tuned on walls
   destroyed per gun per combat phase so Thomas sits at Level 5–6, Mausica at 2–3; the ladder
   held. With a life left a bot passes over a hollow seal — fewer guns kept than a continue
-  gives — for the wall keeping its guns (ARCHIVE 13t, the user's rule): no more dead guns.
+  gives — for the wall keeping its guns (ARCHIVE 13t, the user's rule): no more dead guns. And
+  bots build at people's pace, a piece's time charged to the piece in hand — Thomas's at about
+  Level 6, Mausica's at 3 (ARCHIVE 13v) — so territory now rises with level.
 - **Wipes by the scissor** (ARCHIVE 13o, 2026-10-11): a wipe renders the stage in two passes,
   each look only on its side of the line, cut by the GL scissor rather than masked, pixel for
   pixel as before; wipes between two heavy looks went from 19–20 dropped frames a second to 7, the
@@ -265,7 +267,8 @@ session needs the server rebuilt and every page reloaded for):
 
 **Next** — PLAN §11: more test games towards a first
 feature-ready version, and bots that hold ground as people do (item 1: the yardstick and the dead
-guns done, ambition by level next; `buildStats.ts`, ARCHIVE 13r, 13t). **The bot learning work is paused**; when it
+guns and pace done, a little knowledge at the higher levels next; `buildStats.ts`, ARCHIVE
+13r, 13t–13v). **The bot learning work is paused**; when it
 resumes, `docs/BOT_LEARNING.md` §6 says where — first, learning the choice of wall rather
 than only the cell. French is not to be done. Signing the Windows app was explained (PLAN
 §12) and is not pursued for now.

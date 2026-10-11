@@ -2,8 +2,8 @@
   "levels": [
     {
       "level": 1,
-      "placementBaseMs": 750,
-      "placementPerCellMs": 500,
+      "placementBaseMs": 1300,
+      "placementPerCellMs": 200,
       "fireIntervalMs": 420,
       "readyDelayMs": 500,
       "aimJitter": 0.85,
@@ -14,8 +14,8 @@
     },
     {
       "level": 2,
-      "placementBaseMs": 600,
-      "placementPerCellMs": 420,
+      "placementBaseMs": 1150,
+      "placementPerCellMs": 190,
       "fireIntervalMs": 330,
       "readyDelayMs": 450,
       "aimJitter": 0.7,
@@ -26,8 +26,8 @@
     },
     {
       "level": 5,
-      "placementBaseMs": 420,
-      "placementPerCellMs": 360,
+      "placementBaseMs": 600,
+      "placementPerCellMs": 200,
       "fireIntervalMs": 210,
       "readyDelayMs": 250,
       "aimJitter": 0.25,
@@ -38,8 +38,8 @@
     },
     {
       "level": 8,
-      "placementBaseMs": 360,
-      "placementPerCellMs": 320,
+      "placementBaseMs": 400,
+      "placementPerCellMs": 170,
       "fireIntervalMs": 150,
       "readyDelayMs": 150,
       "aimJitter": 0.05,
@@ -51,7 +51,7 @@
     {
       "level": 10,
       "placementBaseMs": 300,
-      "placementPerCellMs": 270,
+      "placementPerCellMs": 150,
       "fireIntervalMs": 120,
       "readyDelayMs": 0,
       "aimJitter": 0,
