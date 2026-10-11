@@ -1669,6 +1669,10 @@ far behind in building, item 1, the next work. The bot learning work, item 3, is
       the user's rule. It ends the dead guns at no measurable cost (a Level 5 against two
       Level 9s: guns firing 86% → 91%, score 934 → 921 and failed rounds 11.3% → 12.2%, within
       noise, 72 matches each), and does not close the gap in points.
+      2b. **Guns kept, counted by the wall** — fixed (ARCHIVE 13y): two test matches on v0.9.3
+      showed bots sealing a gunless castle near their guns round after round, a wall judged to
+      keep any gun within twelve tiles of its castles. Now a gun counts as kept only on the
+      ground the wall would seal; not measurable in bot tables, to be judged in play.
    3. **The opening, and pace** — done (ARCHIVE 13v, 2026-10-11): a bot's time goes on the
       piece in hand, Thomas's pace at about Level 6 and Mausica's at about Level 3, as the user
       set. It did what the ambition levers could not: territory a round now rises with level

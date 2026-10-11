@@ -34,9 +34,6 @@ import {
 /** How long a bot waits before looking again when it found nothing to do. */
 const IDLE_RETRY_MS = 250;
 
-/** How far from a castle a cannon is taken to belong to it. */
-const GUN_REACH = 12;
-
 /**
  * A breach an offensive bot may close with a roomier wall than it had (PLAN 11.6): its
  * tightest repair, in blocks, at most this. Agreed with the user as the start.
@@ -712,22 +709,29 @@ export class Builder {
     // (PLAN 11). The guns are weighed below instead, a silent cannon still beating
     // elimination.
 
-    // Which of this bot's guns stand near the castles a wall would take in. Not which
-    // castles were sealed last round: after a breach that is nothing at all, which is
-    // exactly the moment the choice matters most.
-    const gunsKept = (plan: SealPlan): number =>
-      state.cannons.filter(
-        (cannon) =>
-          cannon.owner === this.playerId &&
-          plan.castleIds.some((id) => {
-            const castle = state.castles[id];
-            return (
-              castle !== undefined &&
-              Math.abs(cannon.x - castle.x) <= GUN_REACH &&
-              Math.abs(cannon.y - castle.y) <= GUN_REACH
-            );
-          }),
-      ).length;
+    // Which of this bot's guns the wall would keep firing: those standing on the ground it
+    // would seal, read from the board with the wall built. Not which castles were sealed last
+    // round — after a breach that is nothing at all, the moment the choice matters most — and
+    // not which guns stand near its castles: counted within twelve tiles of a castle, a wall
+    // round a gunless castle nine tiles from the guns looked to keep every one, and bots
+    // sealed it round after round with all their guns dead (ARCHIVE 13y).
+    const kept = new Map<SealPlan, number>();
+    const board = state.structure.slice();
+    const island = state.players[this.playerId]?.islandId ?? 0;
+    const gunsKept = (plan: SealPlan): number => {
+      let count = kept.get(plan);
+      if (count !== undefined) return count;
+      for (const i of plan.tiles) board[i] = Structure.Wall;
+      const territory = computeEnclosure({ ...state, structure: board }).territory;
+      for (const i of plan.tiles) board[i] = state.structure[i] as number;
+      count = 0;
+      for (const cannon of state.cannons) {
+        if (cannon.owner !== this.playerId) continue;
+        if (territory[cannon.y * state.width + cannon.x] === island) count++;
+      }
+      kept.set(plan, count);
+      return count;
+    };
 
     // A hollow seal — fewer guns after it than a continue would give — is passed over while a
     // life is left (ARCHIVE 13t), and the others are weighed at the bot's full pace. When no

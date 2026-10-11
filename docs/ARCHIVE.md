@@ -7393,3 +7393,33 @@ build at people's pace, a piece's time charged to the piece in hand, Thomas's pa
 building (`buildStats.ts`) and the bot replay (`botReplay.ts`) came with them, and the ambition
 levers measured and dropped (13u). The bots' strength changed again at every level, so a session
 should name the levels played. Protocol 21 as v0.9.2; the rules unchanged.
+
+## 13y. Guns kept, counted by the wall that keeps them (2026-10-11)
+
+Two test matches on v0.9.3 (Thomas and Mausica against Level 4 and 4, then Level 4 and 6, both
+room matches) the testers won easily: 461 and 181 points a round against the bots' 115 and 66.
+Aim and pace were as tuned (Level 6's time a piece 733–1467 ms, Thomas's 733–1567; own accuracy
+Level 4 75%, Level 6 86%), and the bots laid as many pieces as the testers or more. But the Level
+6 bot had 36% of its guns firing: in rounds 3–5, 8 and 10 it ended each round with one castle
+sealed and every gun dead, and a Level 4 did the same in round 9 of the first match (20 guns, 11
+territory points).
+
+**Diagnosed** by replaying the recordings to each build phase (a room match cannot be replayed
+with live bots: the server does not record its bots' random seed). All the Level 6's guns stood
+round its main castle; a fresh bot at each phase's start planned the 14–18-cell wall round it,
+well within budget; yet the round ended with castle 5, nine tiles away and gunless, sealed — 17–20
+points. The fault: `reseal` counted a gun as kept by a wall when it stood within twelve tiles of
+one of the wall's castles (`GUN_REACH`), so a wall round a gunless castle near the guns looked to
+keep every one; and the hollow-seal rule of 13t, using the same count, never saw it as hollow.
+Breached every round by two people, the bots met that choice every round.
+
+**Fixed**: a gun is kept when it stands on the ground the wall would seal, read from the board
+with the wall built (`computeEnclosure`, once per candidate, only while breached). A test with the
+gunless castle nine tiles from the guns fails on the old count and passes on the new.
+
+**Measured, and not measurable in bot tables**: the case seldom arises there. Tables of one level
+at 4, 6 and 8 the same within noise (Level 6 identical); a Level 5 against two Level 9s, 72
+matches, 1598 points against 1615, guns firing 87% against 85%; Levels 4 and 6 as a team against
+two Level 9s, 36 matches, 1318 against 1380, 90% against 88% — bots breach the gun castle less
+relentlessly than people do. Planning time unchanged (3.3 s a match against 3.2). To be judged
+in the testers' next matches.
