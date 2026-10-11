@@ -393,6 +393,21 @@ export class Builder {
       }
       if (affordable(tight)) return (tight as SealPlan).tiles;
 
+      // With a life left, a seal that keeps fewer guns than a fresh start would give is
+      // worth less than the life (ARCHIVE 13t): a continue hands back a castle, a clean ring,
+      // the starting guns and round one's pieces, where a tiny seal with its guns dead holds
+      // no ground and no firepower into the next barrage. So the wall that keeps the guns is
+      // tried at the bot's full pace, not only within its margin for risk.
+      const fresh = this.freshStartGuns(state);
+      if (
+        fresh !== null &&
+        tight !== null &&
+        this.gunsAfter(state, tight, () => this.ownGuns(state)) >= fresh &&
+        tight.cost / 3.5 <= this.piecesAffordable(state)
+      ) {
+        return tight.tiles;
+      }
+
       // Reaching for two castles while unenclosed is the real gamble: it is more
       // cannons if it lands and elimination if it does not. Only when it clearly fits —
       // and only searched when the cheapest pair at no room fits, since no wider wall
@@ -402,7 +417,7 @@ export class Builder {
         const bold = this.widestAffordable(seal, 2, false, budget);
         if (bold !== null) return bold.tiles;
       }
-      return this.reseal(state, seal, budget);
+      return this.reseal(state, seal, budget, fresh, tight);
     }
 
     // cannonsToPlace is zero throughout a build phase — it is set at the resolution
@@ -654,7 +669,15 @@ export class Builder {
    * So a wall that takes back the ground the guns are standing on is worth paying
    * more for.
    */
-  private reseal(state: MatchState, seal: SealPlanner, budget: number): number[] {
+  private reseal(
+    state: MatchState,
+    seal: SealPlanner,
+    budget: number,
+    /** The guns a continue would bring, or null with no life left: see `decide`. */
+    fresh: number | null = null,
+    /** The tightest wall keeping every gun, which `decide` has weighed already. */
+    keepsAll: SealPlan | null = null,
+  ): number[] {
     // No wall that keeps the guns is asked for here: `decide` comes here only once the
     // tightest of them is past the budget, and a wall with room in it is never cheaper,
     // so asking at every width could only fail — a third of a slow plan late in a phase
@@ -677,6 +700,35 @@ export class Builder {
             );
           }),
       ).length;
+
+    // A hollow seal — fewer guns after it than a continue would give — is passed over while a
+    // life is left (ARCHIVE 13t), and the others are weighed at the bot's full pace. When no
+    // wall but hollow ones exists, the rule says nothing and the bot survives as before.
+    const hollow = (plan: SealPlan): boolean =>
+      fresh !== null && this.gunsAfter(state, plan, () => gunsKept(plan)) < fresh;
+    if (fresh !== null) {
+      const full = this.piecesAffordable(state);
+      let best: SealPlan | null = null;
+      let fallback: SealPlan | null = null;
+      for (let radius = this.profile.roomRadius; radius >= 0 && best === null; radius--) {
+        for (const plan of seal.options(this.profile.maxCastles, false, radius)) {
+          if (hollow(plan)) continue;
+          if (fallback === null || plan.cost < fallback.cost) fallback = plan;
+          if (plan.cost / 3.5 > full) continue;
+          if (
+            best === null ||
+            gunsKept(plan) * 3 - plan.cost / 3.5 > gunsKept(best) * 3 - best.cost / 3.5
+          ) {
+            best = plan;
+          }
+        }
+      }
+      if (best !== null) return best.tiles;
+      // Nothing that keeps the guns fits this phase: build toward it all the same, the
+      // round lost if it is not finished, rather than seal a castle with nothing in it.
+      const toward = keepsAll !== null && !hollow(keepsAll) ? keepsAll : fallback;
+      if (toward !== null) return toward.tiles;
+    }
 
     // Widest first here too, so giving up room is a concession to the budget rather
     // than the default. Within a radius the choice is between castles, and a gun
@@ -709,6 +761,44 @@ export class Builder {
     // sweep takes the lot, and a phase spent on a plan that could never close is how
     // a bot ends a round with fourteen pieces laid and no wall at all.
     return cheapest?.tiles ?? [];
+  }
+
+  /** This bot's guns. */
+  private ownGuns(state: MatchState): number {
+    return state.cannons.filter((c) => c.owner === this.playerId).length;
+  }
+
+  /**
+   * The guns a plan leaves this bot for the next barrage: those it keeps, given, and the
+   * reward its castles earn at the round's end.
+   */
+  private gunsAfter(state: MatchState, plan: SealPlan, kept: () => number): number {
+    const main = state.players[this.playerId]?.startingCastleId ?? null;
+    const reward = cannonReward(
+      state.ruleset.cannons,
+      plan.castleIds.length,
+      main !== null && plan.castleIds.includes(main),
+    );
+    return kept() + reward;
+  }
+
+  /**
+   * The guns a continue would hand back — the starting count and one more for each life the
+   * team has spent, capped as the rules cap it — or null when the team has no life left, or
+   * the rules do not end a round for want of a sealed castle.
+   */
+  private freshStartGuns(state: MatchState): number | null {
+    const player = state.players[this.playerId];
+    const team = player === undefined ? undefined : state.teams[player.team];
+    const rules = state.ruleset.elimination;
+    if (team === undefined || team.continuesRemaining <= 0 || !rules.onZeroEnclosedCastles) {
+      return null;
+    }
+    const spent = team.continuesAtStart - team.continuesRemaining + 1;
+    return (
+      state.ruleset.cannons.startingCount +
+      Math.min(rules.maxExtraCannons, rules.extraCannonsPerContinue * spent)
+    );
   }
 
   /** The ground the current plan would seal, kept until the plan is redrawn. */

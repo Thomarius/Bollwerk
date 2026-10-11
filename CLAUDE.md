@@ -40,6 +40,8 @@ npm start     -w @bollwerk/headless -- --replay recordings/ --stats human.csv   
 npm start     -w @bollwerk/headless -- --tournament --count 400 --league --double  # tournaments by rolls
 npx tsx tools/headless/src/shotStats.ts recordings/   # every shot: accuracy, misses, guns' tempo, range
 npx tsx tools/headless/src/shotStats.ts --bots 1,5,10 --matches 4 --players 4  # the same for bot tables
+npx tsx tools/headless/src/buildStats.ts recordings/ --alias You=Thomas  # castles, ground, guns firing, pieces, by round
+npx tsx tools/headless/src/botReplay.ts recordings/<id>.jsonl --watch 2 --rounds 4-7  # a local match again, live bots
 tools/screenshots.sh /tmp/shots [scene...]   # client in fixed states, against the dev server
 npm start     -w @bollwerk/desktop  # the desktop app, after npm run build
 npm run package -w @bollwerk/desktop # its portable file for this system, into packages/desktop/release/
@@ -164,7 +166,8 @@ session needs the server rebuilt and every page reloaded for):
   as the testers' were (`ai.aim`); a gun fired only once it has stood ready for `readyDelayMs`;
   and nearness weighed in choosing whom to shoot (`rivalDistanceExponent`). Tuned on walls
   destroyed per gun per combat phase so Thomas sits at Level 5–6, Mausica at 2–3; the ladder
-  held.
+  held. With a life left a bot passes over a hollow seal — fewer guns kept than a continue
+  gives — for the wall keeping its guns (ARCHIVE 13t, the user's rule): no more dead guns.
 - **Wipes by the scissor** (ARCHIVE 13o, 2026-10-11): a wipe renders the stage in two passes,
   each look only on its side of the line, cut by the GL scissor rather than masked, pixel for
   pixel as before; wipes between two heavy looks went from 19–20 dropped frames a second to 7, the
@@ -261,7 +264,8 @@ session needs the server rebuilt and every page reloaded for):
   piece and German checked in play by the user (ARCHIVE 12n–12t).
 
 **Next** — PLAN §11: more test games towards a first
-feature-ready version, the bots that now miss judged in them (`shotStats.ts`, ARCHIVE 13r). **The bot learning work is paused**; when it
+feature-ready version, and bots that hold ground as people do (item 1: the yardstick and the dead
+guns done, ambition by level next; `buildStats.ts`, ARCHIVE 13r, 13t). **The bot learning work is paused**; when it
 resumes, `docs/BOT_LEARNING.md` §6 says where — first, learning the choice of wall rather
 than only the cell. French is not to be done. Signing the Windows app was explained (PLAN
 §12) and is not pursued for now.

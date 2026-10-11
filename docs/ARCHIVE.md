@@ -7040,3 +7040,37 @@ Released for the next test sessions with bots that miss as people do (13r): own 
 weighed in choosing whom to shoot. The bots' strength changed at every level but 10, so a test
 session should name the levels played; recordings of it measure against 13r with `shotStats.ts`.
 Protocol 21 as v0.9.1, so the two play together; the game's rules unchanged.
+
+## 13t. A hollow seal is worth less than a life (2026-10-11)
+
+PLAN §11 item 1, direction 2. The first test match against v0.9.2 left a defensive Level 5 bot
+with ten guns and none firing for three rounds; `tools/headless/src/botReplay.ts` (a recorded
+local match played again with live bots, every bot action checked against the recording: exact)
+showed why. Breached every round, its wall round a castle and its guns cost 22–28 cells against
+a budget of its pace times `riskMargin` times the defensive `riskScale` — 56% of 11.9 pieces,
+about 23 cells — so each round it sealed a cheap castle with no gun beside it, or began the gun
+wall, ran short and switched to the cheap one late; its recovery branch began the gun wall only
+after, with too little time left.
+
+**The user's rule**: with a life left, a round held with a tiny seal and its guns dead is worse
+than a round lost — a continue hands back a castle, a clean ring, the starting guns (3, and 1
+more for each life the team has spent, at most 3) and round one's pieces. **Built** (`Builder`,
+`freshStartGuns`, `gunsAfter`): a seal is hollow when the guns it keeps, plus the reward its
+castles earn, are fewer than a continue would give. With no castle sealed and a life left, the
+wall keeping every gun is tried at the bot's full pace, not only within its margin for risk;
+`reseal` passes over hollow walls and weighs the rest at full pace, and when none of them fits
+the phase builds toward the one keeping the guns, the round lost if it is not finished, rather
+than seal a castle with nothing in it. With no life left, or no wall but hollow ones, nothing
+changes. A test (`hollowSeal.test.ts`) fails with the rule switched off.
+
+**Measured**, with a temporary switch per seat: one bot with the rule against three without,
+48 four-bot matches a level, the seat rotating — wins 15, 10 and 13 at Levels 3, 5 and 7, fair
+share 12 each (38 of 144 against 36), failed rounds within 0.7 points of the others'. And the
+case it is for, a Level 5 breached by two Level 9s, 72 matches each way: mean score 921 with the
+rule against 934 without, failed rounds 12.2% against 11.3%, guns firing 91% against 86%, castles
+1.23 and 1.24, one knock-out each; the rule chose 354 times, 177 of them building toward a wall it
+could not finish. So it does what it is for — no bot sits rounds on end with its guns dead, which
+a person reads as broken and gets a free round from — at no measurable cost, and it does not
+close the gap in points: a round lost scores nothing and the fresh ring is breached again, which
+about cancels what the guns and clean walls bring the round after. **Kept**, the user's decision;
+the gap is ambition (direction 4: every level walls 1.7–1.8 castles, Thomas 2.2–2.9).
