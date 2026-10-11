@@ -7032,3 +7032,11 @@ matches a pair, wins old → new: 1–2 5:19 → 6:18, 2–3 7:17 → 8:16, 3–
 3:21, 5–6 6:18 → 7:17, 6–7 7:17 → 7:17, 7–8 12:12 → 10:14, 8–9 5:19 → 4:20, 9–10 6:18 → 7:17.
 That soak also covers the change of 2026-10-07 made without one (Levels 1–4's sloppy fits). The
 task closed with this (the user's decision); the testers' next matches judge it in play.
+
+## 13s. v0.9.2 (2026-10-11)
+
+Released for the next test sessions with bots that miss as people do (13r): own accuracy from
+60% at Level 1 to 100% at Levels 9–10, a gun fired only once it has stood ready, and nearness
+weighed in choosing whom to shoot. The bots' strength changed at every level but 10, so a test
+session should name the levels played; recordings of it measure against 13r with `shotStats.ts`.
+Protocol 21 as v0.9.1, so the two play together; the game's rules unchanged.

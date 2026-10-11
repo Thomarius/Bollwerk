@@ -156,7 +156,7 @@ Full detail in PLAN.md §1. The parts that surprise people:
 
 ## Status
 
-**Done** (2026-10-11; the latest release **v0.9.1**, 2026-10-11, protocol 21, which a test
+**Done** (2026-10-11; the latest release **v0.9.2**, 2026-10-11, protocol 21, which a test
 session needs the server rebuilt and every page reloaded for):
 
 - **Bots that miss as people do** (ARCHIVE 13r, 2026-10-11): own accuracy from 60% at Level 1
