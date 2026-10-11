@@ -5,6 +5,7 @@
       "placementBaseMs": 750,
       "placementPerCellMs": 500,
       "fireIntervalMs": 420,
+      "readyDelayMs": 500,
       "aimJitter": 0.85,
       "riskMargin": 0.5,
       "replanTicks": 80,
@@ -16,6 +17,7 @@
       "placementBaseMs": 600,
       "placementPerCellMs": 420,
       "fireIntervalMs": 330,
+      "readyDelayMs": 450,
       "aimJitter": 0.7,
       "riskMargin": 0.55,
       "replanTicks": 60,
@@ -27,6 +29,7 @@
       "placementBaseMs": 420,
       "placementPerCellMs": 360,
       "fireIntervalMs": 210,
+      "readyDelayMs": 250,
       "aimJitter": 0.25,
       "riskMargin": 0.8,
       "replanTicks": 30,
@@ -38,6 +41,7 @@
       "placementBaseMs": 360,
       "placementPerCellMs": 320,
       "fireIntervalMs": 150,
+      "readyDelayMs": 150,
       "aimJitter": 0.05,
       "riskMargin": 1,
       "replanTicks": 20,
@@ -49,6 +53,7 @@
       "placementBaseMs": 300,
       "placementPerCellMs": 270,
       "fireIntervalMs": 120,
+      "readyDelayMs": 0,
       "aimJitter": 0,
       "riskMargin": 1.1,
       "replanTicks": 15,
@@ -123,5 +128,12 @@
     }
   },
   "plansPerTick": 2,
+  "rivalDistanceExponent": 2,
+  "aim": {
+    "accuracyAtLevel1": 0.6,
+    "perfectFromLevel": 9,
+    "doubleShare": 0.5,
+    "doubleWithinMs": 1000
+  },
   "fitWeights": null
 }

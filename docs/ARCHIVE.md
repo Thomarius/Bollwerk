@@ -6954,3 +6954,81 @@ drawing into a texture and then onto the screen, inside Pixi. By eye at 1:1 the 
 camera zooms (2.4× in the opening, 1.35× onto a winner), and redrawn after `warmChain` renders a
 single strip, which would otherwise leave the texture holding that strip alone. Worth taking up
 again only if the rest of play is found GPU-bound on the testers' machines.
+
+## 13r. Bots that miss as people do (2026-10-11)
+
+PLAN §11 item 1, the user's task of 2026-10-06: bots were superhumanly precise in combat — their
+one error, `aimJitter`, chose a worse target, never a worse shot.
+
+**Measured first**, with a new script that follows every shot from launch to landing
+(`tools/headless/src/shotStats.ts`): eleven recordings that still replay exactly (2026-09-30 to
+10-09; the four of 09-28 are in an older format), 4,186 shots by the testers, 8,583 by bots.
+Thomas is a good player but not a pro, Mausica a casual one. Where shots landed:
+
+|            | on a wall | gone, own earlier shot | gone, anyone else's | beside a wall | farther, or sea |
+| ---------- | --------- | ---------------------- | ------------------- | ------------- | --------------- |
+| Mausica    | 57%       | 21%                    | 4%                  | 18%           | 0%              |
+| Thomas     | 73%       | 14%                    | 3%                  | 9%            | 0%              |
+| bots L3–L6 | 90–93%    | 0%                     | 7–10%               | 0%            | 0%              |
+
+People miss in two ways only: a second click on the tile just fired at — 150–300 ms later
+mostly, under 150 ms for 40% of Thomas's — and a tile beside a wall, never two tiles off nor into
+the sea. Their own accuracy (a wall taken first by someone else not counted against them): Mausica
+61%, Thomas 77%. Both are most accurate early in a combat phase (Thomas 82%, Mausica 62%) and
+less so later (68%, 51–58%); bots the reverse, early shots of several bots meeting on one wall.
+Thomas improved over the sessions, 68–76% on a wall in the room matches, 70–82% in the
+tournament, his second clicks from about 18% of shots to 11%.
+
+**Speed** is not where people and bots differ: flight time is the reload, and both fired about
+3.3–3.4 shots a gun a combat phase. What differs is attention: a gun stood ready a mean of 561 ms
+(Thomas) and 598 ms (Mausica) before it was fired, though they clicked every 167–200 ms. The
+figure that sums up a combat phase is **walls destroyed per gun**: Mausica 1.90, Thomas 2.50,
+the old bots L3 2.76, L5 3.01, L6 3.08 — even Level 3 out-shot Thomas.
+
+**The build phase**, from the first write-up of the task (the recordings of 09-30 to 10-05):
+bots within human range — pieces a build phase L3 13.6, L4 13.4, L5 14.2, Thomas 16.2, Mausica
+12.8; median time between pieces L5 1.5 s, Thomas 1.1 s, Mausica 1.5 s; overtime for 5–7% of
+pieces by everyone. Not human: bots choose their castle and place their guns at once (people
+1.4–5.4 s for the castle, 4.4–5.7 s for the guns, against 0.4–0.9 s), and Levels 3–4 left half
+their guns inert outside sealed ground or more (65–83% in the tournament), people almost none.
+Thomas won all four tournament matches of 10-08 by 3.5 to 5 times the next team.
+
+**Built, as the user decided** (`ai.aim`, `readyDelayMs`, `rivalDistanceExponent`):
+
+- **Own accuracy** from 60% at Level 1 to 100% at Levels 9 and 10, linear between. A shot that
+  misses (`Gunner.missed`) is, half the time, a second shot at the tile of the bot's last shot
+  within a second, and otherwise a tile of land beside the wall aimed at that the rules allow. A
+  perfect level draws nothing, so Level 10 plays exactly as before (its figures identical).
+  Measured: L1 61%, L3 71%, L5 80%, L7 90%, L9 100%.
+- **A gun is fired only once it has stood ready for `readyDelayMs`**: 500 ms at Level 1, 450 at
+  2, 250 at 5, 150 at 8, 0 at 10 (a level between, by the table's interpolation). Slowing the
+  clicking instead (`fireIntervalMs` 450 ms at Levels 1–5) was tried first and was the wrong
+  knob: a cadence caps all of a bot's shots together, so a bot with more guns fired fewer per
+  gun (L5 2.56 shots a gun, L1 3.23), and at 450 ms a bot fired at most 22 shots a phase where
+  Thomas fired 35. `fireIntervalMs` stays the clicking speed, as before. At 500 ms for Levels
+  1–5, Level 5 reached 2.31 walls a gun; at 250, 2.47 (both before nearness counted).
+- **Nearness counts in choosing whom to shoot**: unweighed, bots at eight players sent 46–55% of
+  their shots past their three nearest rivals, where Thomas sent 21%, and shot 41–44 tiles where
+  he shot 32 — the longer flights cost them a third of their shots. The neutral rule's threat
+  (sealed castles × 10 + guns), the strategic trait's leader and `aimJitter`'s worse target are
+  now weighed by `(nearest / distance) ** 2`, so a rival twice as far must be four times the
+  threat; the finisher hunts the weakest within twice the nearest's distance; a grudge is still
+  carried across the map. With only the neutral rule weighed nothing changed (54% still beyond
+  the third): a quarter of a Level 5's shots are jitter and half the rest its trait. At eight
+  players the bots now shoot 33/25/18/24% at their nearest, second, third and farther rivals
+  (Thomas 35/37/7/21%), 30 tiles away.
+
+**Result**, walls destroyed per gun per combat phase (bot tables of one level, balanced, six
+matches of four or three of eight):
+
+|               | Thomas | Mausica | L1   | L3   | L5   | L6   | L7   | L9   | L10  |
+| ------------- | ------ | ------- | ---- | ---- | ---- | ---- | ---- | ---- | ---- |
+| four players  | 2.43   | 1.84    | 1.67 | 1.99 | 2.57 | 2.69 | 2.87 | 3.39 | 3.52 |
+| eight players | 2.62   | —       |      |      | 2.39 | 2.57 |      |      |      |
+
+Thomas at Level 5–6, a little below Level 5 at four players and at Level 6 at eight; Mausica at
+Level 2–3. **The ladder held**: four-bot tables of Level L against L+1 in alternating seats, 24
+matches a pair, wins old → new: 1–2 5:19 → 6:18, 2–3 7:17 → 8:16, 3–4 3:21 → 4:20, 4–5 4:20 →
+3:21, 5–6 6:18 → 7:17, 6–7 7:17 → 7:17, 7–8 12:12 → 10:14, 8–9 5:19 → 4:20, 9–10 6:18 → 7:17.
+That soak also covers the change of 2026-10-07 made without one (Levels 1–4's sloppy fits). The
+task closed with this (the user's decision); the testers' next matches judge it in play.

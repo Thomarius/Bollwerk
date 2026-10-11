@@ -1,5 +1,12 @@
 import { type BotProfile } from '@bollwerk/config';
-import { Structure, sameTeam, type Action, type MatchState, type Rng } from '@bollwerk/sim';
+import {
+  Structure,
+  Terrain,
+  sameTeam,
+  type Action,
+  type MatchState,
+  type Rng,
+} from '@bollwerk/sim';
 
 import type { IslandCentres } from './botTurn.js';
 import { rivalsOf, ticksFor } from './botTurn.js';
@@ -17,23 +24,74 @@ export class Gunner {
   ) {}
 
   private nextShotTick = 0;
+  /** The tick each of its guns was first seen ready since it last fired. */
+  private readonly readySince = new Map<number, number>();
+  /** Where and when its last shot went, for a shot fired there again by mistake. */
+  private lastShot: { x: number; y: number; tick: number } | null = null;
 
   shoot(state: MatchState, rng: Rng): Action | null {
-    if (state.tick < this.nextShotTick) return null;
-
-    // Never ask to fire a gun that is still reloading: the rules would refuse it.
+    // Never ask to fire a gun that is still reloading: the rules would refuse it. Nor one that
+    // has not stood ready for `readyDelayMs`, the time a person takes to notice it.
+    // Not `ticksFor`, which waits a tick at least: no delay is none.
+    const delay = Math.round((this.profile.readyDelayMs * state.ruleset.tickRateHz) / 1000);
     let ready = false;
     for (const cannon of state.cannons) {
-      if (cannon.owner === this.playerId && cannon.active && cannon.shotId === null) {
-        ready = true;
-        break;
+      if (cannon.owner !== this.playerId || !cannon.active || cannon.shotId !== null) {
+        this.readySince.delete(cannon.id);
+        continue;
+      }
+      let since = this.readySince.get(cannon.id);
+      if (since === undefined) this.readySince.set(cannon.id, (since = state.tick));
+      if (state.tick - since >= delay) ready = true;
+    }
+    if (!ready || state.tick < this.nextShotTick) return null;
+
+    const aimed = this.pickTarget(state, rng);
+    this.nextShotTick = state.tick + ticksFor(this.profile.fireIntervalMs, state);
+    if (aimed === null || aimed.kind !== 'fire') return aimed;
+    const shot = this.missed(state, rng, aimed);
+    this.lastShot = { x: shot.x, y: shot.y, tick: state.tick };
+    return shot;
+  }
+
+  /**
+   * The shot as fired: where it was aimed, or — one time in `1 - ownAccuracy` — wasted as the
+   * testers' were (ARCHIVE 13r), half on the tile its last shot went to, clicked twice, and
+   * half on a tile of land beside the wall aimed at. People never missed by more than a
+   * tile, nor into the sea. A perfect level draws nothing, so it plays exactly as before.
+   */
+  private missed(
+    state: MatchState,
+    rng: Rng,
+    aimed: Extract<Action, { kind: 'fire' }>,
+  ): Extract<Action, { kind: 'fire' }> {
+    if (this.profile.ownAccuracy >= 1 || rng.nextFloat() < this.profile.ownAccuracy) return aimed;
+    const last = this.lastShot;
+    const recent =
+      last !== null && state.tick - last.tick <= ticksFor(this.profile.doubleWithinMs, state);
+    if (recent && rng.nextFloat() < this.profile.doubleShare) {
+      return { ...aimed, x: last.x, y: last.y };
+    }
+    const beside: number[] = [];
+    for (let dy = -1; dy <= 1; dy++) {
+      for (let dx = -1; dx <= 1; dx++) {
+        const x = aimed.x + dx;
+        const y = aimed.y + dy;
+        if ((dx === 0 && dy === 0) || x < 0 || y < 0 || x >= state.width || y >= state.height) {
+          continue;
+        }
+        const i = y * state.width + x;
+        if (state.structure[i] === Structure.Wall || state.terrain[i] === Terrain.Water) continue;
+        // The rules refuse a shot at its own island or a teammate's.
+        const island = state.islandId[i] as number;
+        if (island !== 0 && sameTeam(state, this.playerId, island - 1)) continue;
+        beside.push(i);
       }
     }
-    if (!ready) return null;
-
-    const target = this.pickTarget(state, rng);
-    this.nextShotTick = state.tick + ticksFor(this.profile.fireIntervalMs, state);
-    return target;
+    if (beside.length === 0) return aimed;
+    const i = beside[rng.nextInt(beside.length)] as number;
+    const x = i % state.width;
+    return { ...aimed, x, y: (i - x) / state.width };
   }
 
   /**
@@ -69,20 +127,53 @@ export class Gunner {
       }
     }
 
-    for (let attempt = 0; attempt < 40; attempt++) {
-      const x = rng.nextInt(state.width);
-      const y = rng.nextInt(state.height);
-      const i = y * state.width + x;
-      if (state.structure[i] !== Structure.Wall || taken.has(i)) continue;
-      // Only an opponent's: your own island and a teammate's are refused.
-      const island = state.islandId[i] as number;
-      if (island === 0 || sameTeam(state, this.playerId, island - 1)) continue;
-      // Rubble left by an eliminated player is nobody's, and only an opponent's wall
-      // can be damaged, so a shot there would land and change nothing.
-      if (state.owner[i] === 0) continue;
-      return { kind: 'fire', player: this.playerId, x, y };
+    // A worse target: any wall of a rival, the rival drawn by nearness — a person's lapse is
+    // a wall nearby, not one across the map (ARCHIVE 13r). Only a live rival's: your own and
+    // a teammate's are refused, and an eliminated player's rubble changes nothing when hit.
+    const rivals = rivalsOf(state, this.playerId);
+    const weights = this.nearness(state, rivals);
+    while (rivals.length > 0) {
+      const total = weights.reduce((a, b) => a + b, 0);
+      let pick = rng.nextFloat() * total;
+      let k = 0;
+      while (k < rivals.length - 1 && pick >= (weights[k] as number))
+        pick -= weights[k++] as number;
+      const island = (rivals[k] as (typeof rivals)[number]).islandId;
+      const walls: number[] = [];
+      for (let i = 0; i < state.structure.length; i++) {
+        if (state.structure[i] === Structure.Wall && state.owner[i] === island && !taken.has(i)) {
+          walls.push(i);
+        }
+      }
+      if (walls.length > 0) {
+        const i = walls[rng.nextInt(walls.length)] as number;
+        const x = i % state.width;
+        return { kind: 'fire', player: this.playerId, x, y: (i - x) / state.width };
+      }
+      rivals.splice(k, 1);
+      weights.splice(k, 1);
     }
     return null;
+  }
+
+  /**
+   * How near each rival is, as a weight: 1 for the nearest, `(nearest / distance) **
+   * rivalDistanceExponent` for the rest, so a rival twice as far must be that many times the
+   * threat to be chosen. People shot mostly at their nearest rivals, and at a far one only when
+   * it threatened most: unweighed, bots at eight players sent half their shots past their three
+   * nearest rivals where a person sent a fifth, and the longer flights cost them a third of
+   * their shots (ARCHIVE 13r).
+   */
+  private nearness(state: MatchState, rivals: MatchState['players']): number[] {
+    const me = this.islands.centre(state, state.players[this.playerId]?.islandId ?? 0);
+    // An island with no land, as on some test boards, has no centre: then nearness says nothing.
+    if (!Number.isFinite(me.x)) return rivals.map(() => 1);
+    const distances = rivals.map((p) => {
+      const c = this.islands.centre(state, p.islandId);
+      return Math.max(1, Math.hypot(c.x - me.x, c.y - me.y));
+    });
+    const nearest = Math.min(...distances);
+    return distances.map((d) => (nearest / d) ** this.profile.rivalDistanceExponent);
   }
 
   /** The thin part of each opponent's wall, worked along a block at a time, per opponent. */
@@ -126,8 +217,10 @@ export class Gunner {
           const owner = state.territory[i] as number;
           if (owner > 0) tiles[owner - 1] = (tiles[owner - 1] as number) + 1;
         }
+        // Weighed by nearness: a far leader is chased only when far ahead.
+        const near = this.nearness(state, rivals);
         const rate = (p: (typeof rivals)[number]): number =>
-          (tiles[p.id] as number) * p.enclosedCastles;
+          (tiles[p.id] as number) * p.enclosedCastles * (near[rivals.indexOf(p)] as number);
         const leader = rivals.reduce((best, p) =>
           rate(p) > rate(best) || (rate(p) === rate(best) && p.score > best.score) ? p : best,
         );
@@ -135,12 +228,16 @@ export class Gunner {
       }
       case 'finisher': {
         // The weakest: fewest lives left in their pool, then fewest castles sealed, then the
-        // thinnest wall — worked along to force the failed round that takes a life.
+        // thinnest wall — worked along to force the failed round that takes a life. Among the
+        // rivals within twice the nearest's distance: weakness is no threat to chase far.
+        const near = this.nearness(state, rivals);
+        const reach = 0.5 ** this.profile.rivalDistanceExponent;
+        const close = rivals.filter((_, k) => (near[k] as number) >= reach - 1e-9);
         const lives = (p: (typeof rivals)[number]): number =>
           state.teams[p.team]?.continuesRemaining ?? 0;
-        const walls = new Map(rivals.map((p) => [p.id, weakestWall(state, p.id)]));
+        const walls = new Map(close.map((p) => [p.id, weakestWall(state, p.id)]));
         const thin = (id: number): number => walls.get(id)?.length ?? 0;
-        const weakest = rivals.reduce((best, p) => {
+        const weakest = close.reduce((best, p) => {
           const a = [lives(p), p.enclosedCastles, thin(p.id)];
           const b = [lives(best), best.enclosedCastles, thin(best.id)];
           for (let k = 0; k < a.length; k++) {
@@ -236,7 +333,7 @@ export class Gunner {
     }
   }
 
-  /** The opponent closest to winning, so a leader is not left to run away with it. */
+  /** The opponent who threatens most, so a leader is not left to run away with it: by nearness. */
   private chooseOpponent(state: MatchState, rng: Rng): number {
     // Rivals are the other teams — a teammate is never a target.
     const rivals = rivalsOf(state, this.playerId);
@@ -244,9 +341,11 @@ export class Gunner {
     if (!this.profile.picksTarget) {
       return (rivals[rng.nextInt(rivals.length)] as (typeof rivals)[number]).id;
     }
+    const near = this.nearness(state, rivals);
+    const score = (p: (typeof rivals)[number]): number =>
+      (p.enclosedCastles * 10 + state.cannons.filter((c) => c.owner === p.id && c.active).length) *
+      (near[rivals.indexOf(p)] as number);
     let best = rivals[0] as (typeof rivals)[number];
-    const score = (p: typeof best): number =>
-      p.enclosedCastles * 10 + state.cannons.filter((c) => c.owner === p.id && c.active).length;
     for (const rival of rivals) if (score(rival) > score(best)) best = rival;
     return best.id;
   }

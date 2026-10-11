@@ -6,7 +6,7 @@ import { Bot } from './bot.js';
 
 /**
  * Three islands: the bot's, with a gun and a wall, and two rivals' walled castles — the
- * second island nearer the gun than the third.
+ * second island nearer than the third, which lies more than twice as far.
  */
 const BOARD = [
   `
@@ -19,10 +19,10 @@ const BOARD = [
 `,
   `
   ..................................
-  ..........222222.........333333...
-  ..........222222.........333333...
-  ..........222222.........333333...
-  ..........222222.........333333...
+  111111....222222.........333333...
+  111111....222222.........333333...
+  111111....222222.........333333...
+  111111....222222.........333333...
   ..................................
 `,
 ] as const;
@@ -64,21 +64,33 @@ describe('targeting traits', () => {
     expect(targetIsland(bot('points'), state)).toBe(2);
   });
 
-  it('strategic fires at whoever earns most a round, however far', () => {
+  it('strategic fires at whoever earns most a round, a far one only when far ahead', () => {
     const state = board();
     // Island 3 holds a sealed castle and its ground; island 2 nothing.
+    state.players[1]!.enclosedCastles = 0;
     state.players[2]!.enclosedCastles = 1;
     for (let i = 0; i < state.territory.length; i++) {
+      if (state.islandId[i] === 2) state.territory[i] = 0;
       if (state.islandId[i] === 3) state.territory[i] = 3;
     }
     expect(targetIsland(bot('strategic'), state)).toBe(3);
+    // Island 2 earning as much, nearness decides (ARCHIVE 13r).
+    state.players[1]!.enclosedCastles = 1;
+    for (let i = 0; i < state.territory.length; i++) {
+      if (state.islandId[i] === 2) state.territory[i] = 2;
+    }
+    expect(targetIsland(bot('strategic'), state)).toBe(2);
   });
 
-  it('finisher fires at the opponent with fewest lives left', () => {
+  it('finisher fires at the opponent with fewest lives left, within reach', () => {
     const state = board();
+    state.teams[1]!.continuesRemaining = 0;
+    state.teams[2]!.continuesRemaining = 2;
+    expect(targetIsland(bot('finisher'), state)).toBe(2);
+    // The weakest more than twice as far as the nearest rival is not hunted (ARCHIVE 13r).
     state.teams[1]!.continuesRemaining = 2;
     state.teams[2]!.continuesRemaining = 0;
-    expect(targetIsland(bot('finisher'), state)).toBe(3);
+    expect(targetIsland(bot('finisher'), state)).toBe(2);
   });
 
   it('grudge fires at whoever shot at its walls last round, and waits for a grudge', () => {

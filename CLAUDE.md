@@ -38,6 +38,8 @@ npm start     -w @bollwerk/headless -- --matches 8 --players 3 --level 5 --stats
 npm start     -w @bollwerk/headless -- --map --players 3 --seed 2   # print a map as ASCII
 npm start     -w @bollwerk/headless -- --replay recordings/ --stats human.csv   # recorded human play
 npm start     -w @bollwerk/headless -- --tournament --count 400 --league --double  # tournaments by rolls
+npx tsx tools/headless/src/shotStats.ts recordings/   # every shot: accuracy, misses, guns' tempo, range
+npx tsx tools/headless/src/shotStats.ts --bots 1,5,10 --matches 4 --players 4  # the same for bot tables
 tools/screenshots.sh /tmp/shots [scene...]   # client in fixed states, against the dev server
 npm start     -w @bollwerk/desktop  # the desktop app, after npm run build
 npm run package -w @bollwerk/desktop # its portable file for this system, into packages/desktop/release/
@@ -157,6 +159,12 @@ Full detail in PLAN.md §1. The parts that surprise people:
 **Done** (2026-10-11; the latest release **v0.9.1**, 2026-10-11, protocol 21, which a test
 session needs the server rebuilt and every page reloaded for):
 
+- **Bots that miss as people do** (ARCHIVE 13r, 2026-10-11): own accuracy from 60% at Level 1
+  to 100% at Levels 9–10, the misses a second shot at the last tile or a tile beside the wall,
+  as the testers' were (`ai.aim`); a gun fired only once it has stood ready for `readyDelayMs`;
+  and nearness weighed in choosing whom to shoot (`rivalDistanceExponent`). Tuned on walls
+  destroyed per gun per combat phase so Thomas sits at Level 5–6, Mausica at 2–3; the ladder
+  held.
 - **Wipes by the scissor** (ARCHIVE 13o, 2026-10-11): a wipe renders the stage in two passes,
   each look only on its side of the line, cut by the GL scissor rather than masked, pixel for
   pixel as before; wipes between two heavy looks went from 19–20 dropped frames a second to 7, the
@@ -253,8 +261,7 @@ session needs the server rebuilt and every page reloaded for):
   piece and German checked in play by the user (ARCHIVE 12n–12t).
 
 **Next** — PLAN §11: more test games towards a first
-feature-ready version, and bots that miss as people do (combat accuracy, measured against the
-testers' recordings; how is not yet decided). **The bot learning work is paused**; when it
+feature-ready version, the bots that now miss judged in them (`shotStats.ts`, ARCHIVE 13r). **The bot learning work is paused**; when it
 resumes, `docs/BOT_LEARNING.md` §6 says where — first, learning the choice of wall rather
 than only the cell. French is not to be done. Signing the Windows app was explained (PLAN
 §12) and is not pursued for now.

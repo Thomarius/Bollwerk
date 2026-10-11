@@ -1598,57 +1598,14 @@ Tournament mode is finished: its play-testing round, T8, closed with everything 
 (ARCHIVE 13m). The bots' planning is off the page's thread in local matches, measured and felt (ARCHIVE
 13k), every style's terrain is drawn in strips of rows (ARCHIVE 13n), and a wipe renders each
 look only on its side of the line, by the scissor, so wipes between two heavy looks cost about
-what the rest of play does (ARCHIVE 13o). The bot learning work, item 2, is **paused** after a first learned fit (ARCHIVE
+what the rest of play does (ARCHIVE 13o). Bots miss as people do, tuned so the good tester
+plays at Level 5–6 in combat (ARCHIVE 13r): the next test matches are measured with
+`shotStats.ts` against that, and if the bots fall too far behind overall, they are to be
+strengthened in building and strategy, not aim. The bot learning work, item 1, is **paused** after a first learned fit (ARCHIVE
 12z), its next steps in [`BOT_LEARNING.md`](./BOT_LEARNING.md) §6. French is not to be done
 (the user's decision, 2026-10-06). Still open:
 
-1. **Bots that miss as people do** (the user's task, 2026-10-06; how and at which levels not
-   yet decided). Bots should feel fair, and in combat they are superhumanly precise: their
-   only error, `aimJitter`, chooses a worse target, never a worse shot — a jittered shot
-   still lands on an opponent's wall that none of its own shots is headed for. People playing
-   fast and frantic, as the game wants, hover and click as quickly as they can: the cursor
-   is not on a wall at all, a double click sends two shots at one block, and now and then a
-   teammate's shot gets there first. Combat is meant to stay frantic; accuracy is a skill
-   players grow into. The task is an execution error beside `aimJitter` — say a share of
-   shots landing a tile or two off, or a second shot at the block just fired at — scaled by
-   level, then a soak to keep the ladder in order, since it weakens every level it touches.
-   That soak covers one change already made without one (2026-10-07): a sloppy bot's
-   "worse fit" was often the very placement it had chosen, a square's four turns or one
-   anchor reached twice counting as alternatives, so Levels 1–4 now slip for real.
-
-   **The yardstick** is the recordings of 2026-09-30 to 10-05 (five team matches of the two
-   testers against L3–L5 bots, replayed exactly; sparse, so tendencies only). **Thomas is a
-   good player but not a pro, Mausica a casual one**, and the bots should be balanced with
-   both in mind. Where each shot went, as it landed:
-
-   |            | on a wall | wall already gone | bare ground or sea |
-   | ---------- | --------- | ----------------- | ------------------ |
-   | L3–L5 bots | 91–94%    | 6–9%              | 0%                 |
-   | Thomas     | 72%       | 18%               | 10%                |
-   | Mausica    | 57%       | 25%               | 18%                |
-
-   **The build phase** can be judged from the same data, and there the bots are within human
-   range: pieces a build phase L3 13.6, L4 13.4, L5 14.2, against Thomas 16.2 and Mausica 12.8;
-   median time between pieces L5 1.5 s, Thomas 1.1 s, Mausica 1.5 s; overtime used for 5–7% of
-   pieces by everyone. What is not human is reaction: bots choose their castle, lay their
-   first piece and fire their first shot at once, and place their guns in about 0.5 s
-   (people 3–4 s, up to 10). Bots at L3–L4 also leave about half their guns inert outside
-   sealed ground (L5 a fifth, people almost none), and fade late — L5 banked about 216 points
-   a round in rounds 4–7 and 104 in 8–10, where both testers rose. Of the five matches the
-   testers won both six-player ones (L4, L5) and the two-against-two against L3, and lost
-   both two-against-two against L5 by knockout in rounds 7 and 8, where every bot shot is at
-   them.
-
-   **The tournament's four matches of 2026-10-08** (Thomas with an L5 bot as teammate, against
-   L3–L6; ARCHIVE 12zs) agree on accuracy — Thomas 74% on a wall, 17% on one gone, 9% on
-   ground or sea, and 9–18% of his shots at a tile his own shot was already flying to; bots
-   86–98% on a wall — and qualify two points above: people too fire their first shot within
-   a tenth of a second (the difference in reaction is the castle, about 1.4–5.4 s, the first
-   gun and the last, 4.4–5.7 s against bots' 0.4–0.9 s), and L5 bots did not fade (111 points
-   a round early, 166 late). L3–L4 bots again left 65–83% of their guns inert. Thomas won all
-   four by a wide margin, 3.5 to 5 times the next team; one tester, so nothing on Mausica.
-
-2. **Stronger bots by valuing options, then learning the weights** (the user's goal,
+1. **Stronger bots by valuing options, then learning the weights** (the user's goal,
    2026-10-07; also to learn how ML fits a game): the plan, its steps and its progress are
    in [`BOT_LEARNING.md`](./BOT_LEARNING.md) — first the testers' recordings, then a "go big
    while a bail-out remains" rule, then a scoring function trained by the cross-entropy

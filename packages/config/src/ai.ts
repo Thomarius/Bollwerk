@@ -30,6 +30,12 @@ export const SkillSchema = z.strictObject({
   placementPerCellMs: z.number().int().nonnegative(),
   /** Time between shots. Clicking is fast, so this is small; the reload is the real limit. */
   fireIntervalMs: z.number().int().nonnegative(),
+  /**
+   * How long a gun stands ready before it is fired: a person's attention, which the reload
+   * leaves free. Both testers' guns waited about 560 ms on average while they clicked every
+   * 170-200 ms (ARCHIVE 13r), so this, not the clicking, sets how often each gun fires.
+   */
+  readyDelayMs: z.number().int().nonnegative(),
   /** Chance of shooting somewhere other than the opponent's weakest point. */
   aimJitter: z.number().min(0).max(1),
   /**
@@ -250,6 +256,27 @@ export const AiConfigSchema = z
      */
     plansPerTick: z.number().int().positive(),
     /**
+     * How much nearness counts when a bot picks whom to breach by threat: a rival twice as far
+     * must be `2 ** this` times the threat. People shot mostly at their nearest rivals, and at
+     * a far one only when it threatened most (ARCHIVE 13r). 0: distance does not count.
+     */
+    rivalDistanceExponent: z.number().nonnegative(),
+    /**
+     * How a bot misses as people do (PLAN §11 item 1, ARCHIVE 13r): the share of its shots that
+     * go where it aimed, rising in a line from Level 1 to perfect, and the rest wasted as the
+     * testers' were — on the tile its last shot went to, or a tile beside the wall it aimed at.
+     */
+    aim: z.strictObject({
+      /** Its own accuracy at Level 1: the casual tester's was 61%, the good one's 77%. */
+      accuracyAtLevel1: z.number().min(0).max(1),
+      /** The level from which it never misses on its own. */
+      perfectFromLevel: z.number().int().min(MIN_LEVEL).max(MAX_LEVEL),
+      /** Of the shots that miss, the share fired again at the last shot's tile. */
+      doubleShare: z.number().min(0).max(1),
+      /** How recent the last shot must be for that: a person clicks twice in 150–300 ms. */
+      doubleWithinMs: z.number().int().nonnegative(),
+    }),
+    /**
      * A learned scoring of where to lay the piece in hand (docs/BOT_LEARNING.md, step 3):
      * a weight per feature of a placement, summed. Null: the hand-made fit, which covers
      * the first wall in the ladder's order that a piece reaches.
@@ -285,6 +312,7 @@ export function skillAt(ai: AiConfig, level: number): Skill {
     placementBaseMs: whole(below.placementBaseMs, above.placementBaseMs),
     placementPerCellMs: whole(below.placementPerCellMs, above.placementPerCellMs),
     fireIntervalMs: whole(below.fireIntervalMs, above.fireIntervalMs),
+    readyDelayMs: whole(below.readyDelayMs, above.readyDelayMs),
     aimJitter: mix(below.aimJitter, above.aimJitter),
     riskMargin: mix(below.riskMargin, above.riskMargin),
     replanTicks: whole(below.replanTicks, above.replanTicks),
@@ -314,10 +342,23 @@ export interface BotProfile extends Skill {
   castleChoice: RiskTrait['castleChoice'];
   widensWhenSealed: boolean;
   fitWeights: FitWeights | null;
+  /** The share of its shots that go where it aimed (`aim`); the rest miss as people do. */
+  ownAccuracy: number;
+  doubleShare: number;
+  doubleWithinMs: number;
+  rivalDistanceExponent: number;
   roomRadius: number;
   roomMargin: number;
   thickenFirst: boolean;
   maxPockets: number;
+}
+
+/** A level's own accuracy: a line from Level 1's to 1 at `perfectFromLevel`, then 1. */
+export function ownAccuracyAt(ai: AiConfig, level: number): number {
+  const { accuracyAtLevel1, perfectFromLevel } = ai.aim;
+  if (perfectFromLevel <= MIN_LEVEL) return 1;
+  const t = (Math.round(level) - MIN_LEVEL) / (perfectFromLevel - MIN_LEVEL);
+  return Math.min(1, accuracyAtLevel1 + (1 - accuracyAtLevel1) * Math.max(0, t));
 }
 
 export function botProfile(ai: AiConfig, setup: BotSetup): BotProfile {
@@ -334,6 +375,10 @@ export function botProfile(ai: AiConfig, setup: BotSetup): BotProfile {
     castleChoice: risk.castleChoice,
     widensWhenSealed: risk.widensWhenSealed,
     fitWeights: ai.fitWeights,
+    ownAccuracy: ownAccuracyAt(ai, setup.level),
+    doubleShare: ai.aim.doubleShare,
+    doubleWithinMs: ai.aim.doubleWithinMs,
+    rivalDistanceExponent: ai.rivalDistanceExponent,
     picksTarget: true,
     targeting: setup.personality.targeting,
     targetShare: ai.targeting[setup.personality.targeting].share,
