@@ -1669,10 +1669,20 @@ far behind in building, item 1, the next work. The bot learning work, item 2, is
       the user's rule. It ends the dead guns at no measurable cost (a Level 5 against two
       Level 9s: guns firing 86% → 91%, score 934 → 921 and failed rounds 11.3% → 12.2%, within
       noise, 72 matches each), and does not close the gap in points.
-   3. **The opening**: Thomas laid 28 pieces in round 1 against the bots' 17 (later rounds
+   3. **The opening, and pace**: measured (ARCHIVE 13u) — a person's time between pieces grows
+      with the piece in hand (Thomas about 650 + 190 ms a cell, Mausica 1050 + 180), a bot's
+      with the piece it last laid (Level 5 420 + 360, Level 1 750 + 500): as quick with one
+      cell, much slower with four and five. Next: charge a bot's time to the piece in hand and
+      fit each level's line to the testers', as aim was fitted (Thomas about Level 5–6, Mausica
+      2–3), then measure pieces a phase by round against the yardstick. Before that:
+      Thomas laid 28 pieces in round 1 against the bots' 17 (later rounds
       13–19 against 11–17), and round 1's castles decide the guns of every round after. Look
       at the bots' placement pace and plan in round 1, the round with the smallest pieces.
-   4. **More ground and more castles**, by level: the levers exist (`maxCastles`,
+   4. **More ground and more castles**, by level — the simple levers measured and none raises the
+      castles held (ARCHIVE 13u: `maxCastles` never binds, a bolder `widen` and no thickening
+      lose, expanding when sealed is within noise): a bot breached every round spends two thirds
+      of each phase repairing. To revisit after pace (direction 3), and with an opposition that
+      breaches as people do rather than tables of equal bots. The levers exist (`maxCastles`,
       `roomRadius`, `expandsWhenSafe`, `widensWhenSealed` and `widen`'s reach, ARCHIVE 12y).
       Read first what was tried: ambition was a liability for survival bot against bot (a
       marshal walling three castles lost to a gunner walling two, ARCHIVE 10d; `maxCastles`

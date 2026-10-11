@@ -7074,3 +7074,39 @@ a person reads as broken and gets a free round from — at no measurable cost, a
 close the gap in points: a round lost scores nothing and the fresh ring is breached again, which
 about cancels what the guns and clean walls bring the round after. **Kept**, the user's decision;
 the gap is ambition (direction 4: every level walls 1.7–1.8 castles, Thomas 2.2–2.9).
+
+## 13u. Ambition by level: the simple levers measured (2026-10-11)
+
+PLAN §11 item 1, direction 4. Every level walls 1.7–1.8 castles and 117–146 territory points a
+round in bot tables, where Thomas holds 2.2–2.9 and 301–433 (13t, `buildStats.ts`).
+
+**Measured**: one bot changed against three unchanged, four-bot tables, 48 matches each at Levels
+5 and 8, the changed seat rotating; each variant against a control on the same seeds (no change at
+all, which itself read 16 wins of 48 and +12% points at Level 5 — the noise of 48 matches).
+
+| variant                                              | L5 wins / score / castles | L8 wins / score / castles |
+| ---------------------------------------------------- | ------------------------- | ------------------------- |
+| control                                              | 16 / 1792 / 1.81          | 11 / 1805 / 1.75          |
+| `maxCastles` +1, +2                                  | 16 / 1790 / 1.81          | 11 / 1805 / 1.75          |
+| `widen` bolder (gain 1.1 → 1.0, reach 0.8 → 1.0)     | 11 / 1661 / 1.69          | 8 / 1599 / 1.59           |
+| both                                                 | 11 / 1659 / 1.69          | 9 / 1604 / 1.59           |
+| balanced expanding when sealed (`expandsWhenSealed`) | 14 / 1723 / 1.75          | 12 / 1874 / 1.79          |
+| no thickening                                        | 8 / 1405 / 1.59           | 9 / 1691 / 1.71           |
+| expanding, no thickening                             | 6 / 1339 / 1.56           | 10 / 1700 / 1.73          |
+
+The cap never binds (identical at Level 8, as in 10s); a bolder widen reaches walls it does not
+finish, fewer castles; dropping thickening loses — a thick wall is what stands after a barrage;
+expanding when sealed is within noise. None raises the castles held. **Why**, from Bot 3's build
+phases in the test match (`botReplay.ts`): every round opens breached, and two thirds of the phase
+go on the repair, at about two cells a piece, since pieces rarely fit a gap exactly — a bot has
+little time left for ambition whatever its settings, and in bot tables every bot is breached every
+round.
+
+**Pace**, from the recordings (median time between a person's pieces, by the size of the piece
+laid): Thomas 800, 967, 967, 1267 and 1633 ms for one to five cells, about 650 + 190 a cell;
+Mausica 1233–1967 ms, about 1050 + 180. A bot is set as `placementBaseMs + placementPerCellMs ×
+cells` — 420 + 360 at Level 5, 750 + 500 at Level 1 — and charges the wait after a piece by the
+size of the piece just laid, where a person's time goes on fitting the piece in hand. So bots are
+about as quick as people with a one-cell piece and much slower with four and five cells (a Level
+5's median gap 1.5–1.9 s against Thomas's 1.0–1.6), and lay 13–14 pieces a phase to his 16.
+Nothing changed; the temporary switches were removed.
