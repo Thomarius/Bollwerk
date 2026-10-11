@@ -1642,11 +1642,32 @@ far behind in building, item 1, the next work. The bot learning work, item 2, is
       against the pace allowed) — per round and by round, Thomas and Mausica beside each
       level. The target is the user's from 13r, now for the whole game: Thomas on par with
       Level 5–6 in points, not only in combat. One match is a tendency; more recordings at
-      several levels (5, 7, 9) are wanted.
-   2. **Diagnose the dead guns**: replay the recording to Bot 2's build phases in rounds 5–7
-      and ask its builder what it chose and why — the recovery's plan, its cost against the
-      budget, what was built and what the sweep took. A fault found there is the cheapest
-      gain, for every level.
+      several levels (5, 7, 9) are wanted. **Built** (2026-10-11):
+      `tools/headless/src/buildStats.ts` (recordings, `--alias You=Thomas`, `--since`; or
+      `--bots` tables). Over the ten earlier matches Thomas held 301 territory points a round,
+      2.2 castles and 8.4 guns firing (92% of his own); Mausica 93, 1.2 and 4.7 (99%) — about a
+      Level 4–5 in building, with every gun firing; the bots in those matches L3–L5 52–107,
+      1.1–1.3 castles, 50–78% of their guns firing. **Ambition does not grow with level**: in
+      four-bot tables of one level (v0.9.2, six matches each) L3, L5, L7 and L9 all held 1.7–1.8
+      castles and 117–146 territory points a round; the levels differ by pace (pieces a phase
+      11.3 to 16.6) and aim, not by how much ground they wall.
+   2. **Diagnose the dead guns** — done (2026-10-11), with `tools/headless/src/botReplay.ts`,
+      which plays a recorded local match again with live bots and reproduced every bot action
+      of this one exactly. Bot 2 (defensive, Level 5) was breached every round. Its gun-keeping
+      repair (`seal.cheapest(1, …, keepCannons)`, a wall round a castle and every gun) cost
+      22–28 cells, and its budget is the pieces it can lay times `riskMargin` (0.8 at Level 5)
+      times the defensive `riskScale` 0.7 — 6.7 pieces, about 23 cells, of a phase of 11.9.
+      Round 4 it walled the guns back in; round 5 it began the 23-cell wall, could not finish,
+      and as the budget shrank switched late to a cheap gunless castle (9); rounds 6 and 7 the
+      gun wall was over budget from the start, so `reseal` (which skips any plan over budget,
+      however many guns it keeps) chose the cheap castle (10), and the recovery branch began
+      the 28-cell gun wall only after, with 6.8 pieces left. No fault in the code's own terms:
+      a survival margin that never prices dead guns. Every repair against a person who
+      breaches it each round ends the same way. **To decide**: whether a bot with most of its
+      guns dead may spend its full pace on the wall that keeps them, falling back to the cheap
+      castle only once that no longer fits (the late switch round 5 already shows) — weighed
+      by soak in failed rounds, points and guns firing, since a failed round costs a life and
+      wipes the island, guns and all.
    3. **The opening**: Thomas laid 28 pieces in round 1 against the bots' 17 (later rounds
       13–19 against 11–17), and round 1's castles decide the guns of every round after. Look
       at the bots' placement pace and plan in round 1, the round with the smallest pieces.
