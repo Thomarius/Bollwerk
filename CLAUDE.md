@@ -154,7 +154,7 @@ Full detail in PLAN.md §1. The parts that surprise people:
 
 ## Status
 
-**Done** (2026-10-11; the latest release **v0.9.0**, 2026-10-10, protocol 21, which a test
+**Done** (2026-10-11; the latest release **v0.9.1**, 2026-10-11, protocol 21, which a test
 session needs the server rebuilt and every page reloaded for):
 
 - **Wipes by the scissor** (ARCHIVE 13o, 2026-10-11): a wipe renders the stage in two passes,

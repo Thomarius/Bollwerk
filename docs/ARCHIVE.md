@@ -6918,3 +6918,11 @@ Cartoon with Undersea and Office, Chocolate with Office and Glass), 90 s, two ru
 play's 5.1–5.6; mean wipe frame 25.0, 24.2 ms → 19.1, 18.7, the rest 18.2–18.4; wipe frames over
 50 ms 5, 3 → 2, 1. At DPR 1, where on this day the old code too was near 60 fps: 1.3, 1.0 → 0.6,
 0.6. `tools/wipes/measure.mjs` takes `DPR` for the device scale.
+
+## 13p. v0.9.1 (2026-10-11)
+
+Released for the rendering of looks changing: every style's terrain drawn in strips of rows, so a
+new look's terrain no longer costs one long frame (13n), and wipes cut by the scissor rather than
+masked, so a wipe between two heavy looks costs about what the rest of play does (13o). A patch:
+nothing but how frames are rendered changed. Protocol 21 as v0.9.0, so the two play together; the
+game's rules and bots unchanged.
