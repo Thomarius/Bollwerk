@@ -154,14 +154,17 @@ Full detail in PLAN.md §1. The parts that surprise people:
 
 ## Status
 
-**Done** (2026-10-10; the latest release **v0.9.0**, 2026-10-10, protocol 21, which a test
+**Done** (2026-10-11; the latest release **v0.9.0**, 2026-10-10, protocol 21, which a test
 session needs the server rebuilt and every page reloaded for):
 
+- **Wipes by the scissor** (ARCHIVE 13o, 2026-10-11): a wipe renders the stage in two passes,
+  each look only on its side of the line, cut by the GL scissor rather than masked, pixel for
+  pixel as before; wipes between two heavy looks went from 19–20 dropped frames a second to 7, the
+  rest of play's 5–6, at 3840×2160. The planned culling by the line was built, measured to gain
+  almost nothing, and taken out.
 - **The terrain in strips** (ARCHIVE 13n, 2026-10-10): every style's terrain drawn and first
   rendered a strip of rows at a time (`TerrainStrips`), pixel for pixel as before, so a new
-  look's terrain no longer costs one long frame. Wipes between two heavy looks at a large
-  window still drop frames throughout: measured, the fix designed for the next session (PLAN §11
-  item 3).
+  look's terrain no longer costs one long frame.
 - **The bots in a worker** (ARCHIVE 13k, 2026-10-10): a local match's bots plan in a Web
   Worker in lockstep with the page, every action on the tick it had on the page's thread, with
   fallbacks to the thread; and three rendering leads, the crowns keyed (`MainCastles`), an empty
@@ -250,8 +253,7 @@ session needs the server rebuilt and every page reloaded for):
   piece and German checked in play by the user (ARCHIVE 12n–12t).
 
 **Next** — PLAN §11: more test games towards a first
-feature-ready version, wipes between heavy looks rendering only what each look shows (item 3,
-the next session's work), and bots that miss as people do (combat accuracy, measured against the
+feature-ready version, and bots that miss as people do (combat accuracy, measured against the
 testers' recordings; how is not yet decided). **The bot learning work is paused**; when it
 resumes, `docs/BOT_LEARNING.md` §6 says where — first, learning the choice of wall rather
 than only the cell. French is not to be done. Signing the Windows app was explained (PLAN
@@ -419,6 +421,11 @@ its header but the simulation does not — so the server stamps each header with
   drawings one by one, its sprites together. One chain a sprite made Pixel's and Night's six
   thousand tiles six thousand chains, a minute and a half of warming, and their random looks never
   arrived in time (ARCHIVE 13e).
+- **A mask in Pixi v8 is a stencil**: it stops pixels being coloured, not the drawing of what it
+  covers, so a look masked off half the screen still costs it whole on the GPU. Wipes are cut by
+  the GL scissor instead (`Scene.render`), which Pixi never touches. And measure the GPU at a load
+  where it is the limit, several runs alternating: the same 2560×1440 run gave 16.8 dropped frames
+  a second one hour and 0.4 the next (ARCHIVE 13o).
 - **Pixi rebuilds a render group's whole draw list when any `Graphics` in it changes shape**:
   500 stamps each changing shape on their own beat cost Chocolate 3 ms a frame until they were
   put in render groups of their own (ARCHIVE 13f).

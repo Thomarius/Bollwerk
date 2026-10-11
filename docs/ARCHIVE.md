@@ -6862,3 +6862,59 @@ felt. The frame's CPU work stays at 8–15 ms, so it is the GPU's: both looks ar
 during a wipe, each only masked to its side of the line. Hiding what lies wholly on the other side
 is the lead, now that the terrain's strips and the islands' parts make it possible: designed in
 PLAN §11 item 3, to be built in the next session (the user's decision).
+
+## 13o. Wipes cut by the scissor, not masked (2026-10-11)
+
+PLAN §11 item 3: a wipe between two heavy looks dropped frames throughout at a large window
+(ARCHIVE 13n). The design was to hide, on each frame of a wipe, the terrain's strips and the
+islands' parts lying wholly beyond the line, so each look would draw about its own share.
+
+**Built first as designed, and measured not to work.** Each look hid the strips and islands a
+margin beyond the line, by their bounds (a strip's declared rows would not do: Blueprint draws its
+contour rings in the strip of their topmost row and its upright grid lines whole with the first),
+and flipped each only once a wipe. It was checked to be hiding what it should, 80 of 130 pieces
+mid-wipe, and gained almost nothing: Sakura to Undersea, wipes 22.4 dropped frames a second as
+before, 20.3 with it.
+
+**The measurement's first lesson: one run decides nothing, and the load must be there.** At
+2560×1440 two runs of the same code gave 12.0 and 6.4, and the old code went from 16.8 in the
+morning to 0.4 later in the same session, the machine having become faster — so at that size the
+GPU was no longer the limit, and old and new could not be told apart. The runs that decided were
+at 2560×1440 with a device scale of 1.5 (3840×2160 rendered), two or three of each, alternating.
+
+**The diagnosis**, hiding parts of the leaving look during its wipes (Sakura to Undersea, DPR 1.5,
+two runs, dropped frames a second): nothing 24.6 / 20.3; its terrain's strips 11.8 / 6.6; the rest
+of its terrain layer (the sea's animation) 21.1 / 16.2; its effects 21.9 / 17.4; all its board
+layers and effects 5.9 / 1.2; its whole root 5.3 / 2.0; one style for both looks 0.2 / 0.0. Hiding
+the leaving look's strips whole helped, but hiding each strip only beyond the line did not: the
+cost was not in what was drawn beyond the line but in the pixels of it. In Pixi v8 a `Graphics`
+mask is a stencil (it has a scissor mask class but no pipe for it): every shape of the masked-off
+side is still rasterised and tested, and most styles' terrain begins with a full-board fill, drawn
+whole in the first strip and so never hidden by the culling. Frames with a change of visibility
+were no slower than the others (18.5 ms the next frame against 18.7), so the rebuilt draw lists
+were not the cost either.
+
+**Built instead** (`Scene.render`): during a wipe the stage is rendered twice, each pass with one
+look shown and the GL scissor cut to its side of the line — the line in the canvas's pixels,
+shaken as the stage is, counted from the foot as GL counts — and the scissor off again before
+anything else renders; Pixi never sets it itself. Each look's root is a render group, so hiding
+one per pass rebuilds only the stage's short list. The masks remain for a renderer without a
+WebGL context, and are no longer drawn otherwise. Mask against scissor, Sakura to Undersea at DPR
+1.5, two runs each: masks 22.4, 22.4; masks with the culling 20.2, 20.3; scissor 9.6, 9.1;
+scissor with the culling 9.6, 8.9 — mean wipe frame 26.6, 25.2, 19.8 ms, the rest of play about 19.
+The culling was taken out again, the user's choice: no gain under the scissor for its code.
+
+**Checked pixel for pixel** in the page at several moments of wipes: the scissored frame against
+the arriving look rendered alone above the line and the leaving one alone below it, with the stage
+offset as the shake moves it and without, at DPR 1 and 1.5, in Sakura/Undersea, Pixel/Cyberpunk,
+Night/Electric, Cyberpunk/Night and Electric/Cyberpunk, the last two with bloom on (effects
+High): every pixel identical, the scissor off and both looks shown after each frame. The camera's
+zoom is under the stage and the scissor in screen space, so the zoom onto a winner does not enter.
+
+**After**, the old code from a worktree on port 5174 against the new, the same seeded sequence of
+Random looks as ARCHIVE 13n's run (Cyberpunk/Halloween, Sakura with Halloween and Undersea,
+Cartoon with Undersea and Office, Chocolate with Office and Glass), 90 s, two runs each. At
+2560×1440 and DPR 1.5: wipes 20.0, 18.7 dropped frames a second → 7.6, 6.6, against the rest of
+play's 5.1–5.6; mean wipe frame 25.0, 24.2 ms → 19.1, 18.7, the rest 18.2–18.4; wipe frames over
+50 ms 5, 3 → 2, 1. At DPR 1, where on this day the old code too was near 60 fps: 1.3, 1.0 → 0.6,
+0.6. `tools/wipes/measure.mjs` takes `DPR` for the device scale.

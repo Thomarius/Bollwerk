@@ -5,6 +5,7 @@ import { Application, BigPool, Container, Graphics, RenderTexture } from 'pixi.j
 import type { CameraShot } from '../camera.js';
 import type { DrainWash, SealGlow } from '../seal.js';
 import type { Look } from '../transition.js';
+import { clearDrawn } from './clearDrawn.js';
 import { withDrawBudget } from './islandParts.js';
 import { StripContainer } from './terrainStrips.js';
 import { renderResolution } from '../sharpness.js';
@@ -106,7 +107,10 @@ interface Slot {
    */
   backdrop: Graphics;
   layers: ThemeLayers;
-  /** Screen-space rectangle this look is confined to during a wipe. */
+  /**
+   * Screen-space rectangle this look is confined to during a wipe, where there is no scissor
+   * to confine it (`render`): a renderer that is not WebGL's.
+   */
   mask: Graphics;
   /**
    * The layers that changed while it was hidden, to be redrawn before it is shown. By
@@ -367,7 +371,9 @@ export class Scene {
 
   private async slotFor({ theme, art }: SceneLook, pace?: Pace): Promise<Slot> {
     const layers = newLayers();
-    const root = new Container();
+    // A render group, so that a wipe's two passes (`render`), each hiding one look, rebuild
+    // only the stage's short list of looks rather than every drawing in both.
+    const root = new Container({ isRenderGroup: true });
     const backdrop = new Graphics();
     root.addChild(
       backdrop,
@@ -440,22 +446,34 @@ export class Scene {
     this.applyVisibility();
   }
 
+  /** The banner's line between two looks on screen, kept near the window, or null for one. */
+  private splitLine(): number | null {
+    const split = this.visible().length > 1 ? this.shown.lineY : null;
+    // Generous margins either side, so the shake never shows an edge.
+    return split === null ? null : Math.max(-64, Math.min(this.app.screen.height + 64, split));
+  }
+
+  /** WebGL's context, for the scissor a wipe is cut with; undefined under another renderer. */
+  private gl(): WebGL2RenderingContext | undefined {
+    return (this.app.renderer as { gl?: WebGL2RenderingContext }).gl;
+  }
+
   private applyVisibility(): void {
     const visible = this.visible();
-    const split = visible.length > 1 ? this.shown.lineY : null;
+    const line = this.splitLine();
+    // Cut by the scissor in `render` where there is one, so no mask is drawn.
+    const masked = line !== null && this.gl() === undefined;
     // In CSS pixels, as everything on the stage is. Pixi v8's `renderer.width` already is:
     // dividing it by the resolution, as once here, left the masks covering half the window
     // on a high-density screen, so neither look was drawn beyond them until the wipe ended.
     const { width, height } = this.app.screen;
     for (const slot of this.all()) {
       slot.root.visible = visible.includes(slot);
-      slot.mask.clear();
-      if (split === null || !slot.root.visible) {
+      clearDrawn(slot.mask);
+      if (!masked || line === null || !slot.root.visible) {
         slot.root.mask = null;
         continue;
       }
-      // Generous margins either side, so the shake never shows an edge.
-      const line = Math.max(-64, Math.min(height + 64, split));
       if (slot === this.slots[this.shown.to]) slot.mask.rect(-64, -64, width + 128, line + 64);
       else slot.mask.rect(-64, line, width + 128, height + 64 - line);
       slot.mask.fill({ color: 0xffffff });
@@ -766,8 +784,44 @@ export class Scene {
     this.slots[this.shown.to].theme.noteCrumble(block);
   }
 
+  /**
+   * Renders the frame. During a wipe, in two passes, each with one look shown and the scissor
+   * cut to its side of the line (ARCHIVE 13o): a mask is a stencil in Pixi v8, which stops pixels
+   * being coloured but not the drawing of everything it covers, so both looks were rasterised
+   * whole and two heavy ones dropped 22 frames a second at 2560×1440 at a density of 1.5, where
+   * the scissor drops 9, as the rest of play does 6. Rejected by the scissor, nothing beyond the
+   * line is drawn at all. Pixi never sets the scissor itself, and it is off again before
+   * anything else renders.
+   */
   render(): void {
-    this.app.renderer.render(this.app.stage);
+    const split = this.splitLine();
+    const gl = this.gl();
+    if (split === null || gl === undefined) {
+      this.app.renderer.render(this.app.stage);
+      return;
+    }
+    // The line in the canvas's own pixels, counted from its foot as GL counts, and shaken as
+    // the stage is.
+    const height = gl.drawingBufferHeight;
+    const width = gl.drawingBufferWidth;
+    const line = Math.round((split + this.app.stage.y) * this.app.renderer.resolution);
+    const above = Math.max(0, Math.min(height, line));
+    const to = this.slots[this.shown.to];
+    const from = this.slots[this.shown.from];
+    gl.enable(gl.SCISSOR_TEST);
+    try {
+      from.root.visible = false;
+      gl.scissor(0, height - above, width, above);
+      this.app.renderer.render(this.app.stage);
+      from.root.visible = true;
+      to.root.visible = false;
+      gl.scissor(0, 0, width, height - above);
+      this.app.renderer.render(this.app.stage);
+    } finally {
+      to.root.visible = true;
+      from.root.visible = true;
+      gl.disable(gl.SCISSOR_TEST);
+    }
   }
 
   /**

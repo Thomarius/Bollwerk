@@ -11,6 +11,7 @@
 //   cp tools/wipes/measure.mjs /tmp/pw/ && cd /tmp/pw
 //   SEEDED=1 HEADED=1 W=2560 H=1440 node measure.mjs new 'buildStyle=random&combatStyle=random&speed=2' 90
 //
+// DPR sets the device scale. One run decides nothing: alternate old and new, two or three each.
 // SEEDED replaces Math.random with a fixed sequence, so two runs — the old code served from a
 // worktree on another port (BASE=http://localhost:5174) and the new — see the same Random
 // looks in the same order. Writes <label>.json with every frame.
@@ -28,6 +29,9 @@ const browser = await chromium.launch({
 });
 const page = await browser.newPage({
   viewport: { width: Number(process.env.W ?? 1600), height: Number(process.env.H ?? 900) },
+  // A device scale of 1.5 at 2560×1440 renders 3840×2160: the load at which this machine's GPU
+  // is the limit again on a day it held 2560×1440 at 60 fps (ARCHIVE 13o).
+  deviceScaleFactor: Number(process.env.DPR ?? 1),
 });
 if (process.env.SEEDED) {
   // The same looks in the same order for both runs: Random draws from Math.random.
