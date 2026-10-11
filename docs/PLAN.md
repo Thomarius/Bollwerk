@@ -1599,13 +1599,73 @@ Tournament mode is finished: its play-testing round, T8, closed with everything 
 13k), every style's terrain is drawn in strips of rows (ARCHIVE 13n), and a wipe renders each
 look only on its side of the line, by the scissor, so wipes between two heavy looks cost about
 what the rest of play does (ARCHIVE 13o). Bots miss as people do, tuned so the good tester
-plays at Level 5–6 in combat (ARCHIVE 13r): the next test matches are measured with
-`shotStats.ts` against that, and if the bots fall too far behind overall, they are to be
-strengthened in building and strategy, not aim. The bot learning work, item 1, is **paused** after a first learned fit (ARCHIVE
+plays at Level 5–6 in combat (ARCHIVE 13r) — and the first match against them showed the bots
+far behind in building, item 1, the next work. The bot learning work, item 2, is **paused** after a first learned fit (ARCHIVE
 12z), its next steps in [`BOT_LEARNING.md`](./BOT_LEARNING.md) §6. French is not to be done
 (the user's decision, 2026-10-06). Still open:
 
-1. **Stronger bots by valuing options, then learning the weights** (the user's goal,
+1. **Bots that hold ground as people do** (the user's task, 2026-10-11; a longer one, worked
+   in steps, each agreed before it is built). Bots now shoot as well as the good tester at
+   Level 5–6 (ARCHIVE 13r), and lose to him badly all the same: the gap is in building.
+
+   **The finding** (2026-10-11, v0.9.2, `20261011-125336-local-le4ylw`: Thomas alone against
+   two Level 5 bots, Bot 3 balanced / points / balanced cannons and Bot 2 defensive /
+   finisher / secondary; ten rounds, replayed exactly). Thomas 4,841 points, the bots 1,220
+   and 844. In combat they were even: own accuracy 82% against 83%, walls destroyed per gun
+   per combat phase 2.68 against 2.74. Per round on average:
+
+   |        | territory points | damage points | castles sealed | guns active | wall tiles |
+   | ------ | ---------------- | ------------- | -------------- | ----------- | ---------- |
+   | Thomas | 433              | 51            | 2.9            | 9.5         | 100        |
+   | Bot 3  | 94               | 28            | 1.6            | 4.3         | 60         |
+   | Bot 2  | 59               | 26            | 1.2            | 3.5         | 71         |
+   - **Ground is the game.** Nine tenths of Thomas's score was territory. In round 1 he
+     sealed 3 castles and 378 points of ground, laying 28 pieces; each bot sealed one castle
+     and 36–44 points, laying 17. The castles brought guns (12 by round 3, 21 by round 5,
+     against the bots' 7–8 and 4–10), the guns brought damage, and the lead was never in
+     question. The bots' walls are the tightest that seal (the minimum cut, CLAUDE.md), with
+     room for 0–7 guns where his held 20–22, and a balanced or defensive bot holds two castles
+     at most (`maxCastles`).
+   - **Dead guns.** Bot 2 owned 10 guns with none active in rounds 5–7 and fired nothing in
+     rounds 6 and 7: it kept one castle sealed while every gun stood round another. The bot
+     has a recovery for this (`Builder.decide` walls the castle with the guns once fewer than
+     half fire, `reseal` weighs the guns kept), so something defeated it here — the cost, the
+     budget, or the sweep. People almost never leave guns inert (ARCHIVE 13r); Levels 3–4 did
+     for half or more of theirs in earlier sessions.
+   - Thomas failed a round (round 6) and the bots could not punish it.
+
+   **Research directions**, roughly in order:
+
+   1. **A yardstick for building, people against bots**, as `shotStats.ts` is for shooting:
+      from recordings' and bot tables' statistics (the `stats.csv` rows already hold castles,
+      territory and damage points, guns owned and active, gun room, wall tiles, pieces placed
+      against the pace allowed) — per round and by round, Thomas and Mausica beside each
+      level. The target is the user's from 13r, now for the whole game: Thomas on par with
+      Level 5–6 in points, not only in combat. One match is a tendency; more recordings at
+      several levels (5, 7, 9) are wanted.
+   2. **Diagnose the dead guns**: replay the recording to Bot 2's build phases in rounds 5–7
+      and ask its builder what it chose and why — the recovery's plan, its cost against the
+      budget, what was built and what the sweep took. A fault found there is the cheapest
+      gain, for every level.
+   3. **The opening**: Thomas laid 28 pieces in round 1 against the bots' 17 (later rounds
+      13–19 against 11–17), and round 1's castles decide the guns of every round after. Look
+      at the bots' placement pace and plan in round 1, the round with the smallest pieces.
+   4. **More ground and more castles**, by level: the levers exist (`maxCastles`,
+      `roomRadius`, `expandsWhenSafe`, `widensWhenSealed` and `widen`'s reach, ARCHIVE 12y).
+      Read first what was tried: ambition was a liability for survival bot against bot (a
+      marshal walling three castles lost to a gunner walling two, ARCHIVE 10d; `maxCastles`
+      2 → 3 under points changed nothing, as bots rarely held two, 10s), and widening once
+      sealed won 65 of 96 (12y). Those were measured against bots, who breach a big wall as
+      readily as a small one; against a person on points the tight ring lost by four to six
+      times. So measure
+      by points against a fixed field as well as by wins, and against the people's yardstick
+      (direction 1), keeping failed rounds in view.
+   5. **Learning the choice of wall** (item 2's first next step, `BOT_LEARNING.md` §6.1):
+      the hand-made ladder and `widen` already produce the candidate walls; a learned score
+      over their features (value, cost against the cells left, castles gained, guns kept and
+      room, slack after) is the general answer if the hand-made steps above stall.
+
+2. **Stronger bots by valuing options, then learning the weights** (the user's goal,
    2026-10-07; also to learn how ML fits a game): the plan, its steps and its progress are
    in [`BOT_LEARNING.md`](./BOT_LEARNING.md) — first the testers' recordings, then a "go big
    while a bail-out remains" rule, then a scoring function trained by the cross-entropy
