@@ -1600,7 +1600,7 @@ Tournament mode is finished: its play-testing round, T8, closed with everything 
 look only on its side of the line, by the scissor, so wipes between two heavy looks cost about
 what the rest of play does (ARCHIVE 13o). Bots miss as people do, tuned so the good tester
 plays at Level 5–6 in combat (ARCHIVE 13r) — and the first match against them showed the bots
-far behind in building, item 1, the next work. The bot learning work, item 2, is **paused** after a first learned fit (ARCHIVE
+far behind in building, item 1, the next work. The bot learning work, item 3, is **paused** after a first learned fit (ARCHIVE
 12z), its next steps in [`BOT_LEARNING.md`](./BOT_LEARNING.md) §6. French is not to be done
 (the user's decision, 2026-10-06). Still open:
 
@@ -1718,7 +1718,13 @@ far behind in building, item 1, the next work. The bot learning work, item 2, is
       over their features (value, cost against the cells left, castles gained, guns kept and
       room, slack after) is the general answer if the hand-made steps above stall.
 
-2. **Stronger bots by valuing options, then learning the weights** (the user's goal,
+2. **Special towers** (the user's idea, 2026-10-11; designed, not built): each player may bring
+   one special tower, bought in the cannon phase for two or three cannons — Big Bertha, Architect
+   and Rapid Cannon first — with an on/off switch among the match settings. The design, the
+   decisions, the work packages ST1–ST8 and the open questions are in
+   [`SPECIAL_TOWERS.md`](./SPECIAL_TOWERS.md).
+
+3. **Stronger bots by valuing options, then learning the weights** (the user's goal,
    2026-10-07; also to learn how ML fits a game): the plan, its steps and its progress are
    in [`BOT_LEARNING.md`](./BOT_LEARNING.md) — first the testers' recordings, then a "go big
    while a bail-out remains" rule, then a scoring function trained by the cross-entropy
