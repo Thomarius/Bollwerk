@@ -6926,3 +6926,31 @@ new look's terrain no longer costs one long frame (13n), and wipes cut by the sc
 masked, so a wipe between two heavy looks costs about what the rest of play does (13o). A patch:
 nothing but how frames are rendered changed. Protocol 21 as v0.9.0, so the two play together; the
 game's rules and bots unchanged.
+
+## 13q. The terrain cached as a texture: measured and dropped (2026-10-11)
+
+An idea from the list of further improvements: since the GPU's limit at high resolution is the
+pixels it fills (13o), and each style's terrain is many overlapping translucent bands, render a
+look's terrain strips once into a texture (Pixi's `cacheAsTexture` on the `StripContainer`,
+redrawn when the terrain is) and draw that one quad a frame.
+
+**Measured** behind a temporary switch on one server, the seeded Random sequence of 13n and 13o,
+2560×1440 at a density of 1.5, 90 s, three runs each, alternating: rest of play 1.9, 2.0, 1.8
+dropped frames a second → 1.1, 1.1, 1.2; wipes 1.6, 1.6, 2.2 → 0.7, 0.7, 0.6; the render call's
+CPU 4.4 → 3.7 ms a frame and the frame's work 7.2 → 6.2 ms (Pixi skips the terrain's
+instructions). A small, consistent gain — on a day the machine held this load near 60 fps either
+way.
+
+**Not pixel for pixel**: the same frame rendered with the cache off and on, every pixel compared.
+Sakura was identical at density 1, but its disc edges moved a device pixel at 1.5; Pixel, Opera
+and Blueprint differed even at density 1 — mostly by 9–30 levels in fine detail, some edges and
+grid lines a device pixel off (up to 174 levels there). An invisible anchor to pin the texture's
+corner to a whole number of device pixels and pattern repeats, an exact resolution (the renderer
+reports 1.0000000056) and nearest sampling changed nothing measurable: the differences come from
+drawing into a texture and then onto the screen, inside Pixi. By eye at 1:1 the two were the same.
+
+**Dropped**, the user's choice: a small gain against exactness, a screen-sized texture a look
+(about 33 MB at 4K, 70–100 MB with Random looks) and the work to keep it right — off while the
+camera zooms (2.4× in the opening, 1.35× onto a winner), and redrawn after `warmChain` renders a
+single strip, which would otherwise leave the texture holding that strip alone. Worth taking up
+again only if the rest of play is found GPU-bound on the testers' machines.
