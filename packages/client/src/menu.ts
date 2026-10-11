@@ -288,7 +288,7 @@ export function showMenu(notice: string | null = null): void {
     showPicture('combat');
   }, PICTURES_AFTER_MS);
 
-  // Tournaments (docs/TOURNAMENT.md): a new one set up, or a saved one to go on with.
+  // Tournaments (ARCHIVE 13w): a new one set up, or a saved one to go on with.
   const exits = (): TournamentExits => tournamentExits(readCommon().isPublic);
   document.querySelector('#new-tournament')?.addEventListener('click', () => {
     audio.play('select');

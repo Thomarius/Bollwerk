@@ -55,7 +55,7 @@ function shownOnScreen(): Promise<void> {
 /**
  * Where a match leads other than the menu and a rematch: a tournament's match records its
  * result as it ends, leads on to the standings, and is left for the tournament, to be
- * played again (docs/TOURNAMENT.md §1.7).
+ * played again (ARCHIVE 13w §1.7).
  */
 export interface MatchExits {
   /** Called once, as the match is first seen over, before the summary shows. */

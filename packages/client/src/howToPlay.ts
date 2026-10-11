@@ -780,7 +780,7 @@ const scorePage: HowToPage = {
 };
 
 /**
- * 8. Tournaments (docs/TOURNAMENT.md): a bracket of eight, the player's team in blue winning
+ * 8. Tournaments (ARCHIVE 13w): a bracket of eight, the player's team in blue winning
  * its way along to the final, each other match's winner going on in grey, the cup lit last.
  */
 const tournamentPage: HowToPage = {

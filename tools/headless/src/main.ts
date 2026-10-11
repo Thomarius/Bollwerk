@@ -284,7 +284,7 @@ function summariseTeams(layouts: TeamLayout[]): void {
 
 // -------------------------------------------------------------------------- run
 
-// Whole tournaments by rolls (docs/TOURNAMENT.md): flags of their own, and no match is run.
+// Whole tournaments by rolls (ARCHIVE 13w): flags of their own, and no match is run.
 if (process.argv[2] === '--tournament') {
   runTournaments(process.argv.slice(2), loadConfigBundle(repoRoot));
   process.exit(0);

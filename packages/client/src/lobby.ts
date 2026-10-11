@@ -56,7 +56,7 @@ export interface LobbyView {
   /** A link to this room from the internet, while the host's port is open there (PLAN 11.21). */
   invite?: string | null;
   /**
-   * The tournament's match the room is set for (docs/TOURNAMENT.md T6), or none. Its table
+   * The tournament's match the room is set for (ARCHIVE 12zj), or none. Its table
    * is the tournament's: the seats' bots are named, the teams too, and nothing can be
    * changed here — the host sets it from their tournament.
    */

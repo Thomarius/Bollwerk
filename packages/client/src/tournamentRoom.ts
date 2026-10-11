@@ -14,7 +14,7 @@ import { NetworkMatch } from './net/networkMatch.js';
 import { stageLabel } from './tournamentText.js';
 
 /**
- * A tournament's room on the server (docs/TOURNAMENT.md T6), held by its host for as long as
+ * A tournament's room on the server (ARCHIVE 12zj), held by its host for as long as
  * the tournament is open: teammates join it by its code, for any of the matches, and the
  * host sends it each match's table. The tournament itself stays on the host's computer; the
  * room plays only the match it is sent.

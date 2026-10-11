@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { MAX_LEVEL } from './ai.js';
 
 /**
- * Tournament mode (docs/TOURNAMENT.md): how long each length runs, how large a field may
+ * Tournament mode (ARCHIVE 13w): how long each length runs, how large a field may
  * grow, how strong each level counts in a quick roll, and the names teams and bots are
  * given. The host's choices are not here — they travel in the tournament's save.
  */

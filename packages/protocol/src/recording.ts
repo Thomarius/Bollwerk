@@ -87,7 +87,7 @@ export const RecordingHeaderSchema = z.strictObject({
     }),
   ),
   /**
-   * A tournament's match (docs/TOURNAMENT.md): the tournament's id and the step of its
+   * A tournament's match (ARCHIVE 13w): the tournament's id and the step of its
    * schedule. Absent from any other match. A key only added, so the format stands: every
    * reader of this format reads it, and a recording replays only against its own code.
    */

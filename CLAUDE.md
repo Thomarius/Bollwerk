@@ -202,7 +202,7 @@ session needs the server rebuilt and every page reloaded for):
   Tournament tab (the standings, the bracket as an icon beside them), opening on the match.
   The host's room passes their save on to the teammates' pages (protocol 20,
   `tournamentSave`, the one message allowed up to `limits.maxTournamentBytes`).
-- **Tournament mode** (2026-10-08, `docs/TOURNAMENT.md`, ARCHIVE 12ze–12zk): the host's team
+- **Tournament mode** (2026-10-08, ARCHIVE 12ze–12zk, its design in 13w): the host's team
   of people and bots against a field of named bot teams, through a league (one match size a
   matchday) and a single- or double-elimination knockout, saved in the browser between
   matches. The core is `packages/tournament` — a save is settings, field, plan and finished

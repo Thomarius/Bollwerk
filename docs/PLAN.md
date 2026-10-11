@@ -1583,8 +1583,7 @@ every resolution against an independent search, not only on unit pictures.
 Up to **v0.8.3**: the game and online play, bots as skill levels and personalities, the styles
 with their corner pieces, random looks every round, English and German, the desktop app, UPnP,
 the balance soak and the rendering work (ARCHIVE 12h–12v), the refactoring (12w) and stronger
-bots (12x, 12y). **v0.8.4**: tournament mode ([`TOURNAMENT.md`](./TOURNAMENT.md), ARCHIVE
-12ze–12zk) with its first two rounds of feedback (12zl, 12zp), smoother wipes (12zm) and Noir
+bots (12x, 12y). **v0.8.4**: tournament mode (ARCHIVE 12ze–12zk, its design in 13w) with its first two rounds of feedback (12zl, 12zp), smoother wipes (12zm) and Noir
 (12zn). **v0.8.5** (13d): the shared tournament lobby (12zr), team seating for three and four
 teams of two (12zs, 13c) and the style pass, every style but Minimal finished (12zt–12zz, 13a,
 13b). **v0.8.6** (13g): Random looks no longer repeat (13e), a Sharpness setting, the music at
@@ -1688,13 +1687,31 @@ far behind in building, item 1, the next work. The bot learning work, item 2, is
       times. So measure
       by points against a fixed field as well as by wins, and against the people's yardstick
       (direction 1), keeping failed rounds in view.
-   5. **A little knowledge at the higher levels**, the user's preference over superhuman speed
-      (2026-10-11), not obvious to a player, each measured by soak and limited by level: (a) the
-      exact cells it can still lay — the coming pieces' sizes against its pace, where it now
-      uses the bag's average piece — so it commits to a big wall exactly when it will finish
-      (the bolder `widen` of 13u failed by starting walls it did not finish); (b) the next
-      piece when fitting this one, so a repair is laid for the piece that closes it (repairs
-      ran at about two cells a piece, 13u). People see only the piece in hand.
+   5. **A little knowledge at the higher levels** (the user's ideas, 2026-10-11; for a later
+      session, **not yet analysed or built** — the testers play the current bots first). **The
+      goal**: give bots of Level 6 and up an advantage that makes them feel more strategic,
+      without raising their tile output to superhuman: only a bit faster than today's pace
+      (13v, Thomas's at about Level 6), the edge coming from better choices, not more pieces.
+      A little cheating is acceptable to the user where a player would not notice it; people
+      see only the piece in hand, and the piece sequence is fixed by the seed, so a bot can
+      look ahead at no cost. The ideas, each to be analysed, measured by soak (the ladder,
+      points, failed rounds, and pieces a phase kept within human range by `buildStats.ts`) and
+      agreed before it is built:
+
+      - **(a) The exact cells it can still lay.** A bot judges what it can finish from its pace
+        and the bag's average piece (`piecesAffordable`, `cellsAffordable`); the coming pieces'
+        actual sizes against its pace would make that exact, so it commits to a big wall exactly
+        when it will finish — where the bolder `widen` of ARCHIVE 13u lost by starting walls it
+        did not finish — and holds back when the coming pieces are small. Cheap to compute.
+      - **(b) The next piece in view when fitting this one.** Repairs ran at about two cells a
+        piece (13u), pieces rarely fitting a gap exactly; choosing where to lay this piece so
+        that the next one closes the gap would make repairs cheaper and leave time for ground.
+        A two-piece search in `fit`, so its cost per placement must be measured against the
+        plan's time (about 5 ms) and the worker's tick.
+      - Both limited by level (Level 6 and up, perhaps growing to Level 10), so the lower levels
+        keep playing as people do; and the pace of 13v kept, or raised only a little, so the
+        advantage is judgement.
+
    6. **Learning the choice of wall** (item 2's first next step, `BOT_LEARNING.md` §6.1):
       the hand-made ladder and `widen` already produce the candidate walls; a learned score
       over their features (value, cost against the cells left, castles gained, guns kept and

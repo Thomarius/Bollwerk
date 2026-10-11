@@ -116,7 +116,7 @@ export class Room {
   private lobbySeats = new Map<string, number>();
   private lobbyHost = 0;
   /**
-   * The tournament's match the host has set the room for (docs/TOURNAMENT.md T6), or null.
+   * The tournament's match the host has set the room for (ARCHIVE 12zj), or null.
    * While set, the table is the tournament's: people may take only its open seats — the
    * host's team's — and the host may only move them between those.
    */
@@ -393,7 +393,7 @@ export class Room {
   }
 
   /**
-   * Sets the room for a tournament's match (docs/TOURNAMENT.md T6): the table as the host's
+   * Sets the room for a tournament's match (ARCHIVE 12zj): the table as the host's
    * tournament has it, the host in their own seat, everyone else who is here in an open
    * seat — the one they had, while it stays open. Sent once a match is over, it brings the
    * room back to its lobby first, as a rematch does. Refused while a match is under way.

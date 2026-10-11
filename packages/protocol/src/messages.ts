@@ -52,7 +52,7 @@ export const SeatSchema = z.strictObject({
 export type Seat = z.infer<typeof SeatSchema>;
 
 /**
- * A tournament's match as its host sends it to the room (docs/TOURNAMENT.md T6): every
+ * A tournament's match as its host sends it to the room (ARCHIVE 12zj): every
  * seat as the tournament has it, and which of them a person may take — the host's team's.
  * The tournament lives on the host's computer; the room only plays the match it is given.
  */
