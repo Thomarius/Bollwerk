@@ -7383,3 +7383,13 @@ tournament's rounds a match.
   the final. That is accepted: it makes for a better story, not a worse one. A rolled
   losers' match carries him, as every rolled match that could put him out does: he leaves the
   tournament only by a match against the host's team (the users' intent, 2026-10-09).
+
+## 13x. v0.9.3 (2026-10-11)
+
+Released for the next test sessions, the bots' building after the first match against v0.9.2:
+with a life left a bot passes over a hollow seal for the wall keeping its guns (13t), and bots
+build at people's pace, a piece's time charged to the piece in hand, Thomas's pace at about Level
+6 and Mausica's at about Level 3 (13v) — so territory now rises with level. The yardstick for
+building (`buildStats.ts`) and the bot replay (`botReplay.ts`) came with them, and the ambition
+levers measured and dropped (13u). The bots' strength changed again at every level, so a session
+should name the levels played. Protocol 21 as v0.9.2; the rules unchanged.

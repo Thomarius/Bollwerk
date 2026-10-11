@@ -1579,7 +1579,7 @@ every resolution against an independent search, not only on unit pictures.
 
 ## 11. Open work
 
-**Where to start (2026-10-11).** The latest release is **v0.9.2** (2026-10-11, protocol 21).
+**Where to start (2026-10-11).** The latest release is **v0.9.3** (2026-10-11, protocol 21).
 Up to **v0.8.3**: the game and online play, bots as skill levels and personalities, the styles
 with their corner pieces, random looks every round, English and German, the desktop app, UPnP,
 the balance soak and the rendering work (ARCHIVE 12h–12v), the refactoring (12w) and stronger
@@ -1591,7 +1591,8 @@ once where allowed, and Chocolate's and Blueprint's frames cut (13f). **v0.8.7**
 tournament's end shown to teammates and Noir calmed (13h), a Ready button for a room's guests
 and favourite looks for Random (13i). **v0.9.0** (13l): the bots' planning in a worker in local matches,
 measured and felt, and three rendering leads (13k). **v0.9.1** (13p): the terrain in strips (13n) and wipes cut
-by the scissor (13o). **v0.9.2** (13s): bots that miss as people do (13r).
+by the scissor (13o). **v0.9.2** (13s): bots that miss as people do (13r). **v0.9.3** (13x): no more dead guns (13t)
+and bots building at people's pace (13v).
 
 Tournament mode is finished: its play-testing round, T8, closed with everything working
 (ARCHIVE 13m). The bots' planning is off the page's thread in local matches, measured and felt (ARCHIVE
