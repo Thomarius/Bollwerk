@@ -366,10 +366,15 @@ its header but the simulation does not — so the server stamps each header with
   put a gun, and the most fragile one. Nearly every bot problem traces back to this.
 - **`cannonsToPlace` is zero for the whole build phase**; it is set at the resolution that
   ends it. Judge cannon room against the reward about to be earned.
-- **`enclosedCastles` is refreshed by placements and resolutions, not by shots landing.**
-  It is legitimately 0 mid-repair, and it still says "sealed" as a breached build phase
-  opens. Do not assert on it except at a resolution; a bot deciding on it must count
-  afresh with `computeEnclosure`, which is what cost the bots a quarter of their rounds.
+- **`enclosedCastles` is refreshed by placements, resolutions and a build phase opening,
+  not by shots landing.** It is legitimately 0 mid-repair, and through combat and the
+  intermission after it still says "sealed" for a breached wall. Do not assert on it except
+  at a resolution; a bot deciding on it must count afresh with `computeEnclosure`, which is
+  what cost the bots a quarter of their rounds. The refresh as the build phase opens is
+  needed for a build phase rolled out in advance to come true (BUILD_PLANNING.md).
+- **A bot's build may read only its own island.** Anything it reads from elsewhere, such as
+  another island's wall in a search across the map, makes its phase depend on its
+  neighbours, and a rollout can no longer predict it. `rollout.test.ts` catches it.
 - **Headless Chrome cannot verify anything time-dependent in the client** by virtual time: a
   watched match is still on round 0 after 120s of it at 10x speed. Pull the logic into a pure
   function and test that, as `banners.ts`, `lobby.ts` and `scores.ts` do. It can still be

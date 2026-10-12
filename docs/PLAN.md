@@ -1717,6 +1717,13 @@ far behind in building, item 1, the next work. The bot learning work, item 3, is
         keep playing as people do; and the pace of 13v kept, or raised only a little, so the
         advantage is judgement.
 
+   5b. **The build phase played out before it starts** (the user's idea, 2026-10-12; in
+   progress): a bot's build phase depends on nothing but its own island, pieces and pace, so it
+   is rolled out on a copy of the match for several strategies in the intermission, the
+   results scored (points, guns ready, castles nearly sealed), and the best carried out — at
+   every level, with a minimum of three guns and failing on purpose to be measured. It takes in
+   5(a). The design, its steps and their measurements: [`BUILD_PLANNING.md`](./BUILD_PLANNING.md).
+
    6. **Learning the choice of wall** (item 2's first next step, `BOT_LEARNING.md` §6.1):
       the hand-made ladder and `widen` already produce the candidate walls; a learned score
       over their features (value, cost against the cells left, castles gained, guns kept and

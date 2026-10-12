@@ -528,10 +528,17 @@ export function weakestWall(state: MatchState, targetPlayer: number): number[] {
     }
   }
 
+  // Only this island's wall stands in the way: shots fly over every other, so another
+  // island's wall is open ground here. Counted as wall, it decided between paths of equal
+  // cost, and a bot's thickening changed with what its neighbours built — which a build
+  // phase played out in advance cannot know (BUILD_PLANNING.md, step 1).
+  const walled = (i: number): boolean =>
+    state.structure[i] === Structure.Wall && state.islandId[i] === islandId;
+
   // The border, in index order: the order the search sets out in decides between paths
   // of equal cost.
   const seedBorder = (i: number): void => {
-    const cost = state.structure[i] === Structure.Wall ? 1 : 0;
+    const cost = walled(i) ? 1 : 0;
     if (cost >= (dist[i] as number)) return;
     dist[i] = cost;
     if (cost === 0) pushFront(i);
@@ -561,7 +568,7 @@ export function weakestWall(state: MatchState, targetPlayer: number): number[] {
       const ny = y + (DY8[k] as number);
       if (nx < 0 || ny < 0 || nx >= state.width || ny >= state.height) continue;
       const j = ny * state.width + nx;
-      const step = state.structure[j] === Structure.Wall ? 1 : 0;
+      const step = walled(j) ? 1 : 0;
       const next = (dist[i] as number) + step;
       if (next >= (dist[j] as number)) continue;
       dist[j] = next;
@@ -574,7 +581,7 @@ export function weakestWall(state: MatchState, targetPlayer: number): number[] {
   if (reached === -1) return [];
   const path: number[] = [];
   for (let at = reached; at !== -1; at = from[at] as number) {
-    if (state.structure[at] === Structure.Wall) path.push(at);
+    if (walled(at)) path.push(at);
   }
   return path;
 }

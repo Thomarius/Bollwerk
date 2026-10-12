@@ -8,3 +8,4 @@ export * from './tactics.js';
 export * from './flow.js';
 export * from './seating.js';
 export * from './coverage.js';
+export * from './rollout.js';

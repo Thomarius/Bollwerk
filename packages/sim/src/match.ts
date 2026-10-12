@@ -564,6 +564,11 @@ function beginPendingPhase(state: MatchState): void {
       player.pieceIndex = 0;
       player.overtimeSpent = false;
     }
+    // The barrage is over: the territory it breached is lost now, not at the first piece
+    // anyone lays. Until then a player's board read as before the barrage or after it
+    // depending on whether someone else had placed first that tick, and a bot playing its
+    // phase out in advance could not know which (BUILD_PLANNING.md, step 1).
+    applyEnclosure(state);
   }
   const durations: Partial<Record<Phase, number>> = {
     castle_select: state.ruleset.phases.castleSelectMs,
