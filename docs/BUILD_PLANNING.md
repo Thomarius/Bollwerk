@@ -132,6 +132,9 @@ commit, not v0.9.3: its two fixes change how bots play.
 
 ## Progress
 
+Released in **v0.9.4** (ARCHIVE 13z, 13za). Open: step 7, the testers' matches (Level 6
+first), and step 3 only if play shows a need.
+
 - 2026-10-12: designed with the user; step 1 begun.
 - **Step 1, the rollout** (2026-10-12): `rollOutBuild` (`ai/src/rollout.ts`). Exactness
   found two leaks, both fixed:
@@ -338,3 +341,18 @@ commit, not v0.9.3: its two fixes change how bots play.
     by about 4%. Thomas won his by 16%, with territory between Level 7's and Level 8's. Per
     8 matches about 30 rounds were given up on purpose, 5–11 hollow seals kept, 42–50 slips,
     1–4 blunders. Level 4 to 5 is a cliff again (0 wins against 8).
+- **The Level 4 cliff, and the whole ladder** (2026-10-12). A Level 4 planning like a Level 5
+  (depth 8, slip 0.15, blunder 0.04) won 3 of 32 against three Level 5s rather than 0
+  (score 1,367 → 1,690). Its planning mistakes are part of the cliff, and the old weaknesses
+  that fade by Level 5 the rest. A **Level 4 anchor** now gives it milder ones (depth 7,
+  slip 0.18, blunder 0.05), its other columns as interpolated before. Each level against
+  three of the level below, four players, 8 matches in each seat (fair share 8 of 32):
+
+  | level | 2   | 3   | 4   | 5   | 6   | 7   | 8   | 9   | 10  |
+  | ----- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+  | wins  | 18  | 17  | 17  | 17  | 16  | 16  | 15  | 24  | 15  |
+
+  (Level 6 from the calibration above, against three Level 5s.) Even steps throughout,
+  except Level 9, where bots stop missing their shots (`aim.perfectFromLevel` 9, ARCHIVE
+  13r), not a planning matter. Territory a round rises from 165 at Level 2 to 511 at
+  Level 10, pieces a phase from 11 to 24.

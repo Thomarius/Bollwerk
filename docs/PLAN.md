@@ -1579,7 +1579,7 @@ every resolution against an independent search, not only on unit pictures.
 
 ## 11. Open work
 
-**Where to start (2026-10-11).** The latest release is **v0.9.3** (2026-10-11, protocol 21).
+**Where to start (2026-10-12).** The latest release is **v0.9.4** (2026-10-12, protocol 22).
 Up to **v0.8.3**: the game and online play, bots as skill levels and personalities, the styles
 with their corner pieces, random looks every round, English and German, the desktop app, UPnP,
 the balance soak and the rendering work (ARCHIVE 12h–12v), the refactoring (12w) and stronger
@@ -1592,7 +1592,8 @@ tournament's end shown to teammates and Noir calmed (13h), a Ready button for a 
 and favourite looks for Random (13i). **v0.9.0** (13l): the bots' planning in a worker in local matches,
 measured and felt, and three rendering leads (13k). **v0.9.1** (13p): the terrain in strips (13n) and wipes cut
 by the scissor (13o). **v0.9.2** (13s): bots that miss as people do (13r). **v0.9.3** (13x): no more dead guns (13t)
-and bots building at people's pace (13v).
+and bots building at people's pace (13v). **v0.9.4** (13za): build phases played out in advance,
+with mistakes by level (13z).
 
 Tournament mode is finished: its play-testing round, T8, closed with everything working
 (ARCHIVE 13m). The bots' planning is off the page's thread in local matches, measured and felt (ARCHIVE
@@ -1717,12 +1718,12 @@ far behind in building, item 1, the next work. The bot learning work, item 3, is
         keep playing as people do; and the pace of 13v kept, or raised only a little, so the
         advantage is judgement.
 
-   5b. **The build phase played out before it starts** (the user's idea, 2026-10-12; in
-   progress): a bot's build phase depends on nothing but its own island, pieces and pace, so it
-   is rolled out on a copy of the match for several strategies in the intermission, the
-   results scored (points, guns ready, castles nearly sealed), and the best carried out — at
-   every level, with a minimum of three guns and failing on purpose to be measured. It takes in
-   5(a). The design, its steps and their measurements: [`BUILD_PLANNING.md`](./BUILD_PLANNING.md).
+   5b. **The build phase played out before it starts** — done (ARCHIVE 13z, v0.9.4): every bot
+   plays strategies out in the intermission and lays the best, with a minimum of three guns,
+   failing on purpose with an effort, and slips, blunders and search depth by level; Thomas's
+   target is Level 6. It takes in 5(a). Open: the testers' matches against it, Level 6 first
+   (BUILD_PLANNING.md step 7), and step 3, the score's weights, only if play shows a need.
+   [`BUILD_PLANNING.md`](./BUILD_PLANNING.md) holds the design and every measurement.
 
    6. **Learning the choice of wall** (item 2's first next step, `BOT_LEARNING.md` §6.1):
       the hand-made ladder and `widen` already produce the candidate walls; a learned score

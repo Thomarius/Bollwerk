@@ -7423,3 +7423,46 @@ matches, 1598 points against 1615, guns firing 87% against 85%; Levels 4 and 6 a
 two Level 9s, 36 matches, 1318 against 1380, 90% against 88% — bots breach the gun castle less
 relentlessly than people do. Planning time unchanged (3.3 s a match against 3.2). To be judged
 in the testers' next matches.
+
+## 13z. Build phases played out in advance (2026-10-12)
+
+The user's idea, for PLAN §11 item 1: a bot's build phase depends on nothing but its own
+island, its pieces and its pace, so it can be played out on a copy of the match before it
+starts, several strategies weighed by their real outcome, and the best laid piece by piece. The
+design, every step and every measurement are in [`BUILD_PLANNING.md`](./BUILD_PLANNING.md); in
+short:
+
+- **Exact** (step 1): a rollout (`RolloutRun`, `rollOutBuild`) predicts every piece, its tick
+  and the round's result, once two leaks were closed. `weakestWall` counts only the target
+  island's wall now. The sim re-solves the enclosure as a build phase opens, a change to the
+  sim and so to the state hashes (protocol 22).
+- **The ceiling** (step 2): one bot weighing about 50 strategies against two of the ladder, at
+  Level 8, won 22.7 of 32 against 10.7, territory a round 307 → 411.
+- **In real time**: an anytime search (`PlanSearch`) works down the strategies in a learned
+  order, a simulated look at the board at a time, within 8 a tick for the whole table, and
+  ends at the bot's first piece. The game never waits for it. Strategies sharing a first wall
+  are played once and branched. Eight Level 8 bots planning cost a tick about what the ladder
+  did (p99 about 25 ms on a loaded machine); each weighs about 8 strategies a phase. Short
+  fixed lists and an estimate ranking strategies unplayed were measured and dropped.
+- **Switched on** for every bot (`ai.planning`); every driver gives its table `tableSlots`. A
+  person building on a bot teammate's island turns the bot to its strategy's walls at once.
+- **Three guns** (step 4, the user's minimum): a plan leaving three guns ready is chosen over
+  any that does not, and with none and a life to spare the bot fails the round on purpose,
+  with an effort (the failing plan that laid most). Guns firing 63–72% → about 90%.
+- **By level** (step 6, the user's design): `planDepth`, `planSlip` (another good plan) and
+  `planBlunder` (a failing plan, while a life is to spare) in the level table, a Level 4
+  anchor smoothing a cliff. Each level against three of the level below won 15–18 of 32,
+  Level 9 24 (perfect aim). Calibrated to the user's first match against planning bots, three
+  Level 5s he beat by 16%: Level 6 beat three Level 5s in half its matches, by about 4%, the
+  user's target of being on par with Level 6.
+
+Step 3, tuning the score's weights, is left until play shows a need.
+
+## 13za. v0.9.4 (2026-10-12)
+
+Released for the next test sessions: bots that play their build phase out in advance (13z),
+much stronger at every level than v0.9.3's, with mistakes by level and the user's minimum of
+three guns. The levels' strength changed again throughout, so a session should name the levels
+played; the user's target is Level 6. Protocol 22: the simulation changed (the enclosure
+re-solved as a build phase opens), so a test session needs the server rebuilt and every page
+reloaded.

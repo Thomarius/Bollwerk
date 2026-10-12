@@ -158,8 +158,18 @@ Full detail in PLAN.md §1. The parts that surprise people:
 
 ## Status
 
-**Done** (2026-10-11; the latest release **v0.9.3**, 2026-10-11, protocol 21, which a test
+**Done** (2026-10-12; the latest release **v0.9.4**, 2026-10-12, protocol 22, which a test
 session needs the server rebuilt and every page reloaded for):
+
+- **Build phases played out in advance** (ARCHIVE 13z, `docs/BUILD_PLANNING.md`, 2026-10-12):
+  in the intermission every bot plays strategies out on a snapshot of its island — exact,
+  since nothing but its own pieces changes it — and lays the best rollout's pieces on their
+  ticks. An anytime search (`PlanSearch`) within the table's budget (`ai.planning.stepsPerTick`)
+  ends at the bot's first piece, so the game never waits. A minimum of three guns, a round
+  failed on purpose with an effort rather than a hollow seal, and by level a search depth,
+  slips and blunders (`planDepth`, `planSlip`, `planBlunder`); the ladder even, Thomas's target
+  Level 6. Two fixes it needed: `weakestWall` counts only its island's wall, and the sim
+  re-solves the enclosure as a build phase opens.
 
 - **Bots that miss as people do** (ARCHIVE 13r, 2026-10-11): own accuracy from 60% at Level 1
   to 100% at Levels 9–10, the misses a second shot at the last tile or a tile beside the wall,
@@ -266,9 +276,9 @@ session needs the server rebuilt and every page reloaded for):
   piece and German checked in play by the user (ARCHIVE 12n–12t).
 
 **Next** — PLAN §11: more test games towards a first
-feature-ready version, and bots that hold ground as people do (item 1: the yardstick and the dead
-guns and pace done, a little knowledge at the higher levels next; `buildStats.ts`, ARCHIVE
-13r, 13t–13v). **The bot learning work is paused**; when it
+feature-ready version, and bots that hold ground as people do (item 1: the yardstick, the dead
+guns, pace and build planning done; next the testers' matches against v0.9.4, Level 6 first;
+`buildStats.ts`, ARCHIVE 13r, 13t–13v, 13z). **The bot learning work is paused**; when it
 resumes, `docs/BOT_LEARNING.md` §6 says where — first, learning the choice of wall rather
 than only the cell. French is not to be done. Signing the Windows app was explained (PLAN
 §12) and is not pursued for now.
