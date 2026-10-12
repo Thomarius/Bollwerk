@@ -201,3 +201,57 @@ commit, not v0.9.3: its two fixes change how bots play.
   and 3.6 s, so about 1.5–2 s of planning a round for each bot, about 50 rollouts. Far over
   what real time allows (step 5): the strategies must be pruned to those that win, measured
   by how often each is chosen and what the score loses without it.
+
+- **Pruning, and the search in real time** (2026-10-12; the user: a long wait at the start of a
+  build phase is unacceptable, the flow of the game comes first).
+  - **Strategies named by role**: castles by the cost of their wall, cheapest first (`alone1`,
+    `reach2#1`), so a strategy means the same on every board. `--plan-log` writes every
+    phase's strategies and scores. Over 960 planned phases (four players, two planning bots,
+    Levels 3, 5, 8, 10), measured against the best of all 51, the greedy best sets lose 159
+    (one strategy), 84 (two), 55 (three) and 33 (five) points a phase, where today's ladder
+    alone loses 196. Wall the cheapest castle alone, then reach for every castle
+    (`alone1/reachAll`), is the best single strategy at every level.
+  - **Fixed short lists fall short.** In soak the lists of two, three and five kept only
+    25–55% of the gain at Level 8 (territory a round 330–365 against 411 for all 51 and 307
+    today). A different strategy suits each board. **An estimate** that ranked strategies
+    without playing them, from their walls' cuts against the cells the bot will lay, did no
+    better: with three rolled out it still lost about half the gap. It was dropped.
+  - **Cheaper rollouts.** The ladder rolled out lean (`leanLadder`: planning again only once
+    its plan is built) is faster and better (Level 8: 110 → 66 ms, score 395 → 433). Lean
+    hurt the stage strategies (score −5–12%), so they keep replanning. A strategy's spare work
+    is kept until built (`keptSpareWork`): it had been half of such a rollout's time
+    (37.5 → 23.1 ms). **Strategies sharing a first wall** play it once and branch
+    (`RolloutRun.fork`, `Builder.fork`, spare `halt`), exactly as each played alone
+    (tested). That saved less than hoped (about 20 ms a strategy at four players, 31 at
+    eight), since repairs are short.
+  - **Anytime search** (`PlanSearch`): each bot works down its strategies, in a learned
+    order first (`DEFAULT_PLAN_ORDER`) and then the rest, a simulated piece at a time from a
+    snapshot of the board taken in the intermission. The table grants `stepsPerTick`
+    simulated pieces a tick (`PlanningSlots.takeSteps`), shared out evenly by seat. Starting
+    a search costs 8 of them (`SEARCH_SETUP_STEPS`): eight bots starting on one tick took
+    130–180 ms. The search ends at the bot's first piece of the phase, the same tick for
+    every strategy, since its island has not changed till then, with the best played out so
+    far. With nothing played out, or every plan failing, the ladder builds live as before.
+    **The game never waits for it.**
+  - **The budget, 8 a tick.** Eight Level 8 bots, all planning, one process alone (3
+    matches): the bots' time a tick p99 14.6 ms, p99.9 54.2, worst 222, against 14.9, 34.8
+    and 211 for today's bots. The worst ticks are today's own spikes. Each bot weighs 11
+    strategies a phase (at four players 21, at three 25–33). 16 a tick doubled the
+    strategies but raised the worst tick to 130–160 ms with eight bots. A step costs 1.2 ms
+    on average; the ladder's own plans are the dearest, up to 33 ms.
+  - **Measured under that budget**, one planning bot against today's, 32 matches a seat:
+
+    | three players            | today     | all 51, unlimited | real time |
+    | ------------------------ | --------- | ----------------- | --------- |
+    | Level 5, territory, wins | 187, 10.7 | 246, 19.0         | 256, 21.7 |
+    | Level 8, territory, wins | 307, 10.7 | 411, 22.7         | 380, 19.0 |
+
+    Eight players at Level 8 (one planner among seven, 24 matches from each of three seats;
+    12.8 strategies a phase): territory a round 322 → 370, wins 15 → 25 of 72, castles 2.4
+    → 2.7, failed rounds 11.8% → 10.4%.
+
+  - **Still to do for step 5**: planning switched on in the game. Its budget and order go into
+    `ai.default.json`, and every driver (room, local worker, thread) must give the table's
+    `PlanningSlots` its steps. Also a test of the interference fallback with a person
+    building on a bot teammate's island: the builder takes over with the chosen strategy's
+    walls, one plan, no new search.

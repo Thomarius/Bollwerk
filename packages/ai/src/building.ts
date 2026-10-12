@@ -86,7 +86,9 @@ export interface Strategy {
    * Once every stage stands: the ladder's own choice (`decide`), thickening, or the next
    * castle and more room (`spareWork`).
    */
-  spare: 'ladder' | 'thicken' | 'next';
+  spare: 'ladder' | 'thicken' | 'next' | 'halt';
+  /** Rolled out lean: planning again only once its plan is built (`Builder.lean`). */
+  lean?: boolean;
 }
 
 /** One wall of a strategy: round these castles, with this band of room, the guns kept or not. */
@@ -137,6 +139,33 @@ export class Builder {
 
   /** The strategy this phase follows, or null for the ladder (`decide`). */
   strategy: Strategy | null = null;
+
+  /** Plans again only when its plan is built or no piece fits it, not on the clock. */
+  lean = false;
+
+  /**
+   * Set when a strategy whose spare work is `halt` finds its walls standing: the builder
+   * stops before choosing anything else, for a rollout to branch there into the strategies
+   * sharing those walls (`RolloutRun.fork`).
+   */
+  halted = false;
+
+  /**
+   * A builder that goes on exactly as this one would, following `strategy` from here: what a
+   * rollout branching from a shared start is built on. It plans afresh on its next turn.
+   */
+  fork(strategy: Strategy | null): Builder {
+    const copy = new Builder(this.playerId, this.profile, this.slots);
+    Object.assign(copy, this, {
+      strategy,
+      halted: false,
+      plannedAt: -1,
+      plan: [...this.plan],
+      unreachable: new Set(this.unreachable),
+      spareKept: this.spareKept === null ? null : [...this.spareKept],
+    });
+    return copy;
+  }
 
   /**
    * The wider wall it is building, by `widen`'s key and the ground it was asked to take in,
@@ -257,14 +286,21 @@ export class Builder {
       this.plannedAt = -1;
       this.widerKey = null;
       this.widerGround = null;
+      this.spareKept = null;
     }
 
-    if (this.plannedAt < 0 || state.tick - this.plannedAt > this.profile.replanTicks) {
+    // A lean builder, in a rollout, plans again only once its plan is built: the board
+    // changes only by its own pieces, so a plan stays good until then (BUILD_PLANNING.md).
+    const due = this.lean
+      ? this.plan.every((i) => state.structure[i] !== Structure.Empty || this.unreachable.has(i))
+      : state.tick - this.plannedAt > this.profile.replanTicks;
+    if (this.plannedAt < 0 || due) {
       // No plan left at the table this tick: try again on the next.
       if (!this.slots.take(state.tick)) return null;
       this.markUncoverable(state);
       this.plan =
         this.strategy === null ? this.decide(state, look) : this.follow(state, look, this.strategy);
+      if (this.halted) return null;
       this.plannedAt = state.tick;
     }
 
@@ -289,7 +325,7 @@ export class Builder {
       // inside stands where a cannon could have stood.
       () => (thickens ? look.thickenTargets() : []),
       () => {
-        if (this.slots.take(state.tick)) return this.spareWork(state);
+        if (this.slots.take(state.tick)) return this.keptSpareWork(state);
         deferred = true;
         return [];
       },
@@ -608,8 +644,29 @@ export class Builder {
       case 'thicken':
         return this.profile.thickens ? look.thickenTargets() : [];
       case 'next':
-        return this.spareWork(state);
+        return this.keptSpareWork(state);
+      case 'halt':
+        this.halted = true;
+        return [];
     }
+  }
+
+  /** The spare work a strategy chose, kept until it is built or no piece reaches it. */
+  private spareKept: number[] | null = null;
+
+  /**
+   * `spareWork`, worked out again only once what it last chose is built, when following a
+   * strategy: asked afresh at every piece, it weighed every castle and pair each time and was
+   * half of a strategy's rollout (Level 8, four players, 2026-10-12).
+   */
+  private keptSpareWork(state: MatchState): number[] {
+    if (this.strategy === null) return this.spareWork(state);
+    const open = (this.spareKept ?? []).filter(
+      (i) => state.structure[i] === Structure.Empty && !this.unreachable.has(i),
+    );
+    if (open.length > 0) return open;
+    this.spareKept = this.spareWork(state);
+    return this.spareKept;
   }
 
   /** Cells it could still lay this phase, at its pace, with the bag's average piece. */

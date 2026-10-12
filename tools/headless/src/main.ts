@@ -1,4 +1,4 @@
-import { writeFileSync } from 'node:fs';
+import { appendFileSync, writeFileSync } from 'node:fs';
 import { parseArgs as parseFlags } from 'node:util';
 
 import {
@@ -68,6 +68,12 @@ interface Args {
   replay: string[];
   /** Per seat, repeating: whether its bot plays each build phase out in advance. */
   plans: boolean[];
+  /** Every planned phase's strategies and their scores, a JSON line each. */
+  planLog: string | null;
+  /** The strategies a planning bot weighs, by name; all when null. */
+  planSet: string[] | null;
+  /** Simulated pieces a tick the table's planning bots share; unlimited when null. */
+  planSteps: number | null;
 }
 
 /**
@@ -159,6 +165,9 @@ function parseArgs(argv: string[]): Args {
           : number('max-rounds', 0, 1),
     teams: number('teams', 1, 1),
     replay: values.replay === true ? positionals : [],
+    planLog: values['plan-log'] ?? null,
+    planSet: values['plan-set']?.split(',') ?? null,
+    planSteps: values['plan-steps'] === undefined ? null : Number(values['plan-steps']),
     plans: (values.plans ?? '0').split(',').map((v) => v.trim() === '1'),
   };
 }
@@ -173,6 +182,9 @@ const FLAGS = {
   level: { type: 'string' },
   personality: { type: 'string' },
   plans: { type: 'string' },
+  'plan-log': { type: 'string' },
+  'plan-set': { type: 'string' },
+  'plan-steps': { type: 'string' },
   stats: { type: 'string' },
   outcomes: { type: 'string' },
   map: { type: 'boolean' },
@@ -384,6 +396,9 @@ let unfinished = 0;
 const chosenPlans = new Map<string, number>();
 const noted = new Set<object>();
 let diverged = 0;
+let weighedTotal = 0;
+// The bots' time on each tick, all their turns together: what a room waits for.
+const tickMs: number[] = [];
 
 for (let i = 0; i < args.matches; i++) {
   const seed = args.seed + i;
@@ -398,9 +413,16 @@ for (let i = 0; i < args.matches; i++) {
     })),
   });
   const rng = new Rng(seed);
-  const slots = new PlanningSlots(bundle.ai.plansPerTick);
+  const slots = new PlanningSlots(
+    bundle.ai.plansPerTick,
+    args.planSteps ?? Number.POSITIVE_INFINITY,
+  );
   const bots = state.players.map(
-    (p) => new Bot(p.id, seatSetup(p.id, seed), bundle.ai, slots, { plansAhead: seatPlans(p.id) }),
+    (p) =>
+      new Bot(p.id, seatSetup(p.id, seed), bundle.ai, slots, {
+        plansAhead: seatPlans(p.id),
+        ...(args.planSet === null ? {} : { planStrategies: args.planSet }),
+      }),
   );
   let refused = 0;
 
@@ -408,17 +430,25 @@ for (let i = 0; i < args.matches; i++) {
 
   while (state.phase !== 'game_over' && state.tick < args.maxTicks) {
     const before = state.phase;
+    const thinking = performance.now();
     for (const turn of takeBotTurns(state, rng, (player) => bots[player])) {
       if (turn.rejection !== null) refused++;
     }
+    tickMs.push(performance.now() - thinking);
     if (before === 'intermission' && state.pendingPhase === 'build') {
       for (const bot of bots) {
         const plan = bot.lastPlan;
         if (plan === null || noted.has(plan)) continue;
         noted.add(plan);
-        // A castle walled alone is one kind, whichever castle it is.
-        const kind = plan.name.replace(/^c\d+/, 'alone');
-        chosenPlans.set(kind, (chosenPlans.get(kind) ?? 0) + 1);
+        weighedTotal += plan.weighed.length;
+        chosenPlans.set(plan.name, (chosenPlans.get(plan.name) ?? 0) + 1);
+        if (args.planLog !== null) {
+          const player = bots.indexOf(bot);
+          appendFileSync(
+            args.planLog,
+            `${JSON.stringify({ seed, round: state.round, player, level: seatSetup(player, seed).level, players: args.players, chosen: plan.name, weighed: plan.weighed })}\n`,
+          );
+        }
       }
     }
     step(state);
@@ -463,8 +493,20 @@ for (const [outcome, count] of [...outcomes].sort((a, b) => b[1] - a[1])) {
 
 if (layouts.length > 0) summariseTeams(layouts);
 
+{
+  const sorted = [...tickMs].sort((a, b) => a - b);
+  const at = (q: number): string => (sorted[Math.floor(q * (sorted.length - 1))] ?? 0).toFixed(1);
+  console.log(
+    `\nbots' time a tick: p50 ${at(0.5)} ms, p99 ${at(0.99)} ms, p99.9 ${at(0.999)} ms, worst ${at(1)} ms`,
+  );
+}
+
 if (chosenPlans.size > 0) {
-  console.log(`\nplans chosen (${diverged} phase(s) went otherwise than planned):`);
+  const phases = [...chosenPlans.values()].reduce((a, b) => a + b, 0);
+  console.log(
+    `\nplans chosen, ${(weighedTotal / phases).toFixed(1)} strategies weighed a phase ` +
+      `(${diverged} phase(s) went otherwise than planned):`,
+  );
   for (const [name, count] of [...chosenPlans].sort((a, b) => b[1] - a[1])) {
     console.log(`  ${String(count).padStart(5)}  ${name}`);
   }

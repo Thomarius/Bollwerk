@@ -10,8 +10,12 @@ import { Rng, canPlacePiece, type Action, type MatchState } from '@bollwerk/sim'
 
 import { Builder } from './building.js';
 import {
+  DEFAULT_PLAN_ORDER,
   DEFAULT_PLAN_WEIGHTS,
-  choosePlan,
+  PlanSearch,
+  inOrder,
+  pick,
+  strategiesFor,
   type ChosenPlan,
   type PlanWeights,
 } from './buildPlanning.js';
@@ -20,11 +24,18 @@ import { Gunner } from './combat.js';
 import { PlanningSlots } from './planning.js';
 import { Siting } from './siting.js';
 
+/** What beginning a build search costs of the table's simulated pieces (`PlanningSlots`). */
+const SEARCH_SETUP_STEPS = 8;
+
 /** How a bot spends its build phases beyond its level and personality. */
 export interface BotOptions {
   /** Plays each build phase out in advance for several strategies and keeps the best. */
   plansAhead?: boolean;
   planWeights?: PlanWeights;
+  /** Only these strategies weighed, by name in this order; when absent, every one offered. */
+  planStrategies?: readonly string[];
+  /** The strategies tried first, most promising first, when time may run short. */
+  planOrder?: readonly string[];
 }
 
 /**
@@ -62,9 +73,15 @@ export class Bot {
     this.profile = botProfile(ai, setup);
     const islands = new IslandCentres();
     this.gunner = new Gunner(playerId, this.profile, islands);
+    this.slots = slots;
     this.builder = new Builder(playerId, this.profile, slots);
     this.siting = new Siting(playerId, this.profile, slots, islands, this.builder);
   }
+
+  private readonly slots: PlanningSlots;
+
+  /** The search for the coming build phase's plan, while it runs, and its round. */
+  private search: { round: number; search: PlanSearch; seed: number } | null = null;
 
   /** The plan chosen for the current or coming build phase, and its round. */
   private chosen: {
@@ -94,6 +111,7 @@ export class Bot {
         if (this.options.plansAhead === true) this.planAhead(state, rng);
         return null;
       case 'build':
+        if (this.search?.round === state.round && !this.planAhead(state, rng)) return null;
         if (this.chosen?.round !== state.round) return this.builder.build(state, rng);
         return this.chosen.onPlan
           ? this.playPlan(state)
@@ -111,27 +129,63 @@ export class Bot {
   }
 
   /**
-   * In the intermission before a build phase, once the last shot is down and the board
-   * fixed: the phase played out for every strategy, and the best kept (BUILD_PLANNING.md).
-   * Its random draws, for a sloppy level's fits, come from a stream seeded now, so the
-   * phase plays as the rollout did.
+   * The search for the coming build phase's plan (BUILD_PLANNING.md): begun in the
+   * intermission once the last shot is down and the board fixed, worked a share of the
+   * table's simulated pieces each tick, and ended at the bot's first piece of the phase —
+   * till then its island has not changed, so a strategy played out from the start is still
+   * true — with the best plan played out by then. The game never waits for it. Its slips,
+   * for a sloppy level, come from a stream seeded as it begins, so the phase plays as the
+   * rollout did. True once a plan is chosen, or none can be.
    */
-  private planAhead(state: MatchState, rng: Rng): void {
-    if (state.pendingPhase !== 'build' || state.shots.length > 0) return;
-    if (this.chosen?.round === state.round) return;
-    const seed = rng.nextU32();
-    const plan = choosePlan(
-      state,
-      this.playerId,
-      this.profile,
-      seed,
-      this.options.planWeights ?? DEFAULT_PLAN_WEIGHTS,
-    );
-    this.builder.strategy = plan?.strategy ?? null;
+  private planAhead(state: MatchState, rng: Rng): boolean {
+    if (this.chosen?.round === state.round) return true;
+    if (this.search?.round !== state.round) {
+      if (state.phase !== 'intermission' || state.pendingPhase !== 'build') return true;
+      if (state.shots.length > 0) return false;
+      // Weighing the walls a search starts from costs about what a dozen simulated pieces
+      // do: eight bots doing it on one tick took 130-180 ms (Level 8, 2026-10-12).
+      if (!this.slots.takeAllSteps(state.tick, SEARCH_SETUP_STEPS)) return false;
+      const offered = strategiesFor(state, this.playerId);
+      const order =
+        this.options.planStrategies !== undefined
+          ? pick(offered, this.options.planStrategies)
+          : inOrder(offered, this.options.planOrder ?? DEFAULT_PLAN_ORDER);
+      const seed = rng.nextU32();
+      const search = PlanSearch.start(
+        state,
+        this.playerId,
+        this.profile,
+        seed,
+        this.weights,
+        order,
+      );
+      if (search === null) return true;
+      this.search = { round: state.round, search, seed };
+    }
+    const { search, seed } = this.search;
+    // Every strategy plays its first piece on the same tick, its time from the phase's start.
+    const deadline = search.firstPieceTick ?? Number.POSITIVE_INFINITY;
+    if (state.tick < deadline && !search.complete) {
+      const share = Math.max(1, Math.floor(this.slots.stepsPerTick / state.players.length));
+      search.work(this.slots.takeSteps(state.tick, share));
+    }
+    if (!search.complete && state.tick < deadline) return false;
+
+    const plan = search.best();
+    this.search = null;
+    // When every plan weighed fails the round, or none was played out in time, the ladder
+    // builds live, as it did before planning.
+    const fails = plan === null || plan.score <= -this.weights.failure / 2;
+    this.builder.strategy = fails ? null : plan.strategy;
     this.chosen =
       plan === null
         ? null
-        : { round: state.round, plan, next: 0, rng: new Rng(seed), onPlan: true };
+        : { round: state.round, plan, next: 0, rng: new Rng(seed), onPlan: !fails };
+    return true;
+  }
+
+  private get weights(): PlanWeights {
+    return this.options.planWeights ?? DEFAULT_PLAN_WEIGHTS;
   }
 
   /**

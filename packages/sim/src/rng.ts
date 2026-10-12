@@ -37,6 +37,13 @@ export class Rng {
     this.state = mix32(seed);
   }
 
+  /** A stream that goes on exactly as this one will: a rollout branching (BUILD_PLANNING.md). */
+  clone(): Rng {
+    const copy = new Rng(0);
+    copy.state = this.state;
+    return copy;
+  }
+
   /** Uniform 32-bit unsigned integer. */
   nextU32(): number {
     // mulberry32

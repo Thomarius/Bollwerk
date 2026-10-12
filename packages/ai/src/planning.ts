@@ -14,8 +14,40 @@
 export class PlanningSlots {
   private tick = -1;
   private used = 0;
+  private stepsTick = -1;
+  private stepsUsed = 0;
 
-  constructor(readonly perTick: number = Number.POSITIVE_INFINITY) {}
+  constructor(
+    readonly perTick: number = Number.POSITIVE_INFINITY,
+    /**
+     * The simulated pieces the table's bots may play out a tick between them, searching for
+     * their build phases' plans (BUILD_PLANNING.md): a search's cost spread over the ticks
+     * before the phase, bounded on each, so the game never waits for it.
+     */
+    readonly stepsPerTick: number = Number.POSITIVE_INFINITY,
+  ) {}
+
+  /** All of `wanted` simulated pieces on this tick, or none if fewer are left. */
+  takeAllSteps(tick: number, wanted: number): boolean {
+    if (tick !== this.stepsTick) {
+      this.stepsTick = tick;
+      this.stepsUsed = 0;
+    }
+    if (this.stepsPerTick - this.stepsUsed < wanted) return false;
+    this.stepsUsed += wanted;
+    return true;
+  }
+
+  /** Up to `wanted` simulated pieces on this tick, as many as are left. */
+  takeSteps(tick: number, wanted: number): number {
+    if (tick !== this.stepsTick) {
+      this.stepsTick = tick;
+      this.stepsUsed = 0;
+    }
+    const granted = Math.max(0, Math.min(wanted, this.stepsPerTick - this.stepsUsed));
+    this.stepsUsed += granted;
+    return granted;
+  }
 
   /** Takes a plan on this tick, or says there is none left. */
   take(tick: number): boolean {
