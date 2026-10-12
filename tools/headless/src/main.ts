@@ -417,6 +417,9 @@ const noted = new Set<object>();
 let diverged = 0;
 let weighedTotal = 0;
 let gaveUp = 0;
+let hollowKept = 0;
+let slips = 0;
+let blunders = 0;
 // The bots' time on each tick, all their turns together: what a room waits for.
 const tickMs: number[] = [];
 
@@ -479,6 +482,9 @@ for (let i = 0; i < args.matches; i++) {
   for (const bot of bots) {
     diverged += bot.diverged;
     gaveUp += bot.gaveUp;
+    hollowKept += bot.hollowKept;
+    slips += bot.slips;
+    blunders += bot.blunders;
   }
   if (refused > 0) refusedTotal += refused;
 
@@ -528,7 +534,8 @@ if (chosenPlans.size > 0) {
   const phases = [...chosenPlans.values()].reduce((a, b) => a + b, 0);
   console.log(
     `\nplans chosen, ${(weighedTotal / phases).toFixed(1)} strategies weighed a phase ` +
-      `(${diverged} phase(s) went otherwise than planned, ${gaveUp} round(s) given up):`,
+      `(${diverged} phase(s) went otherwise than planned, ${gaveUp} round(s) given up, ` +
+      `${hollowKept} hollow seal(s) kept, ${slips} slip(s), ${blunders} blunder(s)):`,
   );
   for (const [name, count] of [...chosenPlans].sort((a, b) => b[1] - a[1])) {
     console.log(`  ${String(count).padStart(5)}  ${name}`);

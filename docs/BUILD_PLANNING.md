@@ -314,3 +314,27 @@ commit, not v0.9.3: its two fixes change how bots play.
   better (Level 8 +5.8%, within noise at 16 matches). **Kept: `minGuns` 3, `failsOnPurpose`
   true.** The minimums of 2 and 4 were not measured: the soak at three planning bots a table
   ran too slowly on a busy machine, and the result is clear enough.
+
+- **Step 6, mistakes and depth by level** (2026-10-12; the user: weaker bots sometimes take a
+  worse plan, and sometimes a failing one — a repair not finished, a wall too ambitious —
+  every strategy open to every level; failing on purpose must look like an effort). New
+  level columns: `planDepth` (strategies weighed at most: 2, 3, 8, 16, 60 at Levels 1, 2, 5,
+  8, 10), `planSlip` (another of the three next best plans that seal: 0.4, 0.35, 0.15, 0.05, 0) and `planBlunder` (a failing plan, while a life is to spare: 0.12, 0.1, 0.04, 0.01, 0).
+  Failing on purpose now plays the failing plan that laid the most; with none failing, the
+  hollow seal is kept. The draws come from the search's seed.
+  - **Calibration** against the user's match (Thomas against three Level 5 bots: 4,184
+    points, the best bot 3,599, territory 369 a round). One bot of each level against three
+    Level 5 bots, four players, 8 matches in each seat:
+
+    | level | wins of 32 | score | best Level 5 | territory | castles | guns firing | failed | pieces |
+    | ----- | ---------- | ----- | ------------ | --------- | ------- | ----------- | ------ | ------ |
+    | 4     | 0          | 1,367 | 3,177        | 111       | 1.6     | 5.4 (85%)   | 12.2%  | 14.3   |
+    | 5     | 8          | 2,425 | 3,148        | 207       | 2.2     | 7.2 (87%)   | 11.2%  | 15.7   |
+    | 6     | 16         | 3,001 | 2,880        | 261       | 2.5     | 7.3 (80%)   | 10.6%  | 16.9   |
+    | 7     | 25         | 3,834 | 2,882        | 333       | 2.8     | 8.0 (81%)   | 10.6%  | 18.3   |
+    | 8     | 31         | 4,610 | 2,777        | 406       | 2.9     | 8.4 (77%)   | 10.3%  | 18.9   |
+
+    The ladder is steep and in order. Level 6 wins half its matches against three Level 5s,
+    by about 4%. Thomas won his by 16%, with territory between Level 7's and Level 8's. Per
+    8 matches about 30 rounds were given up on purpose, 5–11 hollow seals kept, 42–50 slips,
+    1–4 blunders. Level 4 to 5 is a cliff again (0 wins against 8).

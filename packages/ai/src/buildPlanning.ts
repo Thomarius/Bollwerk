@@ -177,6 +177,8 @@ export class PlanSearch {
   private chosen: ChosenPlan | null = null;
   /** The best plan leaving at least `minGuns` ready. */
   private armed: ChosenPlan | null = null;
+  /** Every plan played out, in the order played. */
+  readonly plans: ChosenPlan[] = [];
   private readonly weighed: ChosenPlan['weighed'] = [];
 
   private constructor(
@@ -302,9 +304,11 @@ export class PlanSearch {
       guns,
       weighed: this.weighed,
     });
-    if (this.chosen === null || score > this.chosen.score) this.chosen = plan();
+    const played = plan();
+    this.plans.push(played);
+    if (this.chosen === null || score > this.chosen.score) this.chosen = played;
     if (guns >= this.minGuns && (this.armed === null || score > this.armed.score)) {
-      this.armed = plan();
+      this.armed = played;
     }
     this.current = null;
     this.next++;

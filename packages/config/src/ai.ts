@@ -58,6 +58,22 @@ export const SkillSchema = z.strictObject({
    * than stopping at once, which made the step from Level 4 to 5 a cliff.
    */
   carelessness: z.number().min(0).max(1),
+  /**
+   * How many strategies it weighs for a build phase at most (docs/BUILD_PLANNING.md), in
+   * `ai.planning.order`: how far ahead it thinks. Time may cut the search shorter.
+   */
+  planDepth: z.number().int().positive(),
+  /**
+   * The chance it takes another of its better plans that seal rather than the best: a
+   * choice made under time pressure, as a person makes it.
+   */
+  planSlip: z.number().min(0).max(1),
+  /**
+   * The chance it takes a plan that fails the round — a repair not finished, a wall too
+   * ambitious for the time — while its team has a life to spare. People do; a bot that
+   * never did would be limited by its speed alone (the user, 2026-10-12).
+   */
+  planBlunder: z.number().min(0).max(1),
 });
 export type Skill = z.infer<typeof SkillSchema>;
 
@@ -356,6 +372,9 @@ export function skillAt(ai: AiConfig, level: number): Skill {
     replanTicks: whole(below.replanTicks, above.replanTicks),
     sloppiness: mix(below.sloppiness, above.sloppiness),
     carelessness: mix(below.carelessness, above.carelessness),
+    planDepth: whole(below.planDepth, above.planDepth),
+    planSlip: mix(below.planSlip, above.planSlip),
+    planBlunder: mix(below.planBlunder, above.planBlunder),
   };
 }
 

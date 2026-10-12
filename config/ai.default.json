@@ -10,7 +10,10 @@
       "riskMargin": 0.5,
       "replanTicks": 80,
       "sloppiness": 0.35,
-      "carelessness": 1
+      "carelessness": 1,
+      "planDepth": 2,
+      "planSlip": 0.4,
+      "planBlunder": 0.12
     },
     {
       "level": 2,
@@ -22,7 +25,10 @@
       "riskMargin": 0.55,
       "replanTicks": 60,
       "sloppiness": 0.25,
-      "carelessness": 0.75
+      "carelessness": 0.75,
+      "planDepth": 3,
+      "planSlip": 0.35,
+      "planBlunder": 0.1
     },
     {
       "level": 5,
@@ -34,7 +40,10 @@
       "riskMargin": 0.8,
       "replanTicks": 30,
       "sloppiness": 0,
-      "carelessness": 0
+      "carelessness": 0,
+      "planDepth": 8,
+      "planSlip": 0.15,
+      "planBlunder": 0.04
     },
     {
       "level": 8,
@@ -46,7 +55,10 @@
       "riskMargin": 1,
       "replanTicks": 20,
       "sloppiness": 0,
-      "carelessness": 0
+      "carelessness": 0,
+      "planDepth": 16,
+      "planSlip": 0.05,
+      "planBlunder": 0.01
     },
     {
       "level": 10,
@@ -58,7 +70,10 @@
       "riskMargin": 1.1,
       "replanTicks": 15,
       "sloppiness": 0,
-      "carelessness": 0
+      "carelessness": 0,
+      "planDepth": 60,
+      "planSlip": 0,
+      "planBlunder": 0
     }
   ],
   "risk": {

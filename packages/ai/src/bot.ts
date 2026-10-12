@@ -166,7 +166,10 @@ export class Bot {
       const order =
         this.options.planStrategies !== undefined
           ? pick(offered, this.options.planStrategies)
-          : inOrder(offered, this.options.planOrder ?? this.planning.order);
+          : inOrder(offered, this.options.planOrder ?? this.planning.order).slice(
+              0,
+              this.profile.planDepth,
+            );
       const seed = rng.nextU32();
       const search = PlanSearch.start(
         state,
@@ -199,38 +202,68 @@ export class Bot {
     }
     if (!search.complete && state.tick < deadline) return false;
 
-    const plan = search.best();
     this.search = null;
-    // Short of the minimum of guns, a life to spare: the round given up, nothing laid, for a
-    // fresh castle, ring and starting guns (`ai.planning.failsOnPurpose`).
-    if (
-      plan !== null &&
-      plan.guns < this.planning.minGuns &&
-      this.planning.failsOnPurpose &&
-      this.maySpareALife(state)
-    ) {
-      this.builder.strategy = null;
-      this.gaveUp++;
-      const quit = { ...plan, strategy: null, name: 'continue', placements: [] };
-      this.chosen = {
-        round: state.round,
-        plan: quit,
-        next: 0,
-        rng: new Rng(seed),
-        onPlan: true,
-        walls,
-      };
-      return true;
-    }
-    // When every plan weighed fails the round, or none was played out in time, the ladder
-    // builds live, as it did before planning.
-    const fails = plan === null || plan.score <= -this.weights.failure / 2;
+    const plan = this.choose(state, search, seed);
+    // When every plan weighed fails the round and none was chosen to, or none was played out
+    // in time, the ladder builds live, as it did before planning.
+    const fails = plan === null || (plan.score <= -this.weights.failure / 2 && !this.meantToFail);
     this.builder.strategy = fails ? null : plan.strategy;
     this.chosen =
       plan === null
         ? null
         : { round: state.round, plan, next: 0, rng: new Rng(seed), onPlan: !fails, walls };
     return true;
+  }
+
+  /** Whether the plan chosen this phase fails the round on purpose or by a blunder. */
+  private meantToFail = false;
+
+  /**
+   * The plan to carry out, of those the search played out: the best, unless it leaves too
+   * few guns and a life is to spare — then a plan that fails, the one that laid the most, so
+   * the round is lost with an effort rather than idly (the user, 2026-10-12) — or unless the
+   * bot slips, taking another of its better plans that seal, or blunders, taking one that
+   * fails, as people under time pressure do, by level (`planSlip`, `planBlunder`). The
+   * draws come from the search's own seed, so the choice is the same wherever it is made.
+   */
+  private choose(state: MatchState, search: PlanSearch, seed: number): ChosenPlan | null {
+    this.meantToFail = false;
+    const best = search.best();
+    if (best === null) return null;
+    const draws = new Rng(seed ^ 0x2545f491);
+    const roll = draws.nextFloat();
+    const pickAt = draws.nextFloat();
+    const failing = search.plans.filter((p) => p.score <= -this.weights.failure / 2);
+    const mostLaid = [...failing].sort((a, b) => b.placements.length - a.placements.length)[0];
+    const spare = this.maySpareALife(state);
+
+    if (best.guns < this.planning.minGuns && this.planning.failsOnPurpose && spare) {
+      if (mostLaid === undefined) {
+        this.hollowKept++;
+        return best;
+      }
+      this.gaveUp++;
+      this.meantToFail = true;
+      return mostLaid;
+    }
+    if (roll < this.profile.planBlunder && spare && failing.length > 0) {
+      this.blunders++;
+      this.meantToFail = true;
+      return failing[Math.floor(pickAt * failing.length)] as ChosenPlan;
+    }
+    if (roll < this.profile.planBlunder + this.profile.planSlip) {
+      // Another of the three next best that seal and keep the guns' minimum, if any.
+      const others = search.plans
+        .filter((p) => p !== best && p.score > -this.weights.failure / 2)
+        .filter((p) => p.guns >= Math.min(this.planning.minGuns, best.guns))
+        .sort((a, b) => b.score - a.score)
+        .slice(0, 3);
+      if (others.length > 0) {
+        this.slips++;
+        return others[Math.floor(pickAt * others.length)] as ChosenPlan;
+      }
+    }
+    return best;
   }
 
   private get weights(): PlanWeights {
@@ -266,8 +299,12 @@ export class Bot {
   /** Phases whose plan did not come true, for the harness. */
   diverged = 0;
 
-  /** Rounds given up on purpose, for the harness. */
+  /** Rounds given up on purpose, for the harness; and hollow seals kept, with none to fail. */
   gaveUp = 0;
+  hollowKept = 0;
+  /** Plans taken by a slip or a blunder, for the harness. */
+  slips = 0;
+  blunders = 0;
 
   /**
    * Whether failing this round on purpose is the bot's to choose: its team has a life left
