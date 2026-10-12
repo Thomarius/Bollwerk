@@ -31,6 +31,21 @@
       "planBlunder": 0.1
     },
     {
+      "level": 4,
+      "placementBaseMs": 783,
+      "placementPerCellMs": 197,
+      "fireIntervalMs": 250,
+      "readyDelayMs": 317,
+      "aimJitter": 0.4,
+      "riskMargin": 0.7166666666666667,
+      "replanTicks": 40,
+      "sloppiness": 0.08333333333333334,
+      "carelessness": 0.25,
+      "planDepth": 7,
+      "planSlip": 0.18,
+      "planBlunder": 0.05
+    },
+    {
       "level": 5,
       "placementBaseMs": 600,
       "placementPerCellMs": 200,
