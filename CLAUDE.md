@@ -158,7 +158,7 @@ Full detail in PLAN.md §1. The parts that surprise people:
 
 ## Status
 
-**Done** (2026-10-12; the latest release **v0.9.4**, 2026-10-12, protocol 22, which a test
+**Done** (2026-10-12; the latest release **v0.9.5**, 2026-10-12, protocol 23, which a test
 session needs the server rebuilt and every page reloaded for):
 
 - **Feedback after v0.9.4** (ARCHIVE 13zb, 2026-10-12): the title's sweep eased, with a pause
@@ -282,7 +282,7 @@ session needs the server rebuilt and every page reloaded for):
 
 **Next** — PLAN §11: more test games towards a first
 feature-ready version, and bots that hold ground as people do (item 1: the yardstick, the dead
-guns, pace and build planning done; next the testers' matches against v0.9.4, Level 6 first;
+guns, pace and build planning done; next the testers' matches against v0.9.5, Level 6 first;
 `buildStats.ts`, ARCHIVE 13r, 13t–13v, 13z). **The bot learning work is paused**; when it
 resumes, `docs/BOT_LEARNING.md` §6 says where — first, learning the choice of wall rather
 than only the cell. French is not to be done. Signing the Windows app was explained (PLAN

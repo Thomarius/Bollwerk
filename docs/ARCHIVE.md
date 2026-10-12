@@ -7499,3 +7499,11 @@ Five points from the test session, triaged with the user first.
   knockout's tree (`tournamentLeagueView.ts`) — the whole table and every matchday, results
   with scores where played and the fixtures to come (all drawn at creation), the host's match
   first in each. The bracket's icon returns with the knockout.
+
+## 13zc. v0.9.5 (2026-10-12)
+
+Released for the next test sessions: the feedback of 13zb — the title's eased sweep with a
+pause, the menu's music back for guests after a match, and the league's tie-breaks, table,
+match sizes and window. The bots are v0.9.4's. Protocol 23: a tournament's save, which the
+host's room passes to teammates, carries a new field (`tieBreaks`) a v0.9.4 page refuses, so a
+test session needs the server rebuilt and every page reloaded.
