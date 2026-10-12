@@ -1,5 +1,5 @@
 import { defaultAiConfig, BALANCED, type BotSetup } from '@bollwerk/config';
-import { Bot, PlanningSlots } from '@bollwerk/ai';
+import { Bot, tableSlots } from '@bollwerk/ai';
 import { Rng, type Action, type MatchState } from '@bollwerk/sim';
 
 import { botTurns } from './botTurns.js';
@@ -45,7 +45,7 @@ export class ThreadDriver implements BotDriver {
   readonly rng: Rng;
   private readonly bots = new Map<number, Bot>();
   /** The plans the bots may make on one tick between them, shared by all of them. */
-  private readonly slots = new PlanningSlots(defaultAiConfig.plansPerTick);
+  private readonly slots = tableSlots(defaultAiConfig);
   /** The next turn to take on the tick in progress, or null between ticks. */
   private next: number | null = null;
 

@@ -1,5 +1,5 @@
 import { defaultAiConfig } from '@bollwerk/config';
-import { Bot, PlanningSlots } from '@bollwerk/ai';
+import { Bot, tableSlots } from '@bollwerk/ai';
 import { HASH_EVERY_TICKS } from '@bollwerk/protocol';
 import {
   Rng,
@@ -47,7 +47,7 @@ export class BotTable {
       case 'init': {
         const mirror = createMatch(message.options);
         // One `PlanningSlots` between the table's bots, as every driver gives them.
-        const slots = new PlanningSlots(message.plansPerTick);
+        const slots = tableSlots(defaultAiConfig);
         const bots = new Map<number, Bot>();
         for (const { player, setup } of message.bots) {
           bots.set(player, new Bot(player, setup, defaultAiConfig, slots));

@@ -71,7 +71,7 @@ describe('a local match, recorded', () => {
     expect(whole.lines.filter((l) => l.kind === 'tick').length).toBeGreaterThan(50);
     expect(spread.lines).toEqual(whole.lines);
     expect(spread.hash).toBe(whole.hash);
-  });
+  }, 60_000);
 
   it('records nothing of a dev fast-forward', () => {
     const lines: RecordingLine[] = [];

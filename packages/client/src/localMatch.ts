@@ -1,5 +1,4 @@
 import {
-  defaultAiConfig,
   defaultRuleset,
   defaultTerrainConfig,
   type BotSetup,
@@ -174,7 +173,6 @@ export class LocalMatch {
             options: matchOptions,
             bots: [...setups].map(([player, setup]) => ({ player, setup })),
             humanPlayer: this.humanPlayer,
-            plansPerTick: defaultAiConfig.plansPerTick,
             rngSeed: botRngSeed(options.seed),
           },
           hashMatchState(this.state),

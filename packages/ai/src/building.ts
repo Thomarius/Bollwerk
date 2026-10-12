@@ -144,6 +144,12 @@ export class Builder {
   lean = false;
 
   /**
+   * Turns on which it looked at the board — planned or fitted — rather than only waited for
+   * its pace: a rollout's unit of work (`RolloutRun.advance`).
+   */
+  attempts = 0;
+
+  /**
    * Set when a strategy whose spare work is `halt` finds its walls standing: the builder
    * stops before choosing anything else, for a rollout to branch there into the strategies
    * sharing those walls (`RolloutRun.fork`).
@@ -277,6 +283,7 @@ export class Builder {
       if (state.tick < this.readyTick) return null;
     }
     const look = new Look(state, this.playerId);
+    this.attempts++;
 
     // Last round's dead ends mean nothing now that the board has changed.
     if (this.planRound !== state.round) {

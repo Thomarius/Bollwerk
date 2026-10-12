@@ -3,6 +3,7 @@
 // tests in the repository: one file of them took 98 of the suite's 103 seconds.
 
 import {
+  defaultAiConfig,
   defaultRuleset,
   defaultTerrainConfig,
   tierSetup,
@@ -20,11 +21,19 @@ import {
 } from '@bollwerk/sim';
 
 import { Bot } from './bot.js';
+import { PlanningSlots } from './planning.js';
 import { cannonRoom } from './tactics.js';
 
 /** The old tiers, as the level and personality each now stands for. */
 export type Difficulty = DifficultyName;
-export const bot = (id: number, tier: Difficulty): Bot => new Bot(id, tierSetup(tier));
+/**
+ * A tier's bot building by its ladder alone, never planning its phases ahead: these matches
+ * test the ladder, which a planning bot still falls back on, and a bot planning with no
+ * table to share a budget with plays every strategy out — minutes a match. Planning has its
+ * own tests (`buildPlanning.test.ts`).
+ */
+export const bot = (id: number, tier: Difficulty): Bot =>
+  new Bot(id, tierSetup(tier), defaultAiConfig, new PlanningSlots(), { plansAhead: false });
 
 export interface Outcome {
   state: MatchState;

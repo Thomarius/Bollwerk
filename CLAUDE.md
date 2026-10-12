@@ -372,6 +372,12 @@ its header but the simulation does not — so the server stamps each header with
   at a resolution; a bot deciding on it must count afresh with `computeEnclosure`, which is
   what cost the bots a quarter of their rounds. The refresh as the build phase opens is
   needed for a build phase rolled out in advance to come true (BUILD_PLANNING.md).
+- **A bot plans its build phase in the intermission** (`ai.planning`, docs/BUILD_PLANNING.md):
+  it plays strategies out on a snapshot, a simulated look at the board at a time within
+  the table's `stepsPerTick`, and lays the best rollout's pieces on their ticks. Anything that
+  makes one step dear (a loop inside `RolloutRun.advance`) shows as a hitch at every phase.
+  A whole-match test of the ladder must pass `plansAhead: false`, or it plans every strategy
+  with no budget and runs for minutes.
 - **A bot's build may read only its own island.** Anything it reads from elsewhere, such as
   another island's wall in a search across the map, makes its phase depend on its
   neighbours, and a rollout can no longer predict it. `rollout.test.ts` catches it.

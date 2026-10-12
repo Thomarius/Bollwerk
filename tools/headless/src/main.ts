@@ -168,7 +168,7 @@ function parseArgs(argv: string[]): Args {
     planLog: values['plan-log'] ?? null,
     planSet: values['plan-set']?.split(',') ?? null,
     planSteps: values['plan-steps'] === undefined ? null : Number(values['plan-steps']),
-    plans: (values.plans ?? '0').split(',').map((v) => v.trim() === '1'),
+    plans: values.plans?.split(',').map((v) => v.trim() === '1') ?? [bundle.ai.planning.enabled],
   };
 }
 
@@ -306,8 +306,8 @@ if (process.argv[2] === '--tournament') {
   process.exit(0);
 }
 
-const args = parseArgs(process.argv.slice(2));
 const bundle = loadConfigBundle(repoRoot);
+const args = parseArgs(process.argv.slice(2));
 
 const problems = validateConfigBundle(bundle);
 if (problems.length > 0) {
@@ -415,7 +415,7 @@ for (let i = 0; i < args.matches; i++) {
   const rng = new Rng(seed);
   const slots = new PlanningSlots(
     bundle.ai.plansPerTick,
-    args.planSteps ?? Number.POSITIVE_INFINITY,
+    args.planSteps ?? bundle.ai.planning.stepsPerTick,
   );
   const bots = state.players.map(
     (p) =>

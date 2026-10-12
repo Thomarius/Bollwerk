@@ -1,4 +1,4 @@
-import { type BotProfile } from '@bollwerk/config';
+import { defaultAiConfig, type AiConfig, type BotProfile } from '@bollwerk/config';
 import {
   Rng,
   Structure,
@@ -24,32 +24,12 @@ import { SealPlanner, cannonRoom, type SealPlan } from './tactics.js';
  * What a plan's outcome is worth beyond the round's points, in points. Hand-set for the
  * first measurement (step 2), to be tuned (step 3).
  */
-export interface PlanWeights {
-  /** Each gun ready for the next barrage: firing, or a reward with room to stand. */
-  gun: number;
-  /** The best castle nearly sealed: the points it would add, times how nearly. */
-  prospect: number;
-  /** A round failed, a life spent: never chosen while anything seals. */
-  failure: number;
-}
+export type PlanWeights = AiConfig['planning']['weights'];
 
-export const DEFAULT_PLAN_WEIGHTS: PlanWeights = { gun: 20, prospect: 0.5, failure: 100_000 };
+export const DEFAULT_PLAN_WEIGHTS: PlanWeights = defaultAiConfig.planning.weights;
 
-/**
- * The strategies a search tries first, most promising first: the greedy choice over 960
- * planned phases at Levels 3–10 (BUILD_PLANNING.md), each adding the most to the best of
- * those before it. The rest follow as offered, while time lasts.
- */
-export const DEFAULT_PLAN_ORDER: readonly string[] = [
-  'leanLadder',
-  'alone1/reachAll',
-  'alone2/next',
-  'alone1/next',
-  'alone2/reachAll',
-  'alone1/reach2#2',
-  'alone3/reachAll',
-  'guns/reach2#1',
-];
+/** The strategies a search tries first, most promising first (`ai.planning.order`). */
+export const DEFAULT_PLAN_ORDER: readonly string[] = defaultAiConfig.planning.order;
 
 /** The share of a phase's cells a bot can count on for a wall after the barrage's repairs. */
 const NEXT_PHASE_SHARE = 0.5;
@@ -190,7 +170,7 @@ export class PlanSearch {
   /** Each shared start, by its wall, once begun, and how its last piece went. */
   private readonly starts = new Map<
     string,
-    { run: RolloutRun; at: 'placed' | 'halted' | 'done' }
+    { run: RolloutRun; at: 'placed' | 'tried' | 'halted' | 'done' }
   >();
   private chosen: ChosenPlan | null = null;
   private readonly weighed: ChosenPlan['weighed'] = [];
@@ -254,7 +234,7 @@ export class PlanSearch {
       const run = this.current as RolloutRun;
       const at = run.advance();
       left--;
-      if (at !== 'placed') this.finish(strategy, run.outcome());
+      if (at === 'halted' || at === 'done') this.finish(strategy, run.outcome());
     }
     return this.complete;
   }
@@ -282,7 +262,7 @@ export class PlanSearch {
       start = { run: fresh(builder), at: 'placed' };
       this.starts.set(key, start);
     }
-    if (start.at === 'placed') {
+    if (start.at === 'placed' || start.at === 'tried') {
       start.at = start.run.advance();
       return 'stepped';
     }

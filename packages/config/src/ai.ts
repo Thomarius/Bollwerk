@@ -256,6 +256,32 @@ export const AiConfigSchema = z
      */
     plansPerTick: z.number().int().positive(),
     /**
+     * Each build phase played out in advance for several strategies, the best kept
+     * (docs/BUILD_PLANNING.md): searched in the intermission, a simulated piece at a time
+     * within the table's budget, and ended at the bot's first piece, so the game never waits.
+     */
+    planning: z.strictObject({
+      enabled: z.boolean(),
+      /**
+       * Simulated pieces a tick the table's bots share. A piece costs about 1.2 ms, at most
+       * 33; at 8, eight Level 8 bots planning cost a tick what today's did (p99 14.6 ms
+       * against 14.9), each weighing 11 strategies a phase; at 16 the worst tick rose to
+       * 130-160 ms.
+       */
+      stepsPerTick: z.number().int().positive(),
+      /** The strategies tried first, most promising first; the rest follow as offered. */
+      order: z.array(z.string().min(1)),
+      /** What an outcome is worth beyond the round's points, in points (`scoreOf`). */
+      weights: z.strictObject({
+        /** Each gun ready for the next barrage: firing, or a reward with room to stand. */
+        gun: z.number().nonnegative(),
+        /** The best castle nearly sealed: the points it would add, times how nearly. */
+        prospect: z.number().nonnegative(),
+        /** A failed round: below anything that seals. */
+        failure: z.number().positive(),
+      }),
+    }),
+    /**
      * How much nearness counts when a bot picks whom to breach by threat: a rival twice as far
      * must be `2 ** this` times the threat. People shot mostly at their nearest rivals, and at
      * a far one only when it threatened most (ARCHIVE 13r). 0: distance does not count.

@@ -1,5 +1,5 @@
 import { defaultAiConfig } from '@bollwerk/config';
-import { Bot, PlanningSlots, takeBotTurns } from '@bollwerk/ai';
+import { Bot, tableSlots, takeBotTurns } from '@bollwerk/ai';
 import { Rng, createMatch, hashMatchState, step, type Action } from '@bollwerk/sim';
 import { describe, expect, it } from 'vitest';
 
@@ -48,7 +48,7 @@ describe('the bots’ table, as the worker keeps it', () => {
     table.handle(init);
     // The same table, driven as a room drives its bots.
     const state = createMatch(init.options);
-    const slots = new PlanningSlots(init.plansPerTick);
+    const slots = tableSlots(defaultAiConfig);
     const bots = new Map(
       init.bots.map(({ player, setup }) => [
         player,
@@ -71,7 +71,7 @@ describe('the bots’ table, as the worker keeps it', () => {
       else expect(answer.hash).toBeUndefined();
     }
     expect(acted).toBeGreaterThan(20);
-  });
+  }, 60_000);
 
   it('drops a turn for another match, or for a tick the mirror is not on', () => {
     const { init } = initOf([4, 6], 3);

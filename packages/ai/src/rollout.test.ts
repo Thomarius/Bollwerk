@@ -33,7 +33,11 @@ describe('a build phase rolled out', () => {
         players: SETUPS.map((_, i) => ({ name: `b${i}`, isBot: true })),
       });
       const rng = new Rng(seed);
-      const bots = SETUPS.map((setup, id) => new Bot(id, setup));
+      // The ladder, live, against which the ladder's rollouts are checked.
+      const bots = SETUPS.map(
+        (setup, id) =>
+          new Bot(id, setup, defaultAiConfig, new PlanningSlots(), { plansAhead: false }),
+      );
       let predicted: Map<number, { placements: Placement[]; result: RoundResult | null }> | null =
         null;
       const laid = new Map<number, Placement[]>();

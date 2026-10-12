@@ -128,6 +128,21 @@
     }
   },
   "plansPerTick": 2,
+  "planning": {
+    "enabled": true,
+    "stepsPerTick": 8,
+    "order": [
+      "leanLadder",
+      "alone1/reachAll",
+      "alone2/next",
+      "alone1/next",
+      "alone2/reachAll",
+      "alone1/reach2#2",
+      "alone3/reachAll",
+      "guns/reach2#1"
+    ],
+    "weights": { "gun": 20, "prospect": 0.5, "failure": 100000 }
+  },
   "rivalDistanceExponent": 2,
   "aim": {
     "accuracyAtLevel1": 0.6,

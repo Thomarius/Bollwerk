@@ -255,3 +255,28 @@ commit, not v0.9.3: its two fixes change how bots play.
     `PlanningSlots` its steps. Also a test of the interference fallback with a person
     building on a bot teammate's island: the builder takes over with the chosen strategy's
     walls, one plan, no new search.
+- **Switched on in the game** (2026-10-12): `ai.planning` in `ai.default.json` (`enabled`,
+  `stepsPerTick` 8, the `order`, the score's `weights`). Every driver makes its table's slots
+  with `tableSlots(ai)`: the room, the local worker (bot protocol 2, the worker reads the
+  config itself) and the page's thread. The worker and the thread still play the very same
+  match with planning on (`workerDriver.test.ts`, `localMatch.test.ts`).
+  - **Two faults found switching it on.** One search start needed a whole tick's steps, which
+    a bot already searching took first, so later bots never began: one start a tick now
+    (`takeStart`), its share spent on weighing its walls. And a step ran until a piece was
+    laid, so a builder with nothing left to lay planned every quarter second to the phase's
+    end inside one step, up to 260 ms: a step now ends at every look at the board
+    (`Builder.attempts`). The deadline is now the bot's first piece by its pace, not a finished
+    rollout's: with none finished, the search had run on past the first piece's tick, and at
+    4 steps a tick 102 phases could not be laid as planned.
+  - **The cost**, eight Level 8 bots all planning, 3 matches, on a loaded machine (load 6–8):
+    the bots' time a tick p99 24.5–26.4 ms, p99.9 47–53, worst 100–270, against 13.9–15.8,
+    34–41 and 85–150 for today's bots; 7.8 strategies a phase. At 4 steps a tick: p99 18.9,
+    p99.9 38.6. **To be measured again on a quiet machine**, and 4 kept in mind if play
+    shows hitches.
+  - **A person building on a bot teammate's island**: before each planned piece the bot
+    counts the wall on its island against the search's snapshot and its own pieces since. If
+    they differ, the builder takes over at once with the chosen strategy's walls, planned
+    afresh, with no new search (the user's rule). Tested.
+  - **Tests**: the whole-match ladder tests (`testing.ts`'s `bot`, `rollout.test.ts`) build by
+    the ladder alone (`plansAhead: false`). With unlimited steps they planned every strategy
+    and the suite took 9.5 minutes. Planning has its own tests.

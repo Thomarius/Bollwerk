@@ -42,7 +42,7 @@ export function rollOutBuild(
 ): Rollout | null {
   const run = RolloutRun.start(state, playerId, builder, rng);
   if (run === null) return null;
-  while (run.advance() === 'placed');
+  for (let at = run.advance(); at === 'placed' || at === 'tried'; at = run.advance());
   return run.outcome();
 }
 
@@ -77,12 +77,14 @@ export class RolloutRun {
   }
 
   /**
-   * Plays on until a piece is laid, the builder halts — on the tick it halted, not yet
+   * Plays on until a piece is laid or the builder has looked at the board and laid nothing,
+   * the builder halts — on the tick it halted, not yet
    * stepped, for a branch to take it from there — or the phase is over.
    */
-  advance(): 'placed' | 'halted' | 'done' {
+  advance(): 'placed' | 'tried' | 'halted' | 'done' {
     const { board, builder, rng } = this;
     while (board.phase === 'build') {
+      const attempts = builder.attempts;
       const action = builder.build(board, rng);
       if (builder.halted) return 'halted';
       let placed = false;
@@ -97,6 +99,10 @@ export class RolloutRun {
       }
       step(board);
       if (placed) return 'placed';
+      // A look that laid nothing — nothing fitted, and the builder stands down a while — is
+      // a step too: a builder with nothing left to lay would otherwise plan again every
+      // quarter second to the phase's end inside one step, up to 260 ms (2026-10-12).
+      if (builder.attempts !== attempts) return 'tried';
     }
     return 'done';
   }

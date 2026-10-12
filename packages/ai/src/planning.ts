@@ -1,3 +1,5 @@
+import { type AiConfig } from '@bollwerk/config';
+
 /**
  * The plans a table's bots may make on one tick, shared between them.
  *
@@ -27,14 +29,17 @@ export class PlanningSlots {
     readonly stepsPerTick: number = Number.POSITIVE_INFINITY,
   ) {}
 
-  /** All of `wanted` simulated pieces on this tick, or none if fewer are left. */
-  takeAllSteps(tick: number, wanted: number): boolean {
-    if (tick !== this.stepsTick) {
-      this.stepsTick = tick;
-      this.stepsUsed = 0;
-    }
-    if (this.stepsPerTick - this.stepsUsed < wanted) return false;
-    this.stepsUsed += wanted;
+  private startTick = -1;
+
+  /**
+   * Whether a bot may begin its build search on this tick: one a tick at a table, since
+   * weighing the walls a search starts from costs what a dozen simulated pieces do, and
+   * eight bots beginning on one tick took 130-180 ms (Level 8, 2026-10-12).
+   */
+  takeStart(tick: number): boolean {
+    if (this.stepsPerTick === Number.POSITIVE_INFINITY) return true;
+    if (tick === this.startTick) return false;
+    this.startTick = tick;
     return true;
   }
 
@@ -59,6 +64,14 @@ export class PlanningSlots {
     this.used++;
     return true;
   }
+}
+
+/**
+ * The slots a table's bots share, as the rules for bots set them: every driver of bots — a
+ * room, a local match's worker or thread, the harness — makes its table's with this.
+ */
+export function tableSlots(ai: AiConfig): PlanningSlots {
+  return new PlanningSlots(ai.plansPerTick, ai.planning.stepsPerTick);
 }
 
 /**

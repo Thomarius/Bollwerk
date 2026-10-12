@@ -101,7 +101,7 @@ describe('the bots in a worker', () => {
     // Built and fought over, and hashed every 30 ticks: the states, not only the actions.
     expect(expected.length).toBeGreaterThan(100);
     expect(ticksBefore(worker.lines, TICKS)).toEqual(expected);
-  });
+  }, 60_000);
 
   it('take the person’s moves made while a turn is out on the next tick', () => {
     const transport = new TimerTransport(new Rng(2));

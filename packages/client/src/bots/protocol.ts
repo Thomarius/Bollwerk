@@ -9,7 +9,7 @@ import type { Action, MatchOptions } from '@bollwerk/sim';
  */
 
 /** Raised whenever a message changes shape: a page and a worker from different builds. */
-export const BOT_PROTOCOL_VERSION = 1;
+export const BOT_PROTOCOL_VERSION = 2;
 
 /** A fresh match: the worker's mirror, made from the very options the page's state was. */
 export interface InitMessage {
@@ -20,7 +20,6 @@ export interface InitMessage {
   /** Each bot as the page dealt it (`dealSeats`), by player. */
   bots: { player: number; setup: BotSetup }[];
   humanPlayer: number;
-  plansPerTick: number;
   rngSeed: number;
 }
 

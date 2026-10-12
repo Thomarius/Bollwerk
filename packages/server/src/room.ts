@@ -13,7 +13,7 @@ import {
   type ServerConfig,
   type TerrainConfig,
 } from '@bollwerk/config';
-import { Bot, PlanningSlots, dealSeats } from '@bollwerk/ai';
+import { Bot, dealSeats, tableSlots } from '@bollwerk/ai';
 import {
   ActionSchema,
   MatchRecorder,
@@ -594,7 +594,7 @@ export class Room {
 
     // The plans the bots may make on one tick between them, a fresh set each match. A seat
     // a person holds still gets a bot, ready to cover them if they drop.
-    const slots = new PlanningSlots(this.options.ai.plansPerTick);
+    const slots = tableSlots(this.options.ai);
     const bots = new Map<number, Bot>();
     for (const seat of this.seats) {
       const setup = setups[seat.playerId] as BotSetup;
