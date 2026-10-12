@@ -66,6 +66,8 @@ interface Args {
   maxRounds: number | null | undefined;
   /** Recordings to replay, files or directories of them, instead of running bots. */
   replay: string[];
+  /** Per seat, repeating: whether its bot plays each build phase out in advance. */
+  plans: boolean[];
 }
 
 /**
@@ -99,7 +101,7 @@ function parsePersonalities(value: string | undefined): (Personality | 'dealt')[
 const USAGE =
   'usage: npm start -w @bollwerk/headless -- [--matches N] [--players N] [--seed N] ' +
   '[--max-ticks N] [--max-rounds N|none] [--teams N] [--level 1-10[,...]] ' +
-  '[--personality offensive|dealt|...[,...]] [--stats FILE] [--outcomes FILE] [--map]\n' +
+  '[--personality offensive|dealt|...[,...]] [--plans 1,0[,...]] [--stats FILE] [--outcomes FILE] [--map]\n' +
   '       npm start -w @bollwerk/headless -- --replay recordings/ [more files or dirs] [--stats FILE]\n' +
   '       npm start -w @bollwerk/headless -- --tournament [--help for its flags]';
 
@@ -157,6 +159,7 @@ function parseArgs(argv: string[]): Args {
           : number('max-rounds', 0, 1),
     teams: number('teams', 1, 1),
     replay: values.replay === true ? positionals : [],
+    plans: (values.plans ?? '0').split(',').map((v) => v.trim() === '1'),
   };
 }
 
@@ -169,6 +172,7 @@ const FLAGS = {
   teams: { type: 'string' },
   level: { type: 'string' },
   personality: { type: 'string' },
+  plans: { type: 'string' },
   stats: { type: 'string' },
   outcomes: { type: 'string' },
   map: { type: 'boolean' },
@@ -328,6 +332,11 @@ if (args.map) {
   process.exit(0);
 }
 
+/** Whether a seat's bot plays its build phases out in advance (BUILD_PLANNING.md). */
+function seatPlans(p: number): boolean {
+  return args.plans[p % args.plans.length] === true;
+}
+
 /** Who sits in each seat — a level and a personality — repeating the lists as needed. */
 function seatSetup(p: number, seed: number): BotSetup {
   const personality = args.personalities[p % args.personalities.length] as Personality | 'dealt';
@@ -343,7 +352,7 @@ function seatSetup(p: number, seed: number): BotSetup {
 /** How a seat is named in the output: `L5`, with a fixed personality after it. */
 function seatLabel(p: number): string {
   const personality = args.personalities[p % args.personalities.length] as Personality | 'dealt';
-  const level = `L${args.levels[p % args.levels.length]}`;
+  const level = `L${args.levels[p % args.levels.length]}${seatPlans(p) ? '+plan' : ''}`;
   if (personality === 'dealt') return `${level} dealt`;
   const words = personalityWords(personality);
   return words === personalityWords(BALANCED) ? level : `${level} ${words}`;
@@ -371,6 +380,10 @@ let refusedTotal = 0;
 let totalTicks = 0;
 let totalRounds = 0;
 let unfinished = 0;
+// The strategies planning bots chose, by kind, and the phases whose plan did not come true.
+const chosenPlans = new Map<string, number>();
+const noted = new Set<object>();
+let diverged = 0;
 
 for (let i = 0; i < args.matches; i++) {
   const seed = args.seed + i;
@@ -386,20 +399,34 @@ for (let i = 0; i < args.matches; i++) {
   });
   const rng = new Rng(seed);
   const slots = new PlanningSlots(bundle.ai.plansPerTick);
-  const bots = state.players.map((p) => new Bot(p.id, seatSetup(p.id, seed), bundle.ai, slots));
+  const bots = state.players.map(
+    (p) => new Bot(p.id, seatSetup(p.id, seed), bundle.ai, slots, { plansAhead: seatPlans(p.id) }),
+  );
   let refused = 0;
 
   const sampler = new RoundStats(bundle, `sim-${seed}`, seed, (p) => seatSetup(p, seed));
 
   while (state.phase !== 'game_over' && state.tick < args.maxTicks) {
+    const before = state.phase;
     for (const turn of takeBotTurns(state, rng, (player) => bots[player])) {
       if (turn.rejection !== null) refused++;
+    }
+    if (before === 'intermission' && state.pendingPhase === 'build') {
+      for (const bot of bots) {
+        const plan = bot.lastPlan;
+        if (plan === null || noted.has(plan)) continue;
+        noted.add(plan);
+        // A castle walled alone is one kind, whichever castle it is.
+        const kind = plan.name.replace(/^c\d+/, 'alone');
+        chosenPlans.set(kind, (chosenPlans.get(kind) ?? 0) + 1);
+      }
     }
     step(state);
     const events = drainEvents(state);
     if (args.stats !== null) sampler.observe(state, events);
   }
   stats.push(...sampler.rows);
+  for (const bot of bots) diverged += bot.diverged;
   if (refused > 0) refusedTotal += refused;
 
   if (args.teams > 1) layouts.push(teamLayout(state));
@@ -435,6 +462,13 @@ for (const [outcome, count] of [...outcomes].sort((a, b) => b[1] - a[1])) {
 }
 
 if (layouts.length > 0) summariseTeams(layouts);
+
+if (chosenPlans.size > 0) {
+  console.log(`\nplans chosen (${diverged} phase(s) went otherwise than planned):`);
+  for (const [name, count] of [...chosenPlans].sort((a, b) => b[1] - a[1])) {
+    console.log(`  ${String(count).padStart(5)}  ${name}`);
+  }
+}
 
 // Only meaningful with a mixed table; with one kind of seat it is a seat count, worth
 // seeing anyway because a symmetric map is supposed to make it a flat one.

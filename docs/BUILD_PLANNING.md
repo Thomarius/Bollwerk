@@ -163,3 +163,41 @@ commit, not v0.9.3: its two fixes change how bots play.
   construction. Eight strategies for each of eight Level 10 bots come to about 9 s of work
   against a 5 s window, as estimated: the work must be spread over ticks (step 5), and the
   number of strategies kept small or their shared start computed once.
+
+- **Step 2, the ceiling** (2026-10-12): `buildPlanning.ts` (`strategiesFor`, `choosePlan`,
+  `scoreOf`), a `Strategy` a `Builder` may follow (`follow`), and a `Bot` with `plansAhead`
+  that plans in the intermission and lays the chosen rollout's pieces on their ticks
+  (`playPlan`), its slips drawn from a stream seeded when it plans; the harness's `--plans
+1,0,0` seats such bots. Strategies: the ladder; then from each first wall — the walls held,
+  or when breached the tightest repair keeping the guns and each castle walled alone without
+  them — the wall thickened, reaching on (`spareWork`), with room, with each castle beyond it
+  tight and with room, and with every castle. Up to 51 a phase on an island of four
+  castles. Score: the round's points, 20 a gun ready (firing, or a reward with room), and
+  half the best prospect; a failed round −100,000.
+
+  The first try started every repair with the wall keeping the guns, too dear after a
+  barrage: every strategy but the ladder failed the rounds the bot was breached in. Walling
+  each castle alone as an alternative first wall fixed it.
+
+  One planning bot against two of today's, three players, 32 matches with the planning bot in
+  each seat (96), against the same seeds with no planning bot (each seat's own baseline, per
+  seat averaged):
+
+  |                   | wins of 32 | score | territory a round | castles | guns firing | failed rounds | pieces | wall tiles |
+  | ----------------- | ---------- | ----- | ----------------- | ------- | ----------- | ------------- | ------ | ---------- |
+  | Level 5, today    | 10.7       | 2,230 | 187               | 2.0     | 6.9         | 8.6%          | 15.1   | 110        |
+  | Level 5, planning | **19.0**   | 2,831 | 246               | 2.4     | 7.5         | 7.7%          | 14.9   | 110        |
+  | Level 8, today    | 10.7       | 3,519 | 307               | 2.3     | 6.7         | 12.7%         | 20.3   | 109        |
+  | Level 8, planning | **22.7**   | 4,641 | 411               | 2.9     | 8.7         | 9.6%          | 19.5   | 119        |
+
+  The opponents' scores barely move (Level 5 2,230 → 2,265; Level 8 3,519 → 3,388). Every plan
+  came true (0 divergences in 192 matches). Chosen: the ladder in 29% of phases at Level 5 and
+  40% at Level 8; thickening as the spare work only 7–9%; reaching for another castle (`reach`,
+  `reachAll`) 40% at Level 5 and 26% at Level 8; the bot almost never opens a phase with its
+  wall whole (`hold` under 1%). **The ceiling is far above the ladder; step 2's gate is
+  passed.**
+
+  The cost: a planning bot's matches took 17 s at Level 5 and 23 s at Level 8, against 2.5
+  and 3.6 s, so about 1.5–2 s of planning a round for each bot, about 50 rollouts. Far over
+  what real time allows (step 5): the strategies must be pruned to those that win, measured
+  by how often each is chosen and what the score loses without it.

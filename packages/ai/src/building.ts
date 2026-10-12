@@ -75,6 +75,28 @@ const BULGE_SEEDS = 8;
 const CASTLE_BANDS = [0, 2];
 
 /**
+ * A way to spend a build phase, for a bot that plays its phase out in advance and keeps
+ * the best (BUILD_PLANNING.md): walls built in turn, each round the castles it names, and
+ * what to do once they stand.
+ */
+export interface Strategy {
+  name: string;
+  stages: Stage[];
+  /**
+   * Once every stage stands: the ladder's own choice (`decide`), thickening, or the next
+   * castle and more room (`spareWork`).
+   */
+  spare: 'ladder' | 'thicken' | 'next';
+}
+
+/** One wall of a strategy: round these castles, with this band of room, the guns kept or not. */
+export interface Stage {
+  castleIds: number[];
+  radius: number;
+  keepCannons: boolean;
+}
+
+/**
  * What one turn works out about the board, for everything the turn decides: the board
  * cannot change within a turn, and a plan asked the same questions of it several times.
  */
@@ -112,6 +134,9 @@ export class Builder {
     private readonly profile: BotProfile,
     private readonly slots: PlanningSlots,
   ) {}
+
+  /** The strategy this phase follows, or null for the ladder (`decide`). */
+  strategy: Strategy | null = null;
 
   /**
    * The wider wall it is building, by `widen`'s key and the ground it was asked to take in,
@@ -238,7 +263,8 @@ export class Builder {
       // No plan left at the table this tick: try again on the next.
       if (!this.slots.take(state.tick)) return null;
       this.markUncoverable(state);
-      this.plan = this.decide(state, look);
+      this.plan =
+        this.strategy === null ? this.decide(state, look) : this.follow(state, look, this.strategy);
       this.plannedAt = state.tick;
     }
 
@@ -562,6 +588,28 @@ export class Builder {
     const hold =
       this.widestAffordable(seal, 1, true, budget) ?? seal.cheapest(1, this.profile.maxCastles);
     return hold?.tiles ?? [];
+  }
+
+  /**
+   * A strategy's plan: the first of its walls not yet standing, then its spare work. A wall
+   * stands when the cheapest cut round its castles needs no more tiles; one no longer
+   * possible, its every way through ruled out, is passed over.
+   */
+  private follow(state: MatchState, look: Look, strategy: Strategy): number[] {
+    const seal = new SealPlanner(state, this.playerId, this.unreachable);
+    for (const stage of strategy.stages) {
+      const castles = state.castles.filter((c) => stage.castleIds.includes(c.id));
+      const wall = seal.wall(castles, stage.keepCannons, stage.radius);
+      if (wall !== null && wall.tiles.length > 0) return wall.tiles;
+    }
+    switch (strategy.spare) {
+      case 'ladder':
+        return this.decide(state, look);
+      case 'thicken':
+        return this.profile.thickens ? look.thickenTargets() : [];
+      case 'next':
+        return this.spareWork(state);
+    }
   }
 
   /** Cells it could still lay this phase, at its pace, with the bag's average piece. */

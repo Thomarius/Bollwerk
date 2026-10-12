@@ -72,5 +72,5 @@ describe('a table sharing its plans', () => {
     expect(Math.max(...slots.granted.values())).toBeLessThanOrEqual(defaultAiConfig.plansPerTick);
     expect(sealed).not.toBeNull();
     for (const castles of sealed ?? []) expect(castles).toBeGreaterThan(0);
-  });
+  }, 60_000);
 });

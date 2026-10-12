@@ -6,13 +6,26 @@ import {
   type BotProfile,
   type BotSetup,
 } from '@bollwerk/config';
-import { type Action, type MatchState, type Rng } from '@bollwerk/sim';
+import { Rng, canPlacePiece, type Action, type MatchState } from '@bollwerk/sim';
 
 import { Builder } from './building.js';
+import {
+  DEFAULT_PLAN_WEIGHTS,
+  choosePlan,
+  type ChosenPlan,
+  type PlanWeights,
+} from './buildPlanning.js';
 import { IslandCentres } from './botTurn.js';
 import { Gunner } from './combat.js';
 import { PlanningSlots } from './planning.js';
 import { Siting } from './siting.js';
+
+/** How a bot spends its build phases beyond its level and personality. */
+export interface BotOptions {
+  /** Plays each build phase out in advance for several strategies and keeps the best. */
+  plansAhead?: boolean;
+  planWeights?: PlanWeights;
+}
 
 /**
  * A bot.
@@ -43,6 +56,7 @@ export class Bot {
     setup: BotSetup = { level: 5, personality: BALANCED },
     ai: AiConfig = defaultAiConfig,
     slots: PlanningSlots = new PlanningSlots(),
+    private readonly options: BotOptions = {},
   ) {
     this.setup = setup;
     this.profile = botProfile(ai, setup);
@@ -50,6 +64,20 @@ export class Bot {
     this.gunner = new Gunner(playerId, this.profile, islands);
     this.builder = new Builder(playerId, this.profile, slots);
     this.siting = new Siting(playerId, this.profile, slots, islands, this.builder);
+  }
+
+  /** The plan chosen for the current or coming build phase, and its round. */
+  private chosen: {
+    round: number;
+    plan: ChosenPlan;
+    next: number;
+    rng: Rng;
+    /** False once the board has gone otherwise than the rollout said. */
+    onPlan: boolean;
+  } | null = null;
+  /** The plan this phase follows, for the harness to report. */
+  get lastPlan(): ChosenPlan | null {
+    return this.chosen?.plan ?? null;
   }
 
   think(state: MatchState, rng: Rng): Action | null {
@@ -62,8 +90,14 @@ export class Bot {
         return this.siting.chooseCastle(state, rng);
       case 'combat':
         return this.gunner.shoot(state, rng);
+      case 'intermission':
+        if (this.options.plansAhead === true) this.planAhead(state, rng);
+        return null;
       case 'build':
-        return this.builder.build(state, rng);
+        if (this.chosen?.round !== state.round) return this.builder.build(state, rng);
+        return this.chosen.onPlan
+          ? this.playPlan(state)
+          : this.builder.build(state, this.chosen.rng);
       case 'cannon_place':
         // A bot that has just spent a continue owes a castle before it owes anything
         // else: without one it has no territory, so no gun has anywhere to stand.
@@ -75,4 +109,53 @@ export class Bot {
         return null;
     }
   }
+
+  /**
+   * In the intermission before a build phase, once the last shot is down and the board
+   * fixed: the phase played out for every strategy, and the best kept (BUILD_PLANNING.md).
+   * Its random draws, for a sloppy level's fits, come from a stream seeded now, so the
+   * phase plays as the rollout did.
+   */
+  private planAhead(state: MatchState, rng: Rng): void {
+    if (state.pendingPhase !== 'build' || state.shots.length > 0) return;
+    if (this.chosen?.round === state.round) return;
+    const seed = rng.nextU32();
+    const plan = choosePlan(
+      state,
+      this.playerId,
+      this.profile,
+      seed,
+      this.options.planWeights ?? DEFAULT_PLAN_WEIGHTS,
+    );
+    this.builder.strategy = plan?.strategy ?? null;
+    this.chosen =
+      plan === null
+        ? null
+        : { round: state.round, plan, next: 0, rng: new Rng(seed), onPlan: true };
+  }
+
+  /**
+   * The chosen rollout's pieces, each on its tick. Should the board have gone otherwise — a
+   * piece refused, its tick missed — the builder takes over with the same strategy.
+   */
+  private playPlan(state: MatchState): Action | null {
+    const chosen = this.chosen as NonNullable<typeof this.chosen>;
+    const next = chosen.plan.placements[chosen.next];
+    if (next === undefined) return null;
+    if (state.tick < next.tick) return null;
+    if (
+      state.tick === next.tick &&
+      canPlacePiece(state, this.playerId, next.rotation, next.x, next.y) === null
+    ) {
+      chosen.next++;
+      const { x, y, rotation } = next;
+      return { kind: 'place_piece', player: this.playerId, x, y, rotation };
+    }
+    this.diverged++;
+    chosen.onPlan = false;
+    return this.builder.build(state, chosen.rng);
+  }
+
+  /** Phases whose plan did not come true, for the harness. */
+  diverged = 0;
 }

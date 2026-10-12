@@ -312,6 +312,22 @@ export class SealPlanner {
     return plan;
   }
 
+  /**
+   * The smallest wall round exactly these castles, with this much band round each and the
+   * guns kept or not: a build plan's stage (BUILD_PLANNING.md), which names its castles
+   * rather than asking for a count of them.
+   */
+  wall(castles: readonly Castle[], keepCannons: boolean, roomRadius: number): SealPlan | null {
+    const key = `wall:${castles.map((c) => c.id).join('+')}:${keepCannons}:${roomRadius}`;
+    let plan = this.grounds.get(key);
+    if (plan === undefined) {
+      const graph = (this.graph ??= new SealGraph(this.state, this.playerId, this.blocked));
+      plan = graph.plan(castles, keepCannons, roomRadius);
+      this.grounds.set(key, plan);
+    }
+    return plan;
+  }
+
   /** The plans `options` would hold that could take in this many castles, as made. */
   private candidates(
     atLeastCastles: number,
