@@ -269,6 +269,18 @@ export const AiConfigSchema = z
        * 130-160 ms.
        */
       stepsPerTick: z.number().int().positive(),
+      /**
+       * The guns a plan should leave ready for the next barrage — firing, or a reward with
+       * room — the user's minimum (2026-10-12): a plan reaching it is chosen over any that
+       * does not. 0: no minimum.
+       */
+      minGuns: z.number().int().nonnegative(),
+      /**
+       * With no plan reaching `minGuns`, fail the round on purpose and spend a life — a
+       * fresh castle, ring and the starting guns — while the team has one to spare, the
+       * round is not the last, and nobody in the team is a person, whose lives they share.
+       */
+      failsOnPurpose: z.boolean(),
       /** The strategies tried first, most promising first; the rest follow as offered. */
       order: z.array(z.string().min(1)),
       /** What an outcome is worth beyond the round's points, in points (`scoreOf`). */

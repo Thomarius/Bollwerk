@@ -280,3 +280,37 @@ commit, not v0.9.3: its two fixes change how bots play.
   - **Tests**: the whole-match ladder tests (`testing.ts`'s `bot`, `rollout.test.ts`) build by
     the ladder alone (`plansAhead: false`). With unlimited steps they planned every strategy
     and the suite took 9.5 minutes. Planning has its own tests.
+- **The user's first match against planning bots** (2026-10-12, `20261012-122157-local-12pi7wy`,
+  three Level 5 bots, replayed exactly): Thomas 4,184, the bots 3,599, 3,223 and 2,881
+  (v0.9.2's Level 5 bots: 1,220 and 844). Per round: Thomas 369 territory points, 2.7
+  castles, 8.8 guns firing (100%), 10% of rounds failed. The bots: 284, 2.6 castles, 9.1 guns
+  firing of 12.9 (70%), 7% failed, fewer pieces than he laid (15.1 against 16.7). No hitches
+  felt, at four players or at eight. "A bit too strong for Level 5." The bots often walled all
+  four castles, then after a heavy breach sealed one tiny castle with every gun outside: 0 of
+  17–22 guns firing in four bot rounds. The `alone…` strategies bypass the ladder's rule
+  against hollow seals (ARCHIVE 13t), and step 4's minimum is the answer.
+- **The user's decisions** (2026-10-12): **Thomas should be on par with Level 6**. Levels are
+  told apart by how far they search, and **weaker bots sometimes choose a worse plan**, like
+  a person's mistake under time pressure. **Every strategy stays open to every level.** The
+  order of work: step 4, then step 6. Step 3, the weights, only if still needed.
+- **Step 4, the minimum of three guns** (2026-10-12): `ai.planning.minGuns` and
+  `failsOnPurpose`. A plan leaving three guns ready is chosen over any that does not; with
+  none, and a life to spare (not the last round, no person in the team), the bot lays
+  nothing and takes the continue. One such bot against two of today's planning bots, three
+  players, 16 matches a seat (seeds 1–16), in each seat:
+
+  |                                 | wins of 16 | score | territory | guns firing | of owned | failed rounds |
+  | ------------------------------- | ---------- | ----- | --------- | ----------- | -------- | ------------- |
+  | Level 5, today's planning       | 5.3        | 2,825 | 245       | 7.3         | 63%      | 7.1%          |
+  | Level 5, minimum 3, fails       | 5.0        | 2,809 | 243       | 7.5         | **90%**  | 11.0%         |
+  | Level 5, minimum 3, never fails | 5.7        | 2,872 | 249       | 7.4         | 64%      | 7.1%          |
+  | Level 8, today's planning       | 5.3        | 4,449 | 392       | 8.4         | 72%      | 9.2%          |
+  | Level 8, minimum 3, fails       | 6.3        | 4,707 | 417       | 8.7         | **89%**  | 11.9%         |
+  | Level 8, minimum 3, never fails | 5.3        | 4,449 | 392       | 8.5         | 72%      | 9.2%          |
+
+  The minimum alone changes almost nothing: when the best plan is hollow, no plan reaches
+  three guns. Failing on purpose ends the dead guns (63–72% of guns firing → 89–90%), about
+  one round a match given up, with no eliminations and the score even (Level 5 −0.6%) or
+  better (Level 8 +5.8%, within noise at 16 matches). **Kept: `minGuns` 3, `failsOnPurpose`
+  true.** The minimums of 2 and 4 were not measured: the soak at three planning bots a table
+  ran too slowly on a busy machine, and the result is clear enough.

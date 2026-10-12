@@ -131,6 +131,8 @@
   "planning": {
     "enabled": true,
     "stepsPerTick": 8,
+    "minGuns": 3,
+    "failsOnPurpose": true,
     "order": [
       "leanLadder",
       "alone1/reachAll",

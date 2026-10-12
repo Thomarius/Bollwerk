@@ -175,6 +175,7 @@ export class Bot {
         seed,
         this.weights,
         order,
+        this.planning.minGuns,
       );
       if (search === null) return true;
       // The phase begins as the intermission ends, the last shot down; the first piece is due
@@ -200,6 +201,27 @@ export class Bot {
 
     const plan = search.best();
     this.search = null;
+    // Short of the minimum of guns, a life to spare: the round given up, nothing laid, for a
+    // fresh castle, ring and starting guns (`ai.planning.failsOnPurpose`).
+    if (
+      plan !== null &&
+      plan.guns < this.planning.minGuns &&
+      this.planning.failsOnPurpose &&
+      this.maySpareALife(state)
+    ) {
+      this.builder.strategy = null;
+      this.gaveUp++;
+      const quit = { ...plan, strategy: null, name: 'continue', placements: [] };
+      this.chosen = {
+        round: state.round,
+        plan: quit,
+        next: 0,
+        rng: new Rng(seed),
+        onPlan: true,
+        walls,
+      };
+      return true;
+    }
     // When every plan weighed fails the round, or none was played out in time, the ladder
     // builds live, as it did before planning.
     const fails = plan === null || plan.score <= -this.weights.failure / 2;
@@ -243,6 +265,24 @@ export class Bot {
 
   /** Phases whose plan did not come true, for the harness. */
   diverged = 0;
+
+  /** Rounds given up on purpose, for the harness. */
+  gaveUp = 0;
+
+  /**
+   * Whether failing this round on purpose is the bot's to choose: its team has a life left
+   * and fails a round for want of a sealed castle, the round is not the last — a life spent
+   * there buys nothing — and nobody in the team is a person, whose lives these are too.
+   */
+  private maySpareALife(state: MatchState): boolean {
+    const player = state.players[this.playerId];
+    const team = player === undefined ? undefined : state.teams[player.team];
+    if (team === undefined || team.continuesRemaining <= 0) return false;
+    if (!state.ruleset.elimination.onZeroEnclosedCastles) return false;
+    const last = state.ruleset.scoring.maxRounds;
+    if (last !== null && state.round >= last) return false;
+    return state.players.every((p) => p.team !== team.id || p.isBot);
+  }
 
   /**
    * Wall standing on its island. Within a build phase only pieces add to it, so its own

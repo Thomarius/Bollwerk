@@ -8,6 +8,7 @@ import {
   parsePersonality,
   personalityWords,
   validateConfigBundle,
+  type AiConfig,
   type BotSetup,
   type Personality,
 } from '@bollwerk/config';
@@ -74,6 +75,10 @@ interface Args {
   planSet: string[] | null;
   /** Simulated pieces a tick the table's planning bots share; unlimited when null. */
   planSteps: number | null;
+  /** Per seat, repeating: the minimum of guns a plan should leave; the config's when null. */
+  minGuns: number[] | null;
+  /** Per seat, repeating: whether it fails a round on purpose short of them. */
+  failOnPurpose: boolean[] | null;
 }
 
 /**
@@ -168,6 +173,8 @@ function parseArgs(argv: string[]): Args {
     planLog: values['plan-log'] ?? null,
     planSet: values['plan-set']?.split(',') ?? null,
     planSteps: values['plan-steps'] === undefined ? null : Number(values['plan-steps']),
+    minGuns: values['min-guns']?.split(',').map(Number) ?? null,
+    failOnPurpose: values['fail-on-purpose']?.split(',').map((v) => v.trim() === '1') ?? null,
     plans: values.plans?.split(',').map((v) => v.trim() === '1') ?? [bundle.ai.planning.enabled],
   };
 }
@@ -185,6 +192,8 @@ const FLAGS = {
   'plan-log': { type: 'string' },
   'plan-set': { type: 'string' },
   'plan-steps': { type: 'string' },
+  'min-guns': { type: 'string' },
+  'fail-on-purpose': { type: 'string' },
   stats: { type: 'string' },
   outcomes: { type: 'string' },
   map: { type: 'boolean' },
@@ -344,6 +353,16 @@ if (args.map) {
   process.exit(0);
 }
 
+/** The rules for a seat's bot: the config's, with its minimum of guns as the flags set it. */
+function seatAi(p: number): AiConfig {
+  const planning = { ...bundle.ai.planning };
+  if (args.minGuns !== null) planning.minGuns = args.minGuns[p % args.minGuns.length] as number;
+  if (args.failOnPurpose !== null) {
+    planning.failsOnPurpose = args.failOnPurpose[p % args.failOnPurpose.length] as boolean;
+  }
+  return { ...bundle.ai, planning };
+}
+
 /** Whether a seat's bot plays its build phases out in advance (BUILD_PLANNING.md). */
 function seatPlans(p: number): boolean {
   return args.plans[p % args.plans.length] === true;
@@ -397,6 +416,7 @@ const chosenPlans = new Map<string, number>();
 const noted = new Set<object>();
 let diverged = 0;
 let weighedTotal = 0;
+let gaveUp = 0;
 // The bots' time on each tick, all their turns together: what a room waits for.
 const tickMs: number[] = [];
 
@@ -419,7 +439,7 @@ for (let i = 0; i < args.matches; i++) {
   );
   const bots = state.players.map(
     (p) =>
-      new Bot(p.id, seatSetup(p.id, seed), bundle.ai, slots, {
+      new Bot(p.id, seatSetup(p.id, seed), seatAi(p.id), slots, {
         plansAhead: seatPlans(p.id),
         ...(args.planSet === null ? {} : { planStrategies: args.planSet }),
       }),
@@ -456,7 +476,10 @@ for (let i = 0; i < args.matches; i++) {
     if (args.stats !== null) sampler.observe(state, events);
   }
   stats.push(...sampler.rows);
-  for (const bot of bots) diverged += bot.diverged;
+  for (const bot of bots) {
+    diverged += bot.diverged;
+    gaveUp += bot.gaveUp;
+  }
   if (refused > 0) refusedTotal += refused;
 
   if (args.teams > 1) layouts.push(teamLayout(state));
@@ -505,7 +528,7 @@ if (chosenPlans.size > 0) {
   const phases = [...chosenPlans.values()].reduce((a, b) => a + b, 0);
   console.log(
     `\nplans chosen, ${(weighedTotal / phases).toFixed(1)} strategies weighed a phase ` +
-      `(${diverged} phase(s) went otherwise than planned):`,
+      `(${diverged} phase(s) went otherwise than planned, ${gaveUp} round(s) given up):`,
   );
   for (const [name, count] of [...chosenPlans].sort((a, b) => b[1] - a[1])) {
     console.log(`  ${String(count).padStart(5)}  ${name}`);

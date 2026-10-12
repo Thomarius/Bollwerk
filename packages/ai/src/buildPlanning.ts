@@ -39,6 +39,8 @@ export interface ChosenPlan {
   name: string;
   placements: Placement[];
   score: number;
+  /** Guns it leaves ready for the next barrage (`gunsReady`). */
+  guns: number;
   /** Every strategy weighed, for the harness: its name and score. */
   weighed: { name: string; score: number }[];
 }
@@ -173,6 +175,8 @@ export class PlanSearch {
     { run: RolloutRun; at: 'placed' | 'tried' | 'halted' | 'done' }
   >();
   private chosen: ChosenPlan | null = null;
+  /** The best plan leaving at least `minGuns` ready. */
+  private armed: ChosenPlan | null = null;
   private readonly weighed: ChosenPlan['weighed'] = [];
 
   private constructor(
@@ -182,6 +186,7 @@ export class PlanSearch {
     private readonly seed: number,
     private readonly weights: PlanWeights,
     private readonly order: readonly Strategy[],
+    private readonly minGuns: number,
   ) {}
 
   /** A search from the board as it is now; null outside the window before a build phase. */
@@ -192,12 +197,13 @@ export class PlanSearch {
     seed: number,
     weights: PlanWeights,
     order: readonly Strategy[],
+    minGuns = 0,
   ): PlanSearch | null {
     const before = state.phase === 'intermission' && state.pendingPhase === 'build';
     if ((!before && state.phase !== 'build') || state.shots.length > 0) return null;
     // The board as it is now, never as it will be: a search that runs on into the build
     // phase must still play every strategy from the same start.
-    return new PlanSearch(snapshot(state), playerId, profile, seed, weights, order);
+    return new PlanSearch(snapshot(state), playerId, profile, seed, weights, order, minGuns);
   }
 
   /** Whether every strategy has been played out. */
@@ -210,9 +216,12 @@ export class PlanSearch {
     return this.weighed.length;
   }
 
-  /** The best plan played out so far, or null before any. */
+  /**
+   * The best plan played out so far, or null before any: the best leaving at least
+   * `minGuns` ready (`ai.planning.minGuns`), while there is one, over any that leaves fewer.
+   */
   best(): ChosenPlan | null {
-    return this.chosen;
+    return this.armed ?? this.chosen;
   }
 
   /** Plays on for up to `steps` simulated pieces; true once the search is complete. */
@@ -283,15 +292,19 @@ export class PlanSearch {
       this.firstPieceTick = first;
     }
     const score = scoreOf(rollout, this.playerId, this.profile, this.weights);
+    const guns = gunsReady(rollout, this.playerId);
     this.weighed.push({ name: strategy.name, score });
-    if (this.chosen === null || score > this.chosen.score) {
-      this.chosen = {
-        strategy: isLadder(strategy) ? null : strategy,
-        name: strategy.name,
-        placements: rollout.placements,
-        score,
-        weighed: this.weighed,
-      };
+    const plan = (): ChosenPlan => ({
+      strategy: isLadder(strategy) ? null : strategy,
+      name: strategy.name,
+      placements: rollout.placements,
+      score,
+      guns,
+      weighed: this.weighed,
+    });
+    if (this.chosen === null || score > this.chosen.score) this.chosen = plan();
+    if (guns >= this.minGuns && (this.armed === null || score > this.armed.score)) {
+      this.armed = plan();
     }
     this.current = null;
     this.next++;
@@ -338,12 +351,21 @@ export function scoreOf(
   if (result === null || result.eliminated) return -weights.failure * 10;
   if (result.enclosedCastles === 0) return -weights.failure;
   const points = result.territoryPoints + result.damagePoints;
+  const guns = gunsReady(rollout, playerId);
+  return points + weights.gun * guns + weights.prospect * prospect(board, playerId, profile);
+}
+
+/**
+ * The guns a rollout leaves ready for the next barrage: those firing after the round's
+ * resolution, and the reward as far as there is room to stand it. None for a failed round.
+ */
+export function gunsReady(rollout: Rollout, playerId: number): number {
+  const { result, board } = rollout;
+  if (result === null || result.eliminated || result.enclosedCastles === 0) return 0;
   let firing = 0;
   for (const cannon of board.cannons) if (cannon.owner === playerId && cannon.active) firing++;
-  const player = board.players[playerId];
-  const reward = player?.cannonsToPlace ?? 0;
-  const guns = firing + Math.min(reward, cannonRoom(board, playerId));
-  return points + weights.gun * guns + weights.prospect * prospect(board, playerId, profile);
+  const reward = board.players[playerId]?.cannonsToPlace ?? 0;
+  return firing + Math.min(reward, cannonRoom(board, playerId));
 }
 
 /** The best castle outside the wall: the points sealing it would add, times how nearly. */
