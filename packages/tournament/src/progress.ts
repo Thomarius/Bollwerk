@@ -48,13 +48,23 @@ export interface Pairing {
   byes: number[];
 }
 
+/**
+ * What told a team from the one below it in the table when their points were level, in the
+ * order they are tried (TOURNAMENT §1.4).
+ */
+export type TieBreak = 'wins' | 'headToHead' | 'buchholz' | 'placings' | 'draw';
+
 /** A team's line in the league's table. */
 export interface TableRow {
   team: number;
   points: number;
+  /** Matches won outright. */
+  wins: number;
   /** The sum of the points of every team met, once per meeting. */
   buchholz: number;
   played: number;
+  /** What put it above the next row, level with it on points; null when they were not. */
+  tie: TieBreak | null;
 }
 
 export class Progress {
@@ -68,6 +78,8 @@ export class Progress {
   private readonly points: number[];
   private readonly played: number[];
   private readonly opponents: number[][];
+  /** Every league match, played or rolled. */
+  private readonly leagueMatches: MatchRecord[] = [];
   /** Each knockout team's seed, 0 best; null until the knockout begins. */
   private seedRank: Map<number, number> | null = null;
   /** The winners' bracket's teams still in, in bracket order. */
@@ -130,28 +142,92 @@ export class Progress {
 
   /**
    * The league's table, best first (TOURNAMENT §1.4): by points — one for every team
-   * finished ahead of — then Buchholz, then a draw fixed by the seed.
+   * finished ahead of — then matches won; then head-to-head, the points the teams still
+   * level took off each other where they met; then Buchholz; then placings, the most second
+   * places, then thirds and on; then a draw fixed by the seed. A league of two or three
+   * matchdays leaves many teams level on points, and with Buchholz alone the draw decided
+   * places at the cut (the test session of 2026-10-12). No tie-break uses match scores:
+   * rolled matches have none. A save from before keeps Buchholz and the draw alone.
    */
   table(): TableRow[] {
     const order = streamFor(this.save.settings.seed, 'table').shuffle(
       this.save.teams.map((_, id) => id),
     );
     const draw = new Map(order.map((team, index) => [team, index]));
-    const rows = this.save.teams.map((_, team) => ({
-      team,
-      points: this.points[team] as number,
-      buchholz: (this.opponents[team] as number[]).reduce(
-        (sum, o) => sum + (this.points[o] as number),
-        0,
-      ),
-      played: this.played[team] as number,
-    }));
-    return rows.sort(
-      (a, b) =>
-        b.points - a.points ||
-        b.buchholz - a.buchholz ||
-        (draw.get(a.team) as number) - (draw.get(b.team) as number),
+    const teams = this.save.teams.map((_, team) => team);
+    const wins = teams.map(() => 0);
+    // How often each team finished at each place, 0 first.
+    const places = teams.map(() => [] as number[]);
+    for (const match of this.leagueMatches) {
+      match.order.forEach((team, place) => {
+        const counts = places[team] as number[];
+        counts[place] = (counts[place] ?? 0) + 1;
+      });
+      wins[match.order[0] as number]! += 1;
+    }
+    const level = (a: number, b: number): boolean =>
+      this.points[a] === this.points[b] && wins[a] === wins[b];
+    // Head-to-head among the teams level on points and wins: the ones it finished ahead of.
+    const headToHead = teams.map((team) => {
+      let ahead = 0;
+      for (const match of this.leagueMatches) {
+        const at = match.order.indexOf(team);
+        if (at < 0) continue;
+        ahead += match.order.slice(at + 1).filter((other) => level(team, other)).length;
+      }
+      return ahead;
+    });
+    const buchholz = teams.map((team) =>
+      (this.opponents[team] as number[]).reduce((sum, o) => sum + (this.points[o] as number), 0),
     );
+    const placings = (a: number, b: number): number => {
+      const pa = places[a] as number[];
+      const pb = places[b] as number[];
+      for (let place = 1; place < Math.max(pa.length, pb.length); place++) {
+        const d = (pb[place] ?? 0) - (pa[place] ?? 0);
+        if (d !== 0) return d;
+      }
+      return 0;
+    };
+    // Each tie-break as a comparison, better first; the draw never ties. An older save's
+    // table keeps the two it was ranked by.
+    type Compare = (a: number, b: number) => number;
+    const all: [TieBreak, Compare][] = [
+      ['wins', (a, b) => (wins[b] as number) - (wins[a] as number)],
+      ['headToHead', (a, b) => (headToHead[b] as number) - (headToHead[a] as number)],
+      ['buchholz', (a, b) => (buchholz[b] as number) - (buchholz[a] as number)],
+      ['placings', placings],
+      ['draw', (a, b) => (draw.get(a) as number) - (draw.get(b) as number)],
+    ];
+    const breaks =
+      this.save.plan.tieBreaks === 2
+        ? all
+        : all.filter(([name]) => name === 'buchholz' || name === 'draw');
+    /** The first tie-break that tells two teams level on points apart, and how. */
+    const settle = (a: number, b: number): [TieBreak, number] => {
+      for (const [name, compare] of breaks) {
+        const d = compare(a, b);
+        if (d !== 0) return [name, d];
+      }
+      return ['draw', 0];
+    };
+    const ranked = [...teams].sort(
+      (a, b) => (this.points[b] as number) - (this.points[a] as number) || settle(a, b)[1],
+    );
+    return ranked.map((team, index) => {
+      const below = ranked[index + 1];
+      return {
+        team,
+        points: this.points[team] as number,
+        wins: wins[team] as number,
+        buchholz: buchholz[team] as number,
+        played: this.played[team] as number,
+        tie:
+          below === undefined || this.points[below] !== this.points[team]
+            ? null
+            : settle(team, below)[0],
+      };
+    });
   }
 
   /** Called before a step is applied or paired: the knockout is seeded as it begins. */
@@ -220,6 +296,7 @@ export class Progress {
     };
     switch (step.kind) {
       case 'league':
+        this.leagueMatches.push(...record.matches);
         for (const match of record.matches) {
           const n = match.order.length;
           match.order.forEach((team, place) => {

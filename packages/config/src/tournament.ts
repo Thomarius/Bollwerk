@@ -29,6 +29,11 @@ export const TournamentConfigSchema = z.strictObject({
    */
   leagueFactor: z.number().int().min(1),
   /**
+   * The fewest teams a league match has, where the match range and the field allow it: a
+   * smaller size only when no larger one divides the field (`matchdaySizes`).
+   */
+  leagueMinTeams: z.number().int().min(2),
+  /**
    * The largest knockout field: the product of the round sizes is brought under it by
    * lowering the largest, never below the minimum match size (TOURNAMENT §1.3).
    */

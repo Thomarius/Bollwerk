@@ -14,6 +14,7 @@
     }
   },
   "leagueFactor": 2,
+  "leagueMinTeams": 3,
   "maxField": 128,
   "levelRatings": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
   "maxRounds": {

@@ -34,6 +34,7 @@ import type { Common } from './menu.js';
 import { showMenu } from './menu.js';
 import { runSession } from './matchScreen.js';
 import { openBracket } from './tournamentBracketView.js';
+import { openLeague } from './tournamentLeagueView.js';
 import { endingMarkup, tournamentTab } from './tournamentView.js';
 
 /** The lobby, one screen whether a server holds the table or the browser does. */
@@ -62,6 +63,10 @@ export interface LobbyHandlers {
 
 /** Draws the lobby and wires its controls to whichever backend holds the table. */
 export function drawLobby(view: LobbyView, on: LobbyHandlers): void {
+  // A guest is brought back here by the room after a match, never through the menu, and
+  // heard the match's victory music on in the lobby until this (test session, 2026-10-12).
+  // The track already up, this does nothing, so every redraw may ask.
+  audio.music('music_menu');
   // The map, which island each seat is dealt and the colour it plays in: all known now,
   // since the seed is fixed while the table is set. See `preview.ts`.
   const { art, terrain } = defaultConfigBundle;
@@ -164,11 +169,15 @@ export function drawLobby(view: LobbyView, on: LobbyHandlers): void {
   }
 }
 
-/** The bracket's button, where a tournament's tab or end shows one. */
+/** The bracket's button, or in the league the league's, where a tournament's tab or end shows one. */
 export function wireBracket(save: Save, progress: Progress): void {
   document.querySelector('#bracket')?.addEventListener('click', () => {
     audio.play('select');
     openBracket(save, progress, () => audio.play('select'));
+  });
+  document.querySelector('#league')?.addEventListener('click', () => {
+    audio.play('select');
+    openLeague(save, progress, () => audio.play('select'));
   });
 }
 

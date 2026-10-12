@@ -73,11 +73,16 @@ export function loserRounds(rng: Rng, rounds: readonly number[], sizes: MatchSiz
  * to everyone that day — mixed sizes let a team that won every match miss the cut, beaten
  * on points by single wins in larger matches (5% of unbeaten hosts in a Short league, ARCHIVE
  * 12zf). The knockout's first round size always divides the league's field.
+ *
+ * Sizes under `least` only when none at or above it divides: a two-team match is worth 1
+ * or 0, and a league of them over two or three matchdays leaves most of the table tied (the
+ * test session of 2026-10-12 asked for three or four teams a match where the range allows).
  */
-export function matchdaySizes(teams: number, sizes: MatchSizes): number[] {
+export function matchdaySizes(teams: number, sizes: MatchSizes, least = 0): number[] {
   const out: number[] = [];
   for (let s = sizes.min; s <= sizes.max; s++) if (teams % s === 0) out.push(s);
-  return out;
+  const large = out.filter((s) => s >= least);
+  return large.length > 0 ? large : out;
 }
 
 /**
@@ -126,18 +131,19 @@ export function drawMatchday(
 
 /**
  * Every league matchday, drawn at creation: each its size, from those `matchdaySizes`
- * allows, then its matches, steering clear of the meetings before.
+ * allows with `least` teams or more, then its matches, steering clear of the meetings before.
  */
 export function drawLeague(
   rng: Rng,
   teams: number,
   matchdays: number,
   sizes: MatchSizes,
+  least: number,
 ): number[][][] {
   const met = Array.from({ length: teams }, () => new Set<number>());
   const out: number[][][] = [];
   for (let day = 0; day < matchdays; day++) {
-    const options = matchdaySizes(teams, sizes);
+    const options = matchdaySizes(teams, sizes, least);
     if (options.length === 0) throw new Error(`no match size within range divides ${teams}`);
     const size = options[rng.nextInt(options.length)] as number;
     const matches = drawMatchday(rng, teams, size, met);

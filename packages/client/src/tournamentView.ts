@@ -76,27 +76,50 @@ function lastResult(save: Save): string {
   return `<p class="last-result${place === 0 ? ' won' : ''}">${escape(text + points)}</p>`;
 }
 
-function leagueTable(save: Save, progress: Progress): string {
-  const lines = tableExcerpt(progress.table(), save.plan.advance)
+/** A tie-break no column shows, as a mark on the rank it decided, its reason on hover. */
+const MARKED_TIES = new Set(['headToHead', 'placings', 'draw']);
+
+/**
+ * The league's table as markup, the lines given — an excerpt on the tournament's tab, every
+ * team in the league's window: rank, team, points, wins and Buchholz, a rank decided by a
+ * tie-break no column shows marked, and a line under it naming the tie-breaks in order (the
+ * test session of 2026-10-12 could not tell what "Geg" was, nor how a tie was broken).
+ */
+export function leagueTableMarkup(save: Save, lines: readonly TableLine[]): string {
+  const full = save.plan.tieBreaks === 2;
+  const columns = full ? 5 : 4;
+  const body = lines
     .map((line) => {
-      if (line === 'gap') return `<tr class="gap"><td colspan="4">…</td></tr>`;
+      if (line === 'gap') return `<tr class="gap"><td colspan="${columns}">…</td></tr>`;
       const { row, rank } = line;
       const classes = [
         row.team === HOST_TEAM ? 'mine' : '',
         rank <= save.plan.advance ? 'through' : '',
         rank === save.plan.advance ? 'cut' : '',
       ].filter((c) => c !== '');
+      const tie =
+        row.tie !== null && MARKED_TIES.has(row.tie)
+          ? `<td class="tie" title="${escape(t(`tournament.tie.${row.tie as 'draw'}`))}">${rank}<sup>*</sup></td>`
+          : `<td>${rank}</td>`;
       return (
-        `<tr${classes.length > 0 ? ` class="${classes.join(' ')}"` : ''}><td>${rank}</td><td>${teamLabel(save, row.team)}</td>` +
-        `<td>${row.points}</td><td>${row.buchholz}</td></tr>`
+        `<tr${classes.length > 0 ? ` class="${classes.join(' ')}"` : ''}>${tie}<td>${teamLabel(save, row.team)}</td>` +
+        `<td>${row.points}</td>${full ? `<td>${row.wins}</td>` : ''}<td>${row.buchholz}</td></tr>`
       );
     })
     .join('');
+  const head = (key: 'points' | 'wins' | 'buchholz'): string =>
+    `<th title="${escape(t(`tournament.${key}Title`))}">${t(`tournament.${key}Short`)}</th>`;
   return (
     `<table class="league-table"><thead><tr><th>#</th><th>${t('tournament.team')}</th>` +
-    `<th title="${escape(t('tournament.pointsTitle'))}">${t('tournament.pointsShort')}</th>` +
-    `<th title="${escape(t('tournament.buchholzTitle'))}">${t('tournament.buchholzShort')}</th></tr></thead>` +
-    `<tbody>${lines}</tbody></table>` +
+    `${head('points')}${full ? head('wins') : ''}${head('buchholz')}</tr></thead>` +
+    `<tbody>${body}</tbody></table>` +
+    `<p class="note tie-legend">${escape(t(full ? 'tournament.tieLegend' : 'tournament.tieLegendOld'))}</p>`
+  );
+}
+
+function leagueTable(save: Save, progress: Progress): string {
+  return (
+    leagueTableMarkup(save, tableExcerpt(progress.table(), save.plan.advance)) +
     `<p class="note">${escape(t('tournament.through', { n: save.plan.advance, of: save.teams.length }))}</p>`
   );
 }
@@ -144,6 +167,16 @@ function knockoutView(save: Save, progress: Progress): string {
   return `${lines.map((l) => `<p>${escape(l)}</p>`).join('')}${otherList}`;
 }
 
+/** The league's window as a button: a table's icon beside the heading it belongs with. */
+function leagueButton(): string {
+  const label = escape(t('tournament.leagueButton'));
+  return (
+    `<button id="league" class="icon-button" title="${label}" aria-label="${label}">` +
+    `<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square">` +
+    `<path d="M3 4h18v16H3zM3 9h18M3 14h18M9 4v16"/></svg></button>`
+  );
+}
+
 /** The knockout's tree as a button: an icon beside the heading it belongs with. */
 function bracketButton(): string {
   const label = escape(t('tournament.bracket'));
@@ -156,8 +189,8 @@ function bracketButton(): string {
 
 /**
  * The tournament's tab of the lobby (TOURNAMENT §1.7, §1.8), the same on the host's page
- * and a teammate's: the settings, the last result, the standings with the bracket beside
- * them, and the step's other matches. The match itself is the other tab's.
+ * and a teammate's: the settings, the last result, the standings with the league's window
+ * or the bracket beside them, and the step's other matches. The match itself is the other tab's.
  */
 export function tournamentTab(save: Save, progress: Progress, open: LobbyTab): TournamentTab {
   const step = stepsOf(save)[progress.done];
@@ -171,7 +204,7 @@ export function tournamentTab(save: Save, progress: Progress, open: LobbyTab): T
       <p class="note subtitle">${escape(settingsLine(save.settings))}</p>
       ${lastResult(save)}
       <section class="standings">
-        <h2>${inLeague ? t('tournament.league') : t('tournament.knockout')}${bracketButton()}</h2>
+        <h2>${inLeague ? `${t('tournament.league')}${leagueButton()}` : `${t('tournament.knockout')}${bracketButton()}`}</h2>
         ${standings}
       </section>`;
   const match = progress.next?.matches[progress.hostMatch] ?? [];

@@ -52,33 +52,47 @@ describe('title layout', () => {
 
 describe('the title gliding', () => {
   const pass = 6000;
+  const timing = { passMs: pass, pauseMs: 700 };
+  const cycle = timing.passMs + timing.pauseMs;
   /** Which look a row of the letters shows, 0 at their top and 1 at their foot. */
   const lookAt = (frame: TitleFrame, row: number): string =>
     row < frame.split ? frame.upper : frame.upper === 'build' ? 'combat' : 'build';
   const rows = Array.from({ length: 41 }, (_, k) => k / 40);
 
   it('starts where the title rests, split through the middle with building above', () => {
-    expect(titleGlide(0, pass)).toEqual(TITLE_AT_REST);
+    expect(titleGlide(0, timing)).toEqual(TITLE_AT_REST);
     expect(TITLE_AT_REST).toEqual({ split: 0.5, upper: 'build' });
   });
 
-  it('moves the line at one speed, never pausing', () => {
-    let last = titleGlide(0, pass).split;
-    const steps = new Set<number>();
-    for (let ms = 10; ms < 4 * pass; ms += 10) {
-      const { split } = titleGlide(ms, pass);
-      // Down, or round from the foot to the head out of sight: never still.
-      if (split > last) steps.add(Math.round((split - last) * 1e6));
-      else expect(last).toBeGreaterThan(1);
+  it('speeds up and slows down across the letters, and waits out of sight between', () => {
+    // A whole pass, from its line entering above the letters.
+    const from = (1 - 0.62 / 1.24) * pass + timing.pauseMs;
+    const step = (ms: number): number =>
+      titleGlide(from + ms + 10, timing).split - titleGlide(from + ms, timing).split;
+    expect(titleGlide(from, timing).split).toBeLessThan(0);
+    // Slow in, fast through the middle, slow out.
+    expect(step(0)).toBeLessThan(step(pass / 2) / 10);
+    expect(step(pass - 20)).toBeLessThan(step(pass / 2) / 10);
+    // Then still below the letters, the line out of sight, for the pause.
+    for (let ms = pass; ms < cycle; ms += 50) {
+      expect(titleGlide(from + ms, timing).split).toBeGreaterThan(1);
+      expect(step(ms)).toBe(0);
+    }
+  });
+
+  it('only moves down, or round from the foot to the head out of sight', () => {
+    let last = titleGlide(0, timing).split;
+    for (let ms = 10; ms < 4 * cycle; ms += 10) {
+      const { split } = titleGlide(ms, timing);
+      if (split < last) expect(last).toBeGreaterThan(1);
       last = split;
     }
-    expect(steps.size).toBe(1);
   });
 
   it('changes a row only as the line passes it, so the word never jumps', () => {
-    for (let ms = 0; ms < 3 * pass; ms += 5) {
-      const a = titleGlide(ms, pass);
-      const b = titleGlide(ms + 5, pass);
+    for (let ms = 0; ms < 3 * cycle; ms += 5) {
+      const a = titleGlide(ms, timing);
+      const b = titleGlide(ms + 5, timing);
       for (const row of rows) {
         if (lookAt(a, row) === lookAt(b, row)) continue;
         // The line came down across this row between the two frames.
@@ -90,7 +104,7 @@ describe('the title gliding', () => {
 
   it('shows the whole word in each look by turns', () => {
     const whole = (look: string): boolean =>
-      Array.from({ length: (2 * pass) / 10 }, (_, k) => titleGlide(k * 10, pass)).some((frame) =>
+      Array.from({ length: (2 * cycle) / 10 }, (_, k) => titleGlide(k * 10, timing)).some((frame) =>
         rows.every((row) => lookAt(frame, row) === look),
       );
     expect(whole('combat')).toBe(true);
@@ -100,16 +114,17 @@ describe('the title gliding', () => {
 
 describe('the title rotating its random halves', () => {
   const pass = 1000;
+  const timing = { passMs: pass, pauseMs: 200 };
 
   it('turns a half at the start of every pass, while it is out of sight, by turns', () => {
     const turns: string[] = [];
     let before = 0;
-    for (let ms = 1; ms <= 4 * pass; ms++) {
-      const look = titleTurn(before, ms, pass);
+    for (let ms = 1; ms <= 4 * (pass + timing.pauseMs); ms++) {
+      const look = titleTurn(before, ms, timing);
       if (look !== null) {
         turns.push(look);
         // The half the coming pass brings is wholly hidden: the word is all the other.
-        const { split, upper } = titleGlide(ms, pass);
+        const { split, upper } = titleGlide(ms, timing);
         expect(upper).toBe(look);
         expect(split).toBeLessThanOrEqual(0);
       }
@@ -119,7 +134,7 @@ describe('the title rotating its random halves', () => {
   });
 
   it('turns a half even when a frame skips past the moment', () => {
-    expect(titleTurn(0, 2 * pass, pass)).not.toBeNull();
-    expect(titleTurn(0, 10, pass)).toBeNull();
+    expect(titleTurn(0, 2 * pass, timing)).not.toBeNull();
+    expect(titleTurn(0, 10, timing)).toBeNull();
   });
 });

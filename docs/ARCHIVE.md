@@ -7225,16 +7225,19 @@ everything; ARCHIVE 12ze.)
 
 - **Matchdays.** On each, every team plays one match against opponents drawn at random from
   the whole field. **Each matchday has one match size**, drawn within the min–max among
-  those that divide the field, as each knockout round has one. A team meets the same
-  opponent twice only if the draw cannot avoid it.
+  those that divide the field, as each knockout round has one — three teams or more where any
+  such size divides it (`leagueMinTeams`, ARCHIVE 13zb). A team meets the same opponent twice
+  only if the draw cannot avoid it.
 - **Points: one for every team you finish ahead of.** A win in a four-team match is 3, a win
   in a two-team match 1, last place 0. With one size a matchday a win is worth the same to
   everyone that day, so **a team that wins every league match always goes through**: the
   unbeaten can never outnumber the places. (Sizes mixed within a matchday, the first design,
   let 5% of unbeaten hosts miss the cut in a Short league; ARCHIVE 12zf.)
-- **One table.** Ranked by points, then **Buchholz** (the sum of the points of every team you
-  met), then a seeded draw. See the note below on why Buchholz replaces the match-score
-  tie-break agreed on 2026-10-08.
+- **One table.** Ranked by points, then matches won, then head-to-head among the teams still
+  level, then **Buchholz** (the sum of the points of every team you met), then placings (most
+  second places, then thirds…), then a seeded draw (ARCHIVE 13zb; until then points, Buchholz
+  and the draw, which a save from before keeps). See the note below on why no tie-break uses
+  match scores.
 - **Who goes through:** the top _K_ after the last matchday, _K_ being the knockout field.
   The league field is `tournament.leagueFactor` × _K_, which every knockout size divides.
 - **The host's team plays every matchday.** It is out if it is not in the top _K_ at the end.
@@ -7466,3 +7469,33 @@ three guns. The levels' strength changed again throughout, so a session should n
 played; the user's target is Level 6. Protocol 22: the simulation changed (the enclosure
 re-solved as a build phase opens), so a test session needs the server rebuilt and every page
 reloaded.
+
+## 13zb. Feedback after v0.9.4: the title, the lobby's music, the league (2026-10-12)
+
+Five points from the test session, triaged with the user first.
+
+- **The title's sweep** eases in and out and waits 0.7 s out of sight between sweeps, the
+  word whole in one look (`titleGlide`, `art.menu.titlePauseMs`; the sweep 6 s → 5.5 s). The
+  first sweep sets off from rest at the middle, where the title rests. The even, never-still
+  line of 2026-10-08 read as mechanical; the old stop at the middle is not back.
+- **A guest kept the victory music** after the host's Continue or Rematch: the room brings
+  guests back to its lobby without the menu, and only the menu asked for its track. `drawLobby`
+  asks now, a no-op while it plays.
+- **"Geg"** was Buchholz, explained only on hover. The table now has Pts · W · Opp (Pkt · S ·
+  Gegn) and a line under it naming the tie-breaks in order; a place decided by one without a
+  column (head-to-head, placings, the lot) is marked * with its reason on hover.
+- **Tie-breaks** (the user agreed the order): points, wins, head-to-head, Buchholz, placings,
+  the draw (`Progress.table`, `TableRow.tie`). With two or three matchdays most of the table is
+  level on points, and with Buchholz alone the draw settled places at the cut. Average place,
+  proposed in the triage, was dropped: every team plays every matchday at one size, so it is
+  fixed by the points. Rolled matches have no scores, so none is used. The plan records
+  `tieBreaks: 2`; a save without it keeps the old order, since its knockout may already be
+  seeded from it.
+- **No two-team league matches** where a larger size divides the field (the user's addition,
+  `tournament.leagueMinTeams` 3): a two-team match is worth 1 or 0, and leagues of them left
+  the table flat. Teams of two in a 2–4 range now play 3- and 4-team matchdays; a field only
+  two divides still plays pairs.
+- **The league's window**: in the league the standings' icon opens the league instead of the
+  knockout's tree (`tournamentLeagueView.ts`) — the whole table and every matchday, results
+  with scores where played and the fixtures to come (all drawn at creation), the host's match
+  first in each. The bracket's icon returns with the knockout.

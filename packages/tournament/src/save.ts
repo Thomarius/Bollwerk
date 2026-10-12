@@ -68,6 +68,12 @@ export const PlanSchema = z.strictObject({
   losers: z.array(LoserRoundSchema),
   /** The knockout's draw without a league, best seed first; null when the league seeds it. */
   draw: z.array(z.number().int().nonnegative()).nullable(),
+  /**
+   * The league's tie-breaks: 2 since 2026-10-12 — wins, head-to-head, Buchholz, placings,
+   * then the draw (`Progress.table`). Absent in a save made before, which ranks by Buchholz
+   * and the draw alone, as it did when its knockout was seeded.
+   */
+  tieBreaks: z.literal(2).optional(),
 });
 export type Plan = z.infer<typeof PlanSchema>;
 

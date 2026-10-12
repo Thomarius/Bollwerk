@@ -1084,8 +1084,10 @@ export const ArtConfigSchema = z
     }),
     /** The menu's title, split between the two chosen looks at a banner's line. */
     menu: z.strictObject({
-      /** One pass of the line down across it, gliding without a pause while the menu is open. */
+      /** One pass of the line down across it, speeding up and slowing down. */
       titlePassMs: z.number().int().positive(),
+      /** The wait between passes, the line out of sight and the word in one look. */
+      titlePauseMs: z.number().int().nonnegative(),
       /** One breath of the surf round the lobby map's coasts, each tile a little out of step. */
       mapSurfMs: z.number().int().positive(),
       /** One breath of the castles on the lobby map. */

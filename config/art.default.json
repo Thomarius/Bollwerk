@@ -1446,7 +1446,8 @@
     }
   },
   "menu": {
-    "titlePassMs": 6000,
+    "titlePassMs": 5500,
+    "titlePauseMs": 700,
     "mapSurfMs": 3200,
     "mapCastleMs": 2200
   },

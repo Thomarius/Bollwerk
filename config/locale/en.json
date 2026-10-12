@@ -438,7 +438,15 @@
   "tournament.pointsShort": "Pts",
   "tournament.pointsTitle": "Points: one for every team finished ahead of",
   "tournament.buchholzShort": "Opp",
-  "tournament.buchholzTitle": "The points of every team met, which breaks a tie on points",
+  "tournament.buchholzTitle": "The points of every team met, added up",
+  "tournament.winsShort": "W",
+  "tournament.winsTitle": "Matches won outright",
+  "tournament.tieLegend": "Level on points, teams are ranked by wins (W), then head-to-head where they met, then the points of every team they met (Opp), then the most second places, then thirds and so on, and last by lot. * marks a place decided by one of the tie-breaks without a column.",
+  "tournament.tieLegendOld": "Level on points, teams are ranked by the points of every team they met (Opp), and then by lot.",
+  "tournament.tie.headToHead": "Ahead of the team below on head-to-head",
+  "tournament.tie.placings": "Ahead of the team below on placings",
+  "tournament.tie.draw": "Ahead of the team below by lot",
+  "tournament.leagueButton": "League",
   "tournament.through": "The top {n} of {of} go through to the knockout.",
   "tournament.leagueAhead": "{days} league matchdays, then the top {n} go through to the knockout.",
   "tournament.brackets": "Winners' bracket: {winners} teams · losers' bracket: {losers}",
@@ -493,5 +501,10 @@
   "bracket.later": "To be decided.",
   "bracket.toPlay": "Still to be played:",
   "bracket.rolled": "Decided among the others:",
-  "bracket.played": "Played:"
+  "bracket.played": "Played:",
+  "league.title": "The league",
+  "league.table": "Table",
+  "league.matchdays": "Matchdays",
+  "league.toPlay": "to play",
+  "league.seeding": "The knockout is seeded from the final table."
 }

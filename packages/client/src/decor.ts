@@ -25,30 +25,48 @@ export const TITLE_AT_REST: TitleFrame = { split: 0.5, upper: 'build' };
 /** Just past the letters, so the line enters and leaves out of sight of them. */
 const BEYOND = 0.12;
 
-/** How far into a pass the line is at the middle of the letters. */
+/** How far through a pass the line is at the middle of the letters. */
 const MIDDLE = (0.5 + BEYOND) / (1 + 2 * BEYOND);
 
-/**
- * Passes of the line since the title began gliding, as a whole and a fraction: begun in
- * the second pass with the line at the middle, so the glide starts where the title rests.
- */
-function passes(ms: number, passMs: number): number {
-  return 1 + MIDDLE + ms / passMs;
+/** A pass's timing: the line's sweep across the letters, then the wait before the next. */
+export interface TitleTiming {
+  passMs: number;
+  pauseMs: number;
+}
+
+/** From 0 to 1, starting and ending at rest. */
+function ease(t: number): number {
+  return 0.5 - 0.5 * Math.cos(Math.PI * t);
 }
 
 /**
- * The title's line, `ms` into its glide: down across the letters at an even pace, out of
- * sight below them, and in again from above, each pass a banner bringing the other look
- * over the whole word — combat, then building, as a round's banners do. Without a pause, at
- * one speed: the line stopped at the middle and waited between sweeps until the test session
- * of 2026-10-08 asked for it slower and never still. Leaving at the foot and entering at the
- * head, the line is out of sight both times, so nothing on the word jumps.
+ * Where the glide is `ms` in: the pass, counted from 1, and how far its line has come, 0
+ * entering above the letters and 1 gone below. The first pass is the lower half of one, the
+ * line setting off from the middle where the title rests; each pass then waits out of sight.
  */
-export function titleGlide(ms: number, passMs: number): TitleFrame {
-  const u = passes(ms, passMs);
-  const pass = Math.floor(u);
+function where(ms: number, { passMs, pauseMs }: TitleTiming): { pass: number; at: number } {
+  const lead = (1 - MIDDLE) * passMs;
+  if (ms < lead) return { pass: 1, at: MIDDLE + (1 - MIDDLE) * ease(ms / lead) };
+  if (ms < lead + pauseMs) return { pass: 1, at: 1 };
+  const since = ms - lead - pauseMs;
+  const cycle = passMs + pauseMs;
+  const into = since % cycle;
+  return { pass: 2 + Math.floor(since / cycle), at: into < passMs ? ease(into / passMs) : 1 };
+}
+
+/**
+ * The title's line, `ms` into its glide: down across the letters, speeding up and slowing
+ * down, out of sight below them for a short wait, and in again from above, each pass a
+ * banner bringing the other look over the whole word — combat, then building, as a round's
+ * banners do. At one even speed and never still (the test session of 2026-10-08, after a line
+ * that stopped at the middle) it read as mechanical; the session of 2026-10-12 asked for it
+ * eased with a pause between, the pause off the letters. Leaving at the foot and entering at
+ * the head, the line is out of sight both times, so nothing on the word jumps.
+ */
+export function titleGlide(ms: number, timing: TitleTiming): TitleFrame {
+  const { pass, at } = where(ms, timing);
   return {
-    split: -BEYOND + (1 + 2 * BEYOND) * (u - pass),
+    split: -BEYOND + (1 + 2 * BEYOND) * at,
     upper: pass % 2 === 0 ? 'combat' : 'build',
   };
 }
@@ -59,9 +77,9 @@ export function titleGlide(ms: number, passMs: number): TitleFrame {
  * since the word is all the other look — as a banner on the board changes a look it is about
  * to reveal (PLAN 11.23). A frame that skips past the moment still turns it.
  */
-export function titleTurn(before: number, ms: number, passMs: number): ArtLook | null {
-  const was = Math.floor(passes(before, passMs));
-  const now = Math.floor(passes(ms, passMs));
+export function titleTurn(before: number, ms: number, timing: TitleTiming): ArtLook | null {
+  const was = where(before, timing).pass;
+  const now = where(ms, timing).pass;
   if (now === was) return null;
   return now % 2 === 0 ? 'combat' : 'build';
 }
@@ -158,15 +176,15 @@ export class SplitTitle {
       this.frame(TITLE_AT_REST);
       return;
     }
-    const passMs = this.art.menu.titlePassMs;
+    const timing = { passMs: this.art.menu.titlePassMs, pauseMs: this.art.menu.titlePauseMs };
     const ms = now - this.glideStart;
-    const turn = titleTurn(this.glidedTo, ms, passMs);
+    const turn = titleTurn(this.glidedTo, ms, timing);
     this.glidedTo = ms;
     if (turn !== null && this.rotation?.isRandom(turn) === true) {
       const other = turn === 'build' ? 'combat' : 'build';
       this.dress(turn, this.rotation.next(turn, this.shown[other] ?? null));
     }
-    this.frame(titleGlide(ms, passMs));
+    this.frame(titleGlide(ms, timing));
     requestAnimationFrame(this.tick);
   };
 

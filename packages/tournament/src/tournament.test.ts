@@ -327,7 +327,7 @@ describe('the league', () => {
     );
   });
 
-  it('puts every team in one match a matchday, and the table ranks by points then Buchholz', () => {
+  it('puts every team in one match a matchday, and the table ranks by points then wins', () => {
     const save = make({ league: true, length: 'long', matchTeams: { min: 2, max: 4 } });
     for (const day of save.plan.matchdays) {
       expect(day.flat().sort((a, b) => a - b)).toEqual(save.teams.map((_, id) => id));
@@ -336,8 +336,76 @@ describe('the league', () => {
     const rows = new Progress(save).table();
     for (let i = 1; i < rows.length; i++) {
       const [a, b] = [rows[i - 1], rows[i]] as [(typeof rows)[0], (typeof rows)[0]];
-      expect(a.points > b.points || (a.points === b.points && a.buchholz >= b.buchholz)).toBe(true);
+      expect(a.points > b.points || (a.points === b.points && a.wins >= b.wins)).toBe(true);
+      expect(a.tie === null).toBe(a.points !== b.points);
     }
+  });
+
+  describe('breaks a tie on points', () => {
+    /** A league of three-team matchdays with these results, best placed first. */
+    const league = (...days: number[][][]): Save => {
+      const save = make({ league: true, length: 'medium', matchTeams: { min: 3, max: 3 } });
+      save.steps = days.map((day) => ({
+        matches: day.map((order) => ({ teams: [...order].sort(), order, scores: null })),
+        byes: [],
+      }));
+      return save;
+    };
+    const ranked = (save: Save): string[] =>
+      new Progress(save)
+        .table()
+        .slice(0, 5)
+        .map((row) => `${row.team} ${row.points} ${row.tie ?? '-'}`);
+
+    it('by wins, then Buchholz', () => {
+      const save = league(
+        [
+          [0, 1, 2],
+          [3, 4, 5],
+        ],
+        [
+          [3, 6, 0],
+          [1, 4, 7],
+          [5, 2, 8],
+        ],
+      );
+      // 0 and 5 won once and 4 never, all on 2 points; 0 met stronger teams than 5.
+      expect(ranked(save)).toEqual(['3 4 -', '1 3 -', '0 2 buchholz', '5 2 wins', '4 2 -']);
+      // A save from before ranks by Buchholz alone: 4 met as strong teams as 0, 5 weaker.
+      delete save.plan.tieBreaks;
+      expect(ranked(save)[4]).toBe('5 2 -');
+      for (const row of new Progress(save).table()) {
+        expect(row.tie === null || row.tie === 'buchholz' || row.tie === 'draw').toBe(true);
+      }
+    });
+
+    it('by head-to-head where the level teams met', () => {
+      const save = league(
+        [[0, 1, 2]],
+        [
+          [3, 0, 4],
+          [1, 5, 6],
+        ],
+      );
+      // 0 and 1 both have 3 points and a win; 0 finished ahead of 1 where they met.
+      expect(ranked(save).slice(0, 2)).toEqual(['0 3 headToHead', '1 3 -']);
+    });
+
+    it('by placings, the most second places', () => {
+      const save = make({ league: true, length: 'medium', matchTeams: { min: 4, max: 4 } });
+      const day = (...orders: number[][]) => ({
+        matches: orders.map((order) => ({ teams: [...order].sort(), order, scores: null })),
+        byes: [],
+      });
+      save.steps = [
+        day([0, 2, 3, 4], [1, 5, 6, 7]),
+        day([8, 0, 9, 10], [11, 12, 1, 13]),
+        day([14, 15, 16, 0], [17, 18, 1, 19]),
+      ];
+      // Both 5 points from one win, never met, their opponents 13 points each: 0 was second
+      // once, 1 never.
+      expect(ranked(save).slice(0, 2)).toEqual(['0 5 placings', '1 5 -']);
+    });
   });
 
   it('sends the top of the table through and everyone else home', () => {
@@ -421,6 +489,15 @@ describe('the plan', () => {
   it('offers a matchday only the sizes that divide the league', () => {
     expect(matchdaySizes(48, { min: 2, max: 8 })).toEqual([2, 3, 4, 6, 8]);
     expect(matchdaySizes(18, { min: 4, max: 5 })).toEqual([]);
+  });
+
+  it('keeps two-team matches out of the league unless no larger size divides it', () => {
+    expect(matchdaySizes(48, { min: 2, max: 8 }, 3)).toEqual([3, 4, 6, 8]);
+    expect(matchdaySizes(16, { min: 2, max: 3 }, 3)).toEqual([2]);
+    for (let seed = 1; seed <= 20; seed++) {
+      const save = make({ seed, league: true, teamSize: 2, matchTeams: { min: 2, max: 4 } });
+      for (const day of save.plan.matchdays) expect(day[0]?.length).toBeGreaterThanOrEqual(3);
+    }
   });
 
   it('lowers the largest round first to meet the cap, then drops rounds', () => {

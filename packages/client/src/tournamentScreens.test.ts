@@ -31,6 +31,7 @@ import { settingsLine, stageName } from './tournamentText.js';
 import { lobbyMarkup, type LobbyView } from './lobby.js';
 import { roomTable } from './tournamentRoom.js';
 import { endingMarkup, tableExcerpt, tournamentTab } from './tournamentView.js';
+import { leagueMarkup } from './tournamentLeagueView.js';
 
 const config = defaultConfigBundle.tournament;
 
@@ -274,7 +275,14 @@ describe('a tournament in words', () => {
 });
 
 describe('the tournament between matches', () => {
-  const row = (team: number): TableRow => ({ team, points: 0, buchholz: 0, played: 0 });
+  const row = (team: number): TableRow => ({
+    team,
+    points: 0,
+    wins: 0,
+    buchholz: 0,
+    played: 0,
+    tie: null,
+  });
 
   it('cuts the table to its top, the host, and the cut', () => {
     const rows = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 0, 19, 20].map(
@@ -300,11 +308,12 @@ describe('the tournament between matches', () => {
     const progress = new Progress(save);
     for (const guest of [false, true]) {
       const markup = lobbyOf(save, progress, guest);
-      // Both pages alike: the map, the match's stage, the standings, the bracket's icon.
+      // Both pages alike: the map, the match's stage, the standings, the league's icon.
       expect(markup).toContain('id="map-preview"');
       expect(markup).toContain('League, matchday 1 of 3');
       expect(markup).toContain('class="tab on" role="tab" data-tab="match"');
-      expect(markup).toMatch(/data-panel="tournament" hidden>[^]*id="bracket" class="icon-button"/);
+      expect(markup).toMatch(/data-panel="tournament" hidden>[^]*id="league" class="icon-button"/);
+      expect(markup).not.toContain('id="bracket"');
       expect(markup).toContain('class="tag you"');
       // Only the host plays the match on; the teammate waits, in place of the team's bot.
       expect(markup.includes('id="begin"')).toBe(!guest);
@@ -365,6 +374,36 @@ describe('the tournament between matches', () => {
     expect(after).toContain('Last match, League, matchday 1 of 3: 1st of 2 · 1234 points');
     expect(after).toContain('class="league-table"');
     expect(after).toContain('A notice');
+    // Wins beside the points, and the tie-breaks named in order under the table.
+    expect(after).toContain('title="Matches won outright">W</th>');
+    expect(after).toContain('Level on points, teams are ranked by wins (W)');
+  });
+
+  it('shows the whole league in its window: every team, and every matchday', () => {
+    setLanguage('en');
+    const save = tournament('t', 'now', { league: true });
+    const before = leagueMarkup(save, new Progress(save));
+    // Before a match the fixtures, every matchday's, and no table of noughts.
+    expect(before.match(/class="matchday /g)).toHaveLength(save.plan.matchdays.length);
+    expect(before.match(/to play/g)).toHaveLength(save.plan.matchdays.length);
+    expect(before).not.toContain('class="league-table"');
+    const progress = new Progress(save);
+    const teams = progress.next?.matches[progress.hostMatch] ?? [];
+    const after = recordMatch(
+      save,
+      config,
+      [0, ...teams.filter((t) => t !== 0)].map((team) => ({ team, score: 1234 })),
+      'later',
+    );
+    const markup = leagueMarkup(save, after);
+    expect(markup.match(/<tr[ >]/g)).toHaveLength(save.teams.length + 1);
+    expect(markup).not.toContain('class="gap"');
+    // The first matchday played, the host's match leading it with its score.
+    expect(markup).toMatch(
+      /matchday played[^]*?<ol class="match host"><li><span class="place">1st<\/span> /,
+    );
+    expect(markup).toContain('<span class="score">1234</span>');
+    expect(markup).toContain('matchday next');
   });
 
   it('shows the knockout around the host, the archnemesis by name', () => {

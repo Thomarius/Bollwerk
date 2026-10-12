@@ -4769,7 +4769,8 @@ body.reduced-effects .look-gallery .card img {
   border-left-color: var(--accent);
 }
 
-.menu em.tag {
+.menu em.tag,
+.league-panel em.tag {
   margin-left: 0.4rem;
   font-size: 0.72rem;
   font-style: normal;
@@ -4778,11 +4779,13 @@ body.reduced-effects .look-gallery .card img {
   color: var(--muted);
 }
 
-.menu em.tag.you {
+.menu em.tag.you,
+.league-panel em.tag.you {
   color: var(--accent);
 }
 
-.menu em.tag.arch {
+.menu em.tag.arch,
+.league-panel em.tag.arch {
   color: #e07a76;
 }
 
@@ -5051,4 +5054,90 @@ body.reduced-effects .look-gallery .card img {
 
 .bracket-overlay .close {
   margin-top: 0.75rem;
+}
+
+/* The league in the same window (tournamentLeagueView.ts): the whole table beside every matchday. */
+.league-panel .league-columns {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
+  gap: 1.5rem;
+  margin-top: 0.75rem;
+}
+
+.league-panel .league-columns > section {
+  max-height: 68vh;
+  overflow: auto;
+}
+
+.league-panel h3 {
+  margin: 0 0 0.4rem;
+  font-size: 0.78rem;
+  font-weight: normal;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.league-panel .matchday {
+  margin-bottom: 1rem;
+}
+
+.league-panel .matchday h3 {
+  color: var(--ink);
+}
+
+.league-panel .matchday.next h3 {
+  color: var(--accent);
+}
+
+.league-panel .matchday h3 .note {
+  color: var(--muted);
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.league-panel .matches {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(12rem, 1fr));
+  gap: 0.4rem;
+}
+
+/* The places are written out ("1st"), so the list numbers nothing itself. */
+.league-panel .match {
+  margin: 0;
+  padding: 0.3rem 0.5rem;
+  border: 1px solid var(--edge);
+  list-style: none;
+  font-size: 0.8rem;
+}
+
+.league-panel .match.host {
+  border-color: var(--accent);
+}
+
+.league-panel .match .place,
+.league-panel .match .score {
+  color: var(--muted);
+}
+
+.league-panel .match em {
+  font-style: normal;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+}
+
+.league-panel .match em.you {
+  color: var(--accent);
+}
+
+.league-panel .match em.arch {
+  color: #e07a76;
+}
+
+.league-table td.tie sup {
+  color: var(--muted);
+}
+
+.tie-legend {
+  font-size: 0.75rem;
 }

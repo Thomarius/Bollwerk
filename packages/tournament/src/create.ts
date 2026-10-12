@@ -43,7 +43,13 @@ export function createTournament(
     teams: createTeams(settings, config, field),
     plan: {
       matchdays: settings.league
-        ? drawLeague(streamFor(seed, 'league'), field, length.leagueMatchdays, matchTeams)
+        ? drawLeague(
+            streamFor(seed, 'league'),
+            field,
+            length.leagueMatchdays,
+            matchTeams,
+            config.leagueMinTeams,
+          )
         : [],
       advance,
       rounds,
@@ -52,6 +58,7 @@ export function createTournament(
           ? loserRounds(streamFor(seed, 'losers'), rounds, matchTeams)
           : [],
       draw: settings.league ? null : streamFor(seed, 'draw').shuffle(ids),
+      tieBreaks: 2,
     },
     steps: [],
   };
