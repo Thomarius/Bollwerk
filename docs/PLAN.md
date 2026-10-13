@@ -1745,6 +1745,12 @@ far behind in building, item 1, the next work. The bot learning work, item 3, is
    12y); step 3's first run learned a fit about as good as the hand-made one (ARCHIVE 12z),
    and the work is **paused** (2026-10-07), its next steps in BOT_LEARNING.md §6.
 
+4. **Scoring by ground and guns** (the user's decision, 2026-10-13; designed, not built): no
+   multiplication of territory by castles any more, and 5 points for every gun firing at the
+   resolution. A test match and 27 recordings showed points growing with the square of the
+   castles, and one flawless round deciding a match. The evidence, the rule, what it touches
+   (bots included) and the work packages are in [`SCORING.md`](./SCORING.md).
+
 Only open work is kept here. Finished packages move to `ARCHIVE.md` under their old
 numbers — 11.1 scoring, 11.7 team mode, 11.8 the visual pass, 11.9 the themes, 11.10 the
 UI polish, all in ARCHIVE 11h; 11.11 the second visual pass and 11.12 the first
