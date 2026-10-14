@@ -39,6 +39,8 @@ export const ActionSchema = z.discriminatedUnion('kind', [
     player: z.number().int().nonnegative(),
     x: z.number().int(),
     y: z.number().int(),
+    /** The player's special tower rather than an ordinary cannon; absent means a cannon. */
+    special: z.literal(true).optional(),
   }),
 ]);
 

@@ -40,19 +40,19 @@ import { ActionSchema } from './messages.js';
 
 /**
  * The format a recording is written in, which names the state fingerprint on its lines:
- * 1 took version 1 (before 2026-10-07), 2 takes version 2 (`HASH_VERSION`). Both read and
- * replay exactly, each checked against its own fingerprint.
+ * 1 took version 1 (before 2026-10-07), 2 version 2, 3 takes version 3 (`HASH_VERSION`), the
+ * special towers in it. Each reads and replays exactly, checked against its own fingerprint.
  */
-export const RECORDING_FORMAT = 2;
+export const RECORDING_FORMAT = 3;
 
 /** The fingerprint a recording of this format carries. */
-export function hashVersionOf(format: 1 | 2): number {
+export function hashVersionOf(format: 1 | 2 | 3): number {
   return format;
 }
 
 export const RecordingHeaderSchema = z.strictObject({
   kind: z.literal('header'),
-  format: z.union([z.literal(1), z.literal(RECORDING_FORMAT)]),
+  format: z.union([z.literal(1), z.literal(2), z.literal(RECORDING_FORMAT)]),
   /** Also the file's name. */
   id: z.string().regex(/^[A-Za-z0-9-]{8,64}$/),
   source: z.enum(['server', 'local']),

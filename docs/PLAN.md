@@ -1620,7 +1620,8 @@ fit (ARCHIVE 12z), its remaining steps dropped (the user's decision, 2026-10-14;
 2. **Special towers** (the user's idea, 2026-10-11; designed, not built): each player may bring
    one special tower, bought in the cannon phase for two or three cannons — Big Bertha, Architect
    and Rapid Cannon first — with an on/off switch among the match settings. The design, the
-   decisions, the work packages ST1–ST8 and the open questions are in
+   decisions (every open question settled with the user on 2026-10-14),
+   and the work packages ST1–ST8 are in
    [`SPECIAL_TOWERS.md`](./SPECIAL_TOWERS.md).
 
 Only open work is kept here. Finished packages move to `ARCHIVE.md` under their old

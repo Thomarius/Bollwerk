@@ -97,8 +97,16 @@ describe('match audio', () => {
   it('sets a cannon down with its own sound, not the menu click', () => {
     const { audio, match } = setup();
     match.handle([
-      { kind: 'cannon_placed', tick: 1, player: HUMAN, cannonId: 0, x: 3, y: 3 },
-      { kind: 'cannon_placed', tick: 1, player: 1, cannonId: 1, x: 9, y: 9 },
+      {
+        kind: 'cannon_placed',
+        tick: 1,
+        player: HUMAN,
+        cannonId: 0,
+        x: 3,
+        y: 3,
+        cannonKind: 'cannon',
+      },
+      { kind: 'cannon_placed', tick: 1, player: 1, cannonId: 1, x: 9, y: 9, cannonKind: 'cannon' },
       { kind: 'castle_selected', tick: 1, player: HUMAN, castleId: 0 },
     ]);
     // A rival's cannon is not acknowledged; a castle chosen is still a plain selection.

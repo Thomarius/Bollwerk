@@ -11,6 +11,7 @@ export * from './sweep.js';
 export * from './pieces.js';
 export * from './placement.js';
 export * from './shots.js';
+export * from './specials.js';
 export * from './match.js';
 export * from './scoring.js';
 export * from './teams.js';

@@ -2,6 +2,7 @@ import type { CraterPattern } from '@bollwerk/config';
 
 import { distanceFixed, distanceSquared } from './math.js';
 import { playerOf, type Rejection } from './placement.js';
+import { craterOf, flightFactorOf, isImpactTower, noteLostWall } from './specials.js';
 import { sameTeam } from './teams.js';
 import { Structure, type Cannon, type MatchState, type Shot } from './types.js';
 
@@ -42,21 +43,29 @@ function cannonCentreY(cannon: Cannon): number {
 }
 
 /**
- * The nearest cannon that is active and has nothing in flight.
+ * The nearest cannon that is active and has nothing in flight — but a ready impact tower
+ * (Big Bertha) before any other gun, the nearest of them if several are ready.
  *
  * Nearest rather than round-robin keeps the player thinking about targets instead of
  * inventory, and makes front-line cannons the workhorses. Ties break on cannon id so
- * the choice is reproducible.
+ * the choice is reproducible. An impact tower first lets every shot stay one click: the
+ * player aims it by when they click, with the cursor telling them it is next (the user's
+ * design, 2026-10-14).
  */
 export function findReadyCannon(state: MatchState, playerId: number, tx: number, ty: number) {
   let best: Cannon | null = null;
   let bestDistance = Infinity;
+  let bestImpact = false;
   for (const cannon of state.cannons) {
     if (cannon.owner !== playerId || !cannon.active || cannon.shotId !== null) continue;
+    const impact = isImpactTower(cannon.kind);
+    if (bestImpact && !impact) continue;
     const d = distanceSquared(cannonCentreX(cannon), cannonCentreY(cannon), tx, ty);
-    if (d < bestDistance || (d === bestDistance && best !== null && cannon.id < best.id)) {
+    const nearer = d < bestDistance || (d === bestDistance && best !== null && cannon.id < best.id);
+    if (nearer || (impact && !bestImpact)) {
       bestDistance = d;
       best = cannon;
+      bestImpact = impact;
     }
   }
   return best;
@@ -76,10 +85,13 @@ export function flightTicks(
   fromY: number,
   tx: number,
   ty: number,
+  factor = 1,
 ): number {
   const { baseFlightMs, perTileFlightMs } = state.ruleset.shots;
   const distance256 = distanceFixed(fromX, fromY, tx, ty);
-  const flightMs = baseFlightMs + (perTileFlightMs * distance256) / 256;
+  // A tower's factor scales the whole flight; at 1 the product is exact, so an ordinary
+  // gun's flight is what it always was.
+  const flightMs = (baseFlightMs + (perTileFlightMs * distance256) / 256) * factor;
   return Math.max(1, Math.ceil((flightMs * state.ruleset.tickRateHz) / 1000));
 }
 
@@ -123,12 +135,15 @@ export function fire(
     id: state.nextShotId++,
     cannonId: cannon.id,
     owner: playerId,
+    kind: cannon.kind,
     fromX,
     fromY,
     toX: tx,
     toY: ty,
     launchTick: state.tick,
-    impactTick: state.tick + flightTicks(state, fromX, fromY, tx, ty),
+    impactTick:
+      state.tick +
+      flightTicks(state, fromX, fromY, tx, ty, flightFactorOf(state.ruleset, cannon.kind)),
   };
   cannon.shotId = shot.id;
   state.shots.push(shot);
@@ -147,7 +162,6 @@ export function fire(
  */
 export function resolveImpacts(state: MatchState): void {
   if (state.shots.length === 0) return;
-  const offsets = craterOffsets(state.ruleset.shots.craterPattern);
   const remaining: Shot[] = [];
 
   for (const shot of state.shots) {
@@ -156,6 +170,7 @@ export function resolveImpacts(state: MatchState): void {
       continue;
     }
 
+    const offsets = craterOffsets(craterOf(state.ruleset, shot.kind));
     const destroyed: number[] = [];
     const shooter = state.players[shot.owner];
     const shooterIsland = shooter?.islandId ?? 0;
@@ -177,6 +192,7 @@ export function resolveImpacts(state: MatchState): void {
         state.structure[i] = Structure.Empty;
         state.owner[i] = 0;
         destroyed.push(i);
+        noteLostWall(state, i);
       }
     }
 

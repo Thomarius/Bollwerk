@@ -101,6 +101,7 @@ describe('targeting traits', () => {
       {
         id: 7,
         cannonId: 0,
+        kind: 'cannon',
         owner: 2,
         fromX: 26,
         fromY: 2,

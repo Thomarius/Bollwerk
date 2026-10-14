@@ -28,6 +28,7 @@ export function liveShot(state: MatchState, n: number, launchTick: number): Shot
   return {
     id: n + 1,
     cannonId: cannon.id,
+    kind: 'cannon',
     owner: cannon.owner,
     fromX: cannon.x + (cannon.w - 1) / 2,
     fromY: cannon.y + (cannon.h - 1) / 2,

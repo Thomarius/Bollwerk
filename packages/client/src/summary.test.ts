@@ -8,6 +8,7 @@ import { MatchLog, mostCastlesOf, scoreChart } from './summary.js';
 const shot = (id: number, owner: number): Shot => ({
   id,
   cannonId: id,
+  kind: 'cannon',
   owner,
   fromX: 0,
   fromY: 0,

@@ -6,6 +6,65 @@ export type CraterPattern = z.infer<typeof CraterPatternSchema>;
 
 const ms = z.number().int().nonnegative();
 
+/** The special towers a player may bring (docs/SPECIAL_TOWERS.md), in their order everywhere. */
+export const SPECIAL_KINDS = ['bertha', 'architect', 'rapid'] as const;
+export const SpecialKindSchema = z.enum(SPECIAL_KINDS);
+export type SpecialKind = z.infer<typeof SpecialKindSchema>;
+
+const footprint = z.tuple([z.number().int().positive(), z.number().int().positive()]);
+
+/** What every tower has: its price in cannons, its footprint and its flight against a gun's. */
+const towerFields = {
+  /** Cannon placements given up for it, from the ones earned that round. */
+  cost: z.number().int().positive(),
+  footprint,
+  /**
+   * A factor on a shot's flight time, which is its reload: below 1 fires more often.
+   * Exactly 1 leaves the flight as an ordinary gun's, tick for tick.
+   */
+  flightFactor: z.number().positive(),
+};
+
+/**
+ * Special towers (docs/SPECIAL_TOWERS.md): a cannon with an ability of its own, bought in
+ * the cannon phase for several ordinary ones. Whether they are played at all is `enabled`,
+ * which a match's settings write; the rest is each tower's balance.
+ */
+export const SpecialsSchema = z.strictObject({
+  enabled: z.boolean(),
+  /** Towers a player may buy in one cannon phase. */
+  perRound: z.number().int().positive(),
+  /**
+   * Towers that may stand on a player's island at once; null for no limit. A continue
+   * wipes the island, its towers with it, and so frees the count.
+   */
+  maxOwned: z.number().int().positive().nullable(),
+  /** Offence: a wider crater, fired first whenever it is ready. */
+  bertha: z.strictObject({ ...towerFields, crater: CraterPatternSchema }),
+  /** Defence: rebuilds its owner's walls lost to shots nearby once a barrage is over. */
+  architect: z.strictObject({
+    ...towerFields,
+    /** Tiles from its footprint, every way and diagonally (Chebyshev). */
+    repairRadius: z.number().int().nonnegative(),
+  }),
+  /** Tempo: an ordinary shot on a shorter flight. */
+  rapid: z.strictObject(towerFields),
+});
+export type Specials = z.infer<typeof SpecialsSchema>;
+
+/**
+ * Towers off, for rulesets written before they existed — recordings above all. With
+ * `enabled` false no other value is ever read.
+ */
+const SPECIALS_OFF: Specials = {
+  enabled: false,
+  perRound: 1,
+  maxOwned: 3,
+  bertha: { cost: 3, footprint: [2, 2], flightFactor: 1, crater: 'plus5' },
+  architect: { cost: 2, footprint: [2, 2], flightFactor: 1, repairRadius: 2 },
+  rapid: { cost: 2, footprint: [2, 2], flightFactor: 0.4 },
+};
+
 export const RulesetSchema = z
   .strictObject({
     tickRateHz: z.number().int().positive().max(120),
@@ -75,6 +134,8 @@ export const RulesetSchema = z
        */
       damagesOwnWalls: z.boolean(),
     }),
+
+    specials: SpecialsSchema.default(SPECIALS_OFF),
 
     build: z.strictObject({
       /**

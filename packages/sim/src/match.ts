@@ -1,4 +1,4 @@
-import type { Ruleset, TerrainConfig } from '@bollwerk/config';
+import type { Ruleset, SpecialKind, TerrainConfig } from '@bollwerk/config';
 
 import { applyEnclosure } from './enclosure.js';
 import { heldPoints, holdingsOf, type Holding } from './scoring.js';
@@ -13,6 +13,7 @@ import {
 } from './placement.js';
 import { streamFor } from './rng.js';
 import { fire, resolveImpacts } from './shots.js';
+import { repairWalls } from './specials.js';
 import { denseTeams, tableTeamSize, teamScore } from './teams.js';
 import { generateTerrain } from './terrain.js';
 import {
@@ -33,6 +34,8 @@ export interface MatchPlayerOptions {
   isBot: boolean;
   /** Any label; players sharing one are a team. Omitted, every player is on their own. */
   team?: number;
+  /** The special tower this player brings, when the ruleset plays them; omitted, none. */
+  special?: SpecialKind | null;
 }
 
 export interface MatchOptions {
@@ -85,6 +88,9 @@ export function createMatch(options: MatchOptions): MatchState {
     overtimeSpent: false,
     score: 0,
     wallsDestroyed: 0,
+    special: ruleset.specials.enabled ? (p.special ?? null) : null,
+    specialsBought: 0,
+    openingPlacement: true,
   }));
 
   const structure = new Uint8Array(size);
@@ -123,6 +129,7 @@ export function createMatch(options: MatchOptions): MatchState {
     castles,
     cannons: [],
     shots: [],
+    lostWalls: [],
     nextCannonId: 0,
     nextShotId: 0,
     winners: [],
@@ -424,6 +431,7 @@ function resolveRound(state: MatchState): void {
       wipeIsland(state, player.id);
       player.startingCastleId = null;
       player.enclosedCastles = 0;
+      player.openingPlacement = true;
       // More guns the more lives the team has spent, and the opening count rather than a
       // round reward: they have no territory to be rewarded for. Capped, because a team
       // of four spends lives four times as fast.
@@ -551,6 +559,10 @@ function beginPendingPhase(state: MatchState): void {
     for (const player of state.players) {
       player.cannonsToPlace = 0;
       player.pieceRound++;
+      player.specialsBought = 0;
+      // Whoever owed a castle has one by now, chosen or given: their next cannon phase
+      // is an ordinary one.
+      player.openingPlacement = false;
     }
     enterPhase(state, 'combat', state.ruleset.phases.combatMs);
     return;
@@ -672,6 +684,10 @@ function advancePhase(state: MatchState): void {
         state.phaseEndTick = state.tick + intermissionTicks(state.ruleset);
         return;
       }
+      // The barrage is over and its last shot down: the Architects rebuild what it took,
+      // before the banner, so the player sees it and a bot plans its build phase on the
+      // board it will build on (docs/SPECIAL_TOWERS.md §2.3).
+      if (state.pendingPhase === 'build') repairWalls(state);
       if (state.tick >= state.phaseEndTick) beginPendingPhase(state);
       return;
     }
@@ -741,7 +757,7 @@ export function applyAction(state: MatchState, action: Action): Rejection | null
       return null;
     }
     case 'place_cannon': {
-      const result = placeCannon(state, action.player, action.x, action.y);
+      const result = placeCannon(state, action.player, action.x, action.y, action.special === true);
       if ('rejection' in result) return result.rejection;
       advancePhase(state); // may end the phase early once everyone has placed
       return null;
@@ -791,10 +807,10 @@ export function runLog(state: MatchState, log: readonly LoggedAction[], untilTic
 
 /**
  * Which fingerprint `hashMatchState` takes. Version 1 left out each player's piece
- * schedule and a few counters; recordings made with it name it in their format, and are
- * checked against it still (`replayRecording`).
+ * schedule and a few counters, version 2 the special towers; recordings made with them
+ * name them in their format, and are checked against them still (`replayRecording`).
  */
-export const HASH_VERSION = 2;
+export const HASH_VERSION = 3;
 
 /**
  * A fingerprint of everything that affects play. Two simulations fed the same seed,
@@ -803,6 +819,9 @@ export const HASH_VERSION = 2;
  *
  * Deliberately excludes `events`, which are a transport concern.
  */
+/** Kinds by a fixed number for the fingerprint, so renaming one never changes a hash. */
+const CANNON_KIND_CODES: readonly string[] = ['cannon', 'bertha', 'architect', 'rapid'];
+
 export function hashMatchState(state: MatchState, version = HASH_VERSION): string {
   const h = new Hasher();
   h.u32(state.seed);
@@ -869,5 +888,18 @@ export function hashMatchState(state: MatchState, version = HASH_VERSION): strin
   for (const c of state.castles) h.i32(c.w).i32(c.h);
   for (const c of state.cannons) h.i32(c.w).i32(c.h);
   for (const s of state.shots) h.i32(s.fromX).i32(s.fromY);
+  if (version < 3) return h.hex;
+
+  // Version 3: the special towers — each player's loadout and purchases, every gun's and
+  // shot's kind, the walls awaiting the Architects' repair.
+  const kindCode = (kind: string): number => CANNON_KIND_CODES.indexOf(kind);
+  for (const p of state.players) {
+    h.u32(p.special === null ? 0xffff : kindCode(p.special));
+    h.i32(p.specialsBought).bool(p.openingPlacement);
+  }
+  for (const c of state.cannons) h.u32(kindCode(c.kind));
+  for (const s of state.shots) h.u32(kindCode(s.kind));
+  h.u32(state.lostWalls.length);
+  for (const i of state.lostWalls) h.i32(i);
   return h.hex;
 }

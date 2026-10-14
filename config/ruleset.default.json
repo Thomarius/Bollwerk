@@ -30,6 +30,28 @@
     "damagesWalls": true,
     "damagesOwnWalls": false
   },
+  "specials": {
+    "enabled": false,
+    "perRound": 1,
+    "maxOwned": 3,
+    "bertha": {
+      "cost": 3,
+      "footprint": [2, 2],
+      "flightFactor": 1,
+      "crater": "plus5"
+    },
+    "architect": {
+      "cost": 2,
+      "footprint": [2, 2],
+      "flightFactor": 1,
+      "repairRadius": 2
+    },
+    "rapid": {
+      "cost": 2,
+      "footprint": [2, 2],
+      "flightFactor": 0.4
+    }
+  },
   "build": {
     "sharedPieceSequence": false,
     "restrictToOwnIsland": true,

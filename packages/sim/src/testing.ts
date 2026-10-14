@@ -5,6 +5,7 @@ import {
   Structure,
   Terrain,
   type Cannon,
+  type CannonKind,
   type Castle,
   type MatchState,
   type PlayerState,
@@ -15,9 +16,10 @@ import {
  * picture states the case far more clearly than a typed array literal.
  *
  * `.` water   `,` empty land   `#` wall   `@` castle   `*` cannon
+ * `B` Big Bertha   `A` Architect   `R` Rapid Cannon — special towers, cannons of a kind
  * `1`-`4` empty land belonging to that island (default is island 1)
  *
- * Adjacent `@` or `*` glyphs are grouped into one structure by bounding box.
+ * Adjacent `@`, `*` or tower glyphs are grouped into one structure by bounding box.
  *
  * `islands`, when given, is a second picture of the same size in which a digit puts
  * that tile on that island whatever the first picture holds. It is how a wall, castle
@@ -26,6 +28,14 @@ import {
  *
  * Every wall is owned by the island it stands on, as it would be in play.
  */
+/** The glyph of each kind of gun in a picture. */
+const GUN_GLYPHS: Readonly<Record<string, CannonKind>> = {
+  '*': 'cannon',
+  B: 'bertha',
+  A: 'architect',
+  R: 'rapid',
+};
+
 export function stateFromAscii(
   art: string,
   ruleset: Ruleset = defaultRuleset,
@@ -62,7 +72,7 @@ export function stateFromAscii(
         structure[i] = Structure.Wall;
         owner[i] = islandId[i] as number;
       } else if (ch === '@') structure[i] = Structure.Castle;
-      else if (ch === '*') structure[i] = Structure.Cannon;
+      else if (GUN_GLYPHS[ch] !== undefined) structure[i] = Structure.Cannon;
     }
   }
 
@@ -90,13 +100,16 @@ export function stateFromAscii(
     ...b,
     enclosed: false,
   }));
-  const cannons: Cannon[] = blocks('*').map((b, id) => ({
-    id,
-    owner: (islandId[b.y * width + b.x] as number) - 1,
-    ...b,
-    active: true,
-    shotId: null,
-  }));
+  const cannons: Cannon[] = Object.entries(GUN_GLYPHS)
+    .flatMap(([glyph, kind]) => blocks(glyph).map((b) => ({ kind, ...b })))
+    .map(({ kind, ...b }, id) => ({
+      id,
+      owner: (islandId[b.y * width + b.x] as number) - 1,
+      kind,
+      ...b,
+      active: true,
+      shotId: null,
+    }));
 
   for (const castle of castles) {
     for (let oy = 0; oy < castle.h; oy++)
@@ -121,6 +134,9 @@ export function stateFromAscii(
     overtimeSpent: false,
     score: 0,
     wallsDestroyed: 0,
+    special: null,
+    specialsBought: 0,
+    openingPlacement: false,
   }));
 
   return {
@@ -147,6 +163,7 @@ export function stateFromAscii(
     castles,
     cannons,
     shots: [],
+    lostWalls: [],
     nextCannonId: cannons.length,
     nextShotId: 0,
     winners: [],
@@ -182,6 +199,11 @@ export function withoutContinues(ruleset: Ruleset): Ruleset {
  */
 export function withoutRoundCap(ruleset: Ruleset): Ruleset {
   return { ...ruleset, scoring: { ...ruleset.scoring, maxRounds: null } };
+}
+
+/** A ruleset with the special towers played. */
+export function withSpecials(ruleset: Ruleset): Ruleset {
+  return { ...ruleset, specials: { ...ruleset.specials, enabled: true } };
 }
 
 /** A ruleset with compressed phases, so a whole match runs in a test in milliseconds. */

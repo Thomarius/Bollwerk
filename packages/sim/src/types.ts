@@ -1,10 +1,13 @@
-import type { Ruleset, TerrainConfig } from '@bollwerk/config';
+import type { Ruleset, SpecialKind, TerrainConfig } from '@bollwerk/config';
 
 export const Terrain = { Water: 0, Land: 1 } as const;
 export type TerrainKind = (typeof Terrain)[keyof typeof Terrain];
 
 export const Structure = { Empty: 0, Wall: 1, Castle: 2, Cannon: 3 } as const;
 export type StructureKind = (typeof Structure)[keyof typeof Structure];
+
+/** An ordinary gun, or one of the special towers (docs/SPECIAL_TOWERS.md). */
+export type CannonKind = 'cannon' | SpecialKind;
 
 export const PHASES = [
   'lobby',
@@ -56,6 +59,17 @@ export interface PlayerState {
    * points, because failing to seal forfeits them.
    */
   wallsDestroyed: number;
+  /** The special tower this player brings to the match, or null; fixed at its start. */
+  special: SpecialKind | null;
+  /** Towers bought in this cannon phase, against `specials.perRound`; zeroed as combat begins. */
+  specialsBought: number;
+  /**
+   * Whether this player's coming or current cannon phase is an opening placement — the
+   * match's first, or the one after a continue — in which no tower may be bought. Set as
+   * a castle is owed, cleared as the cannon phase ends, since the castle chosen during it
+   * no longer tells the two apart.
+   */
+  openingPlacement: boolean;
 }
 
 /**
@@ -88,6 +102,7 @@ export interface Cannon {
   id: number;
   /** Owning player id. */
   owner: number;
+  kind: CannonKind;
   x: number;
   y: number;
   w: number;
@@ -102,6 +117,8 @@ export interface Shot {
   id: number;
   cannonId: number;
   owner: number;
+  /** The kind of gun that fired it, which decides its crater. */
+  kind: CannonKind;
   fromX: number;
   fromY: number;
   toX: number;
@@ -114,7 +131,8 @@ export type Action =
   | { kind: 'select_castle'; player: number; castleId: number }
   | { kind: 'fire'; player: number; x: number; y: number }
   | { kind: 'place_piece'; player: number; x: number; y: number; rotation: number }
-  | { kind: 'place_cannon'; player: number; x: number; y: number };
+  /** `special` places the player's tower instead of an ordinary cannon. */
+  | { kind: 'place_cannon'; player: number; x: number; y: number; special?: true | undefined };
 
 export type ActionKind = Action['kind'];
 
@@ -144,7 +162,15 @@ export type MatchEvent =
       rotation: number;
       cells: number[];
     }
-  | { kind: 'cannon_placed'; tick: number; player: number; cannonId: number; x: number; y: number }
+  | {
+      kind: 'cannon_placed';
+      tick: number;
+      player: number;
+      cannonId: number;
+      x: number;
+      y: number;
+      cannonKind: CannonKind;
+    }
   | { kind: 'round_resolved'; tick: number; round: number; results: RoundResult[] }
   | {
       /** A player failed to seal anything and spent a life rather than being knocked out. */
@@ -155,6 +181,8 @@ export type MatchEvent =
       continuesRemaining: number;
     }
   | { kind: 'walls_swept'; tick: number; tiles: number[] }
+  /** An Architect's repair as a barrage ends: the walls it rebuilt for its owner. */
+  | { kind: 'walls_repaired'; tick: number; player: number; tiles: number[] }
   | { kind: 'player_eliminated'; tick: number; player: number; round: number }
   | {
       kind: 'game_over';
@@ -223,6 +251,12 @@ export interface MatchState {
   castles: Castle[];
   cannons: Cannon[];
   shots: Shot[];
+  /**
+   * Wall tiles shots have cleared since the last barrage ended, in the order they fell,
+   * for the Architects' repair; emptied once it has run. Every island's, whoever owns an
+   * Architect, so the repair needs no record kept in advance.
+   */
+  lostWalls: number[];
 
   nextCannonId: number;
   nextShotId: number;

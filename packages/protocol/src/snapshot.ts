@@ -1,4 +1,9 @@
-import { RulesetSchema, TerrainConfigSchema } from '@bollwerk/config';
+import {
+  RulesetSchema,
+  SPECIAL_KINDS,
+  SpecialKindSchema,
+  TerrainConfigSchema,
+} from '@bollwerk/config';
 import { PHASES, type MatchState } from '@bollwerk/sim';
 import { z } from 'zod';
 
@@ -50,7 +55,12 @@ const PlayerSchema = z.strictObject({
   overtimeSpent: z.boolean(),
   score: z.number().int().nonnegative(),
   wallsDestroyed: z.number().int().nonnegative(),
+  special: SpecialKindSchema.nullable(),
+  specialsBought: z.number().int().nonnegative(),
+  openingPlacement: z.boolean(),
 });
+
+const CannonKindSchema = z.enum(['cannon', ...SPECIAL_KINDS]);
 
 const CastleSchema = z.strictObject({
   id: z.number().int().nonnegative(),
@@ -65,6 +75,7 @@ const CastleSchema = z.strictObject({
 const CannonSchema = z.strictObject({
   id: z.number().int().nonnegative(),
   owner: z.number().int().nonnegative(),
+  kind: CannonKindSchema,
   x: z.number().int(),
   y: z.number().int(),
   w: z.number().int().positive(),
@@ -77,6 +88,7 @@ const ShotSchema = z.strictObject({
   id: z.number().int().nonnegative(),
   cannonId: z.number().int().nonnegative(),
   owner: z.number().int().nonnegative(),
+  kind: CannonKindSchema,
   fromX: z.number(),
   fromY: z.number(),
   toX: z.number().int(),
@@ -117,6 +129,7 @@ export const SnapshotSchema = z.strictObject({
   castles: z.array(CastleSchema),
   cannons: z.array(CannonSchema),
   shots: z.array(ShotSchema),
+  lostWalls: z.array(z.number().int().nonnegative()),
   nextCannonId: z.number().int().nonnegative(),
   nextShotId: z.number().int().nonnegative(),
   winners: z.array(z.number().int().nonnegative()),
@@ -146,6 +159,7 @@ export function captureSnapshot(state: MatchState): Snapshot {
     castles: state.castles.map((c) => ({ ...c })),
     cannons: state.cannons.map((c) => ({ ...c })),
     shots: state.shots.map((s) => ({ ...s })),
+    lostWalls: [...state.lostWalls],
     nextCannonId: state.nextCannonId,
     nextShotId: state.nextShotId,
     winners: [...state.winners],
@@ -178,6 +192,7 @@ export function applySnapshot(state: MatchState, snapshot: Snapshot): void {
   state.castles = snapshot.castles.map((c) => ({ ...c }));
   state.cannons = snapshot.cannons.map((c) => ({ ...c }));
   state.shots = snapshot.shots.map((s) => ({ ...s }));
+  state.lostWalls = [...snapshot.lostWalls];
   state.nextCannonId = snapshot.nextCannonId;
   state.nextShotId = snapshot.nextShotId;
   state.winners = [...snapshot.winners];

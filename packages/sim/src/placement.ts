@@ -1,5 +1,13 @@
-import { Structure, Terrain, type Cannon, type MatchState, type PlayerState } from './types.js';
+import {
+  Structure,
+  Terrain,
+  type Cannon,
+  type CannonKind,
+  type MatchState,
+  type PlayerState,
+} from './types.js';
 import { pieceAt, pieceCells } from './pieces.js';
+import { footprintOf, specialRefusal, towerCost } from './specials.js';
 
 /**
  * Why an action was refused. The server returns these to the client verbatim, and
@@ -23,7 +31,13 @@ export type Rejection =
   | 'already_selected'
   | 'own_island'
   | 'overtime_spent'
-  | 'teammate_island';
+  | 'teammate_island'
+  | 'special_off'
+  | 'no_special'
+  | 'special_at_opening'
+  | 'special_this_round'
+  | 'special_cap'
+  | 'special_too_dear';
 
 export function playerOf(state: MatchState, id: number): PlayerState | null {
   return state.players[id] ?? null;
@@ -143,23 +157,33 @@ function mayBuildOn(state: MatchState, player: PlayerState, island: number): boo
   return owner !== undefined && owner.team === player.team && !owner.eliminated;
 }
 
-/** Cannons go inside your own sealed territory, never on open ground. */
+/**
+ * Cannons go inside your own sealed territory, never on open ground — and so never on a
+ * teammate's island, where a player may build wall but not guns. `special` asks the same
+ * for the player's tower, on its own footprint and at its own price.
+ */
 export function canPlaceCannon(
   state: MatchState,
   playerId: number,
   x: number,
   y: number,
+  special = false,
 ): Rejection | null {
   if (state.phase !== 'cannon_place') return 'wrong_phase';
   const player = playerOf(state, playerId);
   if (!player) return 'unknown_player';
   if (player.eliminated) return 'eliminated';
   if (player.cannonsToPlace <= 0) return 'no_cannons_left';
+  if (special) {
+    const refusal = specialRefusal(state, player);
+    if (refusal !== null) return refusal;
+  }
 
+  // A tower counts as one gun against the cap, as it takes one gun's place.
   const cap = state.ruleset.cannons.maxTotal;
   if (cap !== null && countCannons(state, playerId) >= cap) return 'cannon_cap';
 
-  const [cw, ch] = state.ruleset.cannons.footprint;
+  const [cw, ch] = footprintOf(state.ruleset, kindPlaced(player, special));
   for (let oy = 0; oy < ch; oy++) {
     for (let ox = 0; ox < cw; ox++) {
       const tx = x + ox;
@@ -180,17 +204,29 @@ export function countCannons(state: MatchState, playerId: number): number {
   return count;
 }
 
+/** The kind of gun a placement puts down: the player's tower if asked for, else a cannon. */
+function kindPlaced(player: PlayerState, special: boolean): CannonKind {
+  return special && player.special !== null ? player.special : 'cannon';
+}
+
 export function placeCannon(
   state: MatchState,
   playerId: number,
   x: number,
   y: number,
+  special = false,
 ): { rejection: Rejection } | { cannon: Cannon } {
-  const rejection = canPlaceCannon(state, playerId, x, y);
+  const rejection = canPlaceCannon(state, playerId, x, y, special);
   if (rejection) return { rejection };
   const player = state.players[playerId] as PlayerState;
-  const cannon = spawnCannon(state, playerId, x, y);
-  player.cannonsToPlace--;
+  const kind = kindPlaced(player, special);
+  const cannon = spawnCannon(state, playerId, x, y, kind);
+  if (kind === 'cannon') {
+    player.cannonsToPlace--;
+  } else {
+    player.cannonsToPlace -= towerCost(state.ruleset, kind);
+    player.specialsBought++;
+  }
   state.events.push({
     kind: 'cannon_placed',
     tick: state.tick,
@@ -198,17 +234,25 @@ export function placeCannon(
     cannonId: cannon.id,
     x,
     y,
+    cannonKind: kind,
   });
   return { cannon };
 }
 
 /** Writes a cannon into the grid without any phase or entitlement checks. */
-function spawnCannon(state: MatchState, playerId: number, x: number, y: number): Cannon {
+function spawnCannon(
+  state: MatchState,
+  playerId: number,
+  x: number,
+  y: number,
+  kind: CannonKind,
+): Cannon {
   const player = state.players[playerId] as PlayerState;
-  const [cw, ch] = state.ruleset.cannons.footprint;
+  const [cw, ch] = footprintOf(state.ruleset, kind);
   const cannon: Cannon = {
     id: state.nextCannonId++,
     owner: playerId,
+    kind,
     x,
     y,
     w: cw,

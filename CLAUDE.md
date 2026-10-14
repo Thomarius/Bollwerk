@@ -299,7 +299,7 @@ session needs the server rebuilt and every page reloaded for):
   piece and German checked in play by the user (ARCHIVE 12n–12t).
 
 **Next** — PLAN §11: towards a first feature-ready version, special towers (item 2, designed
-in `docs/SPECIAL_TOWERS.md`, its open questions to be decided before ST1). Bots that hold
+in `docs/SPECIAL_TOWERS.md`, its questions settled 2026-10-14, ST1 next). Bots that hold
 ground as people do are done (ARCHIVE 13zj: the yardstick, the dead guns, pace, build planning,
 the new scoring and bold widening; `buildStats.ts`). The bot learning work is closed,
 its remaining steps dropped (the user's decision, 2026-10-14; ARCHIVE 13zg). French is not to

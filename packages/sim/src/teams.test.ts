@@ -83,7 +83,17 @@ describe('no attacking a teammate', () => {
   it('refuses a shot at a teammate’s island', () => {
     const state = teamed();
     state.phase = 'combat';
-    state.cannons.push({ id: 0, owner: 0, x: 3, y: 3, w: 1, h: 1, active: true, shotId: null });
+    state.cannons.push({
+      id: 0,
+      owner: 0,
+      kind: 'cannon',
+      x: 3,
+      y: 3,
+      w: 1,
+      h: 1,
+      active: true,
+      shotId: null,
+    });
     expect(fire(state, 0, 11, 1)).toEqual({ rejection: 'teammate_island' });
     expect('shot' in fire(state, 0, 19, 1)).toBe(true); // the other team is fair game
   });
@@ -97,6 +107,7 @@ describe('no attacking a teammate', () => {
       id: 0,
       cannonId: 0,
       owner: 0,
+      kind: 'cannon',
       fromX: 3,
       fromY: 3,
       toX: 8,

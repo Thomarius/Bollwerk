@@ -142,6 +142,7 @@ describe('the next gun to be ready', () => {
       {
         id: 1,
         cannonId: a!.id,
+        kind: 'cannon',
         owner: 0,
         fromX: 1,
         fromY: 1,
@@ -153,6 +154,7 @@ describe('the next gun to be ready', () => {
       {
         id: 2,
         cannonId: b!.id,
+        kind: 'cannon',
         owner: 0,
         fromX: 4,
         fromY: 1,
