@@ -2,8 +2,8 @@
 
 Territory is scored today as **tiles × castles** (PLAN §1.7). This file is the change agreed with
 the user on 2026-10-13 after a test match: **no multiplication by castles any more; instead every
-gun firing at the resolution earns a flat bonus, 5 points as the starting value.** Nothing of it
-is built yet. Like PLAN.md it says what is configurable and why, and leaves the values to
+gun firing at the resolution earns a flat bonus, 5 points as the starting value.** Work packages
+1 and 2 are built (2026-10-14); the measurement, the client and the docs are not. Like PLAN.md it says what is configurable and why, and leaves the values to
 `config/*.json`; once built, its summary moves to ARCHIVE.md.
 
 ---
@@ -122,6 +122,14 @@ score stays the sum of the members' own.
   - `buildPlanning.ts` `prospect` (the castle nearly sealed, valued at area × castles);
   - `building.ts` the widening's `valueOf` (area × castles, against `WIDEN_GAIN`);
   - `combat.ts` the strategic personality's target (`tiles × enclosedCastles`).
+
+  Built as `heldPoints` and `holdingsOf` (`sim/src/scoring.ts`). Valued by points alone, a
+  castle was worth its few tiles, and the widening walled a strip of land rather than the castle
+  beside it (`widening.test.ts`). So a bot values a wall by `wallValue` (`ai/src/tactics.ts`):
+  its points, plus the guns its castles earn at `weights.gun` each — **only as many as the wall
+  leaves room to stand** (the user's rule, 2026-10-14): a castle whose gun has nowhere to go is
+  worth its tiles and no more. The widening and the planning's `prospect` both use it, at the
+  bot's own `weights.gun`.
 
   And the planning's score (`scoreOf`) takes the round's points from the sim, gun points
   included, while `weights.gun` already values every gun left ready — **the guns would count

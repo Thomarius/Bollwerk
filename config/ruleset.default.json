@@ -164,6 +164,8 @@
     "maxRounds": 10,
     "wallPoints": 2,
     "tilePoints": 1,
+    "castleMultiplier": false,
+    "gunPoints": 5,
     "scoreDamageOnFailedRound": false
   },
   "teams": {

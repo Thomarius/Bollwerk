@@ -205,7 +205,7 @@ for (const file of readdirSync(dir)
         const end = held(state, r.player);
         ph.castlesEnd = r.enclosedCastles;
         ph.tilesEnd = end.tiles;
-        ph.points = r.territoryPoints + r.damagePoints;
+        ph.points = r.territoryPoints + r.gunPoints + r.damagePoints;
         ph.failed = r.enclosedCastles === 0;
         const seal = sealingWall(state, r.player);
         if (!ph.failed) {

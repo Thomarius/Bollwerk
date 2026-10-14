@@ -1,6 +1,7 @@
 import type { Ruleset, TerrainConfig } from '@bollwerk/config';
 
 import { applyEnclosure } from './enclosure.js';
+import { heldPoints, holdingsOf, type Holding } from './scoring.js';
 import { sweepOrphanedWalls } from './sweep.js';
 import { Hasher } from './hash.js';
 import {
@@ -409,6 +410,7 @@ function resolveRound(state: MatchState): void {
         cannonsAwarded: 0,
         eliminated: true,
         territoryPoints: 0,
+        gunPoints: 0,
         damagePoints: 0,
       });
       continue;
@@ -439,6 +441,7 @@ function resolveRound(state: MatchState): void {
         cannonsAwarded: player.cannonsToPlace,
         eliminated: false,
         territoryPoints: 0,
+        gunPoints: 0,
         damagePoints: 0,
       });
       continue;
@@ -457,6 +460,7 @@ function resolveRound(state: MatchState): void {
       cannonsAwarded: award,
       eliminated: false,
       territoryPoints: 0,
+      gunPoints: 0,
       damagePoints: 0,
     });
   }
@@ -514,33 +518,27 @@ function resolveRound(state: MatchState): void {
 }
 
 /**
- * Banks the round's points: opponents' wall destroyed, plus enclosed tiles times
- * enclosed castles, both as totals across every region a player holds. Totals rather
- * than per region, so two separate loops are worth what one loop around both would be
- * — and the product grows with the square of what a player holds, which is what
- * makes a tight wall around a single castle lose on the clock.
+ * Banks the round's points: opponents' wall destroyed, and what the player holds — the
+ * ground and the guns firing, by `heldPoints`, the formula the bots value walls by too.
+ * Totals across every region a player holds, so two separate loops are worth what one
+ * loop around both would be.
  *
  * A player who ends the round without a sealed castle forfeits all of it, damage
  * included, unless `scoreDamageOnFailedRound` says otherwise.
  */
 function scoreRound(state: MatchState, results: RoundResult[]): void {
-  const { wallPoints, tilePoints, scoreDamageOnFailedRound } = state.ruleset.scoring;
-  const tiles = new Array<number>(state.players.length).fill(0);
-  for (let i = 0; i < state.territory.length; i++) {
-    const owner = state.territory[i] as number;
-    if (owner > 0) tiles[owner - 1] = (tiles[owner - 1] as number) + 1;
-  }
-
+  const { scoring } = state.ruleset;
+  const holdings = holdingsOf(state);
   for (const result of results) {
     const player = state.players[result.player] as PlayerState;
     if (player.eliminated) continue;
     const sealed = player.enclosedCastles > 0;
-    result.territoryPoints = sealed
-      ? tilePoints * (tiles[player.id] as number) * player.enclosedCastles
-      : 0;
+    const held = heldPoints(scoring, holdings[player.id] as Holding);
+    result.territoryPoints = held.territoryPoints;
+    result.gunPoints = held.gunPoints;
     result.damagePoints =
-      sealed || scoreDamageOnFailedRound ? wallPoints * player.wallsDestroyed : 0;
-    player.score += result.territoryPoints + result.damagePoints;
+      sealed || scoring.scoreDamageOnFailedRound ? scoring.wallPoints * player.wallsDestroyed : 0;
+    player.score += result.territoryPoints + result.gunPoints + result.damagePoints;
   }
   for (const player of state.players) player.wallsDestroyed = 0;
 }

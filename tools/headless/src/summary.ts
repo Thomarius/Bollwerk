@@ -24,7 +24,9 @@ export function summariseStats(rows: StatRow[]): void {
   if (byTier.size === 0) return;
 
   console.log('\nper surviving player-round, averaged:');
-  console.log('  tier     sealed  owned  active  idle%   room  wall  pieces/budget   terr   dmg');
+  console.log(
+    '  tier     sealed  owned  active  idle%   room  wall  pieces/budget   terr  gunpt   dmg',
+  );
   // Levels in order, a person's rows last.
   const labels = [...byTier.keys()].sort((a, b) =>
     a === 'human' ? 1 : b === 'human' ? -1 : a.localeCompare(b, 'en', { numeric: true }),
@@ -53,6 +55,8 @@ export function summariseStats(rows: StatRow[]): void {
           )}  ${(used === null ? '—' : `${(used * 100).toFixed(0)}%`).padStart(12)}  ${mean(
           list.map((r) => r.territoryPoints),
         )
+          .toFixed(0)
+          .padStart(5)}  ${mean(list.map((r) => r.gunPoints))
           .toFixed(0)
           .padStart(5)}  ${mean(list.map((r) => r.damagePoints))
           .toFixed(0)

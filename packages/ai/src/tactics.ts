@@ -3,7 +3,11 @@ import {
   NEIGHBOURS_8,
   Structure,
   Terrain,
+  cannonReward,
+  heldValue,
+  holdingOf,
   type Castle,
+  type EnclosureResult,
   type MatchState,
 } from '@bollwerk/sim';
 
@@ -436,6 +440,41 @@ export function cannonRoom(state: MatchState, playerId: number): number {
     }
   }
   return spots;
+}
+
+/**
+ * What a wall is worth to a bot, its enclosure given: the points its holding banks, by the
+ * scoring's own formula (`heldValue`), and the guns its castles earn, at `gunWeight` each.
+ * Ground scores tile by tile and a castle no more than its tiles, so a castle pays through
+ * its guns, every round after it is sealed; valued by points alone, a bot never reached for
+ * one (docs/SCORING.md). But only the guns the wall leaves room to stand: a castle whose gun
+ * has nowhere to go is worth its few tiles and no more.
+ */
+export function wallValue(
+  state: MatchState,
+  playerId: number,
+  structure: Uint8Array,
+  enclosure: EnclosureResult,
+  gunWeight: number,
+): number {
+  const holding = holdingOf(state, playerId, enclosure);
+  const points = heldValue(state.ruleset.scoring, holding);
+  if (holding.castles === 0 || gunWeight === 0) return points;
+  const { cannons } = state.ruleset;
+  const main = state.players[playerId]?.startingCastleId ?? null;
+  let reward = cannonReward(
+    cannons,
+    holding.castles,
+    main !== null && (enclosure.castleEnclosed[main] ?? false),
+  );
+  if (cannons.maxTotal !== null) {
+    let owned = 0;
+    for (const cannon of state.cannons) if (cannon.owner === playerId) owned++;
+    reward = Math.max(0, Math.min(reward, cannons.maxTotal - owned));
+  }
+  if (reward === 0) return points;
+  const room = cannonRoom({ ...state, structure, territory: enclosure.territory }, playerId);
+  return points + gunWeight * Math.min(reward, room);
 }
 
 /**

@@ -198,7 +198,7 @@ const f = (x: number, digits = 1): string => (Number.isFinite(x) ? x.toFixed(dig
 
 const order = [...groups.keys()].sort();
 console.log(
-  '\ngroup        matches rounds | points/rd territory damage | castles failed | guns active  share room | walls pieces vsPace',
+  '\ngroup        matches rounds | points/rd territory  guns damage | castles failed | guns active  share room | walls pieces vsPace',
 );
 for (const key of order) {
   const { rows, matches } = groups.get(key) as { rows: StatRow[]; matches: Set<string> };
@@ -212,8 +212,9 @@ for (const key of order) {
       String(matches.size).padStart(7),
       String(r.length).padStart(6),
       '|',
-      f(mean(r.map((x) => x.territoryPoints + x.damagePoints)), 0).padStart(9),
+      f(mean(r.map((x) => x.territoryPoints + x.gunPoints + x.damagePoints)), 0).padStart(9),
       f(mean(r.map((x) => x.territoryPoints)), 0).padStart(9),
+      f(mean(r.map((x) => x.gunPoints)), 0).padStart(5),
       f(mean(r.map((x) => x.damagePoints)), 0).padStart(6),
       '|',
       f(mean(r.map((x) => x.enclosedCastles))).padStart(7),
@@ -238,6 +239,7 @@ for (const key of order) {
 
 for (const [title, value, digits] of [
   ['territory points a round', (x: StatRow) => x.territoryPoints, 0],
+  ['gun points a round', (x: StatRow) => x.gunPoints, 0],
   ['castles sealed', (x: StatRow) => x.enclosedCastles, 1],
   ['guns active', (x: StatRow) => x.cannonsActive, 1],
   ['pieces laid', (x: StatRow) => x.piecesPlaced, 1],

@@ -1,4 +1,4 @@
-import { type BotProfile, type FitWeights } from '@bollwerk/config';
+import { defaultAiConfig, type BotProfile, type FitWeights } from '@bollwerk/config';
 import {
   Structure,
   cannonReward,
@@ -26,6 +26,7 @@ import {
   pocketPlan,
   SealPlanner,
   thickenTargets,
+  wallValue,
   weakestWall,
   type PocketPlan,
   type SealPlan,
@@ -131,10 +132,16 @@ class Look {
  * attention goes, and it lays a piece at a person's pace.
  */
 export class Builder {
+  /**
+   * @param gunWeight what a gun earned is worth against points, in valuing a wall
+   * (`wallValue`): the planning's own `weights.gun`, so a castle is worth the same to the
+   * ladder as to the search.
+   */
   constructor(
     private readonly playerId: number,
     private readonly profile: BotProfile,
     private readonly slots: PlanningSlots,
+    private readonly gunWeight: number = defaultAiConfig.planning.weights.gun,
   ) {}
 
   /** The strategy this phase follows, or null for the ladder (`decide`). */
@@ -161,7 +168,7 @@ export class Builder {
    * rollout branching from a shared start is built on. It plans afresh on its next turn.
    */
   fork(strategy: Strategy | null): Builder {
-    const copy = new Builder(this.playerId, this.profile, this.slots);
+    const copy = new Builder(this.playerId, this.profile, this.slots, this.gunWeight);
     Object.assign(copy, this, {
       strategy,
       halted: false,
@@ -699,8 +706,9 @@ export class Builder {
    * step 1: they end a phase with more castles, and spend 45% of their cells once sealed on
    * a wider wall where the bots thickened). Weighed: the wall it chose last; the standing
    * wall pushed out to take in each castle outside it; a stretch of land beside the wall;
-   * and the castle walls with room. Valued as the scoring does, tiles times castles, with
-   * the wall stood in; built if worth `WIDEN_GAIN` times what it holds. The wall standing
+   * and the castle walls with room. Valued with the wall stood in by `wallValue` — the
+   * scoring's points and the guns its castles earn where there is room to stand them;
+   * built if worth `WIDEN_GAIN` times what it holds. The wall standing
    * is the bail-out: building outside it leaves it whole, and a part-built extension
    * touching territory outlasts the sweep. Null to go on down the ladder.
    *
@@ -767,10 +775,9 @@ export class Builder {
     const valueOf = (tiles: readonly number[]): number => {
       for (const i of tiles) board[i] = Structure.Wall;
       const e = computeEnclosure({ ...state, structure: board });
+      const value = wallValue(state, this.playerId, board, e, this.gunWeight);
       for (const i of tiles) board[i] = state.structure[i] as number;
-      let area = 0;
-      for (const t of e.territory) if (t === island) area++;
-      return area * (e.enclosedCastlesByPlayer[this.playerId] ?? 0);
+      return value;
     };
 
     const reach = this.cellsAffordable(state) * WIDEN_REACH * this.profile.riskMargin;

@@ -56,6 +56,8 @@ export interface StatRow {
   piecesBudget: number | null;
   shotsFired: number;
   territoryPoints: number;
+  /** For the guns firing at the resolution (`scoring.gunPoints`); 0 under the old rule. */
+  gunPoints: number;
   damagePoints: number;
   /** Banked total after this round. */
   score: number;
@@ -92,6 +94,7 @@ const STAT_COLUMNS: (keyof StatRow)[] = [
   'piecesBudget',
   'shotsFired',
   'territoryPoints',
+  'gunPoints',
   'damagePoints',
   'score',
   'repairAtBuild',
@@ -248,6 +251,7 @@ export class RoundStats {
             piecesBudget: piecesBudget(this.bundle, tier),
             shotsFired: this.fired.get(result.player) ?? 0,
             territoryPoints: result.territoryPoints,
+            gunPoints: result.gunPoints,
             damagePoints: result.damagePoints,
             score: state.players[result.player]?.score ?? 0,
             repairAtBuild: this.repairAtBuild.get(result.player) ?? 0,

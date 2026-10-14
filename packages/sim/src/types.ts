@@ -177,6 +177,8 @@ export interface RoundResult {
   eliminated: boolean;
   /** Banked this resolution, so nobody downstream has to recompute the formula. */
   territoryPoints: number;
+  /** For the guns firing at the resolution, the ones just earned not yet among them. */
+  gunPoints: number;
   damagePoints: number;
 }
 

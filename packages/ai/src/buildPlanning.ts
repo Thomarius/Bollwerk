@@ -12,7 +12,7 @@ import {
 import { Builder, type Stage, type Strategy } from './building.js';
 import { PlanningSlots } from './planning.js';
 import { RolloutRun, snapshot, type Placement, type Rollout } from './rollout.js';
-import { SealPlanner, cannonRoom, type SealPlan } from './tactics.js';
+import { SealPlanner, cannonRoom, wallValue, type SealPlan } from './tactics.js';
 
 /**
  * A build phase chosen by playing it out (BUILD_PLANNING.md, step 2): the ways a bot might
@@ -260,7 +260,12 @@ export class PlanSearch {
     const fresh = (builder: Builder): RolloutRun =>
       RolloutRun.start(this.board, this.playerId, builder, new Rng(this.seed)) as RolloutRun;
     if (isLadder(strategy)) {
-      const builder = new Builder(this.playerId, this.profile, new PlanningSlots());
+      const builder = new Builder(
+        this.playerId,
+        this.profile,
+        new PlanningSlots(),
+        this.weights.gun,
+      );
       builder.lean = strategy.lean === true;
       this.current = fresh(builder);
       return null;
@@ -268,7 +273,12 @@ export class PlanSearch {
     const key = JSON.stringify(strategy.stages[0]);
     let start = this.starts.get(key);
     if (start === undefined) {
-      const builder = new Builder(this.playerId, this.profile, new PlanningSlots());
+      const builder = new Builder(
+        this.playerId,
+        this.profile,
+        new PlanningSlots(),
+        this.weights.gun,
+      );
       builder.strategy = { name: 'start', stages: strategy.stages.slice(0, 1), spare: 'halt' };
       start = { run: fresh(builder), at: 'placed' };
       this.starts.set(key, start);
@@ -354,9 +364,11 @@ export function scoreOf(
   const { result, board } = rollout;
   if (result === null || result.eliminated) return -weights.failure * 10;
   if (result.enclosedCastles === 0) return -weights.failure;
-  const points = result.territoryPoints + result.damagePoints;
+  const points = result.territoryPoints + result.gunPoints + result.damagePoints;
   const guns = gunsReady(rollout, playerId);
-  return points + weights.gun * guns + weights.prospect * prospect(board, playerId, profile);
+  return (
+    points + weights.gun * guns + weights.prospect * prospect(board, playerId, profile, weights.gun)
+  );
 }
 
 /**
@@ -372,8 +384,16 @@ export function gunsReady(rollout: Rollout, playerId: number): number {
   return firing + Math.min(reward, cannonRoom(board, playerId));
 }
 
-/** The best castle outside the wall: the points sealing it would add, times how nearly. */
-function prospect(board: MatchState, playerId: number, profile: BotProfile): number {
+/**
+ * The best castle outside the wall: what sealing it would add (`wallValue`: its points, and
+ * its guns where the wall leaves them room), times how nearly.
+ */
+function prospect(
+  board: MatchState,
+  playerId: number,
+  profile: BotProfile,
+  gunWeight: number,
+): number {
   const player = board.players[playerId];
   if (player === undefined) return 0;
   const island = player.islandId;
@@ -381,15 +401,13 @@ function prospect(board: MatchState, playerId: number, profile: BotProfile): num
   const held = mine.filter((c) => c.enclosed);
   if (held.length === 0) return 0;
   const cells = cellsPerPhase(board, profile, player.pieceRound + 1) * NEXT_PHASE_SHARE;
-  const tilePoints = board.ruleset.scoring.tilePoints;
   const structure = board.structure.slice();
   const valueOf = (tiles: readonly number[]): number => {
     for (const i of tiles) structure[i] = Structure.Wall;
     const e = computeEnclosure({ ...board, structure });
+    const value = wallValue(board, playerId, structure, e, gunWeight);
     for (const i of tiles) structure[i] = board.structure[i] as number;
-    let area = 0;
-    for (const t of e.territory) if (t === island) area++;
-    return tilePoints * area * (e.enclosedCastlesByPlayer[playerId] ?? 0);
+    return value;
   };
   const now = valueOf([]);
   const seal = new SealPlanner(board, playerId);

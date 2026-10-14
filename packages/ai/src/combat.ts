@@ -2,8 +2,11 @@ import { type BotProfile } from '@bollwerk/config';
 import {
   Structure,
   Terrain,
+  heldValue,
+  holdingsOf,
   sameTeam,
   type Action,
+  type Holding,
   type MatchState,
   type Rng,
 } from '@bollwerk/sim';
@@ -210,17 +213,14 @@ export class Gunner {
       case 'points':
         return this.nearestWall(state, rivals, taken);
       case 'strategic': {
-        // Whoever earns most a round now — territory times castles, the scoring formula —
-        // with the banked score to break a tie: the one about to run away with it.
-        const tiles = new Array<number>(state.players.length).fill(0);
-        for (let i = 0; i < state.territory.length; i++) {
-          const owner = state.territory[i] as number;
-          if (owner > 0) tiles[owner - 1] = (tiles[owner - 1] as number) + 1;
-        }
+        // Whoever earns most a round now, by the scoring's own formula, with the banked
+        // score to break a tie: the one about to run away with it.
+        const holdings = holdingsOf(state);
         // Weighed by nearness: a far leader is chased only when far ahead.
         const near = this.nearness(state, rivals);
         const rate = (p: (typeof rivals)[number]): number =>
-          (tiles[p.id] as number) * p.enclosedCastles * (near[rivals.indexOf(p)] as number);
+          heldValue(state.ruleset.scoring, holdings[p.id] as Holding) *
+          (near[rivals.indexOf(p)] as number);
         const leader = rivals.reduce((best, p) =>
           rate(p) > rate(best) || (rate(p) === rate(best) && p.score > best.score) ? p : best,
         );

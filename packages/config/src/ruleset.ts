@@ -192,8 +192,20 @@ export const RulesetSchema = z
       maxRounds: z.number().int().positive().nullable(),
       /** Per opponent's wall tile destroyed during the round. */
       wallPoints: z.number().int().nonnegative(),
-      /** Times total enclosed tiles times total enclosed castles. */
+      /** Per tile of sealed territory, pockets and castle and gun footprints included. */
       tilePoints: z.number().int().nonnegative(),
+      /**
+       * The old rule: the tiles multiplied by the castles sealed, which grew with the square
+       * of the castles held (docs/SCORING.md). Off since 2026-10-14; defaults on so that
+       * recordings made before it existed replay as they were played.
+       */
+      castleMultiplier: z.boolean().default(true),
+      /**
+       * Per gun firing at the resolution — standing on sealed territory once the round is
+       * resolved, so not the guns just earned. Defaults to none, the old rule, for the
+       * same recordings.
+       */
+      gunPoints: z.number().int().nonnegative().default(0),
       /**
        * Whether damage still scores for a player who ends the round without a sealed
        * castle. Off by default: failing to seal forfeits the round's points entirely.

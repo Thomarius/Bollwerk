@@ -130,6 +130,12 @@ const uncapped: Ruleset = {
   scoring: { ...defaultRuleset.scoring, maxRounds: null },
 };
 
+/** Scoring as it was before 2026-10-14: tiles times castles, and nothing for guns. */
+const oldRule: Ruleset = {
+  ...uncapped,
+  scoring: { ...uncapped.scoring, castleMultiplier: true, gunPoints: 0 },
+};
+
 describe('scoring a round', () => {
   it('banks enclosed tiles and the damage dealt', () => {
     const state = rings(uncapped);
@@ -143,12 +149,24 @@ describe('scoring a round', () => {
 
     const resolved = state.events.find((e) => e.kind === 'round_resolved');
     if (resolved?.kind !== 'round_resolved') throw new Error('no resolution');
-    expect(resolved.results[0]).toMatchObject({ territoryPoints: 12, damagePoints: 6 });
+    expect(resolved.results[0]).toMatchObject({
+      territoryPoints: 12,
+      gunPoints: 0,
+      damagePoints: 6,
+    });
   });
 
-  it('multiplies total area by total castles, across separate loops', () => {
+  it('adds the tiles of separate loops, not multiplied by castles', () => {
+    expect(twoLoops(uncapped).players[0]!.score).toBe(defaultRuleset.scoring.tilePoints * 24);
+  });
+
+  it('multiplies total area by total castles under the old rule', () => {
     // Both of island 1's loops belong to player 0: 24 tiles and two castles is 48, where
     // scoring each loop by itself would give 24.
+    expect(twoLoops(oldRule).players[0]!.score).toBe(defaultRuleset.scoring.tilePoints * 24 * 2);
+  });
+
+  function twoLoops(ruleset: Ruleset): MatchState {
     const state = stateFromAscii(
       `
       ..................
@@ -161,7 +179,7 @@ describe('scoring a round', () => {
       ..............###.
       ..............#@@#
     `,
-      uncapped,
+      ruleset,
       `
       ..................
       ..................
@@ -176,14 +194,81 @@ describe('scoring a round', () => {
     );
     resolve(state);
     expect(state.players[0]!.enclosedCastles).toBe(2);
-    expect(state.players[0]!.score).toBe(defaultRuleset.scoring.tilePoints * 24 * 2);
-  });
+    return state;
+  }
 
   it('counts cannon footprints as territory, so placing a gun costs nothing', () => {
     const state = rings(uncapped);
     state.structure[2 * state.width + 2] = Structure.Cannon;
     resolve(state);
     expect(state.players[0]!.score).toBe(12);
+  });
+
+  describe('guns firing', () => {
+    // Island 1: a ring round its castle and a gun (eighteen tiles, both footprints
+    // included), and a second gun outside it. Island 2: a ring round its castle.
+    const GUNS = [
+      `
+      ..........................
+      .########.......######....
+      .#,,,,,,#.......#,,,,#....
+      .#,@@,**#,**,...#,@@,#....
+      .#,@@,**#,**,...#,@@,#....
+      .########.......######....
+      ..........................
+    `,
+      `
+      ..........................
+      ................222222....
+      ................222222....
+      ................222222....
+      ................222222....
+      ................222222....
+      ..........................
+    `,
+    ] as const;
+
+    function resultOf(state: MatchState, player: number) {
+      const resolved = state.events.find((e) => e.kind === 'round_resolved');
+      if (resolved?.kind !== 'round_resolved') throw new Error('no resolution');
+      return resolved.results.find((r) => r.player === player);
+    }
+
+    it('scores each gun on sealed ground, not one outside it nor those just earned', () => {
+      const state = stateFromAscii(GUNS[0], uncapped, GUNS[1]);
+      resolve(state);
+      const { tilePoints, gunPoints } = defaultRuleset.scoring;
+      expect(gunPoints).toBeGreaterThan(0);
+      expect(resultOf(state, 0)).toMatchObject({
+        territoryPoints: tilePoints * 18,
+        gunPoints,
+      });
+      // The castle earns guns at this resolution; they are not standing yet.
+      expect(resultOf(state, 0)!.cannonsAwarded).toBeGreaterThan(0);
+      expect(state.players[0]!.score).toBe(tilePoints * 18 + gunPoints);
+      expect(state.players[1]!.score).toBe(tilePoints * 12);
+    });
+
+    it('scores nothing for guns under the old rule', () => {
+      const state = stateFromAscii(GUNS[0], oldRule, GUNS[1]);
+      resolve(state);
+      expect(state.players[0]!.score).toBe(defaultRuleset.scoring.tilePoints * 18);
+    });
+
+    it('forfeits them with the round for failing to seal', () => {
+      const ruleset = { ...uncapped, elimination: { ...uncapped.elimination, continues: 1 } };
+      const state = stateFromAscii(GUNS[0], ruleset, GUNS[1]);
+      for (const team of state.teams) {
+        team.continuesRemaining = 1;
+        team.continuesAtStart = 1;
+      }
+      state.structure[1 * state.width + 4] = Structure.Empty;
+      state.owner[1 * state.width + 4] = 0;
+      resolve(state);
+      expect(state.teams[0]!.continuesRemaining).toBe(0); // a life spent
+      expect(resultOf(state, 0)).toMatchObject({ territoryPoints: 0, gunPoints: 0 });
+      expect(state.players[0]!.score).toBe(0);
+    });
   });
 
   it('forfeits the whole round, damage included, for failing to seal', () => {
@@ -230,6 +315,25 @@ describe('scoring a round', () => {
       resolve(state);
       expect(state.players[0]!.enclosedCastles).toBe(1);
       expect(state.players[0]!.score).toBe(defaultRuleset.scoring.tilePoints * (12 + 4) * 1);
+    });
+
+    it('counts a gun standing in it, while a castle is sealed', () => {
+      const state = stateFromAscii(
+        `
+        .........................
+        .######.####..######.....
+        .#,,,,#.#**#..#,,,,#.....
+        .#,@@,#.#**#..#,@@,#.....
+        .#,@@,#.####..#,@@,#.....
+        .######.......######.....
+        .........................
+      `,
+        uncapped,
+        POCKET[1],
+      );
+      resolve(state);
+      const { tilePoints, gunPoints } = defaultRuleset.scoring;
+      expect(state.players[0]!.score).toBe(tilePoints * (12 + 4) + gunPoints);
     });
 
     it('does not keep a player in the round without a sealed castle', () => {

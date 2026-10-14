@@ -33,6 +33,7 @@ describe('the pieces budget', () => {
       piecesBudget: null,
       shotsFired: 10,
       territoryPoints: 40,
+      gunPoints: 0,
       damagePoints: 12,
       score: 52,
       repairAtBuild: 8,

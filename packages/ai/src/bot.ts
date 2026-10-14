@@ -82,7 +82,7 @@ export class Bot {
     const islands = new IslandCentres();
     this.gunner = new Gunner(playerId, this.profile, islands);
     this.slots = slots;
-    this.builder = new Builder(playerId, this.profile, slots);
+    this.builder = new Builder(playerId, this.profile, slots, ai.planning.weights.gun);
     this.siting = new Siting(playerId, this.profile, slots, islands, this.builder);
   }
 

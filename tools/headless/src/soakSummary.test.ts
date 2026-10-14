@@ -30,6 +30,7 @@ function row(
     piecesBudget: 10,
     shotsFired: 5,
     territoryPoints: 10,
+    gunPoints: 0,
     damagePoints: 5,
     score,
     repairAtBuild: 0,

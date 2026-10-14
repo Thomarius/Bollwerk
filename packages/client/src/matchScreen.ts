@@ -503,7 +503,7 @@ export async function runSession(
           const count = Math.ceil((tallyMs * session.state.ruleset.tickRateHz) / 1000);
           for (const result of event.results) {
             gained.set(result.player, {
-              amount: result.territoryPoints + result.damagePoints,
+              amount: result.territoryPoints + result.gunPoints + result.damagePoints,
               untilTick: event.tick + hold,
               // Counted up as the territory is tallied, rather than landing whole.
               fromTick: event.tick,

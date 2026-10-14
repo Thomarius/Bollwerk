@@ -4,14 +4,24 @@ import {
   applyAction,
   applyEnclosure,
   beginMatch,
+  cannonReward,
   computeEnclosure,
   createMatch,
+  heldValue,
+  holdingOf,
   stateFromAscii,
   type MatchState,
 } from '@bollwerk/sim';
 import { describe, expect, it } from 'vitest';
 
-import { cheapestPlanFor, planSeal, pocketCount, pocketPlan, weakestWall } from './tactics.js';
+import {
+  cheapestPlanFor,
+  planSeal,
+  pocketCount,
+  pocketPlan,
+  wallValue,
+  weakestWall,
+} from './tactics.js';
 
 /** Builds every tile of a plan, as a bot eventually would. */
 function buildPlan(state: MatchState, tiles: readonly number[], islandId = 1): void {
@@ -220,5 +230,59 @@ describe('pockets for guns', () => {
       ...........
     `);
     expect(pocketPlan(state, 0)).toBeNull();
+  });
+});
+
+describe('what a wall is worth', () => {
+  // Castle A in a ring with no 2x2 spot free beside it; castle B either in a ring with room
+  // for three guns or in a ring as tight as A's.
+  const ROOMY = `
+    ...............
+    .######.######.
+    .#,,,,#.#@@,,#.
+    .#,@@,#.#@@,,#.
+    .#,@@,#.#,,,,#.
+    .#,,,,#.#,,,,#.
+    .######.######.
+    ...............
+  `;
+  const TIGHT = `
+    ...............
+    .######.######.
+    .#,,,,#.#,,,,#.
+    .#,@@,#.#,@@,#.
+    .#,@@,#.#,@@,#.
+    .#,,,,#.#,,,,#.
+    .######.######.
+    ...............
+  `;
+  const GUN = 20;
+
+  function valued(art: string, breachB = false) {
+    const state = stateFromAscii(art);
+    if (breachB) state.structure[1 * state.width + 10] = Structure.Empty;
+    const e = computeEnclosure(state);
+    return {
+      value: wallValue(state, 0, state.structure, e, GUN),
+      points: heldValue(state.ruleset.scoring, holdingOf(state, 0, e)),
+      castles: e.enclosedCastlesByPlayer[0],
+    };
+  }
+
+  it('adds the guns a castle earns, where the wall leaves them room', () => {
+    const both = valued(ROOMY);
+    expect(both.castles).toBe(2);
+    const reward = cannonReward(defaultRuleset.cannons, 2, false);
+    expect(both.value).toBe(both.points + GUN * Math.min(reward, 3));
+    expect(both.value - valued(ROOMY, true).value).toBeGreaterThan(GUN);
+  });
+
+  it('values a castle with no room for its guns at its tiles alone', () => {
+    const both = valued(TIGHT);
+    const alone = valued(TIGHT, true);
+    expect(both.castles).toBe(2);
+    expect(alone.castles).toBe(1);
+    expect(both.value).toBe(both.points);
+    expect(both.value - alone.value).toBe(defaultRuleset.scoring.tilePoints * 16);
   });
 });

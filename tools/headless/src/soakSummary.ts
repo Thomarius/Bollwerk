@@ -263,7 +263,9 @@ function habits(rows: readonly StatRow[]): string[] {
     if (list === undefined) byLabel.set(label, [row]);
     else list.push(row);
   }
-  const lines = ['  who      rounds  failed  sealed  guns  active  room  wall  pieces  terr   dmg'];
+  const lines = [
+    '  who      rounds  failed  sealed  guns  active  room  wall  pieces  terr gunpt   dmg',
+  ];
   for (const [label, list] of [...byLabel].sort((a, b) =>
     a[0] === 'human'
       ? 1
@@ -299,6 +301,9 @@ function habits(rows: readonly StatRow[]): string[] {
           : pct(used)
         ).padStart(7),
         mean(list.map((r) => r.territoryPoints))
+          .toFixed(0)
+          .padStart(5),
+        mean(list.map((r) => r.gunPoints))
           .toFixed(0)
           .padStart(5),
         mean(list.map((r) => r.damagePoints))

@@ -52,6 +52,7 @@ describe('the match log', () => {
         cannonsAwarded: 2,
         eliminated: false,
         territoryPoints: 0,
+        gunPoints: 0,
         damagePoints: 0,
       })),
     });
