@@ -148,7 +148,7 @@ export class Bot {
   }
 
   /**
-   * The search for the coming build phase's plan (BUILD_PLANNING.md): begun in the
+   * The search for the coming build phase's plan (ARCHIVE 13zf): begun in the
    * intermission once the last shot is down and the board fixed, worked a share of the
    * table's simulated pieces each tick, and ended at the bot's first piece of the phase —
    * till then its island has not changed, so a strategy played out from the start is still
@@ -274,7 +274,7 @@ export class Bot {
    * The chosen rollout's pieces, each on its tick. Should the board have gone otherwise — a
    * teammate's piece on its island, a piece refused, its tick missed — the builder takes over
    * at once with the chosen strategy's walls, planned afresh on the board as it is, and no
-   * new search: the user's rule, a quick answer rather than another wait (BUILD_PLANNING.md).
+   * new search: the user's rule, a quick answer rather than another wait (ARCHIVE 13zf).
    */
   private playPlan(state: MatchState): Action | null {
     const chosen = this.chosen as NonNullable<typeof this.chosen>;

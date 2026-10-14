@@ -4,7 +4,7 @@ import type { EnclosureResult } from './enclosure.js';
 import type { MatchState } from './types.js';
 
 /**
- * The scoring formula for held ground, in one place (PLAN §1.7, docs/SCORING.md): the
+ * The scoring formula for held ground, in one place (PLAN §1.7, ARCHIVE 13ze): the
  * resolution banks it, and the bots value a wall they might build by it — so a bot never
  * weighs ground by a rule the match no longer plays.
  */

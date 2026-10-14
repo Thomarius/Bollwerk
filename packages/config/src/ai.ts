@@ -59,7 +59,7 @@ export const SkillSchema = z.strictObject({
    */
   carelessness: z.number().min(0).max(1),
   /**
-   * How many strategies it weighs for a build phase at most (docs/BUILD_PLANNING.md), in
+   * How many strategies it weighs for a build phase at most (ARCHIVE 13zf), in
    * `ai.planning.order`: how far ahead it thinks. Time may cut the search shorter.
    */
   planDepth: z.number().int().positive(),
@@ -122,7 +122,7 @@ export const RiskTraitSchema = z.strictObject({
   /**
    * Once sealed, builds the most valuable wall it can finish this phase — the standing wall
    * pushed out to take in another castle, or a stretch of land beside it — before the rest
-   * of the ladder (docs/BOT_LEARNING.md, B).
+   * of the ladder (ARCHIVE 13zg, B).
    */
   widensWhenSealed: z.boolean(),
 });
@@ -273,7 +273,7 @@ export const AiConfigSchema = z
     plansPerTick: z.number().int().positive(),
     /**
      * Each build phase played out in advance for several strategies, the best kept
-     * (docs/BUILD_PLANNING.md): searched in the intermission, a simulated piece at a time
+     * (ARCHIVE 13zf): searched in the intermission, a simulated piece at a time
      * within the table's budget, and ended at the bot's first piece, so the game never waits.
      */
     planning: z.strictObject({
@@ -331,7 +331,7 @@ export const AiConfigSchema = z
       doubleWithinMs: z.number().int().nonnegative(),
     }),
     /**
-     * A learned scoring of where to lay the piece in hand (docs/BOT_LEARNING.md, step 3):
+     * A learned scoring of where to lay the piece in hand (ARCHIVE 13zg, step 3):
      * a weight per feature of a placement, summed. Null: the hand-made fit, which covers
      * the first wall in the ladder's order that a piece reaches.
      */

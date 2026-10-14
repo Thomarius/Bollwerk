@@ -363,7 +363,7 @@ function seatAi(p: number): AiConfig {
   return { ...bundle.ai, planning };
 }
 
-/** Whether a seat's bot plays its build phases out in advance (BUILD_PLANNING.md). */
+/** Whether a seat's bot plays its build phases out in advance (ARCHIVE 13zf). */
 function seatPlans(p: number): boolean {
   return args.plans[p % args.plans.length] === true;
 }

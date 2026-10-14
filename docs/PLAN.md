@@ -209,7 +209,7 @@ a sealed castle:
 
 Until 2026-10-14 territory was tiles × castles, which grew with the square of the castles
 held, so a minimal ring round an outer castle doubled everything already held and one
-flawless round decided a match ([`SCORING.md`](./SCORING.md), ARCHIVE 13zd).
+flawless round decided a match (ARCHIVE 13zd, its design 13ze).
 `scoring.castleMultiplier` and `gunPoints` default to that old rule in the schema, so that
 recordings made before it replay; the default ruleset sets the new one. The formula is
 `heldPoints` (`sim/src/scoring.ts`), which the bots value walls by too.
@@ -1474,12 +1474,12 @@ construction, and the soak asserts they never ask for a move the rules refuse.
 - **A wall is never planned through a tile no piece can cover** (`markUncoverable`,
   `coverable`): a shot's hole between wall and sea or gun takes no piece once one-cell
   pieces stop, and a third of failed rounds ended on one; the plan routes round it from the
-  start (BOT_LEARNING.md, A).
+  start (ARCHIVE 13zg, A).
 - **Once sealed, the wall is widened before it is thickened** (`widensWhenSealed`, `widen`):
   the most valuable wall the phase can finish — the standing wall pushed out to take in
   another castle, or a stretch of land beside it — if worth 1.1× what is held. Building
   outside a sealed wall leaves it whole, so it needs no bail-out. One such bot against two
-  without won 65 of 96 at Levels 5 and 8 (BOT_LEARNING.md, B).
+  without won 65 of 96 at Levels 5 and 8 (ARCHIVE 13zg, B).
 - **Cannons are never pinned when there is any alternative**: a spot beside a wall block
   with nothing buildable beyond it is where one shot makes a hole only a one-cell piece
   fits. Then clearance from wall and shore, then range.
@@ -1611,8 +1611,9 @@ Tournament mode is finished: its play-testing round, T8, closed with everything 
 look only on its side of the line, by the scissor, so wipes between two heavy looks cost about
 what the rest of play does (ARCHIVE 13o). Bots miss as people do, tuned so the good tester
 plays at Level 5–6 in combat (ARCHIVE 13r) — and the first match against them showed the bots
-far behind in building, item 1, the next work. The bot learning work, item 3, is **paused** after a first learned fit (ARCHIVE
-12z), its next steps in [`BOT_LEARNING.md`](./BOT_LEARNING.md) §6. French is not to be done
+far behind in building, item 1, the next work. The bot learning work closed after a first learned
+fit (ARCHIVE 12z), its remaining steps dropped (the user's decision, 2026-10-14; ARCHIVE
+13zg). French is not to be done
 (the user's decision, 2026-10-06). Still open:
 
 1. **Bots that hold ground as people do** (the user's task, 2026-10-11; a longer one, worked
@@ -1732,13 +1733,8 @@ far behind in building, item 1, the next work. The bot learning work, item 3, is
    plays strategies out in the intermission and lays the best, with a minimum of three guns,
    failing on purpose with an effort, and slips, blunders and search depth by level; Thomas's
    target is Level 6. It takes in 5(a). Open: the testers' matches against it, Level 6 first
-   (BUILD_PLANNING.md step 7), and step 3, the score's weights, only if play shows a need.
-   [`BUILD_PLANNING.md`](./BUILD_PLANNING.md) holds the design and every measurement.
-
-   6. **Learning the choice of wall** (item 2's first next step, `BOT_LEARNING.md` §6.1):
-      the hand-made ladder and `widen` already produce the candidate walls; a learned score
-      over their features (value, cost against the cells left, castles gained, guns kept and
-      room, slack after) is the general answer if the hand-made steps above stall.
+   (its step 7), and its step 3, the score's weights, only if play shows a need. ARCHIVE 13zf
+   holds the design and every measurement.
 
 2. **Special towers** (the user's idea, 2026-10-11; designed, not built): each player may bring
    one special tower, bought in the cannon phase for two or three cannons — Big Bertha, Architect
@@ -1746,18 +1742,11 @@ far behind in building, item 1, the next work. The bot learning work, item 3, is
    decisions, the work packages ST1–ST8 and the open questions are in
    [`SPECIAL_TOWERS.md`](./SPECIAL_TOWERS.md).
 
-3. **Stronger bots by valuing options, then learning the weights** (the user's goal,
-   2026-10-07; also to learn how ML fits a game): the plan, its steps and its progress are
-   in [`BOT_LEARNING.md`](./BOT_LEARNING.md) — first the testers' recordings, then a "go big
-   while a bail-out remains" rule, then a scoring function trained by the cross-entropy
-   method. Read it before changing how bots build. Steps 1 and 2 are done (ARCHIVE 12x,
-   12y); step 3's first run learned a fit about as good as the hand-made one (ARCHIVE 12z),
-   and the work is **paused** (2026-10-07), its next steps in BOT_LEARNING.md §6.
-
-4. **Scoring by ground and guns** (the user's decision, 2026-10-13; built and measured
+3. **Scoring by ground and guns** (the user's decision, 2026-10-13; built and measured
    2026-10-14, ARCHIVE 13zd): no multiplication of territory by castles any more, and 5
-   points for every gun firing at the resolution (§1.7). What is left is work package 5 of
-   [`SCORING.md`](./SCORING.md): the testers' matches under it, read with `buildStats.ts`.
+   points for every gun firing at the resolution (§1.7); the design and the soak's tables are
+   ARCHIVE 13ze. Open: the testers' matches under it, read with `buildStats.ts` against the
+   soak's tables (13ze §9) and the old rule's yardstick.
 
 Only open work is kept here. Finished packages move to `ARCHIVE.md` under their old
 numbers — 11.1 scoring, 11.7 team mode, 11.8 the visual pass, 11.9 the themes, 11.10 the
@@ -1767,7 +1756,7 @@ test-session feedback, in ARCHIVE 11w; 11.5 the small items and 11.6 the bots, i
 11.16 help for new players, the menu and the sea, and 11.17 the desktop app, in ARCHIVE
 11zt; 11.18 the fourth visual pass, in ARCHIVE 11zv; 11.19 every style to the edges, in
 ARCHIVE 11zz; 11.20 more languages, in ARCHIVE 12g; 11.21 UPnP, in ARCHIVE 12j; 11.2 points decide, 11.3 two players,
-11.4 measurements never taken and 11.13 the bots' loose ends, closed by the weekend soak, in ARCHIVE 12h; 11.22 rendering performance, in ARCHIVE 12n, its bots planning on the same ticks in ARCHIVE 12p; 11.23 random looks every round, in ARCHIVE 12q; Cyberpunk under Glowing, in ARCHIVE 12r; the slow plan late in a build phase, in ARCHIVE 12s; 11 item 3, the bots in a worker with the smaller rendering leads, in ARCHIVE 13k; the next item 3, wipes between heavy looks, in ARCHIVE 13o; 11.24 a piece in the corner for every style, in ARCHIVE 12t; Under the sea and Electric, in ARCHIVE 12u and 12v; Cartoon and Christmas, in ARCHIVE 12zb and 12zc; the refactoring of 2026-10-07, in ARCHIVE 12w — so the open sections keep theirs.
+11.4 measurements never taken and 11.13 the bots' loose ends, closed by the weekend soak, in ARCHIVE 12h; 11.22 rendering performance, in ARCHIVE 12n, its bots planning on the same ticks in ARCHIVE 12p; 11.23 random looks every round, in ARCHIVE 12q; Cyberpunk under Glowing, in ARCHIVE 12r; the slow plan late in a build phase, in ARCHIVE 12s; 11 item 3, the bots in a worker with the smaller rendering leads, in ARCHIVE 13k; the next item 3, wipes between heavy looks, in ARCHIVE 13o; 11.24 a piece in the corner for every style, in ARCHIVE 12t; Under the sea and Electric, in ARCHIVE 12u and 12v; Cartoon and Christmas, in ARCHIVE 12zb and 12zc; the refactoring of 2026-10-07, in ARCHIVE 12w; the bot learning work (the old item 3), closed in ARCHIVE 13zg — so the open sections keep theirs.
 
 ## 12. Deferred (explicitly out of scope for v1)
 

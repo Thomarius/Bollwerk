@@ -5478,7 +5478,7 @@ as they did before, on fields added since.
 
 ## 12x. The testers' play measured, and holes no piece can fill (2026-10-07)
 
-The first two pieces of the bot learning work (`docs/BOT_LEARNING.md`, where the tables
+The first two pieces of the bot learning work (13zg, where the tables
 are). **Step 1**: every piece of the five recordings that replay exactly, measured against
 every wall the player could have been building and, in hindsight, against the wall they
 finally sealed (`tools/headless/src/placements.ts`). The testers' pieces that leave the
@@ -5502,7 +5502,7 @@ dropped. The final code reproduces the measured variant's hashes.
 
 ## 12y. Bots widen their walls once sealed (2026-10-07)
 
-Step 2 of the bot learning work (`docs/BOT_LEARNING.md`, B, where the tables are), as
+Step 2 of the bot learning work (13zg, B, where the tables are), as
 adjusted by step 1's findings. **Tried and dropped**: going big while breached for as
 long as the tight repair costs at most a share of the budget (a third, measured from the
 recordings) — the bail-out held it back in two thirds of breached plans and it changed
@@ -5519,7 +5519,7 @@ against 12h's 42%). Plans cost 7–21% more on average.
 
 ## 12z. A learned fit, and the learning work paused (2026-10-07)
 
-Step 3 of the bot learning work, a first run (`docs/BOT_LEARNING.md`, where the tables
+Step 3 of the bot learning work, a first run (13zg, where the tables
 are). A bot may lay its piece by a learned score (`fitWeights`, null by default) instead of
 the hand-made fit: every legal placement near the plan, the tightest repair, the thickening
 targets and the outer skin, weighed by ten features. Trained by the cross-entropy method
@@ -5531,7 +5531,7 @@ fit: relative score +0.19 against today's +0.09 at Level 5 (wins 35 and 32), non
 8 (30 and 35). With the ladder choosing the walls, where a piece goes has little left to
 give. Paused there by the user's decision, the pipeline kept for later; the next steps —
 learning the choice of wall, better training, a straighter objective, levels from a
-learned bot — are BOT_LEARNING.md §6.
+learned bot — were 13zg §6, dropped on 2026-10-14.
 
 ## 12za. Small fixes and new music, and v0.8.2 (2026-10-07)
 
@@ -7432,7 +7432,7 @@ in the testers' next matches.
 The user's idea, for PLAN §11 item 1: a bot's build phase depends on nothing but its own
 island, its pieces and its pace, so it can be played out on a copy of the match before it
 starts, several strategies weighed by their real outcome, and the best laid piece by piece. The
-design, every step and every measurement are in [`BUILD_PLANNING.md`](./BUILD_PLANNING.md); in
+design, every step and every measurement are in 13zf; in
 short:
 
 - **Exact** (step 1): a rollout (`RolloutRun`, `rollOutBuild`) predicts every piece, its tick
@@ -7511,7 +7511,7 @@ test session needs the server rebuilt and every page reloaded.
 ## 13zd. Scoring by ground and guns (2026-10-14)
 
 The user's decision after a test match on 2026-10-13, the design and evidence in
-[`SCORING.md`](./SCORING.md): territory scored tiles × castles, which grew with the square of
+13ze: territory scored tiles × castles, which grew with the square of
 the castles held (people's rounds: one castle 43 points, four 724 where the tiles were 181), so
 a minimal ring round an outer castle doubled everything already held and one flawless round
 decided a match.
@@ -7529,7 +7529,7 @@ decided a match.
   castle was worth its few tiles, and a sealed bot walled a strip of land rather than the castle
   beside it. A bot values a wall by `wallValue` (`ai/src/tactics.ts`): its points, plus the guns
   its castles earn at the planning's `weights.gun`, only as many as the wall leaves room to stand.
-- **Measured** (SCORING.md §9), 368 matches a variant: the ladder flatter (each level against
+- **Measured** (13ze §9), 368 matches a variant: the ladder flatter (each level against
   three of the one below, 157 wins of 288 summed → 132, fair share 72), castles held 0.15–0.2
   fewer at every level, guns firing and failed rounds unchanged; damage a quarter of a score
   rather than a seventh; the winner's lead over second at the mixed table 1.60 → 1.27.
@@ -7539,4 +7539,1109 @@ decided a match.
 - **Statistics**: a `gunPoints` column in every `stats.csv`, read as 0 from older ones, shown by
   `buildStats.ts` and the harness summaries. How to play's caption names the guns.
 
-Still to come, SCORING.md's work package 5: the testers' matches under it.
+Still to come: the testers' matches under it (PLAN §11 item 3).
+
+## 13ze. Scoring's design, moved here from SCORING.md (2026-10-14)
+
+`docs/SCORING.md` held the design of scoring by ground and guns as agreed with the user
+(2026-10-13), its evidence, the work packages and their measurement. Packages 1–4 are done
+(13zd), so it was retired and kept here; code comments name its sections as `ARCHIVE 13ze §n`.
+The last package, the testers' matches under the new rule, is PLAN §11 item 3.
+
+Territory was scored as **tiles × castles**. The change agreed on 2026-10-13 after a test match:
+**no multiplication by castles any more; instead every gun firing at the resolution earns a flat
+bonus, 5 points as the starting value.**
+
+### 1. The problem
+
+The user's findings from the match `20261013-143405-local-5kh5gb` (alone against Levels 4, 5
+and 6):
+
+- **A minimal ring round an outer castle doubles the points of everything already held.** With
+  the main castle sealed, sealing a second castle with the tightest wall multiplies all the
+  ground by two — worth far more than widening the ground itself, which is against the spirit of
+  the game. More ground should matter more; a castle is already rewarded with guns.
+- **One flawless round decides a match.** A round with all four castles and wide ground gives a
+  lead that only another flawless round can close.
+
+### 2. The evidence
+
+From the `stats.csv` of the 27 recorded matches with a person (all of `recordings/` on
+2026-10-13). A round's tiles are its `territoryPoints / enclosedCastles` (`tilePoints` is 1),
+castle and gun footprints included (`enclosure.ts` floods every tile but wall; checked).
+
+**Points grow with the square of the castles held**, since each castle adds only 40–45 tiles:
+
+| castles sealed | people's rounds | mean tiles | points now | tiles alone |
+| -------------- | --------------- | ---------- | ---------- | ----------- |
+| 1              | 84              | 43         | 43         | 43          |
+| 2              | 147             | 90         | 180        | 90          |
+| 3              | 63              | 128        | 384        | 128         |
+| 4              | 38              | 181        | 724        | 181         |
+
+The bots' rounds follow the same curve (1 castle 41 tiles, 4 castles 156).
+
+**The test match**: in rounds 3–5 the user held as much ground as the bots, on two castles
+against their four — round 4, 112 tiles × 2 = 224 against 119 × 4 = 476 and 132 × 4 = 528 —
+and lost 2,384 to 2,687 after leading on ground most of the match.
+
+**The matches rescored** (a static rescoring: people played to today's formula, so it shows a
+tendency, not what would have happened):
+
+|                                   | now  | tiles only | tiles + 5 a gun | tiles + 10 a gun |
+| --------------------------------- | ---- | ---------- | --------------- | ---------------- |
+| winner changed, of 27             | –    | 6          | 7               | 7                |
+| guns' share of a player's score   | –    | –          | 23%             | 37%              |
+| winner's score / second's         | 1.94 | –          | 1.39            | –                |
+| winner's best round, share of all | 23%  | –          | 18%             | –                |
+
+Under tiles + 5 a gun the test match goes to the user, 1,545 to 1,468; the match of 2026-10-11
+against two Level 5 bots stays clearly Thomas's, 2,249 to 950 (4,841 to 1,220 today).
+
+**Guns firing at the resolution do not run away** — breaches, guns left outside and continues
+keep them down. Mean per player and round:
+
+| round  | 1   | 2   | 3   | 4   | 5   | 6   | 7   | 8   | 9   | 10  |
+| ------ | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| people | 3.0 | 5.5 | 7.0 | 7.5 | 6.4 | 6.0 | 6.8 | 7.3 | 7.9 | 8.4 |
+| bots   | 3.0 | 4.7 | 6.4 | 6.0 | 5.4 | 5.2 | 5.8 | 5.2 | 5.0 | 5.4 |
+
+### 3. The options weighed
+
+- **Tiles only**: the cleanest fix, but a castle then scores nothing beyond its tiles, and the
+  incentive to keep guns walled in is lost.
+- **Tiles plus a flat bonus a castle**: no square growth, but it still rewards the minimal ring
+  round an outer castle, only less.
+- **A softened product** (each castle after the first adds half the tiles again): changed one
+  winner in 27; it dampens the problem rather than removing it.
+- **Tiles plus a bonus a gun firing — chosen.** A castle stays worth having, through the guns it
+  earns, but pays over the rounds rather than at once; and walling the guns in is rewarded twice.
+
+### 4. The rule
+
+At each build phase's resolution, a player holding a sealed castle banks:
+
+- `tilePoints` × the tiles of their territory — every sealed region, pockets included (PLAN §1.3),
+  castle and gun footprints included — **not multiplied by castles**;
+- `gunPoints` (5) × their **guns firing**: those standing on their sealed territory after the
+  resolution, `cannon.active`. Guns earned at this resolution are not placed yet and do not count;
+- `wallPoints` × the opponents' wall tiles they destroyed, as today.
+
+A failed round forfeits all three, as today (`scoreDamageOnFailedRound` unchanged). In teams the
+score stays the sum of the members' own.
+
+### 5. How the games change
+
+1. **Ground is the main thing.** A tile counts once however many castles hold it; a minimal ring
+   round an outer castle earns its few tiles and the guns the castle brings.
+2. **A castle pays over time.** About a gun a round, worth 5 points every round it stays walled
+   in: an early castle is worth much, a late one little, and a castle first sealed in the final
+   round brings no gun points at all, since its gun would be placed after the match. The last round
+   is about ground and damage.
+3. **A lead grows steadily rather than in a leap**, through guns kept and ground held.
+4. **Breaching hurts where it should.** A breach of the wall round a leader's guns silences them
+   and takes their points: the best attack, and its repair the best defence.
+5. **Room for guns is worth a wide wall**: a gun's footprint is territory, so placing one costs
+   no points and earns 5 a round.
+6. **Damage weighs more.** Territory points about halve while damage stays; `tilePoints` 2 may
+   restore today's balance of ground to damage (§8).
+7. **Guns pay twice**, in fire and in points — a mild snowball, held down by breaches and
+   continues (§2's table).
+
+### 6. Where it lives
+
+- **Config** (`packages/config`, `config/ruleset.default.json`): `scoring.gunPoints` and a
+  switch for the castle multiplier (for instance `scoring.castleMultiplier: boolean`), strict as
+  every schema. **An old recording's ruleset lacks both**, so a missing key must mean today's rule
+  (multiplier on, no gun points), or old recordings no longer replay; the new defaults go in the
+  default ruleset only. Check how `--replay` and the server read old headers before choosing.
+- **Sim** (`packages/sim/src/match.ts`, `scoreRound`): the formula, behind one exported function
+  (territory and gun points from tiles, castles and guns firing) that the bots call too, so no copy
+  of the formula remains. The round's result carries the gun points beside `territoryPoints` and
+  `damagePoints`. The ruleset travels in the snapshot, so the protocol version goes up (24).
+  Tests: `scoring.test.ts` — "multiplies total area by total castles" becomes the switch's old
+  side, new ASCII cases for guns counted, guns outside not counted, guns just earned not counted,
+  pockets' guns counted, a failed round forfeiting them.
+- **Bots** (`packages/ai`) — three copies of the formula, to call the sim's function:
+  - `buildPlanning.ts` `prospect` (the castle nearly sealed, valued at area × castles);
+  - `building.ts` the widening's `valueOf` (area × castles, against `WIDEN_GAIN`);
+  - `combat.ts` the strategic personality's target (`tiles × enclosedCastles`).
+
+  Built as `heldPoints` and `holdingsOf` (`sim/src/scoring.ts`). Valued by points alone, a
+  castle was worth its few tiles, and the widening walled a strip of land rather than the castle
+  beside it (`widening.test.ts`). So a bot values a wall by `wallValue` (`ai/src/tactics.ts`):
+  its points, plus the guns its castles earn at `weights.gun` each — **only as many as the wall
+  leaves room to stand** (the user's rule, 2026-10-14): a castle whose gun has nowhere to go is
+  worth its tiles and no more. The widening and the planning's `prospect` both use it, at the
+  bot's own `weights.gun`.
+
+  And the planning's score (`scoreOf`) takes the round's points from the sim, gun points
+  included, while `weights.gun` already values every gun left ready — **the guns would count
+  twice**: lower `weights.gun` by about the gun points, measured. Expect bots to reach for
+  castles less, with fewer guns; the repair of the wall round the guns (ARCHIVE 13t) gains.
+
+- **Analysis** (`packages/analysis`): a `gunPoints` column in the per-round statistics, so the
+  `stats.csv` of server, harness and `--replay` alike; `buildStats.ts` to show it.
+- **Client**: the points banner after a round (it names the guns earned), the match summary and
+  awards if they break points down, How to play and its screenshots, every text in English and
+  German (`config/locale/`).
+- **Docs**: PLAN §1.4 and §1.7, CLAUDE.md where it explains the scoring, ARCHIVE once done.
+- **Tournaments**: quick rolls use level ratings, not scores, so they are untouched; a saved
+  tournament carries its matches' rules, to be checked that a save from before still loads.
+
+### 7. Work packages
+
+Each ends with `npm run check` passing and the user's go-ahead to commit.
+
+1. **Rule and config**: the switch and `gunPoints`, the sim's function and result, old
+   recordings replaying exactly, the tests.
+2. **Bots and statistics**: the three copies replaced, `weights.gun` adjusted, the `gunPoints`
+   column.
+3. **Measured**: a soak of the new rule against today's — the ladder across levels, points,
+   failed rounds, castles held, guns firing — and the values of §8 settled by it.
+4. **Client and docs**: the banner, summary, How to play, both languages, PLAN and CLAUDE.md.
+5. **Play-testing**: the testers' matches under it, read with `buildStats.ts` — moved to
+   PLAN §11 item 3 when this file was retired.
+
+### 8. Open questions, for the measurement
+
+1. **`gunPoints`**: 5 to start; 10 made guns 37% of a score in the rescoring, likely too much.
+2. **`tilePoints`**: 1 or 2 — whether ground should keep today's weight against damage.
+3. **`weights.gun`** in the bots' planning, once gun points count in the round's score.
+4. **Whether bots then hold too few castles** to keep up in guns — if so, the planning's
+   `prospect` weight rather than any rule.
+
+### 9. Measured (2026-10-14)
+
+Work package 3: one soak, the same seeds under five variants, every bot's personality dealt as
+in a match — the old rule (commit `10e7507`), the new as built, `gunPoints` 10, and
+`weights.gun` 15 and 30. Each variant: the ladder (each of Levels 2–10 against three of the
+level below, four players, 32 matches in every seat, 288 in all), three Level 5s (48 matches) and
+Levels 3/5/7/9 at one table (32). The files and the script are in `soaks/scoring-2026-10-14/`
+(git-ignored). With 32 matches a cell is ±3 wins, the ladder's sum ±8.
+
+**The ladder** — wins of the one Level k in 32 (fair share 8):
+
+| variant          | L2  | L3  | L4  | L5  | L6  | L7  | L8  | L9  | L10 | sum |
+| ---------------- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| old rule         | 15  | 16  | 16  | 17  | 12  | 18  | 25  | 21  | 17  | 157 |
+| **new**          | 13  | 11  | 14  | 14  | 11  | 19  | 17  | 18  | 15  | 132 |
+| `gunPoints` 10   | 12  | 11  | 13  | 14  | 10  | 17  | 15  | 16  | 11  | 121 |
+| `weights.gun` 15 | 14  | 12  | 16  | 16  | 12  | 17  | 22  | 18  | 13  | 140 |
+| `weights.gun` 30 | 12  | 14  | 16  | 16  | 14  | 16  | 16  | 17  | 17  | 144 |
+
+Flatter than under the old rule, as expected once a castle no longer multiplies a lead, and still
+every level well above its fair share; Level 9 won 27 of 32 at the mixed table (26.5 before).
+
+**Three Level 5s**, per player and round:
+
+| variant        | castles | failed | guns firing | ground | guns | damage | damage share | winner / second | best round |
+| -------------- | ------- | ------ | ----------- | ------ | ---- | ------ | ------------ | --------------- | ---------- |
+| old rule       | 2.28    | 10%    | 7.3         | 217    | 0    | 36     | 14%          | 1.34            | 22%        |
+| **new**        | 2.09    | 11%    | 7.3         | 73     | 36   | 36     | 25%          | 1.26            | 20%        |
+| `gunPoints` 10 | 2.08    | 11%    | 7.3         | 73     | 73   | 36     | 20%          | 1.28            | 20%        |
+
+At the mixed table the winner's lead over second fell from 1.60 to 1.27. Across the ladder's
+tables castles held fell 0.15–0.2 at every level (Level 5 2.29 → 2.10, Level 10 3.06 → 3.02), guns
+firing hardly (Level 5 7.4 → 7.2), failed rounds not at all (10–12%).
+
+**The questions of §8, settled:**
+
+1. **`gunPoints` 5.** At 10 guns score as much as ground at Level 5 and the ladder is flattest.
+2. **`tilePoints` 1.** Damage counts for more — a quarter of a score rather than a seventh — which
+   the user accepted (2026-10-14).
+3. **`weights.gun` 20, unchanged.** 15, 20 and 30 are alike within noise in castles, guns and the
+   ladder. It does not count a gun twice: the gun points are banked this round, `weights.gun`
+   prices the gun's use in the barrages to come.
+4. **Castles held**: down a little, guns not — once a wall is valued with its castles' guns
+   (`wallValue`, §6). Valued by points alone they fell further in a first look (Level 7 3.04 →
+   2.70 in eight matches).
+
+## 13zf. Build planning's design, moved here from BUILD_PLANNING.md (2026-10-14)
+
+`docs/BUILD_PLANNING.md` held the design of a build phase played out before it starts, the
+user's idea (2026-10-12) for PLAN §11 item 1, with every step and its measurement; it is built
+and released (13z, 13za), so it was retired and kept here. Code comments name it as `ARCHIVE
+13zf` and its steps by number. What was open — the testers' matches, and the score's weights
+only if play shows a need — is PLAN §11 item 1.
+
+### The problem
+
+Even strong bots end a round with one castle sealed and a thickened wall, which earns
+nothing more. When they reach for a second castle, with a repair on top, they often fail and
+lose a life. The reason is that the bot judges what it can finish by an estimate: its pace, the
+bag's average piece (`cost / 3.5`) and a safety factor (`riskMargin`, 0.5 to 1.1 by level). So a
+bot either never commits to a wider wall or commits to one it cannot finish. The bolder `widen`
+of ARCHIVE 13u lost because it started walls it did not finish.
+
+### The idea
+
+1. **A build phase can be computed in advance.** A bot's build phase depends on nothing but its
+   own island, its pieces and its pace, so it can be played out on a copy of the match before
+   it begins. The bot then knows the outcome of a plan exactly, not as an estimate.
+2. **Several strategies played out, the best one carried out.** The bot plays the phase out
+   once for each of several strategies, scores every result, and then lays the winner's pieces
+   in order, with no more decisions during the phase.
+
+### Why a build phase can be computed in advance (checked against the code, 2026-10-12)
+
+- **No shot lands during build.** The intermission before build lasts until every shot has
+  landed (`match.ts`, `advancePhase`), and then for the pause and the banner, about 5 s or 150
+  ticks. Once the last shot is down the board is fixed until the build phase opens, and bots do
+  nothing in that time. It is the planning window.
+- **The pieces are known.** `pieceAt(ruleset, seed, pieceRound, index)` is pure.
+- **The pace is exact.** The piece in hand may be laid `placementBaseMs + placementPerCellMs × its
+cells` after the last one (ARCHIVE 13v). Overtime cannot close before the bot has laid its own
+  last piece, since it ends early only once everyone has.
+- **Nobody else builds on a bot's island.** Bots never build on a teammate's island
+  (`crossIslandBuild: "humans"`). **The exception**: a person may build on a bot teammate's
+  island. See _Interference_ below.
+- **The rest is fixed when the plan is made.** The sloppiness draws come from the table's
+  shared stream, so they are drawn when the bot plans. `PlanningSlots` holds a bot back a tick
+  only when it plans. A bot carrying out a finished plan needs no slots.
+- **The rules' own code does the evaluating.** A rollout clones the `MatchState`, applies only
+  this bot's actions, and `step`s through `resolveRound`. The sweep, the points, the gun reward
+  and the continue are exactly the game's, with no second copy of the rules to drift. In the
+  clone every other player is marked out of the match, so a teammate sharing the pool of lives
+  cannot change the bot's own result.
+
+### Design
+
+**Strategies.** A strategy is a goal plus what to do with spare time. Each goal is a wall
+round chosen castles and ground, or keeping the guns. Spare time goes either to thickening or
+to starting the next castle. Each strategy is played by a fresh `Builder` on the clone. The goals
+mostly come from generators that exist already:
+
+- **S0, today's ladder, always included.** At worst the bot does what it would have done.
+- The tightest repair, then thicken.
+- The tightest repair, then each reachable further castle. These share the repair at the start,
+  which can be computed once.
+- The wall that keeps every gun (`reseal`'s options).
+- Room for the reward's guns (`pocketPlan`, `widen`'s bulges).
+- The widest affordable wall (`seal.options` with room).
+- Each of these again, spending spare time on the next castle rather than on thickening.
+
+**Score of a finished plan**, read from the board after the clone's resolution:
+
+- the round's banked points, territory and damage (a failed round forfeits both);
+- a weight times **guns ready for the next barrage**: guns active after the resolution, plus
+  the reward as far as there is room for it (`cannonRoom`);
+- a weight times the **prospect**: for each castle still open, the points it would add, scaled
+  down by the cost of its cheapest seal on the final board (`SealPlanner`) against the next
+  round's cells. A nearly sealed second castle is worth something, since it may be finished
+  next round;
+- optionally a weight times the wall's strength (`weakestWall`). The user suspects thickening
+  is wasted; this term lets the measurement decide.
+
+The weights are to be tuned by soak, by hand first. The learned fit's trainer (`cem.ts`,
+ARCHIVE 13zg) could tune them later.
+
+**A minimum of three guns.** The user decided (2026-10-12): a plan should leave at least three
+guns ready for the next barrage, counting active guns plus reward with room. With a life left, a
+round that is not the last, and no person in the team (the pool of lives is shared), the bot may
+**fail on purpose** rather than carry out a plan below the minimum. A continue gives a fresh
+castle and ring, the starting guns plus one for each life spent, and round one's pieces again.
+This generalises the hollow-seal rule of ARCHIVE 13t. It is **measured before it is kept**: with
+and without, and at minimums of two, three and four.
+
+**Every level.** The user decided (2026-10-12): every level plans this way. The weaker levels are
+held back by their slower pace and their sloppiness, which the rollout keeps since it plays at
+the bot's own pace. If the ladder flattens, the levels are told apart by how much planning
+each may do (the number of strategies).
+
+**Interference.** If the board differs from the plan's prediction, because a person teammate
+built on the bot's island, the bot must react at once, with no new search. It keeps the chosen
+goal's wall as its target and fits each piece to that wall's remaining tiles (one `fit`, no
+plan). Once that wall stands, it goes on with the ladder's spare work.
+
+**Carrying a plan out.** The bot lays the plan's placements at their ticks. Before each one it
+checks that its island is as predicted and that the placement is legal; otherwise it switches
+to the interference fallback.
+
+**Compute.** This is the main risk. A rollout is about 17 placements and up to as many plans of
+about 5 ms each at Level 10. Eight strategies for each of eight bots exceed the 5 s window if
+done all at once, and a room cannot send a tick before its bots have thought. So the work is
+spread over the intermission, **counted in rollout steps, never in time**, so a match plays the
+same on any machine (as `PlanningSlots` does). The repair shared at the start of several
+strategies is computed once, and the number of strategies is set by measurement.
+
+### Steps, each with its measurement
+
+Each step ends in a measurement, and the next is built only if it is worth it. The baseline is step 1's
+commit, not v0.9.3: its two fixes change how bots play.
+
+1. **The rollout, and its exactness.** `rollout.ts`: clone, play one `Builder` at its pace,
+   resolve, and report the placements and the result. A test plays real bot matches and checks
+   that at every build phase the rollout of a fresh `Builder` predicts exactly what the live
+   bot then did: every placement and tick, the points, castles and guns. A tool measures ms per
+   rollout by level and players. This proves idea 1 on its own.
+2. **The ceiling, with unlimited compute.** In the harness, strategies and the score with
+   hand-set weights, chosen with no budget. Against the baseline: territory points a round,
+   castles, guns firing, failed rounds and pieces a phase (`buildStats.ts --bots`); one such bot
+   against two of today's, both seats, 96 matches at Levels 5 and 8 (as in ARCHIVE 12y); and
+   points against a fixed field. **If the ceiling barely beats the ladder, stop here.** The
+   score's terms are tested one at a time, each behind a temporary switch.
+3. **The weights**, on a grid by hand, judged on points and failed rounds together.
+4. **Failing on purpose**, behind its own switch: points a match, wins, lives spent on purpose
+   against lives lost, at minimums of two, three and four guns.
+5. **In real time.** Planning in the intermission under a step budget, the plan carried out,
+   its checks and the interference fallback. The step 1 test keeps passing. Measured: the worst
+   tick with eight Level 10 bots, on the server and in the local worker.
+6. **The ladder across levels**, all planning. If the levels' gap narrows, the number of
+   strategies is set by level.
+7. **The testers' matches**, read with `buildStats.ts` beside Thomas's yardstick (301 territory
+   points a round, 2.2 castles, 8.4 guns firing).
+
+### Progress
+
+Released in **v0.9.4** (ARCHIVE 13z, 13za). Step 7, the testers' matches (Level 6 first), and
+step 3 only if play shows a need, moved to PLAN §11 item 1 when this file was retired.
+
+- 2026-10-12: designed with the user; step 1 begun.
+- **Step 1, the rollout** (2026-10-12): `rollOutBuild` (`ai/src/rollout.ts`). Exactness
+  found two leaks, both fixed:
+  - **`weakestWall` searched the whole map, other islands' walls included.** They changed
+    which of several equally thin ways in it found, and so a bot's thickening depended on
+    what its neighbours built. Shots fly over every other island, so only the target
+    island's wall counts now. This touches the gunner's aim as well.
+  - **As a build phase opened, `territory` and `enclosedCastles` still showed the board
+    before the barrage** until anyone laid a piece, so a bot's first move depended on
+    whether someone else had placed first that tick. The sim now re-solves the enclosure as
+    a build phase begins (`beginPendingPhase`). This is a change to the sim: it changes the
+    state hashes, and recordings made before it no longer replay exactly.
+
+  With both fixes, `rollout.test.ts` (three bots at Levels 5, 8 and 10, two matches) predicts
+  every piece, its tick and the round's result. So did five more matches at four players. The
+  cost, measured with `tools/headless/src/rolloutCost.ts` at four players on this machine:
+
+  | level | pieces a phase | ms mean | p90 | max | exact   |
+  | ----- | -------------- | ------- | --- | --- | ------- |
+  | 1     | 9.9            | 31      | 58  | 84  | 3/120   |
+  | 3     | 11.8           | 45      | 80  | 94  | 15/120  |
+  | 5     | 14.6           | 60      | 104 | 143 | 120/120 |
+  | 8     | 18.5           | 81      | 181 | 216 | 120/120 |
+  | 10    | 22.6           | 105     | 222 | 327 | 120/120 |
+
+  Level 10 at eight players: 138 ms mean, 306 ms max, 80 of 80 exact. The sloppy levels (1–4)
+  disagree only because they draw their slips from the table's shared stream as they fit. Once
+  a bot carries out a plan, its draws are made when it plans, and these levels will be exact by
+  construction. Eight strategies for each of eight Level 10 bots come to about 9 s of work
+  against a 5 s window, as estimated: the work must be spread over ticks (step 5), and the
+  number of strategies kept small or their shared start computed once.
+
+- **Step 2, the ceiling** (2026-10-12): `buildPlanning.ts` (`strategiesFor`, `choosePlan`,
+  `scoreOf`), a `Strategy` a `Builder` may follow (`follow`), and a `Bot` with `plansAhead`
+  that plans in the intermission and lays the chosen rollout's pieces on their ticks
+  (`playPlan`), its slips drawn from a stream seeded when it plans; the harness's `--plans
+1,0,0` seats such bots. Strategies: the ladder; then from each first wall — the walls held,
+  or when breached the tightest repair keeping the guns and each castle walled alone without
+  them — the wall thickened, reaching on (`spareWork`), with room, with each castle beyond it
+  tight and with room, and with every castle. Up to 51 a phase on an island of four
+  castles. Score: the round's points, 20 a gun ready (firing, or a reward with room), and
+  half the best prospect; a failed round −100,000.
+
+  The first try started every repair with the wall keeping the guns, too dear after a
+  barrage: every strategy but the ladder failed the rounds the bot was breached in. Walling
+  each castle alone as an alternative first wall fixed it.
+
+  One planning bot against two of today's, three players, 32 matches with the planning bot in
+  each seat (96), against the same seeds with no planning bot (each seat's own baseline, per
+  seat averaged):
+
+  |                   | wins of 32 | score | territory a round | castles | guns firing | failed rounds | pieces | wall tiles |
+  | ----------------- | ---------- | ----- | ----------------- | ------- | ----------- | ------------- | ------ | ---------- |
+  | Level 5, today    | 10.7       | 2,230 | 187               | 2.0     | 6.9         | 8.6%          | 15.1   | 110        |
+  | Level 5, planning | **19.0**   | 2,831 | 246               | 2.4     | 7.5         | 7.7%          | 14.9   | 110        |
+  | Level 8, today    | 10.7       | 3,519 | 307               | 2.3     | 6.7         | 12.7%         | 20.3   | 109        |
+  | Level 8, planning | **22.7**   | 4,641 | 411               | 2.9     | 8.7         | 9.6%          | 19.5   | 119        |
+
+  The opponents' scores barely move (Level 5 2,230 → 2,265; Level 8 3,519 → 3,388). Every plan
+  came true (0 divergences in 192 matches). Chosen: the ladder in 29% of phases at Level 5 and
+  40% at Level 8; thickening as the spare work only 7–9%; reaching for another castle (`reach`,
+  `reachAll`) 40% at Level 5 and 26% at Level 8; the bot almost never opens a phase with its
+  wall whole (`hold` under 1%). **The ceiling is far above the ladder; step 2's gate is
+  passed.**
+
+  The cost: a planning bot's matches took 17 s at Level 5 and 23 s at Level 8, against 2.5
+  and 3.6 s, so about 1.5–2 s of planning a round for each bot, about 50 rollouts. Far over
+  what real time allows (step 5): the strategies must be pruned to those that win, measured
+  by how often each is chosen and what the score loses without it.
+
+- **Pruning, and the search in real time** (2026-10-12; the user: a long wait at the start of a
+  build phase is unacceptable, the flow of the game comes first).
+  - **Strategies named by role**: castles by the cost of their wall, cheapest first (`alone1`,
+    `reach2#1`), so a strategy means the same on every board. `--plan-log` writes every
+    phase's strategies and scores. Over 960 planned phases (four players, two planning bots,
+    Levels 3, 5, 8, 10), measured against the best of all 51, the greedy best sets lose 159
+    (one strategy), 84 (two), 55 (three) and 33 (five) points a phase, where today's ladder
+    alone loses 196. Wall the cheapest castle alone, then reach for every castle
+    (`alone1/reachAll`), is the best single strategy at every level.
+  - **Fixed short lists fall short.** In soak the lists of two, three and five kept only
+    25–55% of the gain at Level 8 (territory a round 330–365 against 411 for all 51 and 307
+    today). A different strategy suits each board. **An estimate** that ranked strategies
+    without playing them, from their walls' cuts against the cells the bot will lay, did no
+    better: with three rolled out it still lost about half the gap. It was dropped.
+  - **Cheaper rollouts.** The ladder rolled out lean (`leanLadder`: planning again only once
+    its plan is built) is faster and better (Level 8: 110 → 66 ms, score 395 → 433). Lean
+    hurt the stage strategies (score −5–12%), so they keep replanning. A strategy's spare work
+    is kept until built (`keptSpareWork`): it had been half of such a rollout's time
+    (37.5 → 23.1 ms). **Strategies sharing a first wall** play it once and branch
+    (`RolloutRun.fork`, `Builder.fork`, spare `halt`), exactly as each played alone
+    (tested). That saved less than hoped (about 20 ms a strategy at four players, 31 at
+    eight), since repairs are short.
+  - **Anytime search** (`PlanSearch`): each bot works down its strategies, in a learned
+    order first (`DEFAULT_PLAN_ORDER`) and then the rest, a simulated piece at a time from a
+    snapshot of the board taken in the intermission. The table grants `stepsPerTick`
+    simulated pieces a tick (`PlanningSlots.takeSteps`), shared out evenly by seat. Starting
+    a search costs 8 of them (`SEARCH_SETUP_STEPS`): eight bots starting on one tick took
+    130–180 ms. The search ends at the bot's first piece of the phase, the same tick for
+    every strategy, since its island has not changed till then, with the best played out so
+    far. With nothing played out, or every plan failing, the ladder builds live as before.
+    **The game never waits for it.**
+  - **The budget, 8 a tick.** Eight Level 8 bots, all planning, one process alone (3
+    matches): the bots' time a tick p99 14.6 ms, p99.9 54.2, worst 222, against 14.9, 34.8
+    and 211 for today's bots. The worst ticks are today's own spikes. Each bot weighs 11
+    strategies a phase (at four players 21, at three 25–33). 16 a tick doubled the
+    strategies but raised the worst tick to 130–160 ms with eight bots. A step costs 1.2 ms
+    on average; the ladder's own plans are the dearest, up to 33 ms.
+  - **Measured under that budget**, one planning bot against today's, 32 matches a seat:
+
+    | three players            | today     | all 51, unlimited | real time |
+    | ------------------------ | --------- | ----------------- | --------- |
+    | Level 5, territory, wins | 187, 10.7 | 246, 19.0         | 256, 21.7 |
+    | Level 8, territory, wins | 307, 10.7 | 411, 22.7         | 380, 19.0 |
+
+    Eight players at Level 8 (one planner among seven, 24 matches from each of three seats;
+    12.8 strategies a phase): territory a round 322 → 370, wins 15 → 25 of 72, castles 2.4
+    → 2.7, failed rounds 11.8% → 10.4%.
+
+  - **Still to do for step 5**: planning switched on in the game. Its budget and order go into
+    `ai.default.json`, and every driver (room, local worker, thread) must give the table's
+    `PlanningSlots` its steps. Also a test of the interference fallback with a person
+    building on a bot teammate's island: the builder takes over with the chosen strategy's
+    walls, one plan, no new search.
+- **Switched on in the game** (2026-10-12): `ai.planning` in `ai.default.json` (`enabled`,
+  `stepsPerTick` 8, the `order`, the score's `weights`). Every driver makes its table's slots
+  with `tableSlots(ai)`: the room, the local worker (bot protocol 2, the worker reads the
+  config itself) and the page's thread. The worker and the thread still play the very same
+  match with planning on (`workerDriver.test.ts`, `localMatch.test.ts`).
+  - **Two faults found switching it on.** One search start needed a whole tick's steps, which
+    a bot already searching took first, so later bots never began: one start a tick now
+    (`takeStart`), its share spent on weighing its walls. And a step ran until a piece was
+    laid, so a builder with nothing left to lay planned every quarter second to the phase's
+    end inside one step, up to 260 ms: a step now ends at every look at the board
+    (`Builder.attempts`). The deadline is now the bot's first piece by its pace, not a finished
+    rollout's: with none finished, the search had run on past the first piece's tick, and at
+    4 steps a tick 102 phases could not be laid as planned.
+  - **The cost**, eight Level 8 bots all planning, 3 matches, on a loaded machine (load 6–8):
+    the bots' time a tick p99 24.5–26.4 ms, p99.9 47–53, worst 100–270, against 13.9–15.8,
+    34–41 and 85–150 for today's bots; 7.8 strategies a phase. At 4 steps a tick: p99 18.9,
+    p99.9 38.6. **To be measured again on a quiet machine**, and 4 kept in mind if play
+    shows hitches.
+  - **A person building on a bot teammate's island**: before each planned piece the bot
+    counts the wall on its island against the search's snapshot and its own pieces since. If
+    they differ, the builder takes over at once with the chosen strategy's walls, planned
+    afresh, with no new search (the user's rule). Tested.
+  - **Tests**: the whole-match ladder tests (`testing.ts`'s `bot`, `rollout.test.ts`) build by
+    the ladder alone (`plansAhead: false`). With unlimited steps they planned every strategy
+    and the suite took 9.5 minutes. Planning has its own tests.
+- **The user's first match against planning bots** (2026-10-12, `20261012-122157-local-12pi7wy`,
+  three Level 5 bots, replayed exactly): Thomas 4,184, the bots 3,599, 3,223 and 2,881
+  (v0.9.2's Level 5 bots: 1,220 and 844). Per round: Thomas 369 territory points, 2.7
+  castles, 8.8 guns firing (100%), 10% of rounds failed. The bots: 284, 2.6 castles, 9.1 guns
+  firing of 12.9 (70%), 7% failed, fewer pieces than he laid (15.1 against 16.7). No hitches
+  felt, at four players or at eight. "A bit too strong for Level 5." The bots often walled all
+  four castles, then after a heavy breach sealed one tiny castle with every gun outside: 0 of
+  17–22 guns firing in four bot rounds. The `alone…` strategies bypass the ladder's rule
+  against hollow seals (ARCHIVE 13t), and step 4's minimum is the answer.
+- **The user's decisions** (2026-10-12): **Thomas should be on par with Level 6**. Levels are
+  told apart by how far they search, and **weaker bots sometimes choose a worse plan**, like
+  a person's mistake under time pressure. **Every strategy stays open to every level.** The
+  order of work: step 4, then step 6. Step 3, the weights, only if still needed.
+- **Step 4, the minimum of three guns** (2026-10-12): `ai.planning.minGuns` and
+  `failsOnPurpose`. A plan leaving three guns ready is chosen over any that does not; with
+  none, and a life to spare (not the last round, no person in the team), the bot lays
+  nothing and takes the continue. One such bot against two of today's planning bots, three
+  players, 16 matches a seat (seeds 1–16), in each seat:
+
+  |                                 | wins of 16 | score | territory | guns firing | of owned | failed rounds |
+  | ------------------------------- | ---------- | ----- | --------- | ----------- | -------- | ------------- |
+  | Level 5, today's planning       | 5.3        | 2,825 | 245       | 7.3         | 63%      | 7.1%          |
+  | Level 5, minimum 3, fails       | 5.0        | 2,809 | 243       | 7.5         | **90%**  | 11.0%         |
+  | Level 5, minimum 3, never fails | 5.7        | 2,872 | 249       | 7.4         | 64%      | 7.1%          |
+  | Level 8, today's planning       | 5.3        | 4,449 | 392       | 8.4         | 72%      | 9.2%          |
+  | Level 8, minimum 3, fails       | 6.3        | 4,707 | 417       | 8.7         | **89%**  | 11.9%         |
+  | Level 8, minimum 3, never fails | 5.3        | 4,449 | 392       | 8.5         | 72%      | 9.2%          |
+
+  The minimum alone changes almost nothing: when the best plan is hollow, no plan reaches
+  three guns. Failing on purpose ends the dead guns (63–72% of guns firing → 89–90%), about
+  one round a match given up, with no eliminations and the score even (Level 5 −0.6%) or
+  better (Level 8 +5.8%, within noise at 16 matches). **Kept: `minGuns` 3, `failsOnPurpose`
+  true.** The minimums of 2 and 4 were not measured: the soak at three planning bots a table
+  ran too slowly on a busy machine, and the result is clear enough.
+
+- **Step 6, mistakes and depth by level** (2026-10-12; the user: weaker bots sometimes take a
+  worse plan, and sometimes a failing one — a repair not finished, a wall too ambitious —
+  every strategy open to every level; failing on purpose must look like an effort). New
+  level columns: `planDepth` (strategies weighed at most: 2, 3, 8, 16, 60 at Levels 1, 2, 5,
+  8, 10), `planSlip` (another of the three next best plans that seal: 0.4, 0.35, 0.15, 0.05, 0) and `planBlunder` (a failing plan, while a life is to spare: 0.12, 0.1, 0.04, 0.01, 0).
+  Failing on purpose now plays the failing plan that laid the most; with none failing, the
+  hollow seal is kept. The draws come from the search's seed.
+  - **Calibration** against the user's match (Thomas against three Level 5 bots: 4,184
+    points, the best bot 3,599, territory 369 a round). One bot of each level against three
+    Level 5 bots, four players, 8 matches in each seat:
+
+    | level | wins of 32 | score | best Level 5 | territory | castles | guns firing | failed | pieces |
+    | ----- | ---------- | ----- | ------------ | --------- | ------- | ----------- | ------ | ------ |
+    | 4     | 0          | 1,367 | 3,177        | 111       | 1.6     | 5.4 (85%)   | 12.2%  | 14.3   |
+    | 5     | 8          | 2,425 | 3,148        | 207       | 2.2     | 7.2 (87%)   | 11.2%  | 15.7   |
+    | 6     | 16         | 3,001 | 2,880        | 261       | 2.5     | 7.3 (80%)   | 10.6%  | 16.9   |
+    | 7     | 25         | 3,834 | 2,882        | 333       | 2.8     | 8.0 (81%)   | 10.6%  | 18.3   |
+    | 8     | 31         | 4,610 | 2,777        | 406       | 2.9     | 8.4 (77%)   | 10.3%  | 18.9   |
+
+    The ladder is steep and in order. Level 6 wins half its matches against three Level 5s,
+    by about 4%. Thomas won his by 16%, with territory between Level 7's and Level 8's. Per
+    8 matches about 30 rounds were given up on purpose, 5–11 hollow seals kept, 42–50 slips,
+    1–4 blunders. Level 4 to 5 is a cliff again (0 wins against 8).
+- **The Level 4 cliff, and the whole ladder** (2026-10-12). A Level 4 planning like a Level 5
+  (depth 8, slip 0.15, blunder 0.04) won 3 of 32 against three Level 5s rather than 0
+  (score 1,367 → 1,690). Its planning mistakes are part of the cliff, and the old weaknesses
+  that fade by Level 5 the rest. A **Level 4 anchor** now gives it milder ones (depth 7,
+  slip 0.18, blunder 0.05), its other columns as interpolated before. Each level against
+  three of the level below, four players, 8 matches in each seat (fair share 8 of 32):
+
+  | level | 2   | 3   | 4   | 5   | 6   | 7   | 8   | 9   | 10  |
+  | ----- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+  | wins  | 18  | 17  | 17  | 17  | 16  | 16  | 15  | 24  | 15  |
+
+  (Level 6 from the calibration above, against three Level 5s.) Even steps throughout,
+  except Level 9, where bots stop missing their shots (`aim.perfectFromLevel` 9, ARCHIVE
+  13r), not a planning matter. Territory a round rises from 165 at Level 2 to 511 at
+  Level 10, pieces a phase from 11 to 24.
+
+## 13zg. Bot learning, moved here from BOT_LEARNING.md (2026-10-14)
+
+`docs/BOT_LEARNING.md` held the plan agreed with the user on 2026-10-07 — stronger bots by
+valuing options, then learning the weights, and learning how machine learning fits a game — and
+its progress: steps 1 and 2 done (12x, 12y), step 3's first run a learned fit about as good as
+the hand-made one (12z), then paused. On 2026-10-14 the user closed it, its remaining steps
+dropped, since the bots have changed much since; it is kept here, and code comments name its
+parts as `ARCHIVE 13zg` with the step or finding (A, B).
+
+### 1. The idea
+
+#### What the current bot measures, and what it misses
+
+The bot's build phase is driven by the minimum cut (`SealPlanner` in `ai/src/tactics.ts`,
+`Builder.decide` in `ai/src/building.ts`): how many blocks the cheapest sealing wall still
+needs. After a breach it repairs tight first (ARCHIVE 10s), and widens only within a
+budget (`widestAffordable`, `piecesAffordable`).
+
+The testers often did something else: **while repairing, they laid pieces that already
+surrounded new ground — even new castles — so after five pieces they had as many gaps as
+at the start of the phase, then closed a far larger loop in time.** It paid off in
+points and gun room. Any score built on "gaps left" calls those moves mistakes, because
+by that measure they are.
+
+#### What the player was reasoning about
+
+1. **The best result still reachable in the time left.** "Twelve pieces left: the big
+   loop needs ten more blocks and gives two castles and 150 tiles; the tight repair needs
+   three and gives one castle and 40 tiles."
+2. **The bail-out.** "If it goes wrong, I can still close the tight ring in time." Going
+   big costs little while the cheapest seal stays affordable; the risk is real only once
+   it no longer fits.
+
+Both are computable from what the bot already has: the candidate walls with their
+remaining cost (`SealPlanner.options` at several widths, single castles, pairs, all),
+and the pieces it can still lay (`Builder.piecesAffordable`, ~3.5 cells a piece).
+
+#### The measures (the "features")
+
+Defined per player, on the board as it stands during their build phase:
+
+| Name               | Meaning                                                                                                                                                     | Source                                        |
+| ------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------- |
+| `cheapestSeal` (T) | Blocks still needed for the cheapest wall sealing ≥1 castle                                                                                                 | `SealPlanner.cheapest(1, …)`                  |
+| `budget` (B)       | Blocks the player can still lay this phase                                                                                                                  | time left × placement rate × cells a piece    |
+| `bailoutSlack`     | B − T: the safety margin                                                                                                                                    |                                               |
+| `reachableValue`   | max over candidate walls W of value(W) × P(finish W)                                                                                                        | below                                         |
+| value(W)           | Points W would bank: enclosed tiles × castles (the scoring formula, PLAN §1.7), plus a term for gun room (`cannonRoom`)                                     | build W's tiles on a copy, `computeEnclosure` |
+| P(finish W)        | Chance of closing W in time, from its slack: B against W's remaining cost, with an allowance for fit waste (pieces/budget runs 108–137%, ARCHIVE 12h stats) | to be fitted                                  |
+| `carryOver`        | Wall that survives the sweep into the next round (touches territory)                                                                                        | `sweep.ts` rules                              |
+
+**The key effect:** laying five tiles on the big loop barely changes T, but cuts the big
+wall's remaining cost by five, so `reachableValue` rises. A score using it prefers exactly
+what the testers did.
+
+**Cost:** cutting every candidate wall again for every candidate placement is far too
+slow (hundreds of placements × several cuts). Cut the walls **once per turn**, as the bot
+already does, and score a placement by how many tiles of each wall it covers, weighted by
+that wall's value — a softer version of today's `fit`, which aims at one wall. Caches last
+one turn, never a tick (CLAUDE.md gotcha: bots act in turn and change the board).
+
+---
+
+### 2. The steps
+
+#### Step 1 — Check the theory against the testers' recordings
+
+**Question:** do the measures explain the risky play? Do the two testers differ as the
+user observed — **Mausica cautious, valuing immediate repair; Thomas, the more skilled,
+taking bigger risks and playing longer-term**?
+
+**Data:** `recordings/` — five matches replay exactly (2026-09-30 to 10-05, protocol 16,
+format 1); the four of 2026-09-28 do not parse (fields added since). Sparse: tendencies,
+not proof. Bots L3–L5 at the same tables give a baseline.
+
+**Method:** replay each recording (`replayRecording`'s loop, `protocol/src/recording.ts`)
+and, for every `place_piece` by every player, take the measures on the board just before
+it, then after:
+
+- ΔT: did the piece reduce the cheapest seal? (gap-closing vs gap-neutral moves)
+- Δ`reachableValue`, `bailoutSlack` at the time
+- per build phase: T at the start and end, castles and enclosed tiles at the start and at
+  the resolution, points banked, whether the seal failed.
+
+Per player: share of gap-neutral placements, how they correlate with slack (risk taken
+only with slack in hand?), phases that ended with more castles/area than they began with,
+failed phases. Compare Thomas, Mausica, and the bots by level.
+
+**Deliverable:** a findings section below, and the analysis kept as a harness mode if it
+proves useful (`--replay … --placements FILE`, a CSV per placement), else a script
+outside the repository.
+
+#### Step 2 — The rule: "go big while a bail-out remains"
+
+In `Builder.decide`, when something needs repair (and when expanding):
+
+1. Take the tight repair and the bigger options (walls with more castles or room).
+2. Pursue the most valuable option that fits the budget, **provided the tight repair
+   would still fit after it** (slack after the big plan ≥ a margin).
+3. At every replan, re-check; switch to the tight repair as soon as the bail-out is
+   threatened.
+
+**History to respect:** ARCHIVE 10s — widest-first repair lost a quarter of all rounds,
+one to three cells short with the phase spent on a wider wall that did not close. It had
+no bail-out check. Tight-first fixed the losses by giving up the upside. The offensive
+trait's small-breach widening (`widensWhileRepairing`, `SMALL_REPAIR`) is a narrow form of
+this idea.
+
+**As a personality variant first** (a risk trait value, `config/ai.default.json`,
+`botProfile`), so it is measured, not assumed.
+
+**Measure:** soak against today's bots — same seats both ways (CLAUDE.md: position
+matters), Levels 5 and 8, three players and teams; `--stats` columns: castles sealed,
+cannon room, forfeited rounds, points. Success: more points and room, no rise in
+forfeits. Use `npm run soak -- --only …` style batches or headless runs directly.
+
+#### Step 3 — The learned scoring function
+
+Replace "which wall, then fit it" with "score every legal placement of the piece in hand":
+
+- **Score** = Σ weightᵢ × featureᵢ(board after the placement), features from §1 plus
+  cheap ones the tactics already compute: one-tile holes no piece can fill, thickness on
+  the weakest path (`weakestWall`), pockets, guns left inert, cells spilt inside the wall.
+- **Training:** the cross-entropy method (CEM) — sample weight vectors from a Gaussian,
+  play headless matches with each (bots using the score against fixed opponents, both
+  seats), keep the best ~10%, refit the Gaussian, repeat. Objective: points banked and
+  rounds survived; forfeits heavily penalised. Plain TypeScript in `tools/headless`,
+  the existing harness and soak machinery, this machine's CPU. No money.
+- **Why CEM:** it is how linear-feature Tetris agents were trained to clear millions of
+  lines; the problem (place pieces on a grid, delayed reward) is the closest studied
+  cousin of this one; it needs no gradients and is easy to inspect.
+- **Readable result:** a weight per feature, kept in `config/ai.default.json` behind the
+  schema (no rule hardcoded). Personalities become weight sets (offensive weighs
+  `reachableValue`, defensive `bailoutSlack`).
+- **Levels:** strength from noise (choosing among the top few by a temperature), the
+  existing pace and sloppiness, and the planned "misses like a person" work. The soak
+  must show the ladder in order (ARCHIVE 12h).
+
+**Success:** beats step 2's bot and today's bot in soaks at the same level and pace.
+
+#### Step 4 — Later, if wanted
+
+Lookahead (play the rest of the phase out with random future pieces and a cheap policy,
+score by the average outcome), or a neural value function trained in Python. Not now.
+
+---
+
+### 3. Constraints that hold throughout
+
+- **The game must not change for people.** Only how bots choose; rules untouched.
+- **Determinism.** `sim` and `ai` may not use `Math.random`, `Date.now`, `performance`
+  (lint rule). Weighted sums and argmax are deterministic; avoid `Math.exp` and friends in
+  bot code (implementation-approximated), or use `math.ts`/`trig.ts`.
+- **No upcoming pieces.** The sequence is derivable from the seed, but people see only the
+  piece in hand (the preview was removed); bots must too.
+- **Pace.** A bot lays pieces at its level's pace (`placementBaseMs`,
+  `placementPerCellMs`); learning chooses where, never how often.
+- **Time per plan.** A plan costs ~5 ms and the server's tick waits on its bots; plans are
+  spread by `PlanningSlots`. New features must fit; profile with the think-time benchmark
+  method of ARCHIVE 12w (time `Bot.think` over fixed tables, `--cpu-prof`).
+- **Before-and-after soaks** per CLAUDE.md: `git stash`, run, pop, run; edit nothing while
+  a soak runs; check hashes reproduce.
+- **Commits** are the user's to approve, each time.
+
+---
+
+### 4. Progress
+
+- 2026-10-07: plan agreed and written. Step 1 started: a first pass with simple
+  measures (below). Still to do in step 1: `reachableValue` and `bailoutSlack` proper
+  (area a wall would enclose, the player's own placement rate for the budget), and the
+  split of gap-neutral pieces into progress and waste by them.
+- 2026-10-07: step 1 proper done (findings below). The question is answered by hindsight;
+  `reachableValue` over minimum-cut walls was built and does not explain the play.
+  Decided with the user: A, the unfillable last gaps, then B, step 2 adjusted by the
+  findings.
+- 2026-10-07: A done (below): plans route round tiles no piece can cover; failed rounds
+  down about a point at every level measured. Step 2 (B) started.
+- 2026-10-07: B done (below). Going big while breached and widening the territory all
+  round were measured and dropped; **widening once sealed — pushing the standing wall out
+  to another castle, or a stretch of land beside it — is kept for every bot**: one such
+  bot against two of the old won 65 of 96 at Levels 5 and 8. Next: step 3.
+- 2026-10-07: step 3 started: a learned fit (`fitWeights` in `ai.default.json`, null =
+  the hand-made fit; `buildScored` in `building.ts`) scoring every legal placement near the
+  plan, the tightest repair, the thickening targets and the outer skin by ten features;
+  trained by `tools/headless/src/cem.ts` (each candidate head to head against two of
+  today's bots, `fitEval.ts`).
+- 2026-10-07: step 3's first run done (findings below): the learned fit about equals the
+  hand-made one — a small gain at Level 5, none at Level 8. **Paused here by the user's
+  decision**; the pipeline is committed with `fitWeights` null, and the work left is §6.
+
+### 5. Findings
+
+#### Step 1, first pass (2026-10-07)
+
+**Data:** the five recordings that replay exactly — two testers against L3–L5 bots, two
+two-against-two and one six-player match per pairing; 3,080 pieces in 214 player-phases.
+The script is `tools/headless/src/placements.ts` (run `npx tsx src/placements.ts` in
+tools/headless; writes /tmp/bw/placements.csv and phases.csv). Its measures: for every piece, the cheapest seal of ≥1 castle before and
+after (T), and of ≥2 castles; per build phase, what the player held as it opened and at
+the resolution.
+
+**Per build phase** (almost every phase opens breached; castles and tiles are the change
+from the phase's opening to its resolution):
+
+| Player  | phases | failed   | points/phase | castles Δ | tiles Δ | gap-neutral share in breached phases |
+| ------- | ------ | -------- | ------------ | --------- | ------- | ------------------------------------ |
+| Thomas  | 44     | 7 (16%)  | 232          | +1.80     | +81     | 37%                                  |
+| Mausica | 44     | 12 (27%) | 99           | +1.07     | +44     | 32%                                  |
+| bots L3 | 18     | 3 (17%)  | 66           | +1.00     | +30     | 24%                                  |
+| bots L4 | 38     | 8 (21%)  | 53           | +0.79     | +28     | 23%                                  |
+| bots L5 | 70     | 10 (14%) | 165          | +1.31     | +62     | 22%                                  |
+
+**Per piece:**
+
+| Player     | pieces | laid while unsealed | of those, gap-neutral | median T then | median s left | sealed: piece brings a 2nd/next castle closer |
+| ---------- | ------ | ------------------- | --------------------- | ------------- | ------------- | --------------------------------------------- |
+| Thomas     | 731    | 68%                 | 50%                   | 6             | 12.9          | 61%                                           |
+| Mausica    | 576    | 78%                 | 41%                   | 5             | 12.4          | 59%                                           |
+| bots L3–L5 | 1,773  | 54–62%              | 33–37%                | 3             | 10–14         | 25–38%                                        |
+
+**What it hints at** (five matches: tendencies, not proof):
+
+- **Thomas plays the long game the user described, and it pays.** Half his pieces laid
+  while unsealed leave the cheapest seal where it was, and he lays them with twice the
+  gap the bots leave open (median 6 blocks against 3). He ends a phase with +1.8 castles
+  and +81 tiles, banks 232 points a phase — 40% more than L5 bots — and fails 16% of
+  phases, about as often as L5.
+- **Mausica repairs more and expands less, but caution did not make her safer.** Fewer
+  gap-neutral pieces (41%), more of her pieces spent while unsealed (78%), less gained
+  (+1.07 castles, +44 tiles, 99 points a phase) — and the most failed phases of anyone,
+  27%. She also lays fewer pieces (13.1 a phase against Thomas's 16.6): with fewer pieces
+  the tight repair is the right call, and still it often did not close. Speed and fit,
+  not strategy, look like her limit.
+- **The bots are the cautious ones.** The fewest gap-neutral pieces (22–24% in breached
+  phases), and once sealed, only 25–38% of their pieces bring another castle closer,
+  against about 60% for both testers: they thicken where people expand. That is the gap
+  steps 2 and 3 aim at.
+- **Not yet shown:** that Thomas's gap-neutral pieces are progress rather than waste. By
+  the crude test (does the piece lower the cost of sealing two castles?) about half are
+  for him and for Mausica alike; but that test misses a wall widened round the same castle
+  for room. `reachableValue` (ground a wall would enclose, step 1 proper) is what can tell.
+
+#### Step 1 proper (2026-10-07)
+
+**The script** (`tools/headless/src/placements.ts`, three minutes over the five
+recordings) now measures, for every piece and on the island it landed on (37 pieces went
+on a teammate's), before and after: every candidate wall (each castle alone, each pair,
+all of them, at room radii 0–3) with its remaining cost and its value (enclosed tiles ×
+castles, the wall stood in on a copy); the budget (time left × the owner's own rate of
+laying cells × their own efficiency, blocks of the cheapest seal removed per repairing
+cell, 0.41–0.48 for everyone); `bailoutSlack` = budget − T; and `reachableValue`, max over
+walls of value × P(finish). **In hindsight**, at the resolution: whether each cell of the
+piece ended in the wall round the player's territory ("sealing"), standing elsewhere, or
+swept — and per phase, the wall finally sealed, priced as its blocks not yet standing as
+the phase opened.
+
+**1. Gap-neutral pieces are progress for people, mostly not for bots.** Of the cells of
+pieces laid while unsealed in phases that sealed, the share that ended in the sealing wall:
+
+| Placer  | repairing pieces | gap-neutral pieces |
+| ------- | ---------------- | ------------------ |
+| Thomas  | 66%              | 67%                |
+| Mausica | 61%              | 66%                |
+| L5      | 55%              | 47%                |
+| L4      | 54%              | 43%                |
+| L3      | 57%              | 33%                |
+
+A tester's piece that leaves the cheapest seal where it was is as much part of the final
+wall as one that closes a gap. A bot's is spill and thickening.
+
+**2. Thomas closes far bigger walls than he needs, and they cost more than his "budget".**
+Sealed phases that opened breached, medians:
+
+| Player  | phases | tight seal | wall sealed | budget | sealed / budget | sealed > 1.5× tight | value at the end |
+| ------- | ------ | ---------- | ----------- | ------ | --------------- | ------------------- | ---------------- |
+| Thomas  | 36     | 8          | 30          | 22.4   | 1.4             | 97%                 | 214              |
+| Mausica | 31     | 8          | 17          | 18.1   | 1.1             | 58%                 | 48               |
+| L5      | 58     | 7          | 17          | 18.6   | 0.9             | 64%                 | 62               |
+| L4      | 28     | 11         | 14          | 20.4   | 0.7             | 36%                 | 37               |
+| L3      | 15     | 7          | 14          | 20.8   | 0.7             | 47%                 | 35               |
+
+The budget, priced at repair efficiency, understates what a long wall costs to lay: on a
+long run nearly every cell becomes wall, while a repair's last blocks are dear. **Budget
+for a wall in cells, at about 0.6 of a cell laid a block** (the sealing share above),
+not in blocks of the cheapest seal. Once sealed, the same holds: 45% of Thomas's cells end
+in the sealing wall (he widens), against 12–24% for bots and Mausica (they thicken — 60–75%
+of their cells stand off the seal).
+
+**3. Risk with slack in hand.** Median `bailoutSlack` (blocks) when laying a repairing /
+a gap-neutral piece while unsealed: Thomas 6.9 / 9.2, Mausica 3.6 / 5.0, bots 9.3–10 /
+8.4–8.8. Thomas goes neutral when he has more margin than when he repairs; bots do the
+opposite (a bot's neutral piece is mostly a bad fit, not a choice). Mausica plays on half
+Thomas's margin throughout. By slack band, the share of neutral pieces whose phase sealed:
+slack 0–5: Thomas 61%, Mausica 51%, bots 27–41%; 10–20: Thomas 88%, Mausica 79%, bots
+64–84%.
+
+**4. What fails, fails at the end, and was affordable.** Every one of the 40 failed phases
+opened with a tight seal of 5–12 blocks against a budget of 14–24 (as ARCHIVE 10s found
+for bots), and ended 1–3 blocks short in 37 of them. The chance of sealing by the cheapest
+seal over the budget at the time, every piece laid while unsealed, pooled:
+
+| T / budget | < 0.2 | 0.2–0.4 | 0.4–0.6 | 0.6–0.8 | 0.8–1 | 1–1.5 | > 1.5 |
+| ---------- | ----- | ------- | ------- | ------- | ----- | ----- | ----- |
+| sealed     | 97%   | 85%     | 66%     | 58%     | 59%   | 49%   | 12%   |
+| Thomas     | 100%  | 96%     | 78%     | 57%     | 67%   | 38%   | 0%    |
+| bots       | 96%   | 80%     | 62%     | 57%     | 46%   | 33%   | 9%    |
+
+So **a bail-out needs a large margin**: the tight repair should cost no more than about a
+third of the budget to be ~90% safe — far from "it still fits". At the same margin Thomas
+seals more often than the bots (96% against 80% at 0.2–0.4), and **10 of the bots' 21
+failed phases ended on a gap no piece in the bag could fill** (`repairStuck` > 0 in the
+recordings' statistics), against 1 of the testers' 19: the bots' endgame fitting, not
+their choice of wall, is where they lose rounds.
+
+**5. `reachableValue` over minimum-cut walls does not explain the play.** Gap-neutral
+pieces raised it for 34–37% of the testers' pieces and 26–41% of the bots' — no
+difference — and in 33 of Thomas's 37 sealed phases the value he ended with exceeds every
+affordable candidate wall. The walls people close are not minimum cuts round castles and a
+band: they follow the old wall and the coast and take in whole stretches of land at once.
+Value by the min-cut family is the wrong family; step 2 needs candidate walls of that kind
+(the wall last round, its ring widened, the coast-hugging loop), or step 3 a feature that
+does not depend on enumerating walls.
+
+**For the next step**, then: the testers' long game is real, it is progress and it pays
+(Thomas 232 points a phase, L5 165); it is taken with slack in hand; a bail-out must keep
+the tight repair to about a third of the budget; and separately, the bots lose half their
+failed rounds to unfillable holes at the end.
+
+#### A: the unfillable last gaps (2026-10-07)
+
+**Where they came from**, 16 matches of three bots a level (Levels 3, 5, 8), on the build
+phase's last tick: 12–14% of rounds failed, and in a quarter to a third of those the
+cheapest seal still ran through a tile no piece of the bag could cover. Two thirds of
+those tiles were unfillable already as the phase opened — a shot's hole between wall and
+sea or wall and gun, once one-cell pieces stop being dealt — and a third were boxed in by
+the bot's own pieces during the phase. At the opening, 36–58 of ~470 player-rounds had
+their tightest repair running through such a tile.
+
+**The change** (`markUncoverable` in `building.ts`, `coverable` in the new
+`ai/src/coverage.ts`): before each plan, every empty tile of the island that no piece of
+the bag could cover joins the bot's `unreachable` set, which the planner already routes
+round. The bag is the rules' (which pieces the round can deal), not foresight. A build
+phase only fills the board, so a tile uncoverable now stays so for the round. `analysis`
+uses the same `coverable` for `repairStuck`.
+
+**Measured**, 96 matches a variant, three players, dealt personalities, seeds 1001–1096,
+with a temporary switch per part (rows are player-rounds, ±1 SE ≈ 0.6 points):
+
+| Variant          | failed rounds | of them on an unfillable gap | points a round | knockouts |
+| ---------------- | ------------- | ---------------------------- | -------------- | --------- |
+| L5 before        | 12.8%         | 120                          | 103.5          | 12        |
+| L5 routing       | 11.5%         | 55                           | 108.6          | 11        |
+| L5 fit guard     | 12.4%         | 105                          | 104.8          | 13        |
+| L5 both          | 11.5%         | 60                           | 108.0          | 6         |
+| L8 before / both | 12.4% / 11.4% | 131 / 71                     | 129.9 / 133.2  | 14 / 13   |
+| L3 before / both | 13.9% / 11.8% | 120 / 48                     | 82.2 / 84.0    | 28 / 17   |
+
+The routing does the work; a guard in `fit` against placements that leave a planned tile
+uncoverable (penalised as one covered tile) added nothing beside it and was dropped. No
+cost in time (the soaks ran as long). The final code reproduces the routing variant's
+hashes. Every level gains, the low ones most; the ladder is not re-measured.
+
+#### B, first version: going big while breached (2026-10-07)
+
+**As built** (measured behind a temporary switch, then dropped): breached, a bot builds the most valuable wall it can finish — the
+ground it held as combat began (remembered during combat, since the first placement of
+a build phase refreshes territory for everyone), that ground widened by 1–3 tiles, or a
+castle wall with room — while the tightest repair costs at most `bailoutShare` of the
+cells it can still lay, priced at repair efficiency (0.45 blocks a cell); a big wall is
+finishable at 0.55 blocks a cell (the bots' sealing share), must be worth 1.25× the tight
+one, and a chosen one is kept unless another is worth 1.15× more. Checked at every plan.
+
+**Measured**, every bot balanced at Level 5, three players, 96 matches, seeds 1001–1096:
+
+| bailoutShare | failed rounds | points a round | castles | room | knockouts | time  |
+| ------------ | ------------- | -------------- | ------- | ---- | --------- | ----- |
+| off          | 11.9%         | 103.1          | 1.09    | 2.88 | 5         | 251 s |
+| 0.33         | 11.4%         | 106.9          | 1.10    | 2.94 | 2         | 297 s |
+| 0.5          | 11.9%         | 105.6          | 1.09    | 2.99 | 2         | 331 s |
+| 0.7          | 12.3%         | 106.0          | 1.09    | 3.03 | 2         | 354 s |
+
+Points +3–4% and no rise in forfeits, but within noise, castles unchanged, and planning
+18–40% slower. Counted over four matches at 0.33: of ~920 breached plans the bail-out
+held 628 back, the tight repair was the most valuable affordable wall in 263, and a big
+wall was chosen 27 times. At a bot's pace a third of the budget is ~8 blocks as a phase
+opens, against a median tight repair of 7, and it shrinks as the phase runs. **Breached is
+not where the testers' value comes from**: it is castles — Thomas ends a phase with +1.8
+castles, and value is tiles × castles — and 45% of his cells once sealed go into a wider
+wall where the bots thicken (step 1, finding 2). Once sealed, the wall standing is the
+bail-out.
+
+#### B, second version: going big once sealed (2026-10-07)
+
+**Widening the whole territory does not work**: sealed, the candidate "territory widened
+by 1–3 tiles" asks for a new perimeter outside the old wall, beyond any phase's budget.
+Counted over four matches, the best wall within reach was the territory already held in
+479 of ~530 plans. People push a **bulge** out from the wall they have. So sealed, the
+candidates are the territory plus a patch of land of radius 2 or 4 round eight points
+spread along the outside of the wall (the cut reuses the standing wall), and the castle
+walls with room; the ground chosen is remembered, so the same bulge is built from plan
+to plan. Bulges then won 100 of ~580 sealed plans at a gain threshold of 1.25×, and many
+more gained 10–25%.
+
+**Every bot changed**, balanced, three players, 96 matches, seeds 1001–1096:
+
+| Variant              | failed rounds | points a round | castles | active guns | knockouts | time  |
+| -------------------- | ------------- | -------------- | ------- | ----------- | --------- | ----- |
+| L5 off               | 11.9%         | 103.1          | 1.09    | 5.45        | 5         | 251 s |
+| L5 sealed, widening  | 11.7%         | 104.0          | 1.09    | 5.46        | 5         | 285 s |
+| L5 bulges, gain 1.25 | 11.6%         | 102.4          | 1.08    | 5.54        | 1         | 363 s |
+| L5 bulges, gain 1.1  | 11.6%         | 100.7          | 1.04    | 5.59        | 0         | 356 s |
+| L8 off               | 14.7%         | 128.6          | 1.29    | 5.21        | 11        | 260 s |
+| L8 bulges, gain 1.25 | 13.5%         | 132.4          | 1.27    | 5.67        | 3         | 380 s |
+| L8 bulges, gain 1.1  | 13.2%         | 134.9          | 1.24    | 5.81        | 4         | 383 s |
+
+**Head to head**, one bot with bulges at 1.1 and the breached rule at 0.33 against two of
+today's, rotated through the three seats, 96 matches a level (seeds 2001–2096, fair
+share 32, one standard error about 4.6):
+
+| Level | wins     | failed rounds, it / today's | points a round, it / today's | active guns, it / today's |
+| ----- | -------- | --------------------------- | ---------------------------- | ------------------------- |
+| 5     | 32 (33%) | 11.5% / 11.6%               | 108.4 / 105.7                | 5.61 / 5.54               |
+| 8     | 39 (41%) | 12.3% / 14.3%               | 137.7 / 131.9                | 5.75 / 5.34               |
+
+A small gain at Level 8, about one and a half standard errors, and none at Level 5, for
+planning about 45% slower. Castles do not rise: the bulges buy ground and gun room, not
+the second castle that makes the testers' value.
+
+#### B, third version: reaching for castles — kept (2026-10-07)
+
+**The candidates added**: for each castle outside the territory, the territory and that
+castle with a band of 0 or 2 tiles, so the cut reuses the standing wall and only bridges to
+the castle; reaching for every castle on the island, as spare work already did. Head to
+head as above (one changed bot, balanced, against two of today's, 96 matches a level):
+
+| Changed bot                                 | L5 wins | L8 wins |
+| ------------------------------------------- | ------- | ------- |
+| bulges and the breached rule, no castles    | 32      | 39      |
+| castles only                                | 41      | 46      |
+| castles and the breached rule               | 51      | 47      |
+| castles, bulges and the breached rule       | 49      | 47      |
+| castles and bulges                          | 48      | 54      |
+| castles and bulges, reach 0.8 blocks a cell | **65**  | **65**  |
+| castles and bulges, reach 1.0               | 67      | 64      |
+
+Castles carry most of it; the breached rule adds nothing reliable and was dropped, with
+its memory of the ground held. **Reach** was what held it back: at 0.55 blocks a cell (the
+bots' measured wall efficiency) a castle the old ladder would have tried was out of reach,
+and a cheaper bulge was built first — found by a test board where widening sealed one
+castle where the old ladder sealed two. At 0.8: castles a round 1.39 against 1.06 at Level
+5 and 1.74 against 1.29 at Level 8, points 23–33% more, failed rounds 12.9% / 12.1% and
+14.1% / 14.8% (it / today's).
+
+**As kept** (`widensWhenSealed` in each risk trait, true for all three; `widen` in
+`building.ts`; `SealPlanner.around` cuts round given ground): sealed, after the guns are
+recovered, a pocket is taken when short of room, and a thin wall is thickened for the
+secondary and defensive traits, the bot weighs the wall it chose last, eight bulges at radii
+2 and 4, the castles, and the castle walls with room; builds the most valuable it can
+finish (cost at most cells left × 0.8 × the level's risk margin) if worth 1.1× what it
+holds; keeps its choice unless another is worth 1.15× more; else the ladder as before.
+
+**Every bot widening**, dealt personalities, three players, 96 matches (seeds 1001–1096):
+
+| Level      | failed rounds | points a round | castles     | knockouts | at the cap |
+| ---------- | ------------- | -------------- | ----------- | --------- | ---------- |
+| 5 off / on | 11.5% / 11.6% | 108.6 / 113.8  | 1.13 / 1.20 | 11 / 12   | all / all  |
+| 8 off / on | 11.7% / 12.7% | 136.5 / 148.4  | 1.28 / 1.38 | 13 / 18   | all / all  |
+
+The ladder, all widening, one bot against two Level 5s, 96 matches: Level 4 won 12 (12h:
+15%), Level 6 won 33 (12h: 42%) — in order, Level 6's edge smaller, about 1.7 standard
+errors. **Time**: a build plan's mean 7.3 -> 7.8 ms at three players (Level 5) and 5.0 ->
+6.1 ms at eight (Level 8), the worst 82 -> 93 and 47 -> 67 ms (four runs at once on this
+machine, so for comparison only).
+
+#### Step 3, first run: a learned fit (2026-10-07)
+
+**What is learned**: only where the piece in hand goes. The ladder still decides which
+walls matter; a learned score then weighs every legal placement near any of them — the
+plan, the tightest repair, the thickening targets, the outer skin — by ten features
+(`FIT_FEATURES` in `config/src/ai.ts`): cells on each, cells spilt inside, cells wasted,
+the plan's and the repair's cells times urgency (the repair's cost over what the phase can
+still lay), and whether the placement finishes the plan or the repair. `fitWeights` in
+`ai.default.json`, null by default (the hand-made fit), so the game is unchanged.
+
+**Training** (`cem.ts`, `fitEval.ts`): ten iterations of sixteen candidates and the
+current mean, each 24 matches head to head against two of today's bots at Level 5, the
+same seeds within an iteration; the best four refit the Gaussian; `plan` held at 4 for
+scale. Seventy minutes on this machine. The mean, by iteration: −0.08, −0.06, −0.12,
++0.06, +0.06, +0.33, +0.07, +0.10, +0.16, +0.33 (relative score: its points minus the
+opponents' mean, over that mean, a match each).
+
+**Learned** (plan 4): finishes the repair 8.3, the repair's cells 1.9 plus 2.3 × urgency,
+spilt inside −4.2, skin 1.7, thicken 0.9, finishes the plan 0.3, the plan's cells −0.2 ×
+urgency, waste −0.2. It learned what step 1 found by hand: rounds are lost in the last
+blocks, so a placement that closes the repair is worth most.
+
+**Checked on 96 fresh seeds** (900001–900096), today's bot in the same seat as the noise
+— the measure sits above zero even then, since a mean of ratios leans upward:
+
+| Level | relative, today / learned | wins, today / learned | failed rounds, today / learned |
+| ----- | ------------------------- | --------------------- | ------------------------------ |
+| 5     | +0.086 / +0.193           | 32 / 35               | 97 / 102                       |
+| 8     | +0.088 / +0.074           | 35 / 30               | 118 / 114                      |
+
+A small gain at Level 5, where it was trained (about two standard errors on the relative
+score, nothing in wins), and none at Level 8. **The learned fit about equals the hand-made
+one**: with the ladder choosing the walls, where a piece goes has little left to give.
+What could: features for the choice of wall itself, training at more levels than one, and
+more matches a candidate (24 leave one iteration's figure noisy by ±0.1).
+
+---
+
+### 6. The tools left
+
+The next steps this section listed (learning the choice of wall, training better, a straighter
+objective, levels from a learned bot, lookahead) were dropped on 2026-10-14 by the user's
+decision: the bots have changed much since (13r, 13t–13v, 13z, 13zd). The pipeline stays,
+`fitWeights` null.
+
+**How to run what exists**: `npx tsx src/fitEval.ts --weights '{...}' --seeds 1,2,3
+[--level 5]` in `tools/headless` plays one weight vector head to head (`--weights null`
+measures today's bot against itself); `npx tsx src/cem.ts [--iterations 10] [--population
+16] [--elite 4] [--matches 24] [--level 5] [--out DIR] [--resume]` trains, writing
+`state.json` (the mean and spread) and `log.jsonl` (every candidate) to `DIR`. The first
+run's mean is in §5; to try it, put it in `fitWeights`.

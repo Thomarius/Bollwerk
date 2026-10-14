@@ -1,4 +1,4 @@
-// docs/BOT_LEARNING.md, step 3: the cross-entropy method over the fit weights. Each
+// ARCHIVE 13zg, step 3: the cross-entropy method over the fit weights. Each
 // iteration samples weight vectors from a Gaussian, plays each head to head against two
 // of today's bots (`fitEval.ts`, every candidate on the same seeds), keeps the best and
 // refits the Gaussian to them. `plan` is held at 4: the choice is an argmax, so only the

@@ -15,7 +15,7 @@ import { PlanningSlots } from './planning.js';
 import { rollOutBuild, type Placement } from './rollout.js';
 
 // Careful levels only: a sloppy bot draws from the table's shared stream as it fits, which
-// the rollout cannot know until the plan draws for itself (BUILD_PLANNING.md).
+// the rollout cannot know until the plan draws for itself (ARCHIVE 13zf).
 const SETUPS: BotSetup[] = [
   { level: 5, personality: BALANCED },
   { level: 8, personality: { risk: 'offensive', targeting: 'points', cannons: 'max' } },

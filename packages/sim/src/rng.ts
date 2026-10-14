@@ -37,7 +37,7 @@ export class Rng {
     this.state = mix32(seed);
   }
 
-  /** A stream that goes on exactly as this one will: a rollout branching (BUILD_PLANNING.md). */
+  /** A stream that goes on exactly as this one will: a rollout branching (ARCHIVE 13zf). */
   clone(): Rng {
     const copy = new Rng(0);
     copy.state = this.state;

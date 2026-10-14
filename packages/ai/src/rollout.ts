@@ -3,7 +3,7 @@ import { applyAction, step, type MatchState, type Rng, type RoundResult } from '
 import { type Builder, type Strategy } from './building.js';
 
 /**
- * A build phase played out before it is played (BUILD_PLANNING.md, step 1).
+ * A build phase played out before it is played (ARCHIVE 13zf, step 1).
  *
  * A bot's build phase depends on nothing but its own island, its pieces and its pace: no
  * shot lands in it (the intermission before it waits for the last), the pieces are a pure

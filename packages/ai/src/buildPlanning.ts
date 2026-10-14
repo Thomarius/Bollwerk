@@ -15,7 +15,7 @@ import { RolloutRun, snapshot, type Placement, type Rollout } from './rollout.js
 import { SealPlanner, cannonRoom, wallValue, type SealPlan } from './tactics.js';
 
 /**
- * A build phase chosen by playing it out (BUILD_PLANNING.md, step 2): the ways a bot might
+ * A build phase chosen by playing it out (ARCHIVE 13zf, step 2): the ways a bot might
  * spend it, each rolled out on a copy of the match, and the one whose outcome scores best
  * kept — its pieces then laid as they were in the rollout.
  */
@@ -161,7 +161,7 @@ function isLadder(strategy: Strategy): boolean {
 
 /**
  * A bot's search for its build phase, done a simulated piece at a time so it can be spread
- * over ticks and stopped when time is up (BUILD_PLANNING.md, step 5): the strategies in
+ * over ticks and stopped when time is up (ARCHIVE 13zf, step 5): the strategies in
  * the order given, each rolled out on a snapshot of the board taken when the search began.
  * Strategies beginning with the same wall play alike until it stands, so that start is
  * played once and branched (`RolloutRun.fork`) into each of them.

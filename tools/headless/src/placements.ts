@@ -1,4 +1,4 @@
-// docs/BOT_LEARNING.md, step 1: every piece placed in the testers' recordings, measured
+// ARCHIVE 13zg, step 1: every piece placed in the testers' recordings, measured
 // against every wall the player could have been building. Run `npx tsx src/placements.ts`
 // in tools/headless; writes /tmp/bw/placements.csv and phases.csv and prints a summary.
 //

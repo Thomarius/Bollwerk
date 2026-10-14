@@ -196,7 +196,7 @@ export const RulesetSchema = z
       tilePoints: z.number().int().nonnegative(),
       /**
        * The old rule: the tiles multiplied by the castles sealed, which grew with the square
-       * of the castles held (docs/SCORING.md). Off since 2026-10-14; defaults on so that
+       * of the castles held (ARCHIVE 13ze). Off since 2026-10-14; defaults on so that
        * recordings made before it existed replay as they were played.
        */
       castleMultiplier: z.boolean().default(true),

@@ -1,5 +1,5 @@
 /**
- * What a build phase played out in advance costs (BUILD_PLANNING.md, step 1): bot tables of
+ * What a build phase played out in advance costs (ARCHIVE 13zf, step 1): bot tables of
  * one level, each bot's coming build phase rolled out in the intermission before it, timed,
  * and checked against what the bot then did.
  *

@@ -19,9 +19,10 @@ is uncredited. Every sound is from OpenGameArt.org, but three music tracks from 
 License, credited to their authors as they ask).
 
 **`docs/PLAN.md` is the design and the open work** — read it before changing rules,
-terrain or bots. **`docs/ARCHIVE.md`** records how each decision was reached, with the
-measurements and the reverted attempts; consult it before re-trying something. This file
-is the orientation.
+terrain or bots; a design of its own (`docs/SPECIAL_TOWERS.md`) lives beside it until
+built, then is retired into the ARCHIVE. **`docs/ARCHIVE.md`** records how each decision
+was reached, with the measurements and the reverted attempts; consult it before re-trying
+something. This file is the orientation.
 
 ## Commands
 
@@ -167,7 +168,7 @@ Full detail in PLAN.md §1. The parts that surprise people:
 protocol 24 since the scoring change, and a test session needs the server rebuilt and every
 page reloaded for either):
 
-- **Scoring by ground and guns** (ARCHIVE 13zd, `docs/SCORING.md`, 2026-10-14): territory no
+- **Scoring by ground and guns** (ARCHIVE 13zd, its design 13ze, 2026-10-14): territory no
   longer multiplied by castles, and 5 points a gun firing at the resolution; one formula in the
   sim (`heldPoints`) that the bots value walls by, plus their castles' guns where the wall
   leaves room to stand them (`wallValue`). Measured against the old rule: the ladder flatter
@@ -178,7 +179,7 @@ page reloaded for either):
   head-to-head, Buchholz, placings, the lot) shown and explained, no two-team league matches
   where avoidable, and a League window in place of the bracket during the league.
 
-- **Build phases played out in advance** (ARCHIVE 13z, `docs/BUILD_PLANNING.md`, 2026-10-12):
+- **Build phases played out in advance** (ARCHIVE 13z, its design 13zf, 2026-10-12):
   in the intermission every bot plays strategies out on a snapshot of its island — exact,
   since nothing but its own pieces changes it — and lays the best rollout's pieces on their
   ticks. An anytime search (`PlanSearch`) within the table's budget (`ai.planning.stepsPerTick`)
@@ -255,11 +256,11 @@ page reloaded for either):
   a skill level 1–10 chosen in the lobby and a personality dealt from the seed (M13,
   ARCHIVE 11x–11zb); bots sharing a few plans a tick (ARCHIVE 12p) and skipping searches
   that cannot fit (ARCHIVE 12s).
-- **Stronger bots** (ARCHIVE 12x–12z; `docs/BOT_LEARNING.md`): bots plan round tiles no
+- **Stronger bots** (ARCHIVE 12x–12z, the plan 13zg): bots plan round tiles no
   piece can cover (`coverable`, `markUncoverable`), and once sealed widen their wall
   (`widensWhenSealed`, `widen`) — such a bot won 65 of 96 against two of the old. A learned
   fit (`fitWeights`, null by default) and its trainer (`tools/headless/src/cem.ts`) matched
-  the hand-made fit; the learning work is paused.
+  the hand-made fit; the learning work is closed, its remaining steps dropped (2026-10-14).
 - **A refactoring** (ARCHIVE 12w), the game unchanged: the bot is `Gunner`, `Builder` and
   `Siting`; main.ts is app, prefs, session, menu, lobbyFlow and matchScreen, the last with
   `BoardEffects`; a room's match is `MatchRunner`; the styles since Chocolate extend
@@ -293,11 +294,11 @@ page reloaded for either):
   piece and German checked in play by the user (ARCHIVE 12n–12t).
 
 **Next** — PLAN §11: more test games towards a first
-feature-ready version — under the new scoring (SCORING.md's work package 5) — and bots that hold ground as people do (item 1: the yardstick, the dead
-guns, pace and build planning done; next the testers' matches against v0.9.5, Level 6 first;
-`buildStats.ts`, ARCHIVE 13r, 13t–13v, 13z). **The bot learning work is paused**; when it
-resumes, `docs/BOT_LEARNING.md` §6 says where — first, learning the choice of wall rather
-than only the cell. French is not to be done. Signing the Windows app was explained (PLAN
+feature-ready version, under the new scoring (item 3), and bots that hold ground as people do
+(item 1: the yardstick, the dead guns, pace and build planning done; next the testers' matches,
+Level 6 first; `buildStats.ts`, ARCHIVE 13r, 13t–13v, 13z). The bot learning work is closed,
+its remaining steps dropped (the user's decision, 2026-10-14; ARCHIVE 13zg). French is not to
+be done. Signing the Windows app was explained (PLAN
 §12) and is not pursued for now.
 
 **Declined for budget** (PLAN §12): macOS builds (Apple's paid signing) and a hosted public
@@ -398,8 +399,8 @@ its header but the simulation does not — so the server stamps each header with
   intermission after it still says "sealed" for a breached wall. Do not assert on it except
   at a resolution; a bot deciding on it must count afresh with `computeEnclosure`, which is
   what cost the bots a quarter of their rounds. The refresh as the build phase opens is
-  needed for a build phase rolled out in advance to come true (BUILD_PLANNING.md).
-- **A bot plans its build phase in the intermission** (`ai.planning`, docs/BUILD_PLANNING.md):
+  needed for a build phase rolled out in advance to come true (ARCHIVE 13zf).
+- **A bot plans its build phase in the intermission** (`ai.planning`, ARCHIVE 13zf):
   it plays strategies out on a snapshot, a simulated look at the board at a time within
   the table's `stepsPerTick`, and lays the best rollout's pieces on their ticks. Anything that
   makes one step dear (a loop inside `RolloutRun.advance`) shows as a hitch at every phase.

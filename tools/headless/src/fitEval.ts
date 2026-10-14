@@ -1,4 +1,4 @@
-// docs/BOT_LEARNING.md, step 3: how well a bot with these fit weights plays against two of
+// ARCHIVE 13zg, step 3: how well a bot with these fit weights plays against two of
 // today's, at a table of three, its seat rotated by the seed. Prints one line of JSON.
 //
 //   npx tsx src/fitEval.ts --weights '{"plan":4,...}' --seeds 1,2,3 [--level 5]

@@ -23,7 +23,7 @@ export class PlanningSlots {
     readonly perTick: number = Number.POSITIVE_INFINITY,
     /**
      * The simulated pieces the table's bots may play out a tick between them, searching for
-     * their build phases' plans (BUILD_PLANNING.md): a search's cost spread over the ticks
+     * their build phases' plans (ARCHIVE 13zf): a search's cost spread over the ticks
      * before the phase, bounded on each, so the game never waits for it.
      */
     readonly stepsPerTick: number = Number.POSITIVE_INFINITY,

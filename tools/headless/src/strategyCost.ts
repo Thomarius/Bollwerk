@@ -1,6 +1,6 @@
 /**
  * What each build strategy costs to roll out, and what it scores, planned the usual way and
- * lean — planning again only once its plan is built (BUILD_PLANNING.md, pruning). Bot tables
+ * lean — planning again only once its plan is built (ARCHIVE 13zf, pruning). Bot tables
  * where every seat plans with the whole set, so the boards are those planning bots meet.
  *
  *   npx tsx tools/headless/src/strategyCost.ts --level 8 --players 4 --matches 2

@@ -318,7 +318,7 @@ export class SealPlanner {
 
   /**
    * The smallest wall round exactly these castles, with this much band round each and the
-   * guns kept or not: a build plan's stage (BUILD_PLANNING.md), which names its castles
+   * guns kept or not: a build plan's stage (ARCHIVE 13zf), which names its castles
    * rather than asking for a count of them.
    */
   wall(castles: readonly Castle[], keepCannons: boolean, roomRadius: number): SealPlan | null {
@@ -447,7 +447,7 @@ export function cannonRoom(state: MatchState, playerId: number): number {
  * scoring's own formula (`heldValue`), and the guns its castles earn, at `gunWeight` each.
  * Ground scores tile by tile and a castle no more than its tiles, so a castle pays through
  * its guns, every round after it is sealed; valued by points alone, a bot never reached for
- * one (docs/SCORING.md). But only the guns the wall leaves room to stand: a castle whose gun
+ * one (ARCHIVE 13ze). But only the guns the wall leaves room to stand: a castle whose gun
  * has nowhere to go is worth its few tiles and no more.
  */
 export function wallValue(
@@ -586,7 +586,7 @@ export function weakestWall(state: MatchState, targetPlayer: number): number[] {
   // Only this island's wall stands in the way: shots fly over every other, so another
   // island's wall is open ground here. Counted as wall, it decided between paths of equal
   // cost, and a bot's thickening changed with what its neighbours built — which a build
-  // phase played out in advance cannot know (BUILD_PLANNING.md, step 1).
+  // phase played out in advance cannot know (ARCHIVE 13zf, step 1).
   const walled = (i: number): boolean =>
     state.structure[i] === Structure.Wall && state.islandId[i] === islandId;
 

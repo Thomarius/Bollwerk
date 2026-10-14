@@ -42,7 +42,7 @@ const IDLE_RETRY_MS = 250;
 const SMALL_REPAIR = 4;
 
 /**
- * Widening once sealed (`widensWhenSealed`, BOT_LEARNING.md B): what it can still finish,
+ * Widening once sealed (`widensWhenSealed`, ARCHIVE 13zg, B): what it can still finish,
  * in blocks for each cell it can still lay this phase. Tuned head to head, one bot against
  * two of today's, 96 matches each at Levels 5 and 8 (fair share 32): 0.55 — the share of a
  * bot's repairing cells that ends in the final wall, in the testers' recordings — won 48
@@ -77,7 +77,7 @@ const CASTLE_BANDS = [0, 2];
 
 /**
  * A way to spend a build phase, for a bot that plays its phase out in advance and keeps
- * the best (BUILD_PLANNING.md): walls built in turn, each round the castles it names, and
+ * the best (ARCHIVE 13zf): walls built in turn, each round the castles it names, and
  * what to do once they stand.
  */
 export interface Strategy {
@@ -304,7 +304,7 @@ export class Builder {
     }
 
     // A lean builder, in a rollout, plans again only once its plan is built: the board
-    // changes only by its own pieces, so a plan stays good until then (BUILD_PLANNING.md).
+    // changes only by its own pieces, so a plan stays good until then (ARCHIVE 13zf).
     const due = this.lean
       ? this.plan.every((i) => state.structure[i] !== Structure.Empty || this.unreachable.has(i))
       : state.tick - this.plannedAt > this.profile.replanTicks;
@@ -702,7 +702,7 @@ export class Builder {
   }
 
   /**
-   * Sealed, the most valuable wall it can finish this phase, as the testers built (BOT_LEARNING
+   * Sealed, the most valuable wall it can finish this phase, as the testers built (ARCHIVE 13zg,
    * step 1: they end a phase with more castles, and spend 45% of their cells once sealed on
    * a wider wall where the bots thickened). Weighed: the wall it chose last; the standing
    * wall pushed out to take in each castle outside it; a stretch of land beside the wall;
@@ -1057,7 +1057,7 @@ export class Builder {
 
   /**
    * A piece laid by a learned score rather than the ladder's order (`fitWeights`,
-   * BOT_LEARNING step 3): every legal placement reaching the plan, the tightest repair,
+   * ARCHIVE 13zg, step 3): every legal placement reaching the plan, the tightest repair,
    * the thickening targets or the outer skin, weighed at once.
    */
   private buildScored(
@@ -1112,7 +1112,7 @@ export class Builder {
       ...new Set([...targets.plan, ...targets.tight, ...targets.thicken, ...targets.skin]),
     ];
     // The repair's cost over what the phase can still lay, at repair efficiency (0.45 blocks
-    // a cell, BOT_LEARNING step 1): about 1 where the repair would take the whole phase.
+    // a cell, ARCHIVE 13zg, step 1): about 1 where the repair would take the whole phase.
     const urgency = Math.min(
       2,
       targets.tight.length / Math.max(1, this.cellsAffordable(state) * 0.45),
