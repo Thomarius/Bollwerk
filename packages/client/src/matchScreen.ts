@@ -5,7 +5,13 @@ import {
   type Ruleset,
   type TextKey,
 } from '@bollwerk/config';
-import { owesCastleChoice, type MatchEvent, type MatchState, type Phase } from '@bollwerk/sim';
+import {
+  footprintOf,
+  owesCastleChoice,
+  type MatchEvent,
+  type MatchState,
+  type Phase,
+} from '@bollwerk/sim';
 
 import { countdownBeat, showsClock } from './clock.js';
 import { Controls, inputMode, readyCannons } from './controls.js';
@@ -158,6 +164,8 @@ export async function runSession(
    * never move, so this is measured once.
    */
   const islandCentre = new Map<number, { x: number; y: number }>();
+  /** Big Bertha's shots in the air, by id, for the blast each sets off as it lands. */
+  const heavyShots = new Set<number>();
   {
     const sums = new Map<number, { x: number; y: number; n: number }>();
     const board = session.state;
@@ -456,6 +464,7 @@ export async function runSession(
             owner: (islandId[i] as number) - 1,
           }));
           scene.noteImpact(event.x, event.y, debris);
+          if (heavyShots.delete(event.shotId)) scene.noteBlast(event.x, event.y);
           // Only for your own wall: shots land all over the map, all the time.
           const human = session.humanPlayer;
           if (human >= 0 && !motionReduced() && debris.some((d) => d.owner === human)) {
@@ -466,6 +475,12 @@ export async function runSession(
         }
         case 'shot_fired':
           scene.noteShot(event.shot);
+          // Big Bertha's, for the blast its landing sets off.
+          if (event.shot.kind === 'bertha') heavyShots.add(event.shot.id);
+          break;
+        case 'walls_repaired':
+          scene.noteRepair(event.tiles, session.state.width, event.player);
+          structuresChanged = true;
           break;
         case 'piece_placed': {
           // Whose island it went on, which is not always the placer's in a team match.
@@ -485,7 +500,7 @@ export async function runSession(
         case 'cannon_placed': {
           // Set down as a piece is: it settles, throws up the style's dust or sparks, and
           // knocks flat whatever stood under it.
-          const [w, h] = session.state.ruleset.cannons.footprint;
+          const [w, h] = footprintOf(session.state.ruleset, event.cannonKind);
           const cells: { x: number; y: number }[] = [];
           for (let dy = 0; dy < h; dy++) {
             for (let dx = 0; dx < w; dx++) cells.push({ x: event.x + dx, y: event.y + dy });
@@ -656,7 +671,7 @@ export async function runSession(
     pointCamera(now);
     drawTransition();
     drawIslandBanners();
-    hud.update(session.state, session.humanPlayer, session.status());
+    hud.update(session.state, session.humanPlayer, session.status(), controls.placingTower);
     watching.update(session.state, session.humanPlayer);
     const reading = session.network();
     if (reading !== null) badge?.update(reading, session.state.ruleset.tickRateHz);

@@ -33,9 +33,10 @@ keeps only what is open.
 - **Firing uses the left button only** (the user's design, 2026-10-14): a ready special tower
   whose shot does something on impact is always first in line, the nearest of them if several are
   ready. Its readiness is shown by a second reload ring and a glow on the aiming cursor (§2.2).
-- **A tower counts as one gun for the points** (`gunPoints`), whatever it cost: trading three
-  cannons for one tower costs two guns' points every round it stands. That is meant — a decision
-  with a price, and a lever for balance.
+- **A tower scores as the cannons it cost** (`gunPoints`, `gunsWorth`; the user's balance after
+  ST3, 2026-10-14): Big Bertha as three guns firing, the Architect and the Rapid Cannon as two. At
+  first it counted as one gun, which made a tower of cost 3 cost two guns' points every round it
+  stood — and Bertha won 3 of 12 in a first look. For the gun cap it still counts as one.
 - **The graphics are each style's own cannon with an emblem** for the tower's kind — one shared
   mark in every style, as the main castle's crown is — and generic, palette-tinted effects for
   its shots. Custom tower art for a few styles stays possible later, never promised for all
@@ -82,8 +83,8 @@ keeps only what is open.
 
 - A tower is a cannon in every other way: it stays where it stands, it goes **inert outside
   sealed ground** like any gun (so an investment outside a safe wall is a real risk — wanted:
-  it rewards the big, safe enclosure people build), it is never destroyed, it scores as **one gun
-  firing** at each resolution, and a continue wipes it with everything else.
+  it rewards the big, safe enclosure people build), it is never destroyed, it scores as **the cannons
+  it cost** at each resolution, and a continue wipes it with everything else.
 - **Towers of two sorts.** A tower whose shot does something on impact — Big Bertha now, Chain
   Lightning or Scattershot later — is an **impact tower**. A tower that fires ordinary shots — the
   Architect, the Rapid Cannon, however quick its reload — is not: it changes nothing about where
@@ -165,7 +166,7 @@ Built in ST1; the rules are in `sim/src/specials.ts`.
   ready impact tower first (§2.2); `flightTicks` takes a factor, exact at 1; `resolveImpacts`
   takes the crater of the gun that fired (`craterOf`); the intermission before a build phase,
   once no shot is in the air, runs the Architects' repairs in seat order (`repairWalls`, a
-  `walls_repaired` event); `holdingsOf` already counted a tower as one gun.
+  `walls_repaired` event); `holdingsOf` counts a tower as the guns it cost (`gunsWorth`).
 - **Determinism** holds without new randomness for the first three. The later towers that need
   chance (§4) take it from `streamFor(seed, name)`, never `Math.random`.
 - Tests as ASCII pictures (`stateFromAscii` gains `B`, `A` and `R`; `withSpecials`), in
@@ -173,7 +174,7 @@ Built in ST1; the rules are in `sim/src/specials.ts`.
   opponent's wall and not on a teammate's; a ready Bertha chosen before a nearer ready cannon, the
   nearest of two ready Berthas, a cannon when the Bertha is loading; the Architect's repair inside
   its radius and not outside, nor when inert, nor over a placed block; the Rapid Cannon's flight;
-  a tower scoring one gun; the cap freed by a continue; every rejection.
+  a tower scoring its cost in guns; the cap freed by a continue; every rejection.
 
 ### 3.2 Configuration (`packages/config`, `config/*.json`)
 
@@ -210,28 +211,39 @@ Built in ST2, the client's controls for it to come in ST5.
 
 ### 3.4 Client (`packages/client`)
 
-- **Lobby**: the switch beside lives and rounds; when on, a tower chooser for one's own seat
-  (each kind with its emblem, its cost and one line saying what it does, and "none"), the last
-  choice remembered in the preferences; each bot seat shows its drawn tower.
-- **Controls** (`controls.ts`): in the cannon phase the right button toggles the ghost's kind
-  (today it only rotates, which means nothing there). Combat is unchanged: the left button fires.
-- **HUD**: the chosen tower and whether it can be bought this round (cost against cannons left,
-  "one a round", the cap, "not at the opening"). In combat the second reload ring (beside
-  `nextReload`, for impact towers) and the cursor's glow while one is ready (§2.2).
-- **Drawing**: each style draws its cannon as today; the tower's **emblem** — simple
-  shapes readable at a tile's size: a heavy shell for Bertha, a trowel or hammer for the
-  Architect, chevrons for the Rapid Cannon — is one shared mark at the cannon's foot, keyed and
-  drawn once (`Memos` / a `MainCastles`-like `SpecialMarks` in `theme.ts`), every style tinting it
-  in its own palette. The ghost shows it too.
-- **Effects**, generic and palette-tinted in every style: Bertha's larger blast (the impact effect
-  scaled to its crater), the Architect's repair (the walls coming back with a shimmer as combat
-  ends), the Rapid Cannon's quicker, lower arc. Cheap by the rules of "Drawing a style cheaply"
-  in CLAUDE.md.
-- **Sound**: one cue per tower's firing or repair, CC0 from OpenGameArt, credited in
-  `config/audio.manifest.json` like every file.
-- **Texts** in every locale file (English and German), and a **How to play** page for the towers.
-- **Screenshots** (`tools/screenshots.sh`): the ghost in each kind, an emblem in a few styles, a
-  Bertha blast, an Architect's repair, the two rings and the glow.
+Built in ST5 and ST6 together (2026-10-14), so people can play with towers.
+
+- **Lobby** (`lobby.ts`, `lobbyFlow.ts`): the host's switch, **Special towers** On/Off, beside lives
+  and rounds; a guest reads it in the table's statement. While on, a person's own seat has a
+  chooser — none, or each tower with its cost — with a line on what it does, remembered for the
+  next table (`towers.ts`, `bollwerk.tower`) and sent to a room as it opens; anyone else's seat
+  shows their choice, and each bot's seat the tower drawn for it. The same in a tournament's
+  lobby, and a switch in the tournament's setup.
+- **Controls** (`controls.ts`): in the cannon phase the right button switches the ghost between a
+  cannon and the tower (`placingTower`), only while the rules sell it, a cue either way; back to a
+  cannon once bought. Combat is unchanged: the left button fires, a ready Bertha first.
+- **HUD** (`hud.ts`, `towerLine`): a line over the cannon count in a cannon phase — the tower on
+  offer and its price, the ghost switched to it, or why not now (the opening, bought this round,
+  the most allowed, too dear). In combat the cursor says it (`drawFireReticle`): an amber glow
+  while an impact tower is ready, an inner amber ring filling toward the next while they load
+  (`impactReadiness`).
+- **Emblems** (`render/towerMarks.ts`): one layer over both looks, under the camera, as the crown
+  is one mark in every style — no style's own drawing changed. A dark round badge at the gun's
+  foot with the emblem in the owner's light colour from the look in front: a shell for Bertha, a
+  hammer for the Architect, two chevrons for the Rapid Cannon; grey while inert. Bare shapes in
+  the owner's colour read as their outline alone at 16-pixel tiles and vanished on their own
+  ground; the badge reads in every style. Keyed, so drawn again only when a tower changes. The
+  ghost shows the emblem too.
+- **Effects**, in the same layer, drawn only while one plays: Bertha's blast (the crater's cross
+  flashing amber and a ring spreading past it), the Architect's walls shimmering back in the
+  owner's colour as combat ends, and the Rapid Cannon's flatter arc (`shotLift`).
+- **Sound**: three cues, `tower_fire`, `tower_impact` and `walls_repaired`, the cannon's, the
+  impact's and a piece's files played lower or higher (`rate`, a new field of a cue) — no new
+  file, so none to credit; the Architect heard only for the player's own.
+- **Dev**: `?autostart=1&specials=1&tower=bertha` plays a match with towers, the person's tower
+  as asked.
+- To come in ST7: the How to play page and the screenshot scenes. Seen in headless Chrome: the
+  lobby, the ghost and the HUD line, emblems in Minimal and Parchment, the glow, a blast.
 
 ### 3.5 Bots (`packages/ai`)
 
@@ -241,8 +253,8 @@ Built in ST3.
   so every page can show it in the lobby. By personality or set by the host may come later.
 - **Buying** (`Siting.buysTower`): as the first placement of any cannon phase the rules sell it
   in, so long as the bot keeps `ai.planning.minGuns` guns — the tower counting as one, the cannons
-  it costs not. A first rule, for ST4 to measure; the planning's `wallValue` already counted a
-  tower as one gun.
+  it costs not. A first rule, for ST4 to measure; the planning's `wallValue` values a tower's
+  points through `holdingsOf`, as the resolution does.
 - **Placing** (`Siting.site`): only in the ground round a sealed castle, never in a pocket
   (`castleGround`). Big Bertha and the Rapid Cannon as an ordinary cannon goes — never pinning a
   wall, then room, then nearest the enemy; the Architect never pinning, then the most of its own
@@ -298,7 +310,7 @@ In order. Each ends with `npm run check` passing and the user's go-ahead to comm
 
 `CannonKind`, the loadout on the player, `ruleset.specials` with its schema, buying (cost, once a
 round, the cap, not at the opening), the impact towers first in line, the three towers' effects,
-a tower as one gun in the points; the state hashed; ASCII tests for each rule and each rejection.
+a tower as its cost in guns for the points; the state hashed; ASCII tests for each rule and each rejection.
 No client, no protocol yet: the harness can already play matches with towers.
 
 ### ST2 — Settings, protocol and recordings
@@ -366,7 +378,7 @@ All settled with the user on 2026-10-14: firing by the left button with impact t
 (§2.2); the Architect's repair at combat's end; three towers on the island, a continue freeing the
 count; the cap of `cannons.maxTotal` counting a tower as one (it is unset by default); bots'
 towers drawn at random, never none, shown in the lobby; a tournament switch; a tower as one gun
-for the points; the costs 3, 2 and 2, with nothing saved towards a tower; the flight factors 1.0
+for the points (since changed: as its cost, §1); the costs 3, 2 and 2, with nothing saved towards a tower; the flight factors 1.0
 for Big Bertha and 0.4 for the Rapid Cannon. Nothing is open before ST1.
 
 ---

@@ -15,7 +15,7 @@ import {
 
 import { escape } from './html.js';
 import { t } from './i18n.js';
-import { levelPips, rangeOptions } from './lobby.js';
+import { levelPips, rangeOptions, specialsSwitch } from './lobby.js';
 
 /**
  * The new tournament's settings (TOURNAMENT §1.2), as a form: a model the controls change
@@ -38,6 +38,8 @@ export interface TournamentForm {
   maxRounds: number;
   /** Lives less one, as the match settings count them. */
   continues: number;
+  /** Whether every match plays special towers. */
+  specials: boolean;
 }
 
 const bundle = defaultConfigBundle;
@@ -83,6 +85,7 @@ export function defaultForm(names: NameSource): TournamentForm {
     matchTeams: { min: 2, max: 4 },
     maxRounds: bundle.ruleset.scoring.maxRounds ?? TOURNAMENT_LIMITS.maxRounds.max,
     continues: bundle.ruleset.elimination.continues,
+    specials: bundle.ruleset.specials.enabled,
   };
 }
 
@@ -157,6 +160,7 @@ export function settingsOf(
     matchTeams: { ...form.matchTeams },
     maxRounds: form.maxRounds,
     continues: form.continues,
+    specials: form.specials,
   };
 }
 
@@ -259,6 +263,7 @@ export function setupMarkup(form: TournamentForm, hostName: string): string {
             ${archName}
             <label>${t('tournament.rounds')}<select id="max-rounds" aria-label="${t('tournament.rounds')}">${rangeOptions(rounds.min, rounds.max, form.maxRounds)}</select></label>
             <label>${t('lobby.lives')}<select id="lives" aria-label="${t('lobby.lives')}">${rangeOptions(continues.min + 1, continues.max + 1, form.continues + 1)}</select></label>
+            ${specialsSwitch(form.specials)}
           </div>
         </section>
       </div>

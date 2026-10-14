@@ -26,6 +26,12 @@ export const SFX_CUES = [
   'piece_rotate',
   'piece_invalid',
   'countdown_tick',
+  /** Big Bertha firing: heavier than a cannon (docs/SPECIAL_TOWERS.md). */
+  'tower_fire',
+  /** Big Bertha's shot landing, its crater wider than a cannon's. */
+  'tower_impact',
+  /** An Architect rebuilding its owner's walls as a barrage ends. */
+  'walls_repaired',
 ] as const;
 export type SfxCue = (typeof SFX_CUES)[number];
 
@@ -48,6 +54,11 @@ const SfxEntrySchema = z.strictObject({
   volume: z.number().min(0).max(1),
   /** Numbered alternates chosen at random, to avoid repetition fatigue. */
   variants: z.number().int().positive().optional(),
+  /**
+   * The speed it plays at, below 1 lower and heavier: how a special tower's cue makes
+   * another's file its own, already credited, rather than bring a file of its own.
+   */
+  rate: z.number().positive().optional(),
 });
 
 const MusicEntrySchema = z.strictObject({

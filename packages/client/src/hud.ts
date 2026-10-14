@@ -21,6 +21,7 @@ import {
 import { owesCastleChoice, teamScore, type MatchState, type Phase } from '@bollwerk/sim';
 import { BoardLabels } from './boardLabels.js';
 import { EndScreen } from './endScreen.js';
+import { towerLine } from './towers.js';
 
 /**
  * The phase banner each style draws, as a class of `.phase-call`: a record over every
@@ -431,7 +432,11 @@ export class Hud {
     entry.node.replaceChildren(...built.childNodes);
   }
 
-  update(state: MatchState, humanPlayer: number, status = ''): void {
+  /**
+   * `placingTower`: whether the right button has switched the cannon ghost to the player's
+   * special tower, for the tower's line in a cannon phase.
+   */
+  update(state: MatchState, humanPlayer: number, status = '', placingTower = false): void {
     const waiting = state.phase === 'intermission';
     const shown = waiting ? (state.pendingPhase ?? state.phase) : state.phase;
     this.markFinalRound(inFinalRound(state));
@@ -542,6 +547,11 @@ export class Hud {
         : left > 0
           ? `<div class="counter">${t('hud.cannonsLeft', { n: left })}</div>`
           : `<div class="counter done">${t('hud.allPlaced')}</div>`;
+      // The tower, where the player brought one: on offer, chosen, or why not now.
+      const tower = towerLine(state, humanPlayer, placingTower);
+      if (tower !== null && !choosing) {
+        cannonCount += `<div class="counter tower${placingTower ? ' on' : ''}">${escape(tower)}</div>`;
+      }
     }
 
     // The labels over the islands live in the layer above this one, and at the end of a

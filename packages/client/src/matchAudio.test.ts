@@ -268,3 +268,46 @@ describe('match audio', () => {
     expect(audio.sfx).not.toContain('countdown_tick');
   });
 });
+
+describe('special towers in the sound', () => {
+  const shot = (id: number, kind: 'cannon' | 'bertha'): MatchEvent => ({
+    kind: 'shot_fired',
+    tick: 1,
+    shot: {
+      id,
+      cannonId: id,
+      owner: 1,
+      kind,
+      fromX: 0,
+      fromY: 0,
+      toX: 5,
+      toY: 5,
+      launchTick: 1,
+      impactTick: 40,
+    },
+  });
+  const landed = (shotId: number): MatchEvent => ({
+    kind: 'shot_impact',
+    tick: 40,
+    shotId,
+    x: 5,
+    y: 5,
+    destroyed: [],
+  });
+
+  it('gives Big Bertha her own firing and landing', () => {
+    const { audio, match } = setup();
+    match.handle([shot(1, 'bertha'), shot(2, 'cannon')]);
+    match.handle([landed(2), landed(1)]);
+    expect(audio.sfx).toEqual(['tower_fire', 'cannon_fire', 'shot_impact', 'tower_impact']);
+  });
+
+  it('sounds the player’s own Architect rebuilding, not a rival’s', () => {
+    const { audio, match } = setup();
+    match.handle([
+      { kind: 'walls_repaired', tick: 5, player: 1, tiles: [3] },
+      { kind: 'walls_repaired', tick: 5, player: HUMAN, tiles: [4] },
+    ]);
+    expect(audio.sfx).toEqual(['walls_repaired']);
+  });
+});

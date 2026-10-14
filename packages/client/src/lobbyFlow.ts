@@ -5,6 +5,7 @@ import {
   defaultTeams,
   reshapeTable,
   type MatchSettings,
+  type SpecialKind,
   type Table,
 } from '@bollwerk/config';
 import { type ServerMessage } from '@bollwerk/protocol';
@@ -36,6 +37,7 @@ import { runSession } from './matchScreen.js';
 import { openBracket } from './tournamentBracketView.js';
 import { openLeague } from './tournamentLeagueView.js';
 import { endingMarkup, tournamentTab } from './tournamentView.js';
+import { preferredTower, saveTower } from './towers.js';
 
 /** The lobby, one screen whether a server holds the table or the browser does. */
 
@@ -59,6 +61,8 @@ export interface LobbyHandlers {
   ready?(ready: boolean): void;
   /** A tab chosen, to be kept open as the lobby is drawn again. */
   tab?(tab: LobbyTab): void;
+  /** The special tower this person brings, or none; remembered for the next table. */
+  special?(special: SpecialKind | null): void;
 }
 
 /** Draws the lobby and wires its controls to whichever backend holds the table. */
@@ -105,6 +109,18 @@ export function drawLobby(view: LobbyView, on: LobbyHandlers): void {
   number('#player-count', (playerCount) => on.table({ playerCount }));
   number('#max-rounds', (maxRounds) => on.table({ settings: { ...view.settings, maxRounds } }));
   number('#lives', (lives) => on.table({ settings: { ...view.settings, continues: lives - 1 } }));
+  const specials = document.querySelector<HTMLSelectElement>('#specials');
+  specials?.addEventListener('change', () => {
+    audio.play('select');
+    on.table({ settings: { ...view.settings, specials: specials.value === 'on' } });
+  });
+  const mine = document.querySelector<HTMLSelectElement>('#my-special');
+  mine?.addEventListener('change', () => {
+    audio.play('select');
+    const special = mine.value === '' ? null : (mine.value as SpecialKind);
+    saveTower(special);
+    on.special?.(special);
+  });
   for (const field of document.querySelectorAll<HTMLSelectElement>('.bot-select')) {
     field.addEventListener('change', () => {
       audio.play('select');
@@ -231,6 +247,8 @@ interface TableState extends Table {
   /** Where the host sits: they may move to any seat, and the seat decides the team. */
   hostSeat: number;
   bots: number[];
+  /** The special tower the host brings, where the match plays them. */
+  special: SpecialKind | null;
 }
 
 /**
@@ -248,6 +266,9 @@ function playLocally(common: Common, table: TableState): void {
       .map((tier, seat) => (seat === table.hostSeat ? table.hostBot : tier)),
     settings: table.settings,
     teams: table.teams,
+    specials: Array.from({ length: table.playerCount }, (_, seat) =>
+      seat === table.hostSeat ? table.special : null,
+    ),
   };
   // A rematch reopens this table as it was, on a new map (PLAN 11.18 Y6).
   const rematch = (): void => localLobby(common, table.playerCount, randomSeed(), table);
@@ -337,6 +358,7 @@ function localLobby(
           seed,
           hostBot: null,
           hostSeat: 0,
+          special: preferredTower(),
         }
       : { ...kept, bots: [...kept.bots], teams: [...kept.teams], seed };
 
@@ -354,7 +376,7 @@ function localLobby(
             isBot: false,
             connected: true,
             ready: true,
-            special: null,
+            special: table.special,
           },
         ],
         bots: table.bots.slice(0, table.playerCount),
@@ -395,6 +417,10 @@ function localLobby(
           redraw();
         },
         start: () => playLocally(common, table),
+        special: (special) => {
+          table.special = special;
+          redraw();
+        },
       },
     );
   redraw();
@@ -437,6 +463,7 @@ function roomLobby(
     seed: v.seed,
     hostBot: v.hostBot,
     hostSeat: v.hostId,
+    special: v.seats.find((s) => s.playerId === v.hostId)?.special ?? null,
   });
   /** Seats already seen, so a newcomer can be marked as they arrive. */
   let known: Set<number> | null = null;
@@ -473,6 +500,7 @@ function roomLobby(
       },
       ready: (ready) => connection.send({ type: 'ready', ready }),
       tab: (chosen) => (tab = chosen),
+      special: (special) => connection.send({ type: 'special', special }),
     });
     if (same) wireBracket(tournament!.save, tournament!.progress);
     document.querySelector('#leave')?.addEventListener('click', () => {
@@ -584,6 +612,9 @@ function roomLobby(
         break;
     }
   });
+
+  // The tower this person chose last, for the room to know before anything is changed.
+  connection.send({ type: 'special', special: preferredTower() });
 
   // The welcome that decided there was a server arrived before this listener did.
   match.receive(welcome);

@@ -509,5 +509,30 @@
   "league.table": "Tabelle",
   "league.matchdays": "Spieltage",
   "league.toPlay": "noch zu spielen",
-  "league.seeding": "Die K.‑o.‑Runde wird nach der Abschlusstabelle gesetzt."
+  "league.seeding": "Die K.‑o.‑Runde wird nach der Abschlusstabelle gesetzt.",
+  "tower.none": "Kein Turm",
+  "tower.bertha": "Dicke Berta",
+  "tower.architect": "Baumeister",
+  "tower.rapid": "Schnellfeuerkanone",
+  "tower.berthaWhat": "Reißt ein Kreuz aus fünf Mauerblöcken und feuert zuerst, sobald sie bereit ist.",
+  "tower.architectWhat": "Baut nach jedem Beschuss deine Mauern in der Nähe wieder auf.",
+  "tower.rapidWhat": "Lädt in weniger als der halben Zeit einer Kanone nach.",
+  "tower.cost": {
+    "one": "{n} Kanone",
+    "other": "{n} Kanonen"
+  },
+  "tower.option": "{tower} · {cost}",
+  "lobby.specials": "Spezialtürme",
+  "lobby.specialsOff": "Aus",
+  "lobby.specialsOn": "An",
+  "lobby.yourTower": "Dein Turm",
+  "lobby.towerAria": "Dein Spezialturm",
+  "lobby.botTower": "Bringt {tower}",
+  "lobby.specialsStatement": "Jeder bringt einen Spezialturm mit.",
+  "hud.towerOffer": "Rechte Taste: {tower} für {cost}",
+  "hud.towerPlacing": "{tower} wird gesetzt · rechte Taste für eine Kanone",
+  "hud.towerOpening": "{tower}: nicht zu Beginn",
+  "hud.towerBought": "{tower} in dieser Runde gekauft",
+  "hud.towerCap": "{tower}: schon so viele wie erlaubt",
+  "hud.towerDear": "{tower} braucht {cost}"
 }

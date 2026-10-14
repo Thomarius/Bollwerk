@@ -50,6 +50,8 @@ function trackFor(phase: Phase): MusicCue | null {
 export class MatchAudio {
   private phase: Phase | null = null;
   private countedAt = -1;
+  /** Big Bertha's shots in the air, by id, for the heavier landing. */
+  private readonly heavy = new Set<number>();
 
   constructor(
     private readonly audio: Cues,
@@ -69,13 +71,24 @@ export class MatchAudio {
           break;
 
         case 'shot_fired':
-          this.audio.play('cannon_fire');
+          // Big Bertha's own, heavier; the shot's kind kept for its landing.
+          if (event.shot.kind === 'bertha') {
+            this.heavy.add(event.shot.id);
+            this.audio.play('tower_fire');
+          } else {
+            this.audio.play('cannon_fire');
+          }
           break;
 
         case 'shot_impact':
           // One explosion whatever it hits: a separate cue for a wall was planned and
           // dropped by the user, the impact's sound being enough.
-          this.audio.play('shot_impact');
+          this.audio.play(this.heavy.delete(event.shotId) ? 'tower_impact' : 'shot_impact');
+          break;
+
+        case 'walls_repaired':
+          // The player's own Architect at work; a rival's goes unheard, as their pieces do.
+          if (event.player === this.humanPlayer || this.watching) this.audio.play('walls_repaired');
           break;
 
         // Confirmations of the player's own choices, and only theirs — a rival's

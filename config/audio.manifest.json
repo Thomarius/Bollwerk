@@ -59,6 +59,24 @@
     "countdown_tick": {
       "file": "sfx/countdown_tick.wav",
       "volume": 0.5
+    },
+    "tower_fire": {
+      "file": "sfx/cannon_fire.ogg",
+      "volume": 0.85,
+      "variants": 3,
+      "rate": 0.62
+    },
+    "tower_impact": {
+      "file": "sfx/shot_impact.wav",
+      "volume": 0.95,
+      "variants": 9,
+      "rate": 0.6
+    },
+    "walls_repaired": {
+      "file": "sfx/piece_place.wav",
+      "volume": 0.5,
+      "variants": 3,
+      "rate": 1.35
     }
   },
   "music": {

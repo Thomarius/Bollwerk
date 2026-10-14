@@ -60,7 +60,8 @@ leave your seat undriven on the way, so you are soon knocked out), `&speed=10`,
 `&bots=thread` to keep a local match's bots off their worker (ARCHIVE 13k),
 `&style=flat|pixel|night|cyberpunk|blueprint|parchment|bricks|glass|chocolate|halloween|sakura|oktoberfest|opera|office|undersea|electric|cartoon|christmas|noir` for both looks (a one-look style sets only its own)
 (`&buildStyle=`, `&combatStyle=` for one), `&watch=1&level=8` to observe a bot match (`&personality=offensive` fixes every bot's),
-`&rounds=12` for the round cap, `&teams=2` for teams of two in seat order, `&lang=de` for a
+`&rounds=12` for the round cap, `&specials=1` for special towers (`&tower=bertha` the person's),
+`&teams=2` for teams of two in seat order, `&lang=de` for a
 language (not saved). `?tournament=new` and `?tournament=resume` open the tournament screens,
 `?tournament=demo&seed=N` a tournament of teams of two between matches (saved as `t-demo`), and
 `&snapshot=game_over` plays a tournament's match out at once, its result counted. `?host=8` opens

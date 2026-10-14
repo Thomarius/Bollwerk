@@ -4,7 +4,10 @@ import {
   currentPieceId,
   computeEnclosure,
   findReadyCannon,
+  footprintOf,
+  isImpactTower,
   owesCastleChoice,
+  specialRefusal,
   pieceCells,
   startingRingTiles,
   sameTeam,
@@ -93,6 +96,33 @@ export function nextReload(state: MatchState, playerId: number, tickFraction = 0
   return span <= 0 ? 1 : Math.min(1, Math.max(0, (now - soonest.launchTick) / span));
 }
 
+/**
+ * Where a player's impact towers stand (docs/SPECIAL_TOWERS.md §2.2): whether one is ready —
+ * the next shot is then its, whatever is aimed at — or else how far the one ready soonest is
+ * from firing again, 0 to 1, for the cursor's second ring. Null when they own none that can
+ * fire.
+ */
+export function impactReadiness(
+  state: MatchState,
+  playerId: number,
+  tickFraction = 0,
+): { ready: true } | { ready: false; reload: number } | null {
+  const now = state.tick + tickFraction;
+  let soonest: { launchTick: number; impactTick: number } | null = null;
+  for (const cannon of state.cannons) {
+    if (cannon.owner !== playerId || !cannon.active || !isImpactTower(cannon.kind)) continue;
+    if (cannon.shotId === null) return { ready: true };
+    const shot = state.shots.find((s) => s.id === cannon.shotId);
+    if (shot !== undefined && (soonest === null || shot.impactTick < soonest.impactTick)) {
+      soonest = shot;
+    }
+  }
+  if (soonest === null) return null;
+  const span = soonest.impactTick - soonest.launchTick;
+  const reload = span <= 0 ? 1 : Math.min(1, Math.max(0, (now - soonest.launchTick) / span));
+  return { ready: false, reload };
+}
+
 /** The two cues the simulation never sees, because neither changes the match. */
 type InputCue = 'piece_rotate' | 'piece_invalid';
 
@@ -101,13 +131,17 @@ type InputCue = 'piece_rotate' | 'piece_invalid';
  *
  * Every phase uses the same two gestures — move to aim, click to commit — so the
  * player never has to learn a new control scheme mid-match. Rotation is the only
- * extra verb, and only the build phase uses it: the right button or the wheel. Mouse
+ * extra verb, and only the build phase uses it: the right button or the wheel. In the
+ * cannon phase the right button switches between a cannon and the player's special tower,
+ * where they may buy one (docs/SPECIAL_TOWERS.md §2.1). Mouse
  * only — R and E turned the piece once, and went with the hint line that listed them
  * (PLAN 11.15), since nothing in the game is meant to need the keyboard.
  */
 export class Controls {
   private hover: { x: number; y: number } | null = null;
   private rotation = 0;
+  /** Whether the right button has switched the cannon ghost to the player's tower. */
+  private towerChosen = false;
   /** The sealing preview's last answer, asked again only when the question changes. */
   private sealing: { key: string; cells: Cell[] } = { key: '', cells: [] };
   /** The territory as the board stands, kept with the board's sum it was computed for. */
@@ -137,7 +171,8 @@ export class Controls {
     };
     const down = (event: PointerEvent): void => {
       if (event.button === 2) {
-        this.rotate(1);
+        if (inputMode(this.state, this.humanPlayer) === 'cannon') this.switchTower();
+        else this.rotate(1);
         event.preventDefault();
         return;
       }
@@ -175,6 +210,32 @@ export class Controls {
     this.rotation = 0;
   }
 
+  /**
+   * Whether the next placement is the player's tower: switched by the right button, and
+   * only while they may buy it — once bought, or the phase over, a cannon again.
+   */
+  get placingTower(): boolean {
+    if (!this.towerChosen) return false;
+    const player = this.state.players[this.humanPlayer];
+    const may =
+      player !== undefined &&
+      inputMode(this.state, this.humanPlayer) === 'cannon' &&
+      specialRefusal(this.state, player) === null;
+    if (!may) this.towerChosen = false;
+    return this.towerChosen;
+  }
+
+  private switchTower(): void {
+    const player = this.state.players[this.humanPlayer];
+    if (player === undefined || specialRefusal(this.state, player) !== null) {
+      this.towerChosen = false;
+      this.cue('piece_invalid');
+      return;
+    }
+    this.towerChosen = !this.towerChosen;
+    this.cue('piece_rotate');
+  }
+
   /** Rotation is only a verb during the build phase, so only there does it speak. */
   private rotate(by: number): void {
     this.rotation += by;
@@ -206,10 +267,20 @@ export class Controls {
         }
         this.submit({ kind: 'place_piece', player, x: tile.x, y: tile.y, rotation: this.rotation });
         return;
-      case 'cannon':
-        if (canPlaceCannon(this.state, player, tile.x, tile.y) !== null) this.cue('piece_invalid');
-        this.submit({ kind: 'place_cannon', player, x: tile.x, y: tile.y });
+      case 'cannon': {
+        const special = this.placingTower;
+        if (canPlaceCannon(this.state, player, tile.x, tile.y, special) !== null) {
+          this.cue('piece_invalid');
+        }
+        this.submit({
+          kind: 'place_cannon',
+          player,
+          x: tile.x,
+          y: tile.y,
+          ...(special ? { special: true as const } : {}),
+        });
         return;
+      }
       default:
         return;
     }
@@ -287,8 +358,10 @@ export class Controls {
         };
       }
       case 'cannon': {
-        const [w, h] = state.ruleset.cannons.footprint;
-        const valid = canPlaceCannon(state, player, tile.x, tile.y) === null;
+        const special = this.placingTower;
+        const tower = special ? (state.players[player]?.special ?? null) : null;
+        const [w, h] = footprintOf(state.ruleset, tower ?? 'cannon');
+        const valid = canPlaceCannon(state, player, tile.x, tile.y, special) === null;
         return {
           tile,
           cells: [],
@@ -297,6 +370,7 @@ export class Controls {
           selectable,
           unsealed: [],
           aiming: false,
+          tower,
         };
       }
       case 'aim':
@@ -309,6 +383,7 @@ export class Controls {
           unsealed: [],
           aiming: true,
           reload: nextReload(state, player, tickFraction),
+          impact: impactReadiness(state, player, tickFraction),
         };
       case 'fire': {
         const valid =
@@ -323,6 +398,7 @@ export class Controls {
           unsealed: [],
           aiming: true,
           reload: nextReload(state, player, tickFraction),
+          impact: impactReadiness(state, player, tickFraction),
         };
       }
       case 'castle': {

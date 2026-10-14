@@ -169,6 +169,7 @@ export class Audio {
     level.connect(this.buses?.sounds ?? this.master);
     const source = this.ctx.createBufferSource();
     source.buffer = buffer;
+    source.playbackRate.value = entry.rate ?? 1;
     source.connect(level);
     source.start();
     source.addEventListener('ended', () => level.disconnect());

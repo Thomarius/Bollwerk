@@ -1,4 +1,4 @@
-import { defaultConfigBundle } from '@bollwerk/config';
+import { defaultConfigBundle, type SpecialKind } from '@bollwerk/config';
 import type { Seat, ServerMessage, TournamentTable } from '@bollwerk/protocol';
 import {
   HOST_TEAM,
@@ -12,6 +12,7 @@ import {
 import { ServerConnection } from './net/connection.js';
 import { NetworkMatch } from './net/networkMatch.js';
 import { stageLabel } from './tournamentText.js';
+import { preferredTower } from './towers.js';
 
 /**
  * A tournament's room on the server (ARCHIVE 12zj), held by its host for as long as
@@ -91,6 +92,8 @@ export class TournamentRoom {
     }
     const room = new TournamentRoom(connection);
     room.receive(first);
+    // The host's own tower, as they chose it last, for matches that play towers.
+    room.special(preferredTower());
     return room;
   }
 
@@ -115,6 +118,11 @@ export class TournamentRoom {
 
   start(): void {
     this.connection.send({ type: 'start' });
+  }
+
+  /** The special tower the host brings, or none. */
+  special(special: SpecialKind | null): void {
+    this.connection.send({ type: 'special', special });
   }
 
   /** A person to another open seat: the bot whose seat they take sits the match out. */

@@ -1145,6 +1145,20 @@ table.final tr.you td:nth-child(2) {
   color: var(--muted);
 }
 
+/* The special tower's line, above the cannon count; amber while the tower is the ghost. */
+.counter.tower {
+  bottom: 5.25rem;
+  padding: 0.35rem 1rem;
+  font-size: 0.85em;
+  letter-spacing: 0.04em;
+  text-transform: none;
+}
+
+.counter.tower.on {
+  border-color: #ffa83a;
+  color: #ffa83a;
+}
+
 /* ---------- lobby and network ---------- */
 
 .menu input[type='text'] {
@@ -1654,6 +1668,16 @@ body.hud-bricks #hud .roster .line .shape path {
   align-items: center;
   gap: 0.55rem;
   flex-wrap: wrap;
+}
+
+/* A seat's special tower on a line of its own under the seat, whoever's it is. */
+.seats .seat .tag.tower,
+.seats .seat .tower-choice {
+  flex-basis: 100%;
+}
+
+.seats .seat .tower-choice select {
+  margin-left: 0.5rem;
 }
 
 /* The colour this seat will actually play in, so the lobby and the board agree. */

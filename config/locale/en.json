@@ -512,5 +512,30 @@
   "league.table": "Table",
   "league.matchdays": "Matchdays",
   "league.toPlay": "to play",
-  "league.seeding": "The knockout is seeded from the final table."
+  "league.seeding": "The knockout is seeded from the final table.",
+  "tower.none": "No tower",
+  "tower.bertha": "Big Bertha",
+  "tower.architect": "Architect",
+  "tower.rapid": "Rapid Cannon",
+  "tower.berthaWhat": "Clears a cross of five wall blocks, and fires first whenever it is ready.",
+  "tower.architectWhat": "Rebuilds your walls lost nearby once each barrage is over.",
+  "tower.rapidWhat": "Reloads in less than half a cannon's time.",
+  "tower.cost": {
+    "one": "{n} cannon",
+    "other": "{n} cannons"
+  },
+  "tower.option": "{tower} · {cost}",
+  "lobby.specials": "Special towers",
+  "lobby.specialsOff": "Off",
+  "lobby.specialsOn": "On",
+  "lobby.yourTower": "Your tower",
+  "lobby.towerAria": "Your special tower",
+  "lobby.botTower": "Brings {tower}",
+  "lobby.specialsStatement": "Each player brings a special tower.",
+  "hud.towerOffer": "Right button: {tower} for {cost}",
+  "hud.towerPlacing": "Placing {tower} · right button for a cannon",
+  "hud.towerOpening": "{tower}: not at the opening",
+  "hud.towerBought": "{tower} bought this round",
+  "hud.towerCap": "{tower}: the most allowed already stand",
+  "hud.towerDear": "{tower} needs {cost}"
 }

@@ -30,6 +30,7 @@ import type { TournamentExits } from './tournamentMenu.js';
 import { TournamentRoom, roomTable } from './tournamentRoom.js';
 import { deleteTournament, loadTournament, writeTournament } from './tournamentSaves.js';
 import { tournamentTab } from './tournamentView.js';
+import { preferredTower } from './towers.js';
 
 /**
  * Playing a tournament (TOURNAMENT T5, T6): the screen between matches, the match, its
@@ -115,7 +116,7 @@ function showTournament(open: Open, notice: string | null): void {
               isBot: false,
               connected: true,
               ready: true,
-              special: null,
+              special: preferredTower(),
             },
           ]
         : room.people.map((p) => (p.playerId === room.hostId ? { ...p, playerId: hostSeat } : p));
@@ -155,6 +156,10 @@ function showTournament(open: Open, notice: string | null): void {
         playHere(open, progress);
       },
       tab: (chosen) => (tab = chosen),
+      special: (special) => {
+        room?.special(special);
+        draw();
+      },
     });
     wireBracket(save, progress);
     app!.querySelector('#leave')?.addEventListener('click', () => {
@@ -202,6 +207,8 @@ function matchFor(
     teams: table.seats.map((s) => s.team),
     names: table.seats.map((s) => s.name),
     personalities: table.seats.map((s) => s.personality),
+    // The host's tower in their seat, bots drawing theirs, where the tournament plays them.
+    specials: table.seats.map((s) => (s.level === null ? preferredTower() : null)),
     tournament: { id: save.id, step },
     teamNames: teams.map((id) => save.teams[id]?.name ?? ''),
   };

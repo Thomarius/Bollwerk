@@ -83,6 +83,8 @@ export function openNewTournament(common: Common, exits: TournamentExits): void 
         return change({ maxRounds: number(target) });
       case 'lives':
         return change({ continues: number(target) - 1 });
+      case 'specials':
+        return change({ specials: (target as HTMLSelectElement).value === 'on' });
       case 'mate-level':
         return change({
           teamBots: form.teamBots.map((b, i) => (i === mate ? { ...b, level: number(target) } : b)),

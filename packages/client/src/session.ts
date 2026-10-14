@@ -7,6 +7,7 @@ import {
   type MatchSettings,
   type Personality,
   type SpecialKind,
+  SPECIAL_KINDS,
 } from '@bollwerk/config';
 import { type Action, type MatchEvent, type MatchState } from '@bollwerk/sim';
 
@@ -20,6 +21,7 @@ import { RecordingUpload } from './recordingUpload.js';
 import type { ServerConnection } from './net/connection.js';
 import type { NetworkMatch } from './net/networkMatch.js';
 import { params, timeScale } from './app.js';
+import { preferredTower } from './towers.js';
 
 /** A match as the render loop sees it, played on this computer or against a server. */
 
@@ -215,8 +217,24 @@ export function networkSession(
   };
 }
 
-/** `?rounds=N`, ignored when it is outside what a host could choose. */
+/**
+ * `?rounds=N`, ignored when it is outside what a host could choose; `&specials=1` plays
+ * special towers.
+ */
 export function settingsFromParams(): MatchSettings {
   const rounds = Number(params.get('rounds') ?? DEFAULT_SETTINGS.maxRounds);
-  return mergeSettings(DEFAULT_SETTINGS, { maxRounds: rounds }, SETTING_BOUNDS) ?? DEFAULT_SETTINGS;
+  const specials =
+    params.get('specials') === null ? {} : { specials: params.get('specials') === '1' };
+  return (
+    mergeSettings(DEFAULT_SETTINGS, { maxRounds: rounds, ...specials }, SETTING_BOUNDS) ??
+    DEFAULT_SETTINGS
+  );
+}
+
+/** `&tower=bertha` and the like: the person's tower in a match started from the address. */
+export function towerFromParams(): SpecialKind | null {
+  const asked = params.get('tower');
+  return (SPECIAL_KINDS as readonly string[]).includes(asked ?? '')
+    ? (asked as SpecialKind)
+    : preferredTower();
 }

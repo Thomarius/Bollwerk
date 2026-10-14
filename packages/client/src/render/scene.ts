@@ -29,8 +29,10 @@ import { CyberpunkTheme } from './cyberpunk.js';
 import { FlatTheme } from './flat.js';
 import { ParchmentTheme } from './parchment.js';
 import { PixelTheme } from './pixel.js';
+import { TowerMarks } from './towerMarks.js';
 import {
   hex,
+  playerColour,
   type Celebration,
   type Choice,
   type Cell,
@@ -230,6 +232,11 @@ export class Scene {
    * screen space whatever the camera does.
    */
   private readonly cameraRoot = new Container();
+  /**
+   * The special towers' emblems and effects, one layer over both looks (`towerMarks.ts`),
+   * kept last under the camera as looks come and go.
+   */
+  private readonly towers = new TowerMarks();
   /** The camera as applied: zoom, and the screen offset of the board under it. */
   private camera = { zoom: 1, x: 0, y: 0 };
 
@@ -261,6 +268,7 @@ export class Scene {
     this.app.ticker.autoStart = false;
     this.app.ticker.stop();
     this.app.stage.addChild(this.cameraRoot);
+    this.cameraRoot.addChild(this.towers.root);
 
     const build = await this.slotFor(looks.build);
     const combat = looks.combat === looks.build ? build : await this.slotFor(looks.combat);
@@ -392,6 +400,8 @@ export class Scene {
     // finds its generation over and lets the look go.
     if (!this.destroyed) {
       this.cameraRoot.addChild(root);
+      // The towers' marks stay over every look, the new one too.
+      this.cameraRoot.addChild(this.towers.root);
       this.app.stage.addChild(mask);
     }
     await theme.init(layers, art, pace);
@@ -702,6 +712,10 @@ export class Scene {
       choices,
       drain,
     };
+    // The towers' marks in the colours of the look in front, as its banner brings it.
+    const art = this.slots[this.shown.to].art;
+    this.towers.draw(state, this.view, art);
+    this.towers.drawEffects(this.view, deltaMs);
     for (const slot of this.visible()) {
       slot.theme.drawEffects(state, this.view, {
         tickFraction,
@@ -751,6 +765,7 @@ export class Scene {
    */
   drawOverlay(state: MatchState, ghost: Ghost, humanPlayer: number): void {
     const to = this.slots[this.shown.to];
+    this.towers.drawGhost(this.view, ghost, to.art, humanPlayer);
     for (const slot of this.visible()) {
       slot.theme.drawOverlay(state, this.view, slot === to ? ghost : NO_GHOST, humanPlayer);
     }
@@ -777,6 +792,20 @@ export class Scene {
   /** On the looks on screen, for the same reason as impacts. */
   noteLanding(cells: readonly Cell[], owner: number): void {
     for (const slot of this.visible()) slot.theme.noteLanding(cells, owner);
+  }
+
+  /** A Big Bertha's shot has landed here: its blast, over whichever look is in front. */
+  noteBlast(x: number, y: number): void {
+    this.towers.noteBlast(x, y);
+  }
+
+  /** An Architect has rebuilt these walls for this player: they shimmer back. */
+  noteRepair(tiles: readonly number[], width: number, player: number): void {
+    this.towers.noteRepair(
+      tiles,
+      width,
+      playerColour(this.slots[this.shown.to].art, player, 'light'),
+    );
   }
 
   /** In the arriving look: a block goes as the banner reaches it, so above the line. */

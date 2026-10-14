@@ -1,4 +1,4 @@
-import type { ArtConfig, ArtStyle } from '@bollwerk/config';
+import type { ArtConfig, ArtStyle, SpecialKind } from '@bollwerk/config';
 import { findReadyCannon, type MatchState, type Shot } from '@bollwerk/sim';
 import { Graphics, type Container } from 'pixi.js';
 
@@ -150,6 +150,17 @@ export interface Ghost {
    * (`nextReload`), which the cursor fills as it comes round. Null or absent otherwise.
    */
   reload?: number | null;
+  /**
+   * The special tower the cannon ghost would place, while the right button has switched to
+   * it; null or absent for an ordinary cannon.
+   */
+  tower?: SpecialKind | null;
+  /**
+   * While aiming, the player's impact towers (`impactReadiness`): one ready — the next shot
+   * is its, and the cursor glows — or the next one's reload for a second, inner ring. Null
+   * or absent when they own none that can fire.
+   */
+  impact?: { ready: true } | { ready: false; reload: number } | null;
 }
 
 /**
@@ -219,6 +230,7 @@ export function drawFireReticle(
   const cx = tileX(view, ghost.tile.x + 0.5);
   const cy = tileY(view, ghost.tile.y + 0.5);
   const width = Math.max(2, Math.round(view.tile / 9));
+  drawImpactReadiness(g, view, ghost, cx, cy, width);
   if (ghost.valid) {
     const r = view.tile * 1.1;
     const ink = playerColour(art, humanPlayer, 'light');
@@ -260,6 +272,44 @@ export function drawFireReticle(
   g.moveTo(cx, cy - ring);
   g.arc(cx, cy, ring, -Math.PI / 2, -Math.PI / 2 + reload * Math.PI * 2);
   g.stroke({ width: width + 1, color: ink });
+}
+
+/** The special towers' own colour on the cursor, a hot amber every style reads against. */
+export const IMPACT_GLOW = 0xffa83a;
+
+/**
+ * The cursor's word on the player's impact towers (docs/SPECIAL_TOWERS.md §2.2), drawn under
+ * the reticle: while one is ready the next shot is its, and the cursor glows; while they are
+ * loading, an inner ring fills toward the next, as the outer one does for the guns. One glow
+ * for every kind for now; a kind may bring its own later (sparks for Chain Lightning).
+ */
+function drawImpactReadiness(
+  g: Graphics,
+  view: ViewTransform,
+  ghost: Ghost,
+  cx: number,
+  cy: number,
+  width: number,
+): void {
+  const impact = ghost.impact;
+  if (impact === null || impact === undefined) return;
+  if (impact.ready) {
+    const r = view.tile * 1.1;
+    g.circle(cx, cy, r);
+    g.stroke({ width: width * 6, color: IMPACT_GLOW, alpha: 0.18 });
+    g.circle(cx, cy, r);
+    g.stroke({ width: width * 3, color: IMPACT_GLOW, alpha: 0.35 });
+    g.circle(cx, cy, r * 0.62);
+    g.stroke({ width: width + 1, color: IMPACT_GLOW, alpha: 0.9 });
+    return;
+  }
+  const ring = view.tile * 0.62;
+  g.circle(cx, cy, ring);
+  g.stroke({ width: width + 2, color: 0x000000, alpha: 0.4 });
+  if (impact.reload <= 0) return;
+  g.moveTo(cx, cy - ring);
+  g.arc(cx, cy, ring, -Math.PI / 2, -Math.PI / 2 + impact.reload * Math.PI * 2);
+  g.stroke({ width: width + 1, color: IMPACT_GLOW });
 }
 
 /**
@@ -1783,13 +1833,23 @@ export function shotProgress(shot: Pick<Shot, 'launchTick' | 'impactTick'>, now:
   return span <= 0 ? 1 : Math.min(1, Math.max(0, (now - shot.launchTick) / span));
 }
 
-/** How far above the ground a shot rides, in tiles, at progress `t` through its flight. */
-export function shotLift(shot: Pick<Shot, 'fromX' | 'fromY' | 'toX' | 'toY'>, t: number): number {
+/**
+ * How far above the ground a shot rides, in tiles, at progress `t` through its flight. A
+ * Rapid Cannon's shot flies flatter, as its quicker flight says it would; any other as a gun's.
+ */
+export function shotLift(
+  shot: Pick<Shot, 'fromX' | 'fromY' | 'toX' | 'toY'> & { kind?: Shot['kind'] },
+  t: number,
+): number {
   const dx = shot.toX - shot.fromX;
   const dy = shot.toY - shot.fromY;
   const range = Math.sqrt(dx * dx + dy * dy);
-  return Math.sin(Math.PI * t) * Math.min(range * ARC_RISE, ARC_MAX_TILES);
+  const flat = shot.kind === 'rapid' ? RAPID_ARC : 1;
+  return Math.sin(Math.PI * t) * Math.min(range * ARC_RISE, ARC_MAX_TILES) * flat;
 }
+
+/** A Rapid Cannon's arc against a gun's. */
+const RAPID_ARC = 0.45;
 
 /** Top-left of a tile in screen space. */
 export function tileX(view: ViewTransform, x: number): number {

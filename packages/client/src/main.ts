@@ -11,6 +11,7 @@ import {
   DEFAULT_PLAYERS,
   localSession,
   settingsFromParams,
+  towerFromParams,
 } from './session.js';
 import type { Common } from './menu.js';
 import { showMenu, tournamentExits } from './menu.js';
@@ -47,6 +48,10 @@ if (params.get('autostart') === '1') {
     styles: preferredStyles(),
     name: t('menu.defaultName'),
     settings: settingsFromParams(),
+    // &tower=KIND, where &specials=1 plays them; bots draw theirs.
+    specials: Array.from({ length: count }, (_, i) =>
+      i === 0 && !watching ? towerFromParams() : null,
+    ),
     // &teams=N puts the seats in teams of N, in seat order, when N divides the table.
     ...(Number(params.get('teams') ?? 1) > 1 && count % Number(params.get('teams')) === 0
       ? { teams: defaultTeams(count, Number(params.get('teams'))) }
