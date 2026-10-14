@@ -1705,37 +1705,15 @@ fit (ARCHIVE 12z), its remaining steps dropped (the user's decision, 2026-10-14;
       times. So measure
       by points against a fixed field as well as by wins, and against the people's yardstick
       (direction 1), keeping failed rounds in view.
-   5. **A little knowledge at the higher levels** (the user's ideas, 2026-10-11; for a later
-      session, **not yet analysed or built**). **The
-      goal**: give bots of Level 6 and up an advantage that makes them feel more strategic,
-      without raising their tile output to superhuman: only a bit faster than today's pace
-      (13v, Thomas's at about Level 6), the edge coming from better choices, not more pieces.
-      A little cheating is acceptable to the user where a player would not notice it; people
-      see only the piece in hand, and the piece sequence is fixed by the seed, so a bot can
-      look ahead at no cost. The ideas, each to be analysed, measured by soak (the ladder,
-      points, failed rounds, and pieces a phase kept within human range by `buildStats.ts`) and
-      agreed before it is built:
 
-      - **(a) The exact cells it can still lay.** A bot judges what it can finish from its pace
-        and the bag's average piece (`piecesAffordable`, `cellsAffordable`); the coming pieces'
-        actual sizes against its pace would make that exact, so it commits to a big wall exactly
-        when it will finish — where the bolder `widen` of ARCHIVE 13u lost by starting walls it
-        did not finish — and holds back when the coming pieces are small. Cheap to compute.
-      - **(b) The next piece in view when fitting this one.** Repairs ran at about two cells a
-        piece (13u), pieces rarely fitting a gap exactly; choosing where to lay this piece so
-        that the next one closes the gap would make repairs cheaper and leave time for ground.
-        A two-piece search in `fit`, so its cost per placement must be measured against the
-        plan's time (about 5 ms) and the worker's tick.
-      - Both limited by level (Level 6 and up, perhaps growing to Level 10), so the lower levels
-        keep playing as people do; and the pace of 13v kept, or raised only a little, so the
-        advantage is judgement.
-
-   5b. **The build phase played out before it starts** — done (ARCHIVE 13z, v0.9.4): every bot
-   plays strategies out in the intermission and lays the best, with a minimum of three guns,
-   failing on purpose with an effort, and slips, blunders and search depth by level; Thomas's
-   target is Level 6. It takes in 5(a). Approved by the test sessions (2026-10-14); its step 3,
-   the score's weights, only if play shows a need. ARCHIVE 13zf holds the design and every
-   measurement.
+   5. **The build phase played out before it starts** — done (ARCHIVE 13z, v0.9.4): every bot
+      plays strategies out in the intermission and lays the best, with a minimum of three guns,
+      failing on purpose with an effort, and slips, blunders and search depth by level; Thomas's
+      target is Level 6. The ideas once item 5 — a little knowledge at the higher levels, the
+      exact cells it can still lay and the next piece in view — were dropped (the user's decision,
+      2026-10-14): planning several times a phase is smoother. Approved by the test sessions
+      (2026-10-14); its step 3, the score's weights, only if play shows a need. ARCHIVE 13zf holds
+      the design and every measurement.
 
 2. **Special towers** (the user's idea, 2026-10-11; designed, not built): each player may bring
    one special tower, bought in the cannon phase for two or three cannons — Big Bertha, Architect

@@ -294,8 +294,7 @@ session needs the server rebuilt and every page reloaded for):
 
 **Next** — PLAN §11: towards a first feature-ready version, bots that hold ground as people do
 (item 1: the yardstick, the dead guns, pace, build planning and the new scoring done and
-approved in play; open more ground and castles by level, and a little knowledge at the higher
-levels; `buildStats.ts`, ARCHIVE 13r, 13t–13v, 13z), and special towers (item 2, designed in
+approved in play; open more ground and castles by level, item 1.4; `buildStats.ts`, ARCHIVE 13r, 13t–13v, 13z), and special towers (item 2, designed in
 `docs/SPECIAL_TOWERS.md`). The bot learning work is closed,
 its remaining steps dropped (the user's decision, 2026-10-14; ARCHIVE 13zg). French is not to
 be done. Signing the Windows app was explained (PLAN
