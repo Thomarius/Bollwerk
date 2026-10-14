@@ -164,9 +164,8 @@ Full detail in PLAN.md §1. The parts that surprise people:
 
 ## Status
 
-**Done** (2026-10-14; the latest release **v0.9.5**, 2026-10-12, protocol 23; `main` is at
-protocol 24 since the scoring change, and a test session needs the server rebuilt and every
-page reloaded for either):
+**Done** (2026-10-14; the latest release **v0.9.6**, 2026-10-14, protocol 24, which a test
+session needs the server rebuilt and every page reloaded for):
 
 - **Scoring by ground and guns** (ARCHIVE 13zd, its design 13ze, 2026-10-14): territory no
   longer multiplied by castles, and 5 points a gun firing at the resolution; one formula in the
@@ -293,10 +292,11 @@ page reloaded for either):
   every effect kept; no memory kept by a swap of looks (ARCHIVE 12q); every look, corner
   piece and German checked in play by the user (ARCHIVE 12n–12t).
 
-**Next** — PLAN §11: more test games towards a first
-feature-ready version, under the new scoring (item 3), and bots that hold ground as people do
-(item 1: the yardstick, the dead guns, pace and build planning done; next the testers' matches,
-Level 6 first; `buildStats.ts`, ARCHIVE 13r, 13t–13v, 13z). The bot learning work is closed,
+**Next** — PLAN §11: towards a first feature-ready version, bots that hold ground as people do
+(item 1: the yardstick, the dead guns, pace, build planning and the new scoring done and
+approved in play; open more ground and castles by level, and a little knowledge at the higher
+levels; `buildStats.ts`, ARCHIVE 13r, 13t–13v, 13z), and special towers (item 2, designed in
+`docs/SPECIAL_TOWERS.md`). The bot learning work is closed,
 its remaining steps dropped (the user's decision, 2026-10-14; ARCHIVE 13zg). French is not to
 be done. Signing the Windows app was explained (PLAN
 §12) and is not pursued for now.

@@ -8645,3 +8645,12 @@ measures today's bot against itself); `npx tsx src/cem.ts [--iterations 10] [--p
 16] [--elite 4] [--matches 24] [--level 5] [--out DIR] [--resume]` trains, writing
 `state.json` (the mean and spread) and `log.jsonl` (every candidate) to `DIR`. The first
 run's mean is in §5; to try it, put it in `fitWeights`.
+
+## 13zh. v0.9.6 (2026-10-14)
+
+Released after the test sessions approved it: scoring by ground and guns (13zd, its design 13ze)
+— territory no longer multiplied by castles, 5 points a gun firing at the resolution — and bots
+that value a castle for the guns it earns, where the wall leaves them room. Protocol 24: the
+ruleset gained two keys, so a test session needs the server rebuilt and every page reloaded. The
+testers' matches the scoring and the build planning were waiting on are done, and their open
+items left PLAN §11.
