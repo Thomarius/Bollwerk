@@ -1,6 +1,7 @@
 import type { Ruleset } from '@bollwerk/config';
 
 import type { EnclosureResult } from './enclosure.js';
+import { gunsWorth } from './specials.js';
 import type { MatchState } from './types.js';
 
 /**
@@ -15,7 +16,10 @@ export interface Holding {
   tiles: number;
   /** Sealed castles; none means nothing held scores. */
   castles: number;
-  /** Guns standing on the player's sealed territory, so firing. */
+  /**
+   * Guns standing on the player's sealed territory, so firing — a special tower counted as
+   * the cannons it cost (`gunsWorth`).
+   */
   guns: number;
 }
 
@@ -77,7 +81,9 @@ export function holdingsOf(state: MatchState, enclosure?: ScoredEnclosure): Hold
   for (let c = 0; c < state.cannons.length; c++) {
     const cannon = state.cannons[c] as (typeof state.cannons)[number];
     const holding = holdings[cannon.owner];
-    if (holding && (enclosure ? enclosure.cannonActive[c] : cannon.active)) holding.guns++;
+    if (holding && (enclosure ? enclosure.cannonActive[c] : cannon.active)) {
+      holding.guns += gunsWorth(state.ruleset, cannon.kind);
+    }
   }
   return holdings;
 }

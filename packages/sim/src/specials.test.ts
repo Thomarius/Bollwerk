@@ -122,7 +122,7 @@ describe('buying a special tower', () => {
     expect(canPlaceCannon(state, 0, 5, 3)).toBeNull();
   });
 
-  it('counts as one gun for the points, whatever it cost', () => {
+  it('scores as the cannons it cost', () => {
     const state = stateFromAscii(
       `
       ............
@@ -138,7 +138,8 @@ describe('buying a special tower', () => {
       SPECIALS,
     );
     applyEnclosure(state);
-    expect(holdingsOf(state)[0]!.guns).toBe(2);
+    // A cannon and Big Bertha, who cost three.
+    expect(holdingsOf(state)[0]!.guns).toBe(1 + SPECIALS.specials.bertha.cost);
   });
 });
 

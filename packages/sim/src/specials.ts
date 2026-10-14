@@ -38,6 +38,15 @@ export function towerCost(ruleset: Ruleset, kind: SpecialKind): number {
   return ruleset.specials[kind].cost;
 }
 
+/**
+ * How many guns a gun of this kind scores as: a tower as many as the cannons it cost (the
+ * user's balance, 2026-10-14), so buying one costs no gun points — Big Bertha at three would
+ * otherwise have cost two guns' points every round she stood.
+ */
+export function gunsWorth(ruleset: Ruleset, kind: CannonKind): number {
+  return kind === 'cannon' ? 1 : ruleset.specials[kind].cost;
+}
+
 /** Special towers standing on this player's island. */
 export function towersOwned(state: MatchState, playerId: number): number {
   let count = 0;
