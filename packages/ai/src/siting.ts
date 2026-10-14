@@ -5,9 +5,14 @@ import {
   Terrain,
   canPlaceCannon,
   distanceSquared,
+  footprintOf,
   sameTeam,
+  specialRefusal,
+  towerCost,
   type Action,
+  type CannonKind,
   type MatchState,
+  type PlayerState,
   type Rng,
 } from '@bollwerk/sim';
 
@@ -15,7 +20,7 @@ import { type Builder } from './building.js';
 import type { IslandCentres } from './botTurn.js';
 import { rivalsOf, ticksFor } from './botTurn.js';
 import { type PlanningSlots } from './planning.js';
-import { SealGraph } from './tactics.js';
+import { SealGraph, weakestWall } from './tactics.js';
 
 /** Castles an opening choice may weigh beyond cost: those within this of the cheapest. */
 const CASTLE_CHOICE_SLACK = 1.2;
@@ -53,6 +58,8 @@ export class Siting {
     private readonly slots: PlanningSlots,
     private readonly islands: IslandCentres,
     private readonly builder: Builder,
+    /** The guns it keeps at the least, a tower among them: `ai.planning.minGuns`. */
+    private readonly minGuns = 0,
   ) {}
 
   private nextCannonTick = 0;
@@ -128,10 +135,47 @@ export class Siting {
     if (state.tick < this.nextCannonTick) return null;
     this.nextCannonTick = state.tick + ticksFor(this.profile.placementBaseMs, state);
 
+    // Its tower first, while it is for sale, so the cannons left go round it.
+    if (player.special !== null && this.buysTower(state, player)) {
+      const spot = this.site(state, rng, player, player.special);
+      if (spot !== null)
+        return { kind: 'place_cannon', player: this.playerId, ...spot, special: true };
+    }
+    const spot = this.site(state, rng, player, 'cannon');
+    return spot ? { kind: 'place_cannon', player: this.playerId, ...spot } : null;
+  }
+
+  /**
+   * Whether to buy its tower now (docs/SPECIAL_TOWERS.md §3.5): whenever the rules sell it,
+   * so long as it keeps `minGuns` guns at the least — the tower counted as one, the cannons
+   * it costs not.
+   */
+  private buysTower(state: MatchState, player: PlayerState): boolean {
+    if (player.special === null || specialRefusal(state, player) !== null) return false;
+    let owned = 0;
+    for (const cannon of state.cannons) if (cannon.owner === this.playerId) owned++;
+    const after = owned + player.cannonsToPlace - towerCost(state.ruleset, player.special) + 1;
+    return after >= this.minGuns;
+  }
+
+  /**
+   * Where a gun of this kind goes, or null if nowhere. A tower stands only in ground round a
+   * sealed castle, never in a pocket, which a breach elsewhere can leave castleless; the
+   * Architect beside the walls it would repair, the rest toward the enemy.
+   */
+  private site(
+    state: MatchState,
+    rng: Rng,
+    player: PlayerState,
+    kind: CannonKind,
+  ): { x: number; y: number } | null {
+    const special = kind !== 'cannon';
     // Toward the other teams' castles; a teammate's is not the front line.
     const enemies = state.castles.filter((c) => !sameTeam(state, this.playerId, c.islandId - 1));
     const hazard = this.clearanceField(state, player.islandId);
-    const [cw, ch] = state.ruleset.cannons.footprint;
+    const [cw, ch] = footprintOf(state.ruleset, kind);
+    const main = special ? this.castleGround(state, player.islandId) : null;
+    const guarded = kind === 'architect' ? this.guardedWall(state, player.islandId) : null;
 
     // A careless placement weighs proximity half by chance; decided once a gun, and drawn
     // only by a level with any carelessness.
@@ -148,7 +192,8 @@ export class Siting {
     for (let y = 0; y < state.height; y++) {
       for (let x = 0; x < state.width; x++) {
         if (state.territory[y * state.width + x] !== player.islandId) continue;
-        if (canPlaceCannon(state, this.playerId, x, y) !== null) continue;
+        if (main !== null && main[y * state.width + x] !== 1) continue;
+        if (canPlaceCannon(state, this.playerId, x, y, special) !== null) continue;
 
         let clear = Number.MAX_SAFE_INTEGER;
         for (let oy = 0; oy < ch; oy++) {
@@ -160,17 +205,29 @@ export class Siting {
         // is a tile of range given away.
         const room = Math.min(clear, CANNON_CLEARANCE);
 
-        let nearest = Number.MAX_SAFE_INTEGER;
-        for (const enemy of enemies) {
-          nearest = Math.min(nearest, distanceSquared(x, y, enemy.x, enemy.y));
-        }
-        const score = -nearest + (noisy ? rng.nextFloat() * 5000 : 0);
-
         const pinned = this.pinnedWalls(state, player.islandId, x, y, cw, ch);
 
-        const better =
-          pinned < bestPinned ||
-          (pinned === bestPinned && (room > bestRoom || (room === bestRoom && score > bestScore)));
+        let better: boolean;
+        let score: number;
+        if (guarded !== null) {
+          // The Architect: the most of its wall within reach, the weakest counting most, before
+          // room — at radius two it can stand clear of the wall and still reach it.
+          score = this.reach(state, guarded, x, y, cw, ch);
+          better =
+            pinned < bestPinned ||
+            (pinned === bestPinned &&
+              (score > bestScore || (score === bestScore && room > bestRoom)));
+        } else {
+          let nearest = Number.MAX_SAFE_INTEGER;
+          for (const enemy of enemies) {
+            nearest = Math.min(nearest, distanceSquared(x, y, enemy.x, enemy.y));
+          }
+          score = -nearest + (noisy ? rng.nextFloat() * 5000 : 0);
+          better =
+            pinned < bestPinned ||
+            (pinned === bestPinned &&
+              (room > bestRoom || (room === bestRoom && score > bestScore)));
+        }
         if (better) {
           bestPinned = pinned;
           bestRoom = room;
@@ -179,7 +236,71 @@ export class Siting {
         }
       }
     }
-    return best ? { kind: 'place_cannon', player: this.playerId, ...best } : null;
+    return best;
+  }
+
+  /**
+   * The ground round this player's sealed castles, as 1s: the territory reached from a sealed
+   * castle, eight ways as the escape flood goes, so without the pockets apart from it.
+   */
+  private castleGround(state: MatchState, islandId: number): Uint8Array {
+    const mark = new Uint8Array(state.width * state.height);
+    const queue: number[] = [];
+    for (const castle of state.castles) {
+      if (castle.islandId !== islandId || !castle.enclosed) continue;
+      const i = castle.y * state.width + castle.x;
+      if (state.territory[i] === islandId && mark[i] === 0) {
+        mark[i] = 1;
+        queue.push(i);
+      }
+    }
+    for (let head = 0; head < queue.length; head++) {
+      const i = queue[head] as number;
+      const x = i % state.width;
+      const y = (i - x) / state.width;
+      for (const [ox, oy] of NEIGHBOURS_8) {
+        const nx = x + ox;
+        const ny = y + oy;
+        if (nx < 0 || ny < 0 || nx >= state.width || ny >= state.height) continue;
+        const j = ny * state.width + nx;
+        if (mark[j] === 1 || state.territory[j] !== islandId) continue;
+        mark[j] = 1;
+        queue.push(j);
+      }
+    }
+    return mark;
+  }
+
+  /**
+   * What an Architect would guard, by tile: its own wall 1, its weakest wall — where shots
+   * breach it — 3, so it stands by the stretch breached most.
+   */
+  private guardedWall(state: MatchState, islandId: number): Uint8Array {
+    const weight = new Uint8Array(state.width * state.height);
+    for (let i = 0; i < weight.length; i++) {
+      if (state.structure[i] === Structure.Wall && state.owner[i] === islandId) weight[i] = 1;
+    }
+    for (const i of weakestWall(state, this.playerId)) weight[i] = 3;
+    return weight;
+  }
+
+  /** The guarded wall within an Architect's repair radius of a footprint, by weight. */
+  private reach(
+    state: MatchState,
+    guarded: Uint8Array,
+    x: number,
+    y: number,
+    w: number,
+    h: number,
+  ): number {
+    const r = state.ruleset.specials.architect.repairRadius;
+    let sum = 0;
+    for (let ty = Math.max(0, y - r); ty <= Math.min(state.height - 1, y + h - 1 + r); ty++) {
+      for (let tx = Math.max(0, x - r); tx <= Math.min(state.width - 1, x + w - 1 + r); tx++) {
+        sum += guarded[ty * state.width + tx] as number;
+      }
+    }
+    return sum;
   }
 
   /**

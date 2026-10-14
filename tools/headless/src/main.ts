@@ -6,15 +6,17 @@ import {
   BALANCED,
   MAX_LEVEL,
   MIN_LEVEL,
+  SPECIAL_KINDS,
   parsePersonality,
   personalityWords,
   validateConfigBundle,
   type AiConfig,
   type BotSetup,
   type Personality,
+  type SpecialKind,
 } from '@bollwerk/config';
 import { loadConfigBundle } from '@bollwerk/config/node';
-import { Bot, PlanningSlots, dealPersonalities, takeBotTurns } from '@bollwerk/ai';
+import { Bot, PlanningSlots, dealPersonalities, drawnSpecial, takeBotTurns } from '@bollwerk/ai';
 import {
   Rng,
   createMatch,
@@ -61,6 +63,10 @@ interface Args {
   levels: number[];
   /** Personality per seat, repeating; `dealt` deals one from the seed as a match does. */
   personalities: (Personality | 'dealt')[];
+  /** Whether the matches play special towers (`--specials on`). */
+  specials: boolean;
+  /** Each seat's tower, repeating: a kind, none, or `random` — drawn as a match draws a bot's. */
+  towers: (SpecialKind | null | 'random')[];
   stats: string | null;
   /** One row per match: who won, how it ended, the final scores (`MatchOutcome`). */
   outcomes: string | null;
@@ -99,6 +105,19 @@ function parseLevels(value: string | undefined): number[] | null {
 }
 
 /** Seat personalities, likewise: `offensive`, `defensive,balanced`, or `dealt`. */
+/** Seat towers: `bertha`, `none`, `random`, or a list of them. */
+function parseTowers(value: string | undefined): (SpecialKind | null | 'random')[] | null {
+  if (value === undefined) return ['random'];
+  const out: (SpecialKind | null | 'random')[] = [];
+  for (const text of value.split(',').map((t) => t.trim())) {
+    if (text === 'none') out.push(null);
+    else if (text === 'random' || (SPECIAL_KINDS as readonly string[]).includes(text)) {
+      out.push(text as SpecialKind | 'random');
+    } else return null;
+  }
+  return out;
+}
+
 function parsePersonalities(value: string | undefined): (Personality | 'dealt')[] | null {
   if (value === undefined) return null;
   const out: (Personality | 'dealt')[] = [];
@@ -117,7 +136,7 @@ function parsePersonalities(value: string | undefined): (Personality | 'dealt')[
 const USAGE =
   'usage: npm start -w @bollwerk/headless -- [--matches N] [--players N] [--seed N] ' +
   '[--max-ticks N] [--max-rounds N|none] [--teams N] [--level 1-10[,...]] ' +
-  '[--personality offensive|dealt|...[,...]] [--plans 1,0[,...]] [--stats FILE] [--outcomes FILE] [--record DIR] [--map]\n' +
+  '[--personality offensive|dealt|...[,...]] [--specials on|off] [--special bertha|architect|rapid|none|random[,...]] [--plans 1,0[,...]] [--stats FILE] [--outcomes FILE] [--record DIR] [--map]\n' +
   '       npm start -w @bollwerk/headless -- --replay recordings/ [more files or dirs] [--stats FILE]\n' +
   '       npm start -w @bollwerk/headless -- --tournament [--help for its flags]';
 
@@ -153,6 +172,11 @@ function parseArgs(argv: string[]): Args {
   if (personalities === null) {
     usageError('--personality wants trait values joined by -, "dealt", or a list');
   }
+  if (values.specials !== undefined && values.specials !== 'on' && values.specials !== 'off') {
+    usageError('--specials wants on or off');
+  }
+  const towers = parseTowers(values.special);
+  if (towers === null) usageError(`--special wants ${SPECIAL_KINDS.join(', ')}, none or random`);
   const number = (flag: keyof typeof values, fallback: number, min: number): number => {
     const value = values[flag];
     return typeof value === 'string' ? wholeNumber(flag, value, min) : fallback;
@@ -165,6 +189,8 @@ function parseArgs(argv: string[]): Args {
     map: values.map === true,
     levels,
     personalities,
+    specials: values.specials === 'on',
+    towers,
     stats: values.stats ?? null,
     outcomes: values.outcomes ?? null,
     maxRounds:
@@ -194,6 +220,8 @@ const FLAGS = {
   teams: { type: 'string' },
   level: { type: 'string' },
   personality: { type: 'string' },
+  specials: { type: 'string' },
+  special: { type: 'string' },
   plans: { type: 'string' },
   'plan-log': { type: 'string' },
   record: { type: 'string' },
@@ -387,13 +415,24 @@ function seatSetup(p: number, seed: number): BotSetup {
         : personality,
   };
 }
-/** How a seat is named in the output: `L5`, with a fixed personality after it. */
+/** The tower a seat brings, when the matches play them: `random` drawn as a match draws it. */
+function seatTower(p: number, seed: number): SpecialKind | null {
+  if (!args.specials) return null;
+  const tower = args.towers[p % args.towers.length] as SpecialKind | null | 'random';
+  return tower === 'random' ? drawnSpecial(seed, p) : tower;
+}
+
+/**
+ * How a seat is named in the output: `L5`, with a fixed personality after it, and its tower
+ * where the matches play them — so a soak of one tower against none reads by seat.
+ */
 function seatLabel(p: number): string {
   const personality = args.personalities[p % args.personalities.length] as Personality | 'dealt';
   const level = `L${args.levels[p % args.levels.length]}${seatPlans(p) ? '+plan' : ''}`;
-  if (personality === 'dealt') return `${level} dealt`;
+  const tower = args.specials ? ` ${args.towers[p % args.towers.length] ?? 'none'}` : '';
+  if (personality === 'dealt') return `${level} dealt${tower}`;
   const words = personalityWords(personality);
-  return words === personalityWords(BALANCED) ? level : `${level} ${words}`;
+  return (words === personalityWords(BALANCED) ? level : `${level} ${words}`) + tower;
 }
 const table = Array.from({ length: args.players }, (_, p) => seatLabel(p));
 
@@ -403,10 +442,11 @@ console.log(
   `running ${args.matches} match(es), ${args.players} bots (${table.join(', ')})\n`,
 );
 
-const ruleset =
+const capped =
   args.maxRounds === undefined
     ? bundle.ruleset
     : { ...bundle.ruleset, scoring: { ...bundle.ruleset.scoring, maxRounds: args.maxRounds } };
+const ruleset = { ...capped, specials: { ...capped.specials, enabled: args.specials } };
 
 const layouts: TeamLayout[] = [];
 const started = Date.now();
@@ -451,6 +491,7 @@ function recorderFor(state: MatchState, seed: number): MatchRecorder | null {
       team: p.team,
       level: seatSetup(p.id, seed).level,
       personality: seatSetup(p.id, seed).personality,
+      special: p.special,
     })),
   });
 }
@@ -465,6 +506,7 @@ for (let i = 0; i < args.matches; i++) {
       name: `${seatLabel(p)} ${p}`,
       isBot: true,
       team,
+      special: seatTower(p, seed),
     })),
   });
   const rng = new Rng(seed);

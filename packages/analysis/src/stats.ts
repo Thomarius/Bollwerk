@@ -42,6 +42,8 @@ export interface StatRow {
   level: number | null;
   /** A bot's personality in words (`personalityWords`), or empty for a person. */
   personality: string;
+  /** The special tower the player brought (docs/SPECIAL_TOWERS.md), or empty for none. */
+  special: string;
   enclosedCastles: number;
   cannonsAwarded: number;
   eliminated: boolean;
@@ -73,6 +75,10 @@ export interface StatRow {
    * could cover at all — holes the round's pieces are too big for.
    */
   repairStuck: number;
+  /** Special towers standing on the island after the resolution, among `cannonsOwned`. */
+  towersOwned: number;
+  /** Wall its Architects rebuilt as this round's barrage ended. */
+  wallsRepaired: number;
 }
 
 const STAT_COLUMNS: (keyof StatRow)[] = [
@@ -100,6 +106,9 @@ const STAT_COLUMNS: (keyof StatRow)[] = [
   'repairAtBuild',
   'repairLeft',
   'repairStuck',
+  'special',
+  'towersOwned',
+  'wallsRepaired',
 ];
 
 /**
@@ -160,6 +169,7 @@ export function parseStatsCsv(text: string): StatRow[] {
     for (const column of STAT_COLUMNS) row[column] = num(column);
     row.match = raw('match');
     row.personality = raw('personality');
+    row.special = raw('special');
     row.eliminated = raw('eliminated') === 'true';
     row.level = raw('level') === '' ? null : num('level');
     row.piecesBudget = raw('piecesBudget') === '' ? null : num('piecesBudget');
@@ -178,6 +188,7 @@ export class RoundStats {
   // Reset at every resolution, so a row counts only its own round's work.
   private readonly placed = new Map<number, number>();
   private readonly fired = new Map<number, number>();
+  private readonly repaired = new Map<number, number>();
   private readonly repairAtBuild = new Map<number, number>();
   private readonly repairLeft = new Map<number, number>();
   private readonly repairStuck = new Map<number, number>();
@@ -220,16 +231,23 @@ export class RoundStats {
         this.placed.set(event.player, (this.placed.get(event.player) ?? 0) + 1);
       } else if (event.kind === 'shot_fired') {
         this.fired.set(event.shot.owner, (this.fired.get(event.shot.owner) ?? 0) + 1);
+      } else if (event.kind === 'walls_repaired') {
+        this.repaired.set(
+          event.player,
+          (this.repaired.get(event.player) ?? 0) + event.tiles.length,
+        );
       } else if (event.kind === 'round_resolved') {
         // Sampled after the step that produced the event, so the sweep has already
         // run and these are the walls and guns the next barrage will meet.
         for (const result of event.results) {
           let owned = 0;
           let active = 0;
+          let towers = 0;
           for (const cannon of state.cannons) {
             if (cannon.owner !== result.player) continue;
             owned++;
             if (cannon.active) active++;
+            if (cannon.kind !== 'cannon') towers++;
           }
           const tier = this.tierOf(result.player);
           this.rows.push({
@@ -257,10 +275,14 @@ export class RoundStats {
             repairAtBuild: this.repairAtBuild.get(result.player) ?? 0,
             repairLeft: this.repairLeft.get(result.player) ?? 0,
             repairStuck: this.repairStuck.get(result.player) ?? 0,
+            special: state.players[result.player]?.special ?? '',
+            towersOwned: towers,
+            wallsRepaired: this.repaired.get(result.player) ?? 0,
           });
         }
         this.placed.clear();
         this.fired.clear();
+        this.repaired.clear();
         this.repairAtBuild.clear();
         this.repairLeft.clear();
         this.repairStuck.clear();

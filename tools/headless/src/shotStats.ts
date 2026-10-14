@@ -100,6 +100,8 @@ const accOf = (key: string): Acc => {
 const pct = (n: number, d: number): string => (d === 0 ? '-' : `${((100 * n) / d).toFixed(0)}%`);
 /** Per person and match: hit, double and near-miss shares. */
 const perMatch: string[] = [];
+/** Shots landed and wall cleared, by group and the kind of gun that fired. */
+const byKind = new Map<string, { shots: number; walls: number }>();
 
 /** Chebyshev distance from (x, y) to the nearest live opponent's wall, up to 3; 3 means farther. */
 function nearestOpponentWall(state: MatchState, shooter: number, x: number, y: number): number {
@@ -271,6 +273,12 @@ function shotObserver(
         if (outcome === 'goneSelf') m.dup++;
         if (outcome === 'near1' || outcome === 'near2') m.near++;
         for (const d of event.destroyed) destroyedBy.set(d, shot.owner);
+        // By the gun's kind too: a Big Bertha's crater takes more than its aim.
+        const kind = `${keyOf[shot.owner] as string} ${shot.kind}`;
+        const k = byKind.get(kind) ?? { shots: 0, walls: 0 };
+        k.shots++;
+        k.walls += event.destroyed.length;
+        byKind.set(kind, k);
       }
     }
     if (state.phase === 'combat' && phase !== null) {
@@ -435,6 +443,16 @@ for (const key of order) {
   console.log(
     `${key.padEnd(12)} ${a.byThird.map((t) => pct(t.hit, t.landed).padStart(4)).join(' ')}   doubles ${String(g.length).padStart(4)}: <150ms ${share(0, 150)}  150-300 ${share(150, 300)}  300-600 ${share(300, 600)}  >600 ${share(600, 1e9)}`,
   );
+}
+const kinds = [...byKind.keys()].sort();
+if (kinds.some((k) => !k.endsWith(' cannon'))) {
+  console.log('\nshots landed and walls cleared, by the kind of gun that fired');
+  for (const key of kinds) {
+    const k = byKind.get(key) as { shots: number; walls: number };
+    console.log(
+      `${key.padEnd(24)} shots ${String(k.shots).padStart(6)}  walls ${String(k.walls).padStart(6)}  a shot ${(k.walls / (k.shots || 1)).toFixed(2)}`,
+    );
+  }
 }
 if (perMatch.length > 0) {
   console.log('\neach match, people only');

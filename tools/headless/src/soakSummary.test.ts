@@ -36,6 +36,9 @@ function row(
     repairAtBuild: 0,
     repairLeft: 0,
     repairStuck: 0,
+    special: '',
+    towersOwned: 0,
+    wallsRepaired: 0,
     ...extra,
   };
 }

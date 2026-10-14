@@ -83,7 +83,14 @@ export class Bot {
     this.gunner = new Gunner(playerId, this.profile, islands);
     this.slots = slots;
     this.builder = new Builder(playerId, this.profile, slots, ai.planning.weights.gun);
-    this.siting = new Siting(playerId, this.profile, slots, islands, this.builder);
+    this.siting = new Siting(
+      playerId,
+      this.profile,
+      slots,
+      islands,
+      this.builder,
+      ai.planning.minGuns,
+    );
   }
 
   private readonly slots: PlanningSlots;

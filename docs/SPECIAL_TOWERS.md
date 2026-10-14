@@ -235,26 +235,35 @@ Built in ST2, the client's controls for it to come in ST5.
 
 ### 3.5 Bots (`packages/ai`)
 
-- **Loadout**: drawn at random from `streamFor(seed, …)` per seat when the table is set, among the
-  towers only (never none), and shown in the lobby. By personality or set by the host may come
-  later.
-- **Buying** (`Siting`): buy when the tower's cost leaves enough cannons for the room it has, never
-  at the opening, and only on sealed ground likely to stay sealed (inside the main enclosure, not
-  a pocket); `wallValue` counts a tower as one gun. **Placing**: Big Bertha and the Rapid Cannon
-  where an ordinary cannon would go, nearest the rivals it will shoot (`rivalDistanceExponent`);
-  the Architect beside the stretch of its own wall breached most often — its weakest wall
-  (`weakestWall` of its own island) or the tiles lost last round.
-- **Firing** (`Gunner`): the sim picks the gun, so the Gunner asks which gun its next shot will
-  come from. When it is a Bertha it aims where the crater takes most wall tiles (a sum over
-  `plus5` on the weakest wall's blocks), as the weakest-wall breach does today, and subject to the
-  same misses by level (`ai.aim`). Otherwise it aims as now.
+Built in ST3.
+
+- **Loadout**: drawn per seat from the seed (`drawnSpecial`), among the towers only (never none),
+  so every page can show it in the lobby. By personality or set by the host may come later.
+- **Buying** (`Siting.buysTower`): as the first placement of any cannon phase the rules sell it
+  in, so long as the bot keeps `ai.planning.minGuns` guns — the tower counting as one, the cannons
+  it costs not. A first rule, for ST4 to measure; the planning's `wallValue` already counted a
+  tower as one gun.
+- **Placing** (`Siting.site`): only in the ground round a sealed castle, never in a pocket
+  (`castleGround`). Big Bertha and the Rapid Cannon as an ordinary cannon goes — never pinning a
+  wall, then room, then nearest the enemy; the Architect never pinning, then the most of its own
+  wall within its repair radius, its weakest wall (`weakestWall` of its own island) counting
+  three times, then room.
+- **Firing** (`Gunner`): a ready impact tower fires next whatever is aimed at, so while one is
+  ready the bot aims for it — at the chosen opponent's weakest wall, the centre where the crater
+  takes most of it (`craterTarget`), subject to the same misses by level (`ai.aim`). The stream
+  draws nothing new without a ready tower, so a classic table plays as before.
 - The worker, the thread driver and the harness need nothing new: a bot's actions are actions.
 
 ### 3.6 Measuring
 
-- `shotStats.ts`: shots and walls cleared by cannon kind; `buildStats.ts`: towers bought, walls
-  repaired; the headless harness: `--specials on|off` and a seat's tower (`--special bertha,none,…`
-  beside `--level` and `--personality`; `random` draws as a match does).
+- The harness: `--specials on|off` and each seat's tower, repeating (`--special bertha,none`;
+  `random` draws as a match does), named in the seat's label, so wins read by tower.
+- The statistics rows (`RoundStats`): `special`, `towersOwned`, `wallsRepaired`. `buildStats.ts`
+  keys a group by its tower where the match played them and shows towers owned and walls rebuilt
+  by stage; `shotStats.ts` shots landed and walls cleared by the kind of gun that fired.
+- First look (four matches, Level 5, a Bertha against an Architect): each bought two or three
+  towers by round 4; a Bertha's shot took 2.5 walls, a cannon's 0.8; the Architects rebuilt 9–13
+  walls a round. The recordings replayed exactly.
 
 ---
 

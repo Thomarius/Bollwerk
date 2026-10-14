@@ -2,7 +2,10 @@ import { type BotProfile } from '@bollwerk/config';
 import {
   Structure,
   Terrain,
+  craterOf,
+  craterOffsets,
   heldValue,
+  isImpactTower,
   holdingsOf,
   sameTeam,
   type Action,
@@ -118,6 +121,18 @@ export class Gunner {
   private pickTarget(state: MatchState, rng: Rng): Action | null {
     const taken = this.inbound(state);
 
+    // A ready impact tower fires before any gun (`findReadyCannon`), so this shot is its:
+    // aimed where its crater takes most of the weakest wall. Drawn only when one is ready,
+    // so a table without towers draws exactly as before.
+    const tower = this.readyImpactTower(state);
+    if (tower !== null && rng.nextFloat() >= this.profile.aimJitter) {
+      const chosen = this.craterTarget(state, tower, this.chooseOpponent(state, rng), taken);
+      if (chosen !== null) {
+        const x = chosen % state.width;
+        return { kind: 'fire', player: this.playerId, x, y: (chosen - x) / state.width };
+      }
+    }
+
     if (rng.nextFloat() >= this.profile.aimJitter) {
       // A share of aimed shots goes where the targeting trait says (PLAN 11.6), the rest
       // by the neutral rule — breach whoever threatens most — so no bot fires one way only.
@@ -177,6 +192,67 @@ export class Gunner {
     });
     const nearest = Math.min(...distances);
     return distances.map((d) => (nearest / d) ** this.profile.rivalDistanceExponent);
+  }
+
+  /** The kind of its ready impact tower, which fires next whatever is aimed at; or null. */
+  private readyImpactTower(state: MatchState): MatchState['cannons'][number]['kind'] | null {
+    for (const cannon of state.cannons) {
+      if (cannon.owner !== this.playerId || !cannon.active || cannon.shotId !== null) continue;
+      if (isImpactTower(cannon.kind)) return cannon.kind;
+    }
+    return null;
+  }
+
+  /**
+   * Where a crater takes most of an opponent's wall: centred on a block of their weakest
+   * wall or beside it, each block of it the crater clears counting three and any other of a
+   * rival's wall one. Never centred where its own shot is headed; null when nothing scores.
+   */
+  private craterTarget(
+    state: MatchState,
+    kind: MatchState['cannons'][number]['kind'],
+    opponent: number,
+    taken: ReadonlySet<number>,
+  ): number | null {
+    const weakest = new Set(weakestWall(state, opponent));
+    if (weakest.size === 0) return null;
+    const offsets = craterOffsets(craterOf(state.ruleset, kind));
+    const rivalWall = (i: number): boolean => {
+      if (state.structure[i] !== Structure.Wall) return false;
+      const owner = state.owner[i] as number;
+      return owner !== 0 && !sameTeam(state, this.playerId, owner - 1);
+    };
+    let best: number | null = null;
+    let bestScore = 0;
+    const seen = new Set<number>();
+    for (const block of weakest) {
+      const bx = block % state.width;
+      const by = (block - bx) / state.width;
+      for (const [ox, oy] of [[0, 0], ...offsets] as const) {
+        const cx = bx + ox;
+        const cy = by + oy;
+        if (cx < 0 || cy < 0 || cx >= state.width || cy >= state.height) continue;
+        const centre = cy * state.width + cx;
+        if (seen.has(centre) || taken.has(centre)) continue;
+        seen.add(centre);
+        // The rules refuse a shot at its own island or a teammate's.
+        const island = state.islandId[centre] as number;
+        if (island !== 0 && sameTeam(state, this.playerId, island - 1)) continue;
+        let score = 0;
+        for (const [dx, dy] of offsets) {
+          const x = cx + dx;
+          const y = cy + dy;
+          if (x < 0 || y < 0 || x >= state.width || y >= state.height) continue;
+          const i = y * state.width + x;
+          if (rivalWall(i)) score += weakest.has(i) ? 3 : 1;
+        }
+        if (score > bestScore) {
+          bestScore = score;
+          best = centre;
+        }
+      }
+    }
+    return best;
   }
 
   /** The thin part of each opponent's wall, worked along a block at a time, per opponent. */

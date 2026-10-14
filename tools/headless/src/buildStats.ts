@@ -109,9 +109,12 @@ function fromRecordings(
     if (header?.kind !== 'header') continue;
     // Recordings are named by the time they began, as their ids: `--since` keeps the later.
     if (since !== undefined && header.id.slice(0, since.length) < since) continue;
+    // A tower brought, where the match played them, after the name: a tower changes the game.
+    const towers = header.ruleset.specials.enabled;
     const keyOf = header.players.map((p, id) => {
       const setup = setupOfRecorded(header.players[id]);
-      return setup === null ? (aliases.get(p.name) ?? p.name) : `bot L${setup.level}`;
+      const who = setup === null ? (aliases.get(p.name) ?? p.name) : `bot L${setup.level}`;
+      return towers ? `${who} ${p.special ?? 'none'}` : who;
     });
     const sampler = new RoundStats(
       bundle,
@@ -243,6 +246,8 @@ for (const [title, value, digits] of [
   ['castles sealed', (x: StatRow) => x.enclosedCastles, 1],
   ['guns active', (x: StatRow) => x.cannonsActive, 1],
   ['pieces laid', (x: StatRow) => x.piecesPlaced, 1],
+  ['special towers owned', (x: StatRow) => x.towersOwned, 1],
+  ['walls the Architects rebuilt', (x: StatRow) => x.wallsRepaired, 1],
 ] as const) {
   console.log(`\n${title}, by stage: ${STAGES.map((s) => s.name.padStart(6)).join(' ')}`);
   for (const key of order) {
