@@ -165,8 +165,12 @@
     "failsOnPurpose": true,
     "order": [
       "leanLadder",
+      "alone1/widen1.3",
+      "guns/widen1.3",
+      "alone1/widen1",
       "alone1/reachAll",
       "alone2/next",
+      "guns/widen1",
       "alone1/next",
       "alone2/reachAll",
       "alone1/reach2#2",

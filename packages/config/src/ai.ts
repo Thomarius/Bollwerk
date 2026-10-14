@@ -297,7 +297,12 @@ export const AiConfigSchema = z
        * round is not the last, and nobody in the team is a person, whose lives they share.
        */
       failsOnPurpose: z.boolean(),
-      /** The strategies tried first, most promising first; the rest follow as offered. */
+      /**
+       * The strategies tried first, most promising first; the rest follow as offered. The
+       * bold widenings (`…/widen1.3`, `…/widen1`) stand near the top, so a level's few
+       * strategies include them: with no budget they were the best plan in 36% of Level 6's
+       * phases (ARCHIVE 13zi).
+       */
       order: z.array(z.string().min(1)),
       /** What an outcome is worth beyond the round's points, in points (`scoreOf`). */
       weights: z.strictObject({
@@ -316,7 +321,7 @@ export const AiConfigSchema = z
      */
     rivalDistanceExponent: z.number().nonnegative(),
     /**
-     * How a bot misses as people do (PLAN §11 item 1, ARCHIVE 13r): the share of its shots that
+     * How a bot misses as people do (ARCHIVE 13zj, 13r): the share of its shots that
      * go where it aimed, rising in a line from Level 1 to perfect, and the rest wasted as the
      * testers' were — on the tile its last shot went to, or a tile beside the wall it aimed at.
      */

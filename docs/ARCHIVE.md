@@ -8654,3 +8654,146 @@ that value a castle for the guns it earns, where the wall leaves them room. Prot
 ruleset gained two keys, so a test session needs the server rebuilt and every page reloaded. The
 testers' matches the scoring and the build planning were waiting on are done, and their open
 items left PLAN §11.
+
+## 13zi. More ground for the same pieces: bold widening (2026-10-14)
+
+PLAN §11 item 1.4, with the user's rule to take a small meaningful gain and close there. The
+yardstick: Thomas over 17 recorded matches, 155 rounds, held about 120 tiles of ground a round
+with 2.1 castles, 16.4 pieces and room for 8.5 more guns — 7.3 tiles a piece. Level 6 bots in the
+scoring soak's ladder tables held 88 with 2.2 castles and 17.1 pieces: the castles were no longer
+the gap, the ground was.
+
+**Measured, step by step** (Level 6, four players, 16 matches on the same seeds; the harness's
+new `--record` makes bot matches recordings, and `placements.ts` takes their folder):
+
+|                                                    | castles | ground  | pieces | a piece | room    | failed | score     |
+| -------------------------------------------------- | ------- | ------- | ------ | ------- | ------- | ------ | --------- |
+| the planner as played                              | 2.27    | 91      | 16.9   | 5.4     | 5.9     | 11%    | 1,556     |
+| every strategy, no budget                          | 2.44    | 96      | 17.3   | 5.5     | 6.1     | 13%    | 1,608     |
+| + wider walls (room 3–6, reach 4, all castles 2–4) | 2.46    | 100     | 17.2   | 5.8     | 6.7     | 11%    | 1,701     |
+| + room 8–10, all castles 6                         | 2.45    | 100     | 17.1   | 5.8     | 6.6     | 11%    | 1,704     |
+| + bold widening, no budget                         | 2.62    | 115     | 17.3   | 6.7     | 8.6     | 11%    | 1,891     |
+| **bold widening, the real budget**                 | 2.48    | **106** | 17.0   | **6.2** | **7.7** | 11%    | **1,767** |
+
+So the search was not the limit (every strategy weighed gave 96), nor the walls offered (wider
+rings gave 100 and were dropped). **The diagnosis** (`placements.ts`, Thomas's recordings against
+16 recorded Level 6 matches): the bots laid faster (3.0 cells a second against 2.7) and repaired
+as efficiently (0.42 seal blocks a repairing cell against 0.40), but were cautious — breached, they
+sealed walls 1.2 times their budget where Thomas went to 1.5, keeping 13–14 blocks spare to his
+8; sealed, 42% of their cells ended in the sealing wall and 47% standing elsewhere (thickening),
+against his 48% and 41%. The widening's reach is the bot's pace times its level's
+`riskMargin`, a caution right when a bot judged by estimate; a planned phase is exact.
+
+**Built**: a strategy's spare work may be `widen` — the walls widened while it pays, then
+thickened — with `bold`, a margin of 1 or 1.3 in place of `riskMargin` and any gain worth
+building, offered from every first wall (`BOLD`). The two lead `ai.planning.order` after the lean
+ladder, so a level's few strategies include them. The wider wall chosen is kept until built, as
+`keptSpareWork` keeps its own: weighed afresh at every piece it doubled the bots' worst ticks
+(p99 26 → 63 ms); kept, the cost is small (one process, three matches: Level 2 p99 5.9 → 7.7
+ms, Level 6 15.6 → 16.9 ms, the worst tick no higher).
+
+**The ladder** (each level against three of the one below, the scoring soak's seeds): wins of 32
+for Levels 2–10 13 11 14 14 11 19 17 18 15 → 11 20 25 17 17 15 14 23 17, summed 132 → 159 (fair
+share 72); ground up at every level (Level 1 44 → 51, Level 6 88 → 104, Level 10 153 → 172) at the
+same pieces, failed rounds 10–13% → 11–14%. The soak's files and script are in
+`soaks/ground-2026-10-14/`.
+
+## 13zj. Bots that hold ground as people do, moved here from PLAN §11 item 1 (2026-10-14)
+
+The user's task of 2026-10-11, worked in steps each agreed before it was built; every step is
+done, so the item left PLAN as it stood. Its parts: the yardstick (`buildStats.ts`, 13r), the
+dead guns (13t, 13y), the opening and pace (13v), more ground (13zi), and the build phase played
+out in advance (13z, its design 13zf). One thing stays conditional: the planning score's weights
+(13zf step 3), only if play shows a need. Code comments that named the item name this section.
+
+1. **Bots that hold ground as people do** (the user's task, 2026-10-11; a longer one, worked
+   in steps, each agreed before it is built). Bots now shoot as well as the good tester at
+   Level 5–6 (ARCHIVE 13r), and lose to him badly all the same: the gap is in building.
+
+   **The finding** (2026-10-11, v0.9.2, `20261011-125336-local-le4ylw`: Thomas alone against
+   two Level 5 bots, Bot 3 balanced / points / balanced cannons and Bot 2 defensive /
+   finisher / secondary; ten rounds, replayed exactly). Thomas 4,841 points, the bots 1,220
+   and 844. In combat they were even: own accuracy 82% against 83%, walls destroyed per gun
+   per combat phase 2.68 against 2.74. Per round on average:
+
+   |        | territory points | damage points | castles sealed | guns active | wall tiles |
+   | ------ | ---------------- | ------------- | -------------- | ----------- | ---------- |
+   | Thomas | 433              | 51            | 2.9            | 9.5         | 100        |
+   | Bot 3  | 94               | 28            | 1.6            | 4.3         | 60         |
+   | Bot 2  | 59               | 26            | 1.2            | 3.5         | 71         |
+   - **Ground is the game.** Nine tenths of Thomas's score was territory. In round 1 he
+     sealed 3 castles and 378 points of ground, laying 28 pieces; each bot sealed one castle
+     and 36–44 points, laying 17. The castles brought guns (12 by round 3, 21 by round 5,
+     against the bots' 7–8 and 4–10), the guns brought damage, and the lead was never in
+     question. The bots' walls are the tightest that seal (the minimum cut, CLAUDE.md), with
+     room for 0–7 guns where his held 20–22, and a balanced or defensive bot holds two castles
+     at most (`maxCastles`).
+   - **Dead guns.** Bot 2 owned 10 guns with none active in rounds 5–7 and fired nothing in
+     rounds 6 and 7: it kept one castle sealed while every gun stood round another. The bot
+     has a recovery for this (`Builder.decide` walls the castle with the guns once fewer than
+     half fire, `reseal` weighs the guns kept), so something defeated it here — the cost, the
+     budget, or the sweep. People almost never leave guns inert (ARCHIVE 13r); Levels 3–4 did
+     for half or more of theirs in earlier sessions.
+   - Thomas failed a round (round 6) and the bots could not punish it.
+
+   **Research directions**, roughly in order:
+
+   1. **A yardstick for building, people against bots**, as `shotStats.ts` is for shooting:
+      from recordings' and bot tables' statistics (the `stats.csv` rows already hold castles,
+      territory and damage points, guns owned and active, gun room, wall tiles, pieces placed
+      against the pace allowed) — per round and by round, Thomas and Mausica beside each
+      level. The target is the user's from 13r, now for the whole game: Thomas on par with
+      Level 5–6 in points, not only in combat. One match is a tendency; more recordings at
+      several levels (5, 7, 9) are wanted. **Built** (2026-10-11):
+      `tools/headless/src/buildStats.ts` (recordings, `--alias You=Thomas`, `--since`; or
+      `--bots` tables). Over the ten earlier matches Thomas held 301 territory points a round,
+      2.2 castles and 8.4 guns firing (92% of his own); Mausica 93, 1.2 and 4.7 (99%) — about a
+      Level 4–5 in building, with every gun firing; the bots in those matches L3–L5 52–107,
+      1.1–1.3 castles, 50–78% of their guns firing. **Ambition does not grow with level**: in
+      four-bot tables of one level (v0.9.2, six matches each) L3, L5, L7 and L9 all held 1.7–1.8
+      castles and 117–146 territory points a round; the levels differ by pace (pieces a phase
+      11.3 to 16.6) and aim, not by how much ground they wall.
+   2. **The dead guns** — diagnosed and fixed (2026-10-11), with `tools/headless/src/botReplay.ts`,
+      which plays a recorded local match again with live bots and reproduced every bot action
+      of this one exactly. Bot 2 (defensive, Level 5) was breached every round. Its gun-keeping
+      repair (`seal.cheapest(1, …, keepCannons)`, a wall round a castle and every gun) cost
+      22–28 cells, and its budget is the pieces it can lay times `riskMargin` (0.8 at Level 5)
+      times the defensive `riskScale` 0.7 — 6.7 pieces, about 23 cells, of a phase of 11.9.
+      Round 4 it walled the guns back in; round 5 it began the 23-cell wall, could not finish,
+      and as the budget shrank switched late to a cheap gunless castle (9); rounds 6 and 7 the
+      gun wall was over budget from the start, so `reseal` (which skips any plan over budget,
+      however many guns it keeps) chose the cheap castle (10), and the recovery branch began
+      the 28-cell gun wall only after, with 6.8 pieces left. No fault in the code's own terms:
+      a survival margin that never prices dead guns. Every repair against a person who
+      breaches it each round ends the same way. **Built** (ARCHIVE 13t): with a life left, a
+      seal keeping fewer guns than a continue would give is passed over, and the wall keeping
+      the guns built at full pace —
+      the user's rule. It ends the dead guns at no measurable cost (a Level 5 against two
+      Level 9s: guns firing 86% → 91%, score 934 → 921 and failed rounds 11.3% → 12.2%, within
+      noise, 72 matches each), and does not close the gap in points.
+      2b. **Guns kept, counted by the wall** — fixed (ARCHIVE 13y): two test matches on v0.9.3
+      showed bots sealing a gunless castle near their guns round after round, a wall judged to
+      keep any gun within twelve tiles of its castles. Now a gun counts as kept only on the
+      ground the wall would seal; not measurable in bot tables, approved in play (2026-10-14).
+   3. **The opening, and pace** — done (ARCHIVE 13v, 2026-10-11): a bot's time goes on the
+      piece in hand, Thomas's pace at about Level 6 and Mausica's at about Level 3, as the user
+      set. It did what the ambition levers could not: territory a round now rises with level
+      (Level 3 149, 6 211, 10 358 points, from 117–146 at every level), castles from 1.3 at Level
+      1 to 2.4 at 10, and the ladder held.
+   4. **More ground and more castles**, by level — done (ARCHIVE 13zi, 2026-10-14): bots of
+      Level 5–6 sealed as many castles as people but held about a quarter less ground for the same
+      pieces, kept 13 blocks spare where people ran theirs down to 8, and thickened where people
+      pushed the wall out. The planner now also weighs widening once the walls stand, boldly
+      (`BOLD`), before thickening. Level 6: ground 91 → 106 tiles a round, score +14%, the same
+      pieces and failed rounds; the ladder held, ground up at every level. Thomas's 120 tiles
+      at 7.3 a piece are not quite reached; closed there, the gain small but worth it (the
+      user's rule).
+
+   5. **The build phase played out before it starts** — done (ARCHIVE 13z, v0.9.4): every bot
+      plays strategies out in the intermission and lays the best, with a minimum of three guns,
+      failing on purpose with an effort, and slips, blunders and search depth by level; Thomas's
+      target is Level 6. The ideas once item 5 — a little knowledge at the higher levels, the
+      exact cells it can still lay and the next piece in view — were dropped (the user's decision,
+      2026-10-14): planning several times a phase is smoother. Approved by the test sessions
+      (2026-10-14); its step 3, the score's weights, only if play shows a need. ARCHIVE 13zf holds
+      the design and every measurement.

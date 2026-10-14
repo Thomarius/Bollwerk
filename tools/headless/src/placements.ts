@@ -1,6 +1,7 @@
 // ARCHIVE 13zg, step 1: every piece placed in the testers' recordings, measured
 // against every wall the player could have been building. Run `npx tsx src/placements.ts`
-// in tools/headless; writes /tmp/bw/placements.csv and phases.csv and prints a summary.
+// in tools/headless [a folder of recordings, `recordings/` by default; `--record` writes bot
+// matches as such]; writes /tmp/bw/placements.csv and phases.csv and prints a summary.
 //
 // For each piece, before and after it, on the island it was laid on:
 // - every candidate wall (each castle alone, each pair, all of them, at room radii 0-3),
@@ -29,7 +30,8 @@ import {
 
 import { repoRoot } from './cli.js';
 
-const dir = join(repoRoot, 'recordings');
+/** The recordings read: a folder given, or the testers' own. */
+const dir = process.argv[2] ?? join(repoRoot, 'recordings');
 const RADII = [0, 1, 2, 3];
 
 interface Wall {

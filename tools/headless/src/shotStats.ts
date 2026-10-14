@@ -1,7 +1,7 @@
 /**
  * Every shot followed from launch to landing — what its target held when fired and when it
  * landed — and how fast its shooter used their guns: for comparing how people and bots shoot
- * (PLAN §11 item 1, ARCHIVE 13r). From recordings, or from bot matches played here.
+ * (ARCHIVE 13zj, 13r). From recordings, or from bot matches played here.
  *
  *   npx tsx tools/headless/src/shotStats.ts recordings/
  *   npx tsx tools/headless/src/shotStats.ts --bots 1,5,10 --matches 4 --players 4

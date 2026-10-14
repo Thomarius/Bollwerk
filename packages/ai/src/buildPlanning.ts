@@ -46,11 +46,22 @@ export interface ChosenPlan {
 }
 
 /**
+ * Once the walls stand, widened before they are thickened, a wider wall allowed to cost this
+ * share of what the bot can still lay rather than its level's `riskMargin` (ARCHIVE 13zj,
+ * ARCHIVE 13zi). People commit to walls half again past their budget and push the sealing wall
+ * out; the ladder's caution kept bots 13 blocks short of theirs and thickening instead. A
+ * rollout is exact, so a bold wall is kept only where it still seals. Level 6 tables, no
+ * budget: ground 96 -> 115 tiles a round at the same pieces, failed rounds unchanged; wider
+ * walls round the castles (room 3 to 10) gave 100 and were dropped.
+ */
+const BOLD: readonly number[] = [1, 1.3];
+
+/**
  * The ways to spend the coming build phase. The ladder first, as it is: at worst the bot
  * does what it would have done. Then, from each first wall — the walls it holds, or when
  * breached the tightest repair keeping the guns and each castle walled alone without them —
- * that wall thickened or reaching on; with room; with each castle beyond it, tight and with
- * room; and with every castle.
+ * that wall thickened, reaching on or widened boldly (`BOLD`); with room; with each castle
+ * beyond it, tight and with room; and with every castle.
  */
 export function strategiesFor(state: MatchState, playerId: number): Strategy[] {
   const player = state.players[playerId];
@@ -97,6 +108,9 @@ export function strategiesFor(state: MatchState, playerId: number): Strategy[] {
     const keep = first.keepCannons;
     out.push({ name: `${name}/thicken`, stages: [first], spare: 'thicken' });
     out.push({ name: `${name}/next`, stages: [first], spare: 'next' });
+    for (const bold of BOLD) {
+      out.push({ name: `${name}/widen${bold}`, stages: [first], spare: 'widen', bold });
+    }
     out.push({ name: `${name}/room`, stages: [first, stage(held, 2, keep)], spare: 'next' });
     const heldCastles = mine.filter((c) => held.includes(c.id));
     const beyond = byCost(

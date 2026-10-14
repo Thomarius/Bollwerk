@@ -1611,109 +1611,11 @@ Tournament mode is finished: its play-testing round, T8, closed with everything 
 13k), every style's terrain is drawn in strips of rows (ARCHIVE 13n), and a wipe renders each
 look only on its side of the line, by the scissor, so wipes between two heavy looks cost about
 what the rest of play does (ARCHIVE 13o). Bots miss as people do, tuned so the good tester
-plays at Level 5–6 in combat (ARCHIVE 13r) — and the first match against them showed the bots
-far behind in building, item 1, the next work. The bot learning work closed after a first learned
+plays at Level 5–6 in combat (ARCHIVE 13r), and bots that hold ground as people do, the old
+item 1, are done (ARCHIVE 13zj). The bot learning work closed after a first learned
 fit (ARCHIVE 12z), its remaining steps dropped (the user's decision, 2026-10-14; ARCHIVE
 13zg). French is not to be done
 (the user's decision, 2026-10-06). Still open:
-
-1. **Bots that hold ground as people do** (the user's task, 2026-10-11; a longer one, worked
-   in steps, each agreed before it is built). Bots now shoot as well as the good tester at
-   Level 5–6 (ARCHIVE 13r), and lose to him badly all the same: the gap is in building.
-
-   **The finding** (2026-10-11, v0.9.2, `20261011-125336-local-le4ylw`: Thomas alone against
-   two Level 5 bots, Bot 3 balanced / points / balanced cannons and Bot 2 defensive /
-   finisher / secondary; ten rounds, replayed exactly). Thomas 4,841 points, the bots 1,220
-   and 844. In combat they were even: own accuracy 82% against 83%, walls destroyed per gun
-   per combat phase 2.68 against 2.74. Per round on average:
-
-   |        | territory points | damage points | castles sealed | guns active | wall tiles |
-   | ------ | ---------------- | ------------- | -------------- | ----------- | ---------- |
-   | Thomas | 433              | 51            | 2.9            | 9.5         | 100        |
-   | Bot 3  | 94               | 28            | 1.6            | 4.3         | 60         |
-   | Bot 2  | 59               | 26            | 1.2            | 3.5         | 71         |
-   - **Ground is the game.** Nine tenths of Thomas's score was territory. In round 1 he
-     sealed 3 castles and 378 points of ground, laying 28 pieces; each bot sealed one castle
-     and 36–44 points, laying 17. The castles brought guns (12 by round 3, 21 by round 5,
-     against the bots' 7–8 and 4–10), the guns brought damage, and the lead was never in
-     question. The bots' walls are the tightest that seal (the minimum cut, CLAUDE.md), with
-     room for 0–7 guns where his held 20–22, and a balanced or defensive bot holds two castles
-     at most (`maxCastles`).
-   - **Dead guns.** Bot 2 owned 10 guns with none active in rounds 5–7 and fired nothing in
-     rounds 6 and 7: it kept one castle sealed while every gun stood round another. The bot
-     has a recovery for this (`Builder.decide` walls the castle with the guns once fewer than
-     half fire, `reseal` weighs the guns kept), so something defeated it here — the cost, the
-     budget, or the sweep. People almost never leave guns inert (ARCHIVE 13r); Levels 3–4 did
-     for half or more of theirs in earlier sessions.
-   - Thomas failed a round (round 6) and the bots could not punish it.
-
-   **Research directions**, roughly in order:
-
-   1. **A yardstick for building, people against bots**, as `shotStats.ts` is for shooting:
-      from recordings' and bot tables' statistics (the `stats.csv` rows already hold castles,
-      territory and damage points, guns owned and active, gun room, wall tiles, pieces placed
-      against the pace allowed) — per round and by round, Thomas and Mausica beside each
-      level. The target is the user's from 13r, now for the whole game: Thomas on par with
-      Level 5–6 in points, not only in combat. One match is a tendency; more recordings at
-      several levels (5, 7, 9) are wanted. **Built** (2026-10-11):
-      `tools/headless/src/buildStats.ts` (recordings, `--alias You=Thomas`, `--since`; or
-      `--bots` tables). Over the ten earlier matches Thomas held 301 territory points a round,
-      2.2 castles and 8.4 guns firing (92% of his own); Mausica 93, 1.2 and 4.7 (99%) — about a
-      Level 4–5 in building, with every gun firing; the bots in those matches L3–L5 52–107,
-      1.1–1.3 castles, 50–78% of their guns firing. **Ambition does not grow with level**: in
-      four-bot tables of one level (v0.9.2, six matches each) L3, L5, L7 and L9 all held 1.7–1.8
-      castles and 117–146 territory points a round; the levels differ by pace (pieces a phase
-      11.3 to 16.6) and aim, not by how much ground they wall.
-   2. **The dead guns** — diagnosed and fixed (2026-10-11), with `tools/headless/src/botReplay.ts`,
-      which plays a recorded local match again with live bots and reproduced every bot action
-      of this one exactly. Bot 2 (defensive, Level 5) was breached every round. Its gun-keeping
-      repair (`seal.cheapest(1, …, keepCannons)`, a wall round a castle and every gun) cost
-      22–28 cells, and its budget is the pieces it can lay times `riskMargin` (0.8 at Level 5)
-      times the defensive `riskScale` 0.7 — 6.7 pieces, about 23 cells, of a phase of 11.9.
-      Round 4 it walled the guns back in; round 5 it began the 23-cell wall, could not finish,
-      and as the budget shrank switched late to a cheap gunless castle (9); rounds 6 and 7 the
-      gun wall was over budget from the start, so `reseal` (which skips any plan over budget,
-      however many guns it keeps) chose the cheap castle (10), and the recovery branch began
-      the 28-cell gun wall only after, with 6.8 pieces left. No fault in the code's own terms:
-      a survival margin that never prices dead guns. Every repair against a person who
-      breaches it each round ends the same way. **Built** (ARCHIVE 13t): with a life left, a
-      seal keeping fewer guns than a continue would give is passed over, and the wall keeping
-      the guns built at full pace —
-      the user's rule. It ends the dead guns at no measurable cost (a Level 5 against two
-      Level 9s: guns firing 86% → 91%, score 934 → 921 and failed rounds 11.3% → 12.2%, within
-      noise, 72 matches each), and does not close the gap in points.
-      2b. **Guns kept, counted by the wall** — fixed (ARCHIVE 13y): two test matches on v0.9.3
-      showed bots sealing a gunless castle near their guns round after round, a wall judged to
-      keep any gun within twelve tiles of its castles. Now a gun counts as kept only on the
-      ground the wall would seal; not measurable in bot tables, approved in play (2026-10-14).
-   3. **The opening, and pace** — done (ARCHIVE 13v, 2026-10-11): a bot's time goes on the
-      piece in hand, Thomas's pace at about Level 6 and Mausica's at about Level 3, as the user
-      set. It did what the ambition levers could not: territory a round now rises with level
-      (Level 3 149, 6 211, 10 358 points, from 117–146 at every level), castles from 1.3 at Level
-      1 to 2.4 at 10, and the ladder held.
-   4. **More ground and more castles**, by level — the simple levers measured and none raises the
-      castles held (ARCHIVE 13u: `maxCastles` never binds, a bolder `widen` and no thickening
-      lose, expanding when sealed is within noise): a bot breached every round spends two thirds
-      of each phase repairing. To revisit after pace (direction 3), and with an opposition that
-      breaches as people do rather than tables of equal bots. The levers exist (`maxCastles`,
-      `roomRadius`, `expandsWhenSafe`, `widensWhenSealed` and `widen`'s reach, ARCHIVE 12y).
-      Read first what was tried: ambition was a liability for survival bot against bot (a
-      marshal walling three castles lost to a gunner walling two, ARCHIVE 10d; `maxCastles`
-      2 → 3 under points changed nothing, as bots rarely held two, 10s), and widening once
-      sealed won 65 of 96 (12y). Those were measured against bots, who breach a big wall as
-      readily as a small one; against a person on points the tight ring lost by four to six
-      times. So measure
-      by points against a fixed field as well as by wins, and against the people's yardstick
-      (direction 1), keeping failed rounds in view.
-
-   5. **The build phase played out before it starts** — done (ARCHIVE 13z, v0.9.4): every bot
-      plays strategies out in the intermission and lays the best, with a minimum of three guns,
-      failing on purpose with an effort, and slips, blunders and search depth by level; Thomas's
-      target is Level 6. The ideas once item 5 — a little knowledge at the higher levels, the
-      exact cells it can still lay and the next piece in view — were dropped (the user's decision,
-      2026-10-14): planning several times a phase is smoother. Approved by the test sessions
-      (2026-10-14); its step 3, the score's weights, only if play shows a need. ARCHIVE 13zf holds
-      the design and every measurement.
 
 2. **Special towers** (the user's idea, 2026-10-11; designed, not built): each player may bring
    one special tower, bought in the cannon phase for two or three cannons — Big Bertha, Architect
@@ -1729,7 +1631,7 @@ test-session feedback, in ARCHIVE 11w; 11.5 the small items and 11.6 the bots, i
 11.16 help for new players, the menu and the sea, and 11.17 the desktop app, in ARCHIVE
 11zt; 11.18 the fourth visual pass, in ARCHIVE 11zv; 11.19 every style to the edges, in
 ARCHIVE 11zz; 11.20 more languages, in ARCHIVE 12g; 11.21 UPnP, in ARCHIVE 12j; 11.2 points decide, 11.3 two players,
-11.4 measurements never taken and 11.13 the bots' loose ends, closed by the weekend soak, in ARCHIVE 12h; 11.22 rendering performance, in ARCHIVE 12n, its bots planning on the same ticks in ARCHIVE 12p; 11.23 random looks every round, in ARCHIVE 12q; Cyberpunk under Glowing, in ARCHIVE 12r; the slow plan late in a build phase, in ARCHIVE 12s; 11 item 3, the bots in a worker with the smaller rendering leads, in ARCHIVE 13k; the next item 3, wipes between heavy looks, in ARCHIVE 13o; 11.24 a piece in the corner for every style, in ARCHIVE 12t; Under the sea and Electric, in ARCHIVE 12u and 12v; Cartoon and Christmas, in ARCHIVE 12zb and 12zc; the refactoring of 2026-10-07, in ARCHIVE 12w; the bot learning work (the old item 3), closed in ARCHIVE 13zg; scoring by ground and guns (the next item 3), approved by the test sessions, in ARCHIVE 13zd and 13ze — so the open sections keep theirs.
+11.4 measurements never taken and 11.13 the bots' loose ends, closed by the weekend soak, in ARCHIVE 12h; 11.22 rendering performance, in ARCHIVE 12n, its bots planning on the same ticks in ARCHIVE 12p; 11.23 random looks every round, in ARCHIVE 12q; Cyberpunk under Glowing, in ARCHIVE 12r; the slow plan late in a build phase, in ARCHIVE 12s; 11 item 3, the bots in a worker with the smaller rendering leads, in ARCHIVE 13k; the next item 3, wipes between heavy looks, in ARCHIVE 13o; 11.24 a piece in the corner for every style, in ARCHIVE 12t; Under the sea and Electric, in ARCHIVE 12u and 12v; Cartoon and Christmas, in ARCHIVE 12zb and 12zc; the refactoring of 2026-10-07, in ARCHIVE 12w; the bot learning work (the old item 3), closed in ARCHIVE 13zg; bots that hold ground as people do (the old item 1), in ARCHIVE 13zj; scoring by ground and guns (the next item 3), approved by the test sessions, in ARCHIVE 13zd and 13ze — so the open sections keep theirs.
 
 ## 12. Deferred (explicitly out of scope for v1)
 

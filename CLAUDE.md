@@ -38,6 +38,8 @@ npm start     -w @bollwerk/server   # serves the built client at http://localhos
 npm start     -w @bollwerk/headless -- --matches 8 --players 3 --level 5 --stats out.csv
 npm start     -w @bollwerk/headless -- --map --players 3 --seed 2   # print a map as ASCII
 npm start     -w @bollwerk/headless -- --replay recordings/ --stats human.csv   # recorded human play
+npm start     -w @bollwerk/headless -- --matches 4 --level 6 --record /tmp/rec   # bot matches as recordings
+npx tsx tools/headless/src/placements.ts [/tmp/rec]   # where each piece's cells ended, people or bots
 npm start     -w @bollwerk/headless -- --tournament --count 400 --league --double  # tournaments by rolls
 npx tsx tools/headless/src/shotStats.ts recordings/   # every shot: accuracy, misses, guns' tempo, range
 npx tsx tools/headless/src/shotStats.ts --bots 1,5,10 --matches 4 --players 4  # the same for bot tables
@@ -167,6 +169,10 @@ Full detail in PLAN.md §1. The parts that surprise people:
 **Done** (2026-10-14; the latest release **v0.9.6**, 2026-10-14, protocol 24, which a test
 session needs the server rebuilt and every page reloaded for):
 
+- **More ground for the same pieces** (ARCHIVE 13zi, 2026-10-14): the planner also weighs
+  widening once the walls stand, boldly (`BOLD`: a margin of 1 or 1.3 in place of the level's
+  `riskMargin`), before thickening. Level 6 ground 91 → 106 tiles a round, score +14%, the same
+  pieces and failed rounds; the ladder held. Bots had been as quick as people but cautious.
 - **Scoring by ground and guns** (ARCHIVE 13zd, its design 13ze, 2026-10-14): territory no
   longer multiplied by castles, and 5 points a gun firing at the resolution; one formula in the
   sim (`heldPoints`) that the bots value walls by, plus their castles' guns where the wall
@@ -292,10 +298,10 @@ session needs the server rebuilt and every page reloaded for):
   every effect kept; no memory kept by a swap of looks (ARCHIVE 12q); every look, corner
   piece and German checked in play by the user (ARCHIVE 12n–12t).
 
-**Next** — PLAN §11: towards a first feature-ready version, bots that hold ground as people do
-(item 1: the yardstick, the dead guns, pace, build planning and the new scoring done and
-approved in play; open more ground and castles by level, item 1.4; `buildStats.ts`, ARCHIVE 13r, 13t–13v, 13z), and special towers (item 2, designed in
-`docs/SPECIAL_TOWERS.md`). The bot learning work is closed,
+**Next** — PLAN §11: towards a first feature-ready version, special towers (item 2, designed
+in `docs/SPECIAL_TOWERS.md`, its open questions to be decided before ST1). Bots that hold
+ground as people do are done (ARCHIVE 13zj: the yardstick, the dead guns, pace, build planning,
+the new scoring and bold widening; `buildStats.ts`). The bot learning work is closed,
 its remaining steps dropped (the user's decision, 2026-10-14; ARCHIVE 13zg). French is not to
 be done. Signing the Windows app was explained (PLAN
 §12) and is not pursued for now.
@@ -383,6 +389,8 @@ its header but the simulation does not — so the server stamps each header with
 - **Rounder islands** read better but meet their neighbours at points with open sea
   between, and flight time is the reload: corner radius 6 is the roundest that kept the
   channels (ARCHIVE 11zc).
+- **Wider rings round the castles as planned strategies** (room 3 to 10, every castle with
+  room 2 to 6; ARCHIVE 13zi): even played out exactly, they raised Level 6's ground only 96 → 100. The gap was caution in widening, not the walls on offer.
 - **Raising flight time further** to force exactly three salvos drops the rate below the
   original's three and makes close shots slower. The spread of ranges makes "exactly
   three for everyone" unreachable without flattening distance-scaling entirely.

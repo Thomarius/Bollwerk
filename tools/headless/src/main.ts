@@ -1,4 +1,5 @@
-import { appendFileSync, writeFileSync } from 'node:fs';
+import { appendFileSync, mkdirSync, writeFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { parseArgs as parseFlags } from 'node:util';
 
 import {
@@ -23,8 +24,10 @@ import {
   renderAscii,
   seatOrder,
   step,
+  type Action,
   type MatchState,
 } from '@bollwerk/sim';
+import { MatchRecorder } from '@bollwerk/protocol';
 
 import { repoRoot, usageError, wholeNumber } from './cli.js';
 import { replayAll } from './replay.js';
@@ -71,6 +74,8 @@ interface Args {
   plans: boolean[];
   /** Every planned phase's strategies and their scores, a JSON line each. */
   planLog: string | null;
+  /** A folder to write each match into as a recording, as the server would, for tools reading them. */
+  record: string | null;
   /** The strategies a planning bot weighs, by name; all when null. */
   planSet: string[] | null;
   /** Simulated pieces a tick the table's planning bots share; unlimited when null. */
@@ -112,7 +117,7 @@ function parsePersonalities(value: string | undefined): (Personality | 'dealt')[
 const USAGE =
   'usage: npm start -w @bollwerk/headless -- [--matches N] [--players N] [--seed N] ' +
   '[--max-ticks N] [--max-rounds N|none] [--teams N] [--level 1-10[,...]] ' +
-  '[--personality offensive|dealt|...[,...]] [--plans 1,0[,...]] [--stats FILE] [--outcomes FILE] [--map]\n' +
+  '[--personality offensive|dealt|...[,...]] [--plans 1,0[,...]] [--stats FILE] [--outcomes FILE] [--record DIR] [--map]\n' +
   '       npm start -w @bollwerk/headless -- --replay recordings/ [more files or dirs] [--stats FILE]\n' +
   '       npm start -w @bollwerk/headless -- --tournament [--help for its flags]';
 
@@ -171,6 +176,7 @@ function parseArgs(argv: string[]): Args {
     teams: number('teams', 1, 1),
     replay: values.replay === true ? positionals : [],
     planLog: values['plan-log'] ?? null,
+    record: values.record ?? null,
     planSet: values['plan-set']?.split(',') ?? null,
     planSteps: values['plan-steps'] === undefined ? null : Number(values['plan-steps']),
     minGuns: values['min-guns']?.split(',').map(Number) ?? null,
@@ -190,6 +196,7 @@ const FLAGS = {
   personality: { type: 'string' },
   plans: { type: 'string' },
   'plan-log': { type: 'string' },
+  record: { type: 'string' },
   'plan-set': { type: 'string' },
   'plan-steps': { type: 'string' },
   'min-guns': { type: 'string' },
@@ -423,6 +430,31 @@ let blunders = 0;
 // The bots' time on each tick, all their turns together: what a room waits for.
 const tickMs: number[] = [];
 
+/** Writes a match as the server records one, every bot seat named by its level and personality. */
+function recorderFor(state: MatchState, seed: number): MatchRecorder | null {
+  if (args.record === null) return null;
+  mkdirSync(args.record, { recursive: true });
+  const id = `bots-${args.players}p-${seed}`;
+  const file = join(args.record, `${id}.jsonl`);
+  writeFileSync(file, '');
+  return new MatchRecorder((line) => appendFileSync(file, `${JSON.stringify(line)}\n`), {
+    id,
+    source: 'local',
+    startedAt: new Date().toISOString(),
+    code: null,
+    seed,
+    ruleset: state.ruleset,
+    terrain: bundle.terrain,
+    players: state.players.map((p) => ({
+      name: p.name,
+      isBot: true,
+      team: p.team,
+      level: seatSetup(p.id, seed).level,
+      personality: seatSetup(p.id, seed).personality,
+    })),
+  });
+}
+
 for (let i = 0; i < args.matches; i++) {
   const seed = args.seed + i;
   const state = createMatch({
@@ -450,12 +482,16 @@ for (let i = 0; i < args.matches; i++) {
   let refused = 0;
 
   const sampler = new RoundStats(bundle, `sim-${seed}`, seed, (p) => seatSetup(p, seed));
+  const recorder = recorderFor(state, seed);
 
   while (state.phase !== 'game_over' && state.tick < args.maxTicks) {
     const before = state.phase;
     const thinking = performance.now();
+    const tick = state.tick;
+    const applied: Action[] = [];
     for (const turn of takeBotTurns(state, rng, (player) => bots[player])) {
       if (turn.rejection !== null) refused++;
+      else applied.push(turn.action);
     }
     tickMs.push(performance.now() - thinking);
     if (before === 'intermission' && state.pendingPhase === 'build') {
@@ -475,6 +511,7 @@ for (let i = 0; i < args.matches; i++) {
       }
     }
     step(state);
+    recorder?.stepped(tick, applied, state);
     const events = drainEvents(state);
     if (args.stats !== null) sampler.observe(state, events);
   }

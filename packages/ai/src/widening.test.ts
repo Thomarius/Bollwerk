@@ -1,15 +1,19 @@
-import { BALANCED, defaultAiConfig, type AiConfig } from '@bollwerk/config';
+import { BALANCED, botProfile, defaultAiConfig, type AiConfig } from '@bollwerk/config';
 import {
   Rng,
   applyAction,
   applyEnclosure,
   computeEnclosure,
+  holdingOf,
   stateFromAscii,
   type MatchState,
 } from '@bollwerk/sim';
 import { describe, expect, it } from 'vitest';
 
 import { Bot } from './bot.js';
+import { Builder, type Strategy } from './building.js';
+import { PlanningSlots } from './planning.js';
+import { rollOutBuild } from './rollout.js';
 
 /** Every risk trait with widening once sealed set as asked. */
 const widening = (on: boolean): AiConfig => ({
@@ -72,5 +76,23 @@ describe('a sealed bot widening its wall', () => {
 
   it('where without it the phase goes on thickening the ring', () => {
     expect(castlesAfterAPhase(false)).toBe(1);
+  });
+});
+
+describe('a planned phase widening boldly once sealed', () => {
+  /** Ground held after the phase, played out with the walls standing and this spare work. */
+  function groundAfter(strategy: Strategy): number {
+    const profile = botProfile(defaultAiConfig, { level: 6, personality: BALANCED });
+    const builder = new Builder(0, profile, new PlanningSlots());
+    builder.strategy = strategy;
+    const rollout = rollOutBuild(board(), 0, builder, new Rng(1));
+    if (rollout === null) throw new Error('no rollout');
+    return holdingOf(rollout.board, 0).tiles;
+  }
+
+  it('takes in more ground than the same phase spent thickening', () => {
+    const thickened = groundAfter({ name: 'hold/thicken', stages: [], spare: 'thicken' });
+    const widened = groundAfter({ name: 'hold/widen1.3', stages: [], spare: 'widen', bold: 1.3 });
+    expect(widened).toBeGreaterThan(thickened);
   });
 });

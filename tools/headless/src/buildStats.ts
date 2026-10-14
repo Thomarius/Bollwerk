@@ -1,8 +1,8 @@
 /**
  * How people and bots build, round by round — castles sealed, ground and points, guns owned
  * and firing, room for guns, wall, pieces laid — from the per-round statistics a soak and a
- * replay share (`RoundStats`), people by name and bots by level: the building yardstick of PLAN
- * §11 item 1, as `shotStats.ts` is the shooting one.
+ * replay share (`RoundStats`), people by name and bots by level: the building yardstick of
+ * ARCHIVE 13zj, as `shotStats.ts` is the shooting one.
  *
  *   npx tsx tools/headless/src/buildStats.ts recordings/ --alias You=Thomas --since 20261011
  *   npx tsx tools/headless/src/buildStats.ts --bots 3,5,7 --matches 6 --players 4

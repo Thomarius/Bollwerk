@@ -84,10 +84,15 @@ export interface Strategy {
   name: string;
   stages: Stage[];
   /**
-   * Once every stage stands: the ladder's own choice (`decide`), thickening, or the next
-   * castle and more room (`spareWork`).
+   * Once every stage stands: the ladder's own choice (`decide`), thickening, the next
+   * castle and more room (`spareWork`), or the wall widened boldly, then thickened.
    */
-  spare: 'ladder' | 'thicken' | 'next' | 'halt';
+  spare: 'ladder' | 'thicken' | 'next' | 'halt' | 'widen';
+  /**
+   * For `widen`: the share of what it can still lay that a wider wall may cost, in place of
+   * the level's `riskMargin`, and any gain worth building (`BOLD` in `buildPlanning.ts`).
+   */
+  bold?: number;
   /** Rolled out lean: planning again only once its plan is built (`Builder.lean`). */
   lean?: boolean;
 }
@@ -662,6 +667,19 @@ export class Builder {
       case 'halt':
         this.halted = true;
         return [];
+      case 'widen': {
+        // Ground before thickening: wider while it pays, then the wall made thicker. The
+        // wider wall chosen is kept until built, as `keptSpareWork` keeps its own: weighed
+        // afresh at every piece, it doubled the bots' worst ticks.
+        const open = (this.spareKept ?? []).filter(
+          (i) => state.structure[i] === Structure.Empty && !this.unreachable.has(i),
+        );
+        if (open.length > 0) return open;
+        const wider = this.profile.widensWhenSealed ? this.widen(state, seal, look) : null;
+        this.spareKept = wider?.tiles ?? null;
+        if (wider !== null) return wider.tiles;
+        return this.profile.thickens ? look.thickenTargets() : [];
+      }
     }
   }
 
@@ -780,7 +798,9 @@ export class Builder {
       return value;
     };
 
-    const reach = this.cellsAffordable(state) * WIDEN_REACH * this.profile.riskMargin;
+    const bold = this.strategy?.bold;
+    const reach = this.cellsAffordable(state) * WIDEN_REACH * (bold ?? this.profile.riskMargin);
+
     type Valued = (typeof options)[number] & { value: number };
     let best: Valued | null = null;
     let kept: Valued | null = null;
@@ -791,7 +811,8 @@ export class Builder {
       if (option.key === this.widerKey) kept = { ...option, value };
     }
     if (kept !== null && best !== null && kept.value * KEEP_WIDER >= best.value) best = kept;
-    if (best === null || best.value < valueOf([]) * WIDEN_GAIN) {
+    const now = valueOf([]);
+    if (best === null || (bold === undefined ? best.value < now * WIDEN_GAIN : best.value <= now)) {
       this.widerKey = null;
       this.widerGround = null;
       return null;
