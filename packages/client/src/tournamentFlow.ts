@@ -115,6 +115,7 @@ function showTournament(open: Open, notice: string | null): void {
               isBot: false,
               connected: true,
               ready: true,
+              special: null,
             },
           ]
         : room.people.map((p) => (p.playerId === room.hostId ? { ...p, playerId: hostSeat } : p));

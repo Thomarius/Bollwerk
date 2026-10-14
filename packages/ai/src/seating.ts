@@ -1,7 +1,14 @@
-import type { BotSetup, Personality, TerrainConfig } from '@bollwerk/config';
+import {
+  SPECIAL_KINDS,
+  type BotSetup,
+  type Personality,
+  type SpecialKind,
+  type TerrainConfig,
+} from '@bollwerk/config';
 import {
   applyAction,
   seatOrder,
+  streamFor,
   type Action,
   type MatchState,
   type Rejection,
@@ -30,6 +37,11 @@ export interface TableSeat {
   personality?: Personality | null;
   /** The seat's team label; omitted, the seat is a team of its own. */
   team?: number;
+  /**
+   * The special tower a person in this seat chose, or null for none. A bot's seat — `bot`
+   * true — ignores it and brings the tower drawn for it (`drawnSpecial`).
+   */
+  special?: SpecialKind | null;
 }
 
 export interface DealtSeats {
@@ -43,6 +55,22 @@ export interface DealtSeats {
    * other seat's: the deal is made for every seat as if none were given.
    */
   setups: (BotSetup | null)[];
+  /**
+   * Each player's special tower, by player: a person's choice, a bot's draw. Read only
+   * where the match plays towers; `createMatch` drops them otherwise.
+   */
+  specials: (SpecialKind | null)[];
+}
+
+/**
+ * The special tower a bot in this seat brings: drawn from the seed and the seat, never
+ * none (the user's decision, 2026-10-14). By seat, not by player, so the lobby can show it
+ * before the seats are dealt their islands — the seed is fixed when the table is set.
+ */
+export function drawnSpecial(seed: number, seat: number): SpecialKind {
+  return SPECIAL_KINDS[
+    streamFor(seed, `special:${seat}`).nextInt(SPECIAL_KINDS.length)
+  ] as SpecialKind;
 }
 
 export function dealSeats(
@@ -62,14 +90,16 @@ export function dealSeats(
   });
   const personalities = dealPersonalities(seed, isBot);
   const setups = new Array<BotSetup | null>(seats.length).fill(null);
+  const specials = new Array<SpecialKind | null>(seats.length).fill(null);
   seats.forEach((seat, index) => {
     const player = playerOfSeat[index] as number;
+    specials[player] = seat.bot ? drawnSpecial(seed, index) : (seat.special ?? null);
     if (seat.level !== null) {
       const personality = seat.personality ?? (personalities[player] as Personality);
       setups[player] = { level: seat.level, personality };
     }
   });
-  return { playerOfSeat, setups };
+  return { playerOfSeat, setups, specials };
 }
 
 /** One bot's turn as it went: what it asked for, and whether the rules refused it. */

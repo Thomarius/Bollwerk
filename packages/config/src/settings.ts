@@ -7,8 +7,8 @@ import { RulesetSchema, type Ruleset } from './ruleset.js';
  *
  * An explicit list of typed settings rather than overrides by path into the ruleset:
  * each one is a decision to let players choose it, and each has bounds declared in
- * server config, so "no rule is hardcoded" holds for the ranges too. Game speed, team
- * mode and special weapons are meant to join `maxRounds` here.
+ * server config, so "no rule is hardcoded" holds for the ranges too. Game speed is
+ * meant to join them here.
  */
 export const MatchSettingsSchema = z.strictObject({
   /** Whole numbers only: the game is balanced around the cap, so it cannot be lifted. */
@@ -20,6 +20,11 @@ export const MatchSettingsSchema = z.strictObject({
    * Offered as lives, 1 to 5, from the test session of 2026-10-08.
    */
   continues: z.number().int().nonnegative(),
+  /**
+   * Whether special towers are played (docs/SPECIAL_TOWERS.md): each seat brings the tower
+   * it chose, or a bot the one drawn for it. Off, the classic game.
+   */
+  specials: z.boolean(),
 });
 export type MatchSettings = z.infer<typeof MatchSettingsSchema>;
 
@@ -53,6 +58,7 @@ export function defaultSettings(ruleset: Ruleset, bounds: SettingBounds): MatchS
     maxRounds: clamp(rounds, bounds.maxRounds),
     teamSize: 1,
     continues: clamp(ruleset.elimination.continues, bounds.continues),
+    specials: ruleset.specials.enabled,
   };
 }
 
@@ -83,6 +89,7 @@ export function applySettings(ruleset: Ruleset, settings: MatchSettings): Rulese
     ...ruleset,
     scoring: { ...ruleset.scoring, maxRounds: settings.maxRounds },
     elimination: { ...ruleset.elimination, continues: settings.continues },
+    specials: { ...ruleset.specials, enabled: settings.specials },
   });
 }
 

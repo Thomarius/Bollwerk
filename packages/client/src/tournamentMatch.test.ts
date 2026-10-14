@@ -106,3 +106,27 @@ describe('a tournament match, played locally', () => {
     // A whole match of bots: under 4 s alone, past the default 5 s beside every other test.
   }, 60_000);
 });
+
+describe('a tournament with special towers', () => {
+  it('plays every match with them once switched on, the field’s bots bringing theirs', () => {
+    const plain = tournament();
+    const rules = defaultConfigBundle.ruleset.elimination.continues;
+    expect(matchSettingsOf(plain, rules).specials).toBe(false);
+    const save: Save = { ...plain, settings: { ...plain.settings, specials: true } };
+    expect(matchSettingsOf(save, rules).specials).toBe(true);
+
+    const progress = new Progress(save);
+    const table = matchTable(save, progress.next?.matches[progress.hostMatch] as number[]);
+    const match = new LocalMatch({
+      seed: mapSeed(save, progress.done),
+      seats: table.seats.map((s) => s.level),
+      teams: table.seats.map((s) => s.team),
+      specials: table.seats.map(() => 'architect'),
+      ruleset: applySettings(defaultConfigBundle.ruleset, matchSettingsOf(save, rules)),
+      thinkBudgetMs: Number.POSITIVE_INFINITY,
+    });
+    const host = match.state.players[match.humanPlayer]!;
+    expect(host.special).toBe('architect');
+    for (const player of match.state.players) expect(player.special).not.toBeNull();
+  });
+});

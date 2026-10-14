@@ -41,13 +41,18 @@ export function matchTable(save: Save, teams: readonly number[]): MatchTable {
 }
 
 /**
- * The settings every match of a tournament is played on: its rounds, its team size, and its
+ * The settings every match of a tournament is played on: its rounds, its team size, its
  * continues — the rules' own, `ruleContinues`, for a tournament saved before they were a
- * setting.
+ * setting — and whether towers are played, never in one saved before them.
  */
 export function matchSettingsOf(save: Save, ruleContinues: number): MatchSettings {
-  const { maxRounds, teamSize, continues } = save.settings;
-  return { maxRounds, teamSize, continues: continues ?? ruleContinues };
+  const { maxRounds, teamSize, continues, specials } = save.settings;
+  return {
+    maxRounds,
+    teamSize,
+    continues: continues ?? ruleContinues,
+    specials: specials ?? false,
+  };
 }
 
 /**

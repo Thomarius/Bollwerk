@@ -4,6 +4,7 @@ import {
   LevelSchema,
   PersonalitySchema,
   RulesetSchema,
+  SpecialKindSchema,
   TerrainConfigSchema,
   tierSetup,
   withoutRetiredKeys,
@@ -84,6 +85,8 @@ export const RecordingHeaderSchema = z.strictObject({
       level: LevelSchema.nullable().optional(),
       personality: PersonalitySchema.nullable().optional(),
       difficulty: DifficultySchema.nullable().optional(),
+      /** The special tower the player brought, or null; absent from recordings before them. */
+      special: SpecialKindSchema.nullable().optional(),
     }),
   ),
   /**
@@ -164,7 +167,12 @@ export function matchOptionsOf(header: RecordingHeader): MatchOptions {
     seed: header.seed,
     ruleset: header.ruleset,
     terrainConfig: header.terrain,
-    players: header.players.map((p) => ({ name: p.name, isBot: p.isBot, team: p.team })),
+    players: header.players.map((p) => ({
+      name: p.name,
+      isBot: p.isBot,
+      team: p.team,
+      special: p.special ?? null,
+    })),
   };
 }
 

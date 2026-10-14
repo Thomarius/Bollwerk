@@ -76,6 +76,7 @@ function lobbyOf(
     isBot: false,
     connected: true,
     ready: true,
+    special: null,
   });
   const view: LobbyView = {
     code: 'ABCD',

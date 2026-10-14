@@ -308,7 +308,7 @@ describe('lobby settings', () => {
     teamSize: { min: 1, max: 4 },
     continues: { min: 0, max: 4 },
   };
-  const ffa = (maxRounds: number) => ({ maxRounds, teamSize: 1, continues: 2 });
+  const ffa = (maxRounds: number) => ({ maxRounds, teamSize: 1, continues: 2, specials: false });
 
   it('opens on the ruleset cap, pulled inside the bounds, as free-for-all', () => {
     const rules = (maxRounds: number | null) => ({
@@ -329,6 +329,7 @@ describe('lobby settings', () => {
       maxRounds: 10,
       teamSize: 2,
       continues: 2,
+      specials: false,
     });
     expect(mergeSettings(ffa(10), { teamSize: 5 }, bounds)).toBeNull();
     expect(mergeSettings(ffa(10), { continues: 4 }, bounds)).toEqual({ ...ffa(10), continues: 4 });
@@ -341,6 +342,14 @@ describe('lobby settings', () => {
       0,
     );
     expect(() => applySettings(defaultRuleset, ffa(0))).toThrow();
+  });
+
+  it('opens with special towers as the ruleset has them, and switches them in the rules', () => {
+    expect(defaultSettings(defaultRuleset, bounds).specials).toBe(false);
+    expect(applySettings(defaultRuleset, { ...ffa(7), specials: true }).specials.enabled).toBe(
+      true,
+    );
+    expect(applySettings(defaultRuleset, ffa(7)).specials.enabled).toBe(false);
   });
 
   it('allows only player counts that make at least two equal teams', () => {

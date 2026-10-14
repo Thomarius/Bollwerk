@@ -35,6 +35,11 @@ export const TournamentSettingsSchema = z.strictObject({
    * before it was a setting (2026-10-08) play on the rules' own.
    */
   continues: z.number().int().nonnegative().optional(),
+  /**
+   * Whether every match plays special towers, the field's bots bringing the ones drawn for
+   * them. Optional: tournaments saved before towers play without them.
+   */
+  specials: z.boolean().optional(),
 });
 export type TournamentSettings = z.infer<typeof TournamentSettingsSchema>;
 

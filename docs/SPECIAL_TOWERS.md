@@ -181,24 +181,32 @@ Built in ST1; the rules are in `sim/src/specials.ts`.
   a limit in a later test), and per kind its `cost`, `footprint`, and its own levers — Bertha's
   `crater` and `flightFactor`, the Architect's `repairRadius`, the Rapid Cannon's `flightFactor`.
   An unknown key is an error. Whether towers are on at all is the settings' switch.
-- `MatchSettings` gains `specials: boolean`, off by default, and `applySettings` writes it into
-  the ruleset — the schema's own comment foresaw "special weapons" joining the settings.
+- `MatchSettings` gains `specials: boolean`, opening as the ruleset's `specials.enabled` (off), and
+  `applySettings` writes it into the ruleset (ST2).
 - A seat's loadout travels with the seat (as a bot's level and personality do), not in the
-  ruleset: the match's options give each player their `special`.
+  ruleset: `dealSeats` gives each player their `special` — a person's choice, a bot's draw by
+  seat from the seed (`drawnSpecial`, `ai/src/seating.ts`), which every page works out itself.
 
 ### 3.3 Protocol, rooms and recordings
 
-- **Protocol 25**: the settings' switch, a seat's tower in the lobby (people choose their own;
-  bots' drawn, shown to all). The action field and the snapshot's new state came with ST1. A
-  v0.9.6 page cannot join a room of this one.
-- **Recording format 3** (its fingerprint since ST1): each player's `special` in the header, so a
-  replay builds the same match; `--replay`, `shotStats.ts` and `buildStats.ts` read it.
-- **Server** (`room.ts`, `MatchRunner`): the switch and the loadouts in a room's setup, checked
-  against the settings' bounds; nothing else changes, actions being actions.
-- **Local matches** (`LocalMatch`, the bot worker's `BotTable`): the same.
-- **Tournaments**: a switch in the tournament's setup, saved with its settings, for every match
-  of it. When on, the field's bot teams draw towers as any bot does; the quick rolls between other
-  teams ignore towers, since they roll over level ratings.
+Built in ST2, the client's controls for it to come in ST5.
+
+- **Protocol 25**: the settings' switch (`configure`'s `settings.specials`, the host's), a person's
+  own tower (the `special` message, anyone's, before the start) and each seat's in the room's
+  `seats`; bots' draws are not sent, being derivable. The action field and the snapshot's new
+  state came with ST1. A v0.9.6 page cannot join a room of this one.
+- **Recording format 3** (its fingerprint since ST1): each player's `special` in the header, absent
+  meaning none, so a replay builds the same match (`matchOptionsOf`); `--replay` reads it so.
+  `shotStats.ts` and `buildStats.ts` by kind come with ST3.
+- **Server** (`room.ts`): a seat keeps its person's choice; the start deals the towers with the
+  seats; a seat a bot plays — the host's, watching — brings its draw. Nothing else changes,
+  actions being actions.
+- **Local matches**: `LocalMatch` and `Setup` take the person's tower by seat (`specials`); the
+  bot worker's mirror is created from the same options, so it needs nothing new.
+- **Tournaments**: `TournamentSettings.specials`, optional — a save from before plays without —
+  for every match of it (`matchSettingsOf`). When on, the field's bot teams draw towers as any
+  bot does; the quick rolls between other teams ignore towers, since they roll over level
+  ratings.
 
 ### 3.4 Client (`packages/client`)
 

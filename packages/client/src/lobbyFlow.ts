@@ -354,6 +354,7 @@ function localLobby(
             isBot: false,
             connected: true,
             ready: true,
+            special: null,
           },
         ],
         bots: table.bots.slice(0, table.playerCount),

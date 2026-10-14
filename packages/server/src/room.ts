@@ -11,6 +11,7 @@ import {
   type Personality,
   type Ruleset,
   type ServerConfig,
+  type SpecialKind,
   type TerrainConfig,
 } from '@bollwerk/config';
 import { Bot, dealSeats, tableSlots } from '@bollwerk/ai';
@@ -51,6 +52,8 @@ export interface Seat {
   bot: boolean;
   /** Ticks remaining before a dropped player is handed to a bot. */
   graceTicks: number;
+  /** The special tower the person here chose, or null; a bot's seat brings its draw. */
+  special: SpecialKind | null;
 }
 
 export interface RoomOptions {
@@ -219,6 +222,7 @@ export class Room {
       ready: false,
       bot: false,
       graceTicks: 0,
+      special: null,
     };
     this.seats.push(seat);
     if (this.seats.length === 1) this.hostId = seat.playerId;
@@ -254,6 +258,13 @@ export class Room {
     switch (message.type) {
       case 'ready':
         seat.ready = message.ready;
+        this.broadcastRoom();
+        return;
+      case 'special':
+        // Each person their own, while the table is being set; kept whether or not the
+        // match plays towers, so switching them on does not lose the choice.
+        if (this.match !== null) return;
+        seat.special = message.special;
         this.broadcastRoom();
         return;
       case 'start':
@@ -507,6 +518,7 @@ export class Room {
         ready: true,
         bot: true,
         graceTicks: 0,
+        special: null,
       });
     }
 
@@ -523,7 +535,12 @@ export class Room {
     // Which player, and so which island, each seat becomes — shuffled, so no seat is
     // always the one with the awkward neighbours.
     const seed = this.seed;
-    const players = new Array<{ name: string; isBot: boolean; team: number }>(this.seats.length);
+    const players = new Array<{
+      name: string;
+      isBot: boolean;
+      team: number;
+      special: SpecialKind | null;
+    }>(this.seats.length);
     const levels = this.seats.map(
       (_, index) => this.botLevels[index] ?? this.options.server.botLevel,
     );
@@ -538,7 +555,7 @@ export class Room {
     // Each seat's bot, by player once the seats are dealt their islands (PLAN 11.6) — a
     // person's seat gets one too, for the bot that covers them if they drop. For the
     // recording, a person is nulls.
-    const { playerOfSeat, setups } = dealSeats(
+    const { playerOfSeat, setups, specials } = dealSeats(
       seed,
       this.seats.map((seat, index) => ({
         level: levels[index] as number,
@@ -546,6 +563,8 @@ export class Room {
         // A tournament's bots keep theirs; a person's seat is covered by the seat's bot.
         personality: this.tournament?.seats[index]?.personality ?? null,
         team: this.teams[index] ?? index,
+        // A person's own choice; a seat a bot plays — the host's, watching — brings its draw.
+        special: seat.special,
       })),
       this.options.terrain,
     );
@@ -554,7 +573,12 @@ export class Room {
     );
     this.seats.forEach((seat, index) => {
       const player = playerOfSeat[index] as number;
-      players[player] = { name: seat.name, isBot: seat.bot, team: this.teams[index] ?? index };
+      players[player] = {
+        name: seat.name,
+        isBot: seat.bot,
+        team: this.teams[index] ?? index,
+        special: specials[player] ?? null,
+      };
       recorded[player] = seat.bot
         ? (setups[player] as BotSetup)
         : { level: null, personality: null };
@@ -669,6 +693,7 @@ export class Room {
       isBot: seat.bot,
       connected: seat.connection !== null,
       ready: seat.ready,
+      special: seat.special,
     }));
   }
 

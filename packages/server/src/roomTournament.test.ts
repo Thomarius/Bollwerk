@@ -55,7 +55,7 @@ function table(over: Partial<TournamentTable> = {}): TournamentTable {
       { name: 'Thomas', level: null, personality: null, team: 1, open: false },
     ],
     teamNames: ['Granite', 'Die Wälle'],
-    settings: { maxRounds: 5, teamSize: 2, continues: 2 },
+    settings: { maxRounds: 5, teamSize: 2, continues: 2, specials: false },
     seed: 77,
     tournament: { id: 't-test', step: 2 },
     stage: 'Semi-final',
@@ -78,7 +78,7 @@ describe("a tournament's room", () => {
     const message = host.latest('room');
     expect(message.playerCount).toBe(4);
     expect(message.teams).toEqual([0, 0, 1, 1]);
-    expect(message.settings).toEqual({ maxRounds: 5, teamSize: 2, continues: 2 });
+    expect(message.settings).toEqual({ maxRounds: 5, teamSize: 2, continues: 2, specials: false });
     expect(message.seed).toBe(77);
     expect(message.hostId).toBe(3);
     expect(message.tournament?.stage).toBe('Semi-final');
@@ -131,7 +131,7 @@ describe("a tournament's room", () => {
           bot('Mausi', 1, true),
           bot('Nora', 1, true),
         ],
-        settings: { maxRounds: 5, teamSize: 3, continues: 2 },
+        settings: { maxRounds: 5, teamSize: 3, continues: 2, specials: false },
       }),
     });
     const guest = new Listener('g');

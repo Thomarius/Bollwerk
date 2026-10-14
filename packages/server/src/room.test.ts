@@ -942,3 +942,48 @@ describe('a rematch', () => {
     expect(guest.received.filter((m) => m.type === 'snapshot')).toHaveLength(2);
   }, 60_000);
 });
+
+describe('special towers in a room', () => {
+  function lastRoom(client: TestClient) {
+    const message = client.received.filter((m) => m.type === 'room').at(-1);
+    if (message?.type !== 'room') throw new Error('no room message');
+    return message;
+  }
+
+  it("takes each person's own tower before the start, and plays the match with them", () => {
+    const r = room(3, 4);
+    const host = new TestClient('host');
+    const guest = new TestClient('guest');
+    r.join(host, 'Ada');
+    r.join(guest, 'Bo');
+    r.handle(host, { type: 'configure', settings: { specials: true } });
+    r.handle(host, { type: 'special', special: 'bertha' });
+    r.handle(guest, { type: 'special', special: 'rapid' });
+    expect(lastRoom(guest).settings.specials).toBe(true);
+    expect(lastRoom(guest).seats.map((s) => s.special)).toEqual(['bertha', 'rapid']);
+
+    r.start();
+    run(r, 5);
+    const state = host.state!;
+    expect(state.ruleset.specials.enabled).toBe(true);
+    expect(state.players[host.playerId]!.special).toBe('bertha');
+    expect(state.players[guest.playerId]!.special).toBe('rapid');
+    const bot = state.players.find((p) => p.isBot)!;
+    expect(bot.special).not.toBeNull();
+
+    // Locked once the match is under way.
+    r.handle(host, { type: 'special', special: null });
+    expect(lastRoom(host).seats.find((s) => s.name === 'Ada')!.special).toBe('bertha');
+  });
+
+  it('plays no towers unless the host switches them on, whatever was chosen', () => {
+    const r = room(2, 4);
+    const host = new TestClient('host');
+    r.join(host, 'Ada');
+    r.handle(host, { type: 'special', special: 'bertha' });
+    r.start();
+    run(r, 5);
+    expect(host.state!.ruleset.specials.enabled).toBe(false);
+    expect(host.state!.players.map((p) => p.special)).toEqual([null, null]);
+  });
+});

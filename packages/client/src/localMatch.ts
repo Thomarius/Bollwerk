@@ -4,6 +4,7 @@ import {
   type BotSetup,
   type Personality,
   type Ruleset,
+  type SpecialKind,
 } from '@bollwerk/config';
 import { dealSeats } from '@bollwerk/ai';
 import { MatchRecorder, recordingId, type RecordingLine } from '@bollwerk/protocol';
@@ -49,6 +50,11 @@ export interface LocalMatchOptions {
   names?: readonly (string | null)[];
   /** Each seat's bot's personality, by seat, where the table gives one rather than dealing it. */
   personalities?: readonly (Personality | null)[];
+  /**
+   * The special tower the person brings, by seat, where the match plays towers; a bot's
+   * seat brings the one drawn for it, as in a room.
+   */
+  specials?: readonly (SpecialKind | null)[];
   /** Each team's name, by team label in order, where the table names them. */
   teamNames?: readonly string[];
   /** The tournament this match is part of, for the recording's header. */
@@ -115,20 +121,30 @@ export class LocalMatch {
     // Which player — so which island — each seat becomes, and each bot's level with a
     // personality dealt from the seed: exactly as a room deals them, so an offline match
     // seats people as an online one would.
-    const { playerOfSeat: order, setups: dealt } = dealSeats(
+    const {
+      playerOfSeat: order,
+      setups: dealt,
+      specials,
+    } = dealSeats(
       options.seed,
       seats.map((level, index) => ({
         level,
         bot: level !== null,
         personality: options.personalities?.[index] ?? null,
         team: options.teams?.[index] ?? index,
+        special: options.specials?.[index] ?? null,
       })),
       defaultTerrainConfig,
     );
     const humanSeat = seats.findIndex((seat) => seat === null);
     this.humanPlayer = humanSeat < 0 ? -1 : (order[humanSeat] as number);
 
-    const players = new Array<{ name: string; isBot: boolean; team: number }>(seats.length);
+    const players = new Array<{
+      name: string;
+      isBot: boolean;
+      team: number;
+      special: SpecialKind | null;
+    }>(seats.length);
     seats.forEach((seat, index) => {
       players[order[index] as number] = {
         // Numbered by seat, as the lobby and a room number them.
@@ -137,6 +153,7 @@ export class LocalMatch {
           (seat === null ? t('local.you') : t('lobby.bot', { n: index + 1 })),
         isBot: seat !== null,
         team: options.teams?.[index] ?? index,
+        special: specials[order[index] as number] ?? null,
       };
     });
     const matchOptions: MatchOptions = {

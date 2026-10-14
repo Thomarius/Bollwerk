@@ -14,7 +14,7 @@ import { galleryMarkup } from './looks.js';
  */
 
 function seat(playerId: number, name: string): Seat {
-  return { playerId, name, isBot: false, connected: true, ready: false };
+  return { playerId, name, isBot: false, connected: true, ready: false, special: null };
 }
 
 function view(over: Partial<LobbyView> = {}): LobbyView {
@@ -25,7 +25,7 @@ function view(over: Partial<LobbyView> = {}): LobbyView {
     humanPlayer: 0,
     seats: [seat(0, 'Ada'), seat(1, 'Bo')],
     bots: [5, 5, 5, 5],
-    settings: { maxRounds: 10, teamSize: 2, continues: 2 },
+    settings: { maxRounds: 10, teamSize: 2, continues: 2, specials: false },
     settingBounds: {
       maxRounds: { min: 5, max: 20 },
       teamSize: { min: 1, max: 4 },
@@ -61,7 +61,12 @@ describe('in German', () => {
     expect(host).toContain('Spiel starten');
     expect(host).toContain('Team A');
     clean(
-      lobbyMarkup(view({ humanPlayer: 1, settings: { maxRounds: 10, teamSize: 1, continues: 2 } })),
+      lobbyMarkup(
+        view({
+          humanPlayer: 1,
+          settings: { maxRounds: 10, teamSize: 1, continues: 2, specials: false },
+        }),
+      ),
     );
   });
 
