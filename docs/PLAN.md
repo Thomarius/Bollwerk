@@ -137,7 +137,7 @@ exact on a square grid, so every island is pixel-identical at every player count
 - A cannon **not inside its owner's territory** (a castle's region or a counting pocket,
   §1.3) at a resolution is **inert**: it cannot fire,
   is not destroyed, and reactivates if re-enclosed. Breaching a leader's wall silences
-  their guns. This is the game's main corrective and the source of most bot trouble.
+  their guns, and with them their gun points (§1.7). This is the game's main corrective and the source of most bot trouble.
 - Firing: click a target; the nearest ready cannon fires. A cannon is ready only when it
   has no shot in flight — **there is no separate reload, so flight time _is_ the rate of
   fire**. Tune it against shots per cannon in round one, not against a match average.
@@ -198,12 +198,21 @@ elimination is a draw whatever the scores.
 Points are banked at each build-phase resolution, after the sweep, by every player holding
 a sealed castle:
 
-- `wallPoints` for each **opponent's** wall tile they destroyed that round;
-- `tilePoints` × **total enclosed tiles × total enclosed castles**, across every region
-  they hold. Totals, not per region: two one-castle loops of 30 tiles score 120, as one
-  loop around both would. An enclosed tile is `territory === id + 1`, castle and cannon
-  footprints included, so placing a gun never costs points — and pockets included
-  (§1.3), which count for area but not as castles.
+- `wallPoints` (2) for each **opponent's** wall tile they destroyed that round;
+- `tilePoints` (1) × **total enclosed tiles**, across every region they hold, **not
+  multiplied by castles**: a tile counts once however many castles hold it. An enclosed
+  tile is `territory === id + 1`, castle and cannon footprints included, so placing a gun
+  never costs points — and pockets included (§1.3);
+- `gunPoints` (5) × their **guns firing** after the resolution (`cannon.active`): the guns
+  just earned are not placed yet and do not count. So a castle pays through the guns it
+  earns, round after round, and a breach that silences a leader's guns takes their points.
+
+Until 2026-10-14 territory was tiles × castles, which grew with the square of the castles
+held, so a minimal ring round an outer castle doubled everything already held and one
+flawless round decided a match ([`SCORING.md`](./SCORING.md), ARCHIVE 13zd).
+`scoring.castleMultiplier` and `gunPoints` default to that old rule in the schema, so that
+recordings made before it replay; the default ruleset sets the new one. The formula is
+`heldPoints` (`sim/src/scoring.ts`), which the bots value walls by too.
 
 Failing to seal forfeits the round's points, damage included
 (`scoreDamageOnFailedRound` turns that off), and spends a life as usual — in the final
@@ -1745,11 +1754,10 @@ far behind in building, item 1, the next work. The bot learning work, item 3, is
    12y); step 3's first run learned a fit about as good as the hand-made one (ARCHIVE 12z),
    and the work is **paused** (2026-10-07), its next steps in BOT_LEARNING.md §6.
 
-4. **Scoring by ground and guns** (the user's decision, 2026-10-13; designed, not built): no
-   multiplication of territory by castles any more, and 5 points for every gun firing at the
-   resolution. A test match and 27 recordings showed points growing with the square of the
-   castles, and one flawless round deciding a match. The evidence, the rule, what it touches
-   (bots included) and the work packages are in [`SCORING.md`](./SCORING.md).
+4. **Scoring by ground and guns** (the user's decision, 2026-10-13; built and measured
+   2026-10-14, ARCHIVE 13zd): no multiplication of territory by castles any more, and 5
+   points for every gun firing at the resolution (§1.7). What is left is work package 5 of
+   [`SCORING.md`](./SCORING.md): the testers' matches under it, read with `buildStats.ts`.
 
 Only open work is kept here. Finished packages move to `ARCHIVE.md` under their old
 numbers — 11.1 scoring, 11.7 team mode, 11.8 the visual pass, 11.9 the themes, 11.10 the

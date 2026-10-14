@@ -2,8 +2,9 @@
 
 Territory is scored today as **tiles × castles** (PLAN §1.7). This file is the change agreed with
 the user on 2026-10-13 after a test match: **no multiplication by castles any more; instead every
-gun firing at the resolution earns a flat bonus, 5 points as the starting value.** Work packages
-1 and 2 are built (2026-10-14); the measurement, the client and the docs are not. Like PLAN.md it says what is configurable and why, and leaves the values to
+gun firing at the resolution earns a flat bonus, 5 points as the starting value.** Built and
+measured on 2026-10-14 (work packages 1–4, §9; ARCHIVE 13zd); the testers' matches under it, work
+package 5, are still to come. Like PLAN.md it says what is configurable and why, and leaves the values to
 `config/*.json`; once built, its summary moves to ARCHIVE.md.
 
 ---
@@ -165,3 +166,49 @@ Each ends with `npm run check` passing and the user's go-ahead to commit.
 3. **`weights.gun`** in the bots' planning, once gun points count in the round's score.
 4. **Whether bots then hold too few castles** to keep up in guns — if so, the planning's
    `prospect` weight rather than any rule.
+
+## 9. Measured (2026-10-14)
+
+Work package 3: one soak, the same seeds under five variants, every bot's personality dealt as
+in a match — the old rule (commit `10e7507`), the new as built, `gunPoints` 10, and
+`weights.gun` 15 and 30. Each variant: the ladder (each of Levels 2–10 against three of the
+level below, four players, 32 matches in every seat, 288 in all), three Level 5s (48 matches) and
+Levels 3/5/7/9 at one table (32). The files and the script are in `soaks/scoring-2026-10-14/`
+(git-ignored). With 32 matches a cell is ±3 wins, the ladder's sum ±8.
+
+**The ladder** — wins of the one Level k in 32 (fair share 8):
+
+| variant          | L2  | L3  | L4  | L5  | L6  | L7  | L8  | L9  | L10 | sum |
+| ---------------- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| old rule         | 15  | 16  | 16  | 17  | 12  | 18  | 25  | 21  | 17  | 157 |
+| **new**          | 13  | 11  | 14  | 14  | 11  | 19  | 17  | 18  | 15  | 132 |
+| `gunPoints` 10   | 12  | 11  | 13  | 14  | 10  | 17  | 15  | 16  | 11  | 121 |
+| `weights.gun` 15 | 14  | 12  | 16  | 16  | 12  | 17  | 22  | 18  | 13  | 140 |
+| `weights.gun` 30 | 12  | 14  | 16  | 16  | 14  | 16  | 16  | 17  | 17  | 144 |
+
+Flatter than under the old rule, as expected once a castle no longer multiplies a lead, and still
+every level well above its fair share; Level 9 won 27 of 32 at the mixed table (26.5 before).
+
+**Three Level 5s**, per player and round:
+
+| variant        | castles | failed | guns firing | ground | guns | damage | damage share | winner / second | best round |
+| -------------- | ------- | ------ | ----------- | ------ | ---- | ------ | ------------ | --------------- | ---------- |
+| old rule       | 2.28    | 10%    | 7.3         | 217    | 0    | 36     | 14%          | 1.34            | 22%        |
+| **new**        | 2.09    | 11%    | 7.3         | 73     | 36   | 36     | 25%          | 1.26            | 20%        |
+| `gunPoints` 10 | 2.08    | 11%    | 7.3         | 73     | 73   | 36     | 20%          | 1.28            | 20%        |
+
+At the mixed table the winner's lead over second fell from 1.60 to 1.27. Across the ladder's
+tables castles held fell 0.15–0.2 at every level (Level 5 2.29 → 2.10, Level 10 3.06 → 3.02), guns
+firing hardly (Level 5 7.4 → 7.2), failed rounds not at all (10–12%).
+
+**The questions of §8, settled:**
+
+1. **`gunPoints` 5.** At 10 guns score as much as ground at Level 5 and the ladder is flattest.
+2. **`tilePoints` 1.** Damage counts for more — a quarter of a score rather than a seventh — which
+   the user accepted (2026-10-14).
+3. **`weights.gun` 20, unchanged.** 15, 20 and 30 are alike within noise in castles, guns and the
+   ladder. It does not count a gun twice: the gun points are banked this round, `weights.gun`
+   prices the gun's use in the barrages to come.
+4. **Castles held**: down a little, guns not — once a wall is valued with its castles' guns
+   (`wallValue`, §6). Valued by points alone they fell further in a first look (Level 7 3.04 →
+   2.70 in eight matches).

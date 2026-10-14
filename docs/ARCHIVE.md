@@ -7507,3 +7507,36 @@ pause, the menu's music back for guests after a match, and the league's tie-brea
 match sizes and window. The bots are v0.9.4's. Protocol 23: a tournament's save, which the
 host's room passes to teammates, carries a new field (`tieBreaks`) a v0.9.4 page refuses, so a
 test session needs the server rebuilt and every page reloaded.
+
+## 13zd. Scoring by ground and guns (2026-10-14)
+
+The user's decision after a test match on 2026-10-13, the design and evidence in
+[`SCORING.md`](./SCORING.md): territory scored tiles × castles, which grew with the square of
+the castles held (people's rounds: one castle 43 points, four 724 where the tiles were 181), so
+a minimal ring round an outer castle doubled everything already held and one flawless round
+decided a match.
+
+- **The rule** (PLAN §1.7): `tilePoints` a tile, not multiplied by castles, and `gunPoints` (5)
+  for every gun firing after the resolution, the guns just earned not among them. Both behind
+  config — `scoring.castleMultiplier` off, `gunPoints` 5 — defaulting in the schema to the old
+  rule, so the recordings made before it replay exactly (checked on the three newest). The round's
+  result carries `gunPoints` and the banner counts it in its one total (the user's choice: a split
+  tally is too much to read between rounds). Protocol 24.
+- **One formula**: `heldPoints` and `holdingsOf` (`sim/src/scoring.ts`), called by the resolution
+  and by the bots' three former copies — the planning's prospect, the widening and the strategic
+  target. Under the old rule the bots played exactly as before (eight matches, hashes identical).
+- **Castles valued for their guns** (the user's concern, and the user's rule on room): by points alone a
+  castle was worth its few tiles, and a sealed bot walled a strip of land rather than the castle
+  beside it. A bot values a wall by `wallValue` (`ai/src/tactics.ts`): its points, plus the guns
+  its castles earn at the planning's `weights.gun`, only as many as the wall leaves room to stand.
+- **Measured** (SCORING.md §9), 368 matches a variant: the ladder flatter (each level against
+  three of the one below, 157 wins of 288 summed → 132, fair share 72), castles held 0.15–0.2
+  fewer at every level, guns firing and failed rounds unchanged; damage a quarter of a score
+  rather than a seventh; the winner's lead over second at the mixed table 1.60 → 1.27.
+  `gunPoints` 10 made guns as large as ground and flattened the ladder most; `weights.gun` 15 and
+  30 were alike within noise, so it stays 20. `tilePoints` stays 1, damage counting for more
+  accepted by the user.
+- **Statistics**: a `gunPoints` column in every `stats.csv`, read as 0 from older ones, shown by
+  `buildStats.ts` and the harness summaries. How to play's caption names the guns.
+
+Still to come, SCORING.md's work package 5: the testers' matches under it.

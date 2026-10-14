@@ -130,6 +130,11 @@ Full detail in PLAN.md §1. The parts that surprise people:
 - **A pocket counts.** Sealed ground with no castle is territory — guns, points — while
   its player holds a sealed castle anywhere, as in the original; it never saves a round
   on its own (`enclosure.castlelessRegionsCount`, PLAN §1.3).
+- **Ground and guns score, not castles** (2026-10-14, ARCHIVE 13zd): a tile of sealed
+  territory is a point however many castles hold it, and each gun firing after the
+  resolution earns `gunPoints` — so a castle pays through its guns. The old rule, tiles ×
+  castles, is still the schema's default (`castleMultiplier`, `gunPoints` 0) so old
+  recordings replay; the default ruleset sets the new one. One formula, `heldPoints`.
 - **Flight time _is_ the reload** — a cannon cannot fire again until its shot lands.
 - **The starting ring is 8x8 around a 6x6 interior.** A castle sits centred in it, so the
   free band is two tiles wide and a 2x2 cannon spans it: opening cannons must touch the
@@ -158,8 +163,15 @@ Full detail in PLAN.md §1. The parts that surprise people:
 
 ## Status
 
-**Done** (2026-10-12; the latest release **v0.9.5**, 2026-10-12, protocol 23, which a test
-session needs the server rebuilt and every page reloaded for):
+**Done** (2026-10-14; the latest release **v0.9.5**, 2026-10-12, protocol 23; `main` is at
+protocol 24 since the scoring change, and a test session needs the server rebuilt and every
+page reloaded for either):
+
+- **Scoring by ground and guns** (ARCHIVE 13zd, `docs/SCORING.md`, 2026-10-14): territory no
+  longer multiplied by castles, and 5 points a gun firing at the resolution; one formula in the
+  sim (`heldPoints`) that the bots value walls by, plus their castles' guns where the wall
+  leaves room to stand them (`wallValue`). Measured against the old rule: the ladder flatter
+  but intact, castles held a little fewer, guns firing unchanged, damage a quarter of a score.
 
 - **Feedback after v0.9.4** (ARCHIVE 13zb, 2026-10-12): the title's sweep eased, with a pause
   out of sight; the lobby's music for guests after a match; the league's tie-breaks (wins,
@@ -281,7 +293,7 @@ session needs the server rebuilt and every page reloaded for):
   piece and German checked in play by the user (ARCHIVE 12n–12t).
 
 **Next** — PLAN §11: more test games towards a first
-feature-ready version, and bots that hold ground as people do (item 1: the yardstick, the dead
+feature-ready version — under the new scoring (SCORING.md's work package 5) — and bots that hold ground as people do (item 1: the yardstick, the dead
 guns, pace and build planning done; next the testers' matches against v0.9.5, Level 6 first;
 `buildStats.ts`, ARCHIVE 13r, 13t–13v, 13z). **The bot learning work is paused**; when it
 resumes, `docs/BOT_LEARNING.md` §6 says where — first, learning the choice of wall rather
@@ -393,6 +405,10 @@ its header but the simulation does not — so the server stamps each header with
   makes one step dear (a loop inside `RolloutRun.advance`) shows as a hitch at every phase.
   A whole-match test of the ladder must pass `plansAhead: false`, or it plans every strategy
   with no budget and runs for minutes.
+- **A bot values a wall by `wallValue`, not by points alone.** Under ground-and-guns scoring a
+  castle adds only its tiles at its resolution; valued so, the widening walled a strip of land
+  rather than the castle beside it. Its guns, at the planning's `weights.gun`, are what make
+  it worth sealing — and only as many as the wall leaves room for (the user's rule).
 - **A bot's build may read only its own island.** Anything it reads from elsewhere, such as
   another island's wall in a search across the map, makes its phase depend on its
   neighbours, and a rollout can no longer predict it. `rollout.test.ts` catches it.

@@ -728,7 +728,7 @@ const combatPage: HowToPage = {
   },
 };
 
-/** 7. Score and lives: sealed ground scores; a ring left open costs a life. */
+/** 7. Score and lives: sealed ground and its guns score; a ring left open costs a life. */
 const scorePage: HowToPage = {
   caption: 'howTo.score',
   loopMs: 4400,
