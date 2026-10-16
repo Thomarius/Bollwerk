@@ -28,6 +28,7 @@ import {
   drawSealPreview,
   drawChoices,
   drawSelectable,
+  drawCannonGhost,
   drawFireReticle,
   drawOvertimeBorder,
   drawDrain,
@@ -1640,20 +1641,9 @@ export class HalloweenTheme extends ShapeTheme implements Theme {
     }
 
     if (state.phase === 'cannon_place' && ghost.footprint) {
-      // An empty cauldron's outline, struck through where it cannot go.
+      // The gun's square, as in every style (`drawCannonGhost`).
       const colour = ghost.valid ? hex(palette.uiValid) : hex(palette.uiInvalid);
-      const cx = tileX(view, anchor.x + ghost.footprint.w / 2);
-      const cy = tileY(view, anchor.y + ghost.footprint.h / 2);
-      const r = Math.min(ghost.footprint.w, ghost.footprint.h) * t * 0.38;
-      g.ellipse(cx, cy + r * 0.15, r, r * 0.72);
-      g.fill({ color: colour, alpha: 0.22 });
-      g.stroke({ width: Math.max(1.5, t * 0.1), color: colour });
-      g.ellipse(cx, cy - r * 0.25, r * 0.98, r * 0.36);
-      g.stroke({ width: Math.max(1.5, t * 0.08), color: colour });
-      if (!ghost.valid) {
-        g.moveTo(cx - r, cy + r).lineTo(cx + r, cy - r);
-        g.stroke({ width: Math.max(1.5, t * 0.1), color: colour });
-      }
+      drawCannonGhost(g, view, ghost, colour, Math.max(1.5, t * 0.1));
       return;
     }
 

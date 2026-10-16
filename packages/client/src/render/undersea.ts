@@ -39,6 +39,7 @@ import {
   drawSealPreview,
   drawChoices,
   drawSelectable,
+  drawCannonGhost,
   drawFireReticle,
   drawOvertimeBorder,
   drawDrain,
@@ -1731,19 +1732,9 @@ export class UnderseaTheme extends ShapeTheme implements Theme {
     }
 
     if (state.phase === 'cannon_place' && ghost.footprint) {
-      // The pufferfish's place, a ring of bubbles' light, struck through where it cannot go.
+      // The gun's square, as in every style (`drawCannonGhost`).
       const colour = ghost.valid ? hex(palette.uiValid) : hex(palette.uiInvalid);
-      const x = tileX(view, anchor.x);
-      const y = tileY(view, anchor.y);
-      const w = ghost.footprint.w * t;
-      const h = ghost.footprint.h * t;
-      g.ellipse(x + w / 2, y + h / 2, w / 2 - t * 0.12, h / 2 - t * 0.12);
-      g.fill({ color: colour, alpha: 0.22 });
-      g.stroke({ width: Math.max(1.5, t * 0.1), color: colour });
-      if (!ghost.valid) {
-        g.moveTo(x + t * 0.3, y + h - t * 0.3).lineTo(x + w - t * 0.3, y + t * 0.3);
-        g.stroke({ width: Math.max(1.5, t * 0.1), color: colour });
-      }
+      drawCannonGhost(g, view, ghost, colour, Math.max(1.5, t * 0.1));
       return;
     }
 

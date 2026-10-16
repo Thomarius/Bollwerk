@@ -28,6 +28,7 @@ import {
   drawBuildHints,
   drawChoices,
   drawDrain,
+  drawCannonGhost,
   drawFireReticle,
   MainCastles,
   drawOvertimeBorder,
@@ -1452,21 +1453,19 @@ export class CartoonTheme extends ShapeTheme implements Theme {
     }
 
     if (state.phase === 'cannon_place' && ghost.footprint) {
-      // The gun's place, inked round, struck through where it cannot go.
+      // The gun's square, as in every style (`drawCannonGhost`).
       const colour = ghost.valid ? hex(palette.uiValid) : hex(palette.uiInvalid);
-      const x = tileX(view, anchor.x);
-      const y = tileY(view, anchor.y);
-      const w = ghost.footprint.w * t;
-      const h = ghost.footprint.h * t;
-      g.roundRect(x + t * 0.08, y + t * 0.08, w - t * 0.16, h - t * 0.16, t * 0.3);
-      g.fill({ color: colour, alpha: 0.25 });
-      g.stroke({ width: inkWidth(t), color: INK });
-      g.roundRect(x + t * 0.16, y + t * 0.16, w - t * 0.32, h - t * 0.32, t * 0.25);
-      g.stroke({ width: Math.max(1.5, t * 0.07), color: colour });
-      if (!ghost.valid) {
-        g.moveTo(x + t * 0.3, y + h - t * 0.3).lineTo(x + w - t * 0.3, y + t * 0.3);
-        g.stroke({ width: inkWidth(t), color: INK, cap: 'round' });
-      }
+      // Inked round under its line, as everything in the reel is.
+      const ink = inkWidth(t);
+      const inset = ink / 2 + t * 0.04;
+      g.rect(
+        tileX(view, ghost.tile.x) + inset,
+        tileY(view, ghost.tile.y) + inset,
+        ghost.footprint.w * t - 2 * inset,
+        ghost.footprint.h * t - 2 * inset,
+      );
+      g.stroke({ width: ink, color: INK });
+      drawCannonGhost(g, view, ghost, colour, Math.max(1.5, t * 0.07));
       return;
     }
 

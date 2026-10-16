@@ -24,6 +24,7 @@ import {
   drawSealPreview,
   drawChoices,
   drawSelectable,
+  drawCannonGhost,
   drawFireReticle,
   drawOvertimeBorder,
   drawDrain,
@@ -1344,20 +1345,9 @@ export class BricksTheme implements Theme {
     }
 
     if (state.phase === 'cannon_place' && ghost.footprint) {
+      // The gun's square, as in every style (`drawCannonGhost`).
       const colour = ghost.valid ? hex(palette.uiValid) : hex(palette.uiInvalid);
-      const x = tileX(view, anchor.x);
-      const y = tileY(view, anchor.y);
-      const w = ghost.footprint.w * t;
-      const h = ghost.footprint.h * t;
-      const inset = t * 0.18;
-      g.rect(x + inset, y + inset, w - inset * 2, h - inset * 2);
-      g.fill({ color: colour, alpha: 0.25 });
-      g.stroke({ width: Math.max(1.5, t * 0.1), color: colour });
-      if (!ghost.valid) {
-        // Struck through: red alone would vanish on the crimson player's own bricks.
-        g.moveTo(x + inset, y + h - inset).lineTo(x + w - inset, y + inset);
-        g.stroke({ width: Math.max(1.5, t * 0.1), color: colour });
-      }
+      drawCannonGhost(g, view, ghost, colour, Math.max(1.5, t * 0.1));
       return;
     }
 

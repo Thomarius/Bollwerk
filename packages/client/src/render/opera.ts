@@ -28,6 +28,7 @@ import {
   drawSealPreview,
   drawChoices,
   drawSelectable,
+  drawCannonGhost,
   drawFireReticle,
   drawOvertimeBorder,
   drawDrain,
@@ -1585,18 +1586,9 @@ export class OperaTheme extends ShapeTheme implements Theme {
     }
 
     if (state.phase === 'cannon_place' && ghost.footprint) {
-      // An empty stand's outline, struck through where it cannot go.
+      // The gun's square, as in every style (`drawCannonGhost`).
       const colour = ghost.valid ? hex(palette.uiValid) : hex(palette.uiInvalid);
-      const cx = tileX(view, anchor.x + ghost.footprint.w / 2);
-      const cy = tileY(view, anchor.y + ghost.footprint.h / 2);
-      const r = Math.min(ghost.footprint.w, ghost.footprint.h) * t * 0.38;
-      g.circle(cx, cy, r * 0.8);
-      g.fill({ color: colour, alpha: 0.22 });
-      g.stroke({ width: Math.max(1.5, t * 0.1), color: colour });
-      if (!ghost.valid) {
-        g.moveTo(cx - r * 0.7, cy + r * 0.7).lineTo(cx + r * 0.7, cy - r * 0.7);
-        g.stroke({ width: Math.max(1.5, t * 0.1), color: colour });
-      }
+      drawCannonGhost(g, view, ghost, colour, Math.max(1.5, t * 0.1));
       return;
     }
 

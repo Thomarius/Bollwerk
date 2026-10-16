@@ -36,6 +36,7 @@ import {
   drawSealPreview,
   drawChoices,
   drawSelectable,
+  drawCannonGhost,
   drawFireReticle,
   drawOvertimeBorder,
   drawDrain,
@@ -2111,27 +2112,15 @@ export class CyberpunkTheme implements Theme {
       return;
     }
     if (state.phase === 'cannon_place' && ghost.footprint) {
-      // The gun as its turret's lit hexagon, in the ink that says whether it fits.
-      const cx = tileX(view, ghost.tile.x + ghost.footprint.w / 2);
-      const cy = tileY(view, ghost.tile.y + ghost.footprint.h / 2);
-      const r = turretRadius(view, ghost.footprint);
-      g.rect(
-        tileX(view, ghost.tile.x),
-        tileY(view, ghost.tile.y),
-        ghost.footprint.w * view.tile,
-        ghost.footprint.h * view.tile,
+      // The gun's square, as in every style (`drawCannonGhost`).
+      drawCannonGhost(g, view, ghost, colour, this.style.wallLinePx, 0.18);
+      const inset = view.tile * 0.04;
+      this.overlayGlow.rect(
+        tileX(view, ghost.tile.x) + inset,
+        tileY(view, ghost.tile.y) + inset,
+        ghost.footprint.w * view.tile - 2 * inset,
+        ghost.footprint.h * view.tile - 2 * inset,
       );
-      g.fill({ color: colour, alpha: 0.18 });
-      g.poly(hexagon(cx, cy, r));
-      g.stroke({ width: this.style.wallLinePx, color: colour, alpha: 0.9 });
-      if (!ghost.valid) {
-        // Struck through, as the aiming cursor is when nothing is ready: red alone would
-        // vanish on the crimson player's own wall.
-        const d = r * Math.SQRT1_2;
-        g.moveTo(cx - d, cy + d).lineTo(cx + d, cy - d);
-        g.stroke({ width: this.style.wallLinePx, color: colour, alpha: 0.9 });
-      }
-      this.overlayGlow.poly(hexagon(cx, cy, r));
       this.overlayGlow.stroke({
         width: view.tile * this.style.glowWidthTiles,
         color: colour,

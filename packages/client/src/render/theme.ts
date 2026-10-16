@@ -225,6 +225,38 @@ export function dimEliminated(
  * player's colour, nothing ready is a small grey ring struck through. How many are
  * ready is a number beside it, drawn by the HUD.
  */
+/**
+ * The cannon ghost while placing guns: the square the gun will take, filling its footprint with
+ * sharp corners, struck through where it cannot go. Shared by every style but Minimal and Pixel,
+ * whose plain filled square already is one: each style's own shape for it — a ring, a cauldron,
+ * a cupcake, a hexagon — hid the corners, and a player placing a gun is judging what a 2x2 takes
+ * up (play-testing, 2026-10-16; the same reason the guns stand on squares, `cannonBase`).
+ */
+export function drawCannonGhost(
+  g: Graphics,
+  view: ViewTransform,
+  ghost: Ghost,
+  colour: number,
+  width: number,
+  fillAlpha = 0.25,
+): void {
+  if (ghost.tile === null || ghost.footprint === null) return;
+  // The line inside the footprint, so the square is the gun's and not a tile wider.
+  const inset = width / 2 + view.tile * 0.04;
+  const x = tileX(view, ghost.tile.x) + inset;
+  const y = tileY(view, ghost.tile.y) + inset;
+  const w = ghost.footprint.w * view.tile - 2 * inset;
+  const h = ghost.footprint.h * view.tile - 2 * inset;
+  g.rect(x, y, w, h);
+  g.fill({ color: colour, alpha: fillAlpha });
+  g.stroke({ width, color: colour });
+  if (!ghost.valid) {
+    // Struck through: red alone would vanish on the crimson player's own ground.
+    g.moveTo(x, y + h).lineTo(x + w, y);
+    g.stroke({ width, color: colour });
+  }
+}
+
 export function drawFireReticle(
   g: Graphics,
   view: ViewTransform,

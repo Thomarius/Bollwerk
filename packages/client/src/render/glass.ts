@@ -22,6 +22,7 @@ import {
   drawSealPreview,
   drawChoices,
   drawSelectable,
+  drawCannonGhost,
   drawFireReticle,
   drawOvertimeBorder,
   drawDrain,
@@ -1410,23 +1411,9 @@ export class GlassTheme implements Theme {
     }
 
     if (state.phase === 'cannon_place' && ghost.footprint) {
+      // The gun's square, as in every style (`drawCannonGhost`).
       const colour = ghost.valid ? hex(palette.uiValid) : hex(palette.uiInvalid);
-      // The lancet it will be, in outline over its square.
-      const { w: fw, h: fh } = ghost.footprint;
-      const cx = tileX(view, anchor.x + fw / 2);
-      const foot = tileY(view, anchor.y + fh) - t * 0.2;
-      const size = Math.min(fw, fh) * t;
-      g.rect(tileX(view, anchor.x), tileY(view, anchor.y), fw * t, fh * t);
-      g.fill({ color: colour, alpha: 0.18 });
-      g.poly(lancet(cx, foot, size * 0.5, size * 0.8));
-      g.fill({ color: colour, alpha: 0.3 });
-      g.stroke({ width: Math.max(1.5, t * 0.1), color: colour });
-      if (!ghost.valid) {
-        const r = size * 0.36;
-        const cy = tileY(view, anchor.y + fh / 2);
-        g.moveTo(cx - r, cy + r).lineTo(cx + r, cy - r);
-        g.stroke({ width: Math.max(1.5, t * 0.1), color: colour });
-      }
+      drawCannonGhost(g, view, ghost, colour, Math.max(1.5, t * 0.1));
       return;
     }
 

@@ -8910,3 +8910,8 @@ Seven points from the users' test matches, triaged with them before building; al
 - **Bug, cannons still shown with no room for them**: the sim ends the phase early for a player
   with nowhere left but keeps the count until combat, and the client showed the count. It shows
   none once no cannon fits (`placeableCannons`), and the right button no longer offers the tower.
+- **The cannon ghost a square in every style** (the user's, after these): most styles drew it as
+  their own shape — a ring, an ellipse, a cupcake, a cauldron, a hexagon, rounded boxes — which
+  hid what a 2×2 takes up. One shared ghost (`drawCannonGhost`, `theme.ts`), the footprint's
+  square with sharp corners, struck through where it cannot go, in each style's colour and line;
+  Minimal's and Pixel's plain filled squares kept.

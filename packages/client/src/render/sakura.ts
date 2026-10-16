@@ -27,6 +27,7 @@ import {
   drawSealPreview,
   drawChoices,
   drawSelectable,
+  drawCannonGhost,
   drawFireReticle,
   drawOvertimeBorder,
   drawDrain,
@@ -1862,18 +1863,9 @@ export class SakuraTheme extends ShapeTheme implements Theme {
     }
 
     if (state.phase === 'cannon_place' && ghost.footprint) {
-      // An empty stand's outline, struck through where it cannot go.
+      // The gun's square, as in every style (`drawCannonGhost`).
       const colour = ghost.valid ? hex(palette.uiValid) : hex(palette.uiInvalid);
-      const cx = tileX(view, anchor.x + ghost.footprint.w / 2);
-      const cy = tileY(view, anchor.y + ghost.footprint.h / 2);
-      const r = Math.min(ghost.footprint.w, ghost.footprint.h) * t * 0.36;
-      g.roundRect(cx - r, cy - r * 0.75, r * 2, r * 1.5, r * 0.3);
-      g.fill({ color: colour, alpha: 0.22 });
-      g.stroke({ width: Math.max(1.5, t * 0.1), color: colour });
-      if (!ghost.valid) {
-        g.moveTo(cx - r, cy + r * 0.75).lineTo(cx + r, cy - r * 0.75);
-        g.stroke({ width: Math.max(1.5, t * 0.1), color: colour });
-      }
+      drawCannonGhost(g, view, ghost, colour, Math.max(1.5, t * 0.1));
       return;
     }
 

@@ -26,6 +26,7 @@ import {
   drawSealPreview,
   drawChoices,
   drawSelectable,
+  drawCannonGhost,
   drawFireReticle,
   drawOvertimeBorder,
   drawDrain,
@@ -1267,25 +1268,9 @@ export class BlueprintTheme implements Theme {
     }
 
     if (state.phase === 'cannon_place' && ghost.footprint) {
+      // The gun's square, as in every style (`drawCannonGhost`).
       const colour = ghost.valid ? hex(palette.uiValid) : hex(palette.uiInvalid);
-      const cx = tileX(view, anchor.x + ghost.footprint.w / 2);
-      const cy = tileY(view, anchor.y + ghost.footprint.h / 2);
-      const r = (Math.min(ghost.footprint.w, ghost.footprint.h) * t) / 2 - t * 0.2;
-      for (let k = 0; k < 16; k += 2) {
-        const a = (k / 16) * Math.PI * 2;
-        g.moveTo(cx + Math.cos(a) * r, cy + Math.sin(a) * r);
-        g.arc(cx, cy, r, a, ((k + 1) / 16) * Math.PI * 2);
-        g.stroke({ width: this.style.lineWidthPx, color: colour });
-      }
-      const reach = r + t * 0.25;
-      g.moveTo(cx - reach, cy).lineTo(cx + reach, cy);
-      g.moveTo(cx, cy - reach).lineTo(cx, cy + reach);
-      if (!ghost.valid) {
-        // Struck through: red alone would vanish on the crimson player's own ink.
-        const d = r * Math.SQRT1_2;
-        g.moveTo(cx - d, cy + d).lineTo(cx + d, cy - d);
-      }
-      g.stroke({ width: 1.5, color: colour });
+      drawCannonGhost(g, view, ghost, colour, this.style.lineWidthPx);
       return;
     }
 
