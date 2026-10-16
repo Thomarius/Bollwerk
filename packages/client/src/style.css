@@ -1750,8 +1750,37 @@ body.hud-bricks #hud .roster .line .shape path {
   flex-basis: 100%;
 }
 
-.seats .seat .tower-choice select {
-  margin-left: 0.5rem;
+/* The person's own: a button showing the choice, opening the tower menu (towerMenu.ts). As
+   wide as it says, unlike the menu's buttons. */
+.seats .seat .tower-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  width: auto;
+  margin: 0 0 0 0.5rem;
+  padding: 0.2rem 0.6rem;
+  letter-spacing: 0.03em;
+  text-transform: none;
+  border: 1px solid var(--accent);
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  cursor: pointer;
+}
+
+.seats .seat .tower-button:hover {
+  background: color-mix(in srgb, var(--accent) 18%, transparent);
+  color: var(--ink);
+}
+
+.seats .seat .tower-button svg {
+  width: 1.2rem;
+  height: 1.2rem;
+}
+
+.seats .seat .tower-button .pips {
+  color: var(--accent);
+  letter-spacing: 0.1em;
 }
 
 /* The colour this seat will actually play in, so the lobby and the board agree. */
@@ -5239,4 +5268,165 @@ body.reduced-effects .look-gallery .card img {
 
 .tie-legend {
   font-size: 0.75rem;
+}
+
+/* ---------- the special tower menu (towerMenu.ts) ---------- */
+
+/* A card for none and each tower, a switch for the chosen one's cost, what it does, and the
+   preview playing it by the rules. Laid out as the gallery of looks is. */
+.tower-menu {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  display: grid;
+  place-items: center;
+  background: rgb(5 5 10 / 70%);
+}
+
+.tower-menu .panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  width: min(40rem, 94vw);
+  max-height: 92vh;
+  overflow-y: auto;
+  padding: 1.2rem 1.4rem;
+  border: 1px solid var(--accent);
+  background: #0a0a12;
+  color: var(--ink);
+}
+
+.tower-menu h2 {
+  margin: 0;
+  font-size: 1.2rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.tower-menu button {
+  font: inherit;
+  cursor: pointer;
+}
+
+.tower-menu .cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(7.5rem, 1fr));
+  gap: 0.6rem;
+}
+
+.tower-menu .card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.7rem 0.4rem 0.55rem;
+  border: 1px solid color-mix(in srgb, var(--muted) 45%, transparent);
+  background: transparent;
+  color: var(--ink);
+}
+
+.tower-menu .card:hover {
+  border-color: var(--accent);
+}
+
+.tower-menu .card.chosen {
+  border: 2px solid var(--accent);
+  box-shadow: 0 0 10px color-mix(in srgb, var(--accent) 45%, transparent);
+  color: var(--accent);
+}
+
+.tower-menu .card svg {
+  width: 2.6rem;
+  height: 2.6rem;
+}
+
+.tower-menu .card .name {
+  font-size: 13px;
+  letter-spacing: 0.04em;
+}
+
+.tower-menu .card .role {
+  color: var(--muted);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.tower-menu .costs {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.tower-menu .costs span {
+  margin-right: 0.3rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 12px;
+}
+
+.tower-menu .cost {
+  flex: 1;
+  padding: 0.45rem 0.8rem;
+  border: 1px solid color-mix(in srgb, var(--muted) 50%, transparent);
+  background: transparent;
+  color: var(--muted);
+}
+
+.tower-menu .cost.chosen {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.tower-menu .cost:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.tower-menu .what {
+  margin: 0;
+  min-height: 2.6em;
+  line-height: 1.4;
+}
+
+.tower-menu .what em {
+  display: block;
+  color: var(--muted);
+}
+
+.tower-menu .preview {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.tower-menu .preview .label {
+  color: var(--muted);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+/* Pixi sizes its canvas in pixels; the panel's width, at the show's shape, wins over that. */
+.tower-menu canvas.tower-preview {
+  width: 100% !important;
+  height: auto !important;
+  aspect-ratio: 448 / 160;
+  background: #1c1d2b;
+}
+
+.tower-menu .foot {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.tower-menu .done {
+  padding: 0.45rem 1.4rem;
+  border: 1px solid var(--accent);
+  background: transparent;
+  color: var(--accent);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }

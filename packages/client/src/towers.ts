@@ -51,7 +51,15 @@ export function towerWhat(variant: TowerVariant, ruleset: Ruleset = defaultRules
   const config = variantConfig(ruleset.specials, variant);
   switch (kind) {
     case 'bertha':
-      return t(config.flightFactor > 1 ? 'tower.berthaSlowWhat' : 'tower.berthaWhat');
+      // Her two costs differ by the shell's flight, which is her reload, so it is told
+      // against a cannon's: as fast, faster or slower (the user's, 2026-10-16).
+      return t(
+        config.flightFactor > 1
+          ? 'tower.berthaSlowWhat'
+          : config.flightFactor < 1
+            ? 'tower.berthaFastWhat'
+            : 'tower.berthaWhat',
+      );
     case 'architect':
       // Its reach is a circle from the footprint's centre; told as blocks across, a whole number.
       return t('tower.architectWhat', {

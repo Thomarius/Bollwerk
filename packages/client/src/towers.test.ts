@@ -6,6 +6,7 @@ import { describe, expect, it } from 'vitest';
 
 import { impactReadiness } from './controls.js';
 import { lobbyMarkup, type LobbyView } from './lobby.js';
+import { offeredTowers, towerMenuMarkup, variantForCard } from './towerChoice.js';
 import { towerLine, towerName, towerWhat, variantName } from './towers.js';
 
 /** Player 0's sealed ring, in a cannon phase, bringing Big Bertha with three cannons. */
@@ -146,12 +147,10 @@ describe('the lobby with special towers', () => {
 
   it('lets each person choose their own, and shows everyone else’s and the bots’ draws', () => {
     const html = lobbyMarkup(view(true));
+    // The person's own a button opening the tower menu, showing what they chose.
     expect(html).toContain('id="my-special"');
-    expect(html).toMatch(/<option value="architect2" selected>/);
-    // Every tower at each of its costs, one list.
-    for (const variant of ['bertha2', 'bertha3', 'architect3', 'rapid2', 'rapid3'] as const) {
-      expect(html).toContain(`<option value="${variant}">`);
-    }
+    expect(html).toContain('data-variant="architect2"');
+    expect(html).not.toContain('<select id="my-special"');
     expect(html).toContain(variantName('rapid3'));
     expect(html).toContain(variantName(drawnSpecial(42, 2, defaultRuleset.specials)));
   });
@@ -173,7 +172,40 @@ describe('the lobby with special towers', () => {
     expect(towerWhat('architect2', ruleset)).toContain('8');
     expect(towerWhat('architect3', ruleset)).toContain('14');
     expect(towerWhat('rapid3')).toContain('3');
+    // Her two costs as the rules have them differ by the shell, and the text says how.
+    expect(towerWhat('bertha2')).not.toBe(towerWhat('bertha3'));
     // A Bertha whose shell flies slower than a gun's says so.
     expect(towerWhat('bertha2', ruleset)).not.toBe(towerWhat('bertha3', ruleset));
+  });
+});
+
+describe('the tower menu', () => {
+  it('offers none and every tower, each at the costs the rules offer', () => {
+    expect(offeredTowers()).toEqual([
+      { kind: 'bertha', costs: [2, 3] },
+      { kind: 'architect', costs: [2, 3] },
+      { kind: 'rapid', costs: [2, 3] },
+    ]);
+    const html = towerMenuMarkup(null);
+    for (const kind of ['none', 'bertha', 'architect', 'rapid']) {
+      expect(html).toContain(`data-kind="${kind}"`);
+    }
+    expect(html).toContain('class="card chosen" data-kind="none"');
+    // None has no cost to choose.
+    expect(html).not.toContain('class="costs"');
+  });
+
+  it('shows the chosen tower’s cost and what that variant does', () => {
+    const html = towerMenuMarkup('architect3');
+    expect(html).toContain('class="card chosen" data-kind="architect"');
+    expect(html).toMatch(/class="cost chosen" data-cost="3"/);
+    expect(html).toContain(towerWhat('architect3'));
+  });
+
+  it('chooses a tower at the cost last chosen for it, else its cheapest', () => {
+    expect(variantForCard('bertha', {})).toBe('bertha2');
+    expect(variantForCard('bertha', { bertha: 3 })).toBe('bertha3');
+    // A cost the rules no longer offer falls back to the cheapest.
+    expect(variantForCard('rapid', { rapid: 5 })).toBe('rapid2');
   });
 });

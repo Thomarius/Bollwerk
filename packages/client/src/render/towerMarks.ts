@@ -200,6 +200,11 @@ export class TowerMarks {
   /** The player's Architects' reach, drawn again only when it changes. */
   private readonly reach = new Graphics();
   private reachKey = '';
+  /**
+   * The reach shown whatever the phase: the tower menu's preview plays a combat, and the
+   * Architect's circle is what it is there to show.
+   */
+  reachAlways = false;
   /** The towers' emblems, drawn again only when one changes. */
   private readonly emblems = new Graphics();
   /** The ghost's emblem, every frame while there is one. */
@@ -239,7 +244,10 @@ export class TowerMarks {
    */
   private drawReach(state: MatchState, view: ViewTransform, art: ArtConfig, human: number): void {
     const player = state.players[human];
-    const shown = player !== undefined && !player.eliminated && REACH_PHASES.has(state.phase);
+    const shown =
+      player !== undefined &&
+      !player.eliminated &&
+      (this.reachAlways || REACH_PHASES.has(state.phase));
     let key = shown ? `${viewKey(view)}|${playerColour(art, human, 'light')}` : '';
     if (shown) {
       for (const c of state.cannons) {

@@ -8915,3 +8915,27 @@ Seven points from the users' test matches, triaged with them before building; al
   hid what a 2×2 takes up. One shared ghost (`drawCannonGhost`, `theme.ts`), the footprint's
   square with sharp corners, struck through where it cannot go, in each style's colour and line;
   Minimal's and Pixel's plain filled squares kept.
+
+## 13zn. The special tower menu (2026-10-16)
+
+**Why** (the user's): the lobby's list of every variant — each tower at each cost — would not
+scale to more towers. Designed with the user before building: type cards with a cost switch
+(rather than a grid of every variant), a click choosing at once with Done only closing (as the
+gallery of looks), a live preview played by the real rules (rather than a scripted animation), in
+the player's combat look — a style drawn from their favourites, or from all, where it is Random.
+
+**Built**: a button in the person's own seat showing the choice opens the menu (`towerMenu.ts`;
+what it offers and draws in `towerChoice.ts`, testable without a page). A card a tower — none
+first, its icon the cannon's — by emblem, name and role; the cost switch under them, a cost not
+offered greyed; a card's click takes the cost last chosen for that tower, else the cheapest; what
+the variant does by its own numbers and when it can be afforded. The preview is `TowerShow`: a
+28 by 10 board of two sealed rings, the chooser's gun and a rival's two, and a loop of shots fired
+through the sim's own `fire`, landed by `resolveImpacts` and rebuilt by `repairWalls` — so Bertha
+2's slower shell, Architect 3's wider reach (it takes in the wall above the tower, which cost 2
+leaves broken) and the Rapid's barrels are the rules' and tested as such. `TowerPreview` draws it
+with a `Scene`, the Architect's reach shown in combat for it (`Scene.showReachAlways`). Seen in
+headless Chrome: the menu, each tower's preview, the lobby's button.
+
+After a first look (the user's): the line on what the tower does went from under the lobby's
+button, the menu saying it; and Bertha's two costs, which read alike, are told apart by her shell
+against a cannon's — as fast at cost 2, faster at cost 3, so reloading sooner.

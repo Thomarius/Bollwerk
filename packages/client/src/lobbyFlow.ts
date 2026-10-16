@@ -37,6 +37,7 @@ import { runSession } from './matchScreen.js';
 import { openBracket } from './tournamentBracketView.js';
 import { openLeague } from './tournamentLeagueView.js';
 import { endingMarkup, tournamentTab } from './tournamentView.js';
+import { openTowerMenu } from './towerMenu.js';
 import { preferredTower, saveTower } from './towers.js';
 
 /** The lobby, one screen whether a server holds the table or the browser does. */
@@ -114,12 +115,20 @@ export function drawLobby(view: LobbyView, on: LobbyHandlers): void {
     audio.play('select');
     on.table({ settings: { ...view.settings, specials: specials.value === 'on' } });
   });
-  const mine = document.querySelector<HTMLSelectElement>('#my-special');
-  mine?.addEventListener('change', () => {
+  const mine = document.querySelector<HTMLButtonElement>('#my-special');
+  mine?.addEventListener('click', () => {
     audio.play('select');
-    const special = mine.value === '' ? null : (mine.value as TowerVariant);
-    saveTower(special);
-    on.special?.(special);
+    const current = mine.dataset['variant'];
+    openTowerMenu({
+      chosen: current === '' || current === undefined ? null : (current as TowerVariant),
+      onChoose: (special) => {
+        saveTower(special);
+        on.special?.(special);
+      },
+      click: () => audio.play('select'),
+      // Gone with the lobby, a match begun, or the host turning towers off.
+      alive: () => document.querySelector('#my-special') !== null,
+    });
   });
   for (const field of document.querySelectorAll<HTMLSelectElement>('.bot-select')) {
     field.addEventListener('change', () => {

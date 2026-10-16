@@ -794,6 +794,11 @@ export class Scene {
     for (const slot of this.visible()) slot.theme.noteLanding(cells, owner);
   }
 
+  /** The Architects' reach shown in every phase, for the tower menu's preview. */
+  showReachAlways(): void {
+    this.towers.reachAlways = true;
+  }
+
   /** A Big Bertha's shot has landed here: its blast, over whichever look is in front. */
   noteBlast(x: number, y: number): void {
     this.towers.noteBlast(x, y);

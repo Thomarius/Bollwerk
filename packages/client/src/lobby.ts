@@ -2,13 +2,14 @@ import {
   MAX_LEVEL,
   MIN_LEVEL,
   defaultRuleset,
-  offeredVariants,
   teamsBalanced,
   validPlayerCounts,
   type MatchSettings,
   type PlayerShape,
   type SettingBounds,
   type TowerVariant,
+  variantCost,
+  variantKind,
 } from '@bollwerk/config';
 import { drawnSpecial } from '@bollwerk/ai';
 import type { Seat, TournamentTable } from '@bollwerk/protocol';
@@ -17,7 +18,8 @@ import { t } from './i18n.js';
 import { teamLetter } from './scores.js';
 import { shapeSvg } from './shapes.js';
 import { escape } from './html.js';
-import { towerWhat, variantName } from './towers.js';
+import { cannonSvg, towerSvg } from './towerIcons.js';
+import { towerName, towerWhat, variantName } from './towers.js';
 
 /**
  * The lobby, as markup — one lobby for online and offline.
@@ -178,9 +180,8 @@ export function specialsSwitch(on: boolean): string {
 }
 
 /**
- * A seat's special tower, where the match plays them: the person's own a choice of every
- * variant the rules offer — each tower at each cost, one list for now — or none, with a line
- * on what it does; anyone else's, a person's choice or a bot's draw from the seed and its
+ * A seat's special tower, where the match plays them: the person's own a button opening the
+ * tower menu, showing their choice — each tower at each cost, or none; anyone else's, a person's choice or a bot's draw from the seed and its
  * seat (`drawnSpecial`), as a tag.
  */
 function towerControl(
@@ -198,15 +199,18 @@ function towerControl(
       ? ''
       : `<em class="tag tower" title="${escape(towerWhat(special))}">${escape(variantName(special))}</em>`;
   }
-  const choices: (TowerVariant | null)[] = [null, ...offeredVariants(defaultRuleset.specials)];
-  const options = choices
-    .map(
-      (variant) =>
-        `<option value="${variant ?? ''}"${variant === special ? ' selected' : ''}>${escape(variantName(variant))}</option>`,
-    )
-    .join('');
-  const what = special === null ? '' : `<small class="blurb">${escape(towerWhat(special))}</small>`;
-  return `<label class="tower-choice">${t('lobby.yourTower')} <select id="my-special" aria-label="${t('lobby.towerAria')}">${options}</select></label>${what}`;
+  // A button showing the choice, opening the tower menu (`towerMenu.ts`): the list of every
+  // variant had stopped scaling (the user's, 2026-10-16).
+  const icon =
+    special === null ? cannonSvg('currentColor') : towerSvg(variantKind(special), 'currentColor');
+  const pips =
+    special === null ? '' : `<span class="pips">${'•'.repeat(variantCost(special))}</span>`;
+  const button =
+    `<button type="button" id="my-special" class="tower-button" data-variant="${special ?? ''}" ` +
+    `title="${escape(t('towerMenu.open'))}" aria-label="${escape(t('towerMenu.open'))}">` +
+    `${icon}<span>${escape(special === null ? towerName(null) : towerName(variantKind(special)))}</span>${pips}</button>`;
+  // What it does is told in the menu, not under the button (the user's, 2026-10-16).
+  return `<span class="tower-choice">${t('lobby.yourTower')} ${button}</span>`;
 }
 
 /**

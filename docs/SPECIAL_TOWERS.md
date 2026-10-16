@@ -257,14 +257,25 @@ Built in ST2, the costs in ST3b.
 Built in ST5 and ST6 together (2026-10-14), so people can play with towers; the costs in ST3b.
 
 - **Lobby** (`lobby.ts`, `lobbyFlow.ts`): the host's switch, **Special towers** On/Off, beside lives
-  and rounds; a guest reads it in the table's statement. While on, a person's own seat has a
-  chooser — none, or one list of every variant offered, "Big Bertha · 3 cannons" — with a line on
-  what it does by its own numbers (`towerWhat`: the Architect's reach, the Rapid's barrels, a
-  slower Bertha), remembered for the next table (`towers.ts`, `bollwerk.tower`; a choice saved
+  and rounds; a guest reads it in the table's statement. While on, a person's own seat has a button
+  showing their choice — its emblem, name and a pip a cannon it costs, or none — remembered for the next table (`towers.ts`, `bollwerk.tower`; a choice saved
   before the costs names no variant, so reads as none) and sent to a room as it opens; anyone
-  else's seat shows their choice, and each bot's seat the variant drawn for it. A fuller chooser,
-  tower and cost apart with descriptions and a preview, is for later. The same in a tournament's
-  lobby, and a switch in the tournament's setup.
+  else's seat shows their choice, and each bot's seat the variant drawn for it. The same in a
+  tournament's lobby, and a switch in the tournament's setup.
+- **The tower menu** (`towerMenu.ts`, `towerChoice.ts`; the user's, 2026-10-16), opened by that
+  button, where one list of every variant had stopped scaling: a card for none and each tower — its
+  emblem, name and what it is for (offence, defence, more guns) — a switch for the chosen tower's
+  cost, a cost the rules do not offer greyed, a card's click choosing the cost last chosen for that
+  tower (`bollwerk.towerCosts`) or else its cheapest; what the variant does by its own numbers
+  (`towerWhat`: the Architect's reach, the Rapid's barrels, Bertha's shell against a cannon's —
+  as fast at cost 2, faster at cost 3) and when it is affordable (cost 3 only with a second castle held). A click chooses at once and is sent, Done
+  only closes; it closes itself when the lobby goes, a match begins or towers are switched off.
+  Its **preview** (`towerShow.ts`, `towerPreview.ts`) plays the chosen variant by the rules
+  themselves on two small islands — the sim's `fire`, `resolveImpacts` and `repairWalls` on a loop:
+  an ordinary cannon for none, Bertha's cross (cost 2's shell visibly slower), the Rapid's barrels
+  in turn, a rival's barrage on the Architect and the walls in its reach coming back, its circle
+  outlined — in the player's combat look, a style drawn from their favourites where it is Random;
+  under reduced motion a still of the moment that shows it.
 - **Controls** (`controls.ts`): in the cannon phase the right button switches the ghost between a
   cannon and the tower (`placingTower`), only while the rules sell it and a gun still fits
   (`maySwitchTower`), a cue either way; back to a cannon once bought. Combat is unchanged: the
