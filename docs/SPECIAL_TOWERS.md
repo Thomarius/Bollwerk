@@ -5,8 +5,9 @@ bought in the cannon phase by giving up two or three ordinary cannons. Each towe
 different way to play — more damage, sturdier walls, a faster tempo — at the price of guns, and
 of the points those guns would have scored. This file is the design as discussed with the user
 (2026-10-11, its open questions settled 2026-10-14, every tower at two costs 2026-10-16) and the
-plan to build it in work packages. **ST1–ST3, ST3b, ST5 and ST6 are built**, and ST4's first
-balance is measured (ARCHIVE 13zk, the Architect's circle 13zl); the level ladder with towers, ST7 and ST8 are open. Like PLAN.md it says what is configurable and why and leaves the
+plan to build it in work packages. **ST1–ST3, ST3b, ST5 and ST6 are built**, with the users'
+first feedback, the tower menu and its preview (ARCHIVE 13zm, 13zn); ST4's first balance is
+measured (13zk, the Architect's circle 13zl). Open: the rest of ST4, ST7 and ST8 (§5). Like PLAN.md it says what is configurable and why and leaves the
 values to `config/*.json`; when a package is done its summary moves to ARCHIVE.md and this file
 keeps only what is open.
 
@@ -382,38 +383,9 @@ Lightning's chain, Scattershot's extra shots, the Mortar's shots a phase.
 
 ## 5. Work packages
 
-In order. Each ends with `npm run check` passing and the user's go-ahead to commit.
-
-### ST1 — The rules in the simulation
-
-`CannonKind`, the loadout on the player, `ruleset.specials` with its schema, buying (cost, once a
-round, the cap, not at the opening), the impact towers first in line, the three towers' effects,
-a tower as its cost in guns for the points; the state hashed; ASCII tests for each rule and each rejection.
-No client, no protocol yet: the harness can already play matches with towers.
-
-### ST2 — Settings, protocol and recordings
-
-`MatchSettings.specials`, a seat's loadout in local and room setups (bots' drawn from the seed),
-protocol 25, recording format 3, the server's checks, `--replay` reading the new header, the
-tournament's switch in its settings and save.
-
-### ST3 — Bots
-
-Buying and placing in `Siting`, aiming a Bertha's shot in `Gunner`; the harness's `--specials`
-and `--special`; `shotStats.ts` and `buildStats.ts` by kind. Tested in tables of bots before any
-person plays it.
-
-### ST3b — Every tower at two costs
-
-Added after ST6 (the user's, 2026-10-16), before the soaks, since balancing one cost a tower
-first would be soaked again. A loadout becomes a variant, a tower and its cost: `ruleset.specials`
-per kind per cost with its own levers, a variant absent where it is not offered; the Rapid Cannon
-as stacked barrels, a shot in flight each; state hash and recording format bumped, a header
-naming each player's variant; protocol 26 (the `special` message and the seats carry the cost);
-bots drawing among the variants; the lobby's and the tournament lobby's chooser **one list of
-every variant** ("Big Bertha · 3"), for now; the emblem marking the cost (pips, say); the HUD
-line and the harness's `--special bertha3,none` naming it. A fuller chooser, with descriptions
-and a preview, choosing tower and cost apart, is for later (the user's, 2026-10-16).
+In order. Each ends with `npm run check` passing and the user's go-ahead to commit. ST1–ST3,
+ST3b, ST5 and ST6 are built; their plans are in ARCHIVE 13zo, what was measured and changed after
+them in 13zk–13zn.
 
 ### ST4 — Balance
 
@@ -434,25 +406,21 @@ balancing round** (the user's, 2026-10-16 — another session, the results looke
 - Not yet done: the level ladder with towers on and off; four-player tables, one variant against
   three without; whether the bots' buying rule (ST3's first) does the towers justice; then
   towers on by default.
-- To rerun: `npx tsx tools/headless/src/towerSoak.ts --out DIR --pairs architect3:none,...
---levels 3,5,8 [--set specials.architect.3.repairRadius=3]`, then `--summary`; resumable, a
-  chunk whose outcomes exist is skipped. 13zk's own scripts stayed on another machine, so its
-  figures were on other seeds.
+- To rerun, resumable (a chunk whose outcomes exist is skipped), then `--summary`:
 
-### ST5 — The client: lobby, controls, HUD
+  ```bash
+  npx tsx tools/headless/src/towerSoak.ts --out DIR --pairs architect3:none,bertha3:none \
+    --levels 3,5,8 [--set specials.architect.3.repairRadius=3]
+  ```
 
-The switch and the tower chooser in the lobby and in the tournament's setup, the right button in
-the cannon phase, the ghost, the HUD's state, the second reload ring and the cursor's glow, every
-text in English and German.
-
-### ST6 — The client: emblems, effects, sound
-
-The emblem in every style (one shared mark), the generic effects, the cues and their credits,
-checked by screenshots in every style and by `&perf=1` at eight players.
+  13zk's own scripts stayed on another machine, so its figures were on other seeds than 13zl's.
 
 ### ST7 — Help and documentation
 
-The How to play page, the screenshot scenes, CLAUDE.md, PLAN and ARCHIVE.
+The How to play page — what a tower is and costs, the tower menu, the right button's switch in the
+cannon phase and its hint, Big Bertha's cross and flames on the cursor, the Architect's circle —
+the screenshot scenes (`tools/screenshots.sh`: the menu, a cannon phase with a tower, a combat
+with a ready Bertha), CLAUDE.md, PLAN and ARCHIVE.
 
 ### ST8 — Play-testing
 

@@ -155,6 +155,10 @@ Full detail in PLAN.md §1. The parts that surprise people:
   rounds — so a one-tile gap with no free neighbour can never be filled.
 - **Overtime**: when the build clock runs out, everyone may still place the piece they
   hold, within three seconds, and no more.
+- **Special towers** (a table's switch, off by default): a tower is bought in the cannon phase
+  for 2 or 3 of the cannons a round earns, never at the opening, once a round, three at most on
+  the island, and nothing is saved towards one — so cost 3 needs a second castle held. A ready
+  impact tower (Big Bertha) always fires first, whatever the click aims at. `docs/SPECIAL_TOWERS.md`.
 - **Every match is a team match**; free-for-all is teams of one. Teams share a score (the
   sum of their members') and a pool of lives, and a member failing with the pool empty
   takes the whole team out. Teammates may build on each other's islands — people only by
@@ -168,8 +172,21 @@ Full detail in PLAN.md §1. The parts that surprise people:
 
 ## Status
 
-**Done** (2026-10-14; the latest release **v0.9.6**, 2026-10-14, protocol 24, which a test
-session needs the server rebuilt and every page reloaded for):
+**Done** (2026-10-17; the latest release **v0.9.6**, 2026-10-14, protocol 24; main is ahead of
+it at protocol 26 and recording format 4, which a test session needs the server rebuilt and every
+page reloaded for):
+
+- **Special towers** (2026-10-14 to 2026-10-16, ARCHIVE 13zk–13zo, the design and what is open in
+  `docs/SPECIAL_TOWERS.md`): Big Bertha, the Architect and the Rapid Cannon, each at a cost of 2
+  and 3 cannons, bought in the cannon phase with the right button, switched on per table (off by
+  default). The rules in `sim/src/specials.ts`; bots buy, site and fire them; a tower scores as
+  the cannons it cost. Balanced in two-player soaks to 50–70% against no tower
+  (`tools/headless/src/towerSoak.ts`, the harness's `--set`); the Architect's reach a circle from
+  its centre. In the client: emblems, Bertha's cross and flames on the cursor, the Architect's
+  circle outlined, cannon icons and the right button's hint beside the cursor, and the **tower
+  menu** with a preview played by the rules (`towerMenu.ts`, `towerShow.ts`). With it, from the
+  testers: the cannon ghost a square in every style (`drawCannonGhost`), no cannons shown once
+  none fits, and the seal's fanfare for the overtime's last piece.
 
 - **More ground for the same pieces** (ARCHIVE 13zi, 2026-10-14): the planner also weighs
   widening once the walls stand, boldly (`BOLD`: a margin of 1 or 1.3 in place of the level's
@@ -300,15 +317,14 @@ session needs the server rebuilt and every page reloaded for):
   every effect kept; no memory kept by a swap of looks (ARCHIVE 12q); every look, corner
   piece and German checked in play by the user (ARCHIVE 12n–12t).
 
-**Next** — PLAN §11: towards a first feature-ready version, special towers (item 2, designed
-in `docs/SPECIAL_TOWERS.md`): ST1–ST3, ST5 and ST6 built, every tower at two costs (ST3b,
-2026-10-16, protocol 26, recording format 4), ST4's balance soaks under way, then ST7 and the
-testers' ST8. Bots that hold
-ground as people do are done (ARCHIVE 13zj: the yardstick, the dead guns, pace, build planning,
-the new scoring and bold widening; `buildStats.ts`). The bot learning work is closed,
-its remaining steps dropped (the user's decision, 2026-10-14; ARCHIVE 13zg). French is not to
-be done. Signing the Windows app was explained (PLAN
-§12) and is not pursued for now.
+**Next** — PLAN §11: towards a first feature-ready version. Special towers (item 2): the rest of
+the balance (ST4: Level 3, Bertha 3 at Level 8, the ladder and four-player tables with towers, the
+bots' buying rule, then on by default), help (ST7) and the testers' play-testing (ST8). Each
+style's own cannon as the placement icon (item 3), planned in `docs/CANNON_ICONS.md`, the gun
+alone in a fixed pose, not yet built. Bots that hold ground as people do are done (ARCHIVE 13zj).
+The bot learning work is closed, its remaining steps dropped (the user's decision, 2026-10-14;
+ARCHIVE 13zg). French is not to be done. Signing the Windows app was explained (PLAN §12) and is
+not pursued for now.
 
 **Declined for budget** (PLAN §12): macOS builds (Apple's paid signing) and a hosted public
 server. This is a fan project with no budget: propose nothing that costs money to run.
@@ -497,6 +513,12 @@ its header but the simulation does not — so the server stamps each header with
 - **Pixi rebuilds a render group's whole draw list when any `Graphics` in it changes shape**:
   500 stamps each changing shape on their own beat cost Chocolate 3 ms a frame until they were
   put in render groups of their own (ARCHIVE 13f).
+- **`cannonsToPlace` keeps its count when no cannon fits**: the sim ends the cannon phase early
+  for that player but zeroes the count only as combat begins (it is hashed). The client shows
+  `placeableCannons`, never the raw count.
+- **One frame's events can span a phase change**: the overtime's last piece ends the round in
+  the same step, so a check of `state.phase` after the frame reads the intermission. The seal's
+  fanfare asks the phase the frame began in too (`matchAudio.sealed`).
 - **A local match's bots think in a Web Worker, in lockstep** (ARCHIVE 13k): one bot
   planning its walls takes 15 to 50 ms. The page holds the match and sends each tick's turn
   with the person's moves on it; the worker's `BotTable` (`client/src/bots/`) plays them on a

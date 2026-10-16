@@ -1588,7 +1588,7 @@ every resolution against an independent search, not only on unit pictures.
 
 ## 11. Open work
 
-**Where to start (2026-10-14).** The latest release is **v0.9.6** (2026-10-14, protocol 24).
+**Where to start (2026-10-17).** The latest release is **v0.9.6** (2026-10-14, protocol 24).
 Up to **v0.8.3**: the game and online play, bots as skill levels and personalities, the styles
 with their corner pieces, random looks every round, English and German, the desktop app, UPnP,
 the balance soak and the rendering work (ARCHIVE 12h–12v), the refactoring (12w) and stronger
@@ -1604,7 +1604,10 @@ by the scissor (13o). **v0.9.2** (13s): bots that miss as people do (13r). **v0.
 and bots building at people's pace (13v). **v0.9.4** (13za): build phases played out in advance,
 with mistakes by level (13z). **v0.9.5** (13zc): the test session's feedback — the title's sweep,
 the lobby's music, the league's tie-breaks, table and window (13zb). **v0.9.6** (13zh): scoring by
-ground and guns (13zd, 13ze), bots valuing castles for their guns.
+ground and guns (13zd, 13ze), bots valuing castles for their guns. **Since v0.9.6, on main and
+not yet released** (2026-10-17, protocol 26, recording format 4): special towers, every one at two
+costs, with the bots using them, the client, a first balance and the users' first feedback
+(ARCHIVE 13zk–13zo), and the cannon ghost a square in every style (13zm).
 
 Tournament mode is finished: its play-testing round, T8, closed with everything working
 (ARCHIVE 13m). The bots' planning is off the page's thread in local matches, measured and felt (ARCHIVE
@@ -1617,11 +1620,14 @@ fit (ARCHIVE 12z), its remaining steps dropped (the user's decision, 2026-10-14;
 13zg). French is not to be done
 (the user's decision, 2026-10-06). Still open:
 
-2. **Special towers** (the user's idea, 2026-10-11; built but for balance, help and play-testing): each player may bring
-   one special tower, bought in the cannon phase for two or three cannons — Big Bertha, Architect
-   and Rapid Cannon first — with an on/off switch among the match settings. The design, the
-   decisions (every open question settled with the user on 2026-10-14),
-   and the work packages ST1–ST8 are in
+2. **Special towers** (the user's idea, 2026-10-11): each player may bring one special tower,
+   bought in the cannon phase for two or three cannons — Big Bertha, Architect and Rapid Cannon,
+   each at both costs — chosen in the tower menu, with an on/off switch among the match settings
+   (off by default until balanced). Built and played; open are the rest of the balance (ST4:
+   Level 3 a little strong for every tower, Bertha 3 at Level 8 to rerun, the level ladder and
+   four-player tables with towers, the bots' buying rule, then towers on by default), help and
+   documentation (ST7) and the testers' play-testing (ST8, then the next tower and a test without
+   the cap of three). The design and these packages are in
    [`SPECIAL_TOWERS.md`](./SPECIAL_TOWERS.md).
 3. **Each style's own cannon as the placement icon** (the user's wish, 2026-10-16; planned, not
    yet built): the row of cannon icons beside the cursor in the cannon phase (ARCHIVE 13zm) draws
@@ -1639,7 +1645,7 @@ test-session feedback, in ARCHIVE 11w; 11.5 the small items and 11.6 the bots, i
 11.16 help for new players, the menu and the sea, and 11.17 the desktop app, in ARCHIVE
 11zt; 11.18 the fourth visual pass, in ARCHIVE 11zv; 11.19 every style to the edges, in
 ARCHIVE 11zz; 11.20 more languages, in ARCHIVE 12g; 11.21 UPnP, in ARCHIVE 12j; 11.2 points decide, 11.3 two players,
-11.4 measurements never taken and 11.13 the bots' loose ends, closed by the weekend soak, in ARCHIVE 12h; 11.22 rendering performance, in ARCHIVE 12n, its bots planning on the same ticks in ARCHIVE 12p; 11.23 random looks every round, in ARCHIVE 12q; Cyberpunk under Glowing, in ARCHIVE 12r; the slow plan late in a build phase, in ARCHIVE 12s; 11 item 3, the bots in a worker with the smaller rendering leads, in ARCHIVE 13k; the next item 3, wipes between heavy looks, in ARCHIVE 13o; 11.24 a piece in the corner for every style, in ARCHIVE 12t; Under the sea and Electric, in ARCHIVE 12u and 12v; Cartoon and Christmas, in ARCHIVE 12zb and 12zc; the refactoring of 2026-10-07, in ARCHIVE 12w; the bot learning work (the old item 3), closed in ARCHIVE 13zg; bots that hold ground as people do (the old item 1), in ARCHIVE 13zj; scoring by ground and guns (the next item 3), approved by the test sessions, in ARCHIVE 13zd and 13ze — so the open sections keep theirs.
+11.4 measurements never taken and 11.13 the bots' loose ends, closed by the weekend soak, in ARCHIVE 12h; 11.22 rendering performance, in ARCHIVE 12n, its bots planning on the same ticks in ARCHIVE 12p; 11.23 random looks every round, in ARCHIVE 12q; Cyberpunk under Glowing, in ARCHIVE 12r; the slow plan late in a build phase, in ARCHIVE 12s; 11 item 3, the bots in a worker with the smaller rendering leads, in ARCHIVE 13k; the next item 3, wipes between heavy looks, in ARCHIVE 13o; 11.24 a piece in the corner for every style, in ARCHIVE 12t; Under the sea and Electric, in ARCHIVE 12u and 12v; Cartoon and Christmas, in ARCHIVE 12zb and 12zc; the refactoring of 2026-10-07, in ARCHIVE 12w; the bot learning work (the old item 3), closed in ARCHIVE 13zg; bots that hold ground as people do (the old item 1), in ARCHIVE 13zj; scoring by ground and guns (the next item 3), approved by the test sessions, in ARCHIVE 13zd and 13ze; special towers' finished packages ST1–ST6, in ARCHIVE 13zo — so the open sections keep theirs.
 
 ## 12. Deferred (explicitly out of scope for v1)
 

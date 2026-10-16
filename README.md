@@ -13,6 +13,9 @@ score among those still standing wins.
 - 2–8 players, free-for-all or in equal teams; bots of ten skill levels fill any empty seat
 - Tournaments: your team against a field of named bot teams, through a league and a single-
   or double-elimination knockout, with friends joining your team; saved between matches
+- Special towers, if the table switches them on: bring Big Bertha, the Architect or the Rapid
+  Cannon, each at two costs, chosen in a menu that shows what each one does (still being
+  balanced, so off by default)
 - Play alone on your own computer, with friends on your home network, or over the internet;
   offline, the bots think in the background, so the game keeps a steady 60 frames a second
 - Guests in a room say when they are ready, and the host starts once everyone is

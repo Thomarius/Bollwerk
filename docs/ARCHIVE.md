@@ -8939,3 +8939,51 @@ headless Chrome: the menu, each tower's preview, the lobby's button.
 After a first look (the user's): the line on what the tower does went from under the lobby's
 button, the menu saying it; and Bertha's two costs, which read alike, are told apart by her shell
 against a cannon's — as fast at cost 2, faster at cost 3, so reloading sooner.
+
+## 13zo. Special towers ST1–ST6: the packages as planned, moved here from SPECIAL_TOWERS.md (2026-10-17)
+
+Built 2026-10-14 to 2026-10-16 in the order below; what the soaks and the users changed after
+them is in 13zk–13zn. The design itself stays in `docs/SPECIAL_TOWERS.md` until the towers are
+finished.
+
+### ST1 — The rules in the simulation
+
+`CannonKind`, the loadout on the player, `ruleset.specials` with its schema, buying (cost, once a
+round, the cap, not at the opening), the impact towers first in line, the three towers' effects,
+a tower as its cost in guns for the points; the state hashed; ASCII tests for each rule and each rejection.
+No client, no protocol yet: the harness can already play matches with towers.
+
+### ST2 — Settings, protocol and recordings
+
+`MatchSettings.specials`, a seat's loadout in local and room setups (bots' drawn from the seed),
+protocol 25, recording format 3, the server's checks, `--replay` reading the new header, the
+tournament's switch in its settings and save.
+
+### ST3 — Bots
+
+Buying and placing in `Siting`, aiming a Bertha's shot in `Gunner`; the harness's `--specials`
+and `--special`; `shotStats.ts` and `buildStats.ts` by kind. Tested in tables of bots before any
+person plays it.
+
+### ST3b — Every tower at two costs
+
+Added after ST6 (the user's, 2026-10-16), before the soaks, since balancing one cost a tower
+first would be soaked again. A loadout becomes a variant, a tower and its cost: `ruleset.specials`
+per kind per cost with its own levers, a variant absent where it is not offered; the Rapid Cannon
+as stacked barrels, a shot in flight each; state hash and recording format bumped, a header
+naming each player's variant; protocol 26 (the `special` message and the seats carry the cost);
+bots drawing among the variants; the lobby's and the tournament lobby's chooser **one list of
+every variant** ("Big Bertha · 3"), for now; the emblem marking the cost (pips, say); the HUD
+line and the harness's `--special bertha3,none` naming it. A fuller chooser, with descriptions
+and a preview, choosing tower and cost apart, is for later (the user's, 2026-10-16).
+
+### ST5 — The client: lobby, controls, HUD
+
+The switch and the tower chooser in the lobby and in the tournament's setup, the right button in
+the cannon phase, the ghost, the HUD's state, the second reload ring and the cursor's glow, every
+text in English and German.
+
+### ST6 — The client: emblems, effects, sound
+
+The emblem in every style (one shared mark), the generic effects, the cues and their credits,
+checked by screenshots in every style and by `&perf=1` at eight players.
