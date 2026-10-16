@@ -517,8 +517,8 @@
   "tower.berthaWhat": "Reißt ein Kreuz aus fünf Mauerblöcken und feuert zuerst, sobald sie bereit ist.",
   "tower.berthaSlowWhat": "Reißt ein Kreuz aus fünf Mauerblöcken und feuert zuerst, sobald sie bereit ist – mit langsamerer Granate.",
   "tower.architectWhat": {
-    "one": "Baut nach jedem Beschuss deine Mauern bis {n} Block um sich herum wieder auf.",
-    "other": "Baut nach jedem Beschuss deine Mauern bis {n} Blöcke um sich herum wieder auf."
+    "one": "Baut nach jedem Beschuss deine Mauern in einem Kreis von {n} Block Durchmesser um sich herum wieder auf.",
+    "other": "Baut nach jedem Beschuss deine Mauern in einem Kreis von {n} Blöcken Durchmesser um sich herum wieder auf."
   },
   "tower.rapidWhat": "{n} Kanonen übereinander auf dem Platz einer, jede mit eigenem Nachladen.",
   "tower.cost": {

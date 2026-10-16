@@ -67,11 +67,29 @@ export function craterOf(ruleset: Ruleset, kind: CannonKind, cost: number): Crat
   return bertha.crater;
 }
 
-/** The Architect's repair radius at this cost. */
+/** The Architect's repair radius at this cost, in tiles from its footprint's centre. */
 export function repairRadiusOf(ruleset: Ruleset, cost: number): number {
   const architect = ruleset.specials.architect[cost as TowerCost];
   if (architect === undefined) throw new Error(`no architect at cost ${cost} in this ruleset`);
   return architect.repairRadius;
+}
+
+/**
+ * Whether tile (x, y) lies within an Architect's reach: its centre no farther than `radius`
+ * from the footprint's centre, a circle (the user's, 2026-10-16). A square's reach moved in
+ * whole rings, 16 tiles round a 2x2 to 36, with nothing between; a circle's radius moves a
+ * few tiles at a time — 2.2 is the 4x4 square, 2.6 adds the middle of each side (24), 3
+ * the 6x6 without its corners (32). In doubled coordinates, so only the radius is fractional.
+ */
+export function inRepairReach(
+  footprint: { x: number; y: number; w: number; h: number },
+  radius: number,
+  x: number,
+  y: number,
+): boolean {
+  const dx = 2 * x + 1 - (2 * footprint.x + footprint.w);
+  const dy = 2 * y + 1 - (2 * footprint.y + footprint.h);
+  return dx * dx + dy * dy <= 4 * radius * radius;
 }
 
 /**
@@ -134,7 +152,7 @@ export function noteLostWall(state: MatchState, tile: number): void {
 /**
  * The Architects' repair, once a barrage is over and its last shot down: each active
  * Architect rebuilds its owner's walls lost to shots within its cost's `repairRadius` of its
- * footprint, where the tile is still free, in seat order. A breach the owner has already
+ * footprint's centre (`inRepairReach`), where the tile is still free, in seat order. A breach the owner has already
  * built over, or a wall swept as an orphan, is never touched — only what shots took.
  *
  * Active as of the last time the enclosure was solved, the rule that lets a gun fire:
@@ -151,17 +169,13 @@ export function repairWalls(state: MatchState): void {
     for (const cannon of state.cannons) {
       if (cannon.owner !== player.id || cannon.kind !== 'architect' || !cannon.active) continue;
       const r = repairRadiusOf(state.ruleset, cannon.cost);
-      const x0 = cannon.x - r;
-      const y0 = cannon.y - r;
-      const x1 = cannon.x + cannon.w - 1 + r;
-      const y1 = cannon.y + cannon.h - 1 + r;
       for (const i of lost) {
         if (state.islandId[i] !== player.islandId || state.structure[i] !== Structure.Empty) {
           continue;
         }
         const x = i % state.width;
         const y = (i - x) / state.width;
-        if (x < x0 || x > x1 || y < y0 || y > y1) continue;
+        if (!inRepairReach(cannon, r, x, y)) continue;
         state.structure[i] = Structure.Wall;
         state.owner[i] = player.islandId;
         tiles.push(i);

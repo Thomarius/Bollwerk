@@ -43,6 +43,7 @@ npx tsx tools/headless/src/placements.ts [/tmp/rec]   # where each piece's cells
 npm start     -w @bollwerk/headless -- --tournament --count 400 --league --double  # tournaments by rolls
 npx tsx tools/headless/src/shotStats.ts recordings/   # every shot: accuracy, misses, guns' tempo, range
 npx tsx tools/headless/src/shotStats.ts --bots 1,5,10 --matches 4 --players 4  # the same for bot tables
+npx tsx tools/headless/src/towerSoak.ts --out soaks/x --pairs architect3:none --levels 3,5,8  # tower balance, resumable
 npx tsx tools/headless/src/buildStats.ts recordings/ --alias You=Thomas  # castles, ground, guns firing, pieces, by round
 npx tsx tools/headless/src/botReplay.ts recordings/<id>.jsonl --watch 2 --rounds 4-7  # a local match again, live bots
 tools/screenshots.sh /tmp/shots [scene...]   # client in fixed states, against the dev server

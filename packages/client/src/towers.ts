@@ -52,7 +52,10 @@ export function towerWhat(variant: TowerVariant, ruleset: Ruleset = defaultRules
     case 'bertha':
       return t(config.flightFactor > 1 ? 'tower.berthaSlowWhat' : 'tower.berthaWhat');
     case 'architect':
-      return t('tower.architectWhat', { n: 'repairRadius' in config ? config.repairRadius : 0 });
+      // Its reach is a circle from the footprint's centre; told as blocks across, a whole number.
+      return t('tower.architectWhat', {
+        n: 'repairRadius' in config ? Math.round(2 * config.repairRadius) : 0,
+      });
     case 'rapid':
       return t('tower.rapidWhat', { n: cost });
   }

@@ -12,8 +12,8 @@ import { Structure, type MatchState } from './types.js';
 
 /**
  * Towers played, with levers of the tests' own — the balance in config/ is tuned by soaks
- * and moves, the rules under test do not: an Architect of cost 2 reaching 2 tiles, of cost 3
- * reaching 3, and every Rapid Cannon's barrels flying as a cannon's.
+ * and moves, the rules under test do not: an Architect of cost 2 reaching 3 tiles from its
+ * centre, of cost 3 reaching 4, and every Rapid Cannon's barrels flying as a cannon's.
  */
 const SPECIALS: Ruleset = (() => {
   const ruleset = withSpecials(defaultRuleset);
@@ -23,8 +23,8 @@ const SPECIALS: Ruleset = (() => {
     specials: {
       ...ruleset.specials,
       architect: {
-        '2': { ...architect['2']!, repairRadius: 2 },
-        '3': { ...architect['3']!, repairRadius: 3 },
+        '2': { ...architect['2']!, repairRadius: 3 },
+        '3': { ...architect['3']!, repairRadius: 4 },
       },
       rapid: { '2': { ...rapid['2']!, flightFactor: 1 }, '3': { ...rapid['3']!, flightFactor: 1 } },
     },
@@ -451,9 +451,9 @@ describe('Big Bertha’s crater', () => {
 
 describe('the Architect’s repair', () => {
   /**
-   * Player 0's Architect of cost 2 at (3, 3) inside a ring, reaching x 1–6 and y 1–6 at
-   * radius 2, so
-   * the ring's west wall but not its east; player 1's two cannons below.
+   * Player 0's Architect of cost 2 at (3, 3) inside a ring, its centre at (4, 4) and its
+   * reach 3 round it: the ring's west wall but not its east, nor the ring's corner beside
+   * it, 3.5 off diagonally; player 1's two cannons below.
    */
   const RING = [
     `
@@ -523,7 +523,7 @@ describe('the Architect’s repair', () => {
   });
 
   it('reaches as far as its cost’s variant says', () => {
-    const architect = { ...SPECIALS.specials.architect['3']!, repairRadius: 6 };
+    const architect = { ...SPECIALS.specials.architect['3']!, repairRadius: 7 };
     const ruleset = {
       ...SPECIALS,
       specials: {
@@ -536,6 +536,20 @@ describe('the Architect’s repair', () => {
     repairWalls(state);
     expect(state.structure[WEST]).toBe(Structure.Wall);
     expect(state.structure[EAST]).toBe(Structure.Wall);
+  });
+
+  it('reaches round, not square', () => {
+    // The corner is 2 tiles out from the footprint as the west wall's end is, but diagonally.
+    const state = breached();
+    const corner = 1 * 14 + 1;
+    const end = 5 * 14 + 1;
+    for (const i of [corner, end]) {
+      state.structure[i] = Structure.Empty;
+      state.lostWalls.push(i);
+    }
+    repairWalls(state);
+    expect(state.structure[end]).toBe(Structure.Wall);
+    expect(state.structure[corner]).toBe(Structure.Empty);
   });
 
   it('waits for the last shot in the air', () => {

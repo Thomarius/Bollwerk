@@ -8854,3 +8854,35 @@ reads 70–75%, and Architect 3 at Level 5 (79%) and Bertha 3 at Level 8 (46%), 
 measurement at ±10. Final levers: Bertha 2 flight 1, Bertha 3 0.85; Architect 2 radius 1, Architect
 3 radius 2 with its gun at 2; Rapid 2 at 1, Rapid 3 at 1.15. The balance is to how the bots use the
 towers, by ST3's first buying rule. The soaks' files are in `soaks/towers-2026-10-16*/`.
+
+## 13zl. The Architect's reach a circle, its gun at a cannon's flight (2026-10-16)
+
+**Why** (the user's, 2026-10-16): Architect 3's slower gun (flight 2), the lever 13zk left it
+with, was not liked — the tower is defence, and slowing its gun was a debuff beside the point.
+Its reach was a square (Chebyshev), which moves in whole rings round a 2×2: 16 tiles at radius
+1, 36 at 2, nothing between — and radius 2 at a gun's flight had been 73/81/70 against none.
+
+**Built**: the reach is a circle, a tile's centre within `repairRadius` of the footprint's centre
+(`inRepairReach`, in doubled coordinates so only the radius is fractional), in the repair and in
+the bots' siting alike. The radius is a real number now; round a 2×2 it steps 2.2 → 16 tiles (the
+4×4 square, so Architect 2 plays exactly as before), 2.6 → 24 (the square and the middle two of
+each side), 3 → 32 (the 6×6 without its corners). The lobby tells the reach as blocks across,
+twice the radius rounded. The harness gained `--set path=json` (a ruleset value overridden and
+checked by the schema), and the tower soaks a runner in the repository,
+`tools/headless/src/towerSoak.ts` — 13zk's `run.sh` and `analyze.py` stayed on another machine.
+
+**Measured**: as 13zk, two-player tables of equal bots, 96 matches a pairing (48 seeds from 1000,
+both seat orders), Architect 3 at a gun's flight; the share is Architect 3's:
+
+| radius | vs none L3 / L5 / L8 | vs Architect 2 L3 / L5 / L8 |
+| ------ | -------------------- | --------------------------- |
+| 2.6    | 76 / 69 / 55         | 55 / 36 / 50                |
+| 3      | 73 / 76 / 59         | 65 / 64 / 50                |
+
+Level 5 at 2.6 again on 48 other seeds: 68 against none and 53 against Architect 2, so over 192
+matches 68% and 45% — the 36 was noise (one standard error of a share at 96 is about 5 points).
+
+**Kept**: radius 2.6 at flight 1. Against none 76/68/55, Level 3 strong as every tower is (13zk);
+head to head Architect 2 takes 45/55/50, inside the goal. Radius 3 put Architect 3 back above the
+goal at Level 5 and out of the head to head's band at Levels 3 and 5. Soaks in
+`soaks/towers-2026-10-16-circle/`.

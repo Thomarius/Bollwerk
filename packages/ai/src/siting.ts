@@ -7,6 +7,7 @@ import {
   canPlaceCannon,
   distanceSquared,
   footprintOf,
+  inRepairReach,
   sameTeam,
   repairRadiusOf,
   specialRefusal,
@@ -215,7 +216,7 @@ export class Siting {
         let score: number;
         if (guarded !== null) {
           // The Architect: the most of its wall within reach, the weakest counting most, before
-          // room — at radius two it can stand clear of the wall and still reach it.
+          // room — with the larger reach it can stand clear of the wall and still reach it.
           score = this.reach(state, guarded, repairRadiusOf(state.ruleset, cost), x, y, cw, ch);
           better =
             pinned < bestPinned ||
@@ -288,7 +289,7 @@ export class Siting {
     return weight;
   }
 
-  /** The guarded wall within an Architect's repair radius of a footprint, by weight. */
+  /** The guarded wall within an Architect's reach of a footprint (`inRepairReach`), by weight. */
   private reach(
     state: MatchState,
     guarded: Uint8Array,
@@ -299,9 +300,11 @@ export class Siting {
     h: number,
   ): number {
     let sum = 0;
-    for (let ty = Math.max(0, y - r); ty <= Math.min(state.height - 1, y + h - 1 + r); ty++) {
-      for (let tx = Math.max(0, x - r); tx <= Math.min(state.width - 1, x + w - 1 + r); tx++) {
-        sum += guarded[ty * state.width + tx] as number;
+    const footprint = { x, y, w, h };
+    const out = Math.ceil(r);
+    for (let ty = Math.max(0, y - out); ty <= Math.min(state.height - 1, y + h - 1 + out); ty++) {
+      for (let tx = Math.max(0, x - out); tx <= Math.min(state.width - 1, x + w - 1 + out); tx++) {
+        if (inRepairReach(footprint, r, tx, ty)) sum += guarded[ty * state.width + tx] as number;
       }
     }
     return sum;

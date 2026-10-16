@@ -520,8 +520,8 @@
   "tower.berthaWhat": "Clears a cross of five wall blocks, and fires first whenever it is ready.",
   "tower.berthaSlowWhat": "Clears a cross of five wall blocks, and fires first whenever it is ready — on a slower shell.",
   "tower.architectWhat": {
-    "one": "Rebuilds your walls lost up to {n} block around it once each barrage is over.",
-    "other": "Rebuilds your walls lost up to {n} blocks around it once each barrage is over."
+    "one": "Rebuilds your walls lost in a circle {n} block across around it once each barrage is over.",
+    "other": "Rebuilds your walls lost in a circle {n} blocks across around it once each barrage is over."
   },
   "tower.rapidWhat": "{n} cannons stacked in one cannon's place, each with its own reload.",
   "tower.cost": {

@@ -72,8 +72,8 @@ function byCost<T extends z.ZodType>(variant: T) {
 const BerthaSchema = z.strictObject({ ...towerFields, crater: CraterPatternSchema });
 const ArchitectSchema = z.strictObject({
   ...towerFields,
-  /** Tiles from its footprint, every way and diagonally (Chebyshev). */
-  repairRadius: z.number().int().nonnegative(),
+  /** Tiles from its footprint's centre to a tile's centre: a circle (`inRepairReach`). */
+  repairRadius: z.number().nonnegative(),
 });
 /** As many cannons on one footprint as it cost, a barrel each (`barrelsOf`). */
 const RapidSchema = z.strictObject(towerFields);

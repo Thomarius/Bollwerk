@@ -39,8 +39,8 @@
       "3": { "footprint": [2, 2], "flightFactor": 0.85, "crater": "plus5" }
     },
     "architect": {
-      "2": { "footprint": [2, 2], "flightFactor": 1, "repairRadius": 1 },
-      "3": { "footprint": [2, 2], "flightFactor": 2, "repairRadius": 2 }
+      "2": { "footprint": [2, 2], "flightFactor": 1, "repairRadius": 2.2 },
+      "3": { "footprint": [2, 2], "flightFactor": 1, "repairRadius": 2.6 }
     },
     "rapid": {
       "2": { "footprint": [2, 2], "flightFactor": 1 },

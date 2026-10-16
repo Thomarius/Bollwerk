@@ -169,8 +169,9 @@ describe('the lobby with special towers', () => {
         },
       },
     };
-    expect(towerWhat('architect2', ruleset)).toContain('4');
-    expect(towerWhat('architect3', ruleset)).toContain('7');
+    // The reach told as blocks across: twice the radius.
+    expect(towerWhat('architect2', ruleset)).toContain('8');
+    expect(towerWhat('architect3', ruleset)).toContain('14');
     expect(towerWhat('rapid3')).toContain('3');
     // A Bertha whose shell flies slower than a gun's says so.
     expect(towerWhat('bertha2', ruleset)).not.toBe(towerWhat('bertha3', ruleset));

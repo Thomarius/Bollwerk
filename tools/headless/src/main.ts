@@ -6,6 +6,7 @@ import {
   BALANCED,
   MAX_LEVEL,
   MIN_LEVEL,
+  RulesetSchema,
   TOWER_VARIANTS,
   parsePersonality,
   personalityWords,
@@ -13,6 +14,7 @@ import {
   type AiConfig,
   type BotSetup,
   type Personality,
+  type Ruleset,
   type TowerVariant,
 } from '@bollwerk/config';
 import { loadConfigBundle } from '@bollwerk/config/node';
@@ -90,6 +92,40 @@ interface Args {
   minGuns: number[] | null;
   /** Per seat, repeating: whether it fails a round on purpose short of them. */
   failOnPurpose: boolean[] | null;
+  /** Ruleset values to override, `path=json` each (`--set`). */
+  set: string[];
+}
+
+/**
+ * The ruleset with `--set` values written over it, `specials.architect.3.repairRadius=2.6`
+ * each, the value read as JSON and the whole checked by the schema as the file is: a soak
+ * tries a lever without editing config/, which a soak running beside it would read.
+ */
+function withOverrides(ruleset: Ruleset, overrides: readonly string[]): Ruleset {
+  const out = structuredClone(ruleset) as unknown as Record<string, unknown>;
+  for (const override of overrides) {
+    const eq = override.indexOf('=');
+    if (eq < 1) usageError(`--set wants path=value, not ${override}`);
+    const path = override.slice(0, eq).split('.');
+    let value: unknown;
+    try {
+      value = JSON.parse(override.slice(eq + 1));
+    } catch {
+      usageError(`--set ${override}: the value is not JSON`);
+    }
+    let node = out;
+    for (const key of path.slice(0, -1)) {
+      const next = node[key];
+      if (typeof next !== 'object' || next === null) usageError(`--set: no ${path.join('.')}`);
+      node = next as Record<string, unknown>;
+    }
+    const last = path.at(-1) as string;
+    if (!(last in node)) usageError(`--set: no ${path.join('.')}`);
+    node[last] = value;
+  }
+  const parsed = RulesetSchema.safeParse(out);
+  if (!parsed.success) usageError(`--set: ${parsed.error.message}`);
+  return parsed.data;
 }
 
 /**
@@ -136,7 +172,7 @@ function parsePersonalities(value: string | undefined): (Personality | 'dealt')[
 const USAGE =
   'usage: npm start -w @bollwerk/headless -- [--matches N] [--players N] [--seed N] ' +
   '[--max-ticks N] [--max-rounds N|none] [--teams N] [--level 1-10[,...]] ' +
-  '[--personality offensive|dealt|...[,...]] [--specials on|off] [--special bertha2|bertha3|architect2|architect3|rapid2|rapid3|none|random[,...]] [--plans 1,0[,...]] [--stats FILE] [--outcomes FILE] [--record DIR] [--map]\n' +
+  '[--personality offensive|dealt|...[,...]] [--specials on|off] [--special bertha2|bertha3|architect2|architect3|rapid2|rapid3|none|random[,...]] [--plans 1,0[,...]] [--set path=json ...] [--stats FILE] [--outcomes FILE] [--record DIR] [--map]\n' +
   '       npm start -w @bollwerk/headless -- --replay recordings/ [more files or dirs] [--stats FILE]\n' +
   '       npm start -w @bollwerk/headless -- --tournament [--help for its flags]';
 
@@ -208,6 +244,7 @@ function parseArgs(argv: string[]): Args {
     minGuns: values['min-guns']?.split(',').map(Number) ?? null,
     failOnPurpose: values['fail-on-purpose']?.split(',').map((v) => v.trim() === '1') ?? null,
     plans: values.plans?.split(',').map((v) => v.trim() === '1') ?? [bundle.ai.planning.enabled],
+    set: values.set ?? [],
   };
 }
 
@@ -229,6 +266,7 @@ const FLAGS = {
   'plan-steps': { type: 'string' },
   'min-guns': { type: 'string' },
   'fail-on-purpose': { type: 'string' },
+  set: { type: 'string', multiple: true },
   stats: { type: 'string' },
   outcomes: { type: 'string' },
   map: { type: 'boolean' },
@@ -352,6 +390,7 @@ if (process.argv[2] === '--tournament') {
 
 const bundle = loadConfigBundle(repoRoot);
 const args = parseArgs(process.argv.slice(2));
+bundle.ruleset = withOverrides(bundle.ruleset, args.set);
 
 const problems = validateConfigBundle(bundle);
 if (problems.length > 0) {

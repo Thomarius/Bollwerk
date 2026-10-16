@@ -6,7 +6,7 @@ different way to play — more damage, sturdier walls, a faster tempo — at the
 of the points those guns would have scored. This file is the design as discussed with the user
 (2026-10-11, its open questions settled 2026-10-14, every tower at two costs 2026-10-16) and the
 plan to build it in work packages. **ST1–ST3, ST3b, ST5 and ST6 are built**, and ST4's first
-balance is measured (ARCHIVE 13zk); the level ladder with towers, ST7 and ST8 are open. Like PLAN.md it says what is configurable and why and leaves the
+balance is measured (ARCHIVE 13zk, the Architect's circle 13zl); the level ladder with towers, ST7 and ST8 are open. Like PLAN.md it says what is configurable and why and leaves the
 values to `config/*.json`; when a package is done its summary moves to ARCHIVE.md and this file
 keeps only what is open.
 
@@ -35,7 +35,7 @@ keeps only what is open.
   whose shot does something on impact is always first in line, the nearest of them if several are
   ready. Its readiness is shown by a second reload ring and a glow on the aiming cursor (§2.2).
 - **A tower scores as the cannons it cost** (`gunPoints`, `gunsWorth`; the user's balance after
-  ST3, 2026-10-14): Big Bertha as three guns firing, the Architect and the Rapid Cannon as two. At
+  ST3, 2026-10-14): a variant of cost 3 as three guns firing, one of cost 2 as two. At
   first it counted as one gun, which made a tower of cost 3 cost two guns' points every round it
   stood — and Bertha won 3 of 12 in a first look. For the gun cap it still counts as one.
 - **The graphics are each style's own cannon with an emblem** for the tower's kind — one shared
@@ -110,15 +110,15 @@ keeps only what is open.
 
 ### 2.3 The first three towers
 
-Every number below is kept in config, as ST4's first soaks left them (ARCHIVE 13zk, the
+Every number below is kept in config, as ST4's first soaks left them (ARCHIVE 13zk and 13zl, the
 starting values in brackets). Each tower has a variant at cost 2 and one at cost 3 (§1), told
 apart by levers of their own — the thing that defines the tower stays the same in both.
 
-| Tower        | Cost 2                | Cost 3                                      | What stays                     |
-| ------------ | --------------------- | ------------------------------------------- | ------------------------------ |
-| Big Bertha   | flight factor 1 (1.5) | flight factor 0.85 (1)                      | the `plus5` crater             |
-| Architect    | repair radius 1 (2)   | repair radius 2 (3), its gun's flight 2 (1) | an ordinary gun in combat      |
-| Rapid Cannon | 2 barrels, flight 1   | 3 barrels, flight 1.15 (1)                  | each barrel an ordinary cannon |
+| Tower        | Cost 2                | Cost 3                     | What stays                     |
+| ------------ | --------------------- | -------------------------- | ------------------------------ |
+| Big Bertha   | flight factor 1 (1.5) | flight factor 0.85 (1)     | the `plus5` crater             |
+| Architect    | reach 2.2, 16 tiles   | reach 2.6, 24 tiles        | an ordinary gun in combat      |
+| Rapid Cannon | 2 barrels, flight 1   | 3 barrels, flight 1.15 (1) | each barrel an ordinary cannon |
 
 **Big Bertha** — offence.
 
@@ -143,15 +143,20 @@ apart by levers of their own — the thing that defines the tower stays the same
 
 - Cost 2 or 3, footprint 2×2. Less offence, more security: it fires ordinary shots like a cannon.
 - **At the end of each combat phase**, before the banner, it **rebuilds the walls its owner lost
-  to shots in that combat** within its repair radius of its footprint (Chebyshev) — 1 tile at
-  cost 2, 2 at cost 3 (2 and 3 to start; the soaks found them far too strong at Levels 3–5) — on
-  its own island. Its radius moves in whole steps, so cost 3 also has a slower gun (flight 2). Then the repair is on the board through the intermission, where the player sees it and
-  the bots plan their build on a snapshot that already holds it (ARCHIVE 13zf).
+  to shots in that combat** within its reach on its own island: a circle, a tile's centre within
+  the repair radius of the footprint's centre (`inRepairReach`) — 2.2 at cost 2, the 4×4 round its
+  footprint, and 2.6 at cost 3, 24 tiles. It was a square at first, 1 and 2 tiles out from the
+  footprint (2 and 3 to start, far too strong at Levels 3–5), and a square moves only in whole
+  rings, 16 tiles to 36, so cost 3 was given a slower gun; the user disliked that debuff, and the
+  circle's finer steps replaced it (ARCHIVE 13zl). Then the repair is on the board through the
+  intermission, where the player sees it and the bots plan their build on a snapshot that already
+  holds it (ARCHIVE 13zf).
 - Only where the tile is free, and only if the Architect is active — as of the last resolution,
   the same rule that lets a gun fire, since shots landing do not refresh the enclosure. The
   repaired walls are the island's own again. The attacker keeps the points for them: the shot
   did land.
-- Levers: the radius by cost. It repairs only walls lost to shots, never walls swept as orphans.
+- Levers: the radius by cost, a real number (round a 2×2: 2.2 → 16 tiles, 2.6 → 24, 3 → 32). It
+  repairs only walls lost to shots, never walls swept as orphans.
 
 **Rapid Cannon** — more guns in less room (redesigned by the user, 2026-10-16).
 
@@ -207,7 +212,7 @@ Built in ST1, the two costs in ST3b (2026-10-16); the rules are in `sim/src/spec
   teammate's; a ready Bertha chosen before a nearer ready cannon, the nearest of two ready
   Berthas, a cannon when the Bertha is loading; the cheaper Bertha's longer flight; the
   Architect's repair inside its radius and not outside, nor when inert, nor over a placed block,
-  and its radius by cost; a Rapid Cannon firing as its cost in cannons, each barrel freed by its
+  its radius by cost, and round rather than square; a Rapid Cannon firing as its cost in cannons, each barrel freed by its
   own shot; a cheaper variant's cost charged; a variant not offered given as none; a tower
   scoring its cost in guns; the cap freed by a continue; every rejection.
 
@@ -216,7 +221,7 @@ Built in ST1, the two costs in ST3b (2026-10-16); the rules are in `sim/src/spec
 - `ruleset.specials`, strict like everything: `perRound` (1), `maxOwned` (3; to be tried without
   a limit in a later test), and per kind its variants by cost, `"2"` and `"3"`, each with its
   `footprint`, `flightFactor` and own levers — Bertha's `crater`, the Architect's
-  `repairRadius`. A variant left out is not offered (`offeredVariants`); a kind needs one at
+  `repairRadius` (from the footprint's centre, a circle). A variant left out is not offered (`offeredVariants`); a kind needs one at
   least. A loadout is a `TowerVariant` (`TOWER_VARIANTS`, `variantKind`, `variantCost`). An
   unknown key is an error. Whether towers are on at all is the settings' switch.
 - `MatchSettings` gains `specials: boolean`, opening as the ruleset's `specials.enabled` (off), and
@@ -397,16 +402,16 @@ balancing round** (the user's, 2026-10-16 — another session, the results looke
 
 - Every tower is a little strong at Level 3 (70–75% against none), where bots lose more walls and
   hold a second castle less often.
-- Single figures at the edge, each one measurement of 96 at ±10: Architect 3 at Level 5 (79%),
-  Bertha 3 at Level 8 (46%). Rerun them, perhaps at 192, before turning a lever.
-- Architect 3's gun flight (2) is a weak lever; if it stays too strong, another (a 3×3
-  footprint, its radius 1 with a larger cost-3 lever of its own) wants designing.
+- A single figure at the edge, one measurement of 96 at ±10: Bertha 3 at Level 8 (46%). Rerun it,
+  perhaps at 192, before turning a lever. (Architect 3 at Level 5 is settled: its circle, at a
+  gun's flight, read 68% over 192 — ARCHIVE 13zl.)
 - Not yet done: the level ladder with towers on and off; four-player tables, one variant against
   three without; whether the bots' buying rule (ST3's first) does the towers justice; then
   towers on by default.
-- To rerun: `soaks/towers-2026-10-16/run.sh OUT LEVELS WORKERS` (pairings by `PAIRS=`, a chunk
-  whose outcomes exist is skipped, so unchanged pairings are copied in) and `analyze.py OUT`.
-  Both sit beside the data, which git does not keep.
+- To rerun: `npx tsx tools/headless/src/towerSoak.ts --out DIR --pairs architect3:none,...
+--levels 3,5,8 [--set specials.architect.3.repairRadius=3]`, then `--summary`; resumable, a
+  chunk whose outcomes exist is skipped. 13zk's own scripts stayed on another machine, so its
+  figures were on other seeds.
 
 ### ST5 — The client: lobby, controls, HUD
 
