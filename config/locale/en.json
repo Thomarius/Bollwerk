@@ -254,11 +254,6 @@
     "one": "Choose a castle — then {n} cannon to place",
     "other": "Choose a castle — then {n} cannons to place"
   },
-  "hud.cannonsLeft": {
-    "one": "{n} cannon left to place",
-    "other": "{n} cannons left to place"
-  },
-  "hud.allPlaced": "All cannons placed",
   "hud.colPoints": "points",
   "hud.colWall": "wall",
   "hud.colCastles": "castles",

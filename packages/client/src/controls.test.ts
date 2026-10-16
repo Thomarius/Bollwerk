@@ -2,6 +2,7 @@ import { defaultTerrainConfig } from '@bollwerk/config';
 import {
   Rng,
   applyAction,
+  applyEnclosure,
   beginMatch,
   createMatch,
   drainEvents,
@@ -10,11 +11,20 @@ import {
   scriptedAction,
   stateFromAscii,
   step,
+  withSpecials,
   type MatchState,
 } from '@bollwerk/sim';
 import { describe, expect, it } from 'vitest';
 
-import { inputMode, mayTarget, nextReload, readyCannons } from './controls.js';
+import {
+  inputMode,
+  maySwitchTower,
+  mayTarget,
+  nextReload,
+  nextTowerShot,
+  placeableCannons,
+  readyCannons,
+} from './controls.js';
 
 /** Plays until somebody spends a life, then on to the cannon phase that follows. */
 function afterContinue(seed: number): { state: MatchState; player: number } {
@@ -189,5 +199,92 @@ describe('the next gun to be ready', () => {
     expect(nextReload(inert, 0)).toBeNull();
     // Another player's guns are not this one's.
     expect(nextReload(twoLoading(), 1)).toBeNull();
+  });
+});
+
+describe('the next shot a tower fires', () => {
+  /** Player 0's cannon and Big Bertha side by side, both active, both loaded. */
+  function battery(): MatchState {
+    const state = stateFromAscii(`
+      ..........
+      .**..BB...
+      .**..BB...
+      ..........
+    `);
+    for (const cannon of state.cannons) cannon.active = true;
+    return state;
+  }
+
+  it('is a ready Bertha’s cross, wherever the cursor is', () => {
+    // Nearer the cannon, yet the Bertha fires first, as the sim chooses.
+    const next = nextTowerShot(battery(), 0, 0, 1);
+    expect(next?.kind).toBe('bertha');
+    expect([...(next?.crater ?? [])].sort()).toEqual(
+      [
+        [0, 0],
+        [0, -1],
+        [1, 0],
+        [0, 1],
+        [-1, 0],
+      ].sort(),
+    );
+  });
+
+  it('is nothing while she loads, the next shot a cannon’s', () => {
+    const state = battery();
+    state.cannons.find((c) => c.kind === 'bertha')!.shotIds = [99];
+    expect(nextTowerShot(state, 0, 0, 1)).toBeNull();
+  });
+});
+
+describe('the cannons still to place', () => {
+  /** Player 0's castle sealed in a cannon phase, with room for guns or none. */
+  function placing(art: string): MatchState {
+    const state = stateFromAscii(art, withSpecials(fastRuleset()));
+    applyEnclosure(state);
+    state.phase = 'cannon_place';
+    state.phaseEndTick = 100_000;
+    const player = state.players[0]!;
+    player.startingCastleId = state.castles[0]!.id;
+    player.cannonsToPlace = 3;
+    player.special = 'bertha2';
+    return state;
+  }
+  const ROOMY = `
+    ..........
+    .########.
+    .#,,,,,,#.
+    .#,@@,,,#.
+    .#,@@,,,#.
+    .#,,,,,,#.
+    .########.
+    ..........
+  `;
+  const TIGHT = `
+    ......
+    .####.
+    .#@@#.
+    .#@@#.
+    .####.
+    ......
+  `;
+
+  it('are the count while one still fits', () => {
+    expect(placeableCannons(placing(ROOMY), 0)).toBe(3);
+  });
+
+  it('are none once nowhere is left for one, though the sim keeps the count', () => {
+    const state = placing(TIGHT);
+    expect(state.players[0]!.cannonsToPlace).toBe(3);
+    expect(placeableCannons(state, 0)).toBe(0);
+    // Nor does the right button offer the tower with nowhere to stand it.
+    expect(maySwitchTower(state, 0)).toBe(false);
+  });
+
+  it('offer the tower where the rules sell it and a gun fits', () => {
+    const state = placing(ROOMY);
+    expect(maySwitchTower(state, 0)).toBe(true);
+    state.players[0]!.openingPlacement = true;
+    expect(maySwitchTower(state, 0)).toBe(false);
   });
 });

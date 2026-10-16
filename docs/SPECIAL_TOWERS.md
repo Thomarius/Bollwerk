@@ -266,13 +266,27 @@ Built in ST5 and ST6 together (2026-10-14), so people can play with towers; the 
   tower and cost apart with descriptions and a preview, is for later. The same in a tournament's
   lobby, and a switch in the tournament's setup.
 - **Controls** (`controls.ts`): in the cannon phase the right button switches the ghost between a
-  cannon and the tower (`placingTower`), only while the rules sell it, a cue either way; back to a
-  cannon once bought. Combat is unchanged: the left button fires, a ready Bertha first.
-- **HUD** (`hud.ts`, `towerLine`): a line over the cannon count in a cannon phase — the tower on
-  offer and its price, the ghost switched to it, or why not now (the opening, bought this round,
-  the most allowed, too dear). In combat the cursor says it (`drawFireReticle`): an amber glow
+  cannon and the tower (`placingTower`), only while the rules sell it and a gun still fits
+  (`maySwitchTower`), a cue either way; back to a cannon once bought. Combat is unchanged: the
+  left button fires, a ready Bertha first.
+- **Beside the cursor** in the cannon phase (play-testing, 2026-10-16; `towerIcons.ts`,
+  `BoardLabels.showPlaceIcons`): a row of icons, a cannon each still to place, where a number had
+  read as the combat's count of guns ready. With the tower chosen its emblem leads the row and
+  the cannons it costs leave it (4 cannons and a Bertha 3: the tower and one). None left, or no
+  room for one (`placeableCannons` — the sim keeps the count until combat), a grey cannon struck
+  through. Under it, while the right button would switch, its hint: a mouse with the right button
+  lit, a turning arrow, and what a click switches to. The bar's count of cannons went.
+- **HUD** (`hud.ts`, `towerLine`): a line in a cannon phase — the tower on offer and its price,
+  the ghost switched to it, or why not now (the opening, bought this round, the most allowed, too
+  dear); nothing once no gun fits. In combat the cursor says it (`drawFireReticle`): an amber glow
   while an impact tower is ready, an inner amber ring filling toward the next while they load
-  (`impactReadiness`).
+  (`impactReadiness`). Big Bertha brings her own (`nextTowerShot`, the gun the sim would fire):
+  while she is ready her cross is outlined under the cursor, the tiles her shot would clear, and
+  flames rise round the reticle in place of the glow.
+- **The Architect's reach** (play-testing, 2026-10-16): the player's own Architects' circles
+  outlined faintly in their colour round the island's tiles they cover, grey for one inert, in the
+  cannon and build phases only — everyone's would clutter the busy styles (the user's); and the
+  ghost's while placing one.
 - **Emblems** (`render/towerMarks.ts`): one layer over both looks, under the camera, as the crown
   is one mark in every style — no style's own drawing changed. A dark round badge at the gun's
   foot with the emblem in the owner's light colour from the look in front: a shell for Bertha, a
@@ -291,7 +305,8 @@ Built in ST5 and ST6 together (2026-10-14), so people can play with towers; the 
 - **Dev**: `?autostart=1&specials=1&tower=bertha3` plays a match with towers, the person's tower
   as asked.
 - To come in ST7: the How to play page and the screenshot scenes. Seen in headless Chrome: the
-  lobby, the ghost and the HUD line, emblems in Minimal and Parchment, the glow, a blast.
+  lobby, the ghost and the HUD line, emblems in Minimal and Parchment, the glow, a blast; the
+  icons, the hint, the reaches in Minimal and Noir, Bertha's cross and flames.
 
 ### 3.5 Bots (`packages/ai`)
 

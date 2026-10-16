@@ -251,11 +251,6 @@
     "one": "Wähle eine Burg — dann {n} Kanone aufstellen",
     "other": "Wähle eine Burg — dann {n} Kanonen aufstellen"
   },
-  "hud.cannonsLeft": {
-    "one": "Noch {n} Kanone aufzustellen",
-    "other": "Noch {n} Kanonen aufzustellen"
-  },
-  "hud.allPlaced": "Alle Kanonen stehen",
   "hud.colPoints": "Punkte",
   "hud.colWall": "Mauer",
   "hud.colCastles": "Burgen",

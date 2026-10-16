@@ -159,6 +159,41 @@ export class BoardLabels {
     this.readyCount.style.top = `${at.y}px`;
   }
 
+  private placeIcons: { node: HTMLElement; row: HTMLElement; hint: HTMLElement } | null = null;
+
+  /**
+   * The cannon phase beside the cursor: a row of icons, a cannon each still to place or the
+   * tower chosen (`placeIconsHtml`), and under it the right button's hint while it would
+   * switch (`switchHintHtml`). Written only when they change. Null hides it.
+   */
+  showPlaceIcons(at: { x: number; y: number } | null, icons: string, hint: string | null): void {
+    if (at === null) {
+      this.placeIcons?.node.remove();
+      this.placeIcons = null;
+      return;
+    }
+    if (this.placeIcons === null) {
+      const node = document.createElement('div');
+      node.className = 'place-icons';
+      const row = document.createElement('div');
+      row.className = 'row';
+      const hintNode = document.createElement('div');
+      hintNode.className = 'hint';
+      node.append(row, hintNode);
+      this.bannerRoot.append(node);
+      this.placeIcons = { node, row, hint: hintNode };
+    }
+    const { node, row, hint: hintNode } = this.placeIcons;
+    if (row.innerHTML !== icons) row.innerHTML = icons;
+    if (hintNode.dataset['html'] !== (hint ?? '')) {
+      hintNode.dataset['html'] = hint ?? '';
+      hintNode.innerHTML = hint ?? '';
+    }
+    hintNode.hidden = hint === null;
+    node.style.left = `${at.x}px`;
+    node.style.top = `${at.y}px`;
+  }
+
   /** Live banner nodes by player, kept across frames so their animation survives. */
   private readonly islandBanners = new Map<number, HTMLElement>();
 

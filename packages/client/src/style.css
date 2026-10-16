@@ -76,7 +76,8 @@ body.reduced-effects .title-layer img.flicker,
 body.reduced-effects .phase-call.banner-neon,
 body.reduced-effects .big-timer.beat,
 body.reduced-effects .final-stamp,
-body.reduced-effects .you-are-here {
+body.reduced-effects .you-are-here,
+body.reduced-effects .place-icons .hint .turn {
   animation: none;
 }
 
@@ -1140,12 +1141,7 @@ table.final tr.you td:nth-child(2) {
   text-transform: uppercase;
 }
 
-.counter.done {
-  border-color: var(--edge);
-  color: var(--muted);
-}
-
-/* The special tower's line, above the cannon count; amber while the tower is the ghost. */
+/* The special tower's line in the cannon phase; amber while the tower is the ghost. */
 .counter.tower {
   bottom: 5.25rem;
   padding: 0.35rem 1rem;
@@ -1411,6 +1407,84 @@ table.final tr.you td:nth-child(2) {
 
 .ready-count.none {
   color: #ff6a70;
+}
+
+/* The cannon phase beside the cursor: a cannon icon each still to place, the tower chosen
+   first, and under it the right button's hint while it would switch (play-testing,
+   2026-10-16). Left-aligned off the ghost's right side, so the row grows away from it. */
+.place-icons {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.15rem;
+  padding: 0.15rem 0.3rem;
+  border-radius: 0.5rem;
+  pointer-events: none;
+}
+
+.place-icons .row,
+.place-icons .hint {
+  display: flex;
+  align-items: center;
+  gap: 0.1rem;
+}
+
+.place-icons .icon {
+  width: 1.3rem;
+  height: 1.3rem;
+}
+
+.place-icons .row b {
+  margin-left: 0.15rem;
+  font-size: 0.8rem;
+}
+
+.place-icons .row .none {
+  position: relative;
+  display: flex;
+}
+
+/* None left to place, or no room for one: the grey cannon struck through. */
+.place-icons .row .none::after {
+  content: '';
+  position: absolute;
+  left: -0.1rem;
+  right: -0.1rem;
+  top: 50%;
+  border-top: 2px solid #ff6a70;
+  transform: rotate(-35deg);
+}
+
+.place-icons .hint {
+  font-size: 1rem;
+  opacity: 0.9;
+}
+
+.place-icons .hint[hidden] {
+  display: none;
+}
+
+.place-icons .hint .icon {
+  width: 1.15rem;
+  height: 1.15rem;
+}
+
+.place-icons .hint .turn {
+  display: inline-block;
+  animation: place-turn 2.4s linear infinite;
+}
+
+@keyframes place-turn {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .place-icons .hint .turn {
+    animation: none;
+  }
 }
 
 /* Points banked: news, but good news, so it floats rather than sits. */
@@ -2747,7 +2821,8 @@ body.hud-chocolate #hud .counter {
 .banner.summary,
 .pause-overlay .panel,
 .watching,
-.ready-count {
+.ready-count,
+.place-icons {
   --ink: var(--hud-ink);
   --muted: color-mix(in srgb, var(--hud-muted) 65%, var(--hud-ink));
   --accent: var(--hud-accent);

@@ -1,4 +1,4 @@
-import type { ArtConfig, ArtStyle, TowerVariant } from '@bollwerk/config';
+import type { ArtConfig, ArtStyle, SpecialKind, TowerVariant } from '@bollwerk/config';
 import { findReadyCannon, type MatchState, type Shot } from '@bollwerk/sim';
 import { Graphics, type Container } from 'pixi.js';
 
@@ -161,6 +161,12 @@ export interface Ghost {
    * or absent when they own none that can fire.
    */
   impact?: { ready: true } | { ready: false; reload: number } | null;
+  /**
+   * While aiming, the impact tower a click here would fire and the crater it would clear
+   * (`nextTowerShot`): Big Bertha's cross outlined under the cursor, and her flames round it.
+   * Null or absent when the next shot is an ordinary gun's.
+   */
+  nextTower?: { kind: SpecialKind; crater: readonly (readonly [number, number])[] } | null;
 }
 
 /**
@@ -281,7 +287,8 @@ export const IMPACT_GLOW = 0xffa83a;
  * The cursor's word on the player's impact towers (docs/SPECIAL_TOWERS.md §2.2), drawn under
  * the reticle: while one is ready the next shot is its, and the cursor glows; while they are
  * loading, an inner ring fills toward the next, as the outer one does for the guns. One glow
- * for every kind for now; a kind may bring its own later (sparks for Chain Lightning).
+ * for every kind but Big Bertha, whose flames are her own (play-testing, 2026-10-16); a later
+ * kind may bring its own too (sparks for Chain Lightning).
  */
 function drawImpactReadiness(
   g: Graphics,
@@ -293,6 +300,8 @@ function drawImpactReadiness(
 ): void {
   const impact = ghost.impact;
   if (impact === null || impact === undefined) return;
+  // Big Bertha brings her own: flames and her cross, drawn over both looks (`TowerMarks`).
+  if (impact.ready && ghost.nextTower?.kind === 'bertha') return;
   if (impact.ready) {
     const r = view.tile * 1.1;
     g.circle(cx, cy, r);

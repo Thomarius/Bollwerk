@@ -10,6 +10,7 @@ import {
 } from '@bollwerk/config';
 import { specialRefusal, type MatchState } from '@bollwerk/sim';
 
+import { placeableCannons } from './controls.js';
 import { t } from './i18n.js';
 import { store, stored } from './storage.js';
 
@@ -93,6 +94,8 @@ export function towerLine(state: MatchState, playerId: number, placing: boolean)
   const player = state.players[playerId];
   if (player === undefined || player.eliminated || player.special === null) return null;
   if (state.phase !== 'cannon_place' || player.startingCastleId === null) return null;
+  // Nowhere left for a gun, so nothing to offer or refuse: the cursor shows none left.
+  if (placeableCannons(state, playerId) === 0) return null;
   const tower = towerName(variantKind(player.special));
   const cost = towerCostText(variantCost(player.special));
   switch (specialRefusal(state, player)) {
@@ -105,7 +108,7 @@ export function towerLine(state: MatchState, playerId: number, placing: boolean)
     case 'special_cap':
       return t('hud.towerCap', { tower });
     case 'special_too_dear':
-      return player.cannonsToPlace > 0 ? t('hud.towerDear', { tower, cost }) : null;
+      return t('hud.towerDear', { tower, cost });
     default:
       return null;
   }

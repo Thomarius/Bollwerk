@@ -1,10 +1,13 @@
-import { variantCost, variantKind } from '@bollwerk/config';
+import { variantCost, variantKind, type SpecialKind } from '@bollwerk/config';
 import {
   barrelsOf,
+  canPlaceAnyCannon,
   canPlaceCannon,
   canPlacePiece,
   currentPieceId,
   computeEnclosure,
+  craterOf,
+  craterOffsets,
   findReadyCannon,
   footprintOf,
   isImpactTower,
@@ -145,6 +148,51 @@ export function impactReadiness(
   return { ready: false, reload };
 }
 
+/**
+ * The impact tower whose shot a click here would fire, and the crater it would clear round
+ * the tile — the gun the sim itself would choose (`findReadyCannon`), so the cursor shows
+ * exactly what the shot will do. Null when the next shot is an ordinary gun's, or none's.
+ */
+export function nextTowerShot(
+  state: MatchState,
+  playerId: number,
+  x: number,
+  y: number,
+): { kind: SpecialKind; crater: readonly (readonly [number, number])[] } | null {
+  const next = findReadyCannon(state, playerId, x, y);
+  if (next === null || next.kind === 'cannon' || !isImpactTower(next.kind)) return null;
+  return { kind: next.kind, crater: craterOffsets(craterOf(state.ruleset, next.kind, next.cost)) };
+}
+
+/**
+ * Cannons this player may still place: none once nowhere is left for one, though the sim
+ * keeps the count until combat — it ends the phase early for them, and the count beside
+ * the cursor said there were more to come (play-testing, 2026-10-16). A player still to
+ * choose a castle has no ground yet, so theirs is the count.
+ */
+export function placeableCannons(state: MatchState, playerId: number): number {
+  const player = state.players[playerId];
+  if (player === undefined || player.eliminated) return 0;
+  if (owesCastleChoice(player)) return player.cannonsToPlace;
+  return player.cannonsToPlace > 0 && canPlaceAnyCannon(state, playerId)
+    ? player.cannonsToPlace
+    : 0;
+}
+
+/**
+ * Whether the right button would switch the cannon ghost now (`placingTower`): while the
+ * rules sell the player their tower, and some cannon still fits.
+ */
+export function maySwitchTower(state: MatchState, playerId: number): boolean {
+  const player = state.players[playerId];
+  return (
+    player !== undefined &&
+    inputMode(state, playerId) === 'cannon' &&
+    specialRefusal(state, player) === null &&
+    placeableCannons(state, playerId) > 0
+  );
+}
+
 /** The two cues the simulation never sees, because neither changes the match. */
 type InputCue = 'piece_rotate' | 'piece_invalid';
 
@@ -238,18 +286,12 @@ export class Controls {
    */
   get placingTower(): boolean {
     if (!this.towerChosen) return false;
-    const player = this.state.players[this.humanPlayer];
-    const may =
-      player !== undefined &&
-      inputMode(this.state, this.humanPlayer) === 'cannon' &&
-      specialRefusal(this.state, player) === null;
-    if (!may) this.towerChosen = false;
+    if (!maySwitchTower(this.state, this.humanPlayer)) this.towerChosen = false;
     return this.towerChosen;
   }
 
   private switchTower(): void {
-    const player = this.state.players[this.humanPlayer];
-    if (player === undefined || specialRefusal(this.state, player) !== null) {
+    if (!maySwitchTower(this.state, this.humanPlayer)) {
       this.towerChosen = false;
       this.cue('piece_invalid');
       return;
@@ -409,6 +451,7 @@ export class Controls {
           aiming: true,
           reload: nextReload(state, player, tickFraction),
           impact: impactReadiness(state, player, tickFraction),
+          nextTower: nextTowerShot(state, player, tile.x, tile.y),
         };
       case 'fire': {
         const valid =
@@ -424,6 +467,7 @@ export class Controls {
           aiming: true,
           reload: nextReload(state, player, tickFraction),
           impact: impactReadiness(state, player, tickFraction),
+          nextTower: nextTowerShot(state, player, tile.x, tile.y),
         };
       }
       case 'castle': {

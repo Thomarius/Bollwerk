@@ -14,7 +14,9 @@ import {
 } from '@bollwerk/sim';
 
 import { countdownBeat, showsClock } from './clock.js';
-import { Controls, inputMode, readyCannons } from './controls.js';
+import { Controls, inputMode, maySwitchTower, placeableCannons, readyCannons } from './controls.js';
+import { placeIconsHtml, switchHintHtml } from './towerIcons.js';
+import { variantCost, variantKind } from '@bollwerk/config';
 import { bannersFor, type LifeLost, type PointsGained } from './banners.js';
 import { matchPalette, playerCssColour, useMatchPalette } from './colours.js';
 import { matchShapes, playerShape, useMatchShapes } from './shapes.js';
@@ -433,24 +435,37 @@ export async function runSession(
     } else {
       hud.labels.showBigTimer(null, 0);
     }
-    // Beside the cursor, the number that decides the next click: guns ready when
-    // aiming, guns still to place when placing them.
-    const mode = inputMode(state, session.humanPlayer);
-    const count =
-      mode === 'fire' || mode === 'aim'
-        ? readyCannons(state, session.humanPlayer)
-        : mode === 'cannon'
-          ? (state.players[session.humanPlayer]?.cannonsToPlace ?? 0)
-          : null;
+    // Beside the cursor, what decides the next click: the guns ready, as a number, when
+    // aiming; when placing them, a row of icons — a number there was read as the guns ready
+    // (play-testing, 2026-10-16) — with the right button's hint while it would switch.
+    const human = session.humanPlayer;
+    const mode = inputMode(state, human);
+    const aiming = mode === 'fire' || mode === 'aim';
     hud.labels.showReadyCount(
-      ghost.tile !== null && count !== null
-        ? scene.screenAt(ghost.tile.x + 1.4, ghost.tile.y - 1.1)
-        : null,
-      count ?? 0,
+      ghost.tile !== null && aiming ? scene.screenAt(ghost.tile.x + 1.4, ghost.tile.y - 1.1) : null,
+      aiming ? readyCannons(state, human) : 0,
     );
+    const special = state.players[human]?.special ?? null;
+    if (ghost.tile === null || mode !== 'cannon') {
+      hud.labels.showPlaceIcons(null, '', null);
+      return;
+    }
+    const colour = playerCssColour(human);
+    const tower =
+      special !== null && controls.placingTower
+        ? { kind: variantKind(special), cost: variantCost(special) }
+        : null;
+    const icons = placeIconsHtml(placeableCannons(state, human), tower, colour);
+    const hint =
+      special !== null && maySwitchTower(state, human)
+        ? switchHintHtml(variantKind(special), tower === null, colour)
+        : null;
+    const w = ghost.footprint?.w ?? 2;
+    hud.labels.showPlaceIcons(scene.screenAt(ghost.tile.x + w + 0.3, ghost.tile.y), icons, hint);
   }
 
-  function applyEvents(events: readonly MatchEvent[]): void {
+  /** `phaseBefore` is the phase the frame's steps began in, which the seal's fanfare asks. */
+  function applyEvents(events: readonly MatchEvent[], phaseBefore: Phase): void {
     matchLog.note(events, session.state);
     let structuresChanged = false;
     let territoryChanged = false;
@@ -572,7 +587,7 @@ export async function runSession(
     }
     const sealing = board.refresh(structuresChanged, territoryChanged);
     if (sealing !== null) {
-      matchAudio.sealed(session.state, sealing.sealedBefore, sealing.sealedAfter);
+      matchAudio.sealed(session.state, sealing.sealedBefore, sealing.sealedAfter, phaseBefore);
       hints = buildHints(session.state, session.humanPlayer, board.live);
     }
   }
@@ -650,6 +665,7 @@ export async function runSession(
     if (first) preparing?.remove();
 
     perf.begin('sim');
+    const phaseBefore = session.state.phase;
     const events = session.advance(delta);
     if (session.finished && !finishedSeen) {
       finishedSeen = true;
@@ -663,7 +679,7 @@ export async function runSession(
       session.state.players.map((p) => p.name),
       session.finished,
     );
-    applyEvents(events);
+    applyEvents(events, phaseBefore);
     matchAudio.handle(events);
     matchAudio.frame(session.state);
     perf.end('sim');

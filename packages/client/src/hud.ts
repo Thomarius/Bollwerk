@@ -541,12 +541,12 @@ export class Hud {
 
     let cannonCount = '';
     if (state.phase === 'cannon_place' && human && !human.eliminated) {
-      const left = human.cannonsToPlace;
-      cannonCount = choosing
-        ? `<div class="counter">${t('hud.chooseThenCannons', { n: left })}</div>`
-        : left > 0
-          ? `<div class="counter">${t('hud.cannonsLeft', { n: left })}</div>`
-          : `<div class="counter done">${t('hud.allPlaced')}</div>`;
+      // The cannons left are told beside the cursor, as icons (play-testing, 2026-10-16): the
+      // bar keeps only what the cursor cannot say, a castle to choose first.
+      if (choosing) {
+        const n = human.cannonsToPlace;
+        cannonCount = `<div class="counter">${t('hud.chooseThenCannons', { n })}</div>`;
+      }
       // The tower, where the player brought one: on offer, chosen, or why not now.
       const tower = towerLine(state, humanPlayer, placingTower);
       if (tower !== null && !choosing) {

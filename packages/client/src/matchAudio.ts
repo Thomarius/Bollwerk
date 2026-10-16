@@ -179,8 +179,13 @@ export class MatchAudio {
     state: Pick<MatchState, 'phase' | 'castles' | 'players'>,
     before: readonly boolean[],
     after: readonly boolean[],
+    phaseBefore: MatchState['phase'] = state.phase,
   ): void {
-    if (this.watching || state.phase !== 'build') return;
+    // The phase the frame's steps began in as well as the one they end in: the last piece of
+    // an overtime ends the round in the same step, so the frame that seals with it already
+    // reads the intermission, and the fanfare was lost (play-testing, 2026-10-16).
+    const building = state.phase === 'build' || phaseBefore === 'build';
+    if (this.watching || !building) return;
     const island = state.players[this.humanPlayer]?.islandId;
     const newlySealed = state.castles.some(
       (castle) => castle.islandId === island && after[castle.id] === true && !before[castle.id],

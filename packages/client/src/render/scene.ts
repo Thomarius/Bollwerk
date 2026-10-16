@@ -714,7 +714,7 @@ export class Scene {
     };
     // The towers' marks in the colours of the look in front, as its banner brings it.
     const art = this.slots[this.shown.to].art;
-    this.towers.draw(state, this.view, art);
+    this.towers.draw(state, this.view, art, humanPlayer);
     this.towers.drawEffects(this.view, deltaMs);
     for (const slot of this.visible()) {
       slot.theme.drawEffects(state, this.view, {
@@ -765,7 +765,7 @@ export class Scene {
    */
   drawOverlay(state: MatchState, ghost: Ghost, humanPlayer: number): void {
     const to = this.slots[this.shown.to];
-    this.towers.drawGhost(this.view, ghost, to.art, humanPlayer);
+    this.towers.drawGhost(state, this.view, ghost, to.art, humanPlayer);
     for (const slot of this.visible()) {
       slot.theme.drawOverlay(state, this.view, slot === to ? ghost : NO_GHOST, humanPlayer);
     }

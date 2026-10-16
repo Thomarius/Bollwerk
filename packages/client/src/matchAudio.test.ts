@@ -151,6 +151,21 @@ describe('match audio', () => {
     expect(audio.sfx).toHaveLength(2);
   });
 
+  it('sounds it for the overtime’s last piece, which ends the round in the same step', () => {
+    const { audio, match } = setup();
+    const board = {
+      phase: 'intermission',
+      players: [{ islandId: 1 }],
+      castles: [{ id: 0, islandId: 1 }],
+    } as unknown as MatchState;
+    // The frame began in the build phase and ends in the intermission the piece brought on.
+    match.sealed(board, [false], [true], 'build');
+    expect(audio.sfx).toEqual(['enclosure_success']);
+    // A frame wholly outside building stays silent.
+    match.sealed(board, [false], [true], 'intermission');
+    expect(audio.sfx).toHaveLength(1);
+  });
+
   it('sounds the failure for a round that ends with nothing sealed', () => {
     const { audio, match } = setup();
     const resolved = (enclosedCastles: number): MatchEvent => ({

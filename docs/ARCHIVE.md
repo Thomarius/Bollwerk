@@ -8886,3 +8886,27 @@ matches 68% and 45% — the 36 was noise (one standard error of a share at 96 is
 head to head Architect 2 takes 45/55/50, inside the goal. Radius 3 put Architect 3 back above the
 goal at Level 5 and out of the head to head's band at Levels 3 and 5. Soaks in
 `soaks/towers-2026-10-16-circle/`.
+
+## 13zm. Feedback after the towers' first tests (2026-10-16)
+
+Seven points from the users' test matches, triaged with them before building; all in the client.
+
+- **Big Bertha on the cursor**: while she is ready, her cross outlined under the reticle — the
+  tiles her shot would clear, from the gun the sim itself would fire (`nextTowerShot`) — and
+  flames rising round it in place of the generic glow. A first try of tongues pointing outward
+  read as sun rays; rising, curving tongues, longest over the ring, read as fire.
+- **The Architect's reach shown**: it had been invisible. The player's own Architects' circles,
+  a faint outline in their colour, grey for one inert, in the cannon and build phases (the user's
+  choice: only their own, only where walls are planned); the ghost's while placing one.
+- **Cannons to place as icons beside the cursor**, where the number had looked exactly like the
+  combat's count of guns ready; the tower chosen leads the row as its emblem and takes its cost's
+  cannons out of it. The bar's count went with it (the user's), its castle-choice prompt and the
+  tower line kept.
+- **The right button's hint** beside the icons whenever it would switch: a mouse with the right
+  button lit, a turning arrow, and the symbol a click switches to.
+- **Bug, no fanfare for a seal by the overtime's last piece**: the client sounded a seal only
+  while the phase read `build` after the frame's steps, and that piece ends the round in the same
+  step, so the frame already read the intermission. It asks the phase the frame began in too.
+- **Bug, cannons still shown with no room for them**: the sim ends the phase early for a player
+  with nowhere left but keeps the count until combat, and the client showed the count. It shows
+  none once no cannon fits (`placeableCannons`), and the right button no longer offers the tower.

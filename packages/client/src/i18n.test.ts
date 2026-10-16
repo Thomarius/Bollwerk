@@ -28,7 +28,7 @@ describe('the texts', () => {
   it('takes the form a count asks for', () => {
     expect(t('banner.livesLeft', { name: 'Ada', n: 1 })).toBe('Ada — 1 life left');
     expect(t('banner.livesLeft', { name: 'Ada', n: 2 })).toBe('Ada — 2 lives left');
-    expect(t('hud.cannonsLeft', { n: 0 })).toBe('0 cannons left to place');
+    expect(t('banner.livesLeft', { name: 'Ada', n: 0 })).toBe('Ada — 0 lives left');
   });
 
   it('writes places, lists and decimals in English', () => {
