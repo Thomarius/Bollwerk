@@ -9,6 +9,7 @@ const shot = (id: number, owner: number): Shot => ({
   id,
   cannonId: id,
   kind: 'cannon',
+  cost: 1,
   owner,
   fromX: 0,
   fromY: 0,

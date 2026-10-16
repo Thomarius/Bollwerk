@@ -19,6 +19,7 @@ import { loadConfigBundle } from '@bollwerk/config/node';
 import { Bot, PlanningSlots, takeBotTurns } from '@bollwerk/ai';
 import { parseRecording, replayRecording, setupOfRecorded } from '@bollwerk/protocol';
 import {
+  isLoaded,
   Rng,
   Structure,
   Terrain,
@@ -197,7 +198,7 @@ function shotObserver(
           guns,
         };
         for (const c of state.cannons)
-          if (c.active && c.shotId === null) readySince.set(c.id, event.tick);
+          if (c.active && isLoaded(c)) readySince.set(c.id, event.tick);
       } else if (event.kind === 'shot_fired') {
         const { shot } = event;
         const p = shot.owner;
@@ -274,7 +275,8 @@ function shotObserver(
         if (outcome === 'near1' || outcome === 'near2') m.near++;
         for (const d of event.destroyed) destroyedBy.set(d, shot.owner);
         // By the gun's kind too: a Big Bertha's crater takes more than its aim.
-        const kind = `${keyOf[shot.owner] as string} ${shot.kind}`;
+        const gun = shot.kind === 'cannon' ? 'cannon' : `${shot.kind}${shot.cost}`;
+        const kind = `${keyOf[shot.owner] as string} ${gun}`;
         const k = byKind.get(kind) ?? { shots: 0, walls: 0 };
         k.shots++;
         k.walls += event.destroyed.length;
@@ -286,7 +288,7 @@ function shotObserver(
         if (!c.active || (phase.guns[c.owner] as number) === 0) continue;
         const acc = accOf(keyOf[c.owner] as string);
         acc.activeGunTicks++;
-        if (c.shotId === null) acc.readyGunTicks++;
+        if (isLoaded(c)) acc.readyGunTicks++;
       }
     }
   };

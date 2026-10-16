@@ -2,6 +2,7 @@ import { defaultAiConfig, type AiConfig, type BotProfile } from '@bollwerk/confi
 import {
   Rng,
   Structure,
+  barrelsOf,
   computeEnclosure,
   pieceById,
   poolForRound,
@@ -387,13 +388,16 @@ export function scoreOf(
 
 /**
  * The guns a rollout leaves ready for the next barrage: those firing after the round's
- * resolution, and the reward as far as there is room to stand it. None for a failed round.
+ * resolution, by barrels, and the reward as far as there is room to stand it. None for a failed round.
  */
 export function gunsReady(rollout: Rollout, playerId: number): number {
   const { result, board } = rollout;
   if (result === null || result.eliminated || result.enclosedCastles === 0) return 0;
   let firing = 0;
-  for (const cannon of board.cannons) if (cannon.owner === playerId && cannon.active) firing++;
+  // By barrels, so a Rapid Cannon counts as the cannons stacked in it.
+  for (const cannon of board.cannons) {
+    if (cannon.owner === playerId && cannon.active) firing += barrelsOf(cannon);
+  }
   const reward = board.players[playerId]?.cannonsToPlace ?? 0;
   return firing + Math.min(reward, cannonRoom(board, playerId));
 }

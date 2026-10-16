@@ -1,4 +1,4 @@
-import type { ArtConfig, ArtStyle, SpecialKind } from '@bollwerk/config';
+import type { ArtConfig, ArtStyle, TowerVariant } from '@bollwerk/config';
 import { findReadyCannon, type MatchState, type Shot } from '@bollwerk/sim';
 import { Graphics, type Container } from 'pixi.js';
 
@@ -151,10 +151,10 @@ export interface Ghost {
    */
   reload?: number | null;
   /**
-   * The special tower the cannon ghost would place, while the right button has switched to
-   * it; null or absent for an ordinary cannon.
+   * The special tower, at its cost, the cannon ghost would place while the right button has
+   * switched to it; null or absent for an ordinary cannon.
    */
-  tower?: SpecialKind | null;
+  tower?: TowerVariant | null;
   /**
    * While aiming, the player's impact towers (`impactReadiness`): one ready — the next shot
    * is its, and the cursor glows — or the next one's reload for a second, inner ring. Null
@@ -1834,22 +1834,16 @@ export function shotProgress(shot: Pick<Shot, 'launchTick' | 'impactTick'>, now:
 }
 
 /**
- * How far above the ground a shot rides, in tiles, at progress `t` through its flight. A
- * Rapid Cannon's shot flies flatter, as its quicker flight says it would; any other as a gun's.
+ * How far above the ground a shot rides, in tiles, at progress `t` through its flight. Every
+ * gun's alike: a Rapid Cannon's barrels are ordinary cannons (2026-10-16), so its shots no
+ * longer fly the flatter arc its quicker flight once had.
  */
-export function shotLift(
-  shot: Pick<Shot, 'fromX' | 'fromY' | 'toX' | 'toY'> & { kind?: Shot['kind'] },
-  t: number,
-): number {
+export function shotLift(shot: Pick<Shot, 'fromX' | 'fromY' | 'toX' | 'toY'>, t: number): number {
   const dx = shot.toX - shot.fromX;
   const dy = shot.toY - shot.fromY;
   const range = Math.sqrt(dx * dx + dy * dy);
-  const flat = shot.kind === 'rapid' ? RAPID_ARC : 1;
-  return Math.sin(Math.PI * t) * Math.min(range * ARC_RISE, ARC_MAX_TILES) * flat;
+  return Math.sin(Math.PI * t) * Math.min(range * ARC_RISE, ARC_MAX_TILES);
 }
-
-/** A Rapid Cannon's arc against a gun's. */
-const RAPID_ARC = 0.45;
 
 /** Top-left of a tile in screen space. */
 export function tileX(view: ViewTransform, x: number): number {

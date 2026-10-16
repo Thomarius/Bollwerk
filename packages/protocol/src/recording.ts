@@ -4,8 +4,8 @@ import {
   LevelSchema,
   PersonalitySchema,
   RulesetSchema,
-  SpecialKindSchema,
   TerrainConfigSchema,
+  TowerVariantSchema,
   tierSetup,
   withoutRetiredKeys,
   type BotSetup,
@@ -41,13 +41,15 @@ import { ActionSchema } from './messages.js';
 
 /**
  * The format a recording is written in, which names the state fingerprint on its lines:
- * 1 took version 1 (before 2026-10-07), 2 version 2, 3 takes version 3 (`HASH_VERSION`), the
- * special towers in it. Each reads and replays exactly, checked against its own fingerprint.
+ * 1 took version 1 (before 2026-10-07), 2 version 2, 4 takes version 4 (`HASH_VERSION`), the
+ * special towers at two costs in it. Each reads and replays exactly, checked against its own
+ * fingerprint. Format 3, the towers at one cost each, lived between commits and was never
+ * released (2026-10-14 to 16): its rules no longer parse, so it is refused as unknown.
  */
-export const RECORDING_FORMAT = 3;
+export const RECORDING_FORMAT = 4;
 
 /** The fingerprint a recording of this format carries. */
-export function hashVersionOf(format: 1 | 2 | 3): number {
+export function hashVersionOf(format: 1 | 2 | 4): number {
   return format;
 }
 
@@ -85,8 +87,11 @@ export const RecordingHeaderSchema = z.strictObject({
       level: LevelSchema.nullable().optional(),
       personality: PersonalitySchema.nullable().optional(),
       difficulty: DifficultySchema.nullable().optional(),
-      /** The special tower the player brought, or null; absent from recordings before them. */
-      special: SpecialKindSchema.nullable().optional(),
+      /**
+       * The special tower the player brought at its cost, or null; absent from recordings
+       * before them.
+       */
+      special: TowerVariantSchema.nullable().optional(),
     }),
   ),
   /**

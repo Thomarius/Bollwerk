@@ -1,14 +1,14 @@
 import {
   MAX_LEVEL,
   MIN_LEVEL,
-  SPECIAL_KINDS,
   defaultRuleset,
+  offeredVariants,
   teamsBalanced,
   validPlayerCounts,
   type MatchSettings,
   type PlayerShape,
   type SettingBounds,
-  type SpecialKind,
+  type TowerVariant,
 } from '@bollwerk/config';
 import { drawnSpecial } from '@bollwerk/ai';
 import type { Seat, TournamentTable } from '@bollwerk/protocol';
@@ -17,7 +17,7 @@ import { t } from './i18n.js';
 import { teamLetter } from './scores.js';
 import { shapeSvg } from './shapes.js';
 import { escape } from './html.js';
-import { towerCostText, towerName, towerWhat } from './towers.js';
+import { towerWhat, variantName } from './towers.js';
 
 /**
  * The lobby, as markup — one lobby for online and offline.
@@ -179,32 +179,31 @@ export function specialsSwitch(on: boolean): string {
 
 /**
  * A seat's special tower, where the match plays them: the person's own a choice of every
- * tower or none, with a line on what it does; anyone else's, a person's choice or a bot's
- * draw from the seed and its seat (`drawnSpecial`), as a tag.
+ * variant the rules offer — each tower at each cost, one list for now — or none, with a line
+ * on what it does; anyone else's, a person's choice or a bot's draw from the seed and its
+ * seat (`drawnSpecial`), as a tag.
  */
-function towerControl(view: LobbyView, index: number, special: SpecialKind | null | 'bot'): string {
+function towerControl(
+  view: LobbyView,
+  index: number,
+  special: TowerVariant | null | 'bot',
+): string {
   if (!view.settings.specials) return '';
   if (special === 'bot') {
-    const drawn = drawnSpecial(view.seed, index);
-    return `<em class="tag tower" title="${escape(towerWhat(drawn))}">${escape(t('lobby.botTower', { tower: towerName(drawn) }))}</em>`;
+    const drawn = drawnSpecial(view.seed, index, defaultRuleset.specials);
+    return `<em class="tag tower" title="${escape(towerWhat(drawn))}">${escape(t('lobby.botTower', { tower: variantName(drawn) }))}</em>`;
   }
   if (index !== view.humanPlayer) {
     return special === null
       ? ''
-      : `<em class="tag tower" title="${escape(towerWhat(special))}">${escape(towerName(special))}</em>`;
+      : `<em class="tag tower" title="${escape(towerWhat(special))}">${escape(variantName(special))}</em>`;
   }
-  const choices: (SpecialKind | null)[] = [null, ...SPECIAL_KINDS];
+  const choices: (TowerVariant | null)[] = [null, ...offeredVariants(defaultRuleset.specials)];
   const options = choices
-    .map((kind) => {
-      const label =
-        kind === null
-          ? towerName(null)
-          : t('tower.option', {
-              tower: towerName(kind),
-              cost: towerCostText(defaultRuleset.specials[kind].cost),
-            });
-      return `<option value="${kind ?? ''}"${kind === special ? ' selected' : ''}>${escape(label)}</option>`;
-    })
+    .map(
+      (variant) =>
+        `<option value="${variant ?? ''}"${variant === special ? ' selected' : ''}>${escape(variantName(variant))}</option>`,
+    )
     .join('');
   const what = special === null ? '' : `<small class="blurb">${escape(towerWhat(special))}</small>`;
   return `<label class="tower-choice">${t('lobby.yourTower')} <select id="my-special" aria-label="${t('lobby.towerAria')}">${options}</select></label>${what}`;

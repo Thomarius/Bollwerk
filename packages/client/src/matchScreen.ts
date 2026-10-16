@@ -500,7 +500,7 @@ export async function runSession(
         case 'cannon_placed': {
           // Set down as a piece is: it settles, throws up the style's dust or sparks, and
           // knocks flat whatever stood under it.
-          const [w, h] = footprintOf(session.state.ruleset, event.cannonKind);
+          const [w, h] = footprintOf(session.state.ruleset, event.cannonKind, event.cannonCost);
           const cells: { x: number; y: number }[] = [];
           for (let dy = 0; dy < h; dy++) {
             for (let dx = 0; dx < w; dx++) cells.push({ x: event.x + dx, y: event.y + dy });

@@ -53,7 +53,7 @@ describe('a bot with a special tower', () => {
     state.phaseEndTick = 10_000;
     const player = state.players[0]!;
     player.startingCastleId = state.castles.find((c) => c.islandId === 1)!.id;
-    player.special = 'bertha';
+    player.special = 'bertha3';
     player.cannonsToPlace = 3;
     // Guns it already owns, standing on its rival's island out of the way.
     for (let k = 0; k < owned; k++) {
@@ -61,12 +61,13 @@ describe('a bot with a special tower', () => {
         id: 100 + k,
         owner: 0,
         kind: 'cannon',
+        cost: 1,
         x: 0,
         y: 0,
         w: 2,
         h: 2,
         active: true,
-        shotId: null,
+        shotIds: [],
       });
     }
     return state;

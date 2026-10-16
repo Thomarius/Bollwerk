@@ -140,7 +140,7 @@ describe('impact', () => {
     const state = stateFromAscii(RANGE[0], defaultRuleset, RANGE[1]);
     const shot = fireAndLand(state, 16, 1);
     const cannon = state.cannons.find((c) => c.id === shot.cannonId);
-    expect(cannon?.shotId).toBeNull();
+    expect(cannon?.shotIds).toEqual([]);
     expect(state.shots).toHaveLength(0);
   });
 

@@ -1,14 +1,15 @@
-import { type BotProfile } from '@bollwerk/config';
+import { variantCost, variantKind, type BotProfile } from '@bollwerk/config';
 import {
   NEIGHBOURS_8,
   Structure,
+  barrelsOf,
   Terrain,
   canPlaceCannon,
   distanceSquared,
   footprintOf,
   sameTeam,
+  repairRadiusOf,
   specialRefusal,
-  towerCost,
   type Action,
   type CannonKind,
   type MatchState,
@@ -137,29 +138,32 @@ export class Siting {
 
     // Its tower first, while it is for sale, so the cannons left go round it.
     if (player.special !== null && this.buysTower(state, player)) {
-      const spot = this.site(state, rng, player, player.special);
+      const tower = { kind: variantKind(player.special), cost: variantCost(player.special) };
+      const spot = this.site(state, rng, player, tower);
       if (spot !== null)
         return { kind: 'place_cannon', player: this.playerId, ...spot, special: true };
     }
-    const spot = this.site(state, rng, player, 'cannon');
+    const spot = this.site(state, rng, player, { kind: 'cannon', cost: 1 });
     return spot ? { kind: 'place_cannon', player: this.playerId, ...spot } : null;
   }
 
   /**
    * Whether to buy its tower now (docs/SPECIAL_TOWERS.md §3.5): whenever the rules sell it,
-   * so long as it keeps `minGuns` guns at the least — the tower counted as one, the cannons
-   * it costs not.
+   * so long as it keeps `minGuns` guns at the least — a tower counted by its barrels, so one
+   * for most, a Rapid Cannon as the cannons stacked in it; the cannons it costs not.
    */
   private buysTower(state: MatchState, player: PlayerState): boolean {
     if (player.special === null || specialRefusal(state, player) !== null) return false;
     let owned = 0;
-    for (const cannon of state.cannons) if (cannon.owner === this.playerId) owned++;
-    const after = owned + player.cannonsToPlace - towerCost(state.ruleset, player.special) + 1;
+    for (const cannon of state.cannons)
+      if (cannon.owner === this.playerId) owned += barrelsOf(cannon);
+    const tower = { kind: variantKind(player.special), cost: variantCost(player.special) };
+    const after = owned + player.cannonsToPlace - tower.cost + barrelsOf(tower);
     return after >= this.minGuns;
   }
 
   /**
-   * Where a gun of this kind goes, or null if nowhere. A tower stands only in ground round a
+   * Where a gun of this kind and cost goes, or null if nowhere. A tower stands only in ground round a
    * sealed castle, never in a pocket, which a breach elsewhere can leave castleless; the
    * Architect beside the walls it would repair, the rest toward the enemy.
    */
@@ -167,13 +171,13 @@ export class Siting {
     state: MatchState,
     rng: Rng,
     player: PlayerState,
-    kind: CannonKind,
+    { kind, cost }: { kind: CannonKind; cost: number },
   ): { x: number; y: number } | null {
     const special = kind !== 'cannon';
     // Toward the other teams' castles; a teammate's is not the front line.
     const enemies = state.castles.filter((c) => !sameTeam(state, this.playerId, c.islandId - 1));
     const hazard = this.clearanceField(state, player.islandId);
-    const [cw, ch] = footprintOf(state.ruleset, kind);
+    const [cw, ch] = footprintOf(state.ruleset, kind, cost);
     const main = special ? this.castleGround(state, player.islandId) : null;
     const guarded = kind === 'architect' ? this.guardedWall(state, player.islandId) : null;
 
@@ -212,7 +216,7 @@ export class Siting {
         if (guarded !== null) {
           // The Architect: the most of its wall within reach, the weakest counting most, before
           // room — at radius two it can stand clear of the wall and still reach it.
-          score = this.reach(state, guarded, x, y, cw, ch);
+          score = this.reach(state, guarded, repairRadiusOf(state.ruleset, cost), x, y, cw, ch);
           better =
             pinned < bestPinned ||
             (pinned === bestPinned &&
@@ -288,12 +292,12 @@ export class Siting {
   private reach(
     state: MatchState,
     guarded: Uint8Array,
+    r: number,
     x: number,
     y: number,
     w: number,
     h: number,
   ): number {
-    const r = state.ruleset.specials.architect.repairRadius;
     let sum = 0;
     for (let ty = Math.max(0, y - r); ty <= Math.min(state.height - 1, y + h - 1 + r); ty++) {
       for (let tx = Math.max(0, x - r); tx <= Math.min(state.width - 1, x + w - 1 + r); tx++) {

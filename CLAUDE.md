@@ -60,7 +60,7 @@ leave your seat undriven on the way, so you are soon knocked out), `&speed=10`,
 `&bots=thread` to keep a local match's bots off their worker (ARCHIVE 13k),
 `&style=flat|pixel|night|cyberpunk|blueprint|parchment|bricks|glass|chocolate|halloween|sakura|oktoberfest|opera|office|undersea|electric|cartoon|christmas|noir` for both looks (a one-look style sets only its own)
 (`&buildStyle=`, `&combatStyle=` for one), `&watch=1&level=8` to observe a bot match (`&personality=offensive` fixes every bot's),
-`&rounds=12` for the round cap, `&specials=1` for special towers (`&tower=bertha` the person's),
+`&rounds=12` for the round cap, `&specials=1` for special towers (`&tower=bertha3`, a tower at its cost, the person's),
 `&teams=2` for teams of two in seat order, `&lang=de` for a
 language (not saved). `?tournament=new` and `?tournament=resume` open the tournament screens,
 `?tournament=demo&seed=N` a tournament of teams of two between matches (saved as `t-demo`), and
@@ -300,7 +300,9 @@ session needs the server rebuilt and every page reloaded for):
   piece and German checked in play by the user (ARCHIVE 12n–12t).
 
 **Next** — PLAN §11: towards a first feature-ready version, special towers (item 2, designed
-in `docs/SPECIAL_TOWERS.md`, its questions settled 2026-10-14, ST1 next). Bots that hold
+in `docs/SPECIAL_TOWERS.md`): ST1–ST3, ST5 and ST6 built, every tower at two costs (ST3b,
+2026-10-16, protocol 26, recording format 4), ST4's balance soaks under way, then ST7 and the
+testers' ST8. Bots that hold
 ground as people do are done (ARCHIVE 13zj: the yardstick, the dead guns, pace, build planning,
 the new scoring and bold widening; `buildStats.ts`). The bot learning work is closed,
 its remaining steps dropped (the user's decision, 2026-10-14; ARCHIVE 13zg). French is not to

@@ -1,4 +1,4 @@
-import { defaultConfigBundle, type SpecialKind } from '@bollwerk/config';
+import { defaultConfigBundle, type TowerVariant } from '@bollwerk/config';
 import type { Seat, ServerMessage, TournamentTable } from '@bollwerk/protocol';
 import {
   HOST_TEAM,
@@ -121,7 +121,7 @@ export class TournamentRoom {
   }
 
   /** The special tower the host brings, or none. */
-  special(special: SpecialKind | null): void {
+  special(special: TowerVariant | null): void {
     this.connection.send({ type: 'special', special });
   }
 

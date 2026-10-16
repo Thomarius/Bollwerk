@@ -6,8 +6,8 @@ import {
   parsePersonality,
   type MatchSettings,
   type Personality,
-  type SpecialKind,
-  SPECIAL_KINDS,
+  TOWER_VARIANTS,
+  type TowerVariant,
 } from '@bollwerk/config';
 import { type Action, type MatchEvent, type MatchState } from '@bollwerk/sim';
 
@@ -75,7 +75,7 @@ export interface Setup {
   /** Each seat's bot's personality, by seat, where the table gives one. */
   personalities?: readonly (Personality | null)[];
   /** The person's special tower, by seat, where the match plays towers; bots draw theirs. */
-  specials?: readonly (SpecialKind | null)[];
+  specials?: readonly (TowerVariant | null)[];
   /** The tournament the match belongs to, for its recording. */
   tournament?: { id: string; step: number };
   /** Each team's name, by team label in order, where the table names them. */
@@ -231,10 +231,13 @@ export function settingsFromParams(): MatchSettings {
   );
 }
 
-/** `&tower=bertha` and the like: the person's tower in a match started from the address. */
-export function towerFromParams(): SpecialKind | null {
+/**
+ * `&tower=bertha3` and the like, a tower at its cost: the person's tower in a match started
+ * from the address.
+ */
+export function towerFromParams(): TowerVariant | null {
   const asked = params.get('tower');
-  return (SPECIAL_KINDS as readonly string[]).includes(asked ?? '')
-    ? (asked as SpecialKind)
+  return (TOWER_VARIANTS as readonly string[]).includes(asked ?? '')
+    ? (asked as TowerVariant)
     : preferredTower();
 }

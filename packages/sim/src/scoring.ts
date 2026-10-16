@@ -82,7 +82,7 @@ export function holdingsOf(state: MatchState, enclosure?: ScoredEnclosure): Hold
     const cannon = state.cannons[c] as (typeof state.cannons)[number];
     const holding = holdings[cannon.owner];
     if (holding && (enclosure ? enclosure.cannonActive[c] : cannon.active)) {
-      holding.guns += gunsWorth(state.ruleset, cannon.kind);
+      holding.guns += gunsWorth(cannon);
     }
   }
   return holdings;

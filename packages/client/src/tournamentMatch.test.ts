@@ -121,12 +121,12 @@ describe('a tournament with special towers', () => {
       seed: mapSeed(save, progress.done),
       seats: table.seats.map((s) => s.level),
       teams: table.seats.map((s) => s.team),
-      specials: table.seats.map(() => 'architect'),
+      specials: table.seats.map(() => 'architect2' as const),
       ruleset: applySettings(defaultConfigBundle.ruleset, matchSettingsOf(save, rules)),
       thinkBudgetMs: Number.POSITIVE_INFINITY,
     });
     const host = match.state.players[match.humanPlayer]!;
-    expect(host.special).toBe('architect');
+    expect(host.special).toBe('architect2');
     for (const player of match.state.players) expect(player.special).not.toBeNull();
   });
 });

@@ -1,4 +1,6 @@
+import { variantCost, variantKind } from '@bollwerk/config';
 import {
+  barrelsOf,
   canPlaceCannon,
   canPlacePiece,
   currentPieceId,
@@ -6,13 +8,16 @@ import {
   findReadyCannon,
   footprintOf,
   isImpactTower,
+  isLoaded,
   owesCastleChoice,
   specialRefusal,
   pieceCells,
   startingRingTiles,
   sameTeam,
   type Action,
+  type Cannon,
   type MatchState,
+  type Shot,
 } from '@bollwerk/sim';
 
 import type { Ghost, Scene } from './render/scene.js';
@@ -65,13 +70,30 @@ export function mayTarget(state: MatchState, playerId: number, x: number, y: num
   return !sameTeam(state, playerId, island - 1);
 }
 
-/** Cannons this player could fire right now: active, and with nothing in the air. */
+/**
+ * Shots this player could fire right now: a barrel free on each active gun — one a gun, a
+ * Rapid Cannon's several.
+ */
 export function readyCannons(state: MatchState, playerId: number): number {
   let ready = 0;
   for (const cannon of state.cannons) {
-    if (cannon.owner === playerId && cannon.active && cannon.shotId === null) ready++;
+    if (cannon.owner === playerId && cannon.active) {
+      ready += barrelsOf(cannon) - cannon.shotIds.length;
+    }
   }
   return ready;
+}
+
+/** The first of a gun's shots in the air to land, which frees a barrel; null if none is. */
+function landingFirst(state: MatchState, cannon: Cannon): Shot | null {
+  let first: Shot | null = null;
+  for (const id of cannon.shotIds) {
+    const shot = state.shots.find((s) => s.id === id);
+    if (shot !== undefined && (first === null || shot.impactTick < first.impactTick)) {
+      first = shot;
+    }
+  }
+  return first;
 }
 
 /**
@@ -85,9 +107,9 @@ export function nextReload(state: MatchState, playerId: number, tickFraction = 0
   let soonest: { launchTick: number; impactTick: number } | null = null;
   for (const cannon of state.cannons) {
     if (cannon.owner !== playerId || !cannon.active) continue;
-    if (cannon.shotId === null) return null;
-    const shot = state.shots.find((s) => s.id === cannon.shotId);
-    if (shot !== undefined && (soonest === null || shot.impactTick < soonest.impactTick)) {
+    if (isLoaded(cannon)) return null;
+    const shot = landingFirst(state, cannon);
+    if (shot !== null && (soonest === null || shot.impactTick < soonest.impactTick)) {
       soonest = shot;
     }
   }
@@ -111,9 +133,9 @@ export function impactReadiness(
   let soonest: { launchTick: number; impactTick: number } | null = null;
   for (const cannon of state.cannons) {
     if (cannon.owner !== playerId || !cannon.active || !isImpactTower(cannon.kind)) continue;
-    if (cannon.shotId === null) return { ready: true };
-    const shot = state.shots.find((s) => s.id === cannon.shotId);
-    if (shot !== undefined && (soonest === null || shot.impactTick < soonest.impactTick)) {
+    if (isLoaded(cannon)) return { ready: true };
+    const shot = landingFirst(state, cannon);
+    if (shot !== null && (soonest === null || shot.impactTick < soonest.impactTick)) {
       soonest = shot;
     }
   }
@@ -360,7 +382,10 @@ export class Controls {
       case 'cannon': {
         const special = this.placingTower;
         const tower = special ? (state.players[player]?.special ?? null) : null;
-        const [w, h] = footprintOf(state.ruleset, tower ?? 'cannon');
+        const [w, h] =
+          tower === null
+            ? footprintOf(state.ruleset, 'cannon', 1)
+            : footprintOf(state.ruleset, variantKind(tower), variantCost(tower));
         const valid = canPlaceCannon(state, player, tile.x, tile.y, special) === null;
         return {
           tile,

@@ -4,8 +4,9 @@ A match may let each player bring one **special tower**: a cannon with an abilit
 bought in the cannon phase by giving up two or three ordinary cannons. Each tower makes for a
 different way to play — more damage, sturdier walls, a faster tempo — at the price of guns, and
 of the points those guns would have scored. This file is the design as discussed with the user
-(2026-10-11, its open questions settled 2026-10-14) and the plan to build it in work packages.
-**Nothing of it is built yet.** Like PLAN.md it says what is configurable and why and leaves the
+(2026-10-11, its open questions settled 2026-10-14, every tower at two costs 2026-10-16) and the
+plan to build it in work packages. **ST1–ST3, ST3b, ST5 and ST6 are built**, and ST4's first
+balance is measured (ARCHIVE 13zk); the level ladder with towers, ST7 and ST8 are open. Like PLAN.md it says what is configurable and why and leaves the
 values to `config/*.json`; when a package is done its summary moves to ARCHIVE.md and this file
 keeps only what is open.
 
@@ -41,11 +42,17 @@ keeps only what is open.
   mark in every style, as the main castle's crown is — and generic, palette-tinted effects for
   its shots. Custom tower art for a few styles stays possible later, never promised for all
   nineteen.
-- **The first version brings three towers**: **Big Bertha** (offence, cost 3), **Architect**
-  (defence, cost 2), **Rapid Cannon** (tempo, cost 2). Each is deterministic without new
-  randomness, simple in the rules, and gives the bots a clear placement rule. More may follow (§4).
-- **The balance goal** (the user's): a player using a special tower should win 55–65% against an
-  equal player using none.
+- **The first version brings three towers**: **Big Bertha** (offence), **Architect** (defence),
+  **Rapid Cannon** (more guns in less room). Each is deterministic without new randomness, simple
+  in the rules, and gives the bots a clear placement rule. More may follow (§4).
+- **Every tower comes at two costs, 2 and 3 cannons** (the user's, 2026-10-16): a player chooses
+  the tower and the cost that suits them — a variant (§2.3). The cost-3 variant is the stronger
+  tower, since it is bought only in rounds its owner holds a second castle. Never a cost of 1. A
+  variant that cannot be balanced may be left out in config, so a tower can come at one cost.
+  The later towers (§4) are designed with both costs in mind, each by its own lever.
+- **The balance goal** (the user's, loosened 2026-10-16 — the towers are a fun, wacky addition,
+  not a tournament standard): each variant wins **50–70%** against an equal player using none, and
+  a tower's two variants **40–60%** head to head.
 - **Dropped**: the Magma Thrower (a burning tile blocking placement can make a ring unsealable —
   a forced lost life, the most frustrating loss there is) and the Spotter (where opponents' shots
   will land gives no real advantage). **Shelved**: the Keep (a tower counting as a castle; very
@@ -69,11 +76,14 @@ keeps only what is open.
   where the tower's balance wants placement to be harder.
 - **The cost meets the reward**: a sealed main castle earns 2 cannons and every other sealed
   castle 1 (`ruleset.cannons`), and cannons unplaced at the phase's end are lost — nothing is
-  saved towards a tower. So a tower of cost 2 is open to anyone holding their main castle, and
-  Big Bertha at cost 3 only to a player holding a second castle as well. That is meant (the
-  user's design, 2026-10-14): the strongest tower carries a risk, and choosing a tower of cost 2
-  or 3 is a real decision — a defensive or slower player who rarely walls a second castle may
-  rather choose one of cost 2.
+  saved towards a tower. So a variant of cost 2 is open to anyone holding their main castle, and
+  one of cost 3 only to a player holding a second castle as well. That is meant (the user's
+  design, 2026-10-14, every tower at both costs 2026-10-16): the stronger variant carries a risk,
+  and the cost is a real decision — a defensive or slower player who rarely walls a second castle
+  may rather choose cost 2. Two things tilt it, for the soaks to weigh: how often a player holds
+  two castles differs by level, so a pair even at one level may not be at another; and with the
+  cap of three a cost-2 player reaches it sooner and gives up 6 cannons for it against 9, so
+  match length counts a little.
 - **The right mouse button switches the ghost** between an ordinary cannon and the tower; the
   ghost shows the tower's footprint, emblem and cost, and turns invalid where it cannot stand,
   or when the player cannot afford it, has placed one this round, owns the most allowed, or is in
@@ -100,44 +110,63 @@ keeps only what is open.
 
 ### 2.3 The first three towers
 
-Every number below is a starting value for the soaks (§6), kept in config.
+Every number below is kept in config, as ST4's first soaks left them (ARCHIVE 13zk, the
+starting values in brackets). Each tower has a variant at cost 2 and one at cost 3 (§1), told
+apart by levers of their own — the thing that defines the tower stays the same in both.
+
+| Tower        | Cost 2                | Cost 3                                      | What stays                     |
+| ------------ | --------------------- | ------------------------------------------- | ------------------------------ |
+| Big Bertha   | flight factor 1 (1.5) | flight factor 0.85 (1)                      | the `plus5` crater             |
+| Architect    | repair radius 1 (2)   | repair radius 2 (3), its gun's flight 2 (1) | an ordinary gun in combat      |
+| Rapid Cannon | 2 barrels, flight 1   | 3 barrels, flight 1.15 (1)                  | each barrel an ordinary cannon |
 
 **Big Bertha** — offence.
 
-- Cost 3 cannons, footprint 2×2 (3×3 a lever if it proves too strong). An impact tower.
+- Cost 3 or 2, footprint 2×2 (3×3 a lever if it proves too strong). An impact tower.
 - Its shot clears a larger crater: `plus5` (the tile and its four neighbours), the pattern that
   already exists for ordinary shots (`craterPattern`), against an opponent's walls only, as
   every crater. Points per wall cleared as ever, so it also scores more.
 - Its value is the breach, not the tiles: one shot opens a wall up to three thick, where
   ordinary guns need shots in line. Three ordinary guns take three tiles a flight; a Bertha's
   cross takes about three of a single wall and more of a thick one.
-- Its flight is a factor on `flightTicks`, 1.0 at first: as quick as any gun, since at cost 3
-  she already fires one shot where three cannons fire three.
+- Its flight is a factor on `flightTicks`. At cost 2 the crater stays — it is what she is — and
+  the user's idea was a longer flight (2026-10-16), 1.5 to start against 1 at cost 3: a combat
+  phase of 10 s holds 4–5 flights of an ordinary gun, so each step of the factor is about one
+  breach a phase more or less. The soaks put both quicker (ARCHIVE 13zk): at full accuracy a
+  Bertha of cost 3 at a gun's flight did about what her three cannons would, and gained nothing
+  above Level 3 — so 0.85 at cost 3 and 1 at cost 2. A cooldown after landing instead was considered and kept in reserve, should the
+  slow shell feel wrong in play: it would be a new rule, and break "flight time is the reload"
+  for one tower.
 - A 9-tile crater (`square9`) would break most rings with one shot: not at first.
 
 **Architect** — defence.
 
-- Cost 2, footprint 2×2. Less offence, more security: it fires ordinary shots like a cannon.
+- Cost 2 or 3, footprint 2×2. Less offence, more security: it fires ordinary shots like a cannon.
 - **At the end of each combat phase**, before the banner, it **rebuilds the walls its owner lost
-  to shots in that combat** within a radius of 2 tiles of its footprint (Chebyshev), on its own
-  island. Then the repair is on the board through the intermission, where the player sees it and
+  to shots in that combat** within its repair radius of its footprint (Chebyshev) — 1 tile at
+  cost 2, 2 at cost 3 (2 and 3 to start; the soaks found them far too strong at Levels 3–5) — on
+  its own island. Its radius moves in whole steps, so cost 3 also has a slower gun (flight 2). Then the repair is on the board through the intermission, where the player sees it and
   the bots plan their build on a snapshot that already holds it (ARCHIVE 13zf).
 - Only where the tile is free, and only if the Architect is active — as of the last resolution,
   the same rule that lets a gun fire, since shots landing do not refresh the enclosure. The
   repaired walls are the island's own again. The attacker keeps the points for them: the shot
   did land.
-- Levers: the radius (2–3), the cost (2–3). It repairs only walls lost to shots, never walls
-  swept as orphans.
+- Levers: the radius by cost. It repairs only walls lost to shots, never walls swept as orphans.
 
-**Rapid Cannon** — tempo.
+**Rapid Cannon** — more guns in less room (redesigned by the user, 2026-10-16).
 
-- Cost 2, footprint 2×2. Not an impact tower: it fires with the ordinary guns.
-- An ordinary shot with a **shorter flight**, so a shorter reload — flight time is the reload: a
-  factor on `flightTicks`. **It must fire more than the two cannons it costs** (the user's
-  condition), so the factor starts at 0.4 — two and a half shots for one, a flight of 1600 ms
-  becoming 640 ms, which a person can still follow. It also takes one gun's room for two guns'
-  price, which counts for a cramped player.
-- The simplest tower to build and to balance; a good first one to soak.
+- Cost 2 or 3, footprint 2×2. Not an impact tower: it fires with the ordinary guns.
+- **As many cannons stacked on one footprint as it cost**: a barrel for each, each with its own
+  shot in flight and so its own reload — exactly 2 or 3 ordinary cannons, standing where one does
+  (`Cannon.shotIds`, `barrelsOf`). Simple to use, and its advantage is room: a tight
+  wall is the one with nowhere to put a gun (the minimum-cut problem), and a Rapid 3 puts three
+  there. Its risk is the same concentration: inert ground silences every barrel at once.
+- If room is not advantage enough, its lever is a slightly **shorter** flight for its barrels —
+  a factor a little under 1, such as 0.9 (a longer one would be a slower reload, a penalty). The
+  soaks found Rapid 2 on target as it is and Rapid 3 a little strong, its barrels now at 1.15.
+- Replaces the first design, one barrel with a flight factor of 0.4: at cost 3 it would have
+  needed about 0.27, some 450 ms, where the bots' `readyDelayMs` (up to 500 ms) and a person's
+  clicking set the pace rather than the flight, so more speed stops paying.
 
 ---
 
@@ -145,19 +174,23 @@ Every number below is a starting value for the soaks (§6), kept in config.
 
 ### 3.1 Simulation (`packages/sim`)
 
-Built in ST1; the rules are in `sim/src/specials.ts`.
+Built in ST1, the two costs in ST3b (2026-10-16); the rules are in `sim/src/specials.ts`.
 
 - `Cannon` and `Shot` gain `kind: CannonKind` — `'cannon' | 'bertha' | 'architect' | 'rapid'` —
-  a cannon's `w`, `h` its kind's footprint. Whether a kind is an impact tower is a property of
-  the kind in code (`isImpactTower`), not configuration.
-- `PlayerState` gains `special` (the loadout, from the match's options, null unless towers are
-  played), `specialsBought` (this cannon phase's, against `perRound`, zeroed as combat begins) and
+  and `cost`, 1 for an ordinary cannon, a tower's 2 or 3; a cannon's `w`, `h` its variant's
+  footprint. Every lever is read by kind and cost (`footprintOf`, `flightFactorOf`, `craterOf`,
+  `repairRadiusOf`). A gun's shots in flight are `shotIds`, ready while it has a barrel free
+  (`isLoaded`, `barrelsOf`: one, a Rapid Cannon's its cost). Whether a kind is an impact tower is
+  a property of the kind in code (`isImpactTower`), not configuration.
+- `PlayerState` gains `special` (the loadout, a variant such as `bertha3`, from the match's
+  options; null unless towers are played and the ruleset offers that variant), `specialsBought` (this cannon phase's, against `perRound`, zeroed as combat begins) and
   `openingPlacement` (set at the match's start and at a continue, cleared as combat begins — the
   castle chosen during the phase no longer tells an opening from an ordinary one).
 - `MatchState.lostWalls`: the wall tiles shots cleared since the last barrage ended, noted only
-  while towers are played, emptied by the repair. Everything new is in the state hash, version 3
-  (`HASH_VERSION`), and so recordings are format 3; formats 1 and 2 replay against their own.
-  The snapshot carries it all.
+  while towers are played, emptied by the repair. Everything new is in the state hash, version 4
+  (`HASH_VERSION`), and so recordings are format 4; formats 1 and 2 replay against their own.
+  Version and format 3, the towers at one cost, were never released and are refused. The
+  snapshot carries it all.
 - **Actions**: `place_cannon` gains an optional `special: true` — the player's tower rather than a
   cannon; absent, a cannon, so old recordings and clients read the same. `fire` is unchanged.
   New rejections: `special_off`, `no_special`, `special_at_opening`, `special_this_round`,
@@ -169,36 +202,41 @@ Built in ST1; the rules are in `sim/src/specials.ts`.
   `walls_repaired` event); `holdingsOf` counts a tower as the guns it cost (`gunsWorth`).
 - **Determinism** holds without new randomness for the first three. The later towers that need
   chance (§4) take it from `streamFor(seed, name)`, never `Math.random`.
-- Tests as ASCII pictures (`stateFromAscii` gains `B`, `A` and `R`; `withSpecials`), in
-  `specials.test.ts`: a Bertha's crater on an
-  opponent's wall and not on a teammate's; a ready Bertha chosen before a nearer ready cannon, the
-  nearest of two ready Berthas, a cannon when the Bertha is loading; the Architect's repair inside
-  its radius and not outside, nor when inert, nor over a placed block; the Rapid Cannon's flight;
-  a tower scoring its cost in guns; the cap freed by a continue; every rejection.
+- Tests as ASCII pictures (`stateFromAscii` gains `B`, `A` and `R` at cost 3, `b`, `a` and `r` at
+  2; `withSpecials`), in `specials.test.ts`: a Bertha's crater on an opponent's wall and not on a
+  teammate's; a ready Bertha chosen before a nearer ready cannon, the nearest of two ready
+  Berthas, a cannon when the Bertha is loading; the cheaper Bertha's longer flight; the
+  Architect's repair inside its radius and not outside, nor when inert, nor over a placed block,
+  and its radius by cost; a Rapid Cannon firing as its cost in cannons, each barrel freed by its
+  own shot; a cheaper variant's cost charged; a variant not offered given as none; a tower
+  scoring its cost in guns; the cap freed by a continue; every rejection.
 
 ### 3.2 Configuration (`packages/config`, `config/*.json`)
 
 - `ruleset.specials`, strict like everything: `perRound` (1), `maxOwned` (3; to be tried without
-  a limit in a later test), and per kind its `cost`, `footprint`, and its own levers — Bertha's
-  `crater` and `flightFactor`, the Architect's `repairRadius`, the Rapid Cannon's `flightFactor`.
-  An unknown key is an error. Whether towers are on at all is the settings' switch.
+  a limit in a later test), and per kind its variants by cost, `"2"` and `"3"`, each with its
+  `footprint`, `flightFactor` and own levers — Bertha's `crater`, the Architect's
+  `repairRadius`. A variant left out is not offered (`offeredVariants`); a kind needs one at
+  least. A loadout is a `TowerVariant` (`TOWER_VARIANTS`, `variantKind`, `variantCost`). An
+  unknown key is an error. Whether towers are on at all is the settings' switch.
 - `MatchSettings` gains `specials: boolean`, opening as the ruleset's `specials.enabled` (off), and
   `applySettings` writes it into the ruleset (ST2).
 - A seat's loadout travels with the seat (as a bot's level and personality do), not in the
   ruleset: `dealSeats` gives each player their `special` — a person's choice, a bot's draw by
-  seat from the seed (`drawnSpecial`, `ai/src/seating.ts`), which every page works out itself.
+  seat from the seed among the offered variants (`drawnSpecial`, `ai/src/seating.ts`), which
+  every page works out itself.
 
 ### 3.3 Protocol, rooms and recordings
 
-Built in ST2, the client's controls for it to come in ST5.
+Built in ST2, the costs in ST3b.
 
-- **Protocol 25**: the settings' switch (`configure`'s `settings.specials`, the host's), a person's
+- **Protocol 26** (25 before the two costs): the settings' switch (`configure`'s `settings.specials`, the host's), a person's
   own tower (the `special` message, anyone's, before the start) and each seat's in the room's
-  `seats`; bots' draws are not sent, being derivable. The action field and the snapshot's new
-  state came with ST1. A v0.9.6 page cannot join a room of this one.
-- **Recording format 3** (its fingerprint since ST1): each player's `special` in the header, absent
-  meaning none, so a replay builds the same match (`matchOptionsOf`); `--replay` reads it so.
-  `shotStats.ts` and `buildStats.ts` by kind come with ST3.
+  `seats`, each a variant; bots' draws are not sent, being derivable. The action field and the
+  snapshot's new state came with ST1, guns' costs and shots in flight with ST3b. A v0.9.6 page
+  cannot join a room of this one.
+- **Recording format 4**: each player's `special` in the header, a variant, absent meaning none,
+  so a replay builds the same match (`matchOptionsOf`); `--replay` reads it so.
 - **Server** (`room.ts`): a seat keeps its person's choice; the start deals the towers with the
   seats; a seat a bot plays — the host's, watching — brings its draw. Nothing else changes,
   actions being actions.
@@ -211,13 +249,16 @@ Built in ST2, the client's controls for it to come in ST5.
 
 ### 3.4 Client (`packages/client`)
 
-Built in ST5 and ST6 together (2026-10-14), so people can play with towers.
+Built in ST5 and ST6 together (2026-10-14), so people can play with towers; the costs in ST3b.
 
 - **Lobby** (`lobby.ts`, `lobbyFlow.ts`): the host's switch, **Special towers** On/Off, beside lives
   and rounds; a guest reads it in the table's statement. While on, a person's own seat has a
-  chooser — none, or each tower with its cost — with a line on what it does, remembered for the
-  next table (`towers.ts`, `bollwerk.tower`) and sent to a room as it opens; anyone else's seat
-  shows their choice, and each bot's seat the tower drawn for it. The same in a tournament's
+  chooser — none, or one list of every variant offered, "Big Bertha · 3 cannons" — with a line on
+  what it does by its own numbers (`towerWhat`: the Architect's reach, the Rapid's barrels, a
+  slower Bertha), remembered for the next table (`towers.ts`, `bollwerk.tower`; a choice saved
+  before the costs names no variant, so reads as none) and sent to a room as it opens; anyone
+  else's seat shows their choice, and each bot's seat the variant drawn for it. A fuller chooser,
+  tower and cost apart with descriptions and a preview, is for later. The same in a tournament's
   lobby, and a switch in the tournament's setup.
 - **Controls** (`controls.ts`): in the cannon phase the right button switches the ghost between a
   cannon and the tower (`placingTower`), only while the rules sell it, a cue either way; back to a
@@ -230,17 +271,19 @@ Built in ST5 and ST6 together (2026-10-14), so people can play with towers.
 - **Emblems** (`render/towerMarks.ts`): one layer over both looks, under the camera, as the crown
   is one mark in every style — no style's own drawing changed. A dark round badge at the gun's
   foot with the emblem in the owner's light colour from the look in front: a shell for Bertha, a
-  hammer for the Architect, two chevrons for the Rapid Cannon; grey while inert. Bare shapes in
+  hammer for the Architect, two chevrons for the Rapid Cannon; grey while inert; under the badge
+  a pip for each cannon it cost. Bare shapes in
   the owner's colour read as their outline alone at 16-pixel tiles and vanished on their own
   ground; the badge reads in every style. Keyed, so drawn again only when a tower changes. The
   ghost shows the emblem too.
 - **Effects**, in the same layer, drawn only while one plays: Bertha's blast (the crater's cross
   flashing amber and a ring spreading past it), the Architect's walls shimmering back in the
-  owner's colour as combat ends, and the Rapid Cannon's flatter arc (`shotLift`).
+  owner's colour as combat ends. The Rapid Cannon's flatter arc went with its quick flight (ST3b):
+  its barrels fly as any cannon's.
 - **Sound**: three cues, `tower_fire`, `tower_impact` and `walls_repaired`, the cannon's, the
   impact's and a piece's files played lower or higher (`rate`, a new field of a cue) — no new
   file, so none to credit; the Architect heard only for the player's own.
-- **Dev**: `?autostart=1&specials=1&tower=bertha` plays a match with towers, the person's tower
+- **Dev**: `?autostart=1&specials=1&tower=bertha3` plays a match with towers, the person's tower
   as asked.
 - To come in ST7: the How to play page and the screenshot scenes. Seen in headless Chrome: the
   lobby, the ghost and the HUD line, emblems in Minimal and Parchment, the glow, a blast.
@@ -249,11 +292,12 @@ Built in ST5 and ST6 together (2026-10-14), so people can play with towers.
 
 Built in ST3.
 
-- **Loadout**: drawn per seat from the seed (`drawnSpecial`), among the towers only (never none),
-  so every page can show it in the lobby. By personality or set by the host may come later.
+- **Loadout**: drawn per seat from the seed (`drawnSpecial`), among the offered variants only
+  (never none), so every page can show it in the lobby. By personality or set by the host may come later.
 - **Buying** (`Siting.buysTower`): as the first placement of any cannon phase the rules sell it
-  in, so long as the bot keeps `ai.planning.minGuns` guns — the tower counting as one, the cannons
-  it costs not. A first rule, for ST4 to measure; the planning's `wallValue` values a tower's
+  in, so long as the bot keeps `ai.planning.minGuns` guns — a tower counted by its barrels (one, a
+  Rapid Cannon its cost), the cannons it costs not; the build planning's `gunsReady` counts
+  barrels likewise. A first rule, for ST4 to measure; the planning's `wallValue` values a tower's
   points through `holdingsOf`, as the resolution does.
 - **Placing** (`Siting.site`): only in the ground round a sealed castle, never in a pocket
   (`castleGround`). Big Bertha and the Rapid Cannon as an ordinary cannon goes — never pinning a
@@ -268,8 +312,9 @@ Built in ST3.
 
 ### 3.6 Measuring
 
-- The harness: `--specials on|off` and each seat's tower, repeating (`--special bertha,none`;
-  `random` draws as a match does), named in the seat's label, so wins read by tower.
+- The harness: `--specials on|off` and each seat's tower, repeating (`--special bertha3,none`;
+  `random` draws as a match does), named in the seat's label, so wins read by tower;
+  `shotStats.ts` keys a tower's shots by its variant.
 - The statistics rows (`RoundStats`): `special`, `towersOwned`, `wallsRepaired`. `buildStats.ts`
   keys a group by its tower where the match played them and shows towers owned and walls rebuilt
   by stage; `shotStats.ts` shots landed and walls cleared by the kind of gun that fired.
@@ -281,7 +326,9 @@ Built in ST3.
 
 ## 4. Towers for later
 
-In the order the user liked them; each to be designed in detail and agreed before it is built.
+In the order the user liked them; each to be designed in detail and agreed before it is built,
+with a variant at each cost (§1) and the lever that tells them apart — the Bastion's radius, Chain
+Lightning's chain, Scattershot's extra shots, the Mortar's shots a phase.
 
 - **Bastion** (liked): the walls within a radius of 2 need two hits to fall — a crack on the
   first, cleared on the second; cracks heal as each build phase opens. Defensive, simple in the
@@ -325,11 +372,41 @@ Buying and placing in `Siting`, aiming a Bertha's shot in `Gunner`; the harness'
 and `--special`; `shotStats.ts` and `buildStats.ts` by kind. Tested in tables of bots before any
 person plays it.
 
+### ST3b — Every tower at two costs
+
+Added after ST6 (the user's, 2026-10-16), before the soaks, since balancing one cost a tower
+first would be soaked again. A loadout becomes a variant, a tower and its cost: `ruleset.specials`
+per kind per cost with its own levers, a variant absent where it is not offered; the Rapid Cannon
+as stacked barrels, a shot in flight each; state hash and recording format bumped, a header
+naming each player's variant; protocol 26 (the `special` message and the seats carry the cost);
+bots drawing among the variants; the lobby's and the tournament lobby's chooser **one list of
+every variant** ("Big Bertha · 3"), for now; the emblem marking the cost (pips, say); the HUD
+line and the harness's `--special bertha3,none` naming it. A fuller chooser, with descriptions
+and a preview, choosing tower and cost apart, is for later (the user's, 2026-10-16).
+
 ### ST4 — Balance
 
-Soaks per tower to the user's goal (§6): costs, footprints and each tower's levers tuned in config;
-the level ladder checked with towers on and off; and whether costs of 2 and 3 side by side work, or
-every tower should be balanced to one cost. Recorded in ARCHIVE with the figures.
+Soaks per variant to the user's goal (§6), the levers tuned in config; the level ladder checked
+with towers on and off. Recorded in ARCHIVE with the figures. Runs beside ST8's first test
+session, on the build of the day (the user's, 2026-10-16) — never while the same checkout's sim
+is edited.
+
+**First round done** (2026-10-16, ARCHIVE 13zk): four soak rounds brought every variant to the
+goal or its edge; the levers are in config, the figures in the ARCHIVE. **Open for the next
+balancing round** (the user's, 2026-10-16 — another session, the results looked at again first):
+
+- Every tower is a little strong at Level 3 (70–75% against none), where bots lose more walls and
+  hold a second castle less often.
+- Single figures at the edge, each one measurement of 96 at ±10: Architect 3 at Level 5 (79%),
+  Bertha 3 at Level 8 (46%). Rerun them, perhaps at 192, before turning a lever.
+- Architect 3's gun flight (2) is a weak lever; if it stays too strong, another (a 3×3
+  footprint, its radius 1 with a larger cost-3 lever of its own) wants designing.
+- Not yet done: the level ladder with towers on and off; four-player tables, one variant against
+  three without; whether the bots' buying rule (ST3's first) does the towers justice; then
+  towers on by default.
+- To rerun: `soaks/towers-2026-10-16/run.sh OUT LEVELS WORKERS` (pairings by `PAIRS=`, a chunk
+  whose outcomes exist is skipped, so unchanged pairings are copied in) and `analyze.py OUT`.
+  Both sit beside the data, which git does not keep.
 
 ### ST5 — The client: lobby, controls, HUD
 
@@ -355,20 +432,24 @@ a test without the cap of three.
 
 ## 6. Balance
 
-- **The goal**: a player using a special tower wins **55–65%** against an equal player using none.
-- **Measured** as this session's soaks were (ARCHIVE 13t–13v): two-player tables of equal bots,
-  one with the tower and one without, seats alternating, 96 matches a tower at Levels 3, 5 and 8;
-  and four-player tables, one bot with the tower against three without, wins against the fair
-  share and points against the others, seats rotating — always beside a control on the same seeds,
-  since 48 matches read ±4 wins of noise.
-- **The levers**, coarse to fine: the cost (2 or 3), the footprint (2×2 or 3×3), each tower's own
-  values (crater, flight factors, repair radius), and the gun points a tower forgoes.
+- **The goal** (loosened 2026-10-16): each variant wins **50–70%** against an equal player using
+  none, and a tower's two variants **40–60%** head to head. Not strict: the towers are for fun.
+- **Measured** in two-player tables of equal bots, seats alternating, 96 matches each at Levels 3,
+  5 and 8, on the same seeds throughout: each variant against none, each tower's two variants head
+  to head, and none against none as the control — about 2,900 matches for a first round, then only
+  the variants whose levers changed. Head to head is what tells the two variants alike: at 96
+  matches a win rate is good to about ±10 points, and the difference of two rates each measured
+  against none to about ±14. Pairs rather than three-player tables, because bots choose whom to
+  shoot by nearness. Four-player tables, one variant against three without, as a later check.
+  Time a first batch before planning the rest.
+- **The levers**, coarse to fine: the footprint (2×2 or 3×3), each variant's own values (crater,
+  flight factors, repair radius, the Rapid's barrels' flight). The balance is to how the bots use
+  the towers, and their buying rule is still ST3's first (§3.5).
 - **Watch**: failed rounds (an Architect may make turtles — ARCHIVE 10s found a turtle very hard to
   kill), match length, how often Bertha is affordable at all (it needs two castles sealed) and by
   whom, and the people's yardsticks (`shotStats.ts`, `buildStats.ts`).
-- **Costs that differ** (2 and 3) are the design for now. If the soaks show a tower of cost 3 is
-  bought too rarely to matter, or one of cost 2 dominates, the alternative is one cost for all,
-  balanced by each tower's own levers (the user's, 2026-10-14).
+- **Both costs for every tower** (2026-10-16) replaced a cost a tower (3, 2, 2). If a variant
+  cannot be brought to the goal, it is left out in config and its tower comes at one cost.
 
 ---
 

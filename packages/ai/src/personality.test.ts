@@ -1,4 +1,9 @@
-import { TRAIT_VALUES, defaultTerrainConfig, type Personality } from '@bollwerk/config';
+import {
+  TRAIT_VALUES,
+  defaultRuleset,
+  defaultTerrainConfig,
+  type Personality,
+} from '@bollwerk/config';
 import { describe, expect, it } from 'vitest';
 
 import { dealPersonalities } from './personality.js';
@@ -64,6 +69,7 @@ describe('seating a table', () => {
         { level: 7, bot: true },
       ],
       defaultTerrainConfig,
+      defaultRuleset.specials,
     );
     const kept = dealSeats(
       5,
@@ -73,6 +79,7 @@ describe('seating a table', () => {
         { level: 7, bot: true },
       ],
       defaultTerrainConfig,
+      defaultRuleset.specials,
     );
     expect(kept.playerOfSeat).toEqual(plain.playerOfSeat);
     const first = kept.playerOfSeat[0] as number;

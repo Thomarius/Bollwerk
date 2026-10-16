@@ -1617,7 +1617,7 @@ fit (ARCHIVE 12z), its remaining steps dropped (the user's decision, 2026-10-14;
 13zg). French is not to be done
 (the user's decision, 2026-10-06). Still open:
 
-2. **Special towers** (the user's idea, 2026-10-11; designed, not built): each player may bring
+2. **Special towers** (the user's idea, 2026-10-11; built but for balance, help and play-testing): each player may bring
    one special tower, bought in the cannon phase for two or three cannons — Big Bertha, Architect
    and Rapid Cannon first — with an on/off switch among the match settings. The design, the
    decisions (every open question settled with the user on 2026-10-14),

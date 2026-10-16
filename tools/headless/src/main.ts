@@ -6,14 +6,14 @@ import {
   BALANCED,
   MAX_LEVEL,
   MIN_LEVEL,
-  SPECIAL_KINDS,
+  TOWER_VARIANTS,
   parsePersonality,
   personalityWords,
   validateConfigBundle,
   type AiConfig,
   type BotSetup,
   type Personality,
-  type SpecialKind,
+  type TowerVariant,
 } from '@bollwerk/config';
 import { loadConfigBundle } from '@bollwerk/config/node';
 import { Bot, PlanningSlots, dealPersonalities, drawnSpecial, takeBotTurns } from '@bollwerk/ai';
@@ -66,7 +66,7 @@ interface Args {
   /** Whether the matches play special towers (`--specials on`). */
   specials: boolean;
   /** Each seat's tower, repeating: a kind, none, or `random` — drawn as a match draws a bot's. */
-  towers: (SpecialKind | null | 'random')[];
+  towers: (TowerVariant | null | 'random')[];
   stats: string | null;
   /** One row per match: who won, how it ended, the final scores (`MatchOutcome`). */
   outcomes: string | null;
@@ -105,14 +105,14 @@ function parseLevels(value: string | undefined): number[] | null {
 }
 
 /** Seat personalities, likewise: `offensive`, `defensive,balanced`, or `dealt`. */
-/** Seat towers: `bertha`, `none`, `random`, or a list of them. */
-function parseTowers(value: string | undefined): (SpecialKind | null | 'random')[] | null {
+/** Seat towers, each at its cost: `bertha3`, `none`, `random`, or a list of them. */
+function parseTowers(value: string | undefined): (TowerVariant | null | 'random')[] | null {
   if (value === undefined) return ['random'];
-  const out: (SpecialKind | null | 'random')[] = [];
+  const out: (TowerVariant | null | 'random')[] = [];
   for (const text of value.split(',').map((t) => t.trim())) {
     if (text === 'none') out.push(null);
-    else if (text === 'random' || (SPECIAL_KINDS as readonly string[]).includes(text)) {
-      out.push(text as SpecialKind | 'random');
+    else if (text === 'random' || (TOWER_VARIANTS as readonly string[]).includes(text)) {
+      out.push(text as TowerVariant | 'random');
     } else return null;
   }
   return out;
@@ -136,7 +136,7 @@ function parsePersonalities(value: string | undefined): (Personality | 'dealt')[
 const USAGE =
   'usage: npm start -w @bollwerk/headless -- [--matches N] [--players N] [--seed N] ' +
   '[--max-ticks N] [--max-rounds N|none] [--teams N] [--level 1-10[,...]] ' +
-  '[--personality offensive|dealt|...[,...]] [--specials on|off] [--special bertha|architect|rapid|none|random[,...]] [--plans 1,0[,...]] [--stats FILE] [--outcomes FILE] [--record DIR] [--map]\n' +
+  '[--personality offensive|dealt|...[,...]] [--specials on|off] [--special bertha2|bertha3|architect2|architect3|rapid2|rapid3|none|random[,...]] [--plans 1,0[,...]] [--stats FILE] [--outcomes FILE] [--record DIR] [--map]\n' +
   '       npm start -w @bollwerk/headless -- --replay recordings/ [more files or dirs] [--stats FILE]\n' +
   '       npm start -w @bollwerk/headless -- --tournament [--help for its flags]';
 
@@ -176,7 +176,7 @@ function parseArgs(argv: string[]): Args {
     usageError('--specials wants on or off');
   }
   const towers = parseTowers(values.special);
-  if (towers === null) usageError(`--special wants ${SPECIAL_KINDS.join(', ')}, none or random`);
+  if (towers === null) usageError(`--special wants ${TOWER_VARIANTS.join(', ')}, none or random`);
   const number = (flag: keyof typeof values, fallback: number, min: number): number => {
     const value = values[flag];
     return typeof value === 'string' ? wholeNumber(flag, value, min) : fallback;
@@ -416,10 +416,10 @@ function seatSetup(p: number, seed: number): BotSetup {
   };
 }
 /** The tower a seat brings, when the matches play them: `random` drawn as a match draws it. */
-function seatTower(p: number, seed: number): SpecialKind | null {
+function seatTower(p: number, seed: number): TowerVariant | null {
   if (!args.specials) return null;
-  const tower = args.towers[p % args.towers.length] as SpecialKind | null | 'random';
-  return tower === 'random' ? drawnSpecial(seed, p) : tower;
+  const tower = args.towers[p % args.towers.length] as TowerVariant | null | 'random';
+  return tower === 'random' ? drawnSpecial(seed, p, ruleset.specials) : tower;
 }
 
 /**

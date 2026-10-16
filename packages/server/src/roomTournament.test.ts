@@ -24,6 +24,12 @@ class Listener implements Connection {
   }
 }
 
+/**
+ * For a test that plays a whole match of bots: about 2 s alone, but beyond vitest's 5 s beside
+ * the hundred other test files of `npm run check` (2026-10-16).
+ */
+const MATCH_TIMEOUT_MS = 30_000;
+
 function room(record?: (line: RecordingLine) => void): Room {
   return new Room({
     code: 'TOUR42',
@@ -183,59 +189,67 @@ describe("a tournament's room", () => {
     }
   });
 
-  it('refuses a rematch, and goes back to its lobby for the next table once the match is over', () => {
-    const r = room();
-    const host = new Listener('h');
-    r.join(host, 'Thomas');
-    r.handle(host, { type: 'tournament', table: table(), save: SAVE });
-    const guest = new Listener('g');
-    r.join(guest, 'Mausica');
-    r.handle(guest, { type: 'ready', ready: true });
-    r.handle(host, { type: 'start' });
-    // Mid-match, the next table waits.
-    r.handle(host, { type: 'tournament', table: table({ stage: 'Final' }), save: SAVE });
-    expect(host.latest('room').tournament?.stage).toBe('Semi-final');
-    // The host's team never moves, so it is soon out and the match over.
-    run(r, 60_000);
-    expect(r.finished).toBe(true);
-    r.handle(host, { type: 'rematch' });
-    expect(r.started).toBe(true);
+  it(
+    'refuses a rematch, and goes back to its lobby for the next table once the match is over',
+    () => {
+      const r = room();
+      const host = new Listener('h');
+      r.join(host, 'Thomas');
+      r.handle(host, { type: 'tournament', table: table(), save: SAVE });
+      const guest = new Listener('g');
+      r.join(guest, 'Mausica');
+      r.handle(guest, { type: 'ready', ready: true });
+      r.handle(host, { type: 'start' });
+      // Mid-match, the next table waits.
+      r.handle(host, { type: 'tournament', table: table({ stage: 'Final' }), save: SAVE });
+      expect(host.latest('room').tournament?.stage).toBe('Semi-final');
+      // The host's team never moves, so it is soon out and the match over.
+      run(r, 60_000);
+      expect(r.finished).toBe(true);
+      r.handle(host, { type: 'rematch' });
+      expect(r.started).toBe(true);
 
-    const next = table({ stage: 'Final', seed: 9, tournament: { id: 't-test', step: 3 } });
-    next.seats = [next.seats[2]!, next.seats[3]!, next.seats[0]!, next.seats[1]!];
-    next.seats = next.seats.map((seat) => ({ ...seat, team: seat.team === 1 ? 0 : 1 }));
-    r.handle(host, { type: 'tournament', table: next, save: SAVE });
-    expect(r.started).toBe(false);
-    const message = guest.latest('room');
-    expect(message.started).toBe(false);
-    expect(message.tournament?.stage).toBe('Final');
-    // Everyone back, in the seats the new table gives them.
-    expect(host.playerId).toBe(1);
-    expect(guest.playerId).toBe(0);
-  });
+      const next = table({ stage: 'Final', seed: 9, tournament: { id: 't-test', step: 3 } });
+      next.seats = [next.seats[2]!, next.seats[3]!, next.seats[0]!, next.seats[1]!];
+      next.seats = next.seats.map((seat) => ({ ...seat, team: seat.team === 1 ? 0 : 1 }));
+      r.handle(host, { type: 'tournament', table: next, save: SAVE });
+      expect(r.started).toBe(false);
+      const message = guest.latest('room');
+      expect(message.started).toBe(false);
+      expect(message.tournament?.stage).toBe('Final');
+      // Everyone back, in the seats the new table gives them.
+      expect(host.playerId).toBe(1);
+      expect(guest.playerId).toBe(0);
+    },
+    MATCH_TIMEOUT_MS,
+  );
 
-  it("passes the finished tournament on once its last match is over, and only the host's", () => {
-    const r = room();
-    const host = new Listener('h');
-    r.join(host, 'Thomas');
-    r.handle(host, { type: 'tournament', table: table(), save: SAVE });
-    const guest = new Listener('g');
-    r.join(guest, 'Mausica');
-    r.handle(guest, { type: 'ready', ready: true });
-    r.handle(host, { type: 'start' });
-    const ENDED = '{"version":1,"ended":true}';
-    // Mid-match, the end waits; and a guest has no tournament to end.
-    r.handle(host, { type: 'tournamentEnd', save: ENDED });
-    run(r, 60_000);
-    expect(r.finished).toBe(true);
-    r.handle(guest, { type: 'tournamentEnd', save: ENDED });
-    expect(guest.latest('tournamentSave').save).toBe(SAVE);
+  it(
+    "passes the finished tournament on once its last match is over, and only the host's",
+    () => {
+      const r = room();
+      const host = new Listener('h');
+      r.join(host, 'Thomas');
+      r.handle(host, { type: 'tournament', table: table(), save: SAVE });
+      const guest = new Listener('g');
+      r.join(guest, 'Mausica');
+      r.handle(guest, { type: 'ready', ready: true });
+      r.handle(host, { type: 'start' });
+      const ENDED = '{"version":1,"ended":true}';
+      // Mid-match, the end waits; and a guest has no tournament to end.
+      r.handle(host, { type: 'tournamentEnd', save: ENDED });
+      run(r, 60_000);
+      expect(r.finished).toBe(true);
+      r.handle(guest, { type: 'tournamentEnd', save: ENDED });
+      expect(guest.latest('tournamentSave').save).toBe(SAVE);
 
-    r.handle(host, { type: 'tournamentEnd', save: ENDED });
-    expect(guest.latest('tournamentSave').save).toBe(ENDED);
-    // The room stays on the finished match: there is no lobby to go back to.
-    expect(r.started).toBe(true);
-  });
+      r.handle(host, { type: 'tournamentEnd', save: ENDED });
+      expect(guest.latest('tournamentSave').save).toBe(ENDED);
+      // The room stays on the finished match: there is no lobby to go back to.
+      expect(r.started).toBe(true);
+    },
+    MATCH_TIMEOUT_MS,
+  );
 
   it('is listed with its team while an open seat is free', () => {
     const r = new Room({

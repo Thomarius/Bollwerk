@@ -100,12 +100,12 @@ describe('what a click means', () => {
     const { state, player } = afterContinue(3);
     const other = 1 - player;
     const mine = state.cannons.filter((c) => c.owner === other);
-    const expected = mine.filter((c) => c.active && c.shotId === null).length;
+    const expected = mine.filter((c) => c.active && c.shotIds.length === 0).length;
     expect(readyCannons(state, other)).toBe(expected);
     // One in the air is one fewer.
-    const loaded = mine.find((c) => c.active && c.shotId === null);
+    const loaded = mine.find((c) => c.active && c.shotIds.length === 0);
     if (loaded) {
-      loaded.shotId = 999;
+      loaded.shotIds = [999];
       expect(readyCannons(state, other)).toBe(expected - 1);
     }
   });
@@ -143,6 +143,7 @@ describe('the next gun to be ready', () => {
         id: 1,
         cannonId: a!.id,
         kind: 'cannon',
+        cost: 1,
         owner: 0,
         fromX: 1,
         fromY: 1,
@@ -155,6 +156,7 @@ describe('the next gun to be ready', () => {
         id: 2,
         cannonId: b!.id,
         kind: 'cannon',
+        cost: 1,
         owner: 0,
         fromX: 4,
         fromY: 1,
@@ -164,8 +166,8 @@ describe('the next gun to be ready', () => {
         impactTick: 50,
       },
     ];
-    a!.shotId = 1;
-    b!.shotId = 2;
+    a!.shotIds = [1];
+    b!.shotIds = [2];
     for (const cannon of state.cannons) cannon.active = true;
     return state;
   }
@@ -179,7 +181,7 @@ describe('the next gun to be ready', () => {
 
   it('says nothing while a gun is ready, or none could fire at all', () => {
     const ready = twoLoading();
-    ready.cannons[0]!.shotId = null;
+    ready.cannons[0]!.shotIds = [];
     expect(nextReload(ready, 0)).toBeNull();
     // An inert gun reloads nothing: its shot landing would not let a click fire.
     const inert = twoLoading();

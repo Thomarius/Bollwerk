@@ -4,7 +4,7 @@ import {
   type BotSetup,
   type Personality,
   type Ruleset,
-  type SpecialKind,
+  type TowerVariant,
 } from '@bollwerk/config';
 import { dealSeats } from '@bollwerk/ai';
 import { MatchRecorder, recordingId, type RecordingLine } from '@bollwerk/protocol';
@@ -54,7 +54,7 @@ export interface LocalMatchOptions {
    * The special tower the person brings, by seat, where the match plays towers; a bot's
    * seat brings the one drawn for it, as in a room.
    */
-  specials?: readonly (SpecialKind | null)[];
+  specials?: readonly (TowerVariant | null)[];
   /** Each team's name, by team label in order, where the table names them. */
   teamNames?: readonly string[];
   /** The tournament this match is part of, for the recording's header. */
@@ -135,6 +135,7 @@ export class LocalMatch {
         special: options.specials?.[index] ?? null,
       })),
       defaultTerrainConfig,
+      ruleset.specials,
     );
     const humanSeat = seats.findIndex((seat) => seat === null);
     this.humanPlayer = humanSeat < 0 ? -1 : (order[humanSeat] as number);
@@ -143,7 +144,7 @@ export class LocalMatch {
       name: string;
       isBot: boolean;
       team: number;
-      special: SpecialKind | null;
+      special: TowerVariant | null;
     }>(seats.length);
     seats.forEach((seat, index) => {
       players[order[index] as number] = {

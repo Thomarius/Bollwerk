@@ -24,7 +24,7 @@ describe('a recording with special towers', () => {
   it('names each player’s tower in its header and replays exactly', () => {
     const ruleset = withSpecials(fastRuleset());
     const players = [
-      { name: 'Ada', isBot: false, team: 0, special: 'rapid' as const },
+      { name: 'Ada', isBot: false, team: 0, special: 'rapid2' as const },
       { name: 'Bo', isBot: false, team: 1, special: null },
     ];
     const lines: RecordingLine[] = [];
@@ -68,13 +68,29 @@ describe('a recording with special towers', () => {
 
     const header = lines[0]!;
     expect(header.kind === 'header' && header.players.map((p) => p.special)).toEqual([
-      'rapid',
+      'rapid2',
       null,
     ]);
     const replay = replayRecording(lines);
     expect(replay.mismatches).toEqual([]);
     expect(replay.refused).toBe(0);
     expect(replay.state.cannons.some((c) => c.kind === 'rapid')).toBe(true);
+  });
+
+  it('refuses format 3, the towers at one cost, never released', () => {
+    const header = {
+      kind: 'header',
+      id: 'old-recording-1',
+      source: 'server',
+      startedAt: '2026-10-14T00:00:00Z',
+      code: 'ABCD',
+      seed: 1,
+      ruleset: fastRuleset(),
+      terrain: defaultTerrainConfig,
+      players: [{ name: 'a', isBot: true, team: 0 }],
+    };
+    expect(RecordingHeaderSchema.safeParse({ ...header, format: 3 }).success).toBe(false);
+    expect(RecordingHeaderSchema.safeParse({ ...header, format: 4 }).success).toBe(true);
   });
 
   it('reads a header from before towers as bringing none', () => {

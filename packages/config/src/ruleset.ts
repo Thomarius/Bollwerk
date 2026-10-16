@@ -11,12 +11,44 @@ export const SPECIAL_KINDS = ['bertha', 'architect', 'rapid'] as const;
 export const SpecialKindSchema = z.enum(SPECIAL_KINDS);
 export type SpecialKind = z.infer<typeof SpecialKindSchema>;
 
+/**
+ * What a tower may cost in cannons (the user's, 2026-10-16): every tower comes at two
+ * costs, the dearer the stronger, and never at one — a tower is a trade of guns.
+ */
+export const TOWER_COSTS = [2, 3] as const;
+export type TowerCost = (typeof TOWER_COSTS)[number];
+
+/**
+ * A tower at a cost — what a player brings to a match, named by both (`bertha3`), so a
+ * loadout is one value on the wire, in a recording, a preference and a command line.
+ */
+export const TOWER_VARIANTS = [
+  'bertha2',
+  'bertha3',
+  'architect2',
+  'architect3',
+  'rapid2',
+  'rapid3',
+] as const satisfies readonly `${SpecialKind}${TowerCost}`[];
+export const TowerVariantSchema = z.enum(TOWER_VARIANTS);
+export type TowerVariant = z.infer<typeof TowerVariantSchema>;
+
+export function variantOf(kind: SpecialKind, cost: TowerCost): TowerVariant {
+  return `${kind}${cost}` as TowerVariant;
+}
+
+export function variantKind(variant: TowerVariant): SpecialKind {
+  return variant.slice(0, -1) as SpecialKind;
+}
+
+export function variantCost(variant: TowerVariant): TowerCost {
+  return Number(variant.slice(-1)) as TowerCost;
+}
+
 const footprint = z.tuple([z.number().int().positive(), z.number().int().positive()]);
 
-/** What every tower has: its price in cannons, its footprint and its flight against a gun's. */
+/** What every tower's variant has: its footprint and its flight against a gun's. */
 const towerFields = {
-  /** Cannon placements given up for it, from the ones earned that round. */
-  cost: z.number().int().positive(),
   footprint,
   /**
    * A factor on a shot's flight time, which is its reload: below 1 fires more often.
@@ -26,9 +58,30 @@ const towerFields = {
 };
 
 /**
+ * A tower's variants by cost, `"2"` and `"3"`, each with its own levers. A variant left
+ * out is not offered — a tower that cannot be balanced at one cost comes at the other.
+ */
+function byCost<T extends z.ZodType>(variant: T) {
+  return z
+    .strictObject({ '2': variant.optional(), '3': variant.optional() })
+    .refine((v) => v['2'] !== undefined || v['3'] !== undefined, {
+      message: 'a tower needs a variant at one cost at least',
+    });
+}
+
+const BerthaSchema = z.strictObject({ ...towerFields, crater: CraterPatternSchema });
+const ArchitectSchema = z.strictObject({
+  ...towerFields,
+  /** Tiles from its footprint, every way and diagonally (Chebyshev). */
+  repairRadius: z.number().int().nonnegative(),
+});
+/** As many cannons on one footprint as it cost, a barrel each (`barrelsOf`). */
+const RapidSchema = z.strictObject(towerFields);
+
+/**
  * Special towers (docs/SPECIAL_TOWERS.md): a cannon with an ability of its own, bought in
  * the cannon phase for several ordinary ones. Whether they are played at all is `enabled`,
- * which a match's settings write; the rest is each tower's balance.
+ * which a match's settings write; the rest is each variant's balance.
  */
 export const SpecialsSchema = z.strictObject({
   enabled: z.boolean(),
@@ -40,17 +93,29 @@ export const SpecialsSchema = z.strictObject({
    */
   maxOwned: z.number().int().positive().nullable(),
   /** Offence: a wider crater, fired first whenever it is ready. */
-  bertha: z.strictObject({ ...towerFields, crater: CraterPatternSchema }),
+  bertha: byCost(BerthaSchema),
   /** Defence: rebuilds its owner's walls lost to shots nearby once a barrage is over. */
-  architect: z.strictObject({
-    ...towerFields,
-    /** Tiles from its footprint, every way and diagonally (Chebyshev). */
-    repairRadius: z.number().int().nonnegative(),
-  }),
-  /** Tempo: an ordinary shot on a shorter flight. */
-  rapid: z.strictObject(towerFields),
+  architect: byCost(ArchitectSchema),
+  /** More guns in less room: its cost in cannons, stacked. */
+  rapid: byCost(RapidSchema),
 });
 export type Specials = z.infer<typeof SpecialsSchema>;
+export type BerthaVariant = z.infer<typeof BerthaSchema>;
+export type ArchitectVariant = z.infer<typeof ArchitectSchema>;
+export type RapidVariant = z.infer<typeof RapidSchema>;
+export type VariantConfig = BerthaVariant | ArchitectVariant | RapidVariant;
+
+/** The variants the ruleset offers, in their order everywhere. */
+export function offeredVariants(specials: Specials): TowerVariant[] {
+  return TOWER_VARIANTS.filter((v) => specials[variantKind(v)][variantCost(v)] !== undefined);
+}
+
+/** A variant's levers; throws for one the ruleset does not offer, which the sim never allows. */
+export function variantConfig(specials: Specials, variant: TowerVariant): VariantConfig {
+  const found = specials[variantKind(variant)][variantCost(variant)];
+  if (found === undefined) throw new Error(`${variant} is not offered by this ruleset`);
+  return found;
+}
 
 /**
  * Towers off, for rulesets written before they existed — recordings above all. With
@@ -60,9 +125,9 @@ const SPECIALS_OFF: Specials = {
   enabled: false,
   perRound: 1,
   maxOwned: 3,
-  bertha: { cost: 3, footprint: [2, 2], flightFactor: 1, crater: 'plus5' },
-  architect: { cost: 2, footprint: [2, 2], flightFactor: 1, repairRadius: 2 },
-  rapid: { cost: 2, footprint: [2, 2], flightFactor: 0.4 },
+  bertha: { '3': { footprint: [2, 2], flightFactor: 1, crater: 'plus5' } },
+  architect: { '2': { footprint: [2, 2], flightFactor: 1, repairRadius: 2 } },
+  rapid: { '2': { footprint: [2, 2], flightFactor: 1 } },
 };
 
 export const RulesetSchema = z

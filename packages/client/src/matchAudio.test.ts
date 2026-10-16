@@ -105,8 +105,18 @@ describe('match audio', () => {
         x: 3,
         y: 3,
         cannonKind: 'cannon',
+        cannonCost: 1,
       },
-      { kind: 'cannon_placed', tick: 1, player: 1, cannonId: 1, x: 9, y: 9, cannonKind: 'cannon' },
+      {
+        kind: 'cannon_placed',
+        tick: 1,
+        player: 1,
+        cannonId: 1,
+        x: 9,
+        y: 9,
+        cannonKind: 'cannon',
+        cannonCost: 1,
+      },
       { kind: 'castle_selected', tick: 1, player: HUMAN, castleId: 0 },
     ]);
     // A rival's cannon is not acknowledged; a castle chosen is still a plain selection.
@@ -278,6 +288,7 @@ describe('special towers in the sound', () => {
       cannonId: id,
       owner: 1,
       kind,
+      cost: kind === 'cannon' ? 1 : 3,
       fromX: 0,
       fromY: 0,
       toX: 5,

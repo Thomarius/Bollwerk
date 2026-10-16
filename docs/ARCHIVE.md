@@ -8797,3 +8797,60 @@ out in advance (13z, its design 13zf). One thing stays conditional: the planning
       2026-10-14): planning several times a phase is smoother. Approved by the test sessions
       (2026-10-14); its step 3, the score's weights, only if play shows a need. ARCHIVE 13zf holds
       the design and every measurement.
+
+## 13zk. Every tower at two costs (ST3b) and its first balance (2026-10-16)
+
+**The idea** (the user's, 2026-10-16, after ST6): every special tower at a cost of 2 and of 3
+cannons, the player choosing the tower and the cost that suits them, each variant told apart by a
+lever of its own while what defines the tower stays: Big Bertha's cross-shaped crater, the
+Architect's repair round it, and the Rapid Cannon redesigned by the user from "fast reloads" to
+"more ammo" — as many cannons stacked on one footprint as it cost, a barrel each with its own
+flight. The first design's single barrel at a flight factor of 0.4 would have needed about 0.27 at
+cost 3, some 450 ms, where the bots' `readyDelayMs` and a person's clicking set the pace rather
+than the flight. Never a cost of 1. A variant that will not balance may be left out in config.
+The goal loosened with it: each variant 50–70% against an equal bot with no tower, a tower's two
+variants 40–60% head to head — the towers are a fun addition, not a tournament standard.
+
+**Built** (ST3b): a loadout is a variant, `bertha2` … `rapid3` (`TowerVariant`); `ruleset.specials`
+has each kind's variants by cost, `"2"` and `"3"`, each with its footprint, flight factor and own
+lever, one left out not offered (`offeredVariants`). A gun carries its `cost` (1 for a cannon) and
+its shots in flight, `shotIds`, ready while a barrel is free (`isLoaded`, `barrelsOf`). State hash
+version 4 and recording format 4; version and format 3, the towers at one cost, lived two days
+between commits, were never released and are refused. Protocol 26. Bots draw among the offered
+variants (`drawnSpecial` takes the ruleset's towers), count a Rapid Cannon by its barrels against
+`minGuns` and in `gunsReady`. The lobby lists every variant ("Big Bertha · 3 cannons") with a line
+by its own numbers; the emblem gains a pip a cannon it cost; the Rapid's flatter arc went with its
+quick flight.
+
+**Measured**: two-player tables of equal bots, seats in both orders, 96 matches a pairing at
+Levels 3, 5 and 8 on the same seeds for every pairing of a level — each variant against none, each
+tower's variants head to head, none against none as the control (49%, 43%, 47%: at 96 matches a
+share reads ±10 points). About 2,900 matches a full round, 45 minutes on ten processes; later
+rounds reran only the variants whose levers changed. Wins against none, Levels 3 / 5 / 8:
+
+| round | Bertha 2             | Bertha 3           | Architect 2        | Architect 3                 | Rapid 2      | Rapid 3            |
+| ----- | -------------------- | ------------------ | ------------------ | --------------------------- | ------------ | ------------------ |
+| 1     | flight 1.5: 60/44/50 | flight 1: 69/52/47 | radius 2: 77/80/58 | radius 3: 84/89/62          | 68/57/56     | flight 1: 67/76/62 |
+| 2     | 1.1: 63/63/46        | 0.75: 73/78/68     | radius 1: 75/64/66 | radius 2: 73/81/70          | (as round 1) | 1.15: 58/71/64     |
+| 3     | 1.0: 73/65/60        | 0.85: 74/63/46     | (as round 2)       | radius 2, gun 1.5: 71/72/60 |              |                    |
+| 4     |                      |                    |                    | radius 2, gun 2: 75/79/54   |              |                    |
+
+Head to head, the cost-2 variant's share at the end: Bertha 49/53/50, Architect 43/40/43, Rapid
+47/40/49 (round 1: 38/49/47, 27/28/44, 35/32/43 — the dearer variant far ahead but for Bertha).
+
+**Read**: Big Bertha at an ordinary flight does at full accuracy about what the three cannons she
+replaces would — a cross of about three walls a flight against three shots — so in round 1 she
+gained nothing above Level 3; she needed a quicker shell, and the cheap one turned out to need
+none slower. The user's idea of a slower cost-2 Bertha was the right lever in kind, and the soaks
+put both on the other side of 1. The Architect was the strongest tower at Levels 3–5 (80–89%) and
+fades with level, as better bots lose fewer walls; its radius moves in whole steps, so cost 3
+keeps the larger one and a slower gun — a weak lever, within the noise against none, which moved
+the head to head inside the goal. The Rapid Cannon came out on target at its first numbers but for
+Rapid 3, its barrels slowed a little. Every variant is bought in about 65–75% of rounds (Bertha 3
+and Rapid 3 at Level 3 in 50–55%, a second castle rarer there).
+
+**Where it stands**: within the goal or at its edge everywhere but at Level 3, where every tower
+reads 70–75%, and Architect 3 at Level 5 (79%) and Bertha 3 at Level 8 (46%), each a single
+measurement at ±10. Final levers: Bertha 2 flight 1, Bertha 3 0.85; Architect 2 radius 1, Architect
+3 radius 2 with its gun at 2; Rapid 2 at 1, Rapid 3 at 1.15. The balance is to how the bots use the
+towers, by ST3's first buying rule. The soaks' files are in `soaks/towers-2026-10-16*/`.

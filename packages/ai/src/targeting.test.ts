@@ -102,6 +102,7 @@ describe('targeting traits', () => {
         id: 7,
         cannonId: 0,
         kind: 'cannon',
+        cost: 1,
         owner: 2,
         fromX: 26,
         fromY: 2,
@@ -116,7 +117,7 @@ describe('targeting traits', () => {
     state.round = 2;
     state.tick += 100;
     state.shots = [];
-    for (const cannon of state.cannons) cannon.shotId = null;
+    for (const cannon of state.cannons) cannon.shotIds = [];
     expect(targetIsland(grudging, state)).toBe(3);
   });
 });

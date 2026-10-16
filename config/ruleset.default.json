@@ -35,21 +35,16 @@
     "perRound": 1,
     "maxOwned": 3,
     "bertha": {
-      "cost": 3,
-      "footprint": [2, 2],
-      "flightFactor": 1,
-      "crater": "plus5"
+      "2": { "footprint": [2, 2], "flightFactor": 1, "crater": "plus5" },
+      "3": { "footprint": [2, 2], "flightFactor": 0.85, "crater": "plus5" }
     },
     "architect": {
-      "cost": 2,
-      "footprint": [2, 2],
-      "flightFactor": 1,
-      "repairRadius": 2
+      "2": { "footprint": [2, 2], "flightFactor": 1, "repairRadius": 1 },
+      "3": { "footprint": [2, 2], "flightFactor": 2, "repairRadius": 2 }
     },
     "rapid": {
-      "cost": 2,
-      "footprint": [2, 2],
-      "flightFactor": 0.4
+      "2": { "footprint": [2, 2], "flightFactor": 1 },
+      "3": { "footprint": [2, 2], "flightFactor": 1.15 }
     }
   },
   "build": {

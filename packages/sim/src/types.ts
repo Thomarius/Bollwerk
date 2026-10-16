@@ -1,4 +1,4 @@
-import type { Ruleset, SpecialKind, TerrainConfig } from '@bollwerk/config';
+import type { Ruleset, SpecialKind, TerrainConfig, TowerVariant } from '@bollwerk/config';
 
 export const Terrain = { Water: 0, Land: 1 } as const;
 export type TerrainKind = (typeof Terrain)[keyof typeof Terrain];
@@ -59,8 +59,8 @@ export interface PlayerState {
    * points, because failing to seal forfeits them.
    */
   wallsDestroyed: number;
-  /** The special tower this player brings to the match, or null; fixed at its start. */
-  special: SpecialKind | null;
+  /** The special tower this player brings to the match, at its cost, or null; fixed at its start. */
+  special: TowerVariant | null;
   /** Towers bought in this cannon phase, against `specials.perRound`; zeroed as combat begins. */
   specialsBought: number;
   /**
@@ -103,22 +103,28 @@ export interface Cannon {
   /** Owning player id. */
   owner: number;
   kind: CannonKind;
+  /** Cannon placements it cost: 1 for an ordinary cannon, a tower's 2 or 3 (its variant). */
+  cost: number;
   x: number;
   y: number;
   w: number;
   h: number;
   /** False when the cannon sits outside an enclosed region: it survives but cannot fire. */
   active: boolean;
-  /** Shot currently in flight; a cannon is ready only when this is null. */
-  shotId: number | null;
+  /**
+   * Its shots in flight, oldest first. A gun is ready while it has a barrel free
+   * (`isLoaded`): one for every gun but a Rapid Cannon, which has one per cannon it cost.
+   */
+  shotIds: number[];
 }
 
 export interface Shot {
   id: number;
   cannonId: number;
   owner: number;
-  /** The kind of gun that fired it, which decides its crater. */
+  /** The kind of gun that fired it and that gun's cost, which decide its crater. */
   kind: CannonKind;
+  cost: number;
   fromX: number;
   fromY: number;
   toX: number;
@@ -170,6 +176,7 @@ export type MatchEvent =
       x: number;
       y: number;
       cannonKind: CannonKind;
+      cannonCost: number;
     }
   | { kind: 'round_resolved'; tick: number; round: number; results: RoundResult[] }
   | {

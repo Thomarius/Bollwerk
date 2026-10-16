@@ -11,7 +11,7 @@ import {
   type Personality,
   type Ruleset,
   type ServerConfig,
-  type SpecialKind,
+  type TowerVariant,
   type TerrainConfig,
 } from '@bollwerk/config';
 import { Bot, dealSeats, tableSlots } from '@bollwerk/ai';
@@ -53,7 +53,7 @@ export interface Seat {
   /** Ticks remaining before a dropped player is handed to a bot. */
   graceTicks: number;
   /** The special tower the person here chose, or null; a bot's seat brings its draw. */
-  special: SpecialKind | null;
+  special: TowerVariant | null;
 }
 
 export interface RoomOptions {
@@ -539,7 +539,7 @@ export class Room {
       name: string;
       isBot: boolean;
       team: number;
-      special: SpecialKind | null;
+      special: TowerVariant | null;
     }>(this.seats.length);
     const levels = this.seats.map(
       (_, index) => this.botLevels[index] ?? this.options.server.botLevel,
@@ -567,6 +567,7 @@ export class Room {
         special: seat.special,
       })),
       this.options.terrain,
+      this.options.ruleset.specials,
     );
     const recorded = new Array<{ level: number | null; personality: Personality | null }>(
       this.seats.length,

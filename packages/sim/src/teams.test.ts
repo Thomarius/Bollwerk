@@ -87,12 +87,13 @@ describe('no attacking a teammate', () => {
       id: 0,
       owner: 0,
       kind: 'cannon',
+      cost: 1,
       x: 3,
       y: 3,
       w: 1,
       h: 1,
       active: true,
-      shotId: null,
+      shotIds: [],
     });
     expect(fire(state, 0, 11, 1)).toEqual({ rejection: 'teammate_island' });
     expect('shot' in fire(state, 0, 19, 1)).toBe(true); // the other team is fair game
@@ -108,6 +109,7 @@ describe('no attacking a teammate', () => {
       cannonId: 0,
       owner: 0,
       kind: 'cannon',
+      cost: 1,
       fromX: 3,
       fromY: 3,
       toX: 8,

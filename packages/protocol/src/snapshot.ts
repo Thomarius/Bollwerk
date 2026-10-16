@@ -1,8 +1,8 @@
 import {
   RulesetSchema,
   SPECIAL_KINDS,
-  SpecialKindSchema,
   TerrainConfigSchema,
+  TowerVariantSchema,
 } from '@bollwerk/config';
 import { PHASES, type MatchState } from '@bollwerk/sim';
 import { z } from 'zod';
@@ -55,7 +55,7 @@ const PlayerSchema = z.strictObject({
   overtimeSpent: z.boolean(),
   score: z.number().int().nonnegative(),
   wallsDestroyed: z.number().int().nonnegative(),
-  special: SpecialKindSchema.nullable(),
+  special: TowerVariantSchema.nullable(),
   specialsBought: z.number().int().nonnegative(),
   openingPlacement: z.boolean(),
 });
@@ -76,12 +76,13 @@ const CannonSchema = z.strictObject({
   id: z.number().int().nonnegative(),
   owner: z.number().int().nonnegative(),
   kind: CannonKindSchema,
+  cost: z.number().int().positive(),
   x: z.number().int(),
   y: z.number().int(),
   w: z.number().int().positive(),
   h: z.number().int().positive(),
   active: z.boolean(),
-  shotId: z.number().int().nullable(),
+  shotIds: z.array(z.number().int().nonnegative()),
 });
 
 const ShotSchema = z.strictObject({
@@ -89,6 +90,7 @@ const ShotSchema = z.strictObject({
   cannonId: z.number().int().nonnegative(),
   owner: z.number().int().nonnegative(),
   kind: CannonKindSchema,
+  cost: z.number().int().positive(),
   fromX: z.number(),
   fromY: z.number(),
   toX: z.number().int(),

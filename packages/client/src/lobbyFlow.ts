@@ -5,7 +5,7 @@ import {
   defaultTeams,
   reshapeTable,
   type MatchSettings,
-  type SpecialKind,
+  type TowerVariant,
   type Table,
 } from '@bollwerk/config';
 import { type ServerMessage } from '@bollwerk/protocol';
@@ -62,7 +62,7 @@ export interface LobbyHandlers {
   /** A tab chosen, to be kept open as the lobby is drawn again. */
   tab?(tab: LobbyTab): void;
   /** The special tower this person brings, or none; remembered for the next table. */
-  special?(special: SpecialKind | null): void;
+  special?(special: TowerVariant | null): void;
 }
 
 /** Draws the lobby and wires its controls to whichever backend holds the table. */
@@ -117,7 +117,7 @@ export function drawLobby(view: LobbyView, on: LobbyHandlers): void {
   const mine = document.querySelector<HTMLSelectElement>('#my-special');
   mine?.addEventListener('change', () => {
     audio.play('select');
-    const special = mine.value === '' ? null : (mine.value as SpecialKind);
+    const special = mine.value === '' ? null : (mine.value as TowerVariant);
     saveTower(special);
     on.special?.(special);
   });
@@ -248,7 +248,7 @@ interface TableState extends Table {
   hostSeat: number;
   bots: number[];
   /** The special tower the host brings, where the match plays them. */
-  special: SpecialKind | null;
+  special: TowerVariant | null;
 }
 
 /**

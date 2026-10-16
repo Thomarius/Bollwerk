@@ -1,3 +1,5 @@
+import { variantCost, variantKind } from '@bollwerk/config';
+
 import {
   Structure,
   Terrain,
@@ -7,7 +9,7 @@ import {
   type PlayerState,
 } from './types.js';
 import { pieceAt, pieceCells } from './pieces.js';
-import { footprintOf, specialRefusal, towerCost } from './specials.js';
+import { footprintOf, specialRefusal } from './specials.js';
 
 /**
  * Why an action was refused. The server returns these to the client verbatim, and
@@ -183,7 +185,8 @@ export function canPlaceCannon(
   const cap = state.ruleset.cannons.maxTotal;
   if (cap !== null && countCannons(state, playerId) >= cap) return 'cannon_cap';
 
-  const [cw, ch] = footprintOf(state.ruleset, kindPlaced(player, special));
+  const placed = gunPlaced(player, special);
+  const [cw, ch] = footprintOf(state.ruleset, placed.kind, placed.cost);
   for (let oy = 0; oy < ch; oy++) {
     for (let ox = 0; ox < cw; ox++) {
       const tx = x + ox;
@@ -204,9 +207,11 @@ export function countCannons(state: MatchState, playerId: number): number {
   return count;
 }
 
-/** The kind of gun a placement puts down: the player's tower if asked for, else a cannon. */
-function kindPlaced(player: PlayerState, special: boolean): CannonKind {
-  return special && player.special !== null ? player.special : 'cannon';
+/** The gun a placement puts down: the player's tower if asked for, else a cannon. */
+function gunPlaced(player: PlayerState, special: boolean): { kind: CannonKind; cost: number } {
+  return special && player.special !== null
+    ? { kind: variantKind(player.special), cost: variantCost(player.special) }
+    : { kind: 'cannon', cost: 1 };
 }
 
 export function placeCannon(
@@ -219,14 +224,10 @@ export function placeCannon(
   const rejection = canPlaceCannon(state, playerId, x, y, special);
   if (rejection) return { rejection };
   const player = state.players[playerId] as PlayerState;
-  const kind = kindPlaced(player, special);
-  const cannon = spawnCannon(state, playerId, x, y, kind);
-  if (kind === 'cannon') {
-    player.cannonsToPlace--;
-  } else {
-    player.cannonsToPlace -= towerCost(state.ruleset, kind);
-    player.specialsBought++;
-  }
+  const { kind, cost } = gunPlaced(player, special);
+  const cannon = spawnCannon(state, playerId, x, y, kind, cost);
+  player.cannonsToPlace -= cost;
+  if (kind !== 'cannon') player.specialsBought++;
   state.events.push({
     kind: 'cannon_placed',
     tick: state.tick,
@@ -235,6 +236,7 @@ export function placeCannon(
     x,
     y,
     cannonKind: kind,
+    cannonCost: cost,
   });
   return { cannon };
 }
@@ -246,19 +248,21 @@ function spawnCannon(
   x: number,
   y: number,
   kind: CannonKind,
+  cost: number,
 ): Cannon {
   const player = state.players[playerId] as PlayerState;
-  const [cw, ch] = footprintOf(state.ruleset, kind);
+  const [cw, ch] = footprintOf(state.ruleset, kind, cost);
   const cannon: Cannon = {
     id: state.nextCannonId++,
     owner: playerId,
     kind,
+    cost,
     x,
     y,
     w: cw,
     h: ch,
     active: true,
-    shotId: null,
+    shotIds: [],
   };
   for (let oy = 0; oy < ch; oy++) {
     for (let ox = 0; ox < cw; ox++) {

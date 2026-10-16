@@ -10,7 +10,26 @@ import { repairWalls, towersOwned } from './specials.js';
 import { beginMatch, fastRuleset, stateFromAscii, withSpecials } from './testing.js';
 import { Structure, type MatchState } from './types.js';
 
-const SPECIALS = withSpecials(defaultRuleset);
+/**
+ * Towers played, with levers of the tests' own — the balance in config/ is tuned by soaks
+ * and moves, the rules under test do not: an Architect of cost 2 reaching 2 tiles, of cost 3
+ * reaching 3, and every Rapid Cannon's barrels flying as a cannon's.
+ */
+const SPECIALS: Ruleset = (() => {
+  const ruleset = withSpecials(defaultRuleset);
+  const { architect, rapid } = ruleset.specials;
+  return {
+    ...ruleset,
+    specials: {
+      ...ruleset.specials,
+      architect: {
+        '2': { ...architect['2']!, repairRadius: 2 },
+        '3': { ...architect['3']!, repairRadius: 3 },
+      },
+      rapid: { '2': { ...rapid['2']!, flightFactor: 1 }, '3': { ...rapid['3']!, flightFactor: 1 } },
+    },
+  };
+})();
 
 /** A sealed ring round a castle, with room for guns. */
 const SEALED = `
@@ -32,7 +51,7 @@ function cannonPhase(ruleset: Ruleset = SPECIALS, art = SEALED): MatchState {
   state.phase = 'cannon_place';
   state.phaseEndTick = 100_000;
   const player = state.players[0]!;
-  player.special = 'bertha';
+  player.special = 'bertha3';
   player.cannonsToPlace = 3;
   return state;
 }
@@ -45,7 +64,19 @@ describe('buying a special tower', () => {
     expect(state.players[0]!.cannonsToPlace).toBe(0);
     expect(state.players[0]!.specialsBought).toBe(1);
     expect(towersOwned(state, 0)).toBe(1);
-    expect(state.events.at(-1)).toMatchObject({ kind: 'cannon_placed', cannonKind: 'bertha' });
+    expect(state.events.at(-1)).toMatchObject({
+      kind: 'cannon_placed',
+      cannonKind: 'bertha',
+      cannonCost: 3,
+    });
+  });
+
+  it('takes a cheaper variant’s cost, and stands it at that cost', () => {
+    const state = cannonPhase();
+    state.players[0]!.special = 'bertha2';
+    const result = placeCannon(state, 0, 5, 3, true);
+    expect('cannon' in result && [result.cannon.kind, result.cannon.cost]).toEqual(['bertha', 2]);
+    expect(state.players[0]!.cannonsToPlace).toBe(1);
   });
 
   it('places an ordinary cannon unless asked for the tower', () => {
@@ -60,7 +91,10 @@ describe('buying a special tower', () => {
       ...SPECIALS,
       specials: {
         ...SPECIALS.specials,
-        bertha: { ...SPECIALS.specials.bertha, footprint: [3, 3] },
+        bertha: {
+          ...SPECIALS.specials.bertha,
+          '3': { ...SPECIALS.specials.bertha['3']!, footprint: [3, 3] },
+        },
       },
     } as Ruleset;
     const state = cannonPhase(ruleset);
@@ -139,7 +173,7 @@ describe('buying a special tower', () => {
     );
     applyEnclosure(state);
     // A cannon and Big Bertha, who cost three.
-    expect(holdingsOf(state)[0]!.guns).toBe(1 + SPECIALS.specials.bertha.cost);
+    expect(holdingsOf(state)[0]!.guns).toBe(1 + 3);
   });
 });
 
@@ -152,7 +186,7 @@ describe('buying in a match', () => {
         ruleset,
         terrainConfig: defaultTerrainConfig,
         players: [
-          { name: 'a', isBot: true, special: 'rapid' },
+          { name: 'a', isBot: true, special: 'rapid2' },
           { name: 'b', isBot: true },
         ],
       }),
@@ -175,17 +209,33 @@ describe('buying in a match', () => {
 
   it('gives each player the tower they bring, only when towers are played', () => {
     const state = started();
-    expect(state.players.map((p) => p.special)).toEqual(['rapid', null]);
+    expect(state.players.map((p) => p.special)).toEqual(['rapid2', null]);
     const classic = createMatch({
       seed: 7,
       ruleset: fastRuleset(),
       terrainConfig: defaultTerrainConfig,
       players: [
-        { name: 'a', isBot: true, special: 'rapid' },
+        { name: 'a', isBot: true, special: 'rapid2' },
         { name: 'b', isBot: true },
       ],
     });
     expect(classic.players[0]!.special).toBeNull();
+  });
+
+  it('gives none for a variant the ruleset does not offer', () => {
+    const ruleset = withSpecials(fastRuleset());
+    const { rapid } = ruleset.specials;
+    const offered = { ...ruleset, specials: { ...ruleset.specials, rapid: { '3': rapid['3'] } } };
+    const state = createMatch({
+      seed: 7,
+      ruleset: offered,
+      terrainConfig: defaultTerrainConfig,
+      players: [
+        { name: 'a', isBot: true, special: 'rapid2' },
+        { name: 'b', isBot: true, special: 'rapid3' },
+      ],
+    });
+    expect(state.players.map((p) => p.special)).toEqual([null, 'rapid3']);
   });
 
   it('refuses the tower at the opening, then sells it in the next cannon phase', () => {
@@ -254,7 +304,7 @@ describe('firing a special tower', () => {
 
   it('fires the cannons while Big Bertha is loading', () => {
     const state = stateFromAscii(RANGE[0], SPECIALS, RANGE[1]);
-    for (const cannon of state.cannons) if (cannon.kind === 'bertha') cannon.shotId = 99;
+    for (const cannon of state.cannons) if (cannon.kind === 'bertha') cannon.shotIds = [99];
     expect(findReadyCannon(state, 0, 16, 1)?.kind).toBe('cannon');
   });
 
@@ -264,12 +314,13 @@ describe('firing a special tower', () => {
     expect(findReadyCannon(state, 0, 16, 1)?.kind).toBe('cannon');
   });
 
-  it('fires the Rapid Cannon as any gun, on a shorter flight', () => {
-    const state = stateFromAscii(
+  /** Player 0's Rapid Cannon of the glyph's cost alone on island 1, an opponent's wall. */
+  function rapid(glyph: 'R' | 'r'): MatchState {
+    return stateFromAscii(
       `
       ....................
-      ..**..........RR##..
-      ..**..........RR##..
+      ..${glyph}${glyph}............##..
+      ..${glyph}${glyph}............##..
     `,
       SPECIALS,
       `
@@ -278,16 +329,62 @@ describe('firing a special tower', () => {
       ................22..
     `,
     );
-    const result = fire(state, 0, 16, 1);
-    if (!('shot' in result)) throw new Error(result.rejection);
-    expect(result.shot.kind).toBe('rapid');
-    const { fromX, fromY } = result.shot;
-    const ordinary = flightTicks(state, fromX, fromY, 16, 1);
-    const rapid = flightTicks(state, fromX, fromY, 16, 1, SPECIALS.specials.rapid.flightFactor);
-    expect(result.shot.impactTick - state.tick).toBe(rapid);
-    expect(rapid).toBeLessThan(ordinary);
-    // It must fire more than the two cannons it costs.
-    expect(rapid * 2).toBeLessThan(ordinary);
+  }
+
+  it('fires a Rapid Cannon as the cannons it cost, each barrel on its own flight', () => {
+    for (const [glyph, barrels] of [
+      ['r', 2],
+      ['R', 3],
+    ] as const) {
+      const state = rapid(glyph);
+      const shots = [];
+      for (let i = 0; i < barrels; i++) {
+        const result = fire(state, 0, 16, 1);
+        if (!('shot' in result)) throw new Error(result.rejection);
+        shots.push(result.shot);
+        state.tick++;
+      }
+      expect(fire(state, 0, 16, 1)).toEqual({ rejection: 'no_ready_cannon' });
+      // As quick as any gun, at a flight factor of 1.
+      const { fromX, fromY } = shots[0]!;
+      const flight = flightTicks(state, fromX, fromY, 16, 1);
+      expect(shots.map((s) => s.impactTick - s.launchTick)).toEqual(
+        new Array(barrels).fill(flight),
+      );
+      // The first shot down frees its barrel, and only that one.
+      state.tick = shots[0]!.impactTick;
+      resolveImpacts(state);
+      expect(state.cannons[0]!.shotIds).toEqual(shots.slice(1).map((s) => s.id));
+      expect('shot' in fire(state, 0, 16, 1)).toBe(true);
+      expect(fire(state, 0, 16, 1)).toEqual({ rejection: 'no_ready_cannon' });
+    }
+  });
+
+  it('flies each Big Bertha’s shot by her own variant’s factor', () => {
+    const { bertha } = SPECIALS.specials;
+    const ruleset = {
+      ...SPECIALS,
+      specials: {
+        ...SPECIALS.specials,
+        bertha: {
+          '2': { ...bertha['2']!, flightFactor: 1.5 },
+          '3': { ...bertha['3']!, flightFactor: 0.5 },
+        },
+      },
+    };
+    for (const [glyph, cost, factor] of [
+      ['b', 2, 1.5],
+      ['B', 3, 0.5],
+    ] as const) {
+      const state = stateFromAscii(RANGE[0].replaceAll('B', glyph), ruleset, RANGE[1]);
+      const result = fire(state, 0, 16, 1);
+      if (!('shot' in result)) throw new Error(result.rejection);
+      expect([result.shot.kind, result.shot.cost]).toEqual(['bertha', cost]);
+      const { fromX, fromY } = result.shot;
+      expect(result.shot.impactTick - state.tick).toBe(
+        flightTicks(state, fromX, fromY, 16, 1, factor),
+      );
+    }
   });
 
   it('leaves an ordinary gun’s flight exactly as it was', () => {
@@ -346,7 +443,7 @@ describe('Big Bertha’s crater', () => {
 
   it('leaves the ordinary guns’ crater as the ruleset has it', () => {
     const state = stateFromAscii(RANGE[0], SPECIALS, RANGE[1]);
-    for (const cannon of state.cannons) if (cannon.kind === 'bertha') cannon.shotId = 99;
+    for (const cannon of state.cannons) if (cannon.kind === 'bertha') cannon.shotIds = [99];
     landAt(state, 16, 1);
     expect(state.structure[1 * state.width + 17]).toBe(Structure.Wall);
   });
@@ -354,7 +451,8 @@ describe('Big Bertha’s crater', () => {
 
 describe('the Architect’s repair', () => {
   /**
-   * Player 0's Architect at (3, 3) inside a ring, reaching x 1–6 and y 1–6 at radius 2, so
+   * Player 0's Architect of cost 2 at (3, 3) inside a ring, reaching x 1–6 and y 1–6 at
+   * radius 2, so
    * the ring's west wall but not its east; player 1's two cannons below.
    */
   const RING = [
@@ -362,8 +460,8 @@ describe('the Architect’s repair', () => {
     ..............
     .##########...
     .#,,,,,,,,#...
-    .#,AA,@@,,#...
-    .#,AA,@@,,#...
+    .#,aa,@@,,#...
+    .#,aa,@@,,#...
     .#,,,,,,,,#...
     .##########...
     ..............
@@ -424,6 +522,22 @@ describe('the Architect’s repair', () => {
     expect(state.players[1]!.wallsDestroyed).toBe(2);
   });
 
+  it('reaches as far as its cost’s variant says', () => {
+    const architect = { ...SPECIALS.specials.architect['3']!, repairRadius: 6 };
+    const ruleset = {
+      ...SPECIALS,
+      specials: {
+        ...SPECIALS.specials,
+        architect: { ...SPECIALS.specials.architect, '3': architect },
+      },
+    };
+    const state = breached(ruleset);
+    state.cannons.find((c) => c.kind === 'architect')!.cost = 3;
+    repairWalls(state);
+    expect(state.structure[WEST]).toBe(Structure.Wall);
+    expect(state.structure[EAST]).toBe(Structure.Wall);
+  });
+
   it('waits for the last shot in the air', () => {
     const state = breached();
     state.shots.push({
@@ -431,6 +545,7 @@ describe('the Architect’s repair', () => {
       cannonId: 0,
       owner: 1,
       kind: 'cannon',
+      cost: 1,
       fromX: 2.5,
       fromY: 8.5,
       toX: 12,

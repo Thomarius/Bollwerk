@@ -2,7 +2,7 @@ import type { CraterPattern } from '@bollwerk/config';
 
 import { distanceFixed, distanceSquared } from './math.js';
 import { playerOf, type Rejection } from './placement.js';
-import { craterOf, flightFactorOf, isImpactTower, noteLostWall } from './specials.js';
+import { craterOf, flightFactorOf, isImpactTower, isLoaded, noteLostWall } from './specials.js';
 import { sameTeam } from './teams.js';
 import { Structure, type Cannon, type MatchState, type Shot } from './types.js';
 
@@ -43,7 +43,7 @@ function cannonCentreY(cannon: Cannon): number {
 }
 
 /**
- * The nearest cannon that is active and has nothing in flight — but a ready impact tower
+ * The nearest cannon that is active and has a barrel free — but a ready impact tower
  * (Big Bertha) before any other gun, the nearest of them if several are ready.
  *
  * Nearest rather than round-robin keeps the player thinking about targets instead of
@@ -57,7 +57,7 @@ export function findReadyCannon(state: MatchState, playerId: number, tx: number,
   let bestDistance = Infinity;
   let bestImpact = false;
   for (const cannon of state.cannons) {
-    if (cannon.owner !== playerId || !cannon.active || cannon.shotId !== null) continue;
+    if (cannon.owner !== playerId || !cannon.active || !isLoaded(cannon)) continue;
     const impact = isImpactTower(cannon.kind);
     if (bestImpact && !impact) continue;
     const d = distanceSquared(cannonCentreX(cannon), cannonCentreY(cannon), tx, ty);
@@ -136,6 +136,7 @@ export function fire(
     cannonId: cannon.id,
     owner: playerId,
     kind: cannon.kind,
+    cost: cannon.cost,
     fromX,
     fromY,
     toX: tx,
@@ -143,9 +144,16 @@ export function fire(
     launchTick: state.tick,
     impactTick:
       state.tick +
-      flightTicks(state, fromX, fromY, tx, ty, flightFactorOf(state.ruleset, cannon.kind)),
+      flightTicks(
+        state,
+        fromX,
+        fromY,
+        tx,
+        ty,
+        flightFactorOf(state.ruleset, cannon.kind, cannon.cost),
+      ),
   };
-  cannon.shotId = shot.id;
+  cannon.shotIds.push(shot.id);
   state.shots.push(shot);
   state.events.push({ kind: 'shot_fired', tick: state.tick, shot });
   return { shot };
@@ -170,7 +178,7 @@ export function resolveImpacts(state: MatchState): void {
       continue;
     }
 
-    const offsets = craterOffsets(craterOf(state.ruleset, shot.kind));
+    const offsets = craterOffsets(craterOf(state.ruleset, shot.kind, shot.cost));
     const destroyed: number[] = [];
     const shooter = state.players[shot.owner];
     const shooterIsland = shooter?.islandId ?? 0;
@@ -197,7 +205,10 @@ export function resolveImpacts(state: MatchState): void {
     }
 
     const cannon = state.cannons.find((c) => c.id === shot.cannonId);
-    if (cannon && cannon.shotId === shot.id) cannon.shotId = null;
+    if (cannon) {
+      const barrel = cannon.shotIds.indexOf(shot.id);
+      if (barrel >= 0) cannon.shotIds.splice(barrel, 1);
+    }
 
     state.events.push({
       kind: 'shot_impact',

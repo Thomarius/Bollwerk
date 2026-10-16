@@ -515,8 +515,12 @@
   "tower.architect": "Baumeister",
   "tower.rapid": "Schnellfeuerkanone",
   "tower.berthaWhat": "Reißt ein Kreuz aus fünf Mauerblöcken und feuert zuerst, sobald sie bereit ist.",
-  "tower.architectWhat": "Baut nach jedem Beschuss deine Mauern in der Nähe wieder auf.",
-  "tower.rapidWhat": "Lädt in weniger als der halben Zeit einer Kanone nach.",
+  "tower.berthaSlowWhat": "Reißt ein Kreuz aus fünf Mauerblöcken und feuert zuerst, sobald sie bereit ist – mit langsamerer Granate.",
+  "tower.architectWhat": {
+    "one": "Baut nach jedem Beschuss deine Mauern bis {n} Block um sich herum wieder auf.",
+    "other": "Baut nach jedem Beschuss deine Mauern bis {n} Blöcke um sich herum wieder auf."
+  },
+  "tower.rapidWhat": "{n} Kanonen übereinander auf dem Platz einer, jede mit eigenem Nachladen.",
   "tower.cost": {
     "one": "{n} Kanone",
     "other": "{n} Kanonen"

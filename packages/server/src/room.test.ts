@@ -957,30 +957,30 @@ describe('special towers in a room', () => {
     r.join(host, 'Ada');
     r.join(guest, 'Bo');
     r.handle(host, { type: 'configure', settings: { specials: true } });
-    r.handle(host, { type: 'special', special: 'bertha' });
-    r.handle(guest, { type: 'special', special: 'rapid' });
+    r.handle(host, { type: 'special', special: 'bertha3' });
+    r.handle(guest, { type: 'special', special: 'rapid2' });
     expect(lastRoom(guest).settings.specials).toBe(true);
-    expect(lastRoom(guest).seats.map((s) => s.special)).toEqual(['bertha', 'rapid']);
+    expect(lastRoom(guest).seats.map((s) => s.special)).toEqual(['bertha3', 'rapid2']);
 
     r.start();
     run(r, 5);
     const state = host.state!;
     expect(state.ruleset.specials.enabled).toBe(true);
-    expect(state.players[host.playerId]!.special).toBe('bertha');
-    expect(state.players[guest.playerId]!.special).toBe('rapid');
+    expect(state.players[host.playerId]!.special).toBe('bertha3');
+    expect(state.players[guest.playerId]!.special).toBe('rapid2');
     const bot = state.players.find((p) => p.isBot)!;
     expect(bot.special).not.toBeNull();
 
     // Locked once the match is under way.
     r.handle(host, { type: 'special', special: null });
-    expect(lastRoom(host).seats.find((s) => s.name === 'Ada')!.special).toBe('bertha');
+    expect(lastRoom(host).seats.find((s) => s.name === 'Ada')!.special).toBe('bertha3');
   });
 
   it('plays no towers unless the host switches them on, whatever was chosen', () => {
     const r = room(2, 4);
     const host = new TestClient('host');
     r.join(host, 'Ada');
-    r.handle(host, { type: 'special', special: 'bertha' });
+    r.handle(host, { type: 'special', special: 'bertha3' });
     r.start();
     run(r, 5);
     expect(host.state!.ruleset.specials.enabled).toBe(false);

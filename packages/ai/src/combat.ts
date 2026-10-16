@@ -6,9 +6,11 @@ import {
   craterOffsets,
   heldValue,
   isImpactTower,
+  isLoaded,
   holdingsOf,
   sameTeam,
   type Action,
+  type Cannon,
   type Holding,
   type MatchState,
   type Rng,
@@ -42,7 +44,7 @@ export class Gunner {
     const delay = Math.round((this.profile.readyDelayMs * state.ruleset.tickRateHz) / 1000);
     let ready = false;
     for (const cannon of state.cannons) {
-      if (cannon.owner !== this.playerId || !cannon.active || cannon.shotId !== null) {
+      if (cannon.owner !== this.playerId || !cannon.active || !isLoaded(cannon)) {
         this.readySince.delete(cannon.id);
         continue;
       }
@@ -194,11 +196,11 @@ export class Gunner {
     return distances.map((d) => (nearest / d) ** this.profile.rivalDistanceExponent);
   }
 
-  /** The kind of its ready impact tower, which fires next whatever is aimed at; or null. */
-  private readyImpactTower(state: MatchState): MatchState['cannons'][number]['kind'] | null {
+  /** Its ready impact tower, which fires next whatever is aimed at; or null. */
+  private readyImpactTower(state: MatchState): Cannon | null {
     for (const cannon of state.cannons) {
-      if (cannon.owner !== this.playerId || !cannon.active || cannon.shotId !== null) continue;
-      if (isImpactTower(cannon.kind)) return cannon.kind;
+      if (cannon.owner !== this.playerId || !cannon.active || !isLoaded(cannon)) continue;
+      if (isImpactTower(cannon.kind)) return cannon;
     }
     return null;
   }
@@ -210,13 +212,13 @@ export class Gunner {
    */
   private craterTarget(
     state: MatchState,
-    kind: MatchState['cannons'][number]['kind'],
+    tower: Cannon,
     opponent: number,
     taken: ReadonlySet<number>,
   ): number | null {
     const weakest = new Set(weakestWall(state, opponent));
     if (weakest.size === 0) return null;
-    const offsets = craterOffsets(craterOf(state.ruleset, kind));
+    const offsets = craterOffsets(craterOf(state.ruleset, tower.kind, tower.cost));
     const rivalWall = (i: number): boolean => {
       if (state.structure[i] !== Structure.Wall) return false;
       const owner = state.owner[i] as number;

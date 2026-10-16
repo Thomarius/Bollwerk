@@ -6,7 +6,7 @@ import { describe, expect, it } from 'vitest';
 
 import { impactReadiness } from './controls.js';
 import { lobbyMarkup, type LobbyView } from './lobby.js';
-import { towerLine, towerName } from './towers.js';
+import { towerLine, towerName, towerWhat, variantName } from './towers.js';
 
 /** Player 0's sealed ring, in a cannon phase, bringing Big Bertha with three cannons. */
 function cannonPhase(): MatchState {
@@ -27,7 +27,7 @@ function cannonPhase(): MatchState {
   state.phase = 'cannon_place';
   const player = state.players[0]!;
   player.startingCastleId = 0;
-  player.special = 'bertha';
+  player.special = 'bertha3';
   player.cannonsToPlace = 3;
   return state;
 }
@@ -82,7 +82,7 @@ describe('the cursor and the impact towers', () => {
     const state = armed();
     expect(impactReadiness(state, 0)).toEqual({ ready: true });
     const bertha = state.cannons.find((c) => c.kind === 'bertha')!;
-    bertha.shotId = 9;
+    bertha.shotIds = [9];
     state.tick = 40;
     state.shots = [
       {
@@ -90,6 +90,7 @@ describe('the cursor and the impact towers', () => {
         cannonId: bertha.id,
         owner: 0,
         kind: 'bertha',
+        cost: 3,
         fromX: 1.5,
         fromY: 1.5,
         toX: 9,
@@ -122,7 +123,7 @@ describe('the lobby with special towers', () => {
     playerCount: 3,
     hostId: 0,
     humanPlayer: 0,
-    seats: [seat(0, 'Ada', 'architect'), seat(1, 'Bo', 'rapid')],
+    seats: [seat(0, 'Ada', 'architect2'), seat(1, 'Bo', 'rapid3')],
     bots: [5, 5, 5],
     settings: { maxRounds: 10, teamSize: 1, continues: 2, specials },
     settingBounds: {
@@ -146,8 +147,32 @@ describe('the lobby with special towers', () => {
   it('lets each person choose their own, and shows everyone else’s and the bots’ draws', () => {
     const html = lobbyMarkup(view(true));
     expect(html).toContain('id="my-special"');
-    expect(html).toMatch(/<option value="architect" selected>/);
-    expect(html).toContain(towerName('rapid'));
-    expect(html).toContain(towerName(drawnSpecial(42, 2)));
+    expect(html).toMatch(/<option value="architect2" selected>/);
+    // Every tower at each of its costs, one list.
+    for (const variant of ['bertha2', 'bertha3', 'architect3', 'rapid2', 'rapid3'] as const) {
+      expect(html).toContain(`<option value="${variant}">`);
+    }
+    expect(html).toContain(variantName('rapid3'));
+    expect(html).toContain(variantName(drawnSpecial(42, 2, defaultRuleset.specials)));
+  });
+
+  it('describes each variant by its own numbers', () => {
+    const { specials } = defaultRuleset;
+    const ruleset = {
+      ...defaultRuleset,
+      specials: {
+        ...specials,
+        bertha: { ...specials.bertha, '2': { ...specials.bertha['2']!, flightFactor: 1.5 } },
+        architect: {
+          '2': { ...specials.architect['2']!, repairRadius: 4 },
+          '3': { ...specials.architect['3']!, repairRadius: 7 },
+        },
+      },
+    };
+    expect(towerWhat('architect2', ruleset)).toContain('4');
+    expect(towerWhat('architect3', ruleset)).toContain('7');
+    expect(towerWhat('rapid3')).toContain('3');
+    // A Bertha whose shell flies slower than a gun's says so.
+    expect(towerWhat('bertha2', ruleset)).not.toBe(towerWhat('bertha3', ruleset));
   });
 });

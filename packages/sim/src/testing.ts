@@ -16,7 +16,8 @@ import {
  * picture states the case far more clearly than a typed array literal.
  *
  * `.` water   `,` empty land   `#` wall   `@` castle   `*` cannon
- * `B` Big Bertha   `A` Architect   `R` Rapid Cannon — special towers, cannons of a kind
+ * `B` Big Bertha   `A` Architect   `R` Rapid Cannon — special towers at cost 3; `b` `a` `r`
+ *   the same at cost 2
  * `1`-`4` empty land belonging to that island (default is island 1)
  *
  * Adjacent `@`, `*` or tower glyphs are grouped into one structure by bounding box.
@@ -29,11 +30,14 @@ import {
  * Every wall is owned by the island it stands on, as it would be in play.
  */
 /** The glyph of each kind of gun in a picture. */
-const GUN_GLYPHS: Readonly<Record<string, CannonKind>> = {
-  '*': 'cannon',
-  B: 'bertha',
-  A: 'architect',
-  R: 'rapid',
+const GUN_GLYPHS: Readonly<Record<string, { kind: CannonKind; cost: number }>> = {
+  '*': { kind: 'cannon', cost: 1 },
+  B: { kind: 'bertha', cost: 3 },
+  A: { kind: 'architect', cost: 3 },
+  R: { kind: 'rapid', cost: 3 },
+  b: { kind: 'bertha', cost: 2 },
+  a: { kind: 'architect', cost: 2 },
+  r: { kind: 'rapid', cost: 2 },
 };
 
 export function stateFromAscii(
@@ -101,14 +105,15 @@ export function stateFromAscii(
     enclosed: false,
   }));
   const cannons: Cannon[] = Object.entries(GUN_GLYPHS)
-    .flatMap(([glyph, kind]) => blocks(glyph).map((b) => ({ kind, ...b })))
-    .map(({ kind, ...b }, id) => ({
+    .flatMap(([glyph, gun]) => blocks(glyph).map((b) => ({ ...gun, ...b })))
+    .map(({ kind, cost, ...b }, id) => ({
       id,
       owner: (islandId[b.y * width + b.x] as number) - 1,
       kind,
+      cost,
       ...b,
       active: true,
-      shotId: null,
+      shotIds: [],
     }));
 
   for (const castle of castles) {

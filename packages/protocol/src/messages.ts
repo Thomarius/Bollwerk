@@ -3,14 +3,14 @@ import {
   MatchSettingsSchema,
   PersonalitySchema,
   SettingBoundsSchema,
-  SpecialKindSchema,
+  TowerVariantSchema,
 } from '@bollwerk/config';
 import { z } from 'zod';
 
 import { SnapshotSchema } from './snapshot.js';
 
 /** Bumped on any breaking change to the message set; mismatched clients are rejected. */
-export const PROTOCOL_VERSION = 25;
+export const PROTOCOL_VERSION = 26;
 
 /**
  * A player's intent. The server overwrites `player` with the sender's own seat before
@@ -52,10 +52,11 @@ export const SeatSchema = z.strictObject({
   connected: z.boolean(),
   ready: z.boolean(),
   /**
-   * The special tower the person in this seat chose, or null for none; a bot's seat brings
-   * the one drawn for it from the seed (`drawnSpecial`), which every page works out itself.
+   * The special tower the person in this seat chose, at its cost, or null for none; a bot's
+   * seat brings the one drawn for it from the seed (`drawnSpecial`), which every page works
+   * out itself.
    */
-  special: SpecialKindSchema.nullable(),
+  special: TowerVariantSchema.nullable(),
 });
 export type Seat = z.infer<typeof SeatSchema>;
 
@@ -115,10 +116,10 @@ export const ClientMessageSchema = z.discriminatedUnion('type', [
   }),
   z.strictObject({ type: z.literal('ready'), ready: z.boolean() }),
   /**
-   * Anyone, before the match starts: the special tower they bring, or null for none —
+   * Anyone, before the match starts: the special tower they bring at its cost, or null for none —
    * each person their own (docs/SPECIAL_TOWERS.md). Read only if the match plays towers.
    */
-  z.strictObject({ type: z.literal('special'), special: SpecialKindSchema.nullable() }),
+  z.strictObject({ type: z.literal('special'), special: TowerVariantSchema.nullable() }),
   /**
    * Host only, before the match starts: the skill of the bots filling the empty
    * seats, indexed by seat, and any match settings to change. Entries for seats a

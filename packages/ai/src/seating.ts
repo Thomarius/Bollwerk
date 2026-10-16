@@ -1,9 +1,10 @@
 import {
-  SPECIAL_KINDS,
+  offeredVariants,
   type BotSetup,
   type Personality,
-  type SpecialKind,
+  type Specials,
   type TerrainConfig,
+  type TowerVariant,
 } from '@bollwerk/config';
 import {
   applyAction,
@@ -38,10 +39,10 @@ export interface TableSeat {
   /** The seat's team label; omitted, the seat is a team of its own. */
   team?: number;
   /**
-   * The special tower a person in this seat chose, or null for none. A bot's seat — `bot`
-   * true — ignores it and brings the tower drawn for it (`drawnSpecial`).
+   * The special tower a person in this seat chose, at its cost, or null for none. A bot's
+   * seat — `bot` true — ignores it and brings the tower drawn for it (`drawnSpecial`).
    */
-  special?: SpecialKind | null;
+  special?: TowerVariant | null;
 }
 
 export interface DealtSeats {
@@ -59,24 +60,26 @@ export interface DealtSeats {
    * Each player's special tower, by player: a person's choice, a bot's draw. Read only
    * where the match plays towers; `createMatch` drops them otherwise.
    */
-  specials: (SpecialKind | null)[];
+  specials: (TowerVariant | null)[];
 }
 
 /**
- * The special tower a bot in this seat brings: drawn from the seed and the seat, never
- * none (the user's decision, 2026-10-14). By seat, not by player, so the lobby can show it
- * before the seats are dealt their islands — the seed is fixed when the table is set.
+ * The special tower a bot in this seat brings: drawn from the seed and the seat among the
+ * variants the ruleset offers, every tower at each of its costs, never none (the user's
+ * decision, 2026-10-14). By seat, not by player, so the lobby can show it before the seats
+ * are dealt their islands — the seed is fixed when the table is set.
  */
-export function drawnSpecial(seed: number, seat: number): SpecialKind {
-  return SPECIAL_KINDS[
-    streamFor(seed, `special:${seat}`).nextInt(SPECIAL_KINDS.length)
-  ] as SpecialKind;
+export function drawnSpecial(seed: number, seat: number, specials: Specials): TowerVariant {
+  const variants = offeredVariants(specials);
+  return variants[streamFor(seed, `special:${seat}`).nextInt(variants.length)] as TowerVariant;
 }
 
 export function dealSeats(
   seed: number,
   seats: readonly TableSeat[],
   terrain: TerrainConfig,
+  /** The ruleset's towers, which a bot draws its own from. */
+  specials: Specials,
 ): DealtSeats {
   // Teams of two at three or four teams are dealt onto a fair layout (`seatOrder`).
   const playerOfSeat = seatOrder(
@@ -90,16 +93,16 @@ export function dealSeats(
   });
   const personalities = dealPersonalities(seed, isBot);
   const setups = new Array<BotSetup | null>(seats.length).fill(null);
-  const specials = new Array<SpecialKind | null>(seats.length).fill(null);
+  const loadouts = new Array<TowerVariant | null>(seats.length).fill(null);
   seats.forEach((seat, index) => {
     const player = playerOfSeat[index] as number;
-    specials[player] = seat.bot ? drawnSpecial(seed, index) : (seat.special ?? null);
+    loadouts[player] = seat.bot ? drawnSpecial(seed, index, specials) : (seat.special ?? null);
     if (seat.level !== null) {
       const personality = seat.personality ?? (personalities[player] as Personality);
       setups[player] = { level: seat.level, personality };
     }
   });
-  return { playerOfSeat, setups, specials };
+  return { playerOfSeat, setups, specials: loadouts };
 }
 
 /** One bot's turn as it went: what it asked for, and whether the rules refused it. */

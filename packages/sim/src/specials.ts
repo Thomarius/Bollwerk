@@ -1,12 +1,30 @@
-import type { CraterPattern, Ruleset, SpecialKind } from '@bollwerk/config';
+import {
+  variantConfig,
+  variantCost,
+  variantOf,
+  type CraterPattern,
+  type Ruleset,
+  type TowerCost,
+  type TowerVariant,
+} from '@bollwerk/config';
 
 import type { Rejection } from './placement.js';
-import { Structure, type CannonKind, type MatchState, type PlayerState } from './types.js';
+import {
+  Structure,
+  type Cannon,
+  type CannonKind,
+  type MatchState,
+  type PlayerState,
+} from './types.js';
 
 /**
  * The special towers' rules (docs/SPECIAL_TOWERS.md): what one costs, where it may stand,
  * how its shots fly and land, and the Architect's repair. With `specials.enabled` off no
  * player can buy one, every cannon is an ordinary one, and nothing here changes a match.
+ *
+ * Every tower comes at two costs (the user's, 2026-10-16), each its own variant with its
+ * own levers in `ruleset.specials`: so a gun's rules are read by its kind and its cost,
+ * an ordinary cannon's cost being 1.
  */
 
 /**
@@ -18,33 +36,65 @@ export function isImpactTower(kind: CannonKind): boolean {
   return kind === 'bertha';
 }
 
-/** The footprint a gun of this kind stands on. */
-export function footprintOf(ruleset: Ruleset, kind: CannonKind): readonly [number, number] {
-  return kind === 'cannon' ? ruleset.cannons.footprint : ruleset.specials[kind].footprint;
+/** The variant a tower of this kind and cost is; null for an ordinary cannon. */
+function variantFor(kind: CannonKind, cost: number): TowerVariant | null {
+  return kind === 'cannon' ? null : variantOf(kind, cost as TowerCost);
 }
 
-/** The factor on a shot's flight — its reload — for a gun of this kind. */
-export function flightFactorOf(ruleset: Ruleset, kind: CannonKind): number {
-  return kind === 'cannon' ? 1 : ruleset.specials[kind].flightFactor;
+/** The footprint a gun of this kind and cost stands on. */
+export function footprintOf(
+  ruleset: Ruleset,
+  kind: CannonKind,
+  cost: number,
+): readonly [number, number] {
+  const variant = variantFor(kind, cost);
+  return variant === null
+    ? ruleset.cannons.footprint
+    : variantConfig(ruleset.specials, variant).footprint;
 }
 
-/** The crater a shot from a gun of this kind clears. */
-export function craterOf(ruleset: Ruleset, kind: CannonKind): CraterPattern {
-  return kind === 'bertha' ? ruleset.specials.bertha.crater : ruleset.shots.craterPattern;
+/** The factor on a shot's flight — its reload — for a gun of this kind and cost. */
+export function flightFactorOf(ruleset: Ruleset, kind: CannonKind, cost: number): number {
+  const variant = variantFor(kind, cost);
+  return variant === null ? 1 : variantConfig(ruleset.specials, variant).flightFactor;
 }
 
-/** What a tower of this kind costs in cannon placements. */
-export function towerCost(ruleset: Ruleset, kind: SpecialKind): number {
-  return ruleset.specials[kind].cost;
+/** The crater a shot from a gun of this kind and cost clears. */
+export function craterOf(ruleset: Ruleset, kind: CannonKind, cost: number): CraterPattern {
+  if (kind !== 'bertha') return ruleset.shots.craterPattern;
+  const bertha = ruleset.specials.bertha[cost as TowerCost];
+  if (bertha === undefined) throw new Error(`no bertha at cost ${cost} in this ruleset`);
+  return bertha.crater;
+}
+
+/** The Architect's repair radius at this cost. */
+export function repairRadiusOf(ruleset: Ruleset, cost: number): number {
+  const architect = ruleset.specials.architect[cost as TowerCost];
+  if (architect === undefined) throw new Error(`no architect at cost ${cost} in this ruleset`);
+  return architect.repairRadius;
 }
 
 /**
- * How many guns a gun of this kind scores as: a tower as many as the cannons it cost (the
- * user's balance, 2026-10-14), so buying one costs no gun points — Big Bertha at three would
+ * Shots a gun may have in the air at once. A Rapid Cannon is as many cannons stacked on
+ * one footprint as it cost (the user's design, 2026-10-16), a barrel each with its own
+ * flight and so its own reload; every other gun has one.
+ */
+export function barrelsOf(cannon: Pick<Cannon, 'kind' | 'cost'>): number {
+  return cannon.kind === 'rapid' ? cannon.cost : 1;
+}
+
+/** Whether a gun has a barrel free to fire — it may still be inert. */
+export function isLoaded(cannon: Pick<Cannon, 'kind' | 'cost' | 'shotIds'>): boolean {
+  return cannon.shotIds.length < barrelsOf(cannon);
+}
+
+/**
+ * How many guns a gun scores as: a tower as many as the cannons it cost (the user's
+ * balance, 2026-10-14), so buying one costs no gun points — Big Bertha at three would
  * otherwise have cost two guns' points every round she stood.
  */
-export function gunsWorth(ruleset: Ruleset, kind: CannonKind): number {
-  return kind === 'cannon' ? 1 : ruleset.specials[kind].cost;
+export function gunsWorth(cannon: Pick<Cannon, 'cost'>): number {
+  return cannon.cost;
 }
 
 /** Special towers standing on this player's island. */
@@ -69,7 +119,7 @@ export function specialRefusal(state: MatchState, player: PlayerState): Rejectio
   if (specials.maxOwned !== null && towersOwned(state, player.id) >= specials.maxOwned) {
     return 'special_cap';
   }
-  if (player.cannonsToPlace < towerCost(state.ruleset, player.special)) return 'special_too_dear';
+  if (player.cannonsToPlace < variantCost(player.special)) return 'special_too_dear';
   return null;
 }
 
@@ -83,7 +133,7 @@ export function noteLostWall(state: MatchState, tile: number): void {
 
 /**
  * The Architects' repair, once a barrage is over and its last shot down: each active
- * Architect rebuilds its owner's walls lost to shots within `repairRadius` of its
+ * Architect rebuilds its owner's walls lost to shots within its cost's `repairRadius` of its
  * footprint, where the tile is still free, in seat order. A breach the owner has already
  * built over, or a wall swept as an orphan, is never touched — only what shots took.
  *
@@ -95,12 +145,12 @@ export function repairWalls(state: MatchState): void {
   const lost = state.lostWalls;
   if (lost.length === 0) return;
   state.lostWalls = [];
-  const r = state.ruleset.specials.architect.repairRadius;
   for (const player of state.players) {
     if (player.eliminated) continue;
     const tiles: number[] = [];
     for (const cannon of state.cannons) {
       if (cannon.owner !== player.id || cannon.kind !== 'architect' || !cannon.active) continue;
+      const r = repairRadiusOf(state.ruleset, cannon.cost);
       const x0 = cannon.x - r;
       const y0 = cannon.y - r;
       const x1 = cannon.x + cannon.w - 1 + r;

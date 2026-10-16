@@ -1,4 +1,4 @@
-import type { ArtConfig, SpecialKind } from '@bollwerk/config';
+import { variantCost, variantKind, type ArtConfig, type SpecialKind } from '@bollwerk/config';
 import type { MatchState } from '@bollwerk/sim';
 import { Container, Graphics } from 'pixi.js';
 
@@ -51,11 +51,18 @@ const EMBLEMS: Record<SpecialKind, readonly (readonly number[])[]> = {
 const BADGE = 1.05;
 const DROP = 0.05;
 const INNER = 0.68;
+/**
+ * The cost's pips under the badge, one a cannon it cost (every tower comes at two costs,
+ * 2026-10-16): each this wide in tiles, this far apart, on a dark backing as the badge is.
+ */
+const PIP = 0.17;
+const PIP_GAP = 0.27;
 
 function drawEmblem(
   g: Graphics,
   view: ViewTransform,
   kind: SpecialKind,
+  cost: number,
   x: number,
   y: number,
   w: number,
@@ -80,6 +87,13 @@ function drawEmblem(
     g.poly(points);
     g.fill({ color: fill, alpha });
   }
+  const pip = (view.tile * PIP) / 2;
+  const py = cy + radius + pip * 0.6;
+  const first = cx - ((cost - 1) * view.tile * PIP_GAP) / 2;
+  for (let k = 0; k < cost; k++) g.circle(first + k * view.tile * PIP_GAP, py, pip * 1.55);
+  g.fill({ color: 0x0a0a12, alpha: 0.82 * alpha });
+  for (let k = 0; k < cost; k++) g.circle(first + k * view.tile * PIP_GAP, py, pip);
+  g.fill({ color: fill, alpha });
 }
 
 /** A Big Bertha's blast as it plays: where, and how far through. */
@@ -121,7 +135,7 @@ export class TowerMarks {
     let key = `${viewKey(view)}|${art.players.map((p) => p.light).join(',')}`;
     for (const c of state.cannons) {
       if (c.kind !== 'cannon')
-        key += `|${c.kind}${c.owner}:${c.x},${c.y},${c.w},${c.h},${c.active}`;
+        key += `|${c.kind}${c.cost}${c.owner}:${c.x},${c.y},${c.w},${c.h},${c.active}`;
     }
     if (key === this.key) return;
     this.key = key;
@@ -129,20 +143,26 @@ export class TowerMarks {
     for (const c of state.cannons) {
       if (c.kind === 'cannon') continue;
       const fill = c.active ? playerColour(art, c.owner, 'light') : 0x9a9aa4;
-      drawEmblem(this.emblems, view, c.kind, c.x, c.y, c.w, c.h, fill);
+      drawEmblem(this.emblems, view, c.kind, c.cost, c.x, c.y, c.w, c.h, fill);
     }
   }
 
   /** The emblem on the cannon ghost while it would place the player's tower. */
   drawGhost(view: ViewTransform, ghost: Ghost, art: ArtConfig, humanPlayer: number): void {
     clearDrawn(this.ghost);
-    const kind = ghost.tower;
-    if (kind === null || kind === undefined || ghost.tile === null || ghost.footprint === null) {
+    const variant = ghost.tower;
+    if (
+      variant === null ||
+      variant === undefined ||
+      ghost.tile === null ||
+      ghost.footprint === null
+    ) {
       return;
     }
     const { w, h } = ghost.footprint;
     const fill = ghost.valid ? playerColour(art, humanPlayer, 'light') : 0x9a9aa4;
-    drawEmblem(this.ghost, view, kind, ghost.tile.x, ghost.tile.y, w, h, fill, 0.85);
+    const [kind, cost] = [variantKind(variant), variantCost(variant)];
+    drawEmblem(this.ghost, view, kind, cost, ghost.tile.x, ghost.tile.y, w, h, fill, 0.85);
   }
 
   /** A Big Bertha's shot has landed here. */

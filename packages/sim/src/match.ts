@@ -1,4 +1,9 @@
-import type { Ruleset, SpecialKind, TerrainConfig } from '@bollwerk/config';
+import {
+  offeredVariants,
+  type Ruleset,
+  type TerrainConfig,
+  type TowerVariant,
+} from '@bollwerk/config';
 
 import { applyEnclosure } from './enclosure.js';
 import { heldPoints, holdingsOf, type Holding } from './scoring.js';
@@ -29,13 +34,22 @@ import {
   type TeamState,
 } from './types.js';
 
+/** A player's loadout as the match plays it: none unless towers are on and it is offered. */
+function offered(ruleset: Ruleset, special: TowerVariant | null): TowerVariant | null {
+  if (!ruleset.specials.enabled || special === null) return null;
+  return offeredVariants(ruleset.specials).includes(special) ? special : null;
+}
+
 export interface MatchPlayerOptions {
   name: string;
   isBot: boolean;
   /** Any label; players sharing one are a team. Omitted, every player is on their own. */
   team?: number;
-  /** The special tower this player brings, when the ruleset plays them; omitted, none. */
-  special?: SpecialKind | null;
+  /**
+   * The special tower this player brings, at its cost, when the ruleset plays them and
+   * offers that variant; omitted, none.
+   */
+  special?: TowerVariant | null;
 }
 
 export interface MatchOptions {
@@ -88,7 +102,7 @@ export function createMatch(options: MatchOptions): MatchState {
     overtimeSpent: false,
     score: 0,
     wallsDestroyed: 0,
-    special: ruleset.specials.enabled ? (p.special ?? null) : null,
+    special: offered(ruleset, p.special ?? null),
     specialsBought: 0,
     openingPlacement: true,
   }));
@@ -809,8 +823,10 @@ export function runLog(state: MatchState, log: readonly LoggedAction[], untilTic
  * Which fingerprint `hashMatchState` takes. Version 1 left out each player's piece
  * schedule and a few counters, version 2 the special towers; recordings made with them
  * name them in their format, and are checked against them still (`replayRecording`).
+ * Version 3 hashed the towers at one cost each and was never released: version 4 hashes
+ * them at two (each gun's cost, and a Rapid Cannon's several shots in flight).
  */
-export const HASH_VERSION = 3;
+export const HASH_VERSION = 4;
 
 /**
  * A fingerprint of everything that affects play. Two simulations fed the same seed,
@@ -821,6 +837,15 @@ export const HASH_VERSION = 3;
  */
 /** Kinds by a fixed number for the fingerprint, so renaming one never changes a hash. */
 const CANNON_KIND_CODES: readonly string[] = ['cannon', 'bertha', 'architect', 'rapid'];
+/** The same for loadouts; a variant added goes at the end. */
+const VARIANT_CODES: readonly TowerVariant[] = [
+  'bertha2',
+  'bertha3',
+  'architect2',
+  'architect3',
+  'rapid2',
+  'rapid3',
+];
 
 export function hashMatchState(state: MatchState, version = HASH_VERSION): string {
   const h = new Hasher();
@@ -861,7 +886,12 @@ export function hashMatchState(state: MatchState, version = HASH_VERSION): strin
     h.i32(c.id).i32(c.islandId).i32(c.x).i32(c.y).bool(c.enclosed);
   }
   for (const c of state.cannons) {
-    h.i32(c.id).i32(c.owner).i32(c.x).i32(c.y).bool(c.active).nullable(c.shotId);
+    h.i32(c.id)
+      .i32(c.owner)
+      .i32(c.x)
+      .i32(c.y)
+      .bool(c.active)
+      .nullable(c.shotIds[0] ?? null);
   }
   for (const s of state.shots) {
     h.i32(s.id)
@@ -888,17 +918,21 @@ export function hashMatchState(state: MatchState, version = HASH_VERSION): strin
   for (const c of state.castles) h.i32(c.w).i32(c.h);
   for (const c of state.cannons) h.i32(c.w).i32(c.h);
   for (const s of state.shots) h.i32(s.fromX).i32(s.fromY);
-  if (version < 3) return h.hex;
+  if (version < 4) return h.hex;
 
-  // Version 3: the special towers — each player's loadout and purchases, every gun's and
-  // shot's kind, the walls awaiting the Architects' repair.
+  // Version 4: the special towers — each player's loadout and purchases, every gun's and
+  // shot's kind and cost, every shot a gun has in flight, the walls awaiting the
+  // Architects' repair.
   const kindCode = (kind: string): number => CANNON_KIND_CODES.indexOf(kind);
   for (const p of state.players) {
-    h.u32(p.special === null ? 0xffff : kindCode(p.special));
+    h.u32(p.special === null ? 0xffff : VARIANT_CODES.indexOf(p.special));
     h.i32(p.specialsBought).bool(p.openingPlacement);
   }
-  for (const c of state.cannons) h.u32(kindCode(c.kind));
-  for (const s of state.shots) h.u32(kindCode(s.kind));
+  for (const c of state.cannons) {
+    h.u32(kindCode(c.kind)).i32(c.cost).u32(c.shotIds.length);
+    for (const id of c.shotIds) h.i32(id);
+  }
+  for (const s of state.shots) h.u32(kindCode(s.kind)).i32(s.cost);
   h.u32(state.lostWalls.length);
   for (const i of state.lostWalls) h.i32(i);
   return h.hex;
