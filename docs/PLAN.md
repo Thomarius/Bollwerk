@@ -1623,6 +1623,13 @@ fit (ARCHIVE 12z), its remaining steps dropped (the user's decision, 2026-10-14;
    decisions (every open question settled with the user on 2026-10-14),
    and the work packages ST1–ST8 are in
    [`SPECIAL_TOWERS.md`](./SPECIAL_TOWERS.md).
+3. **Each style's own cannon as the placement icon** (the user's wish, 2026-10-16; planned, not
+   yet built): the row of cannon icons beside the cursor in the cannon phase (ARCHIVE 13zm) draws
+   the gun of the style on screen, the gun alone, in a fixed ready pose, through a
+   `drawCannonIcon` every style implements — never a snapshot of the board, which there is none
+   of before the first gun and which changes with the guns' state (the user's rejection). The
+   tower keeps its emblem. The plan, a survey of every style's gun drawing and the work packages
+   CI1–CI4 are in [`CANNON_ICONS.md`](./CANNON_ICONS.md).
 
 Only open work is kept here. Finished packages move to `ARCHIVE.md` under their old
 numbers — 11.1 scoring, 11.7 team mode, 11.8 the visual pass, 11.9 the themes, 11.10 the

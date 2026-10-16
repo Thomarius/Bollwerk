@@ -19,8 +19,8 @@ is uncredited. Every sound is from OpenGameArt.org, but three music tracks from 
 License, credited to their authors as they ask).
 
 **`docs/PLAN.md` is the design and the open work** — read it before changing rules,
-terrain or bots; a design of its own (`docs/SPECIAL_TOWERS.md`) lives beside it until
-built, then is retired into the ARCHIVE. **`docs/ARCHIVE.md`** records how each decision
+terrain or bots; a design of its own (`docs/SPECIAL_TOWERS.md`, `docs/CANNON_ICONS.md`) lives
+beside it until built, then is retired into the ARCHIVE. **`docs/ARCHIVE.md`** records how each decision
 was reached, with the measurements and the reverted attempts; consult it before re-trying
 something. This file is the orientation.
 
