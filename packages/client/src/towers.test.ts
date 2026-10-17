@@ -203,10 +203,12 @@ describe('the tower menu', () => {
     expect(html).toContain(towerWhat('architect3'));
   });
 
-  it('chooses a tower at the cost last chosen for it, else its cheapest', () => {
-    expect(variantForCard('bertha', {})).toBe('bertha2');
-    expect(variantForCard('bertha', { bertha: 3 })).toBe('bertha3');
-    // A cost the rules no longer offer falls back to the cheapest.
-    expect(variantForCard('rapid', { rapid: 5 })).toBe('rapid2');
+  it('keeps the cost chosen when the tower changes, else takes the cheapest', () => {
+    expect(variantForCard('bertha', null)).toBe('bertha2');
+    expect(variantForCard('bertha', 3)).toBe('bertha3');
+    expect(variantForCard('rapid', 3)).toBe('rapid3');
+    expect(variantForCard('lightning', 2)).toBe('lightning2');
+    // A cost the rules do not offer falls back to the cheapest.
+    expect(variantForCard('rapid', 5)).toBe('rapid2');
   });
 });

@@ -1,8 +1,8 @@
-import { variantKind, type SpecialKind, type TowerVariant } from '@bollwerk/config';
+import { variantCost, variantKind, type SpecialKind, type TowerVariant } from '@bollwerk/config';
 
 import { escape } from './html.js';
 import { t } from './i18n.js';
-import { rememberCost, towerMenuMarkup, variantForCard } from './towerChoice.js';
+import { rememberCost, rememberedCost, towerMenuMarkup, variantForCard } from './towerChoice.js';
 import { TowerPreview } from './towerPreview.js';
 
 /**
@@ -65,7 +65,11 @@ export function openTowerMenu(options: TowerMenuOptions): void {
     const card = target.closest<HTMLElement>('.card');
     if (card !== null) {
       const kind = card.dataset['kind'];
-      choose(kind === 'none' || kind === undefined ? null : variantForCard(kind as SpecialKind));
+      // The cost stays as it is when the tower changes.
+      const cost = chosen !== null ? variantCost(chosen) : rememberedCost();
+      choose(
+        kind === 'none' || kind === undefined ? null : variantForCard(kind as SpecialKind, cost),
+      );
       return;
     }
     const cost = target.closest<HTMLButtonElement>('.cost');

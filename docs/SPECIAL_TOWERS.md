@@ -305,8 +305,10 @@ Built in ST5 and ST6 together (2026-10-14), so people can play with towers; the 
 - **The tower menu** (`towerMenu.ts`, `towerChoice.ts`; the user's, 2026-10-16), opened by that
   button, where one list of every variant had stopped scaling: a card for none and each tower — its
   emblem and name (a line on its role, offence or defence, went: the user's, 2026-10-17) — a switch for the chosen tower's
-  cost, a cost the rules do not offer greyed, a card's click choosing the cost last chosen for that
-  tower (`bollwerk.towerCosts`) or else its cheapest; what the variant does by its own numbers
+  cost, a cost the rules do not offer greyed, a card's click keeping the cost chosen, tower and cost
+  independent — the last cost chosen when none was (`bollwerk.towerCost`), else the cheapest; a
+  cost remembered by tower had switched back as its card was clicked, which confused the users
+  (2026-10-17); what the variant does by its own numbers
   (`towerWhat`: the Architect's reach, the Rapid's barrels, Bertha's shell against a cannon's —
   as fast at cost 2, faster at cost 3) and when it is affordable (cost 3 only with a second castle held). A click chooses at once and is sent, Done
   only closes; it closes itself when the lobby goes, a match begins or towers are switched off.
