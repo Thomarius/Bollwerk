@@ -172,9 +172,8 @@ Full detail in PLAN.md §1. The parts that surprise people:
 
 ## Status
 
-**Done** (2026-10-17; the latest release **v0.9.6**, 2026-10-14, protocol 24; main is ahead of
-it at protocol 26 and recording format 4, which a test session needs the server rebuilt and every
-page reloaded for):
+**Done** (2026-10-17; the latest release **v0.9.7**, 2026-10-17, protocol 26, recording format 4,
+which a test session needs the server rebuilt and every page reloaded for):
 
 - **Special towers** (2026-10-14 to 2026-10-16, ARCHIVE 13zk–13zo, the design and what is open in
   `docs/SPECIAL_TOWERS.md`): Big Bertha, the Architect and the Rapid Cannon, each at a cost of 2
@@ -186,7 +185,8 @@ page reloaded for):
   circle outlined, cannon icons and the right button's hint beside the cursor, and the **tower
   menu** with a preview played by the rules (`towerMenu.ts`, `towerShow.ts`). With it, from the
   testers: the cannon ghost a square in every style (`drawCannonGhost`), no cannons shown once
-  none fits, and the seal's fanfare for the overtime's last piece.
+  none fits, and the seal's fanfare for the overtime's last piece. Play-tested by the users with
+  no issues found (2026-10-17, ARCHIVE 13zp).
 
 - **More ground for the same pieces** (ARCHIVE 13zi, 2026-10-14): the planner also weighs
   widening once the walls stand, boldly (`BOLD`: a margin of 1 or 1.3 in place of the level's
@@ -317,9 +317,10 @@ page reloaded for):
   every effect kept; no memory kept by a swap of looks (ARCHIVE 12q); every look, corner
   piece and German checked in play by the user (ARCHIVE 12n–12t).
 
-**Next** — PLAN §11: towards a first feature-ready version. Special towers (item 2): the rest of
-the balance (ST4: Level 3, Bertha 3 at Level 8, the ladder and four-player tables with towers, the
-bots' buying rule, then on by default), help (ST7) and the testers' play-testing (ST8). Each
+**Next** — PLAN §11: towards a first feature-ready version. Special towers (item 2), play-tested
+with no issues found (ARCHIVE 13zp): the rest of the balance (ST4: Level 3, Bertha 3 at Level 8,
+the ladder and four-player tables with towers, the bots' buying rule, then on by default), help
+(ST7), and the user's decisions on the next tower and a test without the cap of three. Each
 style's own cannon as the placement icon (item 3), planned in `docs/CANNON_ICONS.md`, the gun
 alone in a fixed pose, not yet built. Bots that hold ground as people do are done (ARCHIVE 13zj).
 The bot learning work is closed, its remaining steps dropped (the user's decision, 2026-10-14;

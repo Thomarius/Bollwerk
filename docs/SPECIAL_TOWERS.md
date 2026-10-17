@@ -7,7 +7,9 @@ of the points those guns would have scored. This file is the design as discussed
 (2026-10-11, its open questions settled 2026-10-14, every tower at two costs 2026-10-16) and the
 plan to build it in work packages. **ST1–ST3, ST3b, ST5 and ST6 are built**, with the users'
 first feedback, the tower menu and its preview (ARCHIVE 13zm, 13zn); ST4's first balance is
-measured (13zk, the Architect's circle 13zl). Open: the rest of ST4, ST7 and ST8 (§5). Like PLAN.md it says what is configurable and why and leaves the
+measured (13zk, the Architect's circle 13zl). The users' play-testing, ST8, closed with no
+issues found (2026-10-17, ARCHIVE 13zp). Open: the rest of ST4, ST7, and two decisions left
+after ST8 — the next tower and a test without the cap of three (§5). Like PLAN.md it says what is configurable and why and leaves the
 values to `config/*.json`; when a package is done its summary moves to ARCHIVE.md and this file
 keeps only what is open.
 
@@ -385,14 +387,13 @@ Lightning's chain, Scattershot's extra shots, the Mortar's shots a phase.
 
 In order. Each ends with `npm run check` passing and the user's go-ahead to commit. ST1–ST3,
 ST3b, ST5 and ST6 are built; their plans are in ARCHIVE 13zo, what was measured and changed after
-them in 13zk–13zn.
+them in 13zk–13zn; ST8 closed in 13zp.
 
 ### ST4 — Balance
 
 Soaks per variant to the user's goal (§6), the levers tuned in config; the level ladder checked
-with towers on and off. Recorded in ARCHIVE with the figures. Runs beside ST8's first test
-session, on the build of the day (the user's, 2026-10-16) — never while the same checkout's sim
-is edited.
+with towers on and off. Recorded in ARCHIVE with the figures — never run while the same
+checkout's sim is edited.
 
 **First round done** (2026-10-16, ARCHIVE 13zk): four soak rounds brought every variant to the
 goal or its edge; the levers are in config, the figures in the ARCHIVE. **Open for the next
@@ -422,10 +423,11 @@ cannon phase and its hint, Big Bertha's cross and flames on the cursor, the Arch
 the screenshot scenes (`tools/screenshots.sh`: the menu, a cannon phase with a tower, a combat
 with a ready Bertha), CLAUDE.md, PLAN and ARCHIVE.
 
-### ST8 — Play-testing
+### After ST8 — two decisions
 
-The testers' matches with towers on, triaged with them; then the decision on §4's next tower, and
-a test without the cap of three.
+ST8, the testers' matches with towers on, closed with no issues found (2026-10-17, ARCHIVE 13zp).
+Left from it, each the user's to decide: §4's next tower (the Bastion is the one liked most), and
+a test without the cap of three towers on an island (`maxOwned`, null for none).
 
 ---
 

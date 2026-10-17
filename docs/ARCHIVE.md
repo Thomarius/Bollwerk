@@ -8987,3 +8987,22 @@ text in English and German.
 
 The emblem in every style (one shared mark), the generic effects, the cues and their credits,
 checked by screenshots in every style and by `&perf=1` at eight players.
+
+## 13zp. Special towers ST8: the play-testing closed (2026-10-17)
+
+The users played the game as it stands on main — the special towers at both costs, the tower
+menu and its preview, the cursor's icons and hint, Bertha's cross and flames, the Architect's
+circle, the square cannon ghost — and found no issues; the play-tests are finished (the user's,
+2026-10-17). Left from ST8 for the user to decide: the next tower (§4 of SPECIAL_TOWERS.md, the
+Bastion first) and a test without the cap of three towers on an island.
+
+## 13zq. v0.9.7 (2026-10-17)
+
+Released after the users' play-testing found no issues (13zp): special towers — Big Bertha, the
+Architect and the Rapid Cannon, each at a cost of 2 and 3 cannons, switched on per table and off
+by default — with bots that buy, site and fire them (13zk–13zo); the tower menu with its preview
+played by the rules (13zn); the cursor's cannon icons and the right button's hint, Bertha's cross
+and flames, the Architect's circle, the cannon ghost a square in every style, and two fixes, the
+cannon count with no room and the seal's fanfare for the overtime's last piece (13zm). Protocol
+26 and recording format 4: a test session needs the server rebuilt and every page reloaded, and
+a v0.9.6 page cannot join a v0.9.7 room.
