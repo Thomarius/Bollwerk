@@ -9082,3 +9082,62 @@ without their subtitles, and the control soak that showed the towers' advantage 
 abilities (13zt). Protocol 27: a test session needs the server rebuilt and every page reloaded,
 and a v0.9.7 page cannot join a v0.9.8 room; the state hash and recording format are unchanged,
 so v0.9.7's recordings replay.
+
+## 13zv. Each style's own cannon as the placement icon (2026-10-17)
+
+The user's wish (2026-10-16, PLAN §11 item 3): the row of icons beside the cursor in the cannon
+phase (13zm), a cannon each still to place, showed one generic SVG cannon for every style; it now
+shows the gun of the style on screen. Its plan, `docs/CANNON_ICONS.md`, is retired into this entry.
+
+- **Decided before building** (the user's): the gun alone, without its base — not the square it
+  stands on (`cannonBase`), nor the style's plate, sandbags or stand; drawn, never copied from the
+  board, since there is no gun to copy before the first is placed and one changes with its state;
+  a fixed pose, active, never fired, the barrel to the upper right, a figure in its ready mood, no
+  animation. The tower keeps its emblem; the right button's hint switches back to the same cannon
+  as the row.
+- **A switch in config**, the user's: `art.cannonIcons`, `"style"` (the default) or `"generic"`,
+  the old SVG for every style, kept until the testers' readings decide between them. Config only,
+  no setting in the menus.
+- **How**: every style implements `Theme.drawCannonIcon(root, size, player)` by calling the code
+  its board draws with, refactored out where it was inline or a memo's closure (`iconFrame` gives
+  the made-up view, cannon and aim). Into a `Container`, so Pixel's sprites and Cyberpunk's
+  blurred glow fit. `Scene.cannonIcon` renders it once to a PNG at the screen's density, cached by
+  look, player and size, and the row's `<img>` takes the generic icon's place and size (1.3rem),
+  so the box, the "+N", the struck-through grey and the hint stay in the page as they were; Pixi
+  icons laid over the page would have sat under its box. The read-back costs 5–65 ms the first
+  time (headless Chrome on this machine's GPU), so the person's icon is made in the still pause
+  before the cannon phase, not as the cursor arrives.
+- **What "the gun alone" took**: Minimal its square and bore (it has no base, so the square is the
+  gun); Blueprint its octagon, Glass its lancet, Halloween its pot, Sakura its carriage — each the
+  gun's body, the barrel alone a bare stick; Chocolate the cane, its cupcake the base; Pixel and
+  Night the carriage and barrel sprites at 16 CSS pixels a tile, so their pixels stay whole;
+  Cyberpunk the hex mount, rails and lit coil, its glow blurred into the image; Cartoon, Christmas
+  and Noir their figures facing right without their shadows, Noir without its sandbags.
+- **The boards unchanged**: each style's preview board in a build and a combat phase at two sizes
+  (`?icons=boards`), against six runs of the old code, a pixel counted only if it changed in each
+  of three runs of the new and lay outside the animation's noise — all nineteen identical.
+- **The review** (CI4): `?icons=sheet` shows every style's icon for every player at 21, 28 and
+  42 px, over its own board and over dark, beside the generic one. Seen at 21 px, Opera's horn has
+  no player colour (it was the stand's disc), Noir's near-black barrel fades over dark, Christmas's
+  players differ only by scarf and hat band. The user checked the sheet and kept every icon as it
+  is (2026-10-17): no simpler drawings. Left open: the testers' choice between the styles' guns and
+  the generic cannon.
+
+## 13zw. Special towers: the balance closed, off by default for good (2026-10-17)
+
+The user's decisions, closing ST4 without its remaining soaks (Bertha 3 at Level 8 again, the
+level ladder with towers on and off, four-player tables with one tower against three without):
+
+- **Towers stay off by default.** They are a wacky addition, not the base game; the plan had been
+  to switch them on once balanced. The switch among the match settings stays as it is.
+- **The rest of the soaks dropped for now.** The first rounds (13zk, 13zl, 13zs) put every variant
+  at or near 50–70% against no tower, and the control tower (13zt) showed the advantage to be the
+  abilities.
+- **The bots' buying rule kept as it is** (`Siting.buysTower`, SPECIAL_TOWERS.md §3.5): buy the
+  tower as the first placement whenever the rules sell it and at least `minGuns` guns remain; a
+  tower drawn at random per seat, by neither level nor personality. It never asks whether the
+  tower is worth it that round and every level plays it alike, but with it every tower won 57–79%
+  at Levels 5 and 8 against the same bot without, and a tower with no ability about even — so the
+  bots draw real value from the abilities, and a better rule would mostly make the towers stronger.
+  Considered and not taken: towers by personality (offensive Bertha or Rapid, defensive Architect),
+  buying by the situation (an Architect after walls were lost), and mistakes in buying by level.

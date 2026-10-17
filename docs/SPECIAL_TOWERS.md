@@ -9,8 +9,9 @@ plan to build it in work packages. **ST1–ST3, ST3b, ST5 and ST6 are built**, w
 first feedback, the tower menu and its preview (ARCHIVE 13zm, 13zn); ST4's first balance is
 measured (13zk, the Architect's circle 13zl). The users' play-testing, ST8, closed with no
 issues found (2026-10-17, ARCHIVE 13zp), and ST7 put the towers into How to play and the
-screenshot scenes (13zr). Open: the rest of ST4, and two decisions left after ST8 — the next
-tower and a test without the cap of three (§5). Like PLAN.md it says what is configurable and why and leaves the
+screenshot scenes (13zr). ST4 is closed, its remaining soaks dropped, the towers off by default
+for good and the bots' buying rule kept (the user's, ARCHIVE 13zw). Open: two decisions left after
+ST8 — the next tower and a test without the cap of three — and the towers' own sounds (§5). Like PLAN.md it says what is configurable and why and leaves the
 values to `config/*.json`; when a package is done its summary moves to ARCHIVE.md and this file
 keeps only what is open.
 
@@ -23,8 +24,8 @@ keeps only what is open.
   stronger player more options as well as more skill. Unlocks may come back later as variety,
   never as power.
 - **An on/off switch** for special towers among the match settings, beside lives and rounds:
-  classic matches stay possible, and a test session can compare both. **Off by default** until
-  ST4 has balanced the towers, then on. A tournament's setup has the same switch (§3.3).
+  classic matches stay possible, and a test session can compare both. **Off by default**, for
+  good (the user's, 2026-10-17, ARCHIVE 13zw): the towers are a wacky addition, not the base game. A tournament's setup has the same switch (§3.3).
 - **Each player chooses one tower for the match** (or none), each their own. A person's choice is
   remembered in their preferences ("none" the first time). **Bots draw theirs at random** from the
   seed — never "none" — and the draw is shown in the lobby, as the map is.
@@ -370,7 +371,8 @@ Built in ST3.
 - **Buying** (`Siting.buysTower`): as the first placement of any cannon phase the rules sell it
   in, so long as the bot keeps `ai.planning.minGuns` guns — a tower counted by its barrels (one, a
   Rapid Cannon its cost), the cannons it costs not; the build planning's `gunsReady` counts
-  barrels likewise. A first rule, for ST4 to measure; the planning's `wallValue` values a tower's
+  barrels likewise. Kept as it is (the user's, 2026-10-17, ARCHIVE 13zw): with it every tower
+  won 57–79% at Levels 5 and 8, and a better rule would mostly make the towers stronger; the planning's `wallValue` values a tower's
   points through `holdingsOf`, as the resolution does.
 - **Placing** (`Siting.site`): only in the ground round a sealed castle, never in a pocket
   (`castleGround`). Big Bertha and the Rapid Cannon as an ordinary cannon goes — never pinning a
@@ -427,33 +429,16 @@ them in 13zk–13zn; ST8 closed in 13zp, ST7 in 13zr.
 
 ### ST4 — Balance
 
-Soaks per variant to the user's goal (§6), the levers tuned in config; the level ladder checked
-with towers on and off. Recorded in ARCHIVE with the figures — never run while the same
-checkout's sim is edited.
+**Closed** (the user's, 2026-10-17, ARCHIVE 13zw), after the first rounds (13zk, 13zl) and the
+control tower (13zt): the remaining soaks — Bertha 3 at Level 8 again, the level ladder with towers
+on and off, four-player tables — dropped for now; the bots' buying rule kept; the towers off by
+default for good. To measure again, resumable (a chunk whose outcomes exist is skipped), then
+`--summary`:
 
-**First round done** (2026-10-16, ARCHIVE 13zk): four soak rounds brought every variant to the
-goal or its edge; the levers are in config, the figures in the ARCHIVE. **Open for the next
-balancing round** (the user's, 2026-10-16 — another session, the results looked at again first):
-
-- ~~Every tower is a little strong at Level 3 (70–75% against none)~~ — **accepted** (the user's,
-  2026-10-17): a tower that does nothing but fire an ordinary shot won 56% and 61% at Level 3
-  (cost 2, 3) and 47–58% at Levels 5 and 8 (ARCHIVE 13zt). So the abilities are a real advantage,
-  and at Level 3 some 6–11 points come from the trade itself — fewer guns to fit — not from any
-  tower; no lever is turned for it.
-- A single figure at the edge, one measurement of 96 at ±10: Bertha 3 at Level 8 (46%). Rerun it,
-  perhaps at 192, before turning a lever. (Architect 3 at Level 5 is settled: its circle, at a
-  gun's flight, read 68% over 192 — ARCHIVE 13zl.)
-- Not yet done: the level ladder with towers on and off; four-player tables, one variant against
-  three without; whether the bots' buying rule (ST3's first) does the towers justice; then
-  towers on by default.
-- To rerun, resumable (a chunk whose outcomes exist is skipped), then `--summary`:
-
-  ```bash
-  npx tsx tools/headless/src/towerSoak.ts --out DIR --pairs architect3:none,bertha3:none \
-    --levels 3,5,8 [--set specials.architect.3.repairRadius=3]
-  ```
-
-  13zk's own scripts stayed on another machine, so its figures were on other seeds than 13zl's.
+```bash
+npx tsx tools/headless/src/towerSoak.ts --out DIR --pairs architect3:none,bertha3:none \
+  --levels 3,5,8 [--set specials.architect.3.repairRadius=3]
+```
 
 ### LT — The Lightning Tower's balance
 
@@ -502,7 +487,7 @@ a test without the cap of three towers on an island (`maxOwned`, null for none).
   Time a first batch before planning the rest.
 - **The levers**, coarse to fine: the footprint (2×2 or 3×3), each variant's own values (crater,
   flight factors, repair radius, the Rapid's barrels' flight). The balance is to how the bots use
-  the towers, and their buying rule is still ST3's first (§3.5).
+  the towers, and their buying rule is ST3's first, kept (§3.5).
 - **A tower that does nothing** is the control for the trade itself (ARCHIVE 13zt): Big Bertha
   with an ordinary crater and flight (`--set 'specials.bertha.2.crater="single"' --set
 specials.bertha.2.flightFactor=1`, the same for cost 3) against no tower.

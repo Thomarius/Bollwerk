@@ -1622,22 +1622,17 @@ fit (ARCHIVE 12z), its remaining steps dropped (the user's decision, 2026-10-14;
 2. **Special towers** (the user's idea, 2026-10-11): each player may bring one special tower,
    bought in the cannon phase for two or three cannons — Big Bertha, Architect, Rapid Cannon and
    the Lightning Tower (ARCHIVE 13zs), each at both costs — chosen in the tower menu, with an on/off switch among the match settings
-   (off by default until balanced). Built, in How to play (ARCHIVE 13zr), and play-tested by the
-   users with no issues found (13zp). Open: the rest of the balance (ST4: Bertha 3 at Level 8 to rerun — Level 3's
-   strength accepted, ARCHIVE 13zt — the level ladder and four-player tables with towers, the bots'
-   buying rule, then towers on by default) and two decisions —
-   the next tower (the Bastion is liked most) and a test without the cap of three; and sounds of
+   (off by default, for good: a wacky addition, not the base game — the user's, ARCHIVE 13zw).
+   Built, in How to play (ARCHIVE 13zr), and play-tested by the users with no issues found (13zp);
+   the balance closed, its remaining soaks dropped and the bots' buying rule kept (13zw). Open: two
+   decisions — the next tower (the Bastion is liked most) and a test without the cap of three; and sounds of
    the towers' own (TS), each borrowing a cannon's or an impact's for now. The design
    and these packages are in
    [`SPECIAL_TOWERS.md`](./SPECIAL_TOWERS.md).
-3. **Each style's own cannon as the placement icon** (the user's wish, 2026-10-16; built
-   2026-10-17, CI1–CI3, behind the switch `art.cannonIcons`, waiting for the review CI4 and the
-   testers' choice between it and the generic cannon): the row of cannon icons beside the cursor in the cannon phase (ARCHIVE 13zm) draws
-   the gun of the style on screen, the gun alone, in a fixed ready pose, through a
-   `drawCannonIcon` every style implements — never a snapshot of the board, which there is none
-   of before the first gun and which changes with the guns' state (the user's rejection). The
-   tower keeps its emblem. The plan, a survey of every style's gun drawing and the work packages
-   CI1–CI4 are in [`CANNON_ICONS.md`](./CANNON_ICONS.md).
+3. **The testers' choice of cannon icon**: each style's own gun beside the cursor in the cannon
+   phase, built and reviewed (ARCHIVE 13zv), or the generic cannon of before — the switch
+   `art.cannonIcons` (`"style"`, the default, or `"generic"`) until their feedback decides; then the
+   loser and the switch go.
 
 Only open work is kept here. Finished packages move to `ARCHIVE.md` under their old
 numbers — 11.1 scoring, 11.7 team mode, 11.8 the visual pass, 11.9 the themes, 11.10 the
@@ -1647,7 +1642,7 @@ test-session feedback, in ARCHIVE 11w; 11.5 the small items and 11.6 the bots, i
 11.16 help for new players, the menu and the sea, and 11.17 the desktop app, in ARCHIVE
 11zt; 11.18 the fourth visual pass, in ARCHIVE 11zv; 11.19 every style to the edges, in
 ARCHIVE 11zz; 11.20 more languages, in ARCHIVE 12g; 11.21 UPnP, in ARCHIVE 12j; 11.2 points decide, 11.3 two players,
-11.4 measurements never taken and 11.13 the bots' loose ends, closed by the weekend soak, in ARCHIVE 12h; 11.22 rendering performance, in ARCHIVE 12n, its bots planning on the same ticks in ARCHIVE 12p; 11.23 random looks every round, in ARCHIVE 12q; Cyberpunk under Glowing, in ARCHIVE 12r; the slow plan late in a build phase, in ARCHIVE 12s; 11 item 3, the bots in a worker with the smaller rendering leads, in ARCHIVE 13k; the next item 3, wipes between heavy looks, in ARCHIVE 13o; 11.24 a piece in the corner for every style, in ARCHIVE 12t; Under the sea and Electric, in ARCHIVE 12u and 12v; Cartoon and Christmas, in ARCHIVE 12zb and 12zc; the refactoring of 2026-10-07, in ARCHIVE 12w; the bot learning work (the old item 3), closed in ARCHIVE 13zg; bots that hold ground as people do (the old item 1), in ARCHIVE 13zj; scoring by ground and guns (the next item 3), approved by the test sessions, in ARCHIVE 13zd and 13ze; special towers' finished packages ST1–ST6, in ARCHIVE 13zo — so the open sections keep theirs.
+11.4 measurements never taken and 11.13 the bots' loose ends, closed by the weekend soak, in ARCHIVE 12h; 11.22 rendering performance, in ARCHIVE 12n, its bots planning on the same ticks in ARCHIVE 12p; 11.23 random looks every round, in ARCHIVE 12q; Cyberpunk under Glowing, in ARCHIVE 12r; the slow plan late in a build phase, in ARCHIVE 12s; 11 item 3, the bots in a worker with the smaller rendering leads, in ARCHIVE 13k; the next item 3, wipes between heavy looks, in ARCHIVE 13o; 11.24 a piece in the corner for every style, in ARCHIVE 12t; Under the sea and Electric, in ARCHIVE 12u and 12v; Cartoon and Christmas, in ARCHIVE 12zb and 12zc; the refactoring of 2026-10-07, in ARCHIVE 12w; the bot learning work (the old item 3), closed in ARCHIVE 13zg; bots that hold ground as people do (the old item 1), in ARCHIVE 13zj; scoring by ground and guns (the next item 3), approved by the test sessions, in ARCHIVE 13zd and 13ze; special towers' finished packages ST1–ST6, in ARCHIVE 13zo, ST4 closed in 13zw; each style's own cannon icon (the old item 3, CI1–CI4), in ARCHIVE 13zv — so the open sections keep theirs.
 
 ## 12. Deferred (explicitly out of scope for v1)
 

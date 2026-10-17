@@ -19,7 +19,7 @@ is uncredited. Every sound is from OpenGameArt.org, but three music tracks from 
 License, credited to their authors as they ask).
 
 **`docs/PLAN.md` is the design and the open work** — read it before changing rules,
-terrain or bots; a design of its own (`docs/SPECIAL_TOWERS.md`, `docs/CANNON_ICONS.md`) lives
+terrain or bots; a design of its own (`docs/SPECIAL_TOWERS.md`) lives
 beside it until built, then is retired into the ARCHIVE. **`docs/ARCHIVE.md`** records how each decision
 was reached, with the measurements and the reverted attempts; consult it before re-trying
 something. This file is the orientation.
@@ -320,16 +320,14 @@ which a test session needs the server rebuilt and every page reloaded for):
   piece and German checked in play by the user (ARCHIVE 12n–12t).
 
 **Next** — PLAN §11: towards a first feature-ready version. Special towers (item 2), play-tested
-with no issues found (ARCHIVE 13zp): the rest of the balance (ST4: Bertha 3 at Level 8 — Level 3's strength accepted, the trade itself being
-worth some of it, ARCHIVE 13zt —
-the ladder and four-player tables with towers, the bots' buying rule, then on by default), and
-the user's decisions on the next tower and a test without the cap of three, and sounds of the
-towers' own (TS). Their help is done (ST7, ARCHIVE 13zr). A new tower is balanced at Level 5
-only, its variants against each other and against no tower (the user's). Each
-style's own cannon as the placement icon (item 3), `docs/CANNON_ICONS.md`, the gun
-alone in a fixed pose: built for every style (2026-10-17), behind `art.cannonIcons` (`"style"` or
-`"generic"`, today's SVG) until the testers choose; its review (CI4) is open, `?icons=sheet` shows
-every style's icon side by side. Bots that hold ground as people do are done (ARCHIVE 13zj).
+with no issues found (ARCHIVE 13zp), their balance closed (ARCHIVE 13zw, the user's): the remaining
+soaks dropped, the bots' buying rule kept, and **off by default for good** — a wacky addition, not
+the base game. Open there: the user's decisions on the next tower and a test without the cap of
+three, and sounds of the towers' own (TS). A new tower is balanced at Level 5 only, its variants
+against each other and against no tower (the user's). Each style's own cannon as the placement
+icon is built and reviewed, every icon kept as it is (ARCHIVE 13zv); behind `art.cannonIcons`
+(`"style"`, the default, or `"generic"`, the old SVG) until the testers choose (item 3), and
+`?icons=sheet` shows every style's icon side by side. Bots that hold ground as people do are done (ARCHIVE 13zj).
 The bot learning work is closed, its remaining steps dropped (the user's decision, 2026-10-14;
 ARCHIVE 13zg). French is not to be done. Signing the Windows app was explained (PLAN §12) and is
 not pursued for now.

@@ -8,7 +8,7 @@ import { playerCssColour } from './colours.js';
 
 /**
  * Every style's cannon icon on one page, for judging them side by side (`?icons=sheet`, a
- * developer's page, `docs/CANNON_ICONS.md` CI4): each style's gun for every player at the
+ * developer's page, ARCHIVE 13zv): each style's gun for every player at the
  * row's size and larger, over its own board and over the page's dark, the generic icon
  * beside it. Each style through a real `Scene` of its own, as the menu's pictures are.
  */
