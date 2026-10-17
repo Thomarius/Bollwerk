@@ -7,8 +7,8 @@ import { TowerPreview } from './towerPreview.js';
 
 /**
  * The special tower menu (the user's, 2026-10-16): where the lobby's list of every variant
- * had stopped scaling, a window of cards — none, then each tower by its emblem and name, with
- * what it is for — and under them a switch for the chosen tower's cost, a line on what that
+ * had stopped scaling, a window of cards — none, then each tower by its emblem and name —
+ * and under them a switch for the chosen tower's cost, a line on what that
  * variant does by its own numbers and when it can be afforded, and a preview of it played by
  * the rules (`towerPreview.ts`). A click chooses at once, as in the gallery of looks; Done
  * only closes. Mouse only, every choice a click.

@@ -22,14 +22,6 @@ import { towerCostText, towerName, towerWhat } from './towers.js';
 /** Where the menu remembers the cost last chosen for each tower, for a click on its card. */
 const COSTS_KEY = 'bollwerk.towerCosts';
 
-const ROLE_KEY = {
-  none: 'tower.role.none',
-  bertha: 'tower.role.bertha',
-  architect: 'tower.role.architect',
-  rapid: 'tower.role.rapid',
-  lightning: 'tower.role.lightning',
-} as const;
-
 export function rememberedCosts(): Partial<Record<SpecialKind, number>> {
   try {
     const raw: unknown = JSON.parse(stored(COSTS_KEY) ?? '{}');
@@ -75,8 +67,7 @@ export function towerMenuMarkup(chosen: TowerVariant | null): string {
     const icon = k === null ? cannonSvg('currentColor') : towerSvg(k, 'currentColor');
     return (
       `<button type="button" class="card${k === kind ? ' chosen' : ''}" data-kind="${k ?? 'none'}">` +
-      `${icon}<span class="name">${escape(towerName(k))}</span>` +
-      `<small class="role">${escape(t(ROLE_KEY[k ?? 'none']))}</small></button>`
+      `${icon}<span class="name">${escape(towerName(k))}</span></button>`
     );
   };
   const towers = offeredTowers();

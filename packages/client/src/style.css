@@ -5347,13 +5347,6 @@ body.reduced-effects .look-gallery .card img {
   letter-spacing: 0.04em;
 }
 
-.tower-menu .card .role {
-  color: var(--muted);
-  font-size: 11px;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-}
-
 .tower-menu .costs {
   display: flex;
   align-items: center;

@@ -303,7 +303,7 @@ Built in ST5 and ST6 together (2026-10-14), so people can play with towers; the 
   tournament's lobby, and a switch in the tournament's setup.
 - **The tower menu** (`towerMenu.ts`, `towerChoice.ts`; the user's, 2026-10-16), opened by that
   button, where one list of every variant had stopped scaling: a card for none and each tower — its
-  emblem, name and what it is for (offence, defence, more guns) — a switch for the chosen tower's
+  emblem and name (a line on its role, offence or defence, went: the user's, 2026-10-17) — a switch for the chosen tower's
   cost, a cost the rules do not offer greyed, a card's click choosing the cost last chosen for that
   tower (`bollwerk.towerCosts`) or else its cheapest; what the variant does by its own numbers
   (`towerWhat`: the Architect's reach, the Rapid's barrels, Bertha's shell against a cannon's —
