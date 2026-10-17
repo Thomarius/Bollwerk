@@ -60,29 +60,17 @@
       "file": "sfx/countdown_tick.wav",
       "volume": 0.5
     },
-    "tower_fire": {
-      "file": "sfx/cannon_fire.ogg",
-      "volume": 0.85,
-      "variants": 3,
-      "rate": 0.62
-    },
     "tower_impact": {
-      "file": "sfx/shot_impact.wav",
-      "volume": 0.95,
-      "variants": 9,
-      "rate": 0.6
+      "file": "sfx/tower_bertha.mp3",
+      "volume": 0.8
     },
     "lightning_strike": {
-      "file": "sfx/cannon_fire.ogg",
-      "volume": 0.7,
-      "variants": 3,
-      "rate": 1.9
+      "file": "sfx/tower_lightning.mp3",
+      "volume": 0.6
     },
     "walls_repaired": {
-      "file": "sfx/piece_place.wav",
-      "volume": 0.5,
-      "variants": 3,
-      "rate": 1.35
+      "file": "sfx/tower_architect.mp3",
+      "volume": 0.6
     }
   },
   "music": {

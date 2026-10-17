@@ -517,6 +517,7 @@ describe('the Architect’s repair', () => {
       tick: state.tick,
       player: 0,
       tiles: [WEST],
+      towers: 1,
     });
     // The attacker keeps the points: the shots landed.
     expect(state.players[1]!.wallsDestroyed).toBe(2);
@@ -587,6 +588,27 @@ describe('the Architect’s repair', () => {
     repairWalls(state);
     expect(state.structure[WEST]).toBe(Structure.Cannon);
     expect(state.events.some((e) => e.kind === 'walls_repaired')).toBe(false);
+  });
+
+  it('counts the Architects that rebuilt anything, for the sound of each', () => {
+    // A second Architect by the east wall: both rebuild, then only the first when the east
+    // wall still stands.
+    const withSecond = (): MatchState => {
+      const state = breached();
+      const first = state.cannons.find((c) => c.kind === 'architect')!;
+      state.cannons.push({ ...first, id: 90, x: 8, y: 4, shotIds: [] });
+      return state;
+    };
+    const repaired = (state: MatchState) =>
+      state.events.find((e) => e.kind === 'walls_repaired') as { towers: number } | undefined;
+    const both = withSecond();
+    repairWalls(both);
+    expect(both.structure[EAST]).toBe(Structure.Wall);
+    expect(repaired(both)?.towers).toBe(2);
+    const one = withSecond();
+    one.structure[EAST] = Structure.Wall;
+    repairWalls(one);
+    expect(repaired(one)?.towers).toBe(1);
   });
 
   it('repairs only its own island', () => {

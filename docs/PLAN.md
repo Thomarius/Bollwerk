@@ -1625,8 +1625,8 @@ fit (ARCHIVE 12z), its remaining steps dropped (the user's decision, 2026-10-14;
    (off by default, for good: a wacky addition, not the base game — the user's, ARCHIVE 13zw).
    Built, in How to play (ARCHIVE 13zr), and play-tested by the users with no issues found (13zp);
    the balance closed, its remaining soaks dropped and the bots' buying rule kept (13zw). Open: two
-   decisions — the next tower (the Bastion is liked most) and a test without the cap of three; and sounds of
-   the towers' own (TS), each borrowing a cannon's or an impact's for now. The design
+   decisions — the next tower (the Bastion is liked most) and a test without the cap of three.
+   Their own sounds are in (TS, ARCHIVE 13zx). The design
    and these packages are in
    [`SPECIAL_TOWERS.md`](./SPECIAL_TOWERS.md).
 3. **The testers' choice of cannon icon**: each style's own gun beside the cursor in the cannon

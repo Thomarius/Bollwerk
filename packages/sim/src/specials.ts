@@ -166,8 +166,11 @@ export function repairWalls(state: MatchState): void {
   for (const player of state.players) {
     if (player.eliminated) continue;
     const tiles: number[] = [];
+    // Each Architect that rebuilt anything, for the sound of each at work.
+    let towers = 0;
     for (const cannon of state.cannons) {
       if (cannon.owner !== player.id || cannon.kind !== 'architect' || !cannon.active) continue;
+      const before = tiles.length;
       const r = repairRadiusOf(state.ruleset, cannon.cost);
       for (const i of lost) {
         if (state.islandId[i] !== player.islandId || state.structure[i] !== Structure.Empty) {
@@ -180,9 +183,16 @@ export function repairWalls(state: MatchState): void {
         state.owner[i] = player.islandId;
         tiles.push(i);
       }
+      if (tiles.length > before) towers++;
     }
     if (tiles.length > 0) {
-      state.events.push({ kind: 'walls_repaired', tick: state.tick, player: player.id, tiles });
+      state.events.push({
+        kind: 'walls_repaired',
+        tick: state.tick,
+        player: player.id,
+        tiles,
+        towers,
+      });
     }
   }
 }

@@ -11,8 +11,11 @@ import { COUNTDOWN_FROM, countdownGain, showsClock } from './clock.js';
  * logic worth testing here.
  */
 export interface Cues {
-  /** `gain` scales the cue's own volume, for the countdown's rise. */
-  play(cue: SfxCue, gain?: number): void;
+  /**
+   * `gain` scales the cue's own volume, for the countdown's rise; `delayMs` starts it that much
+   * later, for an Architect's double knock.
+   */
+  play(cue: SfxCue, gain?: number, delayMs?: number): void;
   music(cue: MusicCue | null): void;
 }
 
@@ -47,6 +50,9 @@ function trackFor(phase: Phase): MusicCue | null {
   }
 }
 
+/** Between the knocks of an Architect's repair. */
+const KNOCK_MS = 300;
+
 export class MatchAudio {
   private phase: Phase | null = null;
   private countedAt = -1;
@@ -71,15 +77,12 @@ export class MatchAudio {
           break;
 
         case 'shot_fired':
-          // Big Bertha's own, heavier; the shot's kind kept for its landing. A Lightning
-          // Tower's is heard as it strikes (`lightning_struck`), on the same tick.
+          // Every gun but the Lightning Tower fires with a cannon's sound, Big Bertha and the
+          // Rapid Cannon too (the user's, 2026-10-17); Bertha's shot is kept for its landing. A
+          // Lightning Tower's is heard as it strikes (`lightning_struck`), on the same tick.
           if (event.shot.kind === 'lightning') break;
-          if (event.shot.kind === 'bertha') {
-            this.heavy.add(event.shot.id);
-            this.audio.play('tower_fire');
-          } else {
-            this.audio.play('cannon_fire');
-          }
+          if (event.shot.kind === 'bertha') this.heavy.add(event.shot.id);
+          this.audio.play('cannon_fire');
           break;
 
         case 'shot_impact':
@@ -89,14 +92,19 @@ export class MatchAudio {
           break;
 
         case 'lightning_struck':
-          // The cannon's crack, high and short — no file of its own yet (the user's: custom
-          // tower sounds are a package to come).
+          // Once a strike, however many walls it jumps to.
           this.audio.play('lightning_strike');
           break;
 
         case 'walls_repaired':
-          // The player's own Architect at work; a rival's goes unheard, as their pieces do.
-          if (event.player === this.humanPlayer || this.watching) this.audio.play('walls_repaired');
+          // The player's own Architects at work, each that rebuilt anything twice, every knock
+          // 0.3 s after the last (the user's, 2026-10-17); a rival's go unheard, as their
+          // pieces do.
+          if (event.player === this.humanPlayer || this.watching) {
+            for (let k = 0; k < 2 * event.towers; k++) {
+              this.audio.play('walls_repaired', 1, k * KNOCK_MS);
+            }
+          }
           break;
 
         // Confirmations of the player's own choices, and only theirs — a rival's

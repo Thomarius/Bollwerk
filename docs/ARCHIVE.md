@@ -9141,3 +9141,23 @@ level ladder with towers on and off, four-player tables with one tower against t
   bots draw real value from the abilities, and a better rule would mostly make the towers stronger.
   Considered and not taken: towers by personality (offensive Bertha or Rapid, defensive Architect),
   buying by the situation (an Architect after walls were lost), and mistakes in buying by level.
+
+## 13zx. Special towers TS: the towers' own sounds (2026-10-17)
+
+The user brought three files, CC0 from OpenGameArt and so under the `sfx/` folder's credit, and
+said how each tower is heard; until then every tower borrowed a cannon's or an impact's file,
+played higher or lower (`rate`).
+
+- **Firing**: every gun with a cannon's sound (`cannon_fire`), Big Bertha and the Rapid Cannon
+  too; the cue `tower_fire`, Bertha's lowered cannon, is gone.
+- **Big Bertha's shell** lands with `tower_bertha.mp3` (`tower_impact`).
+- **The Lightning Tower**, `tower_lightning.mp3` once a strike (`lightning_strike`), nothing for
+  the jumps.
+- **The Architect**, `tower_architect.mp3` twice for each of the player's own Architects that
+  rebuilt a wall, every knock 0.3 s after the last — two such towers four knocks over 0.9 s (the
+  user's choice over a pair for every Architect, or one pair however many); a rival's unheard, as
+  before. The sim's `walls_repaired` event counts them (`towers`), events not being hashed; the
+  page's audio may start a cue later (`play`'s `delayMs`), its repeats kept apart by when they
+  sound.
+- **Volumes** set by the files' loudness against the cues beside them (`volumedetect`): Bertha's
+  explosion 0.8, a little above a cannon's impact; the strike 0.6; the knock 0.6.

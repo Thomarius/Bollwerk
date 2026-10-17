@@ -26,12 +26,14 @@ export const SFX_CUES = [
   'piece_rotate',
   'piece_invalid',
   'countdown_tick',
-  /** Big Bertha firing: heavier than a cannon (docs/SPECIAL_TOWERS.md). */
-  'tower_fire',
-  /** Big Bertha's shot landing, its crater wider than a cannon's. */
+  /**
+   * Big Bertha's shot landing, its crater wider than a cannon's; she fires with a cannon's
+   * sound, as the Rapid Cannon does (the user's, 2026-10-17).
+   */
   'tower_impact',
+  /** A Lightning Tower's strike, once however many walls it jumps to. */
   'lightning_strike',
-  /** An Architect rebuilding its owner's walls as a barrage ends. */
+  /** The player's own Architect rebuilding their walls as a barrage ends, twice a tower. */
   'walls_repaired',
 ] as const;
 export type SfxCue = (typeof SFX_CUES)[number];
@@ -56,8 +58,9 @@ const SfxEntrySchema = z.strictObject({
   /** Numbered alternates chosen at random, to avoid repetition fatigue. */
   variants: z.number().int().positive().optional(),
   /**
-   * The speed it plays at, below 1 lower and heavier: how a special tower's cue makes
-   * another's file its own, already credited, rather than bring a file of its own.
+   * The speed it plays at, below 1 lower and heavier: how a cue can make another's file its
+   * own, already credited, rather than bring a file of its own — as the special towers' did
+   * until they had theirs.
    */
   rate: z.number().positive().optional(),
 });

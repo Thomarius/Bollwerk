@@ -11,7 +11,8 @@ measured (13zk, the Architect's circle 13zl). The users' play-testing, ST8, clos
 issues found (2026-10-17, ARCHIVE 13zp), and ST7 put the towers into How to play and the
 screenshot scenes (13zr). ST4 is closed, its remaining soaks dropped, the towers off by default
 for good and the bots' buying rule kept (the user's, ARCHIVE 13zw). Open: two decisions left after
-ST8 — the next tower and a test without the cap of three — and the towers' own sounds (§5). Like PLAN.md it says what is configurable and why and leaves the
+ST8 — the next tower and a test without the cap of three (§5); the towers' own sounds, TS, are
+in (ARCHIVE 13zx). Like PLAN.md it says what is configurable and why and leaves the
 values to `config/*.json`; when a package is done its summary moves to ARCHIVE.md and this file
 keeps only what is open.
 
@@ -205,8 +206,7 @@ whenever it is ready it fires first, as Big Bertha does.
 - **Seen and heard**: a lightning-bolt emblem; on the cursor while it is ready, a crackle of short
   bolts round the reticle (no reach circle — the chain stays a surprise, the user's); its strike a
   jagged bolt from the tower through every tile struck, jumping from one to the next, a flash at
-  each; heard as the cannon's crack played high and short (`lightning_strike`) until the towers
-  get sounds of their own (§5).
+  each; heard once a strike (`lightning_strike`, `tower_lightning.mp3`), never for the jumps.
 - **Bots** aim it at the block of an opponent's weakest wall with the most of their wall within
   its reach, by the misses of their level, and buy and site it as an ordinary gun goes.
 
@@ -352,9 +352,12 @@ Built in ST5 and ST6 together (2026-10-14), so people can play with towers; the 
   flashing amber and a ring spreading past it), the Architect's walls shimmering back in the
   owner's colour as combat ends. The Rapid Cannon's flatter arc went with its quick flight (ST3b):
   its barrels fly as any cannon's.
-- **Sound**: three cues, `tower_fire`, `tower_impact` and `walls_repaired`, the cannon's, the
-  impact's and a piece's files played lower or higher (`rate`, a new field of a cue) — no new
-  file, so none to credit; the Architect heard only for the player's own.
+- **Sound** (TS, the user's, ARCHIVE 13zx): every gun fires with a cannon's sound, Big Bertha and
+  the Rapid Cannon too; Bertha's shell lands with her own (`tower_impact`, `tower_bertha.mp3`); the
+  Lightning Tower is heard once a strike (`lightning_strike`, `tower_lightning.mp3`); and each of
+  the player's own Architects that rebuilt a wall knocks twice (`walls_repaired`,
+  `tower_architect.mp3`), every knock 0.3 s after the last — a rival's unheard. The three files are
+  CC0 from OpenGameArt, under the `sfx/` folder's credit.
 - **Dev**: `?autostart=1&specials=1&tower=bertha3` plays a match with towers, the person's tower
   as asked.
 - **How to play** (ST7, ARCHIVE 13zr): two pages after the guns' — cannons drawing together into a
@@ -458,14 +461,6 @@ user's). Lightning 2 / Lightning 3 against none, then Lightning 3's share head t
 Kept: the jumps as designed and a miss chance of **0.6** at both costs (the user's) — every figure
 inside the goal, and the dearer variant the stronger again, which 0.7 had turned round. Level 5
 sits near the goal's upper edge; 0.7 is the cautious fallback should play find it too strong.
-
-### TS — Sounds of the towers' own
-
-The user's, 2026-10-17: every tower now borrows a cannon's or an impact's file played higher or
-lower (`rate`: `tower_fire`, `tower_impact`, `walls_repaired`, `lightning_strike`). Custom sounds
-for the towers — Bertha's heavy shell, the Architect's work, the Rapid's quick barrels, the
-lightning's crack and thunder — chosen from OpenGameArt (or Pixabay) and credited in
-`config/audio.manifest.json` like every file.
 
 ### After ST8 — two decisions
 

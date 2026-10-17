@@ -322,8 +322,8 @@ which a test session needs the server rebuilt and every page reloaded for):
 **Next** — PLAN §11: towards a first feature-ready version. Special towers (item 2), play-tested
 with no issues found (ARCHIVE 13zp), their balance closed (ARCHIVE 13zw, the user's): the remaining
 soaks dropped, the bots' buying rule kept, and **off by default for good** — a wacky addition, not
-the base game. Open there: the user's decisions on the next tower and a test without the cap of
-three, and sounds of the towers' own (TS). A new tower is balanced at Level 5 only, its variants
+the base game; their own sounds are in (ARCHIVE 13zx). Open there: the user's decisions on the
+next tower and a test without the cap of three. A new tower is balanced at Level 5 only, its variants
 against each other and against no tower (the user's). Each style's own cannon as the placement
 icon is built and reviewed, every icon kept as it is (ARCHIVE 13zv); behind `art.cannonIcons`
 (`"style"`, the default, or `"generic"`, the old SVG) until the testers choose (item 3), and

@@ -200,7 +200,14 @@ export type MatchEvent =
     }
   | { kind: 'walls_swept'; tick: number; tiles: number[] }
   /** An Architect's repair as a barrage ends: the walls it rebuilt for its owner. */
-  | { kind: 'walls_repaired'; tick: number; player: number; tiles: number[] }
+  | {
+      /** An Architect's repair: the walls rebuilt, and how many of the player's Architects did it. */
+      kind: 'walls_repaired';
+      tick: number;
+      player: number;
+      tiles: number[];
+      towers: number;
+    }
   | { kind: 'player_eliminated'; tick: number; player: number; round: number }
   | {
       kind: 'game_over';

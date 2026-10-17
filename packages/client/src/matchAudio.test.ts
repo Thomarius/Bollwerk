@@ -8,10 +8,12 @@ import { MatchAudio, type Cues } from './matchAudio.js';
 class Recorder implements Cues {
   readonly sfx: SfxCue[] = [];
   readonly gains: number[] = [];
+  readonly delays: number[] = [];
   readonly tracks: (MusicCue | null)[] = [];
-  play(cue: SfxCue, gain = 1): void {
+  play(cue: SfxCue, gain = 1, delayMs = 0): void {
     this.sfx.push(cue);
     this.gains.push(gain);
+    this.delays.push(delayMs);
   }
   music(cue: MusicCue | null): void {
     this.tracks.push(cue);
@@ -295,7 +297,7 @@ describe('match audio', () => {
 });
 
 describe('special towers in the sound', () => {
-  const shot = (id: number, kind: 'cannon' | 'bertha'): MatchEvent => ({
+  const shot = (id: number, kind: 'cannon' | 'bertha' | 'rapid' | 'lightning'): MatchEvent => ({
     kind: 'shot_fired',
     tick: 1,
     shot: {
@@ -321,19 +323,49 @@ describe('special towers in the sound', () => {
     destroyed: [],
   });
 
-  it('gives Big Bertha her own firing and landing', () => {
+  it('fires Big Bertha and the Rapid Cannon as a cannon, Bertha landing with her own', () => {
     const { audio, match } = setup();
-    match.handle([shot(1, 'bertha'), shot(2, 'cannon')]);
-    match.handle([landed(2), landed(1)]);
-    expect(audio.sfx).toEqual(['tower_fire', 'cannon_fire', 'shot_impact', 'tower_impact']);
+    match.handle([shot(1, 'bertha'), shot(2, 'cannon'), shot(3, 'rapid')]);
+    match.handle([landed(2), landed(1), landed(3)]);
+    expect(audio.sfx).toEqual([
+      'cannon_fire',
+      'cannon_fire',
+      'cannon_fire',
+      'shot_impact',
+      'tower_impact',
+      'shot_impact',
+    ]);
   });
 
-  it('sounds the player’s own Architect rebuilding, not a rival’s', () => {
+  it('sounds a Lightning Tower once as it strikes, not for each jump', () => {
     const { audio, match } = setup();
     match.handle([
-      { kind: 'walls_repaired', tick: 5, player: 1, tiles: [3] },
-      { kind: 'walls_repaired', tick: 5, player: HUMAN, tiles: [4] },
+      shot(4, 'lightning'),
+      {
+        kind: 'lightning_struck',
+        tick: 1,
+        shotId: 4,
+        owner: 1,
+        fromX: 0,
+        fromY: 0,
+        path: [
+          { x: 5, y: 5 },
+          { x: 6, y: 5 },
+          { x: 7, y: 5 },
+        ],
+        destroyed: [1, 2, 3],
+      },
     ]);
-    expect(audio.sfx).toEqual(['walls_repaired']);
+    expect(audio.sfx).toEqual(['lightning_strike']);
+  });
+
+  it('knocks twice for each of the player’s own Architects that rebuilt, not a rival’s', () => {
+    const { audio, match } = setup();
+    match.handle([
+      { kind: 'walls_repaired', tick: 5, player: 1, tiles: [3], towers: 1 },
+      { kind: 'walls_repaired', tick: 5, player: HUMAN, tiles: [4, 5], towers: 2 },
+    ]);
+    expect(audio.sfx).toEqual(Array(4).fill('walls_repaired'));
+    expect(audio.delays).toEqual([0, 300, 600, 900]);
   });
 });

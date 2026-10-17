@@ -149,7 +149,7 @@ export class Audio {
     }
   }
 
-  play(cue: SfxCue, gain = 1): void {
+  play(cue: SfxCue, gain = 1, delayMs = 0): void {
     const entry = this.manifest.sfx[cue];
     // Not while the context waits for a gesture: cues started in a suspended context all
     // sounded at once as it resumed. Music may wait in it — it starts as the context does.
@@ -157,12 +157,13 @@ export class Audio {
       return;
     }
 
-    const now = this.ctx.currentTime * 1000;
-    if (now - (this.lastStarted.get(cue) ?? -Infinity) < MIN_REPEAT_MS) return;
+    // Measured from when it sounds, so knocks scheduled ahead are kept apart as any are.
+    const at = this.ctx.currentTime * 1000 + delayMs;
+    if (Math.abs(at - (this.lastStarted.get(cue) ?? -Infinity)) < MIN_REPEAT_MS) return;
 
     const buffer = this.pick(cue);
     if (buffer === null) return;
-    this.lastStarted.set(cue, now);
+    this.lastStarted.set(cue, at);
 
     const level = this.ctx.createGain();
     level.gain.value = entry.volume * gain;
@@ -171,7 +172,7 @@ export class Audio {
     source.buffer = buffer;
     source.playbackRate.value = entry.rate ?? 1;
     source.connect(level);
-    source.start();
+    source.start(at / 1000);
     source.addEventListener('ended', () => level.disconnect());
   }
 
