@@ -836,7 +836,13 @@ export const HASH_VERSION = 4;
  * Deliberately excludes `events`, which are a transport concern.
  */
 /** Kinds by a fixed number for the fingerprint, so renaming one never changes a hash. */
-const CANNON_KIND_CODES: readonly string[] = ['cannon', 'bertha', 'architect', 'rapid'];
+const CANNON_KIND_CODES: readonly string[] = [
+  'cannon',
+  'bertha',
+  'architect',
+  'rapid',
+  'lightning',
+];
 /** The same for loadouts; a variant added goes at the end. */
 const VARIANT_CODES: readonly TowerVariant[] = [
   'bertha2',
@@ -845,6 +851,8 @@ const VARIANT_CODES: readonly TowerVariant[] = [
   'architect3',
   'rapid2',
   'rapid3',
+  'lightning2',
+  'lightning3',
 ];
 
 export function hashMatchState(state: MatchState, version = HASH_VERSION): string {

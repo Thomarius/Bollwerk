@@ -27,6 +27,7 @@ const ROLE_KEY = {
   bertha: 'tower.role.bertha',
   architect: 'tower.role.architect',
   rapid: 'tower.role.rapid',
+  lightning: 'tower.role.lightning',
 } as const;
 
 export function rememberedCosts(): Partial<Record<SpecialKind, number>> {

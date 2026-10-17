@@ -102,7 +102,14 @@ export class TowerPreview {
     for (let ms = 0; ms < 15_000; ms += 50) {
       const { events } = show.advance(50);
       this.apply(events, false);
-      if (events.some((e) => e.kind === 'walls_repaired' || e.kind === 'shot_impact')) {
+      if (
+        events.some(
+          (e) =>
+            e.kind === 'walls_repaired' ||
+            e.kind === 'shot_impact' ||
+            e.kind === 'lightning_struck',
+        )
+      ) {
         if (show.state.shots.length === 0) break;
       }
     }
@@ -118,8 +125,17 @@ export class TowerPreview {
     for (const event of events) {
       switch (event.kind) {
         case 'shot_fired':
-          scene.noteShot(event.shot);
+          if (event.shot.kind !== 'lightning') scene.noteShot(event.shot);
           break;
+        case 'lightning_struck': {
+          scene.noteLightning(event.fromX, event.fromY, event.path, event.owner);
+          for (const i of event.destroyed) {
+            const at = { x: i % state.width, y: Math.floor(i / state.width) };
+            scene.noteImpact(at.x, at.y, [{ ...at, owner: (state.islandId[i] as number) - 1 }]);
+          }
+          changed ||= event.destroyed.length > 0;
+          break;
+        }
         case 'shot_impact': {
           const debris = event.destroyed.map((i) => ({
             x: i % state.width,

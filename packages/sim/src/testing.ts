@@ -16,8 +16,8 @@ import {
  * picture states the case far more clearly than a typed array literal.
  *
  * `.` water   `,` empty land   `#` wall   `@` castle   `*` cannon
- * `B` Big Bertha   `A` Architect   `R` Rapid Cannon — special towers at cost 3; `b` `a` `r`
- *   the same at cost 2
+ * `B` Big Bertha   `A` Architect   `R` Rapid Cannon   `L` Lightning Tower — special towers at
+ *   cost 3; `b` `a` `r` `l` the same at cost 2
  * `1`-`4` empty land belonging to that island (default is island 1)
  *
  * Adjacent `@`, `*` or tower glyphs are grouped into one structure by bounding box.
@@ -38,6 +38,8 @@ const GUN_GLYPHS: Readonly<Record<string, { kind: CannonKind; cost: number }>> =
   b: { kind: 'bertha', cost: 2 },
   a: { kind: 'architect', cost: 2 },
   r: { kind: 'rapid', cost: 2 },
+  L: { kind: 'lightning', cost: 3 },
+  l: { kind: 'lightning', cost: 2 },
 };
 
 export function stateFromAscii(

@@ -1,4 +1,10 @@
-import { type BotProfile } from '@bollwerk/config';
+import {
+  variantConfig,
+  variantOf,
+  type BotProfile,
+  type LightningVariant,
+  type TowerCost,
+} from '@bollwerk/config';
 import {
   Structure,
   Terrain,
@@ -9,6 +15,7 @@ import {
   isLoaded,
   holdingsOf,
   sameTeam,
+  strikable,
   type Action,
   type Cannon,
   type Holding,
@@ -218,6 +225,7 @@ export class Gunner {
   ): number | null {
     const weakest = new Set(weakestWall(state, opponent));
     if (weakest.size === 0) return null;
+    if (tower.kind === 'lightning') return this.lightningTarget(state, tower, weakest, taken);
     const offsets = craterOffsets(craterOf(state.ruleset, tower.kind, tower.cost));
     const rivalWall = (i: number): boolean => {
       if (state.structure[i] !== Structure.Wall) return false;
@@ -252,6 +260,45 @@ export class Gunner {
           bestScore = score;
           best = centre;
         }
+      }
+    }
+    return best;
+  }
+
+  /**
+   * Where a Lightning Tower's strike starts best: a block of the weakest wall, which the first
+   * strike takes, with the most of rivals' wall within the jump's reach for the chain to find
+   * — the weakest wall's blocks counting three. Its own shots' tiles are passed over.
+   */
+  private lightningTarget(
+    state: MatchState,
+    tower: Cannon,
+    weakest: ReadonlySet<number>,
+    taken: ReadonlySet<number>,
+  ): number | null {
+    const config = variantConfig(
+      state.ruleset.specials,
+      variantOf('lightning', tower.cost as TowerCost),
+    ) as LightningVariant;
+    const r = config.jumpRadius;
+    const reach = Math.floor(r);
+    let best: number | null = null;
+    let bestScore = -1;
+    for (const block of weakest) {
+      if (taken.has(block)) continue;
+      const bx = block % state.width;
+      const by = (block - bx) / state.width;
+      let score = 0;
+      for (let y = Math.max(0, by - reach); y <= Math.min(state.height - 1, by + reach); y++) {
+        for (let x = Math.max(0, bx - reach); x <= Math.min(state.width - 1, bx + reach); x++) {
+          if ((x - bx) ** 2 + (y - by) ** 2 > r * r) continue;
+          const i = y * state.width + x;
+          if (strikable(state, this.playerId, i)) score += weakest.has(i) ? 3 : 1;
+        }
+      }
+      if (score > bestScore) {
+        bestScore = score;
+        best = block;
       }
     }
     return best;

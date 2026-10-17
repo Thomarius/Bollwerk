@@ -185,9 +185,10 @@ describe('the tower menu', () => {
       { kind: 'bertha', costs: [2, 3] },
       { kind: 'architect', costs: [2, 3] },
       { kind: 'rapid', costs: [2, 3] },
+      { kind: 'lightning', costs: [2, 3] },
     ]);
     const html = towerMenuMarkup(null);
-    for (const kind of ['none', 'bertha', 'architect', 'rapid']) {
+    for (const kind of ['none', 'bertha', 'architect', 'rapid', 'lightning']) {
       expect(html).toContain(`data-kind="${kind}"`);
     }
     expect(html).toContain('class="card chosen" data-kind="none"');

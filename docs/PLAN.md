@@ -1620,13 +1620,14 @@ fit (ARCHIVE 12z), its remaining steps dropped (the user's decision, 2026-10-14;
 (the user's decision, 2026-10-06). Still open:
 
 2. **Special towers** (the user's idea, 2026-10-11): each player may bring one special tower,
-   bought in the cannon phase for two or three cannons — Big Bertha, Architect and Rapid Cannon,
-   each at both costs — chosen in the tower menu, with an on/off switch among the match settings
+   bought in the cannon phase for two or three cannons — Big Bertha, Architect, Rapid Cannon and
+   the Lightning Tower (ARCHIVE 13zs), each at both costs — chosen in the tower menu, with an on/off switch among the match settings
    (off by default until balanced). Built, in How to play (ARCHIVE 13zr), and play-tested by the
    users with no issues found (13zp). Open: the rest of the balance (ST4: Level 3 a little strong for every tower,
    Bertha 3 at Level 8 to rerun, the level ladder and four-player tables with towers, the bots'
    buying rule, then towers on by default) and two decisions —
-   the next tower (the Bastion is liked most) and a test without the cap of three. The design
+   the next tower (the Bastion is liked most) and a test without the cap of three; and sounds of
+   the towers' own (TS), each borrowing a cannon's or an impact's for now. The design
    and these packages are in
    [`SPECIAL_TOWERS.md`](./SPECIAL_TOWERS.md).
 3. **Each style's own cannon as the placement icon** (the user's wish, 2026-10-16; planned, not

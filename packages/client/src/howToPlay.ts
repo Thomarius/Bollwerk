@@ -697,11 +697,12 @@ function drawTower(
   }
 }
 
-/** The three towers in turn, at both costs between them. */
+/** The towers in turn, at both costs between them. */
 const TOWER_ROUND: readonly { kind: SpecialKind; cost: number }[] = [
   { kind: 'bertha', cost: 3 },
   { kind: 'architect', cost: 2 },
   { kind: 'rapid', cost: 3 },
+  { kind: 'lightning', cost: 2 },
 ];
 const TOWER_MS = 3000;
 

@@ -25,6 +25,7 @@ const NAME_KEY = {
   bertha: 'tower.bertha',
   architect: 'tower.architect',
   rapid: 'tower.rapid',
+  lightning: 'tower.lightning',
 } as const;
 
 /** A tower's name, without its cost. */
@@ -43,7 +44,8 @@ export function variantName(variant: TowerVariant | null): string {
 
 /**
  * One line on what a variant does, with its own numbers from the rules: the Architect's
- * reach, the Rapid Cannon's barrels, a Big Bertha whose shell flies slower than a gun's.
+ * reach, the Rapid Cannon's barrels, a Big Bertha's shell against a gun's, the Lightning
+ * Tower's jumps and their reach.
  */
 export function towerWhat(variant: TowerVariant, ruleset: Ruleset = defaultRuleset): string {
   const kind = variantKind(variant);
@@ -67,6 +69,10 @@ export function towerWhat(variant: TowerVariant, ruleset: Ruleset = defaultRules
       });
     case 'rapid':
       return t('tower.rapidWhat', { n: cost });
+    case 'lightning':
+      return 'jumps' in config
+        ? t('tower.lightningWhat', { n: config.jumps, r: config.jumpRadius })
+        : '';
   }
 }
 

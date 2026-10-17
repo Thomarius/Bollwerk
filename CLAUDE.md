@@ -176,8 +176,9 @@ Full detail in PLAN.md §1. The parts that surprise people:
 which a test session needs the server rebuilt and every page reloaded for):
 
 - **Special towers** (2026-10-14 to 2026-10-16, ARCHIVE 13zk–13zo, the design and what is open in
-  `docs/SPECIAL_TOWERS.md`): Big Bertha, the Architect and the Rapid Cannon, each at a cost of 2
-  and 3 cannons, bought in the cannon phase with the right button, switched on per table (off by
+  `docs/SPECIAL_TOWERS.md`): Big Bertha, the Architect, the Rapid Cannon and (2026-10-17, ARCHIVE
+  13zs, protocol 27, on main after v0.9.7) the Lightning Tower — a strike on the instant that
+  jumps from wall to wall, its chance from the seed — each at a cost of 2 and 3 cannons, bought in the cannon phase with the right button, switched on per table (off by
   default). The rules in `sim/src/specials.ts`; bots buy, site and fire them; a tower scores as
   the cannons it cost. Balanced in two-player soaks to 50–70% against no tower
   (`tools/headless/src/towerSoak.ts`, the harness's `--set`); the Architect's reach a circle from
@@ -320,8 +321,9 @@ which a test session needs the server rebuilt and every page reloaded for):
 **Next** — PLAN §11: towards a first feature-ready version. Special towers (item 2), play-tested
 with no issues found (ARCHIVE 13zp): the rest of the balance (ST4: Level 3, Bertha 3 at Level 8,
 the ladder and four-player tables with towers, the bots' buying rule, then on by default), and
-the user's decisions on the next tower and a test without the cap of three. Their help is done
-(ST7, ARCHIVE 13zr). Each
+the user's decisions on the next tower and a test without the cap of three, and sounds of the
+towers' own (TS). Their help is done (ST7, ARCHIVE 13zr). A new tower is balanced at Level 5
+only, its variants against each other and against no tower (the user's). Each
 style's own cannon as the placement icon (item 3), planned in `docs/CANNON_ICONS.md`, the gun
 alone in a fixed pose, not yet built. Bots that hold ground as people do are done (ARCHIVE 13zj).
 The bot learning work is closed, its remaining steps dropped (the user's decision, 2026-10-14;

@@ -7,7 +7,7 @@ export type CraterPattern = z.infer<typeof CraterPatternSchema>;
 const ms = z.number().int().nonnegative();
 
 /** The special towers a player may bring (docs/SPECIAL_TOWERS.md), in their order everywhere. */
-export const SPECIAL_KINDS = ['bertha', 'architect', 'rapid'] as const;
+export const SPECIAL_KINDS = ['bertha', 'architect', 'rapid', 'lightning'] as const;
 export const SpecialKindSchema = z.enum(SPECIAL_KINDS);
 export type SpecialKind = z.infer<typeof SpecialKindSchema>;
 
@@ -29,6 +29,8 @@ export const TOWER_VARIANTS = [
   'architect3',
   'rapid2',
   'rapid3',
+  'lightning2',
+  'lightning3',
 ] as const satisfies readonly `${SpecialKind}${TowerCost}`[];
 export const TowerVariantSchema = z.enum(TOWER_VARIANTS);
 export type TowerVariant = z.infer<typeof TowerVariantSchema>;
@@ -77,6 +79,19 @@ const ArchitectSchema = z.strictObject({
 });
 /** As many cannons on one footprint as it cost, a barrel each (`barrelsOf`). */
 const RapidSchema = z.strictObject(towerFields);
+/**
+ * Strikes the tile aimed at on the instant, then jumps on to walls nearby (`strikeLightning`);
+ * its reload is still an ordinary shot's flight to the tile aimed at, times `flightFactor`.
+ */
+const LightningSchema = z.strictObject({
+  ...towerFields,
+  /** Strikes after the first, each from the last; the balance's main lever (the user's). */
+  jumps: z.number().int().nonnegative(),
+  /** How far a jump reaches, in tiles from the last strike's centre to a tile's: a circle. */
+  jumpRadius: z.number().positive(),
+  /** The chance a jump strikes a tile at random in its reach rather than a wall. */
+  missChance: z.number().min(0).max(1),
+});
 
 /**
  * Special towers (docs/SPECIAL_TOWERS.md): a cannon with an ability of its own, bought in
@@ -98,21 +113,27 @@ export const SpecialsSchema = z.strictObject({
   architect: byCost(ArchitectSchema),
   /** More guns in less room: its cost in cannons, stacked. */
   rapid: byCost(RapidSchema),
+  /**
+   * Strikes at once and jumps from wall to wall (2026-10-17). Absent from rulesets written
+   * before it — v0.9.7's recordings — and then not offered.
+   */
+  lightning: byCost(LightningSchema).optional(),
 });
 export type Specials = z.infer<typeof SpecialsSchema>;
 export type BerthaVariant = z.infer<typeof BerthaSchema>;
 export type ArchitectVariant = z.infer<typeof ArchitectSchema>;
 export type RapidVariant = z.infer<typeof RapidSchema>;
-export type VariantConfig = BerthaVariant | ArchitectVariant | RapidVariant;
+export type LightningVariant = z.infer<typeof LightningSchema>;
+export type VariantConfig = BerthaVariant | ArchitectVariant | RapidVariant | LightningVariant;
 
 /** The variants the ruleset offers, in their order everywhere. */
 export function offeredVariants(specials: Specials): TowerVariant[] {
-  return TOWER_VARIANTS.filter((v) => specials[variantKind(v)][variantCost(v)] !== undefined);
+  return TOWER_VARIANTS.filter((v) => specials[variantKind(v)]?.[variantCost(v)] !== undefined);
 }
 
 /** A variant's levers; throws for one the ruleset does not offer, which the sim never allows. */
 export function variantConfig(specials: Specials, variant: TowerVariant): VariantConfig {
-  const found = specials[variantKind(variant)][variantCost(variant)];
+  const found = specials[variantKind(variant)]?.[variantCost(variant)];
   if (found === undefined) throw new Error(`${variant} is not offered by this ruleset`);
   return found;
 }

@@ -30,6 +30,7 @@ export const SFX_CUES = [
   'tower_fire',
   /** Big Bertha's shot landing, its crater wider than a cannon's. */
   'tower_impact',
+  'lightning_strike',
   /** An Architect rebuilding its owner's walls as a barrage ends. */
   'walls_repaired',
 ] as const;

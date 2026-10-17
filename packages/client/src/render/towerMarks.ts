@@ -90,6 +90,16 @@ interface Blast {
   ms: number;
 }
 
+/** A Lightning Tower's bolt as it plays: its jagged course, in screen-independent tiles. */
+interface Bolt {
+  /** The course from the tower through every strike, kinked between, in tile units. */
+  points: { x: number; y: number }[];
+  /** Where each strike falls in `points`, for its flash as the bolt reaches it. */
+  strikes: number[];
+  colour: number;
+  ms: number;
+}
+
 /** Walls an Architect rebuilt, shimmering as they come back. */
 interface Repair {
   tiles: readonly number[];
@@ -100,6 +110,84 @@ interface Repair {
 
 const BLAST_MS = 520;
 const REPAIR_MS = 900;
+/** Between one strike of a chain and the next, so the bolt is seen jumping; then its fade. */
+const BOLT_STEP_MS = 90;
+const BOLT_FADE_MS = 420;
+/** A strike's flash, from the bolt reaching it to gone. */
+const FLASH_MS = 180;
+/** Electric white-blue for the cursor's crackle, read in every style as the amber is. */
+const SPARK = 0xc8ecff;
+
+/** A jagged course from one point to another, `kinks` bends sideways along it, in tiles. */
+function kinked(
+  from: { x: number; y: number },
+  to: { x: number; y: number },
+  kinks: number,
+  random: () => number,
+): { x: number; y: number }[] {
+  const out = [from];
+  const dx = to.x - from.x;
+  const dy = to.y - from.y;
+  const length = Math.hypot(dx, dy) || 1;
+  for (let k = 1; k <= kinks; k++) {
+    const t = k / (kinks + 1);
+    const side = (random() - 0.5) * Math.min(1.2, length * 0.3);
+    out.push({
+      x: from.x + dx * t - (dy / length) * side,
+      y: from.y + dy * t + (dx / length) * side,
+    });
+  }
+  out.push(to);
+  return out;
+}
+
+/** A small seeded random source, so the cursor's crackle holds still between its beats. */
+function seeded(seed: number): () => number {
+  let a = seed >>> 0;
+  return () => {
+    a = (a + 0x6d2b79f5) >>> 0;
+    let r = Math.imul(a ^ (a >>> 15), 1 | a);
+    r = (r + Math.imul(r ^ (r >>> 7), 61 | r)) ^ r;
+    return ((r ^ (r >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+/**
+ * The Lightning Tower's crackle round the cursor while it is ready (the user's, 2026-10-17):
+ * jagged bolts running along the ring itself, a few at a time, drawn afresh on a beat, a glow
+ * under them. Leaping out from the ring at first; along it, as the user asked, they read as
+ * the cursor charged.
+ */
+function drawCrackle(g: Graphics, cx: number, cy: number, r: number, nowMs: number): void {
+  const beat = motionReduced() ? 0 : Math.floor(nowMs / 85);
+  const random = seeded(beat * 7919 + 17);
+  g.circle(cx, cy, r);
+  g.stroke({ width: r * 0.18, color: SPARK, alpha: 0.25 });
+  const bolts: { x: number; y: number }[][] = [];
+  for (let k = 0; k < 3; k++) {
+    // An arc of the ring, 30 to 65 degrees, its ends on the ring and its kinks either side.
+    const start = random() * Math.PI * 2;
+    const span = 0.5 + random() * 0.6;
+    const steps = 6;
+    const bolt: { x: number; y: number }[] = [];
+    for (let i = 0; i <= steps; i++) {
+      const a = start + (span * i) / steps;
+      const out = i === 0 || i === steps ? 1 : 1 + (random() - 0.5) * 0.24;
+      bolt.push({ x: cx + Math.cos(a) * r * out, y: cy + Math.sin(a) * r * out });
+    }
+    bolts.push(bolt);
+  }
+  for (const [width, colour, alpha] of [
+    [Math.max(3, r * 0.26), SPARK, 0.5],
+    [Math.max(1.5, r * 0.08), 0xffffff, 1],
+  ] as const) {
+    for (const bolt of bolts) {
+      g.moveTo(bolt[0]!.x, bolt[0]!.y);
+      for (const p of bolt.slice(1)) g.lineTo(p.x, p.y);
+    }
+    g.stroke({ width, color: colour, alpha, join: 'round', cap: 'round' });
+  }
+}
 
 /**
  * Outlines a set of tiles, given as `y * width + x`: the edges between a tile in the set and
@@ -213,6 +301,7 @@ export class TowerMarks {
   private readonly effects = new Graphics();
   private key = '';
   private blasts: Blast[] = [];
+  private bolts: Bolt[] = [];
   private repairs: Repair[] = [];
 
   constructor() {
@@ -286,6 +375,21 @@ export class TowerMarks {
   ): void {
     clearDrawn(this.ghost);
     this.drawBertha(state, view, ghost);
+    if (
+      ghost.aiming &&
+      ghost.tile !== null &&
+      ghost.impact?.ready === true &&
+      ghost.nextTower?.kind === 'lightning'
+    ) {
+      const { x, y } = ghost.tile;
+      drawCrackle(
+        this.ghost,
+        tileX(view, x + 0.5),
+        tileY(view, y + 0.5),
+        view.tile * 1.1,
+        performance.now(),
+      );
+    }
     const variant = ghost.tower;
     if (
       variant === null ||
@@ -340,13 +444,42 @@ export class TowerMarks {
     this.blasts.push({ x, y, ms: 0 });
   }
 
+  /**
+   * A Lightning Tower's strike: from the tower's centre (in tiles, as a shot's `fromX`) through
+   * every tile struck, each the centre of its tile, kinked between, the strikes in order.
+   */
+  noteLightning(
+    fromX: number,
+    fromY: number,
+    path: readonly { x: number; y: number }[],
+    colour: number,
+  ): void {
+    const random = Math.random;
+    const points: { x: number; y: number }[] = [];
+    const strikes: number[] = [];
+    let at = { x: fromX + 0.5, y: fromY + 0.5 };
+    for (const tile of path) {
+      const to = { x: tile.x + 0.5, y: tile.y + 0.5 };
+      const leg = kinked(
+        at,
+        to,
+        Math.max(2, Math.round(Math.hypot(to.x - at.x, to.y - at.y) / 1.5)),
+        random,
+      );
+      points.push(...(points.length === 0 ? leg : leg.slice(1)));
+      strikes.push(points.length - 1);
+      at = to;
+    }
+    this.bolts.push({ points, strikes, colour, ms: 0 });
+  }
+
   /** An Architect has rebuilt these walls, of a board this wide, for this player. */
   noteRepair(tiles: readonly number[], width: number, colour: number): void {
     this.repairs.push({ tiles, width, colour, ms: 0 });
   }
 
   drawEffects(view: ViewTransform, deltaMs: number): void {
-    if (this.blasts.length === 0 && this.repairs.length === 0) {
+    if (this.blasts.length === 0 && this.repairs.length === 0 && this.bolts.length === 0) {
       clearDrawn(this.effects);
       return;
     }
@@ -399,6 +532,39 @@ export class TowerMarks {
       }
       g.fill({ color: repair.colour, alpha: 0.35 * fade });
     }
+    for (const bolt of this.bolts) {
+      bolt.ms += deltaMs;
+      // The strikes come one after another: the bolt reaches the k-th at k steps, then fades.
+      const reached = Math.min(bolt.strikes.length, Math.floor(bolt.ms / BOLT_STEP_MS) + 1);
+      const end = bolt.strikes[reached - 1] as number;
+      const done = bolt.strikes.length * BOLT_STEP_MS;
+      const fade = still ? 1 : 1 - Math.max(0, (bolt.ms - done) / BOLT_FADE_MS);
+      const at = (p: { x: number; y: number }) => ({ x: tileX(view, p.x), y: tileY(view, p.y) });
+      for (const [width, colour, alpha] of [
+        [Math.max(3, view.tile * 0.4), bolt.colour, 0.35],
+        [Math.max(2, view.tile * 0.16), SPARK, 0.8],
+        [Math.max(1, view.tile * 0.06), 0xffffff, 1],
+      ] as const) {
+        const first = at(bolt.points[0]!);
+        g.moveTo(first.x, first.y);
+        for (const p of bolt.points.slice(1, end + 1)) {
+          const q = at(p);
+          g.lineTo(q.x, q.y);
+        }
+        g.stroke({ width, color: colour, alpha: alpha * fade, join: 'round', cap: 'round' });
+      }
+      // Each strike flashes once as the bolt reaches it and dies away on its own: held to
+      // the bolt's fade, every flash burned at once at the end, overlapping (the user's).
+      for (let k = 0; k < reached; k++) {
+        const since = bolt.ms - k * BOLT_STEP_MS;
+        const flash = still ? 0.3 : 0.3 * Math.max(0, 1 - since / FLASH_MS);
+        if (flash <= 0) continue;
+        const p = at(bolt.points[bolt.strikes[k] as number]!);
+        g.circle(p.x, p.y, view.tile * 0.45);
+        g.fill({ color: SPARK, alpha: flash });
+      }
+    }
+    this.bolts = this.bolts.filter((b) => b.ms < b.strikes.length * BOLT_STEP_MS + BOLT_FADE_MS);
     this.blasts = this.blasts.filter((b) => b.ms < BLAST_MS);
     this.repairs = this.repairs.filter((r) => r.ms < REPAIR_MS);
   }

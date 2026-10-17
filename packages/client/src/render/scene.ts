@@ -550,7 +550,7 @@ export class Scene {
     if (slot.warming.length > 0 || slot.effectsPrimed || last === null) return;
     if (performance.now() >= until) return;
     slot.effectsPrimed = true;
-    slot.theme.drawEffects(last.state, this.view, {
+    slot.theme.drawEffects(withoutLightning(last.state), this.view, {
       tickFraction: last.tickFraction,
       deltaMs: 0,
       castleSealed: last.castleSealed[look],
@@ -716,8 +716,9 @@ export class Scene {
     const art = this.slots[this.shown.to].art;
     this.towers.draw(state, this.view, art, humanPlayer);
     this.towers.drawEffects(this.view, deltaMs);
+    const shown = withoutLightning(state);
     for (const slot of this.visible()) {
-      slot.theme.drawEffects(state, this.view, {
+      slot.theme.drawEffects(shown, this.view, {
         tickFraction,
         deltaMs,
         castleSealed: castleSealed[this.lookOf(slot)],
@@ -766,8 +767,9 @@ export class Scene {
   drawOverlay(state: MatchState, ghost: Ghost, humanPlayer: number): void {
     const to = this.slots[this.shown.to];
     this.towers.drawGhost(state, this.view, ghost, to.art, humanPlayer);
+    const shown = withoutLightning(state);
     for (const slot of this.visible()) {
-      slot.theme.drawOverlay(state, this.view, slot === to ? ghost : NO_GHOST, humanPlayer);
+      slot.theme.drawOverlay(shown, this.view, slot === to ? ghost : NO_GHOST, humanPlayer);
     }
   }
 
@@ -797,6 +799,24 @@ export class Scene {
   /** The Architects' reach shown in every phase, for the tower menu's preview. */
   showReachAlways(): void {
     this.towers.reachAlways = true;
+  }
+
+  /**
+   * A Lightning Tower's strike: its bolt from the tower through every tile struck, in the
+   * striker's colour, over whichever look is in front.
+   */
+  noteLightning(
+    fromX: number,
+    fromY: number,
+    path: readonly { x: number; y: number }[],
+    player: number,
+  ): void {
+    this.towers.noteLightning(
+      fromX,
+      fromY,
+      path,
+      playerColour(this.slots[this.shown.to].art, player, 'light'),
+    );
   }
 
   /** A Big Bertha's shot has landed here: its blast, over whichever look is in front. */
@@ -962,4 +982,14 @@ export class Scene {
     this.pending = {};
     this.app.destroy(true);
   }
+}
+
+/**
+ * The match as the styles are to draw it: a Lightning Tower's shot struck as it was fired, and
+ * what stays in the air after is only its reload (`strikeLightning`), so no style draws it
+ * flying. The state itself where there is none, as there nearly always is.
+ */
+function withoutLightning(state: MatchState): MatchState {
+  if (!state.shots.some((s) => s.kind === 'lightning')) return state;
+  return { ...state, shots: state.shots.filter((s) => s.kind !== 'lightning') };
 }

@@ -9016,3 +9016,39 @@ mouse's right button switching the ghost's square between a gun and the tower, t
 beside it. What each tower does is not told there (the user's): the tower menu says it, by each
 variant's own numbers, where it is chosen. Two screenshot scenes, `towers-cannons` and
 `towers-combat` (`tools/screenshots.sh`). The docs were brought up to date with it.
+
+## 13zs. The Lightning Tower (2026-10-17)
+
+**The design** (the user's, settled with them before building; SPECIAL_TOWERS.md §2.4): an
+impact tower that strikes the tile clicked on the instant, then jumps 2 (cost 2) or 3 (cost 3)
+times, each to a wall at random within 4 tiles of the last strike — any live opponent's, across a
+channel too — or, with none in reach or by its miss chance, to a tile at random in reach, the chain
+going on from there. Its reload is an ordinary shot's flight to the tile clicked, though nothing
+flies. A crackle of bolts on the cursor while it is ready (no reach circle, the user's), the
+cannon's crack played high for its sound until the towers get their own (a work package, TS).
+From it on, a new tower is balanced at Level 5 only: its variants against each other and against
+no tower (the user's).
+
+**Built**: `sim/src/lightning.ts` (`strikeLightning`, its chance from `streamFor(seed,
+'lightning:' + shot id)`); the shot struck in `fire` and kept in the air as the reload, landing
+nothing in `resolveImpacts`; one rule for what a strike clears (`strikable`, `strikeWall`), as
+`resolveImpacts` always judged it. The kind and its two variants appended to the hash's codes, so
+hash version 4 and recording format 4 stand and v0.9.7's recordings replay; `specials.lightning`
+optional in the schema, absent offering none. Protocol 27. Bots aim it at the block of an
+opponent's weakest wall with the most of their wall in its reach. The client: its emblem, a
+jagged bolt from the tower through every strike, jumping a step at a time with a flash at each
+(`TowerMarks.noteLightning`), the crackle on the cursor, the styles shown the match without the
+shot that only reloads (`withoutLightning` in `Scene`), the menu's fifth card and its preview, and
+How to play's tower page.
+
+**Measured** at Level 5, 96 matches a pairing: with every jump finding a wall the tower was far too
+strong — Lightning 2 82% and Lightning 3 90% against no tower, 3 against 2 64%. A miss chance of
+0.5: 73%, 80%, 54%; of 0.7: 66%, 63%, 46%. The user found 0.7 high and asked for Level 8 and 0.6
+beside it (Level 5 / Level 8): 0.5 68 / 77 / 47 at Level 8; **0.6 67 / 69 / 53 and 57 / 64 / 55**;
+0.7 56 / 61 / 46 at Level 8. **0.6 kept at both costs** (the user's): all inside the goal, the
+cost-3 variant the stronger again, which 0.7 had turned round; Level 5 near the upper edge, 0.7 the
+fallback. Lightning 2 hardly moves with the miss chance; Lightning 3, with a jump more, does.
+
+After a first look (the user's): each strike's flash short and its own, where held to the bolt's
+fade every flash burned at once at the end; and the cursor's crackle running along the ring
+rather than leaping out from it. Soaks in `soaks/towers-2026-10-17-lightning/`.

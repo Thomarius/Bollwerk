@@ -511,6 +511,7 @@
   "tower.bertha": "Dicke Berta",
   "tower.architect": "Baumeister",
   "tower.rapid": "Schnellfeuerkanone",
+  "tower.lightning": "Blitzturm",
   "tower.berthaWhat": "Reißt ein Kreuz aus fünf Mauerblöcken und feuert zuerst, sobald sie bereit ist. Ihre Granate fliegt so schnell wie eine Kanonenkugel.",
   "tower.berthaFastWhat": "Reißt ein Kreuz aus fünf Mauerblöcken und feuert zuerst, sobald sie bereit ist. Ihre Granate fliegt schneller als eine Kanonenkugel, also lädt sie früher nach.",
   "tower.berthaSlowWhat": "Reißt ein Kreuz aus fünf Mauerblöcken und feuert zuerst, sobald sie bereit ist. Ihre Granate fliegt langsamer als eine Kanonenkugel, also lädt sie später nach.",
@@ -519,6 +520,7 @@
     "other": "Baut nach jedem Beschuss deine Mauern in einem Kreis von {n} Blöcken Durchmesser um sich herum wieder auf."
   },
   "tower.rapidWhat": "{n} Kanonen übereinander auf dem Platz einer, jede mit eigenem Nachladen.",
+  "tower.lightningWhat": "Schlägt sofort ein und springt dann {n}-mal auf Mauern im Umkreis von {r} Blöcken — feuert zuerst, sobald er bereit ist.",
   "tower.cost": {
     "one": "{n} Kanone",
     "other": "{n} Kanonen"
@@ -532,6 +534,7 @@
   "tower.role.bertha": "Angriff",
   "tower.role.architect": "Verteidigung",
   "tower.role.rapid": "Mehr Kanonen",
+  "tower.role.lightning": "Kettenblitz",
   "tower.noneWhat": "Kein Spezialturm: jede verdiente Kanone ist eine gewöhnliche Kanone.",
   "tower.affordMain": "Bezahlbar, sobald deine Hauptburg umschlossen ist.",
   "tower.affordSecond": "Nur in Runden bezahlbar, in denen du auch eine zweite Burg hältst.",

@@ -5311,7 +5311,8 @@ body.reduced-effects .look-gallery .card img {
 
 .tower-menu .cards {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(7.5rem, 1fr));
+  /* Five cards to a row at the panel's width: none and four towers. */
+  grid-template-columns: repeat(auto-fill, minmax(6.6rem, 1fr));
   gap: 0.6rem;
 }
 

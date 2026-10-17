@@ -53,6 +53,20 @@ describe('the tower menu’s preview, played by the rules', () => {
     expect(rebuilt('architect3')).toEqual([at(9, 2), at(10, 4), at(10, 6)].sort((a, b) => a - b));
   });
 
+  it('strikes the Lightning Tower’s chain at once, a strike more at cost 3', () => {
+    const chain = (variant: TowerVariant): number => {
+      const { events } = play(variant, 2000);
+      const strike = events.find((e) => e.kind === 'lightning_struck');
+      if (strike?.kind !== 'lightning_struck') throw new Error('no strike');
+      // Struck on the tick it fired; nothing of it lands later.
+      expect(strike.tick).toBe(fired(events)[0]!.tick);
+      expect(impacts(events)).toEqual([]);
+      return strike.path.length;
+    };
+    expect(chain('lightning2')).toBe(3);
+    expect(chain('lightning3')).toBe(4);
+  });
+
   it('loops: the walls come back and it plays again', () => {
     for (const variant of [null, ...TOWER_VARIANTS]) {
       const show = new TowerShow(variant);

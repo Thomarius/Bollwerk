@@ -71,7 +71,9 @@ export class MatchAudio {
           break;
 
         case 'shot_fired':
-          // Big Bertha's own, heavier; the shot's kind kept for its landing.
+          // Big Bertha's own, heavier; the shot's kind kept for its landing. A Lightning
+          // Tower's is heard as it strikes (`lightning_struck`), on the same tick.
+          if (event.shot.kind === 'lightning') break;
           if (event.shot.kind === 'bertha') {
             this.heavy.add(event.shot.id);
             this.audio.play('tower_fire');
@@ -84,6 +86,12 @@ export class MatchAudio {
           // One explosion whatever it hits: a separate cue for a wall was planned and
           // dropped by the user, the impact's sound being enough.
           this.audio.play(this.heavy.delete(event.shotId) ? 'tower_impact' : 'shot_impact');
+          break;
+
+        case 'lightning_struck':
+          // The cannon's crack, high and short — no file of its own yet (the user's: custom
+          // tower sounds are a package to come).
+          this.audio.play('lightning_strike');
           break;
 
         case 'walls_repaired':

@@ -2,6 +2,7 @@ import type { CraterPattern } from '@bollwerk/config';
 
 import { distanceFixed, distanceSquared } from './math.js';
 import { playerOf, type Rejection } from './placement.js';
+import { strikeLightning } from './lightning.js';
 import { craterOf, flightFactorOf, isImpactTower, isLoaded, noteLostWall } from './specials.js';
 import { sameTeam } from './teams.js';
 import { Structure, type Cannon, type MatchState, type Shot } from './types.js';
@@ -156,7 +157,41 @@ export function fire(
   cannon.shotIds.push(shot.id);
   state.shots.push(shot);
   state.events.push({ kind: 'shot_fired', tick: state.tick, shot });
+  if (shot.kind === 'lightning') strikeLightning(state, shot);
   return { shot };
+}
+
+/**
+ * Whether a wall at this tile is one a player's strike clears: a live opponent's, else
+ * only where `damagesOwnWalls` says so — never a teammate's, even to a crater wider than
+ * the aim. As `resolveImpacts` always judged it, now shared with the Lightning Tower.
+ */
+export function strikable(state: MatchState, playerId: number, i: number): boolean {
+  if (!state.ruleset.shots.damagesWalls || state.structure[i] !== Structure.Wall) return false;
+  const owner = state.owner[i] as number;
+  const shooterIsland = state.players[playerId]?.islandId ?? 0;
+  const teammate = owner !== 0 && owner !== shooterIsland && sameTeam(state, playerId, owner - 1);
+  if (teammate) return false;
+  return isOpponents(state, playerId, owner) || state.ruleset.shots.damagesOwnWalls;
+}
+
+function isOpponents(state: MatchState, playerId: number, owner: number): boolean {
+  return owner !== 0 && !sameTeam(state, playerId, owner - 1);
+}
+
+/**
+ * A strike on one tile: clears the wall there if `strikable`, crediting the shooter for an
+ * opponent's, and notes it for the Architects' repair. Whether a wall fell. The owner is
+ * read before the tile is cleared, since clearing it is what zeroes the owner.
+ */
+export function strikeWall(state: MatchState, playerId: number, i: number): boolean {
+  if (!strikable(state, playerId, i)) return false;
+  const shooter = state.players[playerId];
+  if (shooter && isOpponents(state, playerId, state.owner[i] as number)) shooter.wallsDestroyed++;
+  state.structure[i] = Structure.Empty;
+  state.owner[i] = 0;
+  noteLostWall(state, i);
+  return true;
 }
 
 /**
@@ -178,36 +213,23 @@ export function resolveImpacts(state: MatchState): void {
       continue;
     }
 
-    const offsets = craterOffsets(craterOf(state.ruleset, shot.kind, shot.cost));
-    const destroyed: number[] = [];
-    const shooter = state.players[shot.owner];
-    const shooterIsland = shooter?.islandId ?? 0;
-    if (state.ruleset.shots.damagesWalls) {
-      for (const [ox, oy] of offsets) {
-        const tx = shot.toX + ox;
-        const ty = shot.toY + oy;
-        if (tx < 0 || ty < 0 || tx >= state.width || ty >= state.height) continue;
-        const i = ty * state.width + tx;
-        if (state.structure[i] !== Structure.Wall) continue;
-        const owner = state.owner[i] as number;
-        const teammate =
-          owner !== 0 && owner !== shooterIsland && sameTeam(state, shot.owner, owner - 1);
-        const opponents = owner !== 0 && !sameTeam(state, shot.owner, owner - 1);
-        // A teammate's wall never falls, even to a crater wider than the aim.
-        if (teammate) continue;
-        if (!opponents && !state.ruleset.shots.damagesOwnWalls) continue;
-        if (opponents && shooter) shooter.wallsDestroyed++;
-        state.structure[i] = Structure.Empty;
-        state.owner[i] = 0;
-        destroyed.push(i);
-        noteLostWall(state, i);
-      }
-    }
-
     const cannon = state.cannons.find((c) => c.id === shot.cannonId);
     if (cannon) {
       const barrel = cannon.shotIds.indexOf(shot.id);
       if (barrel >= 0) cannon.shotIds.splice(barrel, 1);
+    }
+    // The Lightning Tower struck as it fired (`strikeLightning`): what is in the air until now
+    // is only its reload, an ordinary shot's flight, which lands nothing.
+    if (shot.kind === 'lightning') continue;
+
+    const offsets = craterOffsets(craterOf(state.ruleset, shot.kind, shot.cost));
+    const destroyed: number[] = [];
+    for (const [ox, oy] of offsets) {
+      const tx = shot.toX + ox;
+      const ty = shot.toY + oy;
+      if (tx < 0 || ty < 0 || tx >= state.width || ty >= state.height) continue;
+      const i = ty * state.width + tx;
+      if (strikeWall(state, shot.owner, i)) destroyed.push(i);
     }
 
     state.events.push({

@@ -161,6 +161,17 @@ export type MatchEvent =
   | { kind: 'shot_fired'; tick: number; shot: Shot }
   | { kind: 'shot_impact'; tick: number; shotId: number; x: number; y: number; destroyed: number[] }
   | {
+      /** A Lightning Tower's strike, on the tick it fired: every tile struck in order. */
+      kind: 'lightning_struck';
+      tick: number;
+      shotId: number;
+      owner: number;
+      fromX: number;
+      fromY: number;
+      path: { x: number; y: number }[];
+      destroyed: number[];
+    }
+  | {
       kind: 'piece_placed';
       tick: number;
       player: number;

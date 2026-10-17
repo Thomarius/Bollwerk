@@ -514,6 +514,7 @@
   "tower.bertha": "Big Bertha",
   "tower.architect": "Architect",
   "tower.rapid": "Rapid Cannon",
+  "tower.lightning": "Lightning Tower",
   "tower.berthaWhat": "Clears a cross of five wall blocks, and fires first whenever it is ready. Its shell flies as fast as a cannon's.",
   "tower.berthaFastWhat": "Clears a cross of five wall blocks, and fires first whenever it is ready. Its shell flies faster than a cannon's, so it reloads sooner.",
   "tower.berthaSlowWhat": "Clears a cross of five wall blocks, and fires first whenever it is ready. Its shell flies slower than a cannon's, so it reloads later.",
@@ -522,6 +523,7 @@
     "other": "Rebuilds your walls lost in a circle {n} blocks across around it once each barrage is over."
   },
   "tower.rapidWhat": "{n} cannons stacked in one cannon's place, each with its own reload.",
+  "tower.lightningWhat": "Strikes at once, then jumps {n} times to walls within {r} blocks — fires first whenever it is ready.",
   "tower.cost": {
     "one": "{n} cannon",
     "other": "{n} cannons"
@@ -535,6 +537,7 @@
   "tower.role.bertha": "Offence",
   "tower.role.architect": "Defence",
   "tower.role.rapid": "More guns",
+  "tower.role.lightning": "Chain strikes",
   "tower.noneWhat": "No special tower: every cannon you earn is an ordinary cannon.",
   "tower.affordMain": "Affordable whenever your main castle is sealed.",
   "tower.affordSecond": "Affordable only in rounds you also hold a second castle.",

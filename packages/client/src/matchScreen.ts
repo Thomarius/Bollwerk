@@ -489,10 +489,28 @@ export async function runSession(
           break;
         }
         case 'shot_fired':
+          // A Lightning Tower's has struck already (`lightning_struck`); nothing of it flies.
+          if (event.shot.kind === 'lightning') break;
           scene.noteShot(event.shot);
           // Big Bertha's, for the blast its landing sets off.
           if (event.shot.kind === 'bertha') heavyShots.add(event.shot.id);
           break;
+        case 'lightning_struck': {
+          const { width, islandId } = session.state;
+          scene.noteLightning(event.fromX, event.fromY, event.path, event.owner);
+          const debris = event.destroyed.map((i) => ({
+            x: i % width,
+            y: Math.floor(i / width),
+            owner: (islandId[i] as number) - 1,
+          }));
+          for (const d of debris) scene.noteImpact(d.x, d.y, [d]);
+          const human = session.humanPlayer;
+          if (human >= 0 && !motionReduced() && debris.some((d) => d.owner === human)) {
+            scene.shake();
+          }
+          if (debris.length > 0) structuresChanged = true;
+          break;
+        }
         case 'walls_repaired':
           scene.noteRepair(event.tiles, session.state.width, event.player);
           structuresChanged = true;

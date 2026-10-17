@@ -23,6 +23,8 @@ export const EMBLEMS: Record<SpecialKind, readonly (readonly number[])[]> = {
     [0.1, 0.42, 0.5, 0, 0.9, 0.42, 0.9, 0.62, 0.5, 0.22, 0.1, 0.62],
     [0.1, 0.8, 0.5, 0.38, 0.9, 0.8, 0.9, 1, 0.5, 0.6, 0.1, 1],
   ],
+  // A lightning bolt, falling left to right.
+  lightning: [[0.6, 0, 0.18, 0.56, 0.46, 0.56, 0.32, 1, 0.82, 0.38, 0.54, 0.38, 0.74, 0]],
 };
 
 /** A cannon seen from the side, for the icons: a barrel raised over a wheel, in a unit box. */

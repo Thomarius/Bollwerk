@@ -48,7 +48,8 @@ keeps only what is open.
   nineteen.
 - **The first version brings three towers**: **Big Bertha** (offence), **Architect** (defence),
   **Rapid Cannon** (more guns in less room). Each is deterministic without new randomness, simple
-  in the rules, and gives the bots a clear placement rule. More may follow (§4).
+  in the rules, and gives the bots a clear placement rule. More may follow (§4). The fourth, the
+  **Lightning Tower** (offence by chain strikes, §2.4), came on 2026-10-17, the user's design.
 - **Every tower comes at two costs, 2 and 3 cannons** (the user's, 2026-10-16): a player chooses
   the tower and the cost that suits them — a variant (§2.3). The cost-3 variant is the stronger
   tower, since it is bought only in rounds its owner holds a second castle. Never a cost of 1. A
@@ -56,7 +57,9 @@ keeps only what is open.
   The later towers (§4) are designed with both costs in mind, each by its own lever.
 - **The balance goal** (the user's, loosened 2026-10-16 — the towers are a fun, wacky addition,
   not a tournament standard): each variant wins **50–70%** against an equal player using none, and
-  a tower's two variants **40–60%** head to head.
+  a tower's two variants **40–60%** head to head. **From the Lightning Tower on** (the user's,
+  2026-10-17), a new tower is balanced at Level 5 only: its two variants against each other and
+  each against an equal bot with no tower.
 - **Dropped**: the Magma Thrower (a burning tile blocking placement can make a ring unsealable —
   a forced lost life, the most frustrating loss there is) and the Spotter (where opponents' shots
   will land gives no real advantage). **Shelved**: the Keep (a tower counting as a castle; very
@@ -177,6 +180,35 @@ apart by levers of their own — the thing that defines the tower stays the same
   needed about 0.27, some 450 ms, where the bots' `readyDelayMs` (up to 500 ms) and a person's
   clicking set the pace rather than the flight, so more speed stops paying.
 
+### 2.4 The Lightning Tower
+
+The user's design (2026-10-17), the old sketch "Chain Lightning" made precise. An impact tower:
+whenever it is ready it fires first, as Big Bertha does.
+
+- **It strikes on the instant.** No shell flies: the tile clicked is struck on the tick the tower
+  fires, and from there the bolt **jumps** — to a wall at random within its reach of the last
+  tile struck, any live opponent's (so where islands lie close it leaps the channel to a second
+  opponent), never the player's own or a teammate's, never a tile struck before. Every strike
+  clears one tile, as an ordinary shot does, and scores as one; an Architect rebuilds what it
+  takes like any shot's.
+- **No wall in reach**, or a jump that misses by the variant's miss chance: the jump strikes a
+  tile at random in reach, and the chain goes on from that tile all the same (the user's).
+- **Its reload is an ordinary shot's flight** from the tower to the tile clicked, though nothing
+  flies (times its `flightFactor`, 1 to start): the shot stays "in the air" that long, landing
+  nothing, so every reload rule and the cursor's ring hold as for any gun.
+- **Levers by cost**: `jumps` — 2 at cost 2, 3 at cost 3 (so up to 3 and 4 strikes), the main one;
+  `missChance` — the user prefers more jumps that may miss to fewer that do not, and the soaks put
+  it at 0.6 at both costs (§5 LT); `jumpRadius`, 4 tiles, a circle from the last strike's centre.
+- **Chance from the seed**: a stream of its own for every shot (`streamFor(seed, lightning:id)`),
+  so every client draws the same chain.
+- **Seen and heard**: a lightning-bolt emblem; on the cursor while it is ready, a crackle of short
+  bolts round the reticle (no reach circle — the chain stays a surprise, the user's); its strike a
+  jagged bolt from the tower through every tile struck, jumping from one to the next, a flash at
+  each; heard as the cannon's crack played high and short (`lightning_strike`) until the towers
+  get sounds of their own (§5).
+- **Bots** aim it at the block of an opponent's weakest wall with the most of their wall within
+  its reach, by the misses of their level, and buy and site it as an ordinary gun goes.
+
 ---
 
 ## 3. Where it lives
@@ -185,7 +217,7 @@ apart by levers of their own — the thing that defines the tower stays the same
 
 Built in ST1, the two costs in ST3b (2026-10-16); the rules are in `sim/src/specials.ts`.
 
-- `Cannon` and `Shot` gain `kind: CannonKind` — `'cannon' | 'bertha' | 'architect' | 'rapid'` —
+- `Cannon` and `Shot` gain `kind: CannonKind` — `'cannon' | 'bertha' | 'architect' | 'rapid' | 'lightning'` —
   and `cost`, 1 for an ordinary cannon, a tower's 2 or 3; a cannon's `w`, `h` its variant's
   footprint. Every lever is read by kind and cost (`footprintOf`, `flightFactorOf`, `craterOf`,
   `repairRadiusOf`). A gun's shots in flight are `shotIds`, ready while it has a barrel free
@@ -209,9 +241,12 @@ Built in ST1, the two costs in ST3b (2026-10-16); the rules are in `sim/src/spec
   takes the crater of the gun that fired (`craterOf`); the intermission before a build phase,
   once no shot is in the air, runs the Architects' repairs in seat order (`repairWalls`, a
   `walls_repaired` event); `holdingsOf` counts a tower as the guns it cost (`gunsWorth`).
-- **Determinism** holds without new randomness for the first three. The later towers that need
-  chance (§4) take it from `streamFor(seed, name)`, never `Math.random`.
-- Tests as ASCII pictures (`stateFromAscii` gains `B`, `A` and `R` at cost 3, `b`, `a` and `r` at
+- **Determinism** holds without new randomness for the first three. The Lightning Tower's chain
+  takes its chance from `streamFor(seed, 'lightning:' + shot id)` (`sim/src/lightning.ts`), as
+  any later tower must, never `Math.random`. Its kind and variants were appended to the state
+  hash's codes, so hash version 4 and recording format 4 stand and v0.9.7's recordings replay as
+  they were; a ruleset without the tower (`specials.lightning` absent) offers none.
+- Tests as ASCII pictures (`stateFromAscii` gains `B`, `A`, `R` and `L` at cost 3, `b`, `a`, `r` and `l` at
   2; `withSpecials`), in `specials.test.ts`: a Bertha's crater on an opponent's wall and not on a
   teammate's; a ready Bertha chosen before a nearer ready cannon, the nearest of two ready
   Berthas, a cannon when the Bertha is loading; the cheaper Bertha's longer flight; the
@@ -239,7 +274,7 @@ Built in ST1, the two costs in ST3b (2026-10-16); the rules are in `sim/src/spec
 
 Built in ST2, the costs in ST3b.
 
-- **Protocol 26** (25 before the two costs): the settings' switch (`configure`'s `settings.specials`, the host's), a person's
+- **Protocol 27** (26 before the Lightning Tower, 25 before the two costs): the settings' switch (`configure`'s `settings.specials`, the host's), a person's
   own tower (the `special` message, anyone's, before the start) and each seat's in the room's
   `seats`, each a variant; bots' draws are not sent, being derivable. The action field and the
   snapshot's new state came with ST1, guns' costs and shots in flight with ST3b. A v0.9.6 page
@@ -365,18 +400,15 @@ Built in ST3.
 ## 4. Towers for later
 
 In the order the user liked them; each to be designed in detail and agreed before it is built,
-with a variant at each cost (§1) and the lever that tells them apart — the Bastion's radius, Chain
-Lightning's chain, Scattershot's extra shots, the Mortar's shots a phase.
+with a variant at each cost (§1) and the lever that tells them apart — the Bastion's radius,
+Scattershot's extra shots, the Mortar's shots a phase. Chain Lightning was built as the Lightning
+Tower (§2.4).
 
 - **Bastion** (liked): the walls within a radius of 2 need two hits to fall — a crack on the
   first, cleared on the second; cracks heal as each build phase opens. Defensive, simple in the
   rules (a cracked flag per tile, hashed), and it blunts the minimum-cut problem — a thin wall
   stops being fatal. Drawn as a crack on the wall, in every style. The next tower after the first
   three.
-- **Chain Lightning**: after a hit, a random opponent wall within 3 tiles is hit too, and once
-  more from there — two bonus hits, even when the first shot misses. Strong (every wall is
-  points); the chain's reach and length are its levers. Randomness from `streamFor`. A lightning
-  arc in every style, and sparks on the aiming cursor while it is ready. An impact tower.
 - **Scattershot**: three more shots land at random beside the target. Random tiles chosen on the
   island hit, so the extra shots are not mostly wasted on the sea. An impact tower.
 - **Siege Mortar** (experimental): fires itself, once a combat phase, at a target's weakest point.
@@ -419,6 +451,31 @@ balancing round** (the user's, 2026-10-16 — another session, the results looke
   ```
 
   13zk's own scripts stayed on another machine, so its figures were on other seeds than 13zl's.
+
+### LT — The Lightning Tower's balance
+
+Built 2026-10-17 (§2.4). Measured at Level 5 only (§1): Lightning 2 and Lightning 3 each against no
+tower, and head to head, 96 matches a pairing (ARCHIVE 13zs), then at Level 8 as a check (the
+user's). Lightning 2 / Lightning 3 against none, then Lightning 3's share head to head:
+
+| miss chance | Level 5          | Level 8          |
+| ----------- | ---------------- | ---------------- |
+| 0           | 82 / 90 / 64     |                  |
+| 0.5         | 73 / 80 / 54     | 68 / 77 / 47     |
+| **0.6**     | **67 / 69 / 53** | **57 / 64 / 55** |
+| 0.7         | 66 / 63 / 46     | 56 / 61 / 46     |
+
+Kept: the jumps as designed and a miss chance of **0.6** at both costs (the user's) — every figure
+inside the goal, and the dearer variant the stronger again, which 0.7 had turned round. Level 5
+sits near the goal's upper edge; 0.7 is the cautious fallback should play find it too strong.
+
+### TS — Sounds of the towers' own
+
+The user's, 2026-10-17: every tower now borrows a cannon's or an impact's file played higher or
+lower (`rate`: `tower_fire`, `tower_impact`, `walls_repaired`, `lightning_strike`). Custom sounds
+for the towers — Bertha's heavy shell, the Architect's work, the Rapid's quick barrels, the
+lightning's crack and thunder — chosen from OpenGameArt (or Pixabay) and credited in
+`config/audio.manifest.json` like every file.
 
 ### After ST8 — two decisions
 

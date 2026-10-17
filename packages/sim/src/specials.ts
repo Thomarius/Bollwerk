@@ -33,7 +33,7 @@ import {
  * tower that fires ordinary shots, however quickly, fires as any gun.
  */
 export function isImpactTower(kind: CannonKind): boolean {
-  return kind === 'bertha';
+  return kind === 'bertha' || kind === 'lightning';
 }
 
 /** The variant a tower of this kind and cost is; null for an ordinary cannon. */

@@ -72,6 +72,12 @@
       "variants": 9,
       "rate": 0.6
     },
+    "lightning_strike": {
+      "file": "sfx/cannon_fire.ogg",
+      "volume": 0.7,
+      "variants": 3,
+      "rate": 1.9
+    },
     "walls_repaired": {
       "file": "sfx/piece_place.wav",
       "volume": 0.5,
