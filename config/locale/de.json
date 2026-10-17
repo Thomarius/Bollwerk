@@ -326,6 +326,8 @@
   "howTo.seal": "Schließ die Mauer rund um eine Burg.",
   "howTo.corners": "Mauern müssen jede Ecke einschließen.",
   "howTo.guns": "Kanonen feuern nur aus umschlossenem Land.",
+  "howTo.towers": "Spezialturm: in der Lobby gewählt, kostet 2–3 Kanonen.",
+  "howTo.towerSwitch": "Kanonen setzen: Rechtsklick setzt stattdessen deinen Turm.",
   "howTo.fire": "Klick zum Feuern. Zerschieß ihre Mauern.",
   "howTo.score": "Land und Kanonen bringen Punkte. Sonst: ein Leben weg.",
   "howTo.tournament": "Turnier: Gewinne jedes Spiel, um ins Finale zu kommen.",

@@ -17,8 +17,8 @@ import {
 } from './howToPlay.js';
 
 describe('how to play', () => {
-  it('is seven pages of ten words or fewer, each standing still inside its own loop', () => {
-    expect(HOW_TO_PLAY).toHaveLength(8);
+  it('is ten pages of ten words or fewer, each standing still inside its own loop', () => {
+    expect(HOW_TO_PLAY).toHaveLength(10);
     for (const page of HOW_TO_PLAY) {
       expect(t(page.caption).split(/\s+/).length).toBeLessThanOrEqual(10);
       expect(page.stillMs).toBeGreaterThanOrEqual(0);

@@ -329,6 +329,8 @@
   "howTo.seal": "Close the wall around a castle.",
   "howTo.corners": "Walls must include all corners.",
   "howTo.guns": "Guns fire only from sealed ground.",
+  "howTo.towers": "Special tower: chosen in the lobby, costs 2–3 cannons.",
+  "howTo.towerSwitch": "Placing cannons: right-click to place your tower instead.",
   "howTo.fire": "Click to fire. Break their walls.",
   "howTo.score": "Ground and guns score. Fail to seal: lose a life.",
   "howTo.tournament": "Tournament: win each match to reach the final.",

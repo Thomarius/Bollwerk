@@ -319,8 +319,9 @@ which a test session needs the server rebuilt and every page reloaded for):
 
 **Next** — PLAN §11: towards a first feature-ready version. Special towers (item 2), play-tested
 with no issues found (ARCHIVE 13zp): the rest of the balance (ST4: Level 3, Bertha 3 at Level 8,
-the ladder and four-player tables with towers, the bots' buying rule, then on by default), help
-(ST7), and the user's decisions on the next tower and a test without the cap of three. Each
+the ladder and four-player tables with towers, the bots' buying rule, then on by default), and
+the user's decisions on the next tower and a test without the cap of three. Their help is done
+(ST7, ARCHIVE 13zr). Each
 style's own cannon as the placement icon (item 3), planned in `docs/CANNON_ICONS.md`, the gun
 alone in a fixed pose, not yet built. Bots that hold ground as people do are done (ARCHIVE 13zj).
 The bot learning work is closed, its remaining steps dropped (the user's decision, 2026-10-14;

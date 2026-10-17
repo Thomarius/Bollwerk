@@ -158,6 +158,11 @@ SCENES=(
   # A shape per player off the board (X6): by player at eight, by team in teams of two.
   "shapes-eight|$BASE/?autostart=1&players=8&seed=3&snapshot=build&round=2&style=flat|3000"
   "shapes-teams|$BASE/?autostart=1&players=8&teams=2&seed=3&snapshot=build&round=2&style=pixel|3000"
+  # Special towers (docs/SPECIAL_TOWERS.md): the emblems and the Architect's circle in a cannon
+  # phase, a Bertha's in combat, the person's seat played by a bot on the way. The menu and the
+  # cursor's marks need a click or a pointer, so they are seen by script, not here.
+  "towers-cannons|$BASE/?autostart=1&players=2&seed=5&specials=1&tower=architect3&snapshot=cannon_place&round=3&style=flat|2500"
+  "towers-combat|$BASE/?autostart=1&players=2&seed=5&specials=1&tower=bertha3&snapshot=combat&round=3&style=flat|4200"
   # Night's sea: the moon's path, lighthouses and their beams.
   "night-sea|$BASE/?autostart=1&players=3&seed=5&snapshot=combat&round=3&style=night|3000"
 )

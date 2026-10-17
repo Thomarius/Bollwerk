@@ -8,8 +8,9 @@ of the points those guns would have scored. This file is the design as discussed
 plan to build it in work packages. **ST1–ST3, ST3b, ST5 and ST6 are built**, with the users'
 first feedback, the tower menu and its preview (ARCHIVE 13zm, 13zn); ST4's first balance is
 measured (13zk, the Architect's circle 13zl). The users' play-testing, ST8, closed with no
-issues found (2026-10-17, ARCHIVE 13zp). Open: the rest of ST4, ST7, and two decisions left
-after ST8 — the next tower and a test without the cap of three (§5). Like PLAN.md it says what is configurable and why and leaves the
+issues found (2026-10-17, ARCHIVE 13zp), and ST7 put the towers into How to play and the
+screenshot scenes (13zr). Open: the rest of ST4, and two decisions left after ST8 — the next
+tower and a test without the cap of three (§5). Like PLAN.md it says what is configurable and why and leaves the
 values to `config/*.json`; when a package is done its summary moves to ARCHIVE.md and this file
 keeps only what is open.
 
@@ -318,7 +319,10 @@ Built in ST5 and ST6 together (2026-10-14), so people can play with towers; the 
   file, so none to credit; the Architect heard only for the player's own.
 - **Dev**: `?autostart=1&specials=1&tower=bertha3` plays a match with towers, the person's tower
   as asked.
-- To come in ST7: the How to play page and the screenshot scenes. Seen in headless Chrome: the
+- **How to play** (ST7, ARCHIVE 13zr): two pages after the guns' — cannons drawing together into a
+  tower, the three in turn at both costs, and the right button switching the ghost between a gun
+  and the tower with the cursor's hint; what each tower does is the menu's to tell. The screenshot
+  scenes `towers-cannons` and `towers-combat`. Seen in headless Chrome: the
   lobby, the ghost and the HUD line, emblems in Minimal and Parchment, the glow, a blast; the
   icons, the hint, the reaches in Minimal and Noir, Bertha's cross and flames.
 
@@ -387,7 +391,7 @@ Lightning's chain, Scattershot's extra shots, the Mortar's shots a phase.
 
 In order. Each ends with `npm run check` passing and the user's go-ahead to commit. ST1–ST3,
 ST3b, ST5 and ST6 are built; their plans are in ARCHIVE 13zo, what was measured and changed after
-them in 13zk–13zn; ST8 closed in 13zp.
+them in 13zk–13zn; ST8 closed in 13zp, ST7 in 13zr.
 
 ### ST4 — Balance
 
@@ -415,13 +419,6 @@ balancing round** (the user's, 2026-10-16 — another session, the results looke
   ```
 
   13zk's own scripts stayed on another machine, so its figures were on other seeds than 13zl's.
-
-### ST7 — Help and documentation
-
-The How to play page — what a tower is and costs, the tower menu, the right button's switch in the
-cannon phase and its hint, Big Bertha's cross and flames on the cursor, the Architect's circle —
-the screenshot scenes (`tools/screenshots.sh`: the menu, a cannon phase with a tower, a combat
-with a ready Bertha), CLAUDE.md, PLAN and ARCHIVE.
 
 ### After ST8 — two decisions
 

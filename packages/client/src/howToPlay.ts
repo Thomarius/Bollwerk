@@ -1,4 +1,4 @@
-import { defaultArtConfig, type TextKey } from '@bollwerk/config';
+import { defaultArtConfig, type SpecialKind, type TextKey } from '@bollwerk/config';
 import {
   Structure,
   Terrain,
@@ -11,6 +11,7 @@ import {
 import { t } from './i18n.js';
 import { motionReduced } from './motion.js';
 import { store, stored } from './storage.js';
+import { EMBLEMS } from './towerIcons.js';
 
 /**
  * How to play (PLAN 11.16 H1): a few pages opened from the menu, each a small looping
@@ -646,7 +647,167 @@ const gunsPage: HowToPage = {
   },
 };
 
-/** 6. Click to fire: a ball arcs onto an opponent's wall and one block breaks out. */
+/**
+ * A gun as the pages draw one, a disc in the player's colour, and a special tower as the game
+ * badges one: a dark disc with its emblem (`towerIcons.ts`) and a pip a cannon it cost.
+ */
+function drawGun(ctx: CanvasRenderingContext2D, x: number, y: number, r: number): void {
+  ctx.fillStyle = RED.base;
+  ctx.beginPath();
+  ctx.arc(x, y, r, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = RED.dark;
+  ctx.beginPath();
+  ctx.arc(x, y, r * 0.47, 0, Math.PI * 2);
+  ctx.fill();
+}
+
+function drawTower(
+  ctx: CanvasRenderingContext2D,
+  kind: SpecialKind,
+  cost: number,
+  x: number,
+  y: number,
+  r: number,
+): void {
+  ctx.fillStyle = '#0a0a12';
+  ctx.strokeStyle = RED.light;
+  ctx.lineWidth = Math.max(2, r * 0.1);
+  ctx.beginPath();
+  ctx.arc(x, y, r, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.stroke();
+  const size = r * 2 * 0.68;
+  ctx.fillStyle = RED.light;
+  for (const part of EMBLEMS[kind]) {
+    ctx.beginPath();
+    for (let i = 0; i < part.length; i += 2) {
+      const px = x - size / 2 + (part[i] as number) * size;
+      const py = y - size / 2 + (part[i + 1] as number) * size;
+      if (i === 0) ctx.moveTo(px, py);
+      else ctx.lineTo(px, py);
+    }
+    ctx.fill();
+  }
+  const gap = r * 0.5;
+  for (let k = 0; k < cost; k++) {
+    ctx.beginPath();
+    ctx.arc(x + (k - (cost - 1) / 2) * gap, y + r * 1.35, r * 0.14, 0, Math.PI * 2);
+    ctx.fill();
+  }
+}
+
+/** The three towers in turn, at both costs between them. */
+const TOWER_ROUND: readonly { kind: SpecialKind; cost: number }[] = [
+  { kind: 'bertha', cost: 3 },
+  { kind: 'architect', cost: 2 },
+  { kind: 'rapid', cost: 3 },
+];
+const TOWER_MS = 3000;
+
+/**
+ * 6. Special towers, where the table plays them: two or three cannons draw together and become
+ * one tower, each of the three in turn. What each does is told in the tower menu, where it is
+ * chosen, so not here.
+ */
+const towersPage: HowToPage = {
+  caption: 'howTo.towers',
+  loopMs: TOWER_MS * TOWER_ROUND.length,
+  stillMs: 2500,
+  draw(ctx, w, h, ms) {
+    const { kind, cost } = TOWER_ROUND[Math.floor(ms / TOWER_MS)] as (typeof TOWER_ROUND)[number];
+    const at = ms % TOWER_MS;
+    const cx = w * 0.5;
+    const cy = h * 0.45;
+    const r = h * 0.1;
+    const merge = ease(span(at, 900, 1700));
+    ctx.globalAlpha = 1 - span(at, 1300, 1700);
+    for (let k = 0; k < cost; k++) {
+      const x = cx + (k - (cost - 1) / 2) * r * 2.8 * (1 - merge);
+      drawGun(ctx, x, cy, r);
+    }
+    ctx.globalAlpha = 1;
+    const grow = ease(span(at, 1500, 2100));
+    if (grow > 0) {
+      ctx.globalAlpha = grow;
+      drawTower(ctx, kind, cost, cx, cy, r * (1.1 + 0.4 * grow));
+      ctx.globalAlpha = 1;
+    }
+  },
+};
+
+/** The mouse, its right button lit while `pressed`. */
+function drawMouse(
+  ctx: CanvasRenderingContext2D,
+  cx: number,
+  cy: number,
+  mh: number,
+  pressed: boolean,
+): void {
+  const mw = mh * 0.62;
+  ctx.strokeStyle = INK;
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.roundRect(cx - mw / 2, cy - mh / 2, mw, mh, mw / 2);
+  ctx.moveTo(cx - mw / 2, cy - mh * 0.12);
+  ctx.lineTo(cx + mw / 2, cy - mh * 0.12);
+  ctx.moveTo(cx, cy - mh / 2);
+  ctx.lineTo(cx, cy - mh * 0.12);
+  ctx.stroke();
+  ctx.fillStyle = ACCENT;
+  ctx.globalAlpha = pressed ? 0.95 : 0.45;
+  ctx.beginPath();
+  ctx.moveTo(cx + 2, cy - mh * 0.14);
+  ctx.lineTo(cx + mw / 2 - 2, cy - mh * 0.14);
+  ctx.arc(cx, cy - mh / 2 + mw / 2, mw / 2 - 2, 0, -Math.PI * 0.5, true);
+  ctx.lineTo(cx + 2, cy - mh / 2 + 2);
+  ctx.fill();
+  ctx.globalAlpha = 1;
+}
+
+/**
+ * 7. In the cannon phase the right button switches what the next click places, a cannon or the
+ * player's tower, as the hint beside the cursor says: the ghost's square holds a gun, then the
+ * tower, then a gun again.
+ */
+const switchPage: HowToPage = {
+  caption: 'howTo.towerSwitch',
+  loopMs: 4000,
+  stillMs: 2000,
+  draw(ctx, w, h, ms) {
+    const pressed = (ms > 800 && ms < 1100) || (ms > 2800 && ms < 3100);
+    drawMouse(ctx, w * 0.24, h * 0.5, h * 0.5, pressed);
+    // A patch of the player's sealed ground, and the ghost's square on it.
+    const t = h * 0.12;
+    const gx = w * 0.64;
+    const gy = h * 0.5;
+    ctx.fillStyle = RED.dark;
+    ctx.globalAlpha = 0.55;
+    ctx.fillRect(gx - t * 2.5, gy - t * 2.5, t * 5, t * 5);
+    ctx.fillStyle = RED.light;
+    ctx.globalAlpha = 0.3;
+    ctx.fillRect(gx - t * 2.5, gy - t * 2.5, t * 5, t * 5);
+    ctx.globalAlpha = 1;
+    ctx.strokeStyle = GOOD;
+    ctx.lineWidth = Math.max(2, t * 0.12);
+    ctx.fillStyle = GOOD;
+    ctx.globalAlpha = 0.25;
+    ctx.fillRect(gx - t, gy - t, t * 2, t * 2);
+    ctx.globalAlpha = 1;
+    ctx.strokeRect(gx - t, gy - t, t * 2, t * 2);
+    const tower = ms >= 1100 && ms < 3100;
+    if (tower) drawTower(ctx, 'bertha', 3, gx, gy - t * 0.15, t * 0.75);
+    else drawGun(ctx, gx, gy, t * 0.8);
+    // The hint beside it: a turning arrow, and what a right click would switch to.
+    const hx = gx + t * 2.1;
+    const hy = gy - t * 1.6;
+    text(ctx, '\u21BB', hx, hy, t * 0.8, ACCENT);
+    if (tower) drawGun(ctx, hx + t * 0.85, hy, t * 0.32);
+    else drawTower(ctx, 'bertha', 3, hx + t * 0.85, hy - t * 0.08, t * 0.32);
+  },
+};
+
+/** 8. Click to fire: a ball arcs onto an opponent's wall and one block breaks out. */
 export const COMBAT = board(
   `
   ..............
@@ -728,7 +889,7 @@ const combatPage: HowToPage = {
   },
 };
 
-/** 7. Score and lives: sealed ground and its guns score; a ring left open costs a life. */
+/** 9. Score and lives: sealed ground and its guns score; a ring left open costs a life. */
 const scorePage: HowToPage = {
   caption: 'howTo.score',
   loopMs: 4400,
@@ -780,7 +941,7 @@ const scorePage: HowToPage = {
 };
 
 /**
- * 8. Tournaments (ARCHIVE 13w): a bracket of eight, the player's team in blue winning
+ * 10. Tournaments (ARCHIVE 13w): a bracket of eight, the player's team in blue winning
  * its way along to the final, each other match's winner going on in grey, the cup lit last.
  */
 const tournamentPage: HowToPage = {
@@ -849,6 +1010,8 @@ export const HOW_TO_PLAY: readonly HowToPage[] = [
   sealPage,
   cornerPage,
   gunsPage,
+  towersPage,
+  switchPage,
   combatPage,
   scorePage,
   tournamentPage,

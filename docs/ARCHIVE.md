@@ -9006,3 +9006,13 @@ and flames, the Architect's circle, the cannon ghost a square in every style, an
 cannon count with no room and the seal's fanfare for the overtime's last piece (13zm). Protocol
 26 and recording format 4: a test session needs the server rebuilt and every page reloaded, and
 a v0.9.6 page cannot join a v0.9.7 room.
+
+## 13zr. Special towers ST7: help and documentation (2026-10-17)
+
+How to play gained two pages after the guns' (`howToPlay.ts`, ten pages now): **Special
+towers** — two or three guns drawing together into one tower's badge, the three towers in turn
+and both costs between them, "chosen in the lobby, costs 2–3 cannons" — and **the switch** — the
+mouse's right button switching the ghost's square between a gun and the tower, the cursor's hint
+beside it. What each tower does is not told there (the user's): the tower menu says it, by each
+variant's own numbers, where it is chosen. Two screenshot scenes, `towers-cannons` and
+`towers-combat` (`tools/screenshots.sh`). The docs were brought up to date with it.
