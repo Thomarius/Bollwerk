@@ -15,7 +15,7 @@ import {
 
 import { countdownBeat, showsClock } from './clock.js';
 import { Controls, inputMode, maySwitchTower, placeableCannons, readyCannons } from './controls.js';
-import { placeIconsHtml, switchHintHtml } from './towerIcons.js';
+import { cannonImg, placeIconPx, placeIconsHtml, switchHintHtml } from './towerIcons.js';
 import { variantCost, variantKind } from '@bollwerk/config';
 import { bannersFor, type LifeLost, type PointsGained } from './banners.js';
 import { matchPalette, playerCssColour, useMatchPalette } from './colours.js';
@@ -407,6 +407,16 @@ export async function runSession(
     // In the pause before a banner that brings the other look — the last shots landed, the
     // board still — that look is readied out of sight, so the line reveals it at no cost.
     if (progress === null && before !== after && state.shots.length === 0) scene.prime(after);
+    // So too the person's cannon icon, in the pause before the cannon phase, which it is
+    // rendered for once a look (`Scene.cannonIcon`).
+    if (
+      progress === null &&
+      state.pendingPhase === 'cannon_place' &&
+      session.humanPlayer >= 0 &&
+      defaultConfigBundle.art.cannonIcons === 'style'
+    ) {
+      scene.cannonIcon(session.humanPlayer, placeIconPx(), after);
+    }
     hud.useSkin(scene.styles[lineY === null ? before : after]);
     scene.showLooks(
       lineY === null
@@ -455,10 +465,16 @@ export async function runSession(
       special !== null && controls.placingTower
         ? { kind: variantKind(special), cost: variantCost(special) }
         : null;
-    const icons = placeIconsHtml(placeableCannons(state, human), tower, colour);
+    // The style's own gun, or the generic one for every style (`art.cannonIcons`), while the
+    // testers' readings decide between them.
+    const cannon =
+      defaultConfigBundle.art.cannonIcons === 'style'
+        ? cannonImg(scene.cannonIcon(human, placeIconPx()))
+        : null;
+    const icons = placeIconsHtml(placeableCannons(state, human), tower, colour, cannon);
     const hint =
       special !== null && maySwitchTower(state, human)
-        ? switchHintHtml(variantKind(special), tower === null, colour)
+        ? switchHintHtml(variantKind(special), tower === null, colour, cannon)
         : null;
     const w = ghost.footprint?.w ?? 2;
     hud.labels.showPlaceIcons(scene.screenAt(ghost.tile.x + w + 0.3, ghost.tile.y), icons, hint);

@@ -1,6 +1,13 @@
 import type { ArtConfig, BricksStyleConfig } from '@bollwerk/config';
-import { Structure, Terrain, type MatchState, type Shot } from '@bollwerk/sim';
-import { FillPattern, Graphics, Matrix, Texture, type GraphicsContext } from 'pixi.js';
+import { Structure, Terrain, type Cannon, type MatchState, type Shot } from '@bollwerk/sim';
+import {
+  FillPattern,
+  Graphics,
+  Matrix,
+  Texture,
+  type Container,
+  type GraphicsContext,
+} from 'pixi.js';
 
 import { motionReduced } from '../motion.js';
 import type { TimerSpot } from '../timerSpot.js';
@@ -32,11 +39,13 @@ import {
   MainCastles,
   drawShotTarget,
   hex,
+  iconFrame,
   mixed,
   playerColour,
   shotLift,
   tileX,
   tileY,
+  type Aim,
   type Cell,
   type Debris,
   type EffectFrame,
@@ -97,6 +106,8 @@ interface Pop {
 
 /** How long a recoil takes to come home. */
 const RECOIL_MS = 160;
+/** The icon's footprint against its box: the gun, centred, spans about seven eighths of it. */
+const ICON_FILL = 1.15;
 /** How long a splash's rings spread. */
 const SPLASH_MS = 520;
 /** How long the flash off a piece's studs lasts as it clicks down. */
@@ -939,8 +950,6 @@ export class BricksTheme implements Theme {
    * dark, its muzzle dropped to the ground, so it reads at a glance at eight players.
    */
   private drawGuns(state: MatchState, view: ViewTransform, deltaMs: number): void {
-    const t = view.tile;
-    const { palette } = this.art;
     const memo = this.gunMemo;
     memo.begin();
     for (const cannon of state.cannons) {
@@ -949,73 +958,96 @@ export class BricksTheme implements Theme {
       aim.firedAgo += deltaMs;
       // Still between shots: drawn again only as it turns and kicks.
       const key = `${viewKey(view)}|${cannon.x},${cannon.y},${cannon.w},${cannon.h},${cannon.owner},${cannon.active}|${aim.angle}|${aim.firedAgo < RECOIL_MS ? aim.firedAgo : '-'}`;
-      memo.draw(cannon.id, key, (g) => {
-        const live = cannon.active;
-        const kick = live ? Math.max(0, 1 - aim.firedAgo / RECOIL_MS) : 0;
-        const cx = tileX(view, cannon.x + cannon.w / 2);
-        const cy = tileY(view, cannon.y + cannon.h / 2 - this.faceFraction() * 0.3);
-        const fx = Math.sin(aim.angle);
-        const fy = -Math.cos(aim.angle);
-        // A point `u` tiles along the barrel and `v` across it.
-        const at = (u: number, v: number): [number, number] => [
-          cx + (u * fx - v * fy) * t,
-          cy + (u * fy + v * fx) * t,
-        ];
-        const back = -0.12 * kick;
-        const edge = { width: Math.max(1, t * 0.05), color: hex(palette.craterDark) };
-
-        // The wheel plates, either side of the carriage, a grey hub stud in each.
-        for (const v of [-0.4, 0.4]) {
-          const [wx, wy] = at(-0.15 + back, v);
-          g.circle(wx, wy, t * 0.24);
-          g.fill({ color: 0x1b1d22 });
-          g.circle(wx, wy, t * 0.09);
-          g.fill({ color: hex(live ? palette.rockMid : palette.rockDark) });
-        }
-        // The bracket brick the barrel rests in.
-        g.poly([
-          ...at(-0.48 + back, -0.3),
-          ...at(0.12 + back, -0.3),
-          ...at(0.12 + back, 0.3),
-          ...at(-0.48 + back, 0.3),
-        ]);
-        g.fill({ color: hex(live ? palette.rockLight : palette.craterDark) });
-        g.stroke(edge);
-
-        const width = Math.max(3, t * 0.36);
-        if (live) {
-          const length = 0.95 - 0.28 * kick;
-          const [bx, by] = at(-0.3 + back, 0);
-          const [ex, ey] = at(length, 0);
-          g.moveTo(bx, by).lineTo(ex, ey);
-          g.stroke({ width: width + 2, color: this.colour(cannon.owner, 'dark'), cap: 'round' });
-          g.moveTo(bx, by).lineTo(ex, ey);
-          g.stroke({ width, color: this.colour(cannon.owner, 'base'), cap: 'round' });
-          // Its sheen, and the bands where the round bricks of the barrel join.
-          g.moveTo(...at(-0.2 + back, -0.08)).lineTo(...at(length - 0.1, -0.08));
-          g.stroke({ width: Math.max(1, t * 0.06), color: this.colour(cannon.owner, 'light') });
-          for (const u of [0.15, 0.5]) {
-            g.moveTo(...at(u - 0.28 * kick, -0.18)).lineTo(...at(u - 0.28 * kick, 0.18));
-          }
-          g.stroke({ width: Math.max(1, t * 0.05), color: this.colour(cannon.owner, 'dark') });
-          g.circle(ex, ey, width * 0.58);
-          g.fill({ color: this.colour(cannon.owner, 'dark') });
-          g.stroke({ width: Math.max(1, t * 0.05), color: hex(palette.craterDark), alpha: 0.6 });
-        } else {
-          // Lowered: short, the muzzle tipped down toward the ground.
-          const [bx, by] = at(-0.2, 0);
-          const [mx, my] = at(0.3, 0);
-          const ey = my + t * 0.22;
-          g.moveTo(bx, by).lineTo(mx, ey);
-          g.stroke({ width, color: hex(palette.craterDark), cap: 'round' });
-          g.circle(mx, ey, width * 0.5);
-          g.fill({ color: hex(palette.rockDark) });
-          g.stroke(edge);
-        }
-      });
+      memo.draw(cannon.id, key, (g) => this.drawGun(g, view, cannon, aim));
     }
     memo.end();
     this.aims.prune(state);
+  }
+
+  /** One toy cannon, wheels, bracket and barrel, for `drawGuns` and the icon alike. */
+  private drawGun(g: Graphics, view: ViewTransform, cannon: Cannon, aim: Aim): void {
+    const t = view.tile;
+    const { palette } = this.art;
+    const live = cannon.active;
+    const kick = live ? Math.max(0, 1 - aim.firedAgo / RECOIL_MS) : 0;
+    const cx = tileX(view, cannon.x + cannon.w / 2);
+    const cy = tileY(view, cannon.y + cannon.h / 2 - this.faceFraction() * 0.3);
+    const fx = Math.sin(aim.angle);
+    const fy = -Math.cos(aim.angle);
+    // A point `u` tiles along the barrel and `v` across it.
+    const at = (u: number, v: number): [number, number] => [
+      cx + (u * fx - v * fy) * t,
+      cy + (u * fy + v * fx) * t,
+    ];
+    const back = -0.12 * kick;
+    const edge = { width: Math.max(1, t * 0.05), color: hex(palette.craterDark) };
+
+    // The wheel plates, either side of the carriage, a grey hub stud in each.
+    for (const v of [-0.4, 0.4]) {
+      const [wx, wy] = at(-0.15 + back, v);
+      g.circle(wx, wy, t * 0.24);
+      g.fill({ color: 0x1b1d22 });
+      g.circle(wx, wy, t * 0.09);
+      g.fill({ color: hex(live ? palette.rockMid : palette.rockDark) });
+    }
+    // The bracket brick the barrel rests in.
+    g.poly([
+      ...at(-0.48 + back, -0.3),
+      ...at(0.12 + back, -0.3),
+      ...at(0.12 + back, 0.3),
+      ...at(-0.48 + back, 0.3),
+    ]);
+    g.fill({ color: hex(live ? palette.rockLight : palette.craterDark) });
+    g.stroke(edge);
+
+    const width = Math.max(3, t * 0.36);
+    if (live) {
+      const length = 0.95 - 0.28 * kick;
+      const [bx, by] = at(-0.3 + back, 0);
+      const [ex, ey] = at(length, 0);
+      g.moveTo(bx, by).lineTo(ex, ey);
+      g.stroke({ width: width + 2, color: this.colour(cannon.owner, 'dark'), cap: 'round' });
+      g.moveTo(bx, by).lineTo(ex, ey);
+      g.stroke({ width, color: this.colour(cannon.owner, 'base'), cap: 'round' });
+      // Its sheen, and the bands where the round bricks of the barrel join.
+      g.moveTo(...at(-0.2 + back, -0.08)).lineTo(...at(length - 0.1, -0.08));
+      g.stroke({ width: Math.max(1, t * 0.06), color: this.colour(cannon.owner, 'light') });
+      for (const u of [0.15, 0.5]) {
+        g.moveTo(...at(u - 0.28 * kick, -0.18)).lineTo(...at(u - 0.28 * kick, 0.18));
+      }
+      g.stroke({ width: Math.max(1, t * 0.05), color: this.colour(cannon.owner, 'dark') });
+      g.circle(ex, ey, width * 0.58);
+      g.fill({ color: this.colour(cannon.owner, 'dark') });
+      g.stroke({ width: Math.max(1, t * 0.05), color: hex(palette.craterDark), alpha: 0.6 });
+    } else {
+      // Lowered: short, the muzzle tipped down toward the ground.
+      const [bx, by] = at(-0.2, 0);
+      const [mx, my] = at(0.3, 0);
+      const ey = my + t * 0.22;
+      g.moveTo(bx, by).lineTo(mx, ey);
+      g.stroke({ width, color: hex(palette.craterDark), cap: 'round' });
+      g.circle(mx, ey, width * 0.5);
+      g.fill({ color: hex(palette.rockDark) });
+      g.stroke(edge);
+    }
+  }
+
+  /**
+   * The toy cannon off its grey plate: wheels, bracket and barrel are the gun, the plate the
+   * ground it stands on. Aimed up and right it leans that way and sits raised on the plate's
+   * face, so the view is moved back by as much to centre it in the box.
+   */
+  drawCannonIcon(root: Container, size: number, player: number): void {
+    const { view, cannon, aim } = iconFrame(size, player, ICON_FILL);
+    const lean = { x: 0.12, y: -0.12 - this.faceFraction() * 0.3 };
+    const centred = {
+      ...view,
+      originX: view.originX - lean.x * view.tile,
+      originY: view.originY - lean.y * view.tile,
+    };
+    const g = new Graphics();
+    this.drawGun(g, centred, cannon, aim);
+    root.addChild(g);
   }
 
   /**

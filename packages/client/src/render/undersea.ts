@@ -47,6 +47,7 @@ import {
   MainCastles,
   drawShotTarget,
   hex,
+  iconFrame,
   mixed,
   shotLift,
   tileX,
@@ -132,6 +133,8 @@ interface Whale {
 }
 
 const PUFF_MS = 420;
+/** The fish is smaller than its footprint, which it swims in: larger, it fills the icon. */
+const FISH_ICON_FILL = 1.5;
 const SPIT_MS = 600;
 const SPLASH_MS = 1400;
 const SILT_MS = 1500;
@@ -1205,21 +1208,9 @@ export class UnderseaTheme extends ShapeTheme implements Theme {
       const puff = cannon.active ? Math.max(0, 1 - aim.firedAgo / PUFF_MS) : 0;
       const mood: PufferMood = !cannon.active ? 'limp' : puff > 0.15 ? 'puffed' : 'calm';
       const angle = cannon.active ? aim.angle : aim.angle + 0.7;
-      // A silenced fish is drained to a sickly grey with only a trace of its owner's colour:
-      // in full colour it read as armed at a glance (the style review).
       const limp = mood === 'limp';
-      const tone = (shade: 'base' | 'dark' | 'light', grey: number): number =>
-        limp ? mixed(this.colour(owner, shade), grey, 0.75) : this.colour(owner, shade);
       const fish = this.book.get(`puffer|${owner}|${mood}`, t, (k) =>
-        drawPuffer(
-          k,
-          t,
-          tone('base', 0x8e8c86),
-          tone('dark', 0x4e4c48),
-          tone('light', 0xb4b0a8),
-          this.dark,
-          mood,
-        ),
+        this.drawFish(k, t, owner, mood),
       );
       const scale =
         mood === 'puffed' ? 0.85 + 0.25 * Math.sin(Math.min(1, puff) * Math.PI) : limp ? 0.85 : 1;
@@ -1251,6 +1242,44 @@ export class UnderseaTheme extends ShapeTheme implements Theme {
     }
     this.pufferStamps.end();
     this.aims.prune(state);
+  }
+
+  /** One owner's pufferfish in its mood, at the origin, mouth up, as `drawPuffer` draws it. */
+  private drawFish(g: Graphics, t: number, owner: number, mood: PufferMood): void {
+    // A silenced fish is drained to a sickly grey with only a trace of its owner's colour:
+    // in full colour it read as armed at a glance (the style review).
+    const tone = (shade: 'base' | 'dark' | 'light', grey: number): number =>
+      mood === 'limp' ? mixed(this.colour(owner, shade), grey, 0.75) : this.colour(owner, shade);
+    drawPuffer(
+      g,
+      t,
+      tone('base', 0x8e8c86),
+      tone('dark', 0x4e4c48),
+      tone('light', 0xb4b0a8),
+      this.dark,
+      mood,
+    );
+  }
+
+  /**
+   * The gun is the pufferfish, calm and ready, turned as `drawPuffers` turns it but without
+   * its bob; the sandstone nest under it is the base, left out. Drawn into a
+   * `Graphics` of its own rather than through the stamp book, whose contexts are keyed to the
+   * board's tile.
+   */
+  drawCannonIcon(root: Container, size: number, player: number): void {
+    const { view, cannon, aim } = iconFrame(size, player, FISH_ICON_FILL);
+    const t = view.tile;
+    const g = new Graphics();
+    this.drawFish(g, t, player, 'calm');
+    // Centred on its length rather than its middle, tail to mouth, which the tail outreaches.
+    const ahead = t * 0.14;
+    g.position.set(
+      tileX(view, cannon.x + cannon.w / 2) + Math.sin(aim.angle) * ahead,
+      tileY(view, cannon.y + cannon.h / 2) - Math.cos(aim.angle) * ahead,
+    );
+    g.rotation = aim.angle;
+    root.addChild(g);
   }
 
   /** Shots: sea urchins in the owner's colour, spinning, a trail of bubbles behind them. */

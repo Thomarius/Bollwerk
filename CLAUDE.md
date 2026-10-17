@@ -62,7 +62,8 @@ leave your seat undriven on the way, so you are soon knocked out), `&speed=10`,
 `&style=flat|pixel|night|cyberpunk|blueprint|parchment|bricks|glass|chocolate|halloween|sakura|oktoberfest|opera|office|undersea|electric|cartoon|christmas|noir` for both looks (a one-look style sets only its own)
 (`&buildStyle=`, `&combatStyle=` for one), `&watch=1&level=8` to observe a bot match (`&personality=offensive` fixes every bot's),
 `&rounds=12` for the round cap, `&specials=1` for special towers (`&tower=bertha3`, a tower at its cost, the person's),
-`&teams=2` for teams of two in seat order, `&lang=de` for a
+`&teams=2` for teams of two in seat order, `?icons=sheet` every style's cannon icon side by side
+(`?icons=boards` each style's board, for checking a refactor pixel for pixel), `&lang=de` for a
 language (not saved). `?tournament=new` and `?tournament=resume` open the tournament screens,
 `?tournament=demo&seed=N` a tournament of teams of two between matches (saved as `t-demo`), and
 `&snapshot=game_over` plays a tournament's match out at once, its result counted. `?host=8` opens
@@ -325,8 +326,10 @@ the ladder and four-player tables with towers, the bots' buying rule, then on by
 the user's decisions on the next tower and a test without the cap of three, and sounds of the
 towers' own (TS). Their help is done (ST7, ARCHIVE 13zr). A new tower is balanced at Level 5
 only, its variants against each other and against no tower (the user's). Each
-style's own cannon as the placement icon (item 3), planned in `docs/CANNON_ICONS.md`, the gun
-alone in a fixed pose, not yet built. Bots that hold ground as people do are done (ARCHIVE 13zj).
+style's own cannon as the placement icon (item 3), `docs/CANNON_ICONS.md`, the gun
+alone in a fixed pose: built for every style (2026-10-17), behind `art.cannonIcons` (`"style"` or
+`"generic"`, today's SVG) until the testers choose; its review (CI4) is open, `?icons=sheet` shows
+every style's icon side by side. Bots that hold ground as people do are done (ARCHIVE 13zj).
 The bot learning work is closed, its remaining steps dropped (the user's decision, 2026-10-14;
 ARCHIVE 13zg). French is not to be done. Signing the Windows app was explained (PLAN §12) and is
 not pursued for now.

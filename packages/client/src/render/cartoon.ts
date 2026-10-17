@@ -1,6 +1,6 @@
 import type { ArtConfig, CartoonStyleConfig } from '@bollwerk/config';
 import { Structure, type MatchState, type Shot } from '@bollwerk/sim';
-import { Graphics, Sprite, Texture } from 'pixi.js';
+import { Graphics, Sprite, Texture, type Container } from 'pixi.js';
 
 import { motionReduced } from '../motion.js';
 import { perf } from '../perf.js';
@@ -20,6 +20,7 @@ import {
   Fireworks,
   GhostMotion,
   GunAims,
+  iconFrame,
   Landings,
   RuinSmoke,
   WinnerBanners,
@@ -138,6 +139,8 @@ const DROOP = -0.12;
 /** Where a gun's barrel turns, and how far out its muzzle is from there, in tiles. */
 const PIVOT = { x: -0.15, y: -0.5 };
 const MUZZLE = 0.78;
+/** The cannon icon's footprint against its box: the figure is 1.5 tiles wide, so 91% of it. */
+const CANNON_ICON_FILL = 1.2;
 
 const GREY = 0x9a9a9a;
 const LIGHT_GREY = 0xd8d8d8;
@@ -983,6 +986,18 @@ export class CartoonTheme extends ShapeTheme implements Theme {
   }
 
   /**
+   * The gun of the cannon row: the board's figure, awake and facing right, without its shadow
+   * on the ground, centred by its own outline, since its foot is not the middle of its drawing.
+   */
+  drawCannonIcon(root: Container, size: number, player: number): void {
+    const { view } = iconFrame(size, player, CANNON_ICON_FILL);
+    const g = new Graphics();
+    drawCannonFigure(g, view.tile, this.colour(player, 'base'), 'awake', false);
+    centreIn(g, size);
+    root.addChild(g);
+  }
+
+  /**
    * The guns, cannons with faces stamped for each owner and mood, facing their target: a
    * live one bounces on its wheels to the beat; firing, it squashes back and stretches out,
    * eyes screwed shut, a puff of smoke from its muzzle; a silenced one sleeps, its barrel
@@ -1642,13 +1657,21 @@ function drawCastleFigure(
  * A gun as a cannon with a face, facing right, its foot's middle at the origin: a fat barrel
  * in the owner's colour raised on a carriage, its muzzle for a mouth, eyes on its side, a
  * spoked wheel in front. `awake` frowns, determined; `blink` shuts its eyes; `fire` screws
- * them shut; `asleep` droops, eyes closed.
+ * them shut; `asleep` droops, eyes closed. `grounded` casts its shadow, which the icon leaves out.
  */
-function drawCannonFigure(g: Graphics, t: number, body: number, mood: GunMood): void {
+function drawCannonFigure(
+  g: Graphics,
+  t: number,
+  body: number,
+  mood: GunMood,
+  grounded = true,
+): void {
   const u = (v: number): number => v * t;
   const ink = inkWidth(t);
-  g.ellipse(0, 0, u(0.72), u(0.14));
-  g.fill({ color: INK, alpha: 0.25 });
+  if (grounded) {
+    g.ellipse(0, 0, u(0.72), u(0.14));
+    g.fill({ color: INK, alpha: 0.25 });
+  }
   g.poly([-u(0.55), 0, u(0.35), 0, u(0.15), -u(0.45), -u(0.35), -u(0.52)]);
   g.fill({ color: LIGHT_GREY });
   g.stroke({ width: ink * 0.8, color: INK, join: 'round' });
@@ -1917,4 +1940,10 @@ function drawCartoonScenery(g: Graphics, view: ViewTransform, items: readonly Sc
     );
   }
   g.fill({ color: INK, alpha: 0.25 });
+}
+
+/** Moves a drawing so the middle of its outline is the middle of a box `size` square. */
+function centreIn(g: Graphics, size: number): void {
+  const b = g.getLocalBounds();
+  g.position.set(size / 2 - (b.x + b.width / 2), size / 2 - (b.y + b.height / 2));
 }

@@ -30,6 +30,7 @@ import {
   MainCastles,
   drawShotTarget,
   hex,
+  iconFrame,
   shotLift,
   tileX,
   tileY,
@@ -151,6 +152,11 @@ const RING_MS = 1100;
 const MELT_MS = 900;
 const WOBBLE_MS = 560;
 const PUFF_MS = 700;
+/**
+ * The icon's footprint a little over one and a half times its box: the cane alone spans not
+ * much more than a tile of its gun's two, and drawn so it fills nine tenths of the box.
+ */
+const ICON_FILL = 1.64;
 /** A whole turn. */
 const TAU = Math.PI * 2;
 const SNAP_MS = 700;
@@ -1595,6 +1601,20 @@ export class ChocolateTheme extends ShapeTheme implements Theme {
     }
     memo.end();
     this.aims.prune(state);
+  }
+
+  /**
+   * The gun alone as the icon: the candy cane, upright and never fired, without the cupcake
+   * it stands in — that is the gun's base. The cane rises from the cupcake's middle to the
+   * upper right, so the view is moved for the cane's own middle to sit in the box's.
+   */
+  drawCannonIcon(root: Container, size: number, player: number): void {
+    const { view, cannon, aim } = iconFrame(size, player, ICON_FILL);
+    const t = view.tile;
+    const shifted = { ...view, originX: view.originX - t * 0.37, originY: view.originY + t * 0.63 };
+    const g = new Graphics();
+    this.drawBarrel(g, shifted, cannon, aim);
+    root.addChild(g);
   }
 
   private drawBarrel(g: Graphics, view: ViewTransform, cannon: Cannon, aim: Aim): void {

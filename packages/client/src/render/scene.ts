@@ -1,6 +1,6 @@
 import { defaultArtConfig, type ArtConfig, type ArtStyle } from '@bollwerk/config';
 import type { MatchState, Shot } from '@bollwerk/sim';
-import { Application, BigPool, Container, Graphics, RenderTexture } from 'pixi.js';
+import { Application, BigPool, Container, Graphics, Rectangle, RenderTexture } from 'pixi.js';
 
 import type { CameraShot } from '../camera.js';
 import type { DrainWash, SealGlow } from '../seal.js';
@@ -794,6 +794,48 @@ export class Scene {
   /** On the looks on screen, for the same reason as impacts. */
   noteLanding(cells: readonly Cell[], owner: number): void {
     for (const slot of this.visible()) slot.theme.noteLanding(cells, owner);
+  }
+
+  /** Each look's cannon icons by player and size, as image URLs, made once (`cannonIcon`). */
+  private readonly icons = new WeakMap<Theme, Map<string, string>>();
+
+  /**
+   * This player's cannon in the style of the look in front, `cssPx` square, as an image's
+   * URL for the page's row beside the cursor: drawn by the style (`drawCannonIcon`) and
+   * rendered once, at the screen's density, for each look, player and size. A random look
+   * each round is a new theme, so it gets its own. Asked first for the look the cannon phase
+   * will show, in the still pause before it (`matchScreen`): the image is read back from the
+   * GPU, 5 to 65 ms the first time in a headless Chrome, which the moment the cursor first
+   * enters the cannon phase would show as a hitch.
+   */
+  cannonIcon(player: number, cssPx: number, look: Look = this.shown.to): string {
+    const theme = this.slots[look].theme;
+    let made = this.icons.get(theme);
+    if (made === undefined) {
+      made = new Map();
+      this.icons.set(theme, made);
+    }
+    const key = `${player}:${cssPx}`;
+    const known = made.get(key);
+    if (known !== undefined) return known;
+    const root = new Container();
+    theme.drawCannonIcon(root, cssPx, player);
+    const canvas = this.app.renderer.extract.canvas({
+      target: root,
+      frame: new Rectangle(0, 0, cssPx, cssPx),
+      resolution: Math.min(2, globalThis.devicePixelRatio || 1),
+      clearColor: [0, 0, 0, 0],
+    });
+    // A style's glow may be a filter on the icon's own layer, which `release` leaves behind.
+    const filtered = (node: Container): void => {
+      for (const filter of node.filters ?? []) filter.destroy();
+      node.children.forEach(filtered);
+    };
+    filtered(root);
+    release(root);
+    const url = canvas.toDataURL?.('image/png') ?? '';
+    made.set(key, url);
+    return url;
   }
 
   /** The Architects' reach shown in every phase, for the tower menu's preview. */

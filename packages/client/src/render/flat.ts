@@ -1,6 +1,6 @@
 import type { ArtConfig, FlatStyleConfig } from '@bollwerk/config';
-import { Structure, Terrain, type MatchState } from '@bollwerk/sim';
-import { Graphics } from 'pixi.js';
+import { Structure, Terrain, type Cannon, type MatchState } from '@bollwerk/sim';
+import { Graphics, type Container } from 'pixi.js';
 
 import { motionReduced } from '../motion.js';
 import type { TimerSpot } from '../timerSpot.js';
@@ -27,6 +27,7 @@ import {
   MainCastles,
   drawShotTarget,
   hex,
+  iconFrame,
   playerColour,
   tileX,
   tileY,
@@ -267,24 +268,35 @@ export class FlatTheme implements Theme {
       g.fill({ color: playerColour(this.art, owner, 'dark') });
     }
 
-    for (const cannon of state.cannons) {
-      const x = tileX(view, cannon.x);
-      const y = tileY(view, cannon.y);
-      const w = cannon.w * view.tile;
-      const h = cannon.h * view.tile;
-      g.rect(x + inset, y + inset, w - inset * 2, h - inset * 2);
-      g.fill({ color: playerColour(this.art, cannon.owner, 'dark') });
+    for (const cannon of state.cannons) this.drawCannon(g, view, cannon, inset);
+  }
 
-      g.circle(x + w / 2, y + h / 2, Math.max(1, Math.min(w, h) * this.style.cannonBoreScale));
-      g.fill({ color: playerColour(this.art, cannon.owner, 'light') });
+  /** A gun as a square with its bore: the style has no base under it, so it is the gun. */
+  private drawCannon(g: Graphics, view: ViewTransform, cannon: Cannon, inset: number): void {
+    const x = tileX(view, cannon.x);
+    const y = tileY(view, cannon.y);
+    const w = cannon.w * view.tile;
+    const h = cannon.h * view.tile;
+    g.rect(x + inset, y + inset, w - inset * 2, h - inset * 2);
+    g.fill({ color: playerColour(this.art, cannon.owner, 'dark') });
 
-      // An inert cannon reads as struck through: it survives, but it cannot fire.
-      if (!cannon.active) {
-        g.moveTo(x + inset, y + inset);
-        g.lineTo(x + w - inset, y + h - inset);
-        g.stroke({ width: this.style.outlineWidthPx, color: hex(this.art.palette.uiInvalid) });
-      }
+    g.circle(x + w / 2, y + h / 2, Math.max(1, Math.min(w, h) * this.style.cannonBoreScale));
+    g.fill({ color: playerColour(this.art, cannon.owner, 'light') });
+
+    // An inert cannon reads as struck through: it survives, but it cannot fire.
+    if (!cannon.active) {
+      g.moveTo(x + inset, y + inset);
+      g.lineTo(x + w - inset, y + h - inset);
+      g.stroke({ width: this.style.outlineWidthPx, color: hex(this.art.palette.uiInvalid) });
     }
+  }
+
+  /** The gun as the board draws it, the square and its bore, a little inside the box. */
+  drawCannonIcon(root: Container, size: number, player: number): void {
+    const { view, cannon } = iconFrame(size, player, 0.9);
+    const g = new Graphics();
+    this.drawCannon(g, view, cannon, view.tile >= 6 ? this.style.structureInsetPx : 0);
+    root.addChild(g);
   }
 
   /**

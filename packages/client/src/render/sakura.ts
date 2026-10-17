@@ -1,5 +1,6 @@
 import type { ArtConfig, SakuraStyleConfig } from '@bollwerk/config';
 import { Structure, type Cannon, type Castle, type MatchState, type Shot } from '@bollwerk/sim';
+import type { Container } from 'pixi.js';
 import { Graphics } from 'pixi.js';
 
 import { motionReduced } from '../motion.js';
@@ -35,9 +36,11 @@ import {
   MainCastles,
   drawShotTarget,
   hex,
+  iconFrame,
   shotLift,
   tileX,
   tileY,
+  type Aim,
   type Cell,
   type Debris,
   type EffectFrame,
@@ -261,6 +264,9 @@ export function rakeLines(
  * sweep scatters blocks into petals. Cherry petals drift over everything, and in overtime
  * and the final round the season turns, and they fall as maple leaves.
  */
+/** The icon's footprint against its box: the carriage and its wheels fill some 0.84 of it. */
+const ICON_FILL = 1.1;
+
 export class SakuraTheme extends ShapeTheme implements Theme {
   readonly id = 'sakura' as const;
 
@@ -827,11 +833,6 @@ export class SakuraTheme extends ShapeTheme implements Theme {
    * Takeda's, since a disc with a pale rim is what a shot looks like here.
    */
   private drawCarriage(g: Graphics, view: ViewTransform, cannon: Cannon): void {
-    const t = view.tile;
-    const ink = this.ink(view);
-    const cx = tileX(view, cannon.x + cannon.w / 2);
-    const cy = tileY(view, cannon.y + cannon.h / 2);
-    const r = Math.min(cannon.w, cannon.h) * t * 0.36;
     cannonBase(
       g,
       view,
@@ -839,6 +840,28 @@ export class SakuraTheme extends ShapeTheme implements Theme {
       this.colour(cannon.owner, 'dark'),
       this.colour(cannon.owner, 'base'),
     );
+    this.drawGunCarriage(g, view, cannon);
+  }
+
+  /**
+   * The gun as the board draws it, carriage and barrel, without the square it stands on. The
+   * wheels and bed stay: without them the barrel is a bronze stroke that could be anyone's.
+   */
+  drawCannonIcon(root: Container, size: number, player: number): void {
+    const { view, cannon, aim } = iconFrame(size, player, ICON_FILL);
+    const g = new Graphics();
+    this.drawGunCarriage(g, view, cannon);
+    this.drawBarrel(g, view, cannon, aim);
+    root.addChild(g);
+  }
+
+  /** The carriage itself, wheels, bed and crest, without the square under it: the icon's too. */
+  private drawGunCarriage(g: Graphics, view: ViewTransform, cannon: Cannon): void {
+    const t = view.tile;
+    const ink = this.ink(view);
+    const cx = tileX(view, cannon.x + cannon.w / 2);
+    const cy = tileY(view, cannon.y + cannon.h / 2);
+    const r = Math.min(cannon.w, cannon.h) * t * 0.36;
     g.ellipse(cx + t * 0.08, cy + r * 0.85, r * 1.1, r * 0.28);
     g.fill({ color: this.sumi, alpha: 0.3 });
     // The cheeks of the carriage, a wheel at either side of it.
@@ -1465,7 +1488,6 @@ export class SakuraTheme extends ShapeTheme implements Theme {
    * smoke from the muzzle. A silenced gun's barrel droops and a cloth is thrown over it.
    */
   private drawBarrels(state: MatchState, view: ViewTransform, deltaMs: number): void {
-    const t = view.tile;
     const memo = this.gunMemo;
     memo.begin();
     for (const cannon of state.cannons) {
@@ -1474,87 +1496,94 @@ export class SakuraTheme extends ShapeTheme implements Theme {
       aim.firedAgo += deltaMs;
       // Still between shots: drawn again only as it turns and kicks.
       const key = `${viewKey(view)}|${cannon.x},${cannon.y},${cannon.w},${cannon.h},${cannon.owner},${cannon.active}|${aim.angle}|${aim.firedAgo < Math.max(RECOIL_MS, SMOKE_MS) ? aim.firedAgo : '-'}`;
-      memo.draw(cannon.id, key, (g) => {
-        const r = Math.min(cannon.w, cannon.h) * t * 0.36;
-        const cx = tileX(view, cannon.x + cannon.w / 2);
-        const cy = tileY(view, cannon.y + cannon.h / 2) - r * 0.1;
-        if (!cannon.active) {
-          // The cloth thrown over the gun and its bed, falling in folds to a hem above the
-          // crest and the wheels, so whose it is still shows; tied with a cord.
-          g.moveTo(cx - r * 0.95, cy + r * 0.45);
-          g.quadraticCurveTo(cx - r * 0.85, cy - r * 0.75, cx, cy - r * 0.72);
-          g.quadraticCurveTo(cx + r * 0.85, cy - r * 0.75, cx + r * 0.95, cy + r * 0.45);
-          g.lineTo(cx + r * 0.55, cy + r * 0.3);
-          g.lineTo(cx + r * 0.2, cy + r * 0.42);
-          g.lineTo(cx - r * 0.2, cy + r * 0.3);
-          g.lineTo(cx - r * 0.55, cy + r * 0.42);
-          g.closePath();
-          g.fill({ color: CLOTH });
-          g.stroke({ width: Math.max(1, t * 0.06), color: this.sumi, alpha: 0.85, join: 'round' });
-          g.moveTo(cx - r * 0.35, cy - r * 0.55).lineTo(cx - r * 0.5, cy + r * 0.35);
-          g.moveTo(cx + r * 0.3, cy - r * 0.55).lineTo(cx + r * 0.4, cy + r * 0.32);
-          g.stroke({ width: Math.max(1, t * 0.05), color: CLOTH_SHADE });
-          g.moveTo(cx - r * 0.75, cy - r * 0.1).quadraticCurveTo(
-            cx,
-            cy + r * 0.05,
-            cx + r * 0.75,
-            cy - r * 0.1,
-          );
-          g.stroke({ width: Math.max(1, t * 0.05), color: this.sumi, alpha: 0.75 });
-          return;
-        }
-        const kick = Math.max(0, 1 - aim.firedAgo / RECOIL_MS);
-        const length = t * (0.95 - 0.3 * kick);
-        const dx = Math.sin(aim.angle);
-        const dy = -Math.cos(aim.angle);
-        const ex = cx + dx * length;
-        const ey = cy + dy * length * 0.8;
-        // Across the barrel, for its bands; the barrel is foreshortened as the board is.
-        const norm = Math.hypot(dx, dy * 0.8) || 1;
-        const nx = (-dy * 0.8) / norm;
-        const ny = dx / norm;
-        const bore = Math.max(2.5, t * 0.26);
-        g.moveTo(cx, cy).lineTo(ex, ey);
-        g.stroke({ width: bore + Math.max(1.5, t * 0.08), color: this.sumi, cap: 'round' });
-        g.moveTo(cx, cy).lineTo(ex, ey);
-        g.stroke({ width: bore, color: BRONZE, cap: 'round' });
-        // The light along its upper side, then its bands — at the breech, the trunnions and
-        // the chase — and the muzzle's swell; a band, not a disc, since a round bead at the
-        // muzzle reads as a shot.
-        const lift = bore * 0.22;
-        const ux = (ny > 0 ? -nx : nx) * lift;
-        const uy = -Math.abs(ny) * lift;
-        g.moveTo(cx + (ex - cx) * 0.15 + ux, cy + (ey - cy) * 0.15 + uy);
-        g.lineTo(cx + (ex - cx) * 0.8 + ux, cy + (ey - cy) * 0.8 + uy);
-        g.stroke({ width: Math.max(1, t * 0.06), color: BRONZE_LIGHT, alpha: 0.85 });
-        for (const [f, span] of BARREL_BANDS) {
-          const bx = cx + (ex - cx) * f;
-          const by = cy + (ey - cy) * f;
-          const w = (bore * span) / 2;
-          g.moveTo(bx - nx * w, by - ny * w).lineTo(bx + nx * w, by + ny * w);
-        }
-        g.stroke({ width: Math.max(1, t * 0.07), color: BRONZE_DARK });
-        g.moveTo(ex - nx * bore * 0.68, ey - ny * bore * 0.68).lineTo(
-          ex + nx * bore * 0.68,
-          ey + ny * bore * 0.68,
-        );
-        g.stroke({ width: Math.max(1.5, t * 0.11), color: BRONZE_DARK, cap: 'round' });
-        if (aim.firedAgo < SMOKE_MS) {
-          const k = aim.firedAgo / SMOKE_MS;
-          drawCloudCurl(
-            g,
-            ex + dx * t * 0.4 * k,
-            ey + dy * t * 0.4 * k - k * t * 0.2,
-            t * (0.16 + 0.18 * k),
-            PAPER,
-            this.sumi,
-            0.85 * (1 - k),
-          );
-        }
-      });
+      memo.draw(cannon.id, key, (g) => this.drawBarrel(g, view, cannon, aim));
     }
     memo.end();
     this.aims.prune(state);
+  }
+
+  /**
+   * One gun's barrel, or the cloth over a silenced one, for the board's memo and the icon
+   * alike; the memo's key must name everything read here.
+   */
+  private drawBarrel(g: Graphics, view: ViewTransform, cannon: Cannon, aim: Aim): void {
+    const t = view.tile;
+    const r = Math.min(cannon.w, cannon.h) * t * 0.36;
+    const cx = tileX(view, cannon.x + cannon.w / 2);
+    const cy = tileY(view, cannon.y + cannon.h / 2) - r * 0.1;
+    if (!cannon.active) {
+      // The cloth thrown over the gun and its bed, falling in folds to a hem above the
+      // crest and the wheels, so whose it is still shows; tied with a cord.
+      g.moveTo(cx - r * 0.95, cy + r * 0.45);
+      g.quadraticCurveTo(cx - r * 0.85, cy - r * 0.75, cx, cy - r * 0.72);
+      g.quadraticCurveTo(cx + r * 0.85, cy - r * 0.75, cx + r * 0.95, cy + r * 0.45);
+      g.lineTo(cx + r * 0.55, cy + r * 0.3);
+      g.lineTo(cx + r * 0.2, cy + r * 0.42);
+      g.lineTo(cx - r * 0.2, cy + r * 0.3);
+      g.lineTo(cx - r * 0.55, cy + r * 0.42);
+      g.closePath();
+      g.fill({ color: CLOTH });
+      g.stroke({ width: Math.max(1, t * 0.06), color: this.sumi, alpha: 0.85, join: 'round' });
+      g.moveTo(cx - r * 0.35, cy - r * 0.55).lineTo(cx - r * 0.5, cy + r * 0.35);
+      g.moveTo(cx + r * 0.3, cy - r * 0.55).lineTo(cx + r * 0.4, cy + r * 0.32);
+      g.stroke({ width: Math.max(1, t * 0.05), color: CLOTH_SHADE });
+      g.moveTo(cx - r * 0.75, cy - r * 0.1).quadraticCurveTo(
+        cx,
+        cy + r * 0.05,
+        cx + r * 0.75,
+        cy - r * 0.1,
+      );
+      g.stroke({ width: Math.max(1, t * 0.05), color: this.sumi, alpha: 0.75 });
+      return;
+    }
+    const kick = Math.max(0, 1 - aim.firedAgo / RECOIL_MS);
+    const length = t * (0.95 - 0.3 * kick);
+    const dx = Math.sin(aim.angle);
+    const dy = -Math.cos(aim.angle);
+    const ex = cx + dx * length;
+    const ey = cy + dy * length * 0.8;
+    // Across the barrel, for its bands; the barrel is foreshortened as the board is.
+    const norm = Math.hypot(dx, dy * 0.8) || 1;
+    const nx = (-dy * 0.8) / norm;
+    const ny = dx / norm;
+    const bore = Math.max(2.5, t * 0.26);
+    g.moveTo(cx, cy).lineTo(ex, ey);
+    g.stroke({ width: bore + Math.max(1.5, t * 0.08), color: this.sumi, cap: 'round' });
+    g.moveTo(cx, cy).lineTo(ex, ey);
+    g.stroke({ width: bore, color: BRONZE, cap: 'round' });
+    // The light along its upper side, then its bands — at the breech, the trunnions and
+    // the chase — and the muzzle's swell; a band, not a disc, since a round bead at the
+    // muzzle reads as a shot.
+    const lift = bore * 0.22;
+    const ux = (ny > 0 ? -nx : nx) * lift;
+    const uy = -Math.abs(ny) * lift;
+    g.moveTo(cx + (ex - cx) * 0.15 + ux, cy + (ey - cy) * 0.15 + uy);
+    g.lineTo(cx + (ex - cx) * 0.8 + ux, cy + (ey - cy) * 0.8 + uy);
+    g.stroke({ width: Math.max(1, t * 0.06), color: BRONZE_LIGHT, alpha: 0.85 });
+    for (const [f, span] of BARREL_BANDS) {
+      const bx = cx + (ex - cx) * f;
+      const by = cy + (ey - cy) * f;
+      const w = (bore * span) / 2;
+      g.moveTo(bx - nx * w, by - ny * w).lineTo(bx + nx * w, by + ny * w);
+    }
+    g.stroke({ width: Math.max(1, t * 0.07), color: BRONZE_DARK });
+    g.moveTo(ex - nx * bore * 0.68, ey - ny * bore * 0.68).lineTo(
+      ex + nx * bore * 0.68,
+      ey + ny * bore * 0.68,
+    );
+    g.stroke({ width: Math.max(1.5, t * 0.11), color: BRONZE_DARK, cap: 'round' });
+    if (aim.firedAgo < SMOKE_MS) {
+      const k = aim.firedAgo / SMOKE_MS;
+      drawCloudCurl(
+        g,
+        ex + dx * t * 0.4 * k,
+        ey + dy * t * 0.4 * k - k * t * 0.2,
+        t * (0.16 + 0.18 * k),
+        PAPER,
+        this.sumi,
+        0.85 * (1 - k),
+      );
+    }
   }
 
   /** Bands of mist drifting across a foggy match, as the prints lay them over a view. */

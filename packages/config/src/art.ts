@@ -1093,6 +1093,12 @@ export const ArtConfigSchema = z
       /** One breath of the castles on the lobby map. */
       mapCastleMs: z.number().int().positive(),
     }),
+    /**
+     * The icons beside the cursor in the cannon phase, a cannon each still to place: the style's
+     * own gun, drawn small (`drawCannonIcon`), or one generic cannon for every style, as before
+     * (2026-10-17). Both kept until the testers' readings decide between them.
+     */
+    cannonIcons: z.enum(['style', 'generic']),
     tileSizePx: z.number().int().positive(),
     atlasSizePx: z.number().int().positive(),
     pixelSnap: z.boolean(),

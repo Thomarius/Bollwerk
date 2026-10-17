@@ -1,6 +1,6 @@
 import type { ArtConfig, OfficeStyleConfig } from '@bollwerk/config';
 import { Structure, type Castle, type MatchState, type Shot } from '@bollwerk/sim';
-import { FillPattern, Graphics, Texture } from 'pixi.js';
+import { type Container, FillPattern, Graphics, Texture } from 'pixi.js';
 
 import { motionReduced } from '../motion.js';
 import { perf } from '../perf.js';
@@ -36,6 +36,7 @@ import {
   MainCastles,
   drawShotTarget,
   hex,
+  iconFrame,
   shotLift,
   tileX,
   tileY,
@@ -1172,6 +1173,25 @@ export class OfficeTheme extends ShapeTheme implements Theme {
     }
     this.copierStamps.end();
     this.aims.prune(state);
+  }
+
+  /**
+   * The gun is the copier, live, placed as `drawCopiers` places it and turned to the icon's
+   * angle; the office chair's star under it is the base, left out. Drawn into a `Graphics` of
+   * its own rather than through the stamp book, whose contexts are keyed to the board's tile;
+   * over its footprint, since the copier turned on its corner is narrower than it.
+   */
+  drawCannonIcon(root: Container, size: number, player: number): void {
+    const { view, cannon, aim } = iconFrame(size, player, 1.15);
+    const t = view.tile;
+    const g = new Graphics();
+    this.copierShape(g, t, player, cannon.active);
+    g.position.set(
+      tileX(view, cannon.x + cannon.w / 2),
+      tileY(view, cannon.y + cannon.h / 2) - t * 0.08,
+    );
+    g.rotation = aim.angle;
+    root.addChild(g);
   }
 
   /** One copier, centred, its tray pointing up, for the stamp book. */

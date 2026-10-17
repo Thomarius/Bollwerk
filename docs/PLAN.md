@@ -1630,8 +1630,9 @@ fit (ARCHIVE 12z), its remaining steps dropped (the user's decision, 2026-10-14;
    the towers' own (TS), each borrowing a cannon's or an impact's for now. The design
    and these packages are in
    [`SPECIAL_TOWERS.md`](./SPECIAL_TOWERS.md).
-3. **Each style's own cannon as the placement icon** (the user's wish, 2026-10-16; planned, not
-   yet built): the row of cannon icons beside the cursor in the cannon phase (ARCHIVE 13zm) draws
+3. **Each style's own cannon as the placement icon** (the user's wish, 2026-10-16; built
+   2026-10-17, CI1–CI3, behind the switch `art.cannonIcons`, waiting for the review CI4 and the
+   testers' choice between it and the generic cannon): the row of cannon icons beside the cursor in the cannon phase (ARCHIVE 13zm) draws
    the gun of the style on screen, the gun alone, in a fixed ready pose, through a
    `drawCannonIcon` every style implements — never a snapshot of the board, which there is none
    of before the first gun and which changes with the guns' state (the user's rejection). The

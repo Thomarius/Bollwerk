@@ -1,5 +1,5 @@
 import type { ArtConfig, OperaStyleConfig } from '@bollwerk/config';
-import { Structure, type Castle, type MatchState, type Shot } from '@bollwerk/sim';
+import { Structure, type Cannon, type Castle, type MatchState, type Shot } from '@bollwerk/sim';
 import { Container, Graphics } from 'pixi.js';
 
 import { motionReduced } from '../motion.js';
@@ -36,9 +36,11 @@ import {
   MainCastles,
   drawShotTarget,
   hex,
+  iconFrame,
   shotLift,
   tileX,
   tileY,
+  type Aim,
   type Cell,
   type Debris,
   type EffectFrame,
@@ -167,6 +169,25 @@ function blackAfter(n: number): boolean {
  * chord. In the finale — overtime and the final round — the staves swell and spotlights
  * sweep the board.
  */
+/** The icon's footprint against its box: the coil and the bell span some 0.6 of it. */
+const HORN_ICON_FILL = 1.5;
+
+/** Where a horn's coil sits: a little above its stand's middle, the stand's legs below it. */
+function hornCentre(view: ViewTransform, cannon: Cannon): [number, number] {
+  return [
+    tileX(view, cannon.x + cannon.w / 2),
+    tileY(view, cannon.y + cannon.h / 2) - view.tile * 0.08,
+  ];
+}
+
+/** A horn's coil, two stroked rings round (x, y): the board's stamp, drawn at the origin. */
+function drawCoil(g: Graphics, x: number, y: number, t: number, metal: number, dark: number): void {
+  g.circle(x, y, t * 0.26);
+  g.stroke({ width: Math.max(2, t * 0.11), color: dark });
+  g.circle(x, y, t * 0.26);
+  g.stroke({ width: Math.max(1.5, t * 0.07), color: metal });
+}
+
 export class OperaTheme extends ShapeTheme implements Theme {
   readonly id = 'opera' as const;
 
@@ -1266,12 +1287,7 @@ export class OperaTheme extends ShapeTheme implements Theme {
     const g = this.aboveCrownsGfx;
     const t = view.tile;
     const coilOf = (key: string, metal: number, dark: number) =>
-      this.book.get(key, t, (k) => {
-        k.circle(0, 0, t * 0.26);
-        k.stroke({ width: Math.max(2, t * 0.11), color: dark });
-        k.circle(0, 0, t * 0.26);
-        k.stroke({ width: Math.max(1.5, t * 0.07), color: metal });
-      });
+      this.book.get(key, t, (k) => drawCoil(k, 0, 0, t, metal, dark));
     const coil = coilOf('coil', BRASS, BRASS_DARK);
     const dullCoil = coilOf('coil|muted', TARNISH, TARNISH_DARK);
     this.coilStamps.begin();
@@ -1279,73 +1295,99 @@ export class OperaTheme extends ShapeTheme implements Theme {
       const aim = this.aims.of(state, cannon.id);
       if (aim === null) continue;
       aim.firedAgo += deltaMs;
-      const cx = tileX(view, cannon.x + cannon.w / 2);
-      const cy = tileY(view, cannon.y + cannon.h / 2) - t * 0.08;
-      const kick = Math.max(0, 1 - aim.firedAgo / RECOIL_MS);
-      const angle = cannon.active ? aim.angle : Math.PI * 0.75;
-      const dx = Math.sin(angle);
-      const dy = -Math.cos(angle) * 0.8;
-      const nx = -dy;
-      const ny = dx;
-      const reach = t * (0.7 - 0.22 * kick);
-      const ex = cx + dx * reach;
-      const ey = cy + dy * reach;
-      const metal = cannon.active ? BRASS : TARNISH;
-      const metalDark = cannon.active ? BRASS_DARK : TARNISH_DARK;
+      const [cx, cy] = hornCentre(view, cannon);
       // The coil, and the tube out to the bell.
       this.coilStamps.place(cannon.active ? coil : dullCoil, cx, cy);
-      g.moveTo(cx, cy).lineTo(ex, ey);
-      g.stroke({ width: Math.max(2, t * 0.12), color: metal, cap: 'round' });
-      // The bell, flaring.
-      const bell = t * 0.32;
-      const fx = ex + dx * t * 0.28;
-      const fy = ey + dy * t * 0.28;
-      g.poly([
-        ex + nx * t * 0.07,
-        ey + ny * t * 0.07,
-        fx + nx * bell,
-        fy + ny * bell,
-        fx - nx * bell,
-        fy - ny * bell,
-        ex - nx * t * 0.07,
-        ey - ny * t * 0.07,
-      ]);
-      g.fill({ color: metal });
-      g.stroke({ width: 1, color: metalDark });
-      g.ellipse(
-        fx,
-        fy,
-        bell * 0.55 + Math.abs(nx) * bell * 0.45,
-        bell * 0.55 + Math.abs(ny) * bell * 0.45,
-      );
-      g.fill({ color: cannon.active ? 0x5a4010 : TARNISH_DARK });
-      if (!cannon.active) {
-        // The mute, stuffed in the bell: near black, filling it, a pale cork ring round it.
-        g.circle(fx - dx * t * 0.05, fy - dy * t * 0.05, bell * 0.72);
-        g.fill({ color: 0x15100c });
-        g.stroke({ width: Math.max(1, t * 0.04), color: 0xc8b89a });
-        g.circle(fx - dx * t * 0.05, fy - dy * t * 0.05, bell * 0.22);
-        g.fill({ color: 0x4a3a2c });
-        continue;
-      }
-      if (aim.firedAgo < 650) {
-        const k = aim.firedAgo / 650;
-        for (let n = 0; n < 2; n++) {
-          const d = t * (0.3 + 0.9 * k);
-          drawQuaver(
-            g,
-            fx + dx * d + nx * t * (n - 0.5) * 0.6,
-            fy + dy * d + ny * t * (n - 0.5) * 0.6 - k * t * 0.3,
-            t * 0.4,
-            GOLD,
-            1 - k,
-            n + 1,
-          );
-        }
-      }
+      this.drawHorn(g, view, cannon, aim);
     }
     this.coilStamps.end();
     this.aims.prune(state);
+  }
+
+  /**
+   * The gun as the board draws it, the coil and the horn out of it, without the stand: the
+   * coil drawn as the board's stamp is, at the horn's centre, the horn over it. The bell
+   * reaches far up and right of the coil, so the drawing is centred by its own bounds rather
+   * than by the footprint, which would leave it clipped at one corner and bare at the other.
+   */
+  drawCannonIcon(root: Container, size: number, player: number): void {
+    const { view, cannon, aim } = iconFrame(size, player, HORN_ICON_FILL);
+    const [cx, cy] = hornCentre(view, cannon);
+    const g = new Graphics();
+    drawCoil(g, cx, cy, view.tile, BRASS, BRASS_DARK);
+    this.drawHorn(g, view, cannon, aim);
+    const b = g.getLocalBounds();
+    g.position.set(size / 2 - (b.minX + b.maxX) / 2, size / 2 - (b.minY + b.maxY) / 2);
+    root.addChild(g);
+  }
+
+  /**
+   * One horn's tube and bell from its coil, kicked back and sounding notes as it fires, or
+   * muted and turned down when silenced: for the board and the icon alike.
+   */
+  private drawHorn(g: Graphics, view: ViewTransform, cannon: Cannon, aim: Aim): void {
+    const t = view.tile;
+    const [cx, cy] = hornCentre(view, cannon);
+    const kick = Math.max(0, 1 - aim.firedAgo / RECOIL_MS);
+    const angle = cannon.active ? aim.angle : Math.PI * 0.75;
+    const dx = Math.sin(angle);
+    const dy = -Math.cos(angle) * 0.8;
+    const nx = -dy;
+    const ny = dx;
+    const reach = t * (0.7 - 0.22 * kick);
+    const ex = cx + dx * reach;
+    const ey = cy + dy * reach;
+    const metal = cannon.active ? BRASS : TARNISH;
+    const metalDark = cannon.active ? BRASS_DARK : TARNISH_DARK;
+    g.moveTo(cx, cy).lineTo(ex, ey);
+    g.stroke({ width: Math.max(2, t * 0.12), color: metal, cap: 'round' });
+    // The bell, flaring.
+    const bell = t * 0.32;
+    const fx = ex + dx * t * 0.28;
+    const fy = ey + dy * t * 0.28;
+    g.poly([
+      ex + nx * t * 0.07,
+      ey + ny * t * 0.07,
+      fx + nx * bell,
+      fy + ny * bell,
+      fx - nx * bell,
+      fy - ny * bell,
+      ex - nx * t * 0.07,
+      ey - ny * t * 0.07,
+    ]);
+    g.fill({ color: metal });
+    g.stroke({ width: 1, color: metalDark });
+    g.ellipse(
+      fx,
+      fy,
+      bell * 0.55 + Math.abs(nx) * bell * 0.45,
+      bell * 0.55 + Math.abs(ny) * bell * 0.45,
+    );
+    g.fill({ color: cannon.active ? 0x5a4010 : TARNISH_DARK });
+    if (!cannon.active) {
+      // The mute, stuffed in the bell: near black, filling it, a pale cork ring round it.
+      g.circle(fx - dx * t * 0.05, fy - dy * t * 0.05, bell * 0.72);
+      g.fill({ color: 0x15100c });
+      g.stroke({ width: Math.max(1, t * 0.04), color: 0xc8b89a });
+      g.circle(fx - dx * t * 0.05, fy - dy * t * 0.05, bell * 0.22);
+      g.fill({ color: 0x4a3a2c });
+      return;
+    }
+    if (aim.firedAgo < 650) {
+      const k = aim.firedAgo / 650;
+      for (let n = 0; n < 2; n++) {
+        const d = t * (0.3 + 0.9 * k);
+        drawQuaver(
+          g,
+          fx + dx * d + nx * t * (n - 0.5) * 0.6,
+          fy + dy * d + ny * t * (n - 0.5) * 0.6 - k * t * 0.3,
+          t * 0.4,
+          GOLD,
+          1 - k,
+          n + 1,
+        );
+      }
+    }
   }
 
   /** Shots: notes in the owner's colour, rocking as they fly, a glow round each. */

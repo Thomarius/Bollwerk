@@ -6,6 +6,42 @@ style (`cannonSvg` in `client/src/towerIcons.ts`). The user's wish (2026-10-16):
 cannon**, drawn small, so the icon is the gun the player is about to place. Planned here, not yet
 built; PLAN §11 item 3.
 
+**Built (2026-10-17): CI1–CI3**, every style, waiting for the review (CI4) and the testers. What
+building it decided, beyond §1–§3:
+
+- **A switch in config**, the user's: `art.cannonIcons`, `"style"` (the default) or `"generic"`,
+  today's SVG cannon for every style — both kept until the testers' readings decide. Config only,
+  no setting in the menus. The right button's hint switches back to the same cannon as the row.
+- **Rendered once to an image, the row left in the page** (§2's open choice): `Scene.cannonIcon`
+  draws the style's gun (`Theme.drawCannonIcon(root, size, player)`, into a `Container` rather
+  than a `Graphics`, so Pixel's sprites and Cyberpunk's blurred glow fit), reads it back as a PNG
+  at the screen's density and caches it by look, player and size; the row's `<img>` takes the
+  generic icon's place and size (1.3rem). So the box, the "+N", the struck-through grey (a
+  `grayscale` filter on the image) and the hint stay as they were. Pixi icons laid over the page
+  would sit under its box. The read-back costs 5–65 ms the first time (headless Chrome on this
+  machine's GPU), so the person's icon is made in the still pause before the cannon phase
+  (`matchScreen`), not as the cursor arrives.
+- **What "the gun alone" took**, style by style: Minimal its square and bore (it has no base, so
+  the square is the gun); Blueprint its octagon, Glass its lancet, Halloween its pot, Sakura its
+  carriage — each the gun's body, the barrel alone a bare stick; Chocolate the cane alone, its
+  cupcake the base; Pixel and Night the carriage and barrel sprites, at 16 CSS pixels a tile so
+  their pixels stay whole; Cyberpunk the hex mount, rails and lit coil with its glow blurred into
+  the image; the figures (Cartoon, Christmas, Noir) facing right, without their shadows, Noir
+  without its sandbags.
+- **The board unchanged**, every refactor checked pixel for pixel: each style's preview board in a
+  build and a combat phase, at two sizes (`?icons=boards`), against six runs of the old code, a
+  pixel counted only if it changed in each of three runs of the new and lies outside the
+  animation's noise. All nineteen identical.
+- **The sheet for the review**: `?icons=sheet` (`&style=`, `&sizes=21,28,42`, `&players=8`) shows
+  every style's icon for every player at three sizes, over its own board and over dark, the generic
+  icon beside it.
+
+**For the review (CI4)**, seen in the sheet at 21 px: Opera's horn is the same for every player
+(its colour was the stand's disc, the base) and reads as a ball on a stick; Noir's gun is low and
+its near-black barrel vanishes over dark, the shield and lamp carrying it; Christmas's players
+differ only by scarf and hat band; Chocolate's cane and Parchment's long gun are thin; Night's
+carriage is faint, as on its board.
+
 ---
 
 ## 1. What was decided
@@ -112,7 +148,8 @@ In order, each ending with `npm run check` passing and the user's go-ahead to co
    size at four and at eight players (24–28 pixels); a style whose gun does not read that small
    gets a simpler drawing of its own in its `drawCannonIcon` (the busy ones are likeliest: Opera,
    Noir, Sakura). `&perf=1` at eight players, the icons placed rather than drawn each frame. The
-   generic SVG cannon then goes; `towerIcons.ts` keeps the emblems for the page's labels.
+   generic SVG cannon goes only if the testers choose the styles' guns, and the switch with it;
+   `towerIcons.ts` keeps the emblems for the page's labels.
 
 ---
 

@@ -1,5 +1,5 @@
 import type { ArtConfig, ArtStyle } from '@bollwerk/config';
-import { Rng, Structure, Terrain, type MatchState, type Shot } from '@bollwerk/sim';
+import { Rng, Structure, Terrain, type Cannon, type MatchState, type Shot } from '@bollwerk/sim';
 import { BlurFilter, Container, Graphics, Sprite, Texture } from 'pixi.js';
 
 import { bloomWanted, motionReduced } from '../motion.js';
@@ -63,6 +63,7 @@ import {
   GunAims,
   mixed,
   shotProgress,
+  iconFrame,
 } from './theme.js';
 import { clearDrawn } from './clearDrawn.js';
 import { TerrainStrips, whole, type TerrainPlan } from './terrainStrips.js';
@@ -2819,7 +2820,6 @@ export class PixelTheme implements Theme {
 
   /** Barrels turn to their last target and kick back when they fire. */
   private drawBarrels(state: MatchState, view: ViewTransform, deltaMs: number): void {
-    const steps = this.art.generators.cannon.rotationSteps;
     const recoilFrames = this.art.generators.cannon.recoilFrames;
     const flashFrames = this.art.generators.fx.muzzleFlashFrames;
     const length = this.art.generators.cannon.barrelLengthPx / this.art.tileSizePx;
@@ -2828,7 +2828,7 @@ export class PixelTheme implements Theme {
       const aim = this.aims.of(state, cannon.id);
       if (aim === null) continue;
       aim.firedAgo += deltaMs;
-      const step = ((Math.round((aim.angle / (2 * Math.PI)) * steps) % steps) + steps) % steps;
+      const step = this.gunStep(aim.angle);
       // Back at once, then home a frame at a time.
       const kick = Math.floor(aim.firedAgo / FX_FRAME_MS);
       const recoil = kick < recoilFrames ? recoilFrames - 1 - kick : 0;
@@ -2849,28 +2849,7 @@ export class PixelTheme implements Theme {
           );
         }
       }
-      // The carriage runs back with the barrel, and a silenced one stands dark.
-      const bed = this.place(
-        this.effectLayer,
-        KEY.carriage(step, recoil),
-        view,
-        cannon.x,
-        cannon.y,
-        cannon.w,
-      );
-      if (!cannon.active) bed.tint = 0x8a8a8a;
-      const sprite = this.place(
-        this.effectLayer,
-        cannon.active ? KEY.barrel(step, recoil) : KEY.droop(step),
-        view,
-        cannon.x,
-        cannon.y,
-        cannon.w,
-      );
-      // The owner's light colour, a step above the base's, so the barrel reads on it.
-      sprite.tint = cannon.active
-        ? washed(playerColour(this.art, cannon.owner, 'light'), 0.45)
-        : hex(this.art.palette.rockMid);
+      this.placeGun(this.effectLayer, view, cannon, step, recoil);
 
       if (cannon.active && kick < flashFrames) {
         const cx = cannon.x + cannon.w / 2 + Math.sin(aim.angle) * (length + 0.15);
@@ -2883,6 +2862,57 @@ export class PixelTheme implements Theme {
       }
     }
     this.aims.prune(state);
+  }
+
+  /** An aim's angle as one of the textures' turns, the nearest of `rotationSteps`. */
+  private gunStep(angle: number): number {
+    const steps = this.art.generators.cannon.rotationSteps;
+    return ((Math.round((angle / (2 * Math.PI)) * steps) % steps) + steps) % steps;
+  }
+
+  /** The turning part of a gun, its carriage and barrel, as the board and the icon draw it. */
+  private placeGun(
+    parent: Container,
+    view: ViewTransform,
+    cannon: Cannon,
+    step: number,
+    recoil: number,
+  ): void {
+    // The carriage runs back with the barrel, and a silenced one stands dark.
+    const bed = this.place(parent, KEY.carriage(step, recoil), view, cannon.x, cannon.y, cannon.w);
+    if (!cannon.active) bed.tint = 0x8a8a8a;
+    const sprite = this.place(
+      parent,
+      cannon.active ? KEY.barrel(step, recoil) : KEY.droop(step),
+      view,
+      cannon.x,
+      cannon.y,
+      cannon.w,
+    );
+    // The owner's light colour, a step above the base's, so the barrel reads on it.
+    sprite.tint = cannon.active
+      ? washed(playerColour(this.art, cannon.owner, 'light'), 0.45)
+      : hex(this.art.palette.rockMid);
+  }
+
+  /**
+   * The carriage and barrel without the base under them, the sandbags and ball pile, which
+   * stand by the island's shape round a real gun. Drawn at the textures' own 16 pixels a tile
+   * in a 21-pixel box (`fill`), so at the row's size the pixels stay whole; and moved back
+   * along the barrel to the middle of its run from the carriage's tail to the muzzle, since
+   * the gun stands forward of its texture's centre and would otherwise sit high and right.
+   */
+  drawCannonIcon(root: Container, size: number, player: number): void {
+    const { view, cannon, aim } = iconFrame(size, player, (2 * this.art.tileSizePx) / 21);
+    const step = this.gunStep(aim.angle);
+    const angle = (2 * Math.PI * step) / this.art.generators.cannon.rotationSteps;
+    const reach = (this.art.generators.cannon.barrelLengthPx - 4.5) / 2 / this.art.tileSizePx;
+    const shifted = {
+      ...view,
+      originX: view.originX - Math.sin(angle) * reach * view.tile,
+      originY: view.originY + Math.cos(angle) * reach * view.tile,
+    };
+    this.placeGun(root, shifted, cannon, step, 0);
   }
 
   /** A banner in the owner's colour flies over every castle sealed as things stand. */

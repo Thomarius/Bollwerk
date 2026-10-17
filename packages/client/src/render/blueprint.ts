@@ -1,5 +1,5 @@
 import type { ArtConfig, BlueprintStyleConfig } from '@bollwerk/config';
-import { Structure, Terrain, type MatchState, type Shot } from '@bollwerk/sim';
+import { Structure, Terrain, type Cannon, type MatchState, type Shot } from '@bollwerk/sim';
 import { Container, Graphics, Text } from 'pixi.js';
 
 import { t as t_ } from '../i18n.js';
@@ -34,11 +34,13 @@ import {
   MainCastles,
   drawShotTarget,
   hex,
+  iconFrame,
   mixed,
   playerColour,
   shotLift,
   tileX,
   tileY,
+  type Aim,
   type Cell,
   type Debris,
   type EffectFrame,
@@ -93,6 +95,8 @@ interface Fade {
 
 /** How long a recoil takes to come home. */
 const RECOIL_MS = 160;
+/** The icon's footprint against its box: the platform near the edges, the centreline clipped. */
+const ICON_FILL = 1.1;
 /** How long an impact's rings spread. */
 const RING_MS = 420;
 
@@ -590,7 +594,6 @@ export class BlueprintTheme implements Theme {
   private drawIsland(g: Graphics, state: MatchState, view: ViewTransform): void {
     const { palette } = this.art;
     const t = view.tile;
-    const line = this.style.lineWidthPx;
     const wallOf = (x: number, y: number): number =>
       x >= 0 && y >= 0 && x < state.width && y < state.height
         ? state.structure[y * state.width + x] === Structure.Wall
@@ -639,38 +642,46 @@ export class BlueprintTheme implements Theme {
     // dashed and crossed out, as work struck from a drawing.
     for (const cannon of state.cannons) {
       cannonBase(g, view, cannon, null, this.colour(cannon.owner, 'light'));
-      const cx = tileX(view, cannon.x + cannon.w / 2);
-      const cy = tileY(view, cannon.y + cannon.h / 2);
-      const r = (Math.min(cannon.w, cannon.h) * t) / 2 - t * 0.16;
-      const corners: [number, number][] = [];
-      for (let k = 0; k < 8; k++) {
-        const a = ((k + 0.5) / 8) * Math.PI * 2;
-        corners.push([cx + Math.cos(a) * r, cy + Math.sin(a) * r]);
-      }
-      const ink = this.colour(cannon.owner, 'light');
-      if (cannon.active) {
-        g.poly(corners.flat());
-        g.fill({ color: hex(palette.grassMid) });
-        g.stroke({ width: line, color: ink });
-        // The mount's ring inside the platform.
-        g.circle(cx, cy, r * 0.42);
-        g.stroke({ width: 1, color: this.colour(cannon.owner, 'base'), alpha: 0.8 });
-        continue;
-      }
-      const edges = corners.map(([x1, y1], k) => {
-        const [x2, y2] = corners[(k + 1) % 8] as [number, number];
-        return { x1, y1, x2, y2 };
-      });
-      trace(
-        g,
-        edges.flatMap((s) => dashed(s, t * 0.16, t * 0.12)),
-      );
-      g.stroke({ width: line, color: ink, alpha: 0.85 });
-      const d = r * 0.6;
-      g.moveTo(cx - d, cy - d).lineTo(cx + d, cy + d);
-      g.moveTo(cx - d, cy + d).lineTo(cx + d, cy - d);
-      g.stroke({ width: 1.5, color: ink, alpha: 0.85 });
+      this.drawPlatform(g, view, cannon);
     }
+  }
+
+  /** A gun's octagonal platform in plan, its mount's ring inside; dashed and crossed out if inert. */
+  private drawPlatform(g: Graphics, view: ViewTransform, cannon: Cannon): void {
+    const { palette } = this.art;
+    const t = view.tile;
+    const line = this.style.lineWidthPx;
+    const cx = tileX(view, cannon.x + cannon.w / 2);
+    const cy = tileY(view, cannon.y + cannon.h / 2);
+    const r = (Math.min(cannon.w, cannon.h) * t) / 2 - t * 0.16;
+    const corners: [number, number][] = [];
+    for (let k = 0; k < 8; k++) {
+      const a = ((k + 0.5) / 8) * Math.PI * 2;
+      corners.push([cx + Math.cos(a) * r, cy + Math.sin(a) * r]);
+    }
+    const ink = this.colour(cannon.owner, 'light');
+    if (cannon.active) {
+      g.poly(corners.flat());
+      g.fill({ color: hex(palette.grassMid) });
+      g.stroke({ width: line, color: ink });
+      // The mount's ring inside the platform.
+      g.circle(cx, cy, r * 0.42);
+      g.stroke({ width: 1, color: this.colour(cannon.owner, 'base'), alpha: 0.8 });
+      return;
+    }
+    const edges = corners.map(([x1, y1], k) => {
+      const [x2, y2] = corners[(k + 1) % 8] as [number, number];
+      return { x1, y1, x2, y2 };
+    });
+    trace(
+      g,
+      edges.flatMap((s) => dashed(s, t * 0.16, t * 0.12)),
+    );
+    g.stroke({ width: line, color: ink, alpha: 0.85 });
+    const d = r * 0.6;
+    g.moveTo(cx - d, cy - d).lineTo(cx + d, cy + d);
+    g.moveTo(cx - d, cy + d).lineTo(cx + d, cy - d);
+    g.stroke({ width: 1.5, color: ink, alpha: 0.85 });
   }
 
   /** The cut walls of a keep in plan, as rectangles, the door's gap left open. */
@@ -897,7 +908,6 @@ export class BlueprintTheme implements Theme {
 
   /** Barrels as a line from the mount with an arrowhead, kicking back on firing. */
   private drawBarrels(state: MatchState, view: ViewTransform, deltaMs: number): void {
-    const t = view.tile;
     const memo = this.gunMemo;
     memo.begin();
     for (const cannon of state.cannons) {
@@ -906,55 +916,72 @@ export class BlueprintTheme implements Theme {
       aim.firedAgo += deltaMs;
       // Still between shots: drawn again only as it turns and kicks.
       const key = `${viewKey(view)}|${cannon.x},${cannon.y},${cannon.w},${cannon.h},${cannon.owner},${cannon.active}|${aim.angle}|${aim.firedAgo < RECOIL_MS ? aim.firedAgo : '-'}`;
-      memo.draw(cannon.id, key, (g) => {
-        const kick = Math.max(0, 1 - aim.firedAgo / RECOIL_MS);
-        const length = cannon.active ? 1.05 - 0.3 * kick : 0.5;
-        const cx = cannon.x + cannon.w / 2;
-        const cy = cannon.y + cannon.h / 2;
-        const sx = Math.sin(aim.angle);
-        const sy = -Math.cos(aim.angle);
-        const ex = tileX(view, cx + sx * length);
-        const ey = tileY(view, cy + sy * length);
-        const colour = cannon.active
-          ? this.colour(cannon.owner, 'light')
-          : hex(this.art.palette.rockDark);
-        g.moveTo(tileX(view, cx), tileY(view, cy)).lineTo(ex, ey);
-        if (cannon.active) {
-          // The arrowhead, as a direction is marked on a drawing.
-          const head = t * 0.3;
-          for (const side of [-1, 1]) {
-            const a = aim.angle + Math.PI + side * 0.45;
-            g.moveTo(ex, ey).lineTo(ex + Math.sin(a) * head, ey - Math.cos(a) * head);
-          }
-        }
-        g.stroke({ width: Math.max(1.5, t * 0.12), color: colour });
-        if (!cannon.active) return;
-        // Its centreline, dash and dot, run on past the muzzle as a plan draws an axis,
-        // and a dashed arc either side of it for the swing the mount allows.
-        const ink = this.colour(cannon.owner, 'base');
-        const pattern = [0.22, 0.07, 0.03, 0.07];
-        let d = -0.6;
-        for (let n = 0; d < 1.7; n++) {
-          const on = n % 2 === 0;
-          const step = pattern[n % 4] as number;
-          if (on) {
-            g.moveTo(tileX(view, cx + sx * d), tileY(view, cy + sy * d));
-            g.lineTo(tileX(view, cx + sx * (d + step)), tileY(view, cy + sy * (d + step)));
-          }
-          d += step;
-        }
-        const r = t * 0.8;
-        const mid = aim.angle - Math.PI / 2;
-        for (let k = -3; k < 3; k += 2) {
-          const a = mid + (k / 3) * 0.6;
-          g.moveTo(tileX(view, cx) + Math.cos(a) * r, tileY(view, cy) + Math.sin(a) * r);
-          g.arc(tileX(view, cx), tileY(view, cy), r, a, a + 0.2);
-        }
-        g.stroke({ width: 1, color: ink, alpha: 0.6 });
-      });
+      memo.draw(cannon.id, key, (g) => this.drawBarrel(g, view, cannon, aim));
     }
     memo.end();
     this.aims.prune(state);
+  }
+
+  /** One gun's barrel, its centreline and swing, for `drawBarrels` and the icon alike. */
+  private drawBarrel(g: Graphics, view: ViewTransform, cannon: Cannon, aim: Aim): void {
+    const t = view.tile;
+    const kick = Math.max(0, 1 - aim.firedAgo / RECOIL_MS);
+    const length = cannon.active ? 1.05 - 0.3 * kick : 0.5;
+    const cx = cannon.x + cannon.w / 2;
+    const cy = cannon.y + cannon.h / 2;
+    const sx = Math.sin(aim.angle);
+    const sy = -Math.cos(aim.angle);
+    const ex = tileX(view, cx + sx * length);
+    const ey = tileY(view, cy + sy * length);
+    const colour = cannon.active
+      ? this.colour(cannon.owner, 'light')
+      : hex(this.art.palette.rockDark);
+    g.moveTo(tileX(view, cx), tileY(view, cy)).lineTo(ex, ey);
+    if (cannon.active) {
+      // The arrowhead, as a direction is marked on a drawing.
+      const head = t * 0.3;
+      for (const side of [-1, 1]) {
+        const a = aim.angle + Math.PI + side * 0.45;
+        g.moveTo(ex, ey).lineTo(ex + Math.sin(a) * head, ey - Math.cos(a) * head);
+      }
+    }
+    g.stroke({ width: Math.max(1.5, t * 0.12), color: colour });
+    if (!cannon.active) return;
+    // Its centreline, dash and dot, run on past the muzzle as a plan draws an axis,
+    // and a dashed arc either side of it for the swing the mount allows.
+    const ink = this.colour(cannon.owner, 'base');
+    const pattern = [0.22, 0.07, 0.03, 0.07];
+    let d = -0.6;
+    for (let n = 0; d < 1.7; n++) {
+      const on = n % 2 === 0;
+      const step = pattern[n % 4] as number;
+      if (on) {
+        g.moveTo(tileX(view, cx + sx * d), tileY(view, cy + sy * d));
+        g.lineTo(tileX(view, cx + sx * (d + step)), tileY(view, cy + sy * (d + step)));
+      }
+      d += step;
+    }
+    const r = t * 0.8;
+    const mid = aim.angle - Math.PI / 2;
+    for (let k = -3; k < 3; k += 2) {
+      const a = mid + (k / 3) * 0.6;
+      g.moveTo(tileX(view, cx) + Math.cos(a) * r, tileY(view, cy) + Math.sin(a) * r);
+      g.arc(tileX(view, cx), tileY(view, cy), r, a, a + 0.2);
+    }
+    g.stroke({ width: 1, color: ink, alpha: 0.6 });
+  }
+
+  /**
+   * The emplacement in plan, its platform and barrel, without the gun's square: the octagon is
+   * what a plan draws of the gun itself, and a barrel alone would read as a bare arrow. The
+   * centreline runs on past the muzzle, so the footprint is drawn a little small to keep it in.
+   */
+  drawCannonIcon(root: Container, size: number, player: number): void {
+    const { view, cannon, aim } = iconFrame(size, player, ICON_FILL);
+    const g = new Graphics();
+    this.drawPlatform(g, view, cannon);
+    this.drawBarrel(g, view, cannon, aim);
+    root.addChild(g);
   }
 
   /** A pennant on a pole over each sealed keep, hoisted as it is sealed. */

@@ -21,6 +21,7 @@ import {
   FlagHoist,
   GhostMotion,
   GunAims,
+  iconFrame,
   Landings,
   RuinSmoke,
   WinnerBanners,
@@ -128,6 +129,11 @@ type Mood = 'ready' | 'fire' | 'dark';
 type Club = 'lit' | 'dark' | 'closed';
 
 const FIRE_MS = 260;
+/**
+ * The cannon icon's footprint against its box: without its sandbags the gun is 1.45 tiles wide
+ * and half that high, so it fills 92% of the box's width.
+ */
+const CANNON_ICON_FILL = 1.28;
 const BLAST_MS = 380;
 const SPLASH_MS = 650;
 /** At most this many sound words on the board at once. */
@@ -881,6 +887,19 @@ export class NoirTheme extends ShapeTheme implements Theme {
   }
 
   /**
+   * The gun of the cannon row: the board's rooftop gun, ready and facing right, without its
+   * sandbags and shadow, which are its emplacement, nor the searchlight's beam, which is the
+   * night's; centred by its own outline.
+   */
+  drawCannonIcon(root: Container, size: number, player: number): void {
+    const { view } = iconFrame(size, player, CANNON_ICON_FILL);
+    const g = new Graphics();
+    drawGun(g, view.tile, this.colour(player, 'base'), 'ready', this.crossHatch, false);
+    centreIn(g, size);
+    root.addChild(g);
+  }
+
+  /**
    * The guns, rooftop guns behind a shield in the owner's colour, facing their target: a live
    * one's searchlight sweeping the night; firing, it kicks back in a white muzzle flash that
    * lights what is round it; a silenced one stands in the dark, hatched over, its barrel down.
@@ -1458,7 +1477,8 @@ function drawLamp(g: Graphics, t: number, state: 'on' | 'off' | 'broken'): void 
 /**
  * A rooftop gun facing right, its foot at the origin: a sandbagged emplacement, a shield in the
  * owner's colour lit on its top and hatched on its face, a barrel and a searchlight on top.
- * Firing, the barrel is run back; dark, it is hatched over and its barrel hangs.
+ * Firing, the barrel is run back; dark, it is hatched over and its barrel hangs. `grounded`
+ * draws the emplacement and its shadow, which the icon leaves out.
  */
 function drawGun(
   g: Graphics,
@@ -1466,22 +1486,31 @@ function drawGun(
   colour: number,
   mood: Mood,
   crossHatch: FillPattern | null,
+  grounded = true,
 ): void {
   const u = (v: number): number => v * t;
   const ink = Math.max(1, u(0.055));
-  g.ellipse(0, u(0.05), u(0.8), u(0.18));
-  g.fill({ color: NOIR_INK, alpha: 0.45 });
-  // Sandbags, two rows.
-  for (const [row, n] of [
-    [0, 4],
-    [1, 3],
-  ] as const) {
-    for (let k = 0; k < n; k++) {
-      g.roundRect(u(-0.72 + row * 0.18 + k * 0.38), u(-0.2 - row * 0.2), u(0.36), u(0.2), u(0.08));
+  if (grounded) {
+    g.ellipse(0, u(0.05), u(0.8), u(0.18));
+    g.fill({ color: NOIR_INK, alpha: 0.45 });
+    // Sandbags, two rows.
+    for (const [row, n] of [
+      [0, 4],
+      [1, 3],
+    ] as const) {
+      for (let k = 0; k < n; k++) {
+        g.roundRect(
+          u(-0.72 + row * 0.18 + k * 0.38),
+          u(-0.2 - row * 0.2),
+          u(0.36),
+          u(0.2),
+          u(0.08),
+        );
+      }
     }
+    g.fill({ color: 0x8a8a84 });
+    g.stroke({ width: Math.max(1, ink * 0.8), color: NOIR_INK });
   }
-  g.fill({ color: 0x8a8a84 });
-  g.stroke({ width: Math.max(1, ink * 0.8), color: NOIR_INK });
   // The barrel.
   const run = mood === 'fire' ? -0.18 : 0;
   const droop = mood === 'dark' ? 0.3 : 0;
@@ -1730,4 +1759,10 @@ function drawNoirScenery(
     for (const s of shadows) s();
     g.fill({ fill: hatch, alpha: 0.7 });
   }
+}
+
+/** Moves a drawing so the middle of its outline is the middle of a box `size` square. */
+function centreIn(g: Graphics, size: number): void {
+  const b = g.getLocalBounds();
+  g.position.set(size / 2 - (b.x + b.width / 2), size / 2 - (b.y + b.height / 2));
 }

@@ -52,6 +52,26 @@ export function cannonSvg(colour: string): string {
   );
 }
 
+/** The icons' side in the row, `.place-icons .icon`'s 1.3rem, in CSS pixels; read once. */
+let iconPx = 0;
+
+/** The side, in CSS pixels, a cannon's icon is rendered at for the row (`cannonImg`). */
+export function placeIconPx(): number {
+  if (iconPx === 0) {
+    const rem = Number.parseFloat(getComputedStyle(document.documentElement).fontSize);
+    iconPx = Math.round(1.3 * (Number.isFinite(rem) && rem > 0 ? rem : 16));
+  }
+  return iconPx;
+}
+
+/**
+ * A cannon's icon in the style on screen: an image the scene rendered (`Scene.cannonIcon`),
+ * sized as the generic one is by the same class, so the two compare at one size.
+ */
+export function cannonImg(url: string): string {
+  return `<img class="icon cannon styled" src="${url}" alt="" aria-hidden="true">`;
+}
+
 /** A tower's emblem on its dark badge, as the board shows it, in this CSS colour. */
 export function towerSvg(kind: SpecialKind, colour: string): string {
   // The emblem at 68% of the badge, as on the board (`INNER`).
@@ -89,8 +109,10 @@ export function placeIconsHtml(
   cannons: number,
   tower: { kind: SpecialKind; cost: number } | null,
   colour: string,
+  cannon: string | null = null,
 ): string {
-  if (cannons <= 0) return `<span class="none">${cannonSvg('#8a8a9a')}</span>`;
+  // The style's own gun greyed by the page (`.none .styled`), the generic one drawn grey.
+  if (cannons <= 0) return `<span class="none">${cannon ?? cannonSvg('#8a8a9a')}</span>`;
   const icons: string[] = [];
   let left = cannons;
   if (tower !== null && left >= tower.cost) {
@@ -98,19 +120,26 @@ export function placeIconsHtml(
     left -= tower.cost;
   }
   const shown = Math.min(left, MAX_ICONS - icons.length);
-  for (let k = 0; k < shown; k++) icons.push(cannonSvg(colour));
+  const one = cannon ?? cannonSvg(colour);
+  for (let k = 0; k < shown; k++) icons.push(one);
   if (left > shown) icons.push(`<b>+${left - shown}</b>`);
   return icons.join('');
 }
 
 /**
  * The right button's hint under the icons, while it would switch: the mouse, a turning arrow,
- * and what a click switches to — the tower's emblem, or a cannon back from it.
+ * and what a click switches to — the tower's emblem, or a cannon back from it, `cannon` where
+ * given (the row's own, `placeIconsHtml`).
  */
-export function switchHintHtml(kind: SpecialKind, toTower: boolean, colour: string): string {
+export function switchHintHtml(
+  kind: SpecialKind,
+  toTower: boolean,
+  colour: string,
+  cannon: string | null = null,
+): string {
   return (
     rightClickSvg(colour) +
     `<span class="turn" aria-hidden="true">↻</span>` +
-    (toTower ? towerSvg(kind, colour) : cannonSvg(colour))
+    (toTower ? towerSvg(kind, colour) : (cannon ?? cannonSvg(colour)))
   );
 }

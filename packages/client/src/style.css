@@ -1445,6 +1445,11 @@ table.final tr.you td:nth-child(2) {
   display: flex;
 }
 
+/* The style's own gun, greyed when none is left: the generic one is drawn grey. */
+.place-icons .row .none .styled {
+  filter: grayscale(1) brightness(0.75);
+}
+
 /* None left to place, or no room for one: the grey cannon struck through. */
 .place-icons .row .none::after {
   content: '';

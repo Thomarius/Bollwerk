@@ -1,5 +1,6 @@
 import type { ArtConfig, OktoberfestStyleConfig } from '@bollwerk/config';
-import { Structure, type Castle, type MatchState, type Shot } from '@bollwerk/sim';
+import { Structure, type Cannon, type Castle, type MatchState, type Shot } from '@bollwerk/sim';
+import type { Container } from 'pixi.js';
 import { Graphics } from 'pixi.js';
 
 import { motionReduced } from '../motion.js';
@@ -35,6 +36,7 @@ import {
   MainCastles,
   drawShotTarget,
   hex,
+  iconFrame,
   shotLift,
   tileX,
   tileY,
@@ -167,6 +169,9 @@ const FINISH: FinishLook = { spark: 'pretzel', flag: 'rauten' };
  * trees, beer-garden tables, gingerbread hearts, a dropped Maß and now and then a reveller
  * asleep in the grass.
  */
+/** The icon's footprint against its box: the keg alone, turned, is some 0.6 of its footprint. */
+const KEG_ICON_FILL = 1.4;
+
 export class OktoberfestTheme extends ShapeTheme implements Theme {
   readonly id = 'oktoberfest' as const;
 
@@ -1025,13 +1030,9 @@ export class OktoberfestTheme extends ShapeTheme implements Theme {
       const aim = this.aims.of(state, cannon.id);
       if (aim === null) continue;
       aim.firedAgo += deltaMs;
-      const r = Math.min(cannon.w, cannon.h) * t * 0.38;
-      const cx = tileX(view, cannon.x + cannon.w / 2);
-      const cy = tileY(view, cannon.y + cannon.h / 2) - r * 0.15;
       const kick = Math.max(0, 1 - aim.firedAgo / RECOIL_MS);
       const angle = cannon.active ? aim.angle : Math.PI * 0.5 + 0.35;
-      const dx = Math.sin(angle);
-      const dy = -Math.cos(angle) * 0.8;
+      const { r, cx, cy, dx, dy } = this.kegAxes(view, cannon, angle);
       const front = r * (0.75 - 0.25 * kick);
       // Across the keg.
       const nx = -dy;
@@ -1077,6 +1078,41 @@ export class OktoberfestTheme extends ShapeTheme implements Theme {
     }
     stamps.end();
     this.aims.prune(state);
+  }
+
+  /**
+   * Where a keg lies on its dray and which way it points, foreshortened as the board is: its
+   * radius, its middle, and the unit of its axis on the screen.
+   */
+  private kegAxes(
+    view: ViewTransform,
+    cannon: Cannon,
+    angle: number,
+  ): { r: number; cx: number; cy: number; dx: number; dy: number } {
+    const r = Math.min(cannon.w, cannon.h) * view.tile * 0.38;
+    const cx = tileX(view, cannon.x + cannon.w / 2);
+    const cy = tileY(view, cannon.y + cannon.h / 2) - r * 0.15;
+    return { r, cx, cy, dx: Math.sin(angle), dy: -Math.cos(angle) * 0.8 };
+  }
+
+  /**
+   * The keg alone, turned as the board turns it, without its dray: the dray is the gun's
+   * stand, and the keg with its tap and hoops in the owner's colour is what fires. Drawn into
+   * a Graphics of its own rather than the stamp book, which keeps the board's sizes only; its
+   * middle — the hoops' and the tap's, not the dray's — set in the box's.
+   */
+  drawCannonIcon(root: Container, size: number, player: number): void {
+    const { view, cannon, aim } = iconFrame(size, player, KEG_ICON_FILL);
+    const { r, dx, dy } = this.kegAxes(view, cannon, aim.angle);
+    const g = new Graphics();
+    this.drawKeg(g, view, r, cannon.owner, cannon.active);
+    const scale = Math.hypot(dx, dy);
+    // From the back of the keg (-0.55 r) to the front of its tap (0.75 + 0.12 + 0.16 r).
+    const middle = r * 0.24 * scale;
+    g.position.set(size / 2 - dx * middle, size / 2 - dy * middle);
+    g.rotation = Math.atan2(dy, dx);
+    g.scale.set(scale);
+    root.addChild(g);
   }
 
   /** A keg at rest lying along x, its middle at the origin: the stamp `drawKegs` turns. */

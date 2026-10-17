@@ -1,6 +1,6 @@
 import type { ArtConfig, ElectricStyleConfig } from '@bollwerk/config';
 import { Structure, type Castle, type MatchState, type Shot } from '@bollwerk/sim';
-import { BlurFilter, Graphics } from 'pixi.js';
+import { BlurFilter, type Container, Graphics } from 'pixi.js';
 
 import { bloomWanted, motionReduced } from '../motion.js';
 import { perf } from '../perf.js';
@@ -48,6 +48,7 @@ import {
   MainCastles,
   drawShotTarget,
   hex,
+  iconFrame,
   mixed,
   shotLift,
   tileX,
@@ -978,6 +979,26 @@ export class ElectricTheme extends ShapeTheme implements Theme {
       .lineTo(sphere.x + t * 0.62, foot)
       .lineTo(sphere.x + t * 0.8, foot + t * 0.08);
     g.stroke({ width: Math.max(1.5, t * 0.07), color: 0x16181c });
+  }
+
+  /**
+   * The gun is the Tesla tower as the structures draw it, live; it does not aim, so it stands
+   * as on the board. The plate under it is the base, and the arcs and halo of the glow layer
+   * flicker with the clock, so both are left out. Drawn a little over its footprint, since the
+   * tower is narrower than it.
+   */
+  drawCannonIcon(root: Container, size: number, player: number): void {
+    const { view, cannon } = iconFrame(size, player, 1.12);
+    const g = new Graphics();
+    this.drawCoil(
+      g,
+      view,
+      cannon.x + cannon.w / 2,
+      cannon.y + cannon.h / 2,
+      cannon.owner,
+      cannon.active,
+    );
+    root.addChild(g);
   }
 
   // ------------------------------------------------------------------ events

@@ -33,7 +33,16 @@ import { runSession } from './matchScreen.js';
  * menu, a lobby or a match comes first.
  */
 
-if (params.get('autostart') === '1') {
+if (params.get('icons') === 'sheet') {
+  // Every style's cannon icon side by side, for judging them (`iconSheet.ts`).
+  void import('./iconSheet.js')
+    .then(({ showIconSheet }) => showIconSheet())
+    .catch((e: unknown) => showError('icons', e));
+} else if (params.get('icons') === 'boards') {
+  void import('./iconSheet.js')
+    .then(({ showBoardSheet }) => showBoardSheet())
+    .catch((e: unknown) => showError('icons', e));
+} else if (params.get('autostart') === '1') {
   const count = Number(params.get('players') ?? 3);
   // ?watch=1 fills every seat with a bot, which is how a match is observed rather
   // than played.

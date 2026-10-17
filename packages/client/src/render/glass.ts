@@ -1,5 +1,5 @@
 import type { ArtConfig, GlassStyleConfig } from '@bollwerk/config';
-import { Structure, Terrain, type MatchState, type Shot } from '@bollwerk/sim';
+import { Structure, Terrain, type Cannon, type MatchState, type Shot } from '@bollwerk/sim';
 import { Container, FillPattern, Graphics, Sprite, Texture } from 'pixi.js';
 
 import { motionReduced } from '../motion.js';
@@ -30,10 +30,12 @@ import {
   MainCastles,
   drawShotTarget,
   hex,
+  iconFrame,
   playerColour,
   shotLift,
   tileX,
   tileY,
+  type Aim,
   type Cell,
   type Debris,
   type EffectFrame,
@@ -96,6 +98,8 @@ interface Glint {
 }
 
 const RECOIL_MS = 160;
+/** How much of the icon's box the gun's 2×2 footprint spans: the lancet and barrel fill nine tenths of it. */
+const ICON_FILL = 1;
 /** How many beats the shimmering panes are shared among. */
 const SHIMMER_GROUPS = 6;
 const RIPPLE_MS = 520;
@@ -688,42 +692,67 @@ export class GlassTheme implements Theme {
     // footprint by; silenced, its glass clouds to grey, which reads at eight players' size.
     for (const cannon of state.cannons) {
       cannonBase(g, view, cannon, this.colour(cannon.owner, 'dark'), hex(palette.shadow));
-      const cx = tileX(view, cannon.x + cannon.w / 2);
-      const foot = tileY(view, cannon.y + cannon.h) - t * 0.2;
-      const w = Math.min(cannon.w, cannon.h) * t * 0.5;
-      const h = Math.min(cannon.w, cannon.h) * t * 0.8;
-      const spring = foot - h + w * 0.86;
-      // Its shadow, then the three panes: two lights below, the pointed head above.
-      g.poly(lancet(cx + t * 0.05, foot + t * 0.08, w, h));
-      g.fill({ color: 0x000000, alpha: 0.3 });
-      const cloud = hex(palette.rockMid);
-      const panes = cannon.active
-        ? [
-            this.colour(cannon.owner, 'base'),
-            this.colour(cannon.owner, 'light'),
-            mixed(this.colour(cannon.owner, 'light'), 0xffffff, 0.3),
-          ]
-        : [cloud, mixed(cloud, hex(palette.rockLight), 0.3), mixed(cloud, 0xffffff, 0.15)];
-      g.rect(cx - w / 2, spring, w / 2, foot - spring);
-      g.fill({ color: panes[0] as number });
-      g.rect(cx, spring, w / 2, foot - spring);
-      g.fill({ color: panes[1] as number });
-      g.poly(lancet(cx, spring, w, h - (foot - spring)));
-      g.fill({ color: panes[2] as number });
-      if (!cannon.active) {
-        // Cloudy: a milky film across the glass, lighter towards the top.
-        g.poly(lancet(cx, foot, w, h));
-        g.fill({ color: hex(palette.rockLight), alpha: 0.35 });
-      } else {
-        // The light through it, a sheen down the left light.
-        g.rect(cx - w * 0.36, spring + (foot - spring) * 0.12, w * 0.1, (foot - spring) * 0.6);
-        g.fill({ color: 0xffffff, alpha: 0.45 });
-      }
-      g.poly(lancet(cx, foot, w, h));
-      g.moveTo(cx - w / 2, spring).lineTo(cx + w / 2, spring);
-      g.moveTo(cx, spring).lineTo(cx, foot);
-      g.stroke({ width: this.lead(view) * 1.4, color: hex(palette.shadow), join: 'round' });
+      this.drawLancet(g, view, cannon);
     }
+  }
+
+  /**
+   * A gun's lancet, the window of its glass that stands on its square: the board's and the
+   * icon's, so the two cannot drift apart.
+   */
+  private drawLancet(g: Graphics, view: ViewTransform, cannon: Cannon): void {
+    const { palette } = this.art;
+    const t = view.tile;
+    const cx = tileX(view, cannon.x + cannon.w / 2);
+    const foot = tileY(view, cannon.y + cannon.h) - t * 0.2;
+    const w = Math.min(cannon.w, cannon.h) * t * 0.5;
+    const h = Math.min(cannon.w, cannon.h) * t * 0.8;
+    const spring = foot - h + w * 0.86;
+    // Its shadow, then the three panes: two lights below, the pointed head above.
+    g.poly(lancet(cx + t * 0.05, foot + t * 0.08, w, h));
+    g.fill({ color: 0x000000, alpha: 0.3 });
+    const cloud = hex(palette.rockMid);
+    const panes = cannon.active
+      ? [
+          this.colour(cannon.owner, 'base'),
+          this.colour(cannon.owner, 'light'),
+          mixed(this.colour(cannon.owner, 'light'), 0xffffff, 0.3),
+        ]
+      : [cloud, mixed(cloud, hex(palette.rockLight), 0.3), mixed(cloud, 0xffffff, 0.15)];
+    g.rect(cx - w / 2, spring, w / 2, foot - spring);
+    g.fill({ color: panes[0] as number });
+    g.rect(cx, spring, w / 2, foot - spring);
+    g.fill({ color: panes[1] as number });
+    g.poly(lancet(cx, spring, w, h - (foot - spring)));
+    g.fill({ color: panes[2] as number });
+    if (!cannon.active) {
+      // Cloudy: a milky film across the glass, lighter towards the top.
+      g.poly(lancet(cx, foot, w, h));
+      g.fill({ color: hex(palette.rockLight), alpha: 0.35 });
+    } else {
+      // The light through it, a sheen down the left light.
+      g.rect(cx - w * 0.36, spring + (foot - spring) * 0.12, w * 0.1, (foot - spring) * 0.6);
+      g.fill({ color: 0xffffff, alpha: 0.45 });
+    }
+    g.poly(lancet(cx, foot, w, h));
+    g.moveTo(cx - w / 2, spring).lineTo(cx + w / 2, spring);
+    g.moveTo(cx, spring).lineTo(cx, foot);
+    g.stroke({ width: this.lead(view) * 1.4, color: hex(palette.shadow), join: 'round' });
+  }
+
+  /**
+   * The gun alone as the icon: its lancet and the amber barrel over it, without the square
+   * it stands on. The lancet is the gun's body here, not its base — without it the barrel is
+   * a stick. The barrel reaches out to the right of the lancet, so the pair is set a little
+   * left to sit in the middle of the box.
+   */
+  drawCannonIcon(root: Container, size: number, player: number): void {
+    const { view, cannon, aim } = iconFrame(size, player, ICON_FILL);
+    const shifted = { ...view, originX: view.originX - view.tile * 0.17 };
+    const g = new Graphics();
+    this.drawLancet(g, shifted, cannon);
+    this.drawBarrel(g, shifted, cannon, aim);
+    root.addChild(g);
   }
 
   /**
@@ -1227,8 +1256,6 @@ export class GlassTheme implements Theme {
    * clouded grey like its lancet.
    */
   private drawBarrels(state: MatchState, view: ViewTransform, deltaMs: number): void {
-    const t = view.tile;
-    const { palette } = this.art;
     const memo = this.gunMemo;
     memo.begin();
     for (const cannon of state.cannons) {
@@ -1237,42 +1264,47 @@ export class GlassTheme implements Theme {
       aim.firedAgo += deltaMs;
       // Still between shots: drawn again only as it turns and kicks.
       const key = `${viewKey(view)}|${cannon.x},${cannon.y},${cannon.w},${cannon.h},${cannon.owner},${cannon.active}|${aim.angle}|${aim.firedAgo < RECOIL_MS ? aim.firedAgo : '-'}`;
-      memo.draw(cannon.id, key, (g) => {
-        const kick = Math.max(0, 1 - aim.firedAgo / RECOIL_MS);
-        const length = cannon.active ? 1.0 - 0.28 * kick : 0.45;
-        const cx = cannon.x + cannon.w / 2;
-        const cy = cannon.y + cannon.h / 2 - this.faceFraction() * 0.4;
-        const ex = tileX(view, cx + Math.sin(aim.angle) * length);
-        const ey = tileY(view, cy - Math.cos(aim.angle) * length);
-        const width = Math.max(3, t * 0.3);
-        const sx = tileX(view, cx);
-        const sy = tileY(view, cy);
-        g.moveTo(sx, sy).lineTo(ex, ey);
-        g.stroke({ width: width + this.lead(view) * 2, color: hex(palette.shadow), cap: 'round' });
-        g.moveTo(sx, sy).lineTo(ex, ey);
-        g.stroke({
-          width,
-          color: cannon.active
-            ? hex(palette.emberMid)
-            : mixed(hex(palette.rockMid), hex(palette.rockLight), 0.3),
-          cap: 'round',
-        });
-        if (cannon.active) {
-          // The light along it, a little to one side of its axis.
-          const nx = -Math.cos(aim.angle) * width * 0.22;
-          const ny = -Math.sin(aim.angle) * width * 0.22;
-          g.moveTo(sx + nx + (ex - sx) * 0.2, sy + ny + (ey - sy) * 0.2);
-          g.lineTo(sx + nx + (ex - sx) * 0.85, sy + ny + (ey - sy) * 0.85);
-          g.stroke({
-            width: Math.max(1, width * 0.25),
-            color: hex(palette.emberHot),
-            cap: 'round',
-          });
-        }
-      });
+      memo.draw(cannon.id, key, (g) => this.drawBarrel(g, view, cannon, aim));
     }
     memo.end();
     this.aims.prune(state);
+  }
+
+  /** One gun's barrel as aimed, for the board's memo and for the icon alike. */
+  private drawBarrel(g: Graphics, view: ViewTransform, cannon: Cannon, aim: Aim): void {
+    const t = view.tile;
+    const { palette } = this.art;
+    const kick = Math.max(0, 1 - aim.firedAgo / RECOIL_MS);
+    const length = cannon.active ? 1.0 - 0.28 * kick : 0.45;
+    const cx = cannon.x + cannon.w / 2;
+    const cy = cannon.y + cannon.h / 2 - this.faceFraction() * 0.4;
+    const ex = tileX(view, cx + Math.sin(aim.angle) * length);
+    const ey = tileY(view, cy - Math.cos(aim.angle) * length);
+    const width = Math.max(3, t * 0.3);
+    const sx = tileX(view, cx);
+    const sy = tileY(view, cy);
+    g.moveTo(sx, sy).lineTo(ex, ey);
+    g.stroke({ width: width + this.lead(view) * 2, color: hex(palette.shadow), cap: 'round' });
+    g.moveTo(sx, sy).lineTo(ex, ey);
+    g.stroke({
+      width,
+      color: cannon.active
+        ? hex(palette.emberMid)
+        : mixed(hex(palette.rockMid), hex(palette.rockLight), 0.3),
+      cap: 'round',
+    });
+    if (cannon.active) {
+      // The light along it, a little to one side of its axis.
+      const nx = -Math.cos(aim.angle) * width * 0.22;
+      const ny = -Math.sin(aim.angle) * width * 0.22;
+      g.moveTo(sx + nx + (ex - sx) * 0.2, sy + ny + (ey - sy) * 0.2);
+      g.lineTo(sx + nx + (ex - sx) * 0.85, sy + ny + (ey - sy) * 0.85);
+      g.stroke({
+        width: Math.max(1, width * 0.25),
+        color: hex(palette.emberHot),
+        cap: 'round',
+      });
+    }
   }
 
   /** A pennant of the owner's glass over each sealed castle, hoisted as it is sealed. */

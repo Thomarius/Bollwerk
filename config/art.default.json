@@ -3,6 +3,7 @@
     "build": "flat",
     "combat": "pixel"
   },
+  "cannonIcons": "style",
   "tileSizePx": 16,
   "atlasSizePx": 2048,
   "pixelSnap": true,

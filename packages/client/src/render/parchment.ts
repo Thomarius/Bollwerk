@@ -1,5 +1,5 @@
 import type { ArtConfig, ParchmentStyleConfig } from '@bollwerk/config';
-import { Rng, Structure, Terrain, type MatchState, type Shot } from '@bollwerk/sim';
+import { Rng, Structure, Terrain, type Cannon, type MatchState, type Shot } from '@bollwerk/sim';
 import { Container, Graphics, Sprite, Text, Texture } from 'pixi.js';
 
 import { timerSpot } from '../timerSpot.js';
@@ -30,11 +30,13 @@ import {
   MainCastles,
   drawShotTarget,
   hex,
+  iconFrame,
   mixed,
   playerColour,
   shotLift,
   tileX,
   tileY,
+  type Aim,
   type Cell,
   type Debris,
   type EffectFrame,
@@ -91,6 +93,8 @@ interface Fade {
 }
 
 const RECOIL_MS = 160;
+/** The icon's footprint against its box: the muzzle, 0.86 of a half-footprint out, near its edge. */
+const ICON_FILL = 1.12;
 const RIPPLE_MS = 700;
 /** Canvas pixels per tile in the paper's grain: fine enough to read as paper. */
 const GRAIN_PX = 6;
@@ -1155,8 +1159,6 @@ export class ParchmentTheme implements Theme {
    * gun is the same drawing faded, struck through with one stroke of the pen.
    */
   private drawBarrels(state: MatchState, view: ViewTransform, deltaMs: number): void {
-    const t = view.tile;
-    const { palette } = this.art;
     const memo = this.gunMemo;
     memo.begin();
     for (const cannon of state.cannons) {
@@ -1165,88 +1167,104 @@ export class ParchmentTheme implements Theme {
       aim.firedAgo += deltaMs;
       // Still between shots: drawn again only as it turns and kicks.
       const key = `${viewKey(view)}|${cannon.x},${cannon.y},${cannon.w},${cannon.h},${cannon.owner},${cannon.active}|${aim.angle}|${aim.firedAgo < RECOIL_MS ? aim.firedAgo : '-'}`;
-      memo.draw(cannon.id, key, (g) => {
-        const kick = Math.max(0, 1 - aim.firedAgo / RECOIL_MS);
-        const u = Math.min(cannon.w, cannon.h) * t * 0.5;
-        const cx = tileX(view, cannon.x + cannon.w / 2);
-        const cy = tileY(view, cannon.y + cannon.h / 2);
-        const sin = Math.sin(aim.angle);
-        const cos = Math.cos(aim.angle);
-        /** Along the barrel `a` and across it `s`, in units of half the gun, to the screen. */
-        const p = (a: number, s: number): [number, number] => [
-          cx + (sin * a + cos * s) * u,
-          cy + (-cos * a + sin * s) * u,
-        ];
-        const poly = (points: [number, number][]): void => {
-          g.poly(points.flat());
-        };
-        const alpha = cannon.active ? 1 : 0.45;
-        const ink = cannon.active ? this.colour(cannon.owner, 'dark') : hex(palette.rockMid);
-        const wood = cannon.active ? this.paper(cannon.owner, 0.25) : hex(palette.grassDark);
-        const line = { width: 1, color: ink, alpha, join: 'round' as const };
-
-        // The carriage's trail, back from the axle, hatched as wood is.
-        poly([p(0.15, -0.26), p(0.15, 0.26), p(-0.85, 0.14), p(-0.85, -0.14)]);
-        g.fill({ color: wood, alpha });
-        g.stroke(line);
-        for (const a of [-0.2, -0.45, -0.7]) {
-          g.moveTo(...p(a, -0.2 + (0.15 - a) * 0.06)).lineTo(...p(a, 0.2 - (0.15 - a) * 0.06));
-        }
-        g.stroke({ ...line, alpha: alpha * 0.5 });
-        // The wheels either side, seen from above: their rims, and a spoke or two showing.
-        for (const side of [-1, 1]) {
-          const rim: [number, number][] = [];
-          for (let k = 0; k < 10; k++) {
-            const r = (k / 10) * Math.PI * 2;
-            rim.push(p(0.05 + Math.cos(r) * 0.36, side * (0.42 + Math.sin(r) * 0.09)));
-          }
-          poly(rim);
-          g.fill({ color: wood, alpha });
-          g.stroke(line);
-          for (const a of [-0.2, 0.05, 0.3])
-            g.moveTo(...p(a, side * 0.35)).lineTo(...p(a, side * 0.49));
-          g.stroke({ ...line, alpha: alpha * 0.7 });
-        }
-        // The barrel, kicked back by a shot: breech, chase, the flare of the muzzle.
-        const back = -0.25 * kick;
-        const b = (a: number, s: number): [number, number] => p(a + back, s);
-        poly([
-          b(-0.5, -0.22),
-          b(0.2, -0.17),
-          b(0.9, -0.13),
-          b(0.98, -0.18),
-          b(1.04, -0.18),
-          b(1.04, 0.18),
-          b(0.98, 0.18),
-          b(0.9, 0.13),
-          b(0.2, 0.17),
-          b(-0.5, 0.22),
-        ]);
-        g.fill({
-          color: cannon.active ? this.colour(cannon.owner, 'base') : hex(palette.rockLight),
-          alpha,
-        });
-        g.stroke(line);
-        // Its bands, and the shading along one flank.
-        for (const a of [-0.3, 0.2, 0.86]) g.moveTo(...b(a, -0.2)).lineTo(...b(a, 0.2));
-        g.moveTo(...b(-0.45, 0.12)).lineTo(...b(0.85, 0.08));
-        g.stroke({ ...line, alpha: alpha * 0.7 });
-        // The cascabel, the knob at the breech.
-        g.circle(...b(-0.6, 0), u * 0.09);
-        g.fill({ color: ink, alpha });
-        if (cannon.active) return;
-        // Silenced: struck through with one stroke of the pen.
-        g.moveTo(...p(0.7, -0.7)).lineTo(...p(-0.7, 0.7));
-        g.stroke({
-          width: Math.max(1.5, t * 0.08),
-          color: hex(palette.rockDark),
-          alpha: 0.7,
-          cap: 'round',
-        });
-      });
+      memo.draw(cannon.id, key, (g) => this.drawGun(g, view, cannon, aim));
     }
     memo.end();
     this.aims.prune(state);
+  }
+
+  /** One gun, carriage, wheels and barrel, for `drawBarrels` and the icon alike. */
+  private drawGun(g: Graphics, view: ViewTransform, cannon: Cannon, aim: Aim): void {
+    const t = view.tile;
+    const { palette } = this.art;
+    const kick = Math.max(0, 1 - aim.firedAgo / RECOIL_MS);
+    const u = Math.min(cannon.w, cannon.h) * t * 0.5;
+    const cx = tileX(view, cannon.x + cannon.w / 2);
+    const cy = tileY(view, cannon.y + cannon.h / 2);
+    const sin = Math.sin(aim.angle);
+    const cos = Math.cos(aim.angle);
+    /** Along the barrel `a` and across it `s`, in units of half the gun, to the screen. */
+    const p = (a: number, s: number): [number, number] => [
+      cx + (sin * a + cos * s) * u,
+      cy + (-cos * a + sin * s) * u,
+    ];
+    const poly = (points: [number, number][]): void => {
+      g.poly(points.flat());
+    };
+    const alpha = cannon.active ? 1 : 0.45;
+    const ink = cannon.active ? this.colour(cannon.owner, 'dark') : hex(palette.rockMid);
+    const wood = cannon.active ? this.paper(cannon.owner, 0.25) : hex(palette.grassDark);
+    const line = { width: 1, color: ink, alpha, join: 'round' as const };
+
+    // The carriage's trail, back from the axle, hatched as wood is.
+    poly([p(0.15, -0.26), p(0.15, 0.26), p(-0.85, 0.14), p(-0.85, -0.14)]);
+    g.fill({ color: wood, alpha });
+    g.stroke(line);
+    for (const a of [-0.2, -0.45, -0.7]) {
+      g.moveTo(...p(a, -0.2 + (0.15 - a) * 0.06)).lineTo(...p(a, 0.2 - (0.15 - a) * 0.06));
+    }
+    g.stroke({ ...line, alpha: alpha * 0.5 });
+    // The wheels either side, seen from above: their rims, and a spoke or two showing.
+    for (const side of [-1, 1]) {
+      const rim: [number, number][] = [];
+      for (let k = 0; k < 10; k++) {
+        const r = (k / 10) * Math.PI * 2;
+        rim.push(p(0.05 + Math.cos(r) * 0.36, side * (0.42 + Math.sin(r) * 0.09)));
+      }
+      poly(rim);
+      g.fill({ color: wood, alpha });
+      g.stroke(line);
+      for (const a of [-0.2, 0.05, 0.3])
+        g.moveTo(...p(a, side * 0.35)).lineTo(...p(a, side * 0.49));
+      g.stroke({ ...line, alpha: alpha * 0.7 });
+    }
+    // The barrel, kicked back by a shot: breech, chase, the flare of the muzzle.
+    const back = -0.25 * kick;
+    const b = (a: number, s: number): [number, number] => p(a + back, s);
+    poly([
+      b(-0.5, -0.22),
+      b(0.2, -0.17),
+      b(0.9, -0.13),
+      b(0.98, -0.18),
+      b(1.04, -0.18),
+      b(1.04, 0.18),
+      b(0.98, 0.18),
+      b(0.9, 0.13),
+      b(0.2, 0.17),
+      b(-0.5, 0.22),
+    ]);
+    g.fill({
+      color: cannon.active ? this.colour(cannon.owner, 'base') : hex(palette.rockLight),
+      alpha,
+    });
+    g.stroke(line);
+    // Its bands, and the shading along one flank.
+    for (const a of [-0.3, 0.2, 0.86]) g.moveTo(...b(a, -0.2)).lineTo(...b(a, 0.2));
+    g.moveTo(...b(-0.45, 0.12)).lineTo(...b(0.85, 0.08));
+    g.stroke({ ...line, alpha: alpha * 0.7 });
+    // The cascabel, the knob at the breech.
+    g.circle(...b(-0.6, 0), u * 0.09);
+    g.fill({ color: ink, alpha });
+    if (cannon.active) return;
+    // Silenced: struck through with one stroke of the pen.
+    g.moveTo(...p(0.7, -0.7)).lineTo(...p(-0.7, 0.7));
+    g.stroke({
+      width: Math.max(1.5, t * 0.08),
+      color: hex(palette.rockDark),
+      alpha: 0.7,
+      cap: 'round',
+    });
+  }
+
+  /**
+   * The engraver's cannon alone, without its square or the shadow under it: carriage, wheels
+   * and barrel are all the gun, and fill the box by themselves.
+   */
+  drawCannonIcon(root: Container, size: number, player: number): void {
+    const { view, cannon, aim } = iconFrame(size, player, ICON_FILL);
+    const g = new Graphics();
+    this.drawGun(g, view, cannon, aim);
+    root.addChild(g);
   }
 
   /**

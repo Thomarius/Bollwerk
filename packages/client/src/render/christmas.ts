@@ -1,6 +1,6 @@
 import type { ArtConfig, ChristmasStyleConfig } from '@bollwerk/config';
 import { Structure, type MatchState, type Shot } from '@bollwerk/sim';
-import { Graphics, type GraphicsContext } from 'pixi.js';
+import { Graphics, type Container, type GraphicsContext } from 'pixi.js';
 
 import { motionReduced } from '../motion.js';
 import { perf } from '../perf.js';
@@ -20,6 +20,7 @@ import {
   FlagHoist,
   GhostMotion,
   GunAims,
+  iconFrame,
   Landings,
   RuinSmoke,
   WinnerBanners,
@@ -126,6 +127,8 @@ type Mood = 'ready' | 'throw' | 'melted';
 const SMALL_TILE = 18;
 
 const THROW_MS = 360;
+/** The cannon icon's footprint against its box: the snowman, hat and all, 1.9 tiles high: 92%. */
+const CANNON_ICON_FILL = 0.98;
 const BURST_MS = 220;
 const SPLASH_MS = 700;
 /** How long a light takes to go out as a breach lowers its tree's "flag". */
@@ -871,6 +874,19 @@ export class ChristmasTheme extends ShapeTheme implements Theme {
   }
 
   /**
+   * The gun of the cannon row: the board's snowman, watching and facing right, without its
+   * shadow on the snow, centred by its own outline, since its foot is not its middle.
+   */
+  drawCannonIcon(root: Container, size: number, player: number): void {
+    const { view } = iconFrame(size, player, CANNON_ICON_FILL);
+    const g = new Graphics();
+    const scarf = this.colour(player, 'base');
+    drawSnowmanFigure(g, view.tile, scarf, this.colour(player, 'light'), 'ready', false);
+    centreIn(g, size);
+    root.addChild(g);
+  }
+
+  /**
    * The guns, snowmen stamped for each owner and mood, facing their target: watching; throwing
    * as they fire, leaning into it, the throwing arm high; a silenced one half melted, slumped
    * into a puddle, its hat down over its eyes.
@@ -1306,8 +1322,16 @@ function drawTreeStar(g: Graphics, r: number): void {
  * the right, coal eyes and buttons, a carrot nose, stick arms, a scarf in the owner's colour and
  * a top hat with a band of it. `throw` has the right arm flung high and forward; `melted` is
  * slumped into a puddle, smaller and lopsided, the hat tipped over its eyes, arms drooping.
+ * `grounded` casts its shadow, which the icon leaves out; a melted one's puddle stays.
  */
-function drawSnowmanFigure(g: Graphics, t: number, scarf: number, light: number, mood: Mood): void {
+function drawSnowmanFigure(
+  g: Graphics,
+  t: number,
+  scarf: number,
+  light: number,
+  mood: Mood,
+  grounded = true,
+): void {
   const u = (v: number): number => v * t;
   const melted = mood === 'melted';
   const ink = Math.max(1, u(0.045));
@@ -1320,7 +1344,7 @@ function drawSnowmanFigure(g: Graphics, t: number, scarf: number, light: number,
     g.stroke({ width: ink, color: MELT_EDGE });
     g.ellipse(-u(0.35), -u(0.08), u(0.2), u(0.05));
     g.fill({ color: ICE, alpha: 0.9 });
-  } else {
+  } else if (grounded) {
     g.ellipse(u(0.05), -u(0.02), u(0.55), u(0.12));
     g.fill({ color: NIGHT, alpha: 0.25 });
   }
@@ -1607,4 +1631,10 @@ function drawChristmasScenery(
       g.fill({ color: SNOW });
     }
   }
+}
+
+/** Moves a drawing so the middle of its outline is the middle of a box `size` square. */
+function centreIn(g: Graphics, size: number): void {
+  const b = g.getLocalBounds();
+  g.position.set(size / 2 - (b.x + b.width / 2), size / 2 - (b.y + b.height / 2));
 }

@@ -1,5 +1,5 @@
 import type { ArtConfig, ArtStyle, SpecialKind, TowerVariant } from '@bollwerk/config';
-import { findReadyCannon, type MatchState, type Shot } from '@bollwerk/sim';
+import { findReadyCannon, type Cannon, type MatchState, type Shot } from '@bollwerk/sim';
 import { Graphics, type Container } from 'pixi.js';
 
 import type { DrainWash, SealGlow } from '../seal.js';
@@ -54,6 +54,15 @@ export interface Theme {
   noteCrumble(block: Debris): void;
   /** A piece has just been placed: these cells, on this player's island. */
   noteLanding(cells: readonly Cell[], owner: number): void;
+
+  /**
+   * One ordinary cannon of this player, standing ready — the gun alone, without the base it
+   * stands on — drawn into `root` in a box `size` pixels square at its origin: the icon beside
+   * the cursor in the cannon phase (`Scene.cannonIcon`), rendered once to an image. A fixed
+   * pose, the same every time: active, never fired, the barrel to the upper right, no
+   * animation. `iconFrame` gives the made-up view, cannon and aim the board's code draws with.
+   */
+  drawCannonIcon(root: Container, size: number, player: number): void;
 
   /** Releases textures and display objects. */
   destroy(): void;
@@ -1783,6 +1792,40 @@ export function drawChoices(
 export interface Aim {
   angle: number;
   firedAgo: number;
+}
+
+/** The icon's barrel points to the upper right, in `GunAims`' angles (0 up, clockwise). */
+export const ICON_ANGLE = Math.PI / 4;
+
+/**
+ * What a style's board code needs to draw one gun as an icon (`drawCannonIcon`): a view whose
+ * 2×2 footprint is centred in the box, `fill` of it wide — more than 1 where the gun alone is
+ * smaller than its footprint — and a cannon of this player at 0,0, active, aimed up and right,
+ * never fired.
+ */
+export function iconFrame(
+  size: number,
+  player: number,
+  fill = 1,
+): { view: ViewTransform; cannon: Cannon; aim: Aim } {
+  const tile = (size * fill) / 2;
+  const origin = size / 2 - tile;
+  return {
+    view: { tile, originX: origin, originY: origin, width: size, height: size, top: 0 },
+    cannon: {
+      id: -1,
+      owner: player,
+      kind: 'cannon',
+      cost: 1,
+      x: 0,
+      y: 0,
+      w: 2,
+      h: 2,
+      active: true,
+      shotIds: [],
+    },
+    aim: { angle: ICON_ANGLE, firedAgo: Number.POSITIVE_INFINITY },
+  };
 }
 
 /**

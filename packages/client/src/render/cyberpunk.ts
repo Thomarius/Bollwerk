@@ -59,6 +59,7 @@ import {
   type ViewTransform,
   type FinishLook,
   shotProgress,
+  iconFrame,
 } from './theme.js';
 import type { SceneryItem } from './scenery.js';
 import { SceneryLayer } from './sceneryLayer.js';
@@ -1088,6 +1089,62 @@ export class CyberpunkTheme implements Theme {
     view: ViewTransform,
     cannon: MatchState['cannons'][number],
   ): void {
+    const dark = this.colour(cannon.owner, 'dark');
+    const base = this.colour(cannon.owner, 'base');
+    cannonBase(g, view, cannon, dark, base, 0.4);
+    this.drawMount(g, glow, view, cannon);
+  }
+
+  /**
+   * The turret and its rails without the base square, charged and ready, layered as on the
+   * board: the mount's glow under it, the coil's bands added over the rails, the rails' glow
+   * over all. The bloom the board's glow layers get is given here to the icon's own, a blur
+   * scaled to the icon's tile, since it is rendered only once; the mount is drawn a little
+   * under its footprint (`fill`) to leave the glow room inside the box.
+   */
+  drawCannonIcon(root: Container, size: number, player: number): void {
+    const { view, cannon, aim } = iconFrame(size, player, 1.05);
+    const bloom = (): Container => {
+      const layer = new Container();
+      layer.blendMode = 'add';
+      if (bloomWanted()) {
+        layer.filters = [new BlurFilter({ strength: Math.max(1, view.tile * 0.12), quality: 2 })];
+      }
+      return layer;
+    };
+    const mountGlow = bloom();
+    const mountGlowGfx = new Graphics();
+    const mount = new Graphics();
+    this.drawMount(mount, mountGlowGfx, view, cannon);
+    mountGlow.addChild(mountGlowGfx);
+    const f = railFrame(view, cannon, aim.angle, 0.95);
+    const rails = new Graphics();
+    this.drawRails(rails, cannon, f);
+    root.addChild(mountGlow, mount, rails);
+    const light = this.colour(player, 'light');
+    for (const d of f.bands) {
+      const band = new Graphics();
+      coilBand(band, view.tile);
+      [band.x, band.y] = f.along(d);
+      band.rotation = aim.angle;
+      band.tint = light;
+      band.blendMode = 'add';
+      root.addChild(band);
+    }
+    const railGlow = bloom();
+    const railGlowGfx = new Graphics();
+    this.drawRailGlow(railGlowGfx, cannon, f);
+    railGlow.addChild(railGlowGfx);
+    root.addChild(railGlow);
+  }
+
+  /** The turret's mount, all of `drawTurret` but the base square it stands on. */
+  private drawMount(
+    g: Graphics,
+    glow: Graphics,
+    view: ViewTransform,
+    cannon: MatchState['cannons'][number],
+  ): void {
     const { palette } = this.art;
     const t = view.tile;
     const line = this.style.wallLinePx;
@@ -1101,7 +1158,6 @@ export class CyberpunkTheme implements Theme {
     const dark = this.colour(cannon.owner, 'dark');
     const base = this.colour(cannon.owner, 'base');
     const light = this.colour(cannon.owner, 'light');
-    cannonBase(g, view, cannon, dark, base, 0.4);
     g.poly(hexagon(cx, cy + side, r));
     g.fill({ color: on ? dimmed(dark, 0.5) : hex(palette.grassDark) });
     g.stroke({ width: 1, color: on ? base : hex(palette.rockDark), alpha: 0.6 });
@@ -1601,12 +1657,7 @@ export class CyberpunkTheme implements Theme {
     const now = state.tick + frame.tickFraction;
     const charging = new Map<number, number>();
     for (const shot of state.shots) charging.set(shot.cannonId, shotProgress(shot, now));
-    const gap = t * 0.085;
-    const rail = Math.max(1.5, t * 0.07);
-    const band = this.book.get('coil', t, (g) => {
-      g.moveTo(-gap - rail, 0).lineTo(gap + rail, 0);
-      g.stroke({ width: Math.max(1.5, t * 0.08), color: 0xffffff });
-    });
+    const band = this.book.get('coil', t, (g) => coilBand(g, t));
     memo.begin();
     glows.begin();
     for (const cannon of state.cannons) {
@@ -1616,63 +1667,10 @@ export class CyberpunkTheme implements Theme {
       // Still between shots: drawn again only as it turns and kicks.
       const key = `${viewKey(view)}|${cannon.x},${cannon.y},${cannon.owner},${cannon.active}|${aim.angle}|${aim.firedAgo < RECOIL_MS ? aim.firedAgo : '-'}`;
       const kick = Math.max(0, 1 - aim.firedAgo / RECOIL_MS);
-      const length = cannon.active ? 0.95 - 0.3 * kick : 0.55;
-      const cx = cannon.x + cannon.w / 2;
-      const cy = cannon.y + cannon.h / 2;
-      const dx = Math.sin(aim.angle);
-      const dy = -Math.cos(aim.angle);
-      const ex = cx + dx * length;
-      const ey = cy + dy * length;
-      // Across the barrel, in pixels, and a point `d` tiles along it.
-      const px = -dy;
-      const py = dx;
-      const along = (d: number): [number, number] => [
-        tileX(view, cx + dx * d),
-        tileY(view, cy + dy * d),
-      ];
-      const bands = [length - 0.34, length - 0.21, length - 0.08];
-      memo.draw(cannon.id, key, (g) => {
-        const [bx, by] = along(0);
-        const [mx, my] = along(length);
-        for (const s of [-1, 1]) {
-          g.moveTo(bx + px * gap * s, by + py * gap * s).lineTo(
-            mx + px * gap * s,
-            my + py * gap * s,
-          );
-        }
-        g.stroke({
-          width: rail,
-          color: cannon.active ? this.colour(cannon.owner, 'light') : hex(this.art.palette.rockMid),
-          alpha: cannon.active ? 1 : 0.5,
-        });
-        const block = gap + rail * 1.4;
-        g.moveTo(bx - px * block, by - py * block).lineTo(bx + px * block, by + py * block);
-        g.stroke({
-          width: rail * 2,
-          color: cannon.active ? this.colour(cannon.owner, 'base') : hex(this.art.palette.rockDark),
-        });
-        if (!cannon.active) return;
-        // The coil's bands, dark until they charge.
-        for (const d of bands) {
-          const [ax, ay] = along(d);
-          g.moveTo(ax - px * (gap + rail), ay - py * (gap + rail));
-          g.lineTo(ax + px * (gap + rail), ay + py * (gap + rail));
-        }
-        g.stroke({
-          width: Math.max(1.5, t * 0.08),
-          color: dimmed(this.colour(cannon.owner, 'dark'), 0.7),
-        });
-      });
-      glows.draw(cannon.id, key, (glow) => {
-        if (!cannon.active) return;
-        glow.moveTo(tileX(view, cx), tileY(view, cy)).lineTo(tileX(view, ex), tileY(view, ey));
-        // Square at the ends: round, it was a glowing ball at every muzzle, as a shot is.
-        glow.stroke({
-          width: (gap + rail) * 2 * 1.8,
-          color: this.colour(cannon.owner, 'base'),
-          alpha: 0.3,
-        });
-      });
+      const rails = railFrame(view, cannon, aim.angle, cannon.active ? 0.95 - 0.3 * kick : 0.55);
+      const { along, bands, ex, ey } = rails;
+      memo.draw(cannon.id, key, (g) => this.drawRails(g, cannon, rails));
+      glows.draw(cannon.id, key, (glow) => this.drawRailGlow(glow, cannon, rails));
       if (!cannon.active) continue;
       // Ready but for a shot still in the air; in every other phase, charged.
       const charge = charging.get(cannon.id) ?? 1;
@@ -1691,6 +1689,52 @@ export class CyberpunkTheme implements Theme {
     memo.end();
     glows.end();
     this.aims.prune(state);
+  }
+
+  /** A gun's rails and breech block, and the coil's bands dark, as the board's memo and the icon draw them. */
+  private drawRails(g: Graphics, cannon: MatchState['cannons'][number], f: RailFrame): void {
+    const { along, px, py, gap, rail, bands, length } = f;
+    const [bx, by] = along(0);
+    const [mx, my] = along(length);
+    for (const s of [-1, 1]) {
+      g.moveTo(bx + px * gap * s, by + py * gap * s).lineTo(mx + px * gap * s, my + py * gap * s);
+    }
+    g.stroke({
+      width: rail,
+      color: cannon.active ? this.colour(cannon.owner, 'light') : hex(this.art.palette.rockMid),
+      alpha: cannon.active ? 1 : 0.5,
+    });
+    const block = gap + rail * 1.4;
+    g.moveTo(bx - px * block, by - py * block).lineTo(bx + px * block, by + py * block);
+    g.stroke({
+      width: rail * 2,
+      color: cannon.active ? this.colour(cannon.owner, 'base') : hex(this.art.palette.rockDark),
+    });
+    if (!cannon.active) return;
+    // The coil's bands, dark until they charge.
+    for (const d of bands) {
+      const [ax, ay] = along(d);
+      g.moveTo(ax - px * (gap + rail), ay - py * (gap + rail));
+      g.lineTo(ax + px * (gap + rail), ay + py * (gap + rail));
+    }
+    g.stroke({
+      width: Math.max(1.5, f.t * 0.08),
+      color: dimmed(this.colour(cannon.owner, 'dark'), 0.7),
+    });
+  }
+
+  /** The rails' glow, for the bloomed layer over them. */
+  private drawRailGlow(glow: Graphics, cannon: MatchState['cannons'][number], f: RailFrame): void {
+    if (!cannon.active) return;
+    const [sx, sy] = f.along(0);
+    const [ex, ey] = f.along(f.length);
+    glow.moveTo(sx, sy).lineTo(ex, ey);
+    // Square at the ends: round, it was a glowing ball at every muzzle, as a shot is.
+    glow.stroke({
+      width: (f.gap + f.rail) * 2 * 1.8,
+      color: this.colour(cannon.owner, 'base'),
+      alpha: 0.3,
+    });
   }
 
   /**
@@ -2378,6 +2422,58 @@ function hexagon(cx: number, cy: number, r: number): number[] {
 }
 
 /** A turret's hexagon, centre to corner, in pixels: inside its square base with room round it. */
+/** A gun's rails, `length` tiles along `angle` from its centre, and the measures they are drawn by. */
+interface RailFrame {
+  t: number;
+  length: number;
+  /** Half the gap between the rails, and a rail's width, in pixels. */
+  gap: number;
+  rail: number;
+  /** Across the barrel, a unit in pixels' directions. */
+  px: number;
+  py: number;
+  /** The muzzle, in tiles. */
+  ex: number;
+  ey: number;
+  /** The coil's bands, in tiles along the rails. */
+  bands: number[];
+  /** The point `d` tiles along the rails, in pixels. */
+  along: (d: number) => [number, number];
+}
+
+function railFrame(
+  view: ViewTransform,
+  cannon: MatchState['cannons'][number],
+  angle: number,
+  length: number,
+): RailFrame {
+  const t = view.tile;
+  const cx = cannon.x + cannon.w / 2;
+  const cy = cannon.y + cannon.h / 2;
+  const dx = Math.sin(angle);
+  const dy = -Math.cos(angle);
+  return {
+    t,
+    length,
+    gap: t * 0.085,
+    rail: Math.max(1.5, t * 0.07),
+    px: -dy,
+    py: dx,
+    ex: cx + dx * length,
+    ey: cy + dy * length,
+    bands: [length - 0.34, length - 0.21, length - 0.08],
+    along: (d) => [tileX(view, cx + dx * d), tileY(view, cy + dy * d)],
+  };
+}
+
+/** One of the coil's bands, lit, in white at the origin across the rails, for the stamp and the icon. */
+function coilBand(g: Graphics, t: number): void {
+  const gap = t * 0.085;
+  const rail = Math.max(1.5, t * 0.07);
+  g.moveTo(-gap - rail, 0).lineTo(gap + rail, 0);
+  g.stroke({ width: Math.max(1.5, t * 0.08), color: 0xffffff });
+}
+
 function turretRadius(view: ViewTransform, cannon: { w: number; h: number }): number {
   return (Math.min(cannon.w, cannon.h) * view.tile) / 2 - view.tile * 0.2;
 }

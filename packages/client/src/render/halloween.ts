@@ -1,6 +1,6 @@
 import type { ArtConfig, HalloweenStyleConfig } from '@bollwerk/config';
-import { Structure, type Castle, type MatchState, type Shot } from '@bollwerk/sim';
-import { Graphics } from 'pixi.js';
+import { Structure, type Cannon, type Castle, type MatchState, type Shot } from '@bollwerk/sim';
+import { Graphics, type Container } from 'pixi.js';
 
 import { motionReduced } from '../motion.js';
 import { perf } from '../perf.js';
@@ -21,6 +21,7 @@ import {
   Fireworks,
   WinnerBanners,
   GunAims,
+  type Aim,
   RuinSmoke,
   dimEliminated,
   drawAimLine,
@@ -36,6 +37,7 @@ import {
   MainCastles,
   drawShotTarget,
   hex,
+  iconFrame,
   shotLift,
   tileX,
   tileY,
@@ -710,8 +712,6 @@ export class HalloweenTheme extends ShapeTheme implements Theme {
 
   /** One island's structures, for `IslandParts`: the board holds that island's alone. */
   private drawIsland(g: Graphics, state: MatchState, view: ViewTransform): void {
-    const { palette } = this.art;
-    const t = view.tile;
     const wallAt = (x: number, y: number): number =>
       x >= 0 && y >= 0 && x < state.width && y < state.height
         ? state.structure[y * state.width + x] === Structure.Wall
@@ -735,9 +735,6 @@ export class HalloweenTheme extends ShapeTheme implements Theme {
     // Guns: a witch's cauldron on three legs, brimming with potion in the owner's colour,
     // dull and still when silenced.
     for (const cannon of state.cannons) {
-      const cx = tileX(view, cannon.x + cannon.w / 2);
-      const cy = tileY(view, cannon.y + cannon.h / 2);
-      const r = Math.min(cannon.w, cannon.h) * t * 0.38;
       cannonBase(
         g,
         view,
@@ -745,57 +742,84 @@ export class HalloweenTheme extends ShapeTheme implements Theme {
         this.colour(cannon.owner, 'dark'),
         this.colour(cannon.owner, 'base'),
       );
-      g.ellipse(cx + t * 0.08, cy + r * 0.85, r * 0.95, r * 0.3);
-      g.fill({ color: hex(palette.shadow), alpha: 0.35 });
-      for (const lx of [-0.55, 0, 0.55]) {
-        g.moveTo(cx + r * lx, cy + r * 0.5).lineTo(cx + r * lx * 1.2, cy + r * 0.9);
+      this.drawCauldron(g, view, cannon);
+    }
+  }
+
+  /**
+   * The gun alone as the icon: the cauldron and its ladle, brimming, without the square it
+   * stands on or the brew's bubbles, which are the board's clock. The pot is the gun's body,
+   * not its base — the ladle alone is a stick. Pot and ladle together span some three
+   * quarters of the footprint, hence a footprint a little wider than the box.
+   */
+  drawCannonIcon(root: Container, size: number, player: number): void {
+    const { view, cannon, aim } = iconFrame(size, player, 1.12);
+    const g = new Graphics();
+    this.drawCauldron(g, view, cannon);
+    this.drawLadle(g, view, cannon, aim);
+    root.addChild(g);
+  }
+
+  /**
+   * A gun's cauldron, the pot on its three legs and the brew in it, standing on its square:
+   * the board's and the icon's, so the two cannot drift apart.
+   */
+  private drawCauldron(g: Graphics, view: ViewTransform, cannon: Cannon): void {
+    const { palette } = this.art;
+    const t = view.tile;
+    const cx = tileX(view, cannon.x + cannon.w / 2);
+    const cy = tileY(view, cannon.y + cannon.h / 2);
+    const r = Math.min(cannon.w, cannon.h) * t * 0.38;
+    g.ellipse(cx + t * 0.08, cy + r * 0.85, r * 0.95, r * 0.3);
+    g.fill({ color: hex(palette.shadow), alpha: 0.35 });
+    for (const lx of [-0.55, 0, 0.55]) {
+      g.moveTo(cx + r * lx, cy + r * 0.5).lineTo(cx + r * lx * 1.2, cy + r * 0.9);
+    }
+    g.stroke({ width: Math.max(1.5, t * 0.08), color: 0x1a1420, cap: 'round' });
+    g.ellipse(cx, cy + r * 0.15, r, r * 0.72);
+    g.fill({ color: 0x241c2c });
+    g.ellipse(cx - r * 0.45, cy + r * 0.05, r * 0.18, r * 0.3);
+    g.fill({ color: 0xffffff, alpha: 0.12 });
+    g.ellipse(cx, cy - r * 0.25, r * 0.98, r * 0.36);
+    g.fill({ color: 0x3a3244 });
+    if (cannon.active) {
+      g.ellipse(cx, cy - r * 0.25, r * 0.8, r * 0.26);
+      g.fill({ color: this.colour(cannon.owner, 'base') });
+      g.ellipse(cx - r * 0.25, cy - r * 0.3, r * 0.22, r * 0.07);
+      g.fill({ color: this.colour(cannon.owner, 'light'), alpha: 0.8 });
+    } else {
+      // Silenced, the brew has gone cold: skinned over in grey, a wrinkle across it, and
+      // a pale cobweb spun over the rim, bright enough against the black pot to read at
+      // eight players, where the potion's colour alone did not.
+      g.ellipse(cx, cy - r * 0.25, r * 0.8, r * 0.26);
+      g.fill({ color: 0x6a6e66 });
+      g.moveTo(cx - r * 0.5, cy - r * 0.22).quadraticCurveTo(
+        cx - r * 0.1,
+        cy - r * 0.38,
+        cx + r * 0.45,
+        cy - r * 0.24,
+      );
+      g.stroke({ width: Math.max(1, t * 0.04), color: 0x45483f });
+      const hub = { x: cx + r * 0.15, y: cy - r * 0.28 };
+      const spokes = [
+        [-0.98, -0.25],
+        [-0.55, -0.5],
+        [0.2, -0.58],
+        [0.85, -0.42],
+        [0.98, -0.2],
+        [0.6, 0.05],
+        [-0.3, 0.1],
+      ] as const;
+      for (const [sx, sy] of spokes) g.moveTo(hub.x, hub.y).lineTo(cx + r * sx, cy + r * sy);
+      for (const f of [0.4, 0.75]) {
+        spokes.forEach(([sx, sy], i) => {
+          const x = hub.x + (cx + r * sx - hub.x) * f;
+          const y = hub.y + (cy + r * sy - hub.y) * f;
+          if (i === 0) g.moveTo(x, y);
+          else g.lineTo(x, y);
+        });
       }
-      g.stroke({ width: Math.max(1.5, t * 0.08), color: 0x1a1420, cap: 'round' });
-      g.ellipse(cx, cy + r * 0.15, r, r * 0.72);
-      g.fill({ color: 0x241c2c });
-      g.ellipse(cx - r * 0.45, cy + r * 0.05, r * 0.18, r * 0.3);
-      g.fill({ color: 0xffffff, alpha: 0.12 });
-      g.ellipse(cx, cy - r * 0.25, r * 0.98, r * 0.36);
-      g.fill({ color: 0x3a3244 });
-      if (cannon.active) {
-        g.ellipse(cx, cy - r * 0.25, r * 0.8, r * 0.26);
-        g.fill({ color: this.colour(cannon.owner, 'base') });
-        g.ellipse(cx - r * 0.25, cy - r * 0.3, r * 0.22, r * 0.07);
-        g.fill({ color: this.colour(cannon.owner, 'light'), alpha: 0.8 });
-      } else {
-        // Silenced, the brew has gone cold: skinned over in grey, a wrinkle across it, and
-        // a pale cobweb spun over the rim, bright enough against the black pot to read at
-        // eight players, where the potion's colour alone did not.
-        g.ellipse(cx, cy - r * 0.25, r * 0.8, r * 0.26);
-        g.fill({ color: 0x6a6e66 });
-        g.moveTo(cx - r * 0.5, cy - r * 0.22).quadraticCurveTo(
-          cx - r * 0.1,
-          cy - r * 0.38,
-          cx + r * 0.45,
-          cy - r * 0.24,
-        );
-        g.stroke({ width: Math.max(1, t * 0.04), color: 0x45483f });
-        const hub = { x: cx + r * 0.15, y: cy - r * 0.28 };
-        const spokes = [
-          [-0.98, -0.25],
-          [-0.55, -0.5],
-          [0.2, -0.58],
-          [0.85, -0.42],
-          [0.98, -0.2],
-          [0.6, 0.05],
-          [-0.3, 0.1],
-        ] as const;
-        for (const [sx, sy] of spokes) g.moveTo(hub.x, hub.y).lineTo(cx + r * sx, cy + r * sy);
-        for (const f of [0.4, 0.75]) {
-          spokes.forEach(([sx, sy], i) => {
-            const x = hub.x + (cx + r * sx - hub.x) * f;
-            const y = hub.y + (cy + r * sy - hub.y) * f;
-            if (i === 0) g.moveTo(x, y);
-            else g.lineTo(x, y);
-          });
-        }
-        g.stroke({ width: Math.max(1, t * 0.035), color: 0xf4f0ff, alpha: 0.85 });
-      }
+      g.stroke({ width: Math.max(1, t * 0.035), color: 0xf4f0ff, alpha: 0.85 });
     }
   }
 
@@ -1320,34 +1344,7 @@ export class HalloweenTheme extends ShapeTheme implements Theme {
       aim.firedAgo += deltaMs;
       // Still between shots: drawn again only as it turns and kicks.
       const key = `${viewKey(view)}|${cannon.x},${cannon.y},${cannon.w},${cannon.h},${cannon.owner},${cannon.active}|${aim.angle}|${aim.firedAgo < Math.max(RECOIL_MS, 600) ? aim.firedAgo : '-'}`;
-      memo.draw(cannon.id, key, (g) => {
-        const r = Math.min(cannon.w, cannon.h) * t * 0.38;
-        const cx = tileX(view, cannon.x + cannon.w / 2);
-        const cy = tileY(view, cannon.y + cannon.h / 2) - r * 0.25;
-        const kick = Math.max(0, 1 - aim.firedAgo / RECOIL_MS);
-        const length = cannon.active ? t * (0.95 - 0.3 * kick) : t * 0.55;
-        const dx = Math.sin(aim.angle);
-        const dy = cannon.active ? -Math.cos(aim.angle) : 0.6;
-        const ex = cx + dx * length;
-        const ey = cy + dy * length * 0.8;
-        g.moveTo(cx, cy).lineTo(ex, ey);
-        g.stroke({ width: Math.max(2, t * 0.12), color: 0x6b4a2a, cap: 'round' });
-        g.circle(ex, ey, t * 0.1);
-        g.fill({ color: 0x6b4a2a });
-        if (!cannon.active) return;
-        if (aim.firedAgo < 600) {
-          const k = aim.firedAgo / 600;
-          for (let n = 0; n < 4; n++) {
-            const d = t * (0.2 + 0.6 * k + n * 0.1);
-            g.circle(
-              cx + dx * d + (n - 1.5) * t * 0.08,
-              cy - Math.cos(aim.angle) * d,
-              t * 0.09 * (1 - k * 0.5),
-            );
-          }
-          g.fill({ color: this.colour(cannon.owner, 'base'), alpha: 0.7 * (1 - k) });
-        }
-      });
+      memo.draw(cannon.id, key, (g) => this.drawLadle(g, view, cannon, aim));
       // The brew bubbling, every frame: over the ladle, as it was drawn after it.
       if (!cannon.active || still) continue;
       const r = Math.min(cannon.w, cannon.h) * t * 0.38;
@@ -1362,6 +1359,37 @@ export class HalloweenTheme extends ShapeTheme implements Theme {
     }
     memo.end();
     this.aims.prune(state);
+  }
+
+  /** One cauldron's ladle as aimed, and its splash on firing: the board's memo's and the icon's. */
+  private drawLadle(g: Graphics, view: ViewTransform, cannon: Cannon, aim: Aim): void {
+    const t = view.tile;
+    const r = Math.min(cannon.w, cannon.h) * t * 0.38;
+    const cx = tileX(view, cannon.x + cannon.w / 2);
+    const cy = tileY(view, cannon.y + cannon.h / 2) - r * 0.25;
+    const kick = Math.max(0, 1 - aim.firedAgo / RECOIL_MS);
+    const length = cannon.active ? t * (0.95 - 0.3 * kick) : t * 0.55;
+    const dx = Math.sin(aim.angle);
+    const dy = cannon.active ? -Math.cos(aim.angle) : 0.6;
+    const ex = cx + dx * length;
+    const ey = cy + dy * length * 0.8;
+    g.moveTo(cx, cy).lineTo(ex, ey);
+    g.stroke({ width: Math.max(2, t * 0.12), color: 0x6b4a2a, cap: 'round' });
+    g.circle(ex, ey, t * 0.1);
+    g.fill({ color: 0x6b4a2a });
+    if (!cannon.active) return;
+    if (aim.firedAgo < 600) {
+      const k = aim.firedAgo / 600;
+      for (let n = 0; n < 4; n++) {
+        const d = t * (0.2 + 0.6 * k + n * 0.1);
+        g.circle(
+          cx + dx * d + (n - 1.5) * t * 0.08,
+          cy - Math.cos(aim.angle) * d,
+          t * 0.09 * (1 - k * 0.5),
+        );
+      }
+      g.fill({ color: this.colour(cannon.owner, 'base'), alpha: 0.7 * (1 - k) });
+    }
   }
 
   /** Ground fog drifting across the board in soft banks, thicker in a foggy match. */
