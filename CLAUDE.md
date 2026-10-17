@@ -173,7 +173,7 @@ Full detail in PLAN.md §1. The parts that surprise people:
 
 ## Status
 
-**Done** (2026-10-17; the latest release **v0.9.8**, 2026-10-17, protocol 27, recording format 4,
+**Done** (2026-10-17; the latest release **v0.9.9**, 2026-10-17, protocol 27, recording format 4,
 which a test session needs the server rebuilt and every page reloaded for):
 
 - **Special towers** (2026-10-14 to 2026-10-16, ARCHIVE 13zk–13zo, the design and what is open in

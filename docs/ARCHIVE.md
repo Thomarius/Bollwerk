@@ -9161,3 +9161,11 @@ played higher or lower (`rate`).
   sound.
 - **Volumes** set by the files' loudness against the cues beside them (`volumedetect`): Bertha's
   explosion 0.8, a little above a cannon's impact; the strike 0.6; the knock 0.6.
+
+## 13zy. v0.9.9 (2026-10-17)
+
+Each style's own cannon as the placement icon beside the cursor (13zv), behind `art.cannonIcons`
+until the testers choose; the towers' own sounds (13zx); the tower menu keeping the cost chosen
+when the tower changes; and the towers' balance closed, off by default for good (13zw). Protocol
+27 still, the state hash and recording format unchanged: a v0.9.8 page can still join, and
+v0.9.8's recordings replay.
