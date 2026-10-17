@@ -9052,3 +9052,24 @@ fallback. Lightning 2 hardly moves with the miss chance; Lightning 3, with a jum
 After a first look (the user's): each strike's flash short and its own, where held to the bolt's
 fade every flash burned at once at the end; and the cursor's crackle running along the ring
 rather than leaping out from it. Soaks in `soaks/towers-2026-10-17-lightning/`.
+
+## 13zt. A tower that does nothing: the trade itself measured (2026-10-17)
+
+**Why** (the user's): to make sure the special towers are a real advantage for the bots, and not
+only the trade — fewer guns, so less room to find and an easier wall to repair.
+
+**How**: a control tower with no ability, made by the soak tool's `--set` alone — Big Bertha with
+an ordinary single-tile crater and an ordinary cannon's flight: a 2×2 gun costing 2 or 3 cannons,
+scored as the cannons it cost, bought and sited as a tower, firing one ordinary shot a reload (it
+still fires first when ready, which changes nothing a shot does). Against an equal bot with no
+tower, 96 matches a pairing, ±5:
+
+| control | Level 3 | Level 5 | Level 8 |
+| ------- | ------- | ------- | ------- |
+| cost 2  | 56%     | 50%     | 58%     |
+| cost 3  | 61%     | 47%     | 50%     |
+
+**Read**: at Levels 5 and 8 the trade alone is even; the towers' 57–79% there is their abilities.
+At Level 3 the trade itself is worth some 6–11 points, which is part of why every tower reads a
+little strong there (68–76%, 13zk). **Accepted** (the user's): no lever is turned for Level 3.
+Soaks in `soaks/towers-2026-10-17-dummy/`.

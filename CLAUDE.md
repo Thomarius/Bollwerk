@@ -319,7 +319,8 @@ which a test session needs the server rebuilt and every page reloaded for):
   piece and German checked in play by the user (ARCHIVE 12n–12t).
 
 **Next** — PLAN §11: towards a first feature-ready version. Special towers (item 2), play-tested
-with no issues found (ARCHIVE 13zp): the rest of the balance (ST4: Level 3, Bertha 3 at Level 8,
+with no issues found (ARCHIVE 13zp): the rest of the balance (ST4: Bertha 3 at Level 8 — Level 3's strength accepted, the trade itself being
+worth some of it, ARCHIVE 13zt —
 the ladder and four-player tables with towers, the bots' buying rule, then on by default), and
 the user's decisions on the next tower and a test without the cap of three, and sounds of the
 towers' own (TS). Their help is done (ST7, ARCHIVE 13zr). A new tower is balanced at Level 5

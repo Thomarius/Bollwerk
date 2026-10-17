@@ -435,8 +435,11 @@ checkout's sim is edited.
 goal or its edge; the levers are in config, the figures in the ARCHIVE. **Open for the next
 balancing round** (the user's, 2026-10-16 — another session, the results looked at again first):
 
-- Every tower is a little strong at Level 3 (70–75% against none), where bots lose more walls and
-  hold a second castle less often.
+- ~~Every tower is a little strong at Level 3 (70–75% against none)~~ — **accepted** (the user's,
+  2026-10-17): a tower that does nothing but fire an ordinary shot won 56% and 61% at Level 3
+  (cost 2, 3) and 47–58% at Levels 5 and 8 (ARCHIVE 13zt). So the abilities are a real advantage,
+  and at Level 3 some 6–11 points come from the trade itself — fewer guns to fit — not from any
+  tower; no lever is turned for it.
 - A single figure at the edge, one measurement of 96 at ±10: Bertha 3 at Level 8 (46%). Rerun it,
   perhaps at 192, before turning a lever. (Architect 3 at Level 5 is settled: its circle, at a
   gun's flight, read 68% over 192 — ARCHIVE 13zl.)
@@ -500,6 +503,9 @@ a test without the cap of three towers on an island (`maxOwned`, null for none).
 - **The levers**, coarse to fine: the footprint (2×2 or 3×3), each variant's own values (crater,
   flight factors, repair radius, the Rapid's barrels' flight). The balance is to how the bots use
   the towers, and their buying rule is still ST3's first (§3.5).
+- **A tower that does nothing** is the control for the trade itself (ARCHIVE 13zt): Big Bertha
+  with an ordinary crater and flight (`--set 'specials.bertha.2.crater="single"' --set
+specials.bertha.2.flightFactor=1`, the same for cost 3) against no tower.
 - **Watch**: failed rounds (an Architect may make turtles — ARCHIVE 10s found a turtle very hard to
   kill), match length, how often Bertha is affordable at all (it needs two castles sealed) and by
   whom, and the people's yardsticks (`shotStats.ts`, `buildStats.ts`).
