@@ -172,12 +172,12 @@ Full detail in PLAN.md §1. The parts that surprise people:
 
 ## Status
 
-**Done** (2026-10-17; the latest release **v0.9.7**, 2026-10-17, protocol 26, recording format 4,
+**Done** (2026-10-17; the latest release **v0.9.8**, 2026-10-17, protocol 27, recording format 4,
 which a test session needs the server rebuilt and every page reloaded for):
 
 - **Special towers** (2026-10-14 to 2026-10-16, ARCHIVE 13zk–13zo, the design and what is open in
   `docs/SPECIAL_TOWERS.md`): Big Bertha, the Architect, the Rapid Cannon and (2026-10-17, ARCHIVE
-  13zs, protocol 27, on main after v0.9.7) the Lightning Tower — a strike on the instant that
+  13zs, v0.9.8) the Lightning Tower — a strike on the instant that
   jumps from wall to wall, its chance from the seed — each at a cost of 2 and 3 cannons, bought in the cannon phase with the right button, switched on per table (off by
   default). The rules in `sim/src/specials.ts`; bots buy, site and fire them; a tower scores as
   the cannons it cost. Balanced in two-player soaks to 50–70% against no tower

@@ -9073,3 +9073,12 @@ tower, 96 matches a pairing, ±5:
 At Level 3 the trade itself is worth some 6–11 points, which is part of why every tower reads a
 little strong there (68–76%, 13zk). **Accepted** (the user's): no lever is turned for Level 3.
 Soaks in `soaks/towers-2026-10-17-dummy/`.
+
+## 13zu. v0.9.8 (2026-10-17)
+
+The Lightning Tower (13zs) — a strike on the instant that jumps from wall to wall, at a cost of 2
+and 3, balanced at Levels 5 and 8 with a miss chance of 0.6 — with the tower menu's cards
+without their subtitles, and the control soak that showed the towers' advantage to be their
+abilities (13zt). Protocol 27: a test session needs the server rebuilt and every page reloaded,
+and a v0.9.7 page cannot join a v0.9.8 room; the state hash and recording format are unchanged,
+so v0.9.7's recordings replay.
