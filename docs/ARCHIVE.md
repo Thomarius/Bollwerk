@@ -9195,3 +9195,11 @@ menu's sixth card (the panel widened to keep one row) and its preview, the real 
 air; How to play. Fired with a cannon's sound, landing with `tower_biggestbertha.mp3`, the user's,
 CC0 from OpenGameArt (`tower_biggest_impact`). Bots aim it as Bertha, where its crater takes the
 most of an opponent's weakest wall, and buy it by the rule every tower has.
+
+## 14a. v0.9.10 (2026-10-18)
+
+The Allerdickste Bertha (13zz), a fifth special tower: one enormous shell a combat phase, 10
+seconds in the air, its crater a circle 9 or 11 blocks across. Protocol 28, a variant and a ruleset
+key a v0.9.9 page does not know: a test session needs the server rebuilt and every page reloaded,
+and a v0.9.9 page cannot join a v0.9.10 room. The state hash and recording format are unchanged,
+so v0.9.9's recordings replay.

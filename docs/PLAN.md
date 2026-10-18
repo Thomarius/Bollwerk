@@ -1588,7 +1588,7 @@ every resolution against an independent search, not only on unit pictures.
 
 ## 11. Open work
 
-**Where to start (2026-10-17).** The latest release is **v0.9.9** (2026-10-17, protocol 27).
+**Where to start (2026-10-17).** The latest release is **v0.9.10** (2026-10-18, protocol 28).
 Up to **v0.8.3**: the game and online play, bots as skill levels and personalities, the styles
 with their corner pieces, random looks every round, English and German, the desktop app, UPnP,
 the balance soak and the rendering work (ARCHIVE 12h–12v), the refactoring (12w) and stronger
@@ -1608,7 +1608,8 @@ ground and guns (13zd, 13ze), bots valuing castles for their guns. **v0.9.7** (1
 preview, a first balance and the users' first feedback (13zk–13zo), play-tested with no issues
 found (13zp). **v0.9.8** (13zu): the Lightning Tower (13zs). **v0.9.9** (13zy): each style's own
 cannon as the placement icon (13zv), the towers' own sounds (13zx), the tower menu's cost kept
-across towers, and the towers' balance closed, off by default for good (13zw).
+across towers, and the towers' balance closed, off by default for good (13zw). **v0.9.10** (14a): the Allerdickste
+Bertha (13zz).
 
 Tournament mode is finished: its play-testing round, T8, closed with everything working
 (ARCHIVE 13m). The bots' planning is off the page's thread in local matches, measured and felt (ARCHIVE
