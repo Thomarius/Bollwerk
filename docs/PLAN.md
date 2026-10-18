@@ -1588,7 +1588,8 @@ every resolution against an independent search, not only on unit pictures.
 
 ## 11. Open work
 
-**Where to start (2026-10-17).** The latest release is **v0.9.10** (2026-10-18, protocol 28).
+**Where to start (2026-10-18).** The latest release is **v0.9.11** (2026-10-18, protocol 28). Next:
+item 4's Package B, the styles' own music, once the user has the tracks.
 Up to **v0.8.3**: the game and online play, bots as skill levels and personalities, the styles
 with their corner pieces, random looks every round, English and German, the desktop app, UPnP,
 the balance soak and the rendering work (ARCHIVE 12h–12v), the refactoring (12w) and stronger
@@ -1609,7 +1610,8 @@ preview, a first balance and the users' first feedback (13zk–13zo), play-teste
 found (13zp). **v0.9.8** (13zu): the Lightning Tower (13zs). **v0.9.9** (13zy): each style's own
 cannon as the placement icon (13zv), the towers' own sounds (13zx), the tower menu's cost kept
 across towers, and the towers' balance closed, off by default for good (13zw). **v0.9.10** (14a): the Allerdickste
-Bertha (13zz).
+Bertha (13zz). **v0.9.11** (14c): audio loaded once behind a loading screen, cached by the browser
+and played compressed (14b).
 
 Tournament mode is finished: its play-testing round, T8, closed with everything working
 (ARCHIVE 13m). The bots' planning is off the page's thread in local matches, measured and felt (ARCHIVE
@@ -1636,12 +1638,11 @@ fit (ARCHIVE 12z), its remaining steps dropped (the user's decision, 2026-10-14;
    phase, built and reviewed (ARCHIVE 13zv), or the generic cannon of before — the switch
    `art.cannonIcons` (`"style"`, the default, or `"generic"`) until their feedback decides; then the
    loser and the switch go.
-4. **Audio loaded once, and music for the styles** (the users' idea, 2026-10-18; Package A
-   built, ARCHIVE 14b; Package B open): every sound and music file downloaded once behind a loading screen, kept
-   compressed and cached by the browser, music played compressed rather than decoded whole (today
-   300 MB of memory), at a lower bitrate (A1–A4); then some styles' own tracks, played with a
-   chance at each look's start and paused for some rounds after (B1–B2). The plan is in
-   [`STYLE_MUSIC.md`](./STYLE_MUSIC.md).
+4. **Music for the styles** (the users' idea, 2026-10-18), **next**: Package A, audio loaded once
+   behind a loading screen, cached and played compressed, is built (ARCHIVE 14b, v0.9.11). Open:
+   Package B (B1–B2), some styles' own tracks, played with a chance at every start of a look and
+   paused per style for some rounds after — the next session's, once the user has the tracks. The
+   plan is in [`STYLE_MUSIC.md`](./STYLE_MUSIC.md).
 
 Only open work is kept here. Finished packages move to `ARCHIVE.md` under their old
 numbers — 11.1 scoring, 11.7 team mode, 11.8 the visual pass, 11.9 the themes, 11.10 the

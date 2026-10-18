@@ -173,8 +173,17 @@ Full detail in PLAN.md §1. The parts that surprise people:
 
 ## Status
 
-**Done** (2026-10-18; the latest release **v0.9.10**, 2026-10-18, protocol 28, recording format 4,
+**Done** (2026-10-18; the latest release **v0.9.11**, 2026-10-18, protocol 28, recording format 4,
 which a test session needs the server rebuilt and every page reloaded for):
+
+- **Audio loaded once** (ARCHIVE 14b, 2026-10-18, v0.9.11; Package A of `docs/STYLE_MUSIC.md`):
+  every sound and music file fetched once behind a loading screen before the first menu, its bar
+  counting bytes; the server's `ETag`, `Cache-Control: no-cache` and 304s, so a reload downloads
+  nothing; the music re-encoded to MP3 at 96 kbps, loudness normalised (25 MB → 9.2 MB), kept
+  compressed and played by an `<audio>` element through the music bus — the page's memory in an
+  eight-player match 633 MB → 356 MB.
+- **Each style's own cannon as the placement icon** (ARCHIVE 13zv, v0.9.9), drawn by the style
+  (`drawCannonIcon`) and rendered once to an image; the towers' own sounds (13zx).
 
 - **Special towers** (2026-10-14 to 2026-10-16, ARCHIVE 13zk–13zo, the design and what is open in
   `docs/SPECIAL_TOWERS.md`): Big Bertha, the Architect, the Rapid Cannon and (2026-10-17, ARCHIVE
@@ -321,20 +330,21 @@ which a test session needs the server rebuilt and every page reloaded for):
   every effect kept; no memory kept by a swap of looks (ARCHIVE 12q); every look, corner
   piece and German checked in play by the user (ARCHIVE 12n–12t).
 
-**Next** — PLAN §11: towards a first feature-ready version. Special towers (item 2), play-tested
-with no issues found (ARCHIVE 13zp), their balance closed (ARCHIVE 13zw, the user's): the remaining
-soaks dropped, the bots' buying rule kept, and **off by default for good** — a wacky addition, not
-the base game; their own sounds are in (ARCHIVE 13zx). Open there: the user's decisions on the
-next tower and a test without the cap of three. A new tower is balanced at Level 5 only, its variants
-against each other and against no tower (the user's). Each style's own cannon as the placement
-icon is built and reviewed, every icon kept as it is (ARCHIVE 13zv); behind `art.cannonIcons`
-(`"style"`, the default, or `"generic"`, the old SVG) until the testers choose (item 3), and
-`?icons=sheet` shows every style's icon side by side. Audio loaded once behind a loading screen is
-built (item 4, ARCHIVE 14b); some styles' own music, its Package B, is planned in
-`docs/STYLE_MUSIC.md`. Bots that hold ground as people do are done (ARCHIVE 13zj).
-The bot learning work is closed, its remaining steps dropped (the user's decision, 2026-10-14;
-ARCHIVE 13zg). French is not to be done. Signing the Windows app was explained (PLAN §12) and is
-not pursued for now.
+**Next** — PLAN §11, towards a first feature-ready version:
+
+- **The styles' own music** (item 4, Package B of `docs/STYLE_MUSIC.md`), the next session's work,
+  once the user has the tracks: some styles' own track, played with a chance (`styleTrackChance`,
+  50%) at every start of a look and paused per style for `styleTrackPauseRounds` (3) after —
+  both in the audio manifest — on the framework Package A built (ARCHIVE 14b).
+- **Special towers** (item 2): the user's decisions on the next tower (the Bastion is liked most)
+  and a test without the cap of three. Their balance is closed and they are **off by default for
+  good** — a wacky addition, not the base game (ARCHIVE 13zw); a new tower is balanced at Level 5
+  only, its variants against each other and against no tower (the user's).
+- **The testers' choice of cannon icon** (item 3): each style's own gun or the generic cannon,
+  `art.cannonIcons` (`"style"`, the default, or `"generic"`); `?icons=sheet` shows every style's.
+
+Closed for good: the bot learning work (ARCHIVE 13zg) and French (the user's decisions). Signing
+the Windows app was explained (PLAN §12) and is not pursued for now.
 
 **Declined for budget** (PLAN §12): macOS builds (Apple's paid signing) and a hosted public
 server. This is a fan project with no budget: propose nothing that costs money to run.

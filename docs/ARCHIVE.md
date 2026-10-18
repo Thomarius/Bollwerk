@@ -9229,3 +9229,11 @@ before, as the framework the styles' own music (Package B) will extend.
   music file, counted in bytes. Weighed by file it leapt to two thirds as fifty small sounds
   finished and crawled through the music; by bytes, the music asked for first and an unknown
   file's length guessed by its kind (`loadProgress`), it climbed evenly, 2% to 96% over 11 s.
+
+## 14c. v0.9.11 (2026-10-18)
+
+Audio loaded once (14b): every sound and music file fetched once behind a loading screen before
+the first menu, kept by the browser between visits by the server's `ETag` and 304s, the music
+re-encoded at 96 kbps and loudness normalised, played compressed rather than decoded whole.
+Protocol 28 still, the state hash and recording format unchanged: a v0.9.10 page can still join,
+and v0.9.10's recordings replay.
