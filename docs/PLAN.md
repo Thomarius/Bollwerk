@@ -1643,6 +1643,10 @@ fit (ARCHIVE 12z), its remaining steps dropped (the user's decision, 2026-10-14;
    Package B (B1–B2), some styles' own tracks, played with a chance at every start of a look and
    paused per style for some rounds after — the next session's, once the user has the tracks. The
    plan is in [`STYLE_MUSIC.md`](./STYLE_MUSIC.md).
+5. **A Sports style** (the users' choice of the themes brainstormed, 2026-10-18; an idea, not yet
+   designed): a stadium, its guns stick figures of ball sports throwing, kicking or serving their
+   own balls, each without its ball until the shot lands. Written down in
+   [`SPORTS_STYLE.md`](./SPORTS_STYLE.md).
 
 Only open work is kept here. Finished packages move to `ARCHIVE.md` under their old
 numbers — 11.1 scoring, 11.7 team mode, 11.8 the visual pass, 11.9 the themes, 11.10 the

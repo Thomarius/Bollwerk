@@ -19,7 +19,8 @@ is uncredited. Every sound is from OpenGameArt.org, but three music tracks from 
 License, credited to their authors as they ask).
 
 **`docs/PLAN.md` is the design and the open work** — read it before changing rules,
-terrain or bots; a design of its own (`docs/SPECIAL_TOWERS.md`, `docs/STYLE_MUSIC.md`) lives
+terrain or bots; a design of its own (`docs/SPECIAL_TOWERS.md`, `docs/STYLE_MUSIC.md`,
+`docs/SPORTS_STYLE.md`) lives
 beside it until built, then is retired into the ARCHIVE. **`docs/ARCHIVE.md`** records how each decision
 was reached, with the measurements and the reverted attempts; consult it before re-trying
 something. This file is the orientation.
@@ -340,6 +341,8 @@ which a test session needs the server rebuilt and every page reloaded for):
   and a test without the cap of three. Their balance is closed and they are **off by default for
   good** — a wacky addition, not the base game (ARCHIVE 13zw); a new tower is balanced at Level 5
   only, its variants against each other and against no tower (the user's).
+- **A Sports style** (item 5), after the music: an idea in `docs/SPORTS_STYLE.md` — a stadium,
+  its guns stick figures of ball sports with their balls, the ball missing until the shot lands.
 - **The testers' choice of cannon icon** (item 3): each style's own gun or the generic cannon,
   `art.cannonIcons` (`"style"`, the default, or `"generic"`); `?icons=sheet` shows every style's.
 
