@@ -3,7 +3,14 @@ import type { CraterPattern } from '@bollwerk/config';
 import { distanceFixed, distanceSquared } from './math.js';
 import { playerOf, type Rejection } from './placement.js';
 import { strikeLightning } from './lightning.js';
-import { craterOf, flightFactorOf, isImpactTower, isLoaded, noteLostWall } from './specials.js';
+import {
+  craterTilesOf,
+  fixedFlightMsOf,
+  flightFactorOf,
+  isImpactTower,
+  isLoaded,
+  noteLostWall,
+} from './specials.js';
 import { sameTeam } from './teams.js';
 import { Structure, type Cannon, type MatchState, type Shot } from './types.js';
 
@@ -96,6 +103,24 @@ export function flightTicks(
   return Math.max(1, Math.ceil((flightMs * state.ruleset.tickRateHz) / 1000));
 }
 
+/**
+ * A shot's flight from this gun, in ticks: by distance, times the gun's factor — or the
+ * Allerdickste Bertha's, fixed whatever the distance.
+ */
+function shotFlightTicks(
+  state: MatchState,
+  cannon: Cannon,
+  fromX: number,
+  fromY: number,
+  tx: number,
+  ty: number,
+): number {
+  const fixed = fixedFlightMsOf(state.ruleset, cannon.kind, cannon.cost);
+  if (fixed !== null) return Math.max(1, Math.ceil((fixed * state.ruleset.tickRateHz) / 1000));
+  const factor = flightFactorOf(state.ruleset, cannon.kind, cannon.cost);
+  return flightTicks(state, fromX, fromY, tx, ty, factor);
+}
+
 export function fire(
   state: MatchState,
   playerId: number,
@@ -143,16 +168,7 @@ export function fire(
     toX: tx,
     toY: ty,
     launchTick: state.tick,
-    impactTick:
-      state.tick +
-      flightTicks(
-        state,
-        fromX,
-        fromY,
-        tx,
-        ty,
-        flightFactorOf(state.ruleset, cannon.kind, cannon.cost),
-      ),
+    impactTick: state.tick + shotFlightTicks(state, cannon, fromX, fromY, tx, ty),
   };
   cannon.shotIds.push(shot.id);
   state.shots.push(shot);
@@ -222,7 +238,7 @@ export function resolveImpacts(state: MatchState): void {
     // is only its reload, an ordinary shot's flight, which lands nothing.
     if (shot.kind === 'lightning') continue;
 
-    const offsets = craterOffsets(craterOf(state.ruleset, shot.kind, shot.cost));
+    const offsets = craterTilesOf(state.ruleset, shot.kind, shot.cost);
     const destroyed: number[] = [];
     for (const [ox, oy] of offsets) {
       const tx = shot.toX + ox;

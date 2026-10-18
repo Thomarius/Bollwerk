@@ -861,9 +861,12 @@ export class Scene {
     );
   }
 
-  /** A Big Bertha's shot has landed here: its blast, over whichever look is in front. */
-  noteBlast(x: number, y: number): void {
-    this.towers.noteBlast(x, y);
+  /**
+   * A Big Bertha's shot — or the Allerdickste's — has landed here, clearing these tiles round
+   * it: its blast, over whichever look is in front.
+   */
+  noteBlast(x: number, y: number, crater: readonly (readonly [number, number])[]): void {
+    this.towers.noteBlast(x, y, crater);
   }
 
   /** An Architect has rebuilt these walls for this player: they shimmer back. */

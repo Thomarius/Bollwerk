@@ -210,6 +210,29 @@ whenever it is ready it fires first, as Big Bertha does.
 - **Bots** aim it at the block of an opponent's weakest wall with the most of their wall within
   its reach, by the misses of their level, and buy and site it as an ordinary gun goes.
 
+### 2.5 The Allerdickste Bertha
+
+The user's design (2026-10-17): an absolutely massive cannon, one enormous shell a combat phase,
+so the one shot has to count. Big Bertha made bigger and slower, an impact tower that fires first
+whenever it is ready, as she does (the user's: no button of its own).
+
+- **One shell a combat phase.** Its flight is fixed, **10 seconds** near or far (`flightMs`), and
+  the flight is the reload: as long as the combat phase, so it fires once in each. Fired late, it
+  lands in the intermission, which waits for the last shot down — accepted (the user's: nobody
+  holds their first shot for long).
+- **Its crater a circle**: every tile whose centre is within `craterRadius` of the tile aimed at
+  — **4.5** at cost 2 (69 tiles, 9 across), **5.5** at cost 3 (97, 11 across), set by the soaks
+  (§5 BB) from a first try of 3 and 4; a fractional radius moves it a few tiles at a time, as the
+  Architect's reach does. Only opponents' walls, as every shot.
+- **A tower like the rest**: 2×2, at both costs, under the cap of three (the user's).
+- **Seen and heard**: a lit bomb for its emblem; while it is ready, its circle outlined under the
+  cursor and a ring of flames as wide; a blast over every tile it clears, longer than Bertha's;
+  fired with a cannon's sound, landing with its own (`tower_biggest_impact`,
+  `tower_biggestbertha.mp3`). No warning for the target (the user's): you see only your own
+  shots.
+- **Bots** aim it as Big Bertha, where its crater takes the most of an opponent's weakest wall,
+  and buy and site it as an ordinary gun goes.
+
 ---
 
 ## 3. Where it lives
@@ -461,6 +484,23 @@ user's). Lightning 2 / Lightning 3 against none, then Lightning 3's share head t
 Kept: the jumps as designed and a miss chance of **0.6** at both costs (the user's) — every figure
 inside the goal, and the dearer variant the stronger again, which 0.7 had turned round. Level 5
 sits near the goal's upper edge; 0.7 is the cautious fallback should play find it too strong.
+
+### BB — The Allerdickste Bertha's balance
+
+Built 2026-10-17 (§2.5). Measured at Level 5 only (§1): each variant against no tower and the two
+head to head, 96 matches a pairing (±5), the crater's radius the lever (ARCHIVE 13zz). Cost 2 /
+cost 3 against none, then 3 against 2:
+
+| radius (cost 2 / 3) | against none | head to head |
+| ------------------- | ------------ | ------------ |
+| 3 / 4               | 45 / 42      | 50           |
+| 5 / 6               | 69 / 71      | 65           |
+| 4.5 / 5             | 63 / 49      | 40           |
+| **4.5 / 5.5**       | **63 / 63**  | **52**       |
+
+Kept: 4.5 and 5.5. A wall is a thin line, so a wider circle takes only a few more of its blocks,
+and one shell a phase is worth less than the cannons it costs until the crater is wide; the
+dearer variant needs a radius one larger to make up for its third cannon.
 
 ### After ST8 — two decisions
 

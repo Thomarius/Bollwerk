@@ -9169,3 +9169,29 @@ until the testers choose; the towers' own sounds (13zx); the tower menu keeping 
 when the tower changes; and the towers' balance closed, off by default for good (13zw). Protocol
 27 still, the state hash and recording format unchanged: a v0.9.8 page can still join, and
 v0.9.8's recordings replay.
+
+## 13zz. The Allerdickste Bertha (2026-10-17)
+
+The user's design, settled with them before building (SPECIAL_TOWERS.md §2.5): an absolutely
+massive cannon whose one shell a combat phase has to count. A fifth tower, `biggest`, at costs 2
+and 3, 2×2 and under the cap of three like the rest: an impact tower that fires first whenever it
+is ready (Bertha's rule kept, the user's, over a button of its own); its flight fixed at 10
+seconds near or far (`flightMs`), the flight its reload, so once a combat phase — fired late it
+lands in the intermission, which waits for it (accepted: nobody holds their first shot); its
+crater a circle (`craterRadius`, `circleOffsets`), only opponents' walls. The kind and variants are
+appended to the hash's codes and `specials.biggest` is optional, so hash version 4 and recording
+format 4 stand and v0.9.9's recordings replay; protocol 28.
+
+**Balanced at Level 5**, 96 matches a pairing, the radius the lever, cost 2 / cost 3 against no
+tower and 3 against 2: radius 3 / 4 gave 45 / 42 and 50 — one shell a phase is worth less than
+two or three cannons when a wall is a thin line a wider circle takes only a few more blocks of;
+5 / 6 gave 69 / 71 and 65, cost 3 too far ahead; 4.5 / 5 gave 63 / 49 and 40, the third cannon
+costing cost 3 some 20 points at the same radius; **4.5 / 5.5 gave 63 / 63 and 52**, kept — 69
+and 97 tiles, 9 and 11 across.
+
+In the client: a lit bomb for its emblem; while it is ready, its circle outlined under the cursor
+and a ring of flames as wide; a blast over every tile it clears, longer for a wider crater; the
+menu's sixth card (the panel widened to keep one row) and its preview, the real 10 seconds in the
+air; How to play. Fired with a cannon's sound, landing with `tower_biggestbertha.mp3`, the user's,
+CC0 from OpenGameArt (`tower_biggest_impact`). Bots aim it as Bertha, where its crater takes the
+most of an opponent's weakest wall, and buy it by the rule every tower has.

@@ -63,6 +63,8 @@ const GLYPH: Record<TowerVariant, string> = {
   rapid3: 'R',
   lightning2: 'l',
   lightning3: 'L',
+  biggest2: 'g',
+  biggest3: 'G',
 };
 
 /** Before the first shot of a loop, after its last lands, and before the repair. */

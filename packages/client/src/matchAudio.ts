@@ -56,8 +56,8 @@ const KNOCK_MS = 300;
 export class MatchAudio {
   private phase: Phase | null = null;
   private countedAt = -1;
-  /** Big Bertha's shots in the air, by id, for the heavier landing. */
-  private readonly heavy = new Set<number>();
+  /** Either Bertha's shots in the air, by id, with the cue of each one's heavier landing. */
+  private readonly heavy = new Map<number, SfxCue>();
 
   constructor(
     private readonly audio: Cues,
@@ -78,17 +78,19 @@ export class MatchAudio {
 
         case 'shot_fired':
           // Every gun but the Lightning Tower fires with a cannon's sound, Big Bertha and the
-          // Rapid Cannon too (the user's, 2026-10-17); Bertha's shot is kept for its landing. A
+          // Rapid Cannon too (the user's, 2026-10-17); either Bertha's shot is kept for its landing. A
           // Lightning Tower's is heard as it strikes (`lightning_struck`), on the same tick.
           if (event.shot.kind === 'lightning') break;
-          if (event.shot.kind === 'bertha') this.heavy.add(event.shot.id);
+          if (event.shot.kind === 'bertha') this.heavy.set(event.shot.id, 'tower_impact');
+          if (event.shot.kind === 'biggest') this.heavy.set(event.shot.id, 'tower_biggest_impact');
           this.audio.play('cannon_fire');
           break;
 
         case 'shot_impact':
           // One explosion whatever it hits: a separate cue for a wall was planned and
           // dropped by the user, the impact's sound being enough.
-          this.audio.play(this.heavy.delete(event.shotId) ? 'tower_impact' : 'shot_impact');
+          this.audio.play(this.heavy.get(event.shotId) ?? 'shot_impact');
+          this.heavy.delete(event.shotId);
           break;
 
         case 'lightning_struck':

@@ -25,6 +25,19 @@ export const EMBLEMS: Record<SpecialKind, readonly (readonly number[])[]> = {
   ],
   // A lightning bolt, falling left to right.
   lightning: [[0.6, 0, 0.18, 0.56, 0.46, 0.56, 0.32, 1, 0.82, 0.38, 0.54, 0.38, 0.74, 0]],
+  // A round bomb, its fuse lit: bigger than anything Bertha fires.
+  biggest: [
+    [
+      0.78, 0.6, 0.753, 0.738, 0.675, 0.855, 0.558, 0.933, 0.42, 0.96, 0.282, 0.933, 0.165, 0.855,
+      0.087, 0.738, 0.06, 0.6, 0.087, 0.462, 0.165, 0.345, 0.282, 0.267, 0.42, 0.24, 0.558, 0.267,
+      0.675, 0.345, 0.753, 0.462,
+    ],
+    [0.6, 0.3, 0.72, 0.18, 0.84, 0.3, 0.72, 0.42],
+    [
+      0.86, 0, 0.888, 0.092, 0.99, 0.12, 0.888, 0.148, 0.86, 0.25, 0.832, 0.148, 0.73, 0.12, 0.832,
+      0.092,
+    ],
+  ],
 };
 
 /** A cannon seen from the side, for the icons: a barrel raised over a wheel, in a unit box. */

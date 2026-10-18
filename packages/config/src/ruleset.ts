@@ -7,7 +7,7 @@ export type CraterPattern = z.infer<typeof CraterPatternSchema>;
 const ms = z.number().int().nonnegative();
 
 /** The special towers a player may bring (docs/SPECIAL_TOWERS.md), in their order everywhere. */
-export const SPECIAL_KINDS = ['bertha', 'architect', 'rapid', 'lightning'] as const;
+export const SPECIAL_KINDS = ['bertha', 'architect', 'rapid', 'lightning', 'biggest'] as const;
 export const SpecialKindSchema = z.enum(SPECIAL_KINDS);
 export type SpecialKind = z.infer<typeof SpecialKindSchema>;
 
@@ -31,6 +31,8 @@ export const TOWER_VARIANTS = [
   'rapid3',
   'lightning2',
   'lightning3',
+  'biggest2',
+  'biggest3',
 ] as const satisfies readonly `${SpecialKind}${TowerCost}`[];
 export const TowerVariantSchema = z.enum(TOWER_VARIANTS);
 export type TowerVariant = z.infer<typeof TowerVariantSchema>;
@@ -94,6 +96,22 @@ const LightningSchema = z.strictObject({
 });
 
 /**
+ * The Allerdickste Bertha (2026-10-17, the user's): one enormous shell a combat phase, its
+ * crater a circle. Its flight is fixed, whatever the distance — and the flight is the reload,
+ * so a flight as long as the combat phase fires it once in each.
+ */
+const BiggestSchema = z.strictObject({
+  footprint,
+  /** The shell's flight, in milliseconds, near or far alike. */
+  flightMs: z.number().int().positive(),
+  /**
+   * The crater: every tile whose centre is no farther than this from the tile aimed at, in
+   * tiles — a circle, as the Architect's reach is (radius 3 clears 29 tiles, 4 clears 49).
+   */
+  craterRadius: z.number().nonnegative(),
+});
+
+/**
  * Special towers (docs/SPECIAL_TOWERS.md): a cannon with an ability of its own, bought in
  * the cannon phase for several ordinary ones. Whether they are played at all is `enabled`,
  * which a match's settings write; the rest is each variant's balance.
@@ -118,13 +136,20 @@ export const SpecialsSchema = z.strictObject({
    * before it — v0.9.7's recordings — and then not offered.
    */
   lightning: byCost(LightningSchema).optional(),
+  /**
+   * One enormous shell a combat phase (2026-10-17). Absent from rulesets written before it —
+   * v0.9.9's recordings — and then not offered.
+   */
+  biggest: byCost(BiggestSchema).optional(),
 });
 export type Specials = z.infer<typeof SpecialsSchema>;
 export type BerthaVariant = z.infer<typeof BerthaSchema>;
 export type ArchitectVariant = z.infer<typeof ArchitectSchema>;
 export type RapidVariant = z.infer<typeof RapidSchema>;
 export type LightningVariant = z.infer<typeof LightningSchema>;
-export type VariantConfig = BerthaVariant | ArchitectVariant | RapidVariant | LightningVariant;
+export type BiggestVariant = z.infer<typeof BiggestSchema>;
+export type VariantConfig =
+  BerthaVariant | ArchitectVariant | RapidVariant | LightningVariant | BiggestVariant;
 
 /** The variants the ruleset offers, in their order everywhere. */
 export function offeredVariants(specials: Specials): TowerVariant[] {

@@ -31,6 +31,8 @@ export const SFX_CUES = [
    * sound, as the Rapid Cannon does (the user's, 2026-10-17).
    */
   'tower_impact',
+  /** The Allerdickste Bertha's shell landing, bigger still. */
+  'tower_biggest_impact',
   /** A Lightning Tower's strike, once however many walls it jumps to. */
   'lightning_strike',
   /** The player's own Architect rebuilding their walls as a barrage ends, twice a tower. */

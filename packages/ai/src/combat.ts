@@ -8,8 +8,7 @@ import {
 import {
   Structure,
   Terrain,
-  craterOf,
-  craterOffsets,
+  craterTilesOf,
   heldValue,
   isImpactTower,
   isLoaded,
@@ -226,7 +225,7 @@ export class Gunner {
     const weakest = new Set(weakestWall(state, opponent));
     if (weakest.size === 0) return null;
     if (tower.kind === 'lightning') return this.lightningTarget(state, tower, weakest, taken);
-    const offsets = craterOffsets(craterOf(state.ruleset, tower.kind, tower.cost));
+    const offsets = craterTilesOf(state.ruleset, tower.kind, tower.cost);
     const rivalWall = (i: number): boolean => {
       if (state.structure[i] !== Structure.Wall) return false;
       const owner = state.owner[i] as number;

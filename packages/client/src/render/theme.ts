@@ -341,10 +341,10 @@ function drawImpactReadiness(
 ): void {
   const impact = ghost.impact;
   if (impact === null || impact === undefined) return;
-  // Big Bertha and the Lightning Tower bring their own, drawn over both looks (`TowerMarks`):
-  // her flames and cross, its crackle.
+  // Both Berthas and the Lightning Tower bring their own, drawn over both looks (`TowerMarks`):
+  // their flames and crater, its crackle.
   const own = ghost.nextTower?.kind;
-  if (impact.ready && (own === 'bertha' || own === 'lightning')) return;
+  if (impact.ready && (own === 'bertha' || own === 'biggest' || own === 'lightning')) return;
   if (impact.ready) {
     const r = view.tile * 1.1;
     g.circle(cx, cy, r);

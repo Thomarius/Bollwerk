@@ -703,12 +703,13 @@ const TOWER_ROUND: readonly { kind: SpecialKind; cost: number }[] = [
   { kind: 'architect', cost: 2 },
   { kind: 'rapid', cost: 3 },
   { kind: 'lightning', cost: 2 },
+  { kind: 'biggest', cost: 3 },
 ];
 const TOWER_MS = 3000;
 
 /**
  * 6. Special towers, where the table plays them: two or three cannons draw together and become
- * one tower, each of the three in turn. What each does is told in the tower menu, where it is
+ * one tower, each in turn. What each does is told in the tower menu, where it is
  * chosen, so not here.
  */
 const towersPage: HowToPage = {

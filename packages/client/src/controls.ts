@@ -6,8 +6,7 @@ import {
   canPlacePiece,
   currentPieceId,
   computeEnclosure,
-  craterOf,
-  craterOffsets,
+  craterTilesOf,
   findReadyCannon,
   footprintOf,
   isImpactTower,
@@ -161,7 +160,7 @@ export function nextTowerShot(
 ): { kind: SpecialKind; crater: readonly (readonly [number, number])[] } | null {
   const next = findReadyCannon(state, playerId, x, y);
   if (next === null || next.kind === 'cannon' || !isImpactTower(next.kind)) return null;
-  return { kind: next.kind, crater: craterOffsets(craterOf(state.ruleset, next.kind, next.cost)) };
+  return { kind: next.kind, crater: craterTilesOf(state.ruleset, next.kind, next.cost) };
 }
 
 /**

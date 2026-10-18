@@ -1622,8 +1622,8 @@ fit (ARCHIVE 12z), its remaining steps dropped (the user's decision, 2026-10-14;
 (the user's decision, 2026-10-06). Still open:
 
 2. **Special towers** (the user's idea, 2026-10-11): each player may bring one special tower,
-   bought in the cannon phase for two or three cannons — Big Bertha, Architect, Rapid Cannon and
-   the Lightning Tower (ARCHIVE 13zs), each at both costs — chosen in the tower menu, with an on/off switch among the match settings
+   bought in the cannon phase for two or three cannons — Big Bertha, Architect, Rapid Cannon,
+   the Lightning Tower (ARCHIVE 13zs) and the Allerdickste Bertha (13zz), each at both costs — chosen in the tower menu, with an on/off switch among the match settings
    (off by default, for good: a wacky addition, not the base game — the user's, ARCHIVE 13zw).
    Built, in How to play (ARCHIVE 13zr), and play-tested by the users with no issues found (13zp);
    the balance closed, its remaining soaks dropped and the bots' buying rule kept (13zw). Open: two

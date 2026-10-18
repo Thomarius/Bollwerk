@@ -179,7 +179,9 @@ which a test session needs the server rebuilt and every page reloaded for):
 - **Special towers** (2026-10-14 to 2026-10-16, ARCHIVE 13zk–13zo, the design and what is open in
   `docs/SPECIAL_TOWERS.md`): Big Bertha, the Architect, the Rapid Cannon and (2026-10-17, ARCHIVE
   13zs, v0.9.8) the Lightning Tower — a strike on the instant that
-  jumps from wall to wall, its chance from the seed — each at a cost of 2 and 3 cannons, bought in the cannon phase with the right button, switched on per table (off by
+  jumps from wall to wall, its chance from the seed — and (2026-10-17, ARCHIVE 13zz) the
+  Allerdickste Bertha, one shell a combat phase, 10 seconds in the air, a crater a circle 9 or
+  11 blocks across — each at a cost of 2 and 3 cannons, bought in the cannon phase with the right button, switched on per table (off by
   default). The rules in `sim/src/specials.ts`; bots buy, site and fire them; a tower scores as
   the cannons it cost. Balanced in two-player soaks to 50–70% against no tower
   (`tools/headless/src/towerSoak.ts`, the harness's `--set`); the Architect's reach a circle from

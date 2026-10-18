@@ -40,6 +40,8 @@ const GUN_GLYPHS: Readonly<Record<string, { kind: CannonKind; cost: number }>> =
   r: { kind: 'rapid', cost: 2 },
   L: { kind: 'lightning', cost: 3 },
   l: { kind: 'lightning', cost: 2 },
+  G: { kind: 'biggest', cost: 3 },
+  g: { kind: 'biggest', cost: 2 },
 };
 
 export function stateFromAscii(

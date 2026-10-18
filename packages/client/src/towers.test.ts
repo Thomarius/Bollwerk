@@ -176,6 +176,10 @@ describe('the lobby with special towers', () => {
     expect(towerWhat('bertha2')).not.toBe(towerWhat('bertha3'));
     // A Bertha whose shell flies slower than a gun's says so.
     expect(towerWhat('bertha2', ruleset)).not.toBe(towerWhat('bertha3', ruleset));
+    // The Allerdickste's crater and her flight, as the rules have them.
+    expect(towerWhat('biggest2')).toContain('9 blocks across');
+    expect(towerWhat('biggest3')).toContain('11 blocks across');
+    expect(towerWhat('biggest3')).toContain('10 seconds');
   });
 });
 
@@ -186,9 +190,10 @@ describe('the tower menu', () => {
       { kind: 'architect', costs: [2, 3] },
       { kind: 'rapid', costs: [2, 3] },
       { kind: 'lightning', costs: [2, 3] },
+      { kind: 'biggest', costs: [2, 3] },
     ]);
     const html = towerMenuMarkup(null);
-    for (const kind of ['none', 'bertha', 'architect', 'rapid', 'lightning']) {
+    for (const kind of ['none', 'bertha', 'architect', 'rapid', 'lightning', 'biggest']) {
       expect(html).toContain(`data-kind="${kind}"`);
     }
     expect(html).toContain('class="card chosen" data-kind="none"');

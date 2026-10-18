@@ -6,6 +6,7 @@ import {
   type TextKey,
 } from '@bollwerk/config';
 import {
+  craterTilesOf,
   footprintOf,
   owesCastleChoice,
   type MatchEvent,
@@ -38,6 +39,7 @@ import { openingShot, winnerShot } from './camera.js';
 import { perf } from './perf.js';
 import { bannerProgress, looksAround, type Look } from './transition.js';
 import { Scene, createTheme, type Ghost, type SceneLook } from './render/scene.js';
+import { hasBlast } from './render/towerMarks.js';
 import { app, audio, showSoundButton } from './app.js';
 import { saveStyles } from './prefs.js';
 import type { Session, Setup } from './session.js';
@@ -166,8 +168,8 @@ export async function runSession(
    * never move, so this is measured once.
    */
   const islandCentre = new Map<number, { x: number; y: number }>();
-  /** Big Bertha's shots in the air, by id, for the blast each sets off as it lands. */
-  const heavyShots = new Set<number>();
+  /** Either Bertha's shots in the air, by id, with the tiles each clears, for its blast. */
+  const heavyShots = new Map<number, readonly (readonly [number, number])[]>();
   {
     const sums = new Map<number, { x: number; y: number; n: number }>();
     const board = session.state;
@@ -495,7 +497,11 @@ export async function runSession(
             owner: (islandId[i] as number) - 1,
           }));
           scene.noteImpact(event.x, event.y, debris);
-          if (heavyShots.delete(event.shotId)) scene.noteBlast(event.x, event.y);
+          const heavy = heavyShots.get(event.shotId);
+          if (heavy !== undefined) {
+            heavyShots.delete(event.shotId);
+            scene.noteBlast(event.x, event.y, heavy);
+          }
           // Only for your own wall: shots land all over the map, all the time.
           const human = session.humanPlayer;
           if (human >= 0 && !motionReduced() && debris.some((d) => d.owner === human)) {
@@ -508,8 +514,11 @@ export async function runSession(
           // A Lightning Tower's has struck already (`lightning_struck`); nothing of it flies.
           if (event.shot.kind === 'lightning') break;
           scene.noteShot(event.shot);
-          // Big Bertha's, for the blast its landing sets off.
-          if (event.shot.kind === 'bertha') heavyShots.add(event.shot.id);
+          // Either Bertha's, for the blast its landing sets off over the tiles it clears.
+          if (hasBlast(event.shot.kind)) {
+            const { kind, cost } = event.shot;
+            heavyShots.set(event.shot.id, craterTilesOf(session.state.ruleset, kind, cost));
+          }
           break;
         case 'lightning_struck': {
           const { width, islandId } = session.state;

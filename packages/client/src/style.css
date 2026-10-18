@@ -5292,7 +5292,8 @@ body.reduced-effects .look-gallery .card img {
   display: flex;
   flex-direction: column;
   gap: 0.9rem;
-  width: min(40rem, 94vw);
+  /* Six cards to a row: none and five towers. */
+  width: min(46rem, 94vw);
   max-height: 92vh;
   overflow-y: auto;
   padding: 1.2rem 1.4rem;
@@ -5316,7 +5317,7 @@ body.reduced-effects .look-gallery .card img {
 
 .tower-menu .cards {
   display: grid;
-  /* Five cards to a row at the panel's width: none and four towers. */
+  /* Every card in one row at the panel's width, the widest name ("Allerdickste") on one line. */
   grid-template-columns: repeat(auto-fill, minmax(6.6rem, 1fr));
   gap: 0.6rem;
 }

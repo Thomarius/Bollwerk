@@ -64,6 +64,10 @@
       "file": "sfx/tower_bertha.mp3",
       "volume": 0.8
     },
+    "tower_biggest_impact": {
+      "file": "sfx/tower_biggestbertha.mp3",
+      "volume": 0.9
+    },
     "lightning_strike": {
       "file": "sfx/tower_lightning.mp3",
       "volume": 0.6

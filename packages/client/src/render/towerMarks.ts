@@ -1,5 +1,5 @@
 import { variantCost, variantKind, type ArtConfig, type SpecialKind } from '@bollwerk/config';
-import { inRepairReach, repairRadiusOf, type MatchState } from '@bollwerk/sim';
+import { inRepairReach, repairRadiusOf, type CannonKind, type MatchState } from '@bollwerk/sim';
 import { Container, Graphics } from 'pixi.js';
 
 import { motionReduced } from '../motion.js';
@@ -83,11 +83,26 @@ function drawEmblem(
   g.fill({ color: fill, alpha });
 }
 
-/** A Big Bertha's blast as it plays: where, and how far through. */
+/** A Bertha's blast as it plays: where, the tiles it cleared round there, and how far through. */
 interface Blast {
   x: number;
   y: number;
+  crater: readonly (readonly [number, number])[];
+  /** How far the crater reaches from its middle, in tiles, for the ring and the length. */
+  reach: number;
   ms: number;
+}
+
+/** Whether a gun's landing sets off a blast: either Bertha's. */
+export function hasBlast(kind: CannonKind): boolean {
+  return kind === 'bertha' || kind === 'biggest';
+}
+
+/** How far a crater reaches from its middle, in whole tiles. */
+function craterReach(crater: readonly (readonly [number, number])[]): number {
+  let most = 0;
+  for (const [dx, dy] of crater) most = Math.max(most, Math.abs(dx), Math.abs(dy));
+  return most;
 }
 
 /** A Lightning Tower's bolt as it plays: its jagged course, in screen-independent tiles. */
@@ -109,6 +124,11 @@ interface Repair {
 }
 
 const BLAST_MS = 520;
+
+/** A blast's length: Bertha's, and longer by half again for every tile more a crater reaches. */
+function blastMs(blast: Blast): number {
+  return BLAST_MS * (1 + 0.5 * Math.max(0, blast.reach - 1));
+}
 const REPAIR_MS = 900;
 /** Between one strike of a chain and the next, so the bolt is seen jumping; then its fade. */
 const BOLT_STEP_MS = 90;
@@ -412,10 +432,14 @@ export class TowerMarks {
     drawEmblem(this.ghost, view, kind, cost, ghost.tile.x, ghost.tile.y, w, h, fill, 0.85);
   }
 
-  /** A ready Big Bertha's cross under the cursor, the tiles her shot would clear, and flames. */
+  /**
+   * A ready Bertha's crater under the cursor, the tiles her shot would clear, and flames — the
+   * Allerdickste's ring of them as wide as her crater, so the size of what is coming shows.
+   */
   private drawBertha(state: MatchState, view: ViewTransform, ghost: Ghost): void {
     const next = ghost.nextTower;
-    if (!ghost.aiming || ghost.tile === null || next?.kind !== 'bertha') return;
+    if (!ghost.aiming || ghost.tile === null || next === null || next === undefined) return;
+    if (!hasBlast(next.kind)) return;
     if (ghost.impact?.ready !== true) return;
     const { x, y } = ghost.tile;
     if (ghost.valid) {
@@ -434,14 +458,14 @@ export class TowerMarks {
       this.ghost,
       tileX(view, x + 0.5),
       tileY(view, y + 0.5),
-      view.tile * 1.1,
+      view.tile * (next.kind === 'biggest' ? craterReach(next.crater) + 0.6 : 1.1),
       performance.now(),
     );
   }
 
-  /** A Big Bertha's shot has landed here. */
-  noteBlast(x: number, y: number): void {
-    this.blasts.push({ x, y, ms: 0 });
+  /** A Bertha's shot has landed here, clearing these tiles round it. */
+  noteBlast(x: number, y: number, crater: readonly (readonly [number, number])[]): void {
+    this.blasts.push({ x, y, crater, reach: craterReach(crater), ms: 0 });
   }
 
   /**
@@ -489,24 +513,24 @@ export class TowerMarks {
     const still = motionReduced();
     for (const blast of this.blasts) {
       blast.ms += deltaMs;
-      const t = Math.min(1, blast.ms / BLAST_MS);
+      const t = Math.min(1, blast.ms / blastMs(blast));
       const cx = tileX(view, blast.x + 0.5);
       const cy = tileY(view, blast.y + 0.5);
-      // The crater's cross, flashing, and a ring spreading past it.
+      // The crater, flashing, and a ring spreading past it: Bertha's cross reaches a tile, so
+      // her ring was 0.6 to 2.2 tiles; a wider crater's spreads as much farther as it reaches.
       const fade = 1 - t;
-      for (const [dx, dy] of [
-        [0, 0],
-        [1, 0],
-        [-1, 0],
-        [0, 1],
-        [0, -1],
-      ] as const) {
+      for (const [dx, dy] of blast.crater) {
         g.rect(tileX(view, blast.x + dx), tileY(view, blast.y + dy), view.tile, view.tile);
       }
       g.fill({ color: IMPACT_GLOW, alpha: 0.45 * fade });
-      const r = view.tile * (still ? 1.6 : 0.6 + 1.6 * t);
+      const reach = Math.max(1, blast.reach);
+      const r = view.tile * reach * (still ? 1.6 : 0.6 + 1.6 * t);
       g.circle(cx, cy, r);
-      g.stroke({ width: Math.max(2, view.tile * 0.22 * fade), color: IMPACT_GLOW, alpha: fade });
+      g.stroke({
+        width: Math.max(2, view.tile * 0.22 * Math.sqrt(reach) * fade),
+        color: IMPACT_GLOW,
+        alpha: fade,
+      });
     }
     for (const repair of this.repairs) {
       repair.ms += deltaMs;
@@ -565,7 +589,7 @@ export class TowerMarks {
       }
     }
     this.bolts = this.bolts.filter((b) => b.ms < b.strikes.length * BOLT_STEP_MS + BOLT_FADE_MS);
-    this.blasts = this.blasts.filter((b) => b.ms < BLAST_MS);
+    this.blasts = this.blasts.filter((b) => b.ms < blastMs(b));
     this.repairs = this.repairs.filter((r) => r.ms < REPAIR_MS);
   }
 }

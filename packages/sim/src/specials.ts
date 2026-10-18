@@ -9,6 +9,7 @@ import {
 } from '@bollwerk/config';
 
 import type { Rejection } from './placement.js';
+import { craterOffsets } from './shots.js';
 import {
   Structure,
   type Cannon,
@@ -33,7 +34,7 @@ import {
  * tower that fires ordinary shots, however quickly, fires as any gun.
  */
 export function isImpactTower(kind: CannonKind): boolean {
-  return kind === 'bertha' || kind === 'lightning';
+  return kind === 'bertha' || kind === 'lightning' || kind === 'biggest';
 }
 
 /** The variant a tower of this kind and cost is; null for an ordinary cannon. */
@@ -53,18 +54,69 @@ export function footprintOf(
     : variantConfig(ruleset.specials, variant).footprint;
 }
 
-/** The factor on a shot's flight — its reload — for a gun of this kind and cost. */
+/**
+ * The factor on a shot's flight — its reload — for a gun of this kind and cost. The
+ * Allerdickste Bertha's flight is fixed instead (`fixedFlightMsOf`), so hers is 1.
+ */
 export function flightFactorOf(ruleset: Ruleset, kind: CannonKind, cost: number): number {
   const variant = variantFor(kind, cost);
-  return variant === null ? 1 : variantConfig(ruleset.specials, variant).flightFactor;
+  if (variant === null) return 1;
+  const config = variantConfig(ruleset.specials, variant);
+  return 'flightFactor' in config ? config.flightFactor : 1;
 }
 
-/** The crater a shot from a gun of this kind and cost clears. */
+/** The Allerdickste Bertha's flight in ms, the same near or far; null for every other gun. */
+export function fixedFlightMsOf(ruleset: Ruleset, kind: CannonKind, cost: number): number | null {
+  if (kind !== 'biggest') return null;
+  const biggest = ruleset.specials.biggest?.[cost as TowerCost];
+  if (biggest === undefined) throw new Error(`no biggest at cost ${cost} in this ruleset`);
+  return biggest.flightMs;
+}
+
+/** The crater a shot from a gun of this kind and cost clears, as a pattern. */
 export function craterOf(ruleset: Ruleset, kind: CannonKind, cost: number): CraterPattern {
   if (kind !== 'bertha') return ruleset.shots.craterPattern;
   const bertha = ruleset.specials.bertha[cost as TowerCost];
   if (bertha === undefined) throw new Error(`no bertha at cost ${cost} in this ruleset`);
   return bertha.crater;
+}
+
+/** Circles' tiles by radius, made once each. */
+const circles = new Map<number, readonly (readonly [number, number])[]>();
+
+/**
+ * The tiles a crater of this radius clears round the tile aimed at, relative to it: every
+ * tile whose centre is no farther than `radius` from its centre, row by row.
+ */
+export function circleOffsets(radius: number): readonly (readonly [number, number])[] {
+  const known = circles.get(radius);
+  if (known !== undefined) return known;
+  const reach = Math.floor(radius);
+  const out: (readonly [number, number])[] = [];
+  for (let dy = -reach; dy <= reach; dy++) {
+    for (let dx = -reach; dx <= reach; dx++) {
+      if (dx * dx + dy * dy <= radius * radius) out.push([dx, dy]);
+    }
+  }
+  circles.set(radius, out);
+  return out;
+}
+
+/**
+ * The tiles a shot from a gun of this kind and cost clears, relative to the tile aimed at:
+ * its pattern's (`craterOffsets`), or the Allerdickste Bertha's circle.
+ */
+export function craterTilesOf(
+  ruleset: Ruleset,
+  kind: CannonKind,
+  cost: number,
+): readonly (readonly [number, number])[] {
+  if (kind === 'biggest') {
+    const biggest = ruleset.specials.biggest?.[cost as TowerCost];
+    if (biggest === undefined) throw new Error(`no biggest at cost ${cost} in this ruleset`);
+    return circleOffsets(biggest.craterRadius);
+  }
+  return craterOffsets(craterOf(ruleset, kind, cost));
 }
 
 /** The Architect's repair radius at this cost, in tiles from its footprint's centre. */

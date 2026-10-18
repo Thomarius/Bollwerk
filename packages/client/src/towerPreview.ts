@@ -1,10 +1,18 @@
-import { artForStyle, defaultArtConfig, type ArtStyle, type TowerVariant } from '@bollwerk/config';
-import { computeEnclosure, type MatchEvent } from '@bollwerk/sim';
+import {
+  artForStyle,
+  defaultArtConfig,
+  variantCost,
+  variantKind,
+  type ArtStyle,
+  type TowerVariant,
+} from '@bollwerk/config';
+import { computeEnclosure, craterTilesOf, type MatchEvent } from '@bollwerk/sim';
 
 import { LookRotation } from './looks.js';
 import { motionReduced } from './motion.js';
 import { preferredStyles } from './prefs.js';
 import { createTheme, Scene } from './render/scene.js';
+import { hasBlast } from './render/towerMarks.js';
 import { TowerShow } from './towerShow.js';
 
 /**
@@ -143,8 +151,12 @@ export class TowerPreview {
             owner: (state.islandId[i] as number) - 1,
           }));
           scene.noteImpact(event.x, event.y, debris);
-          // In Big Bertha's show every shot is hers.
-          if (this.show?.variant?.startsWith('bertha') === true) scene.noteBlast(event.x, event.y);
+          // In either Bertha's show every shot is hers.
+          const variant = this.show?.variant ?? null;
+          if (variant !== null && hasBlast(variantKind(variant))) {
+            const crater = craterTilesOf(state.ruleset, variantKind(variant), variantCost(variant));
+            scene.noteBlast(event.x, event.y, crater);
+          }
           changed ||= event.destroyed.length > 0;
           break;
         }

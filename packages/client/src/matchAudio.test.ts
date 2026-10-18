@@ -297,7 +297,10 @@ describe('match audio', () => {
 });
 
 describe('special towers in the sound', () => {
-  const shot = (id: number, kind: 'cannon' | 'bertha' | 'rapid' | 'lightning'): MatchEvent => ({
+  const shot = (
+    id: number,
+    kind: 'cannon' | 'bertha' | 'rapid' | 'lightning' | 'biggest',
+  ): MatchEvent => ({
     kind: 'shot_fired',
     tick: 1,
     shot: {
@@ -334,6 +337,18 @@ describe('special towers in the sound', () => {
       'shot_impact',
       'tower_impact',
       'shot_impact',
+    ]);
+  });
+
+  it('fires the Allerdickste Bertha as a cannon, her landing the biggest of all', () => {
+    const { audio, match } = setup();
+    match.handle([shot(5, 'biggest'), shot(6, 'bertha')]);
+    match.handle([landed(6), landed(5)]);
+    expect(audio.sfx).toEqual([
+      'cannon_fire',
+      'cannon_fire',
+      'tower_impact',
+      'tower_biggest_impact',
     ]);
   });
 

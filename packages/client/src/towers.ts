@@ -26,6 +26,7 @@ const NAME_KEY = {
   architect: 'tower.architect',
   rapid: 'tower.rapid',
   lightning: 'tower.lightning',
+  biggest: 'tower.biggest',
 } as const;
 
 /** A tower's name, without its cost. */
@@ -56,11 +57,11 @@ export function towerWhat(variant: TowerVariant, ruleset: Ruleset = defaultRules
       // Her two costs differ by the shell's flight, which is her reload, so it is told
       // against a cannon's: as fast, faster or slower (the user's, 2026-10-16).
       return t(
-        config.flightFactor > 1
-          ? 'tower.berthaSlowWhat'
-          : config.flightFactor < 1
-            ? 'tower.berthaFastWhat'
-            : 'tower.berthaWhat',
+        !('flightFactor' in config) || config.flightFactor === 1
+          ? 'tower.berthaWhat'
+          : config.flightFactor > 1
+            ? 'tower.berthaSlowWhat'
+            : 'tower.berthaFastWhat',
       );
     case 'architect':
       // Its reach is a circle from the footprint's centre; told as blocks across, a whole number.
@@ -72,6 +73,14 @@ export function towerWhat(variant: TowerVariant, ruleset: Ruleset = defaultRules
     case 'lightning':
       return 'jumps' in config
         ? t('tower.lightningWhat', { n: config.jumps, r: config.jumpRadius })
+        : '';
+    case 'biggest':
+      // Its crater a circle round the tile hit, told as the Architect's reach is: blocks across.
+      return 'craterRadius' in config
+        ? t('tower.biggestWhat', {
+            n: Math.round(2 * config.craterRadius),
+            s: config.flightMs / 1000,
+          })
         : '';
   }
 }

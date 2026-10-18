@@ -67,13 +67,26 @@ describe('the tower menu’s preview, played by the rules', () => {
     expect(chain('lightning3')).toBe(4);
   });
 
+  it('lands the Allerdickste Bertha’s shell after ten seconds, cost 3’s clearing more', () => {
+    const cleared = (variant: TowerVariant): number => {
+      const { events } = play(variant, 12_000);
+      const shot = fired(events)[0];
+      const first = impacts(events)[0];
+      if (shot?.kind !== 'shot_fired' || first?.kind !== 'shot_impact') throw new Error('no shot');
+      expect(first.tick - shot.tick).toBe(10 * new TowerShow(variant).state.ruleset.tickRateHz);
+      return first.destroyed.length;
+    };
+    expect(cleared('biggest3')).toBeGreaterThan(cleared('biggest2'));
+  });
+
   it('loops: the walls come back and it plays again', () => {
     for (const variant of [null, ...TOWER_VARIANTS]) {
       const show = new TowerShow(variant);
       const walls = show.state.structure.filter((s) => s === Structure.Wall).length;
       let resets = 0;
       let shots = 0;
-      for (let t = 0; t < 20_000; t += 50) {
+      // The Allerdickste Bertha's shell is ten seconds in the air, so hers is the longest loop.
+      for (let t = 0; t < 30_000; t += 50) {
         const frame = show.advance(50);
         if (frame.reset) {
           resets++;
