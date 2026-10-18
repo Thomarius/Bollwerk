@@ -1636,6 +1636,11 @@ fit (ARCHIVE 12z), its remaining steps dropped (the user's decision, 2026-10-14;
    phase, built and reviewed (ARCHIVE 13zv), or the generic cannon of before — the switch
    `art.cannonIcons` (`"style"`, the default, or `"generic"`) until their feedback decides; then the
    loser and the switch go.
+4. **Music for every style** (the users' idea, 2026-10-18; planned, not yet built): each style
+   its own track, some 70 MB of MP3 — which first needs music loaded only when a look needs it and
+   played compressed, never decoded whole, or Random looks every round would cost gigabytes of
+   memory and every guest the whole download. The plan, its open decisions and the work packages
+   SM1–SM5 are in [`STYLE_MUSIC.md`](./STYLE_MUSIC.md).
 
 Only open work is kept here. Finished packages move to `ARCHIVE.md` under their old
 numbers — 11.1 scoring, 11.7 team mode, 11.8 the visual pass, 11.9 the themes, 11.10 the

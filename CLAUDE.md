@@ -19,7 +19,7 @@ is uncredited. Every sound is from OpenGameArt.org, but three music tracks from 
 License, credited to their authors as they ask).
 
 **`docs/PLAN.md` is the design and the open work** — read it before changing rules,
-terrain or bots; a design of its own (`docs/SPECIAL_TOWERS.md`) lives
+terrain or bots; a design of its own (`docs/SPECIAL_TOWERS.md`, `docs/STYLE_MUSIC.md`) lives
 beside it until built, then is retired into the ARCHIVE. **`docs/ARCHIVE.md`** records how each decision
 was reached, with the measurements and the reverted attempts; consult it before re-trying
 something. This file is the orientation.
@@ -329,7 +329,8 @@ next tower and a test without the cap of three. A new tower is balanced at Level
 against each other and against no tower (the user's). Each style's own cannon as the placement
 icon is built and reviewed, every icon kept as it is (ARCHIVE 13zv); behind `art.cannonIcons`
 (`"style"`, the default, or `"generic"`, the old SVG) until the testers choose (item 3), and
-`?icons=sheet` shows every style's icon side by side. Bots that hold ground as people do are done (ARCHIVE 13zj).
+`?icons=sheet` shows every style's icon side by side. Music for every style (item 4) is planned
+in `docs/STYLE_MUSIC.md`, its decisions open. Bots that hold ground as people do are done (ARCHIVE 13zj).
 The bot learning work is closed, its remaining steps dropped (the user's decision, 2026-10-14;
 ARCHIVE 13zg). French is not to be done. Signing the Windows app was explained (PLAN §12) and is
 not pursued for now.
