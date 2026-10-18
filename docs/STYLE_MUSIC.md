@@ -1,174 +1,163 @@
-# Music for every style — plan
+# Audio loaded once, and music for the styles — plan
 
-The users' idea (2026-10-18): each of the nineteen styles brings music of its own, supplied as MP3,
-some 70 MB in all. Planned here, not yet built; PLAN §11 item 4. The original files are kept by the
-user outside the repository before anything is converted.
-
----
-
-## 1. Why the way audio loads has to change first
-
-Today `client/src/audio.ts` (`loadAll`) fetches **every** file in the manifest as the page opens
-and decodes each into an `AudioBuffer` — raw samples, about 21–23 MB a minute of stereo music:
-
-- the nine music files now, some 13 minutes, already take about **300 MB of memory** decoded, on
-  every page;
-- 70 MB of MP3 is 50–75 minutes of music at 128–192 kbps: about **1.1–1.7 GB** decoded, and
-  seconds of decoding after the page opens — too much for weaker machines and browser tabs;
-- every page would download all 70 MB, though a match plays the music of one or two looks; a
-  guest downloads from the host's machine, whose home upload (5–20 Mbit/s) makes that 30 seconds
-  to 2 minutes a guest;
-- the release files grow by about 70 MB each, and the repository (102 MB now) by the files' size
-  for good — git cannot compress MP3, and every replaced track adds its whole size again. Git LFS
-  is not an option: beyond a small free allowance it costs money (PLAN §12).
-
-So the music must be **loaded when needed and never decoded whole**; the sound effects stay as they
-are (2 MB, decoded once, played at once, which they need).
+Two packages, in order (PLAN §11 item 4). **A** changes how the game's audio is loaded and played,
+for the files it has today. **B** builds on it: some styles bring a track of their own, played at
+times in place of the shared music. Planned here, not yet built. The user keeps every original
+music file outside the repository before anything is converted.
 
 ---
 
-## 2. What is decided
+## 1. Why the loading has to change
 
-- **One format for all music** (the user's): every track re-encoded once, from the user's originals,
-  to one format and bitrate, its loudness evened out.
-- **Loaded when needed**: a track is fetched only when a look that plays it is coming, and dropped
-  when no look on screen or coming plays it any more.
-- **Not decoded whole**: a track plays compressed through an `<audio>` element fed into the Web
-  Audio graph (`MediaElementAudioSourceNode`), so the music volume bus, mute and crossfades work as
-  now. It is fetched **whole** before it plays (into a `Blob`), not streamed, so a slow host never
-  makes it stutter mid-track.
-- **Random looks every round must not cause trouble** (the user's): a Random build look and a
-  Random combat look, each a new style every round, is the case the design is measured against
-  (§5).
-- **Nothing reaches the simulation**: music is the page's alone, so none of this can desync.
+Today `client/src/audio.ts` (`loadAll`) fetches every file in the manifest as the page opens and
+decodes each into an `AudioBuffer` — raw samples, about 21–23 MB a minute of stereo music. The nine
+music files, some 13 minutes, already take about **300 MB of memory** decoded on every page; the
+styles' tracks on top would take a gigabyte or more. And the server sends no caching headers
+(`server.ts` writes only the content type), so a page served by a host downloads every file again
+at every load.
 
----
-
-## 3. Decisions before building
-
-For the user, each with a suggestion:
-
-1. **Which phases play a style's track.** Suggested: the **build look's** style during castle
-   selection, cannon placement and building (today's `music_admin`), the **combat look's** during
-   combat (`music_battle`); the menu, the lobby, victory and defeat keep the shared tracks. One
-   style in both looks plays one track straight through the banners, without restarting.
-2. **One track a style, or two** (a calm one and a battle one). One is half the files; two keep
-   today's change of mood between building and combat.
-3. **When a track changes.** Today the next phase's music starts as the intermission opens, leading
-   into the announcement. A new look arrives only with its banner, near the intermission's end.
-   Suggested: a change of style crossfades as the banner's line crosses the screen, so the music
-   changes with the wipe.
-4. **A style without a track** plays today's shared track, so styles can get music one at a time.
-5. **Format and bitrate**: suggested **MP3, about 128 kbps stereo, 44.1 kHz**. Mac players use the
-   browser, and only MP3 plays in every browser and in the desktop app; Ogg/Opus would be a third
-   smaller but older Safari may not play it — today's two Ogg tracks (`music_battle`,
-   `music_defeat`) may be silent there already, and are converted too. 96 kbps if the size still
-   matters; each source file is measured first, since converting a file already at 128 kbps gains
-   nothing.
+Downloading every file at the start is not the problem; decoding every file is. So (the user's
+choice, 2026-10-18, over fetching tracks as looks need them): **every audio file is downloaded
+once, at the first load, behind a loading screen, and kept compressed; music is played compressed,
+never decoded whole; the browser keeps the files between visits.**
 
 ---
 
-## 4. How it works
+## 2. Package A — audio loaded once
 
-### 4.1 The files
+### 2.1 The music files, at a lower bitrate
 
-- `assets/audio/music/styles/<style>.mp3` (or `<style>.calm.mp3` and `<style>.battle.mp3`, §3.2),
-  one per style that has one, the style's id as in `ArtStyleSchema`.
-- Re-encoded once with `ffmpeg` from the user's originals: one bitrate, loudness normalised (EBU R128,
-  `loudnorm`, one target for every track, the shared ones included), and encoded gapless (LAME's
-  encoder delay written to the file), since an `<audio>` element otherwise shows MP3's padding as a
-  short gap at every loop.
-- Every file credited in `config/audio.manifest.json` (title, author, licence, source, changes —
-  "re-encoded at 128 kbps, loudness normalised"), as every audio file must be; `npm run credits`.
+The user's: the music's bitrate comes down whatever else is chosen.
 
-### 4.2 The manifest
+- Every music file re-encoded once with `ffmpeg`, from the user's originals, to **MP3, 96 kbps
+  stereo, 44.1 kHz**. MP3 because Mac players use the browser, and only MP3 plays in every browser
+  and in the desktop app; today's two Ogg tracks (`music_battle.ogg`, `.2.ogg`, `music_defeat.ogg`)
+  are converted too, and older Safari may not play them now.
+- Each original's bitrate measured first: one already at or below 96 kbps is kept as it is (a
+  lossy file converted again only loses).
+- Loudness evened out across the tracks (EBU R128, `loudnorm`, one target), and encoded gapless (the
+  encoder's delay written to the file), since an `<audio>` element otherwise shows MP3's padding as
+  a short gap at every loop.
+- Each changed file's credit in `config/audio.manifest.json` gains its change ("re-encoded at 96
+  kbps, loudness normalised"); `npm run credits`.
+- The sound effects stay as they are: 2 MB, short, needing to start at once.
 
-A style's music in `config/audio.manifest.json` under a key of its own (`styleMusic`, by style:
-file, volume, loop), behind the strict schema; a style left out plays the shared track. The shared
-music cues stay as they are.
+### 2.2 The server keeps them cached
 
-### 4.3 The player (`client/src/audio.ts`)
+The static handler (`server/src/server.ts`) sends, for every file it serves, an `ETag` (from the
+file's size and modification time) and `Cache-Control: no-cache`, and answers a request whose
+`If-None-Match` matches with **304 Not Modified** and no body. So the browser keeps every file, asks
+the host once per load whether it changed, and downloads only what did — a new release's changed
+files, never a stale one. The desktop app's window (Electron) caches the same way.
 
-- **Sound effects** as now: fetched and decoded as the page opens.
-- **Music**, shared and styles' alike: a track is a `MusicTrack` — its file fetched whole into a
-  `Blob` on request, played by an `<audio>` element from an object URL through a
-  `MediaElementAudioSourceNode` into the music bus, looped by the element, faded by a `GainNode`
-  as now.
-- **A small cache**, by path: what is playing, what is fading out, and what has been asked for
-  ahead. Anything else is dropped — its element stopped and detached, its object URL revoked — so
-  at most about four tracks are held, each 2–4 MB compressed. With Random looks a cache of more
-  would gain nothing: a cycle of styles plays every favourite once before any comes back
-  (`LookRotation`).
-- **Never waits**: a track asked to play before it has arrived keeps the old one playing and
-  crossfades as soon as it is ready; one that fails to load (a missing file decodes as nothing, the
-  static handler answering with `index.html`, CLAUDE.md) falls back to the shared track, quietly.
-- **Autoplay** as now: in a browser the music waits for the first click; the desktop app's window
-  always allows it.
+### 2.3 The loading screen
 
-### 4.4 Which track, and when (`client/src/styleMusic.ts`, pure)
+Before the first menu, a screen in the menu's look with a bar: **every sound and music file**
+fetched (the user's: everything before the menu, the simplest and certain), counted in bytes as
+they arrive. Then the menu opens, its music ready.
 
-Pure functions, tested without a browser, as `banners.ts` and `scores.ts` are:
+- From the player's own disk (the desktop app, a server on their machine) it is a second or two;
+  from a host the first time, as long as the host's upload takes — about 40 seconds for 45 MB at 10
+  Mbit/s, several guests at once sharing it — and moments ever after (§2.2).
+- A file that fails or is absent (the static handler answers a missing path with `index.html` and a
+  200, so a file that does not decode is absent, CLAUDE.md) counts as done and stays silent, as
+  `missingFilesAreSilent` says now: the loading never stops on it.
+- Fetching needs no click; only playing does, as the browser's autoplay rules have it — the menu's
+  music then starts at the first click, as now, and at once in the desktop app.
+- The dev pages (`?autostart`, `&snapshot=`, `?icons=`) load the same way, quickly from the dev
+  server.
 
-- `trackFor(phase, pending, styles)` — the track for this moment from the phase and the two looks'
-  styles (§3.1);
-- `tracksAhead(state, styles, coming)` — the tracks to fetch now: the current looks', and the
-  coming looks' once they are drawn.
+### 2.4 Playing
 
-### 4.5 Fetching ahead
+- **Sound effects** as now: decoded once into `AudioBuffer`s, played by buffer sources.
+- **Music**: every track held as its compressed bytes (a `Blob`); the one playing — and the one
+  fading out — played by an `<audio>` element from an object URL through a
+  `MediaElementAudioSourceNode` into the music bus, so the music volume, mute and crossfades work as
+  now. Looped by the element. A track not playing holds only its bytes: about 0.7 MB a minute at 96
+  kbps, so all of today's music in some 10 MB and the styles' tracks with it in some 40–55 MB,
+  against 300 MB decoded for today's alone.
 
-- **Random looks**: the next round's looks are drawn just after the build phase's resolution
-  (`prepareNextLooks` in `matchScreen.ts`), the combat look first. Their tracks are asked for then
-  — before the cannon phase and the combat phase have run, over 35 seconds before a combat look's
-  track is needed and longer for the build look's.
-- **Chosen looks**: both tracks asked for as the match opens; nothing more is fetched in the match.
-- **A style changed from the pause menu**: its track asked for at once and crossfaded in when ready.
-- **The menu and the lobby**: only the menu's track; a match's tracks as it opens, during the
-  opening's own preparation.
+### 2.5 Checked
 
----
-
-## 5. Random every round, measured
-
-Random build and combat looks each draw a new style every round, so a 10-round match brings up to
-twenty tracks. What makes that safe, and what is checked:
-
-- **Two fetches a round at most**, both well ahead (§4.5); a host's upload of 5 Mbit/s carries a
-  3 MB track in about 5 seconds a guest.
-- **Bounded memory**: the cache never holds more than the playing, fading and coming tracks. A test
-  plays the choosing logic through 30 rounds of Random looks and asserts the cache's size at every
-  step; in the page, the memory of a 10-round Random/Random match at eight players is measured
-  against today's (Chrome's task manager and `performance.memory`, before and after — today's
-  ~300 MB of decoded music should drop to some 20 MB).
-- **No waits and no gaps**: a 10-round Random/Random match is watched (`&watch=1`, GPU flags, real
-  time, CLAUDE.md) with a temporary log of each track's request, arrival and start; every track
-  must arrive before its banner. Then once over a throttled connection (Chrome's "Slow 4G" for a
-  guest) to see the fallback keep the old track playing.
-- **Frame times**: `&perf=1` at eight players across a few banners — starting an `<audio>` element
-  and creating an object URL must not show as a hitch where decoding a whole buffer would have.
+- Memory of a page in a 10-round match at eight players, before and after (Chrome's task manager,
+  `performance.memory`): today's ~300 MB of decoded music should drop to some 10 MB.
+- The loading screen against the dev server, the built server and a throttled connection (Chrome's
+  "Slow 4G"); a second load answered by 304s.
+- Every track's loop heard once for a gap; crossfades and the volume sliders as before;
+  `&perf=1` across the phase changes for a hitch where a track starts.
 
 ---
 
-## 6. Risks
+## 3. Package B — the styles' own tracks
 
-- **A late track**: covered by fetching ahead; the fallback keeps the old track.
-- **Loop gaps**: MP3 padding; covered by gapless encoding, checked by ear on every track.
-- **Memory creeping back** with many style changes: covered by the cache's drop rule and its test.
-- **Repository size**: about +40–70 MB once, for good. Replace tracks rarely; convert from the
-  originals, never from an already converted copy (each lossy pass loses a little).
-- **Release files** about 40–70 MB larger; acceptable for a game download.
+### 3.1 The user's rules (2026-10-18)
+
+- **Some styles get a track of their own**, one each, for building and combat alike. Not all:
+  generic or medieval styles (Medieval, Night) are the shared music's own and keep it.
+- **A chance, rolled at every start of a look**: whenever a build phase or a combat phase begins in
+  a style that has a track — the build look's span opening with the build phase (it runs on through
+  the cannon placement, the same look), the combat look's with combat — the style's track plays in
+  place of the shared one with a chance of **`styleTrackChance`, 50% to start**. Rolled even when the
+  style has not changed: a style chosen for both looks rolls at every build phase and every combat.
+- **A pause per style**: once a style's track has played, that style's track may not play again for
+  **`styleTrackPauseRounds`, 3 rounds to start**; until then the style plays the shared music. Other
+  styles' tracks are not held back. One consequence, as intended: a style whose track won as
+  building began, and which is also the combat look, rolls again at combat but finds its pause
+  running, and combat plays the shared battle music.
+- Both values in `config/audio.manifest.json`, behind its strict schema — set in the file, not in
+  any menu (the user's).
+
+### 3.2 Details to the rules
+
+- **What it replaces**: `music_admin` over the build look's span (castle selection, building, cannon
+  placement), `music_battle` over combat. The menu, the lobby, victory and defeat keep theirs.
+- **A round** is the match's round; the pauses start afresh with every match.
+- **The roll** is the page's own (`Math.random`), never the match's: music is no part of the
+  simulation, so two players at one table may hear different music, as they may see different looks.
+- **A style changed from the pause menu** mid-phase rolls as its look would have; one changed to
+  while its pause runs plays the shared music.
+- **The opening**: the first build-look span (castle selection, then the cannon placement) rolls as
+  any other.
+
+### 3.3 Built
+
+- **Files**: `assets/audio/music/styles/<style>.mp3`, by the style's id in `ArtStyleSchema`, at the
+  bitrate and loudness of §2.1, each credited.
+- **Manifest**: `styleMusic`, by style (file, volume), `styleTrackChance` and
+  `styleTrackPauseRounds`; a style left out has no track.
+- **Loaded** with everything else by the loading screen (§2.3) — the users' 40–55 MB in all at 96
+  kbps.
+- **Chosen** by a pure function in `client/src/styleMusic.ts`, tested without a browser as
+  `banners.ts` and `scores.ts` are: given the look starting, its style, the round, the pauses and a
+  roll, which track plays and how the pauses stand after. Tests: the chance's both outcomes, a
+  style's pause holding for its rounds and lifting after, another style unaffected, the same style
+  in both looks (the case in §3.1), Random looks over 30 rounds.
+- **Wired** in `matchAudio.ts`, where the phases' music is chosen today (`trackFor`): the style of
+  each look from the scene, the roll at a build phase's and a combat phase's start.
 
 ---
 
-## 7. Work packages
+## 4. Risks
+
+- **A first load from a slow host**: up to a minute or two once per release, behind the loading
+  screen; later loads take moments (§2.2). The lower bitrate is what keeps it short.
+- **Loop gaps**: MP3 padding; gapless encoding, every loop heard once.
+- **Repository and release files**: about +40–55 MB for good with the styles' tracks. Replace
+  tracks rarely, and always convert from the originals, never from a converted copy.
+- **Autoplay**: unchanged — music after the first click in a browser.
+
+---
+
+## 5. Work packages
 
 In order, each ending with `npm run check` passing and the user's go-ahead to commit.
 
-1. **SM1 — the decisions** of §3, with the user.
-2. **SM2 — the player**: music through `<audio>` elements, fetched when asked, the cache and its
-   drop rule, the fallback; today's shared tracks played so, the game sounding as before. Memory
-   measured before and after (§5).
-3. **SM3 — the files**: the originals measured, converted, normalised and credited; the manifest's
-   `styleMusic`.
-4. **SM4 — which track and when**: `styleMusic.ts` and its tests, the fetching ahead, the pause
-   menu's change of style.
-5. **SM5 — Random/Random measured** (§5), then play-tested by the users.
+1. **A1 — the files**: today's music measured, converted to 96 kbps MP3, normalised, credited.
+2. **A2 — caching**: the server's `ETag`, `Cache-Control: no-cache` and 304s; a test of the handler.
+3. **A3 — the player**: music held compressed and played through `<audio>` elements, sound effects
+   as now; the game sounding as before; memory measured (§2.5).
+4. **A4 — the loading screen**, before the first menu, in English and German.
+5. **B1 — the styles' tracks**: the files from the user, converted and credited; the manifest's
+   `styleMusic`, `styleTrackChance` and `styleTrackPauseRounds`.
+6. **B2 — the choosing**: `styleMusic.ts` and its tests, wired into `matchAudio.ts`; play-tested by
+   the users.
