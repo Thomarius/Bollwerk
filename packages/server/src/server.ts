@@ -107,6 +107,23 @@ const MIME: Record<string, string> = {
   '.flac': 'audio/flac',
 };
 
+/**
+ * How a static file is answered: always with an `ETag` from its size and modification time and
+ * `Cache-Control: no-cache`, so a browser keeps every file and asks once a load whether it
+ * changed; a request whose `If-None-Match` names the same tag gets 304 and no body. The sound and
+ * music are some 10 MB a guest downloads from a host's home connection, which every load did
+ * again before (docs/STYLE_MUSIC.md §2.2); a new release's changed files have new tags, so none is
+ * ever kept stale.
+ */
+export function staticAnswer(
+  file: { size: number; mtimeMs: number },
+  ifNoneMatch: string | undefined,
+): { status: 200 | 304; etag: string } {
+  const etag = `W/"${file.size.toString(16)}-${Math.floor(file.mtimeMs).toString(16)}"`;
+  const asked = (ifNoneMatch ?? '').split(',').map((tag) => tag.trim());
+  return { status: asked.includes(etag) || asked.includes('*') ? 304 : 200, etag };
+}
+
 export async function startServer(options: ServerOptions): Promise<StartResult> {
   const bundle = loadConfigBundle(options.root);
   const log = options.log ?? ((message: string) => console.error(message));
@@ -173,7 +190,19 @@ export async function startServer(options: ServerOptions): Promise<StartResult> 
       res.end('client not built — run: npm run build -w @bollwerk/client');
       return;
     }
-    res.writeHead(200, { 'content-type': MIME[extname(file)] ?? 'application/octet-stream' });
+    const stat = statSync(file);
+    const { status, etag } = staticAnswer(stat, req.headers['if-none-match']);
+    const headers = { etag, 'cache-control': 'no-cache' };
+    if (status === 304) {
+      res.writeHead(304, headers).end();
+      return;
+    }
+    // Its length too, so the loading screen's bar moves through a file from a slow host.
+    res.writeHead(200, {
+      ...headers,
+      'content-type': MIME[extname(file)] ?? 'application/octet-stream',
+      'content-length': stat.size,
+    });
     createReadStream(file).pipe(res);
   };
 

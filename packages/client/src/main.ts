@@ -21,6 +21,7 @@ import { TOURNAMENT_LIMITS } from './tournamentSetup.js';
 import { createTournament } from '@bollwerk/tournament';
 import { openLobby } from './lobbyFlow.js';
 import { runSession } from './matchScreen.js';
+import { showLoading } from './loading.js';
 
 /**
  * Bollwerk client.
@@ -42,94 +43,105 @@ if (params.get('icons') === 'sheet') {
   void import('./iconSheet.js')
     .then(({ showBoardSheet }) => showBoardSheet())
     .catch((e: unknown) => showError('icons', e));
-} else if (params.get('autostart') === '1') {
-  const count = Number(params.get('players') ?? 3);
-  // ?watch=1 fills every seat with a bot, which is how a match is observed rather
-  // than played.
-  const watching = params.get('watch') === '1';
-  // &level=N sets every bot's skill level, 1 to 10.
-  const asked = Number(params.get('level'));
-  const level =
-    Number.isInteger(asked) && asked >= MIN_LEVEL && asked <= MAX_LEVEL ? asked : DEFAULT_BOT;
-  const setup: Setup = {
-    seats: Array.from({ length: count }, (_, i) => (i === 0 && !watching ? null : level)),
-    seed: chosenSeed(),
-    styles: preferredStyles(),
-    name: t('menu.defaultName'),
-    settings: settingsFromParams(),
-    // &tower=KIND, where &specials=1 plays them; bots draw theirs.
-    specials: Array.from({ length: count }, (_, i) =>
-      i === 0 && !watching ? towerFromParams() : null,
-    ),
-    // &teams=N puts the seats in teams of N, in seat order, when N divides the table.
-    ...(Number(params.get('teams') ?? 1) > 1 && count % Number(params.get('teams')) === 0
-      ? { teams: defaultTeams(count, Number(params.get('teams'))) }
-      : {}),
-  };
-  const phase = params.get('snapshot');
-  const match = localMatchFor(setup, phase === null, phase === null);
-  // &round=N stops at that phase in round N or later, for looking at a match deep in.
-  if (phase !== null && PHASES.includes(phase as Phase)) {
-    match.fastForwardTo(
-      phase as Phase,
-      Number(params.get('round') ?? 0),
-      params.get('idle') === '1',
+} else {
+  // Every sound and music file first, behind a loading screen (docs/STYLE_MUSIC.md §2.3);
+  // then the page the query asks for.
+  void showLoading()
+    .then(start)
+    .catch((e: unknown) => showError(t('error.unhandled'), e));
+}
+
+/** The page the query asks for: a match, a lobby, a tournament's screen, or the menu. */
+function start(): void {
+  if (params.get('autostart') === '1') {
+    const count = Number(params.get('players') ?? 3);
+    // ?watch=1 fills every seat with a bot, which is how a match is observed rather
+    // than played.
+    const watching = params.get('watch') === '1';
+    // &level=N sets every bot's skill level, 1 to 10.
+    const asked = Number(params.get('level'));
+    const level =
+      Number.isInteger(asked) && asked >= MIN_LEVEL && asked <= MAX_LEVEL ? asked : DEFAULT_BOT;
+    const setup: Setup = {
+      seats: Array.from({ length: count }, (_, i) => (i === 0 && !watching ? null : level)),
+      seed: chosenSeed(),
+      styles: preferredStyles(),
+      name: t('menu.defaultName'),
+      settings: settingsFromParams(),
+      // &tower=KIND, where &specials=1 plays them; bots draw theirs.
+      specials: Array.from({ length: count }, (_, i) =>
+        i === 0 && !watching ? towerFromParams() : null,
+      ),
+      // &teams=N puts the seats in teams of N, in seat order, when N divides the table.
+      ...(Number(params.get('teams') ?? 1) > 1 && count % Number(params.get('teams')) === 0
+        ? { teams: defaultTeams(count, Number(params.get('teams'))) }
+        : {}),
+    };
+    const phase = params.get('snapshot');
+    const match = localMatchFor(setup, phase === null, phase === null);
+    // &round=N stops at that phase in round N or later, for looking at a match deep in.
+    if (phase !== null && PHASES.includes(phase as Phase)) {
+      match.fastForwardTo(
+        phase as Phase,
+        Number(params.get('round') ?? 0),
+        params.get('idle') === '1',
+      );
+    }
+    void runSession(localSession(match), setup).catch((error: unknown) =>
+      showError(t('error.failedToStart'), error),
     );
-  }
-  void runSession(localSession(match), setup).catch((error: unknown) =>
-    showError(t('error.failedToStart'), error),
-  );
-} else if (params.get('host') !== null || params.get('join') !== null) {
-  // The lobby had no way in except clicking through the menu, which meant it could not
-  // be looked at the way `?autostart=1` lets a match be looked at — and it went
-  // un-inspected at more than four seats for exactly that long.
-  const joining = params.get('join');
-  const common: Common = {
-    styles: preferredStyles(),
-    name: params.get('name') ?? storedName(),
-    isPublic: params.get('private') !== '1',
-  };
-  void openLobby(common, joining, Number(params.get('host') ?? DEFAULT_PLAYERS)).catch(
-    (error: unknown) =>
-      showError(t(joining !== null ? 'error.couldNotJoin' : 'error.couldNotHost'), error),
-  );
-} else if (params.get('tournament') === 'new') {
-  // The tournament screens, reachable as the lobby is, for looking at them.
-  openNewTournament(
-    {
+  } else if (params.get('host') !== null || params.get('join') !== null) {
+    // The lobby had no way in except clicking through the menu, which meant it could not
+    // be looked at the way `?autostart=1` lets a match be looked at — and it went
+    // un-inspected at more than four seats for exactly that long.
+    const joining = params.get('join');
+    const common: Common = {
       styles: preferredStyles(),
       name: params.get('name') ?? storedName(),
       isPublic: params.get('private') !== '1',
-    },
-    tournamentExits(params.get('private') !== '1'),
-  );
-} else if (params.get('tournament') === 'resume') {
-  openResumeList(tournamentExits(params.get('private') !== '1'));
-} else if (params.get('tournament') === 'demo') {
-  // A tournament to look at: teams of two, a league and an archnemesis, from `&seed=`, saved
-  // under one id so that looking again replaces it rather than piling saves up.
-  const now = new Date();
-  const save = createTournament(
-    {
-      seed: chosenSeed(),
-      teamSize: 2,
-      hostName: params.get('name') ?? storedName(),
-      teamName: 'Bastion',
-      teamBots: [{ name: 'Mira', level: 5 }],
-      levels: { min: 4, max: 6 },
-      archnemesis: 'Nemesis',
-      length: 'medium',
-      league: true,
-      knockout: 'double',
-      matchTeams: { min: 2, max: 4 },
-      maxRounds: 10,
-    },
-    defaultConfigBundle.tournament,
-    TOURNAMENT_LIMITS,
-    { id: 't-demo', now: now.toISOString() },
-  );
-  writeTournament(save);
-  tournamentExits(params.get('private') !== '1').play(save.id);
-} else {
-  showMenu();
+    };
+    void openLobby(common, joining, Number(params.get('host') ?? DEFAULT_PLAYERS)).catch(
+      (error: unknown) =>
+        showError(t(joining !== null ? 'error.couldNotJoin' : 'error.couldNotHost'), error),
+    );
+  } else if (params.get('tournament') === 'new') {
+    // The tournament screens, reachable as the lobby is, for looking at them.
+    openNewTournament(
+      {
+        styles: preferredStyles(),
+        name: params.get('name') ?? storedName(),
+        isPublic: params.get('private') !== '1',
+      },
+      tournamentExits(params.get('private') !== '1'),
+    );
+  } else if (params.get('tournament') === 'resume') {
+    openResumeList(tournamentExits(params.get('private') !== '1'));
+  } else if (params.get('tournament') === 'demo') {
+    // A tournament to look at: teams of two, a league and an archnemesis, from `&seed=`, saved
+    // under one id so that looking again replaces it rather than piling saves up.
+    const now = new Date();
+    const save = createTournament(
+      {
+        seed: chosenSeed(),
+        teamSize: 2,
+        hostName: params.get('name') ?? storedName(),
+        teamName: 'Bastion',
+        teamBots: [{ name: 'Mira', level: 5 }],
+        levels: { min: 4, max: 6 },
+        archnemesis: 'Nemesis',
+        length: 'medium',
+        league: true,
+        knockout: 'double',
+        matchTeams: { min: 2, max: 4 },
+        maxRounds: 10,
+      },
+      defaultConfigBundle.tournament,
+      TOURNAMENT_LIMITS,
+      { id: 't-demo', now: now.toISOString() },
+    );
+    writeTournament(save);
+    tournamentExits(params.get('private') !== '1').play(save.id);
+  } else {
+    showMenu();
+  }
 }

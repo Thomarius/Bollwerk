@@ -2,8 +2,11 @@
 
 Two packages, in order (PLAN §11 item 4). **A** changes how the game's audio is loaded and played,
 for the files it has today. **B** builds on it: some styles bring a track of their own, played at
-times in place of the shared music. Planned here, not yet built. The user keeps every original
-music file outside the repository before anything is converted.
+times in place of the shared music. The user keeps every original music file outside the
+repository.
+
+**Package A is built** (2026-10-18, ARCHIVE 14b); what was measured is there, and §2 below stays as
+the framework B builds on. **Package B is open.**
 
 ---
 
@@ -64,8 +67,12 @@ they arrive. Then the menu opens, its music ready.
   `missingFilesAreSilent` says now: the loading never stops on it.
 - Fetching needs no click; only playing does, as the browser's autoplay rules have it — the menu's
   music then starts at the first click, as now, and at once in the desktop app.
-- The dev pages (`?autostart`, `&snapshot=`, `?icons=`) load the same way, quickly from the dev
-  server.
+- The dev pages (`?autostart`, `&snapshot=`) load the same way, quickly from the dev server; the
+  icon sheets (`?icons=`), which play nothing, open without it.
+- The bar counts bytes: a file's length from its response (the server sends it), one not yet begun
+  guessed by its kind's known average or typical size (`loadProgress`), the music asked for first
+  so the long files' lengths are known early — weighed by file, fifty small sounds took the bar to
+  two thirds in a second and left the music to crawl.
 
 ### 2.4 Playing
 

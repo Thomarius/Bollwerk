@@ -329,8 +329,9 @@ next tower and a test without the cap of three. A new tower is balanced at Level
 against each other and against no tower (the user's). Each style's own cannon as the placement
 icon is built and reviewed, every icon kept as it is (ARCHIVE 13zv); behind `art.cannonIcons`
 (`"style"`, the default, or `"generic"`, the old SVG) until the testers choose (item 3), and
-`?icons=sheet` shows every style's icon side by side. Audio loaded once behind a loading screen, then
-some styles' own music (item 4), is planned in `docs/STYLE_MUSIC.md`. Bots that hold ground as people do are done (ARCHIVE 13zj).
+`?icons=sheet` shows every style's icon side by side. Audio loaded once behind a loading screen is
+built (item 4, ARCHIVE 14b); some styles' own music, its Package B, is planned in
+`docs/STYLE_MUSIC.md`. Bots that hold ground as people do are done (ARCHIVE 13zj).
 The bot learning work is closed, its remaining steps dropped (the user's decision, 2026-10-14;
 ARCHIVE 13zg). French is not to be done. Signing the Windows app was explained (PLAN §12) and is
 not pursued for now.
@@ -477,7 +478,12 @@ its header but the simulation does not — so the server stamps each header with
 - **Prettier reflows code, so string-replace patches silently miss.** Assert on every
   replacement.
 - **The static handler answers an unknown path with `index.html` and a 200.** A missing
-  asset is not a 404 — audio decides a file is absent by its failure to decode.
+  asset is not a 404 — audio decides a sound is absent by its failure to decode, a track by its
+  first bytes (`isAudioData`).
+- **Music is never decoded whole** (ARCHIVE 14b): every audio file is fetched once behind the
+  loading screen, the sounds decoded, each track kept compressed and played by an `<audio>`
+  element through the music bus. Decoded, today's thirteen minutes of music took 277 MB of the
+  page's memory. The server's `ETag` and 304s let the browser keep every file between visits.
 - **Check nothing stale is answering.** A git worktree sharing the main checkout's
   `node_modules` resolves `@bollwerk/*` back into the working tree and measures the new
   code twice; a server left running on 8080 answers instead of the one you just built.

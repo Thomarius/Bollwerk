@@ -9203,3 +9203,29 @@ seconds in the air, its crater a circle 9 or 11 blocks across. Protocol 28, a va
 key a v0.9.9 page does not know: a test session needs the server rebuilt and every page reloaded,
 and a v0.9.9 page cannot join a v0.9.10 room. The state hash and recording format are unchanged,
 so v0.9.9's recordings replay.
+
+## 14b. Audio loaded once: Package A (2026-10-18)
+
+The plan is `docs/STYLE_MUSIC.md` §2 (the users' choice: every file once, behind a loading
+screen, over fetching tracks as looks need them). Built for today's files, the game sounding as
+before, as the framework the styles' own music (Package B) will extend.
+
+- **The music re-encoded** (A1) from the user's originals' copies: every track MP3, 96 kbps
+  stereo, 44.1 kHz, loudness normalised to −14 LUFS with peaks under −1.5 dBTP (two-pass
+  `loudnorm`); they had ranged from −11.3 to −19.6 LUFS, so the defeat track and the menu's are
+  some 5.6 and 3.4 dB louder than before and the rest within 2 dB. The three Ogg tracks became MP3,
+  which every browser plays. 25 MB → 9.2 MB. Credits note the change.
+- **Cached** (A2): the static handler sends an `ETag` (size and modification time),
+  `Cache-Control: no-cache` and the length, and answers a matching `If-None-Match` with 304 and no
+  body (`staticAnswer`). Against the built server at 10 Mbit/s: the first load 11.5 MB of audio,
+  the menu after 11.6 s; a reload 12 KB, the menu after 1.1 s.
+- **Played compressed** (A3): sound effects decoded as before; every track kept as its bytes (an
+  object URL) and played by an `<audio>` element through a `MediaElementAudioSourceNode` into the
+  music bus, crossfaded by its gain as before. A track is known present by its first bytes
+  (`isAudioData`), never by decoding. A track the browser refuses before the first gesture is
+  started at it (`unlock`), as the context is resumed. Memory of the page in an eight-player
+  match: 633 MB with every track decoded, **356 MB** so — the 277 MB the decoded music took.
+- **The loading screen** (A4, `loading.ts`): before the first menu, a bar over every sound and
+  music file, counted in bytes. Weighed by file it leapt to two thirds as fifty small sounds
+  finished and crawled through the music; by bytes, the music asked for first and an unknown
+  file's length guessed by its kind (`loadProgress`), it climbed evenly, 2% to 96% over 11 s.

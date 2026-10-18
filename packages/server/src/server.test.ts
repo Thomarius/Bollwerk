@@ -1,4 +1,4 @@
-import { mkdtempSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, utimesSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -7,7 +7,7 @@ import { describe, expect, it } from 'vitest';
 import { WebSocket } from 'ws';
 
 import { repoRoot } from './paths.js';
-import { startServer, type RunningServer } from './server.js';
+import { startServer, staticAnswer, type RunningServer } from './server.js';
 import { PortOpener, type Router } from './upnp.js';
 
 /** A server on a free port, recording into a folder of its own, as the desktop app's. */
@@ -152,5 +152,55 @@ describe('opening the port to the internet', () => {
     expect(rooms.map((r) => r.internet)).toEqual([`http://203.0.113.7:${server.port}`, null]);
     expect(server.internet).toEqual({ state: 'off' });
     await server.stop();
+  });
+});
+
+describe('the static files, kept by the browser', () => {
+  it('tags a file by its size and time, and answers a matching tag with 304', () => {
+    const file = { size: 9000, mtimeMs: 1_700_000_000_000.5 };
+    const { status, etag } = staticAnswer(file, undefined);
+    expect(status).toBe(200);
+    expect(staticAnswer(file, etag)).toEqual({ status: 304, etag });
+    expect(staticAnswer(file, `W/"other", ${etag}`).status).toBe(304);
+    expect(staticAnswer({ ...file, size: 9001 }, etag).status).toBe(200);
+    expect(staticAnswer({ ...file, mtimeMs: file.mtimeMs + 1000 }, etag).status).toBe(200);
+  });
+
+  it('serves a file once, then only says it has not changed, until it has', async () => {
+    const clientDir = mkdtempSync(join(tmpdir(), 'bollwerk-client-'));
+    mkdirSync(join(clientDir, 'audio'));
+    const path = join(clientDir, 'audio', 'track.mp3');
+    writeFileSync(path, 'first');
+    const result = await startServer({
+      root: repoRoot,
+      port: 0,
+      host: '127.0.0.1',
+      clientDir,
+      recordingsDir: mkdtempSync(join(tmpdir(), 'bollwerk-server-')),
+      commit: null,
+      log: () => undefined,
+    });
+    if (!result.ok) throw new Error(result.reason);
+    const url = `http://127.0.0.1:${result.server.port}/audio/track.mp3`;
+
+    const first = await fetch(url);
+    expect(first.status).toBe(200);
+    expect(first.headers.get('cache-control')).toBe('no-cache');
+    expect(first.headers.get('content-type')).toBe('audio/mpeg');
+    expect(first.headers.get('content-length')).toBe('5');
+    expect(await first.text()).toBe('first');
+    const etag = first.headers.get('etag') ?? '';
+
+    const again = await fetch(url, { headers: { 'if-none-match': etag } });
+    expect(again.status).toBe(304);
+    expect(await again.text()).toBe('');
+
+    writeFileSync(path, 'second, longer');
+    utimesSync(path, new Date(), new Date(Date.now() + 5000));
+    const changed = await fetch(url, { headers: { 'if-none-match': etag } });
+    expect(changed.status).toBe(200);
+    expect(await changed.text()).toBe('second, longer');
+    expect(changed.headers.get('etag')).not.toBe(etag);
+    await result.server.stop();
   });
 });

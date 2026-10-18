@@ -262,6 +262,7 @@
   "hud.next": "Next: {label}",
   "hud.seconds": "{seconds}s",
   "error.uncaught": "Uncaught error",
+  "loading.audio": "Loading sounds and music…",
   "error.unhandled": "Unhandled rejection",
   "error.couldNotJoin": "Could not join",
   "error.couldNotHost": "Could not host",

@@ -244,6 +244,45 @@ body.reduced-effects .embers {
   box-shadow: 0 1rem 3rem rgb(0 0 0 / 50%);
 }
 
+/* The loading screen before the first menu (loading.ts): the menu's panel, a bar in gold. */
+.loading-screen .panel {
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: min(24rem, 90vw);
+  height: fit-content;
+  padding: 2rem;
+  border: 1px solid var(--edge);
+  background: rgb(26 26 36 / 94%);
+  box-shadow: 0 1rem 3rem rgb(0 0 0 / 50%);
+  text-align: center;
+}
+
+.loading-screen h1 {
+  margin: 0 0 0.6rem;
+  color: var(--accent);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+
+.loading-screen p {
+  margin: 0 0 1rem;
+  color: var(--muted);
+}
+
+.loading-screen .bar {
+  height: 0.5rem;
+  border: 1px solid var(--edge);
+  background: #0a0a12;
+}
+
+.loading-screen .fill {
+  width: 0;
+  height: 100%;
+  background: var(--accent);
+  transition: width 120ms linear;
+}
+
 /*
  * The title in both chosen looks (SplitTitle in decor.ts): two layers over one box the
  * size of the letters, each image placed and sized inline so the letters coincide, cut

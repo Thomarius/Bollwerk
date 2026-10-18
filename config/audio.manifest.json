@@ -90,7 +90,7 @@
       "loop": true
     },
     "music_battle": {
-      "file": "music/music_battle.ogg",
+      "file": "music/music_battle.mp3",
       "volume": 0.5,
       "loop": true,
       "variants": 2
@@ -101,7 +101,7 @@
       "loop": false
     },
     "music_defeat": {
-      "file": "music/music_defeat.ogg",
+      "file": "music/music_defeat.mp3",
       "volume": 0.6,
       "loop": false
     }
@@ -111,56 +111,64 @@
       "title": "Medieval: The Old Tower Inn",
       "author": "RandomMind",
       "licence": "CC0",
-      "source": "https://opengameart.org/content/medieval-the-old-tower-inn"
+      "source": "https://opengameart.org/content/medieval-the-old-tower-inn",
+      "changes": "re-encoded as MP3 at 96 kbps, loudness normalised"
     },
     "music/music_admin.mp3": {
       "title": "Unused music (Track_1.mp3)",
       "author": "Alexandr Zhelanov",
       "licence": "CC-BY 3.0",
-      "source": "https://opengameart.org/content/unused-music"
+      "source": "https://opengameart.org/content/unused-music",
+      "changes": "re-encoded as MP3 at 96 kbps, loudness normalised"
     },
     "music/music_admin.2.mp3": {
       "title": "Unused music (demo_track_1.mp3)",
       "author": "Alexandr Zhelanov",
       "licence": "CC-BY 3.0",
-      "source": "https://opengameart.org/content/unused-music"
+      "source": "https://opengameart.org/content/unused-music",
+      "changes": "re-encoded as MP3 at 96 kbps, loudness normalised"
     },
     "music/music_admin.3.mp3": {
       "title": "Unused music (Brirfing_theme.mp3)",
       "author": "Alexandr Zhelanov",
       "licence": "CC-BY 3.0",
-      "source": "https://opengameart.org/content/unused-music"
+      "source": "https://opengameart.org/content/unused-music",
+      "changes": "re-encoded as MP3 at 96 kbps, loudness normalised"
     },
     "music/music_admin.4.mp3": {
       "title": "Medieval Waltz Music",
       "author": "Tunetank",
       "licence": "Pixabay Content License",
-      "source": "https://pixabay.com/users/tunetank-50201703/?utm_source=link-attribution&utm_medium=referral&utm_campaign=music&utm_content=412748"
+      "source": "https://pixabay.com/users/tunetank-50201703/?utm_source=link-attribution&utm_medium=referral&utm_campaign=music&utm_content=412748",
+      "changes": "re-encoded as MP3 at 96 kbps, loudness normalised"
     },
-    "music/music_battle.ogg": {
+    "music/music_battle.mp3": {
       "title": "Tiny Swords Duel",
       "author": "Alexandr Zhelanov",
       "licence": "CC-BY 4.0",
-      "source": "https://opengameart.org/content/tiny-swords-duel"
+      "source": "https://opengameart.org/content/tiny-swords-duel",
+      "changes": "re-encoded as MP3 at 96 kbps, loudness normalised"
     },
-    "music/music_battle.2.ogg": {
+    "music/music_battle.2.mp3": {
       "title": "The Tournament",
       "author": "Emmraan",
       "licence": "Pixabay Content License",
       "source": "https://pixabay.com/users/emmraan-24732583/?utm_source=link-attribution&utm_medium=referral&utm_campaign=music&utm_content=280277",
-      "changes": "converted from MP3 to Ogg Vorbis"
+      "changes": "converted from MP3 to Ogg Vorbis, then to MP3 at 96 kbps, loudness normalised"
     },
     "music/music_victory.mp3": {
       "title": "Majestic Brass Fanfare",
       "author": "Luis Humanoide",
       "licence": "Pixabay Content License",
-      "source": "https://pixabay.com/users/luis_humanoide-12661853/?utm_source=link-attribution&utm_medium=referral&utm_campaign=music&utm_content=293125"
+      "source": "https://pixabay.com/users/luis_humanoide-12661853/?utm_source=link-attribution&utm_medium=referral&utm_campaign=music&utm_content=293125",
+      "changes": "re-encoded as MP3 at 96 kbps, loudness normalised"
     },
-    "music/music_defeat.ogg": {
+    "music/music_defeat.mp3": {
       "title": "Medieval Rondo",
       "author": "Marcelo Fernandez",
       "licence": "CC-BY 3.0",
-      "source": "https://opengameart.org/content/medieval-rondo"
+      "source": "https://opengameart.org/content/medieval-rondo",
+      "changes": "re-encoded as MP3 at 96 kbps, loudness normalised"
     },
     "sfx/": {
       "author": "various authors",

@@ -259,6 +259,7 @@
   "hud.next": "Gleich: {label}",
   "hud.seconds": "{seconds} s",
   "error.uncaught": "Unerwarteter Fehler",
+  "loading.audio": "Klänge und Musik werden geladen …",
   "error.unhandled": "Unbehandelter Fehler",
   "error.couldNotJoin": "Beitreten fehlgeschlagen",
   "error.couldNotHost": "Eröffnen fehlgeschlagen",
