@@ -121,7 +121,17 @@ export class Gunner {
   private inbound(state: MatchState): Set<number> {
     const taken = new Set<number>();
     for (const shot of state.shots) {
-      if (shot.owner === this.playerId) taken.add(shot.toY * state.width + shot.toX);
+      if (shot.owner !== this.playerId) continue;
+      taken.add(shot.toY * state.width + shot.toX);
+      // The Allerdickste Bertha's shell takes all its crater as it lands, ten seconds on: the
+      // guns shooting into it meanwhile took what it would have, and it cleared 42% of the wall
+      // it was aimed at, where a tester's cleared 73% (2026-10-19).
+      if (shot.kind !== 'biggest') continue;
+      for (const [dx, dy] of craterTilesOf(state.ruleset, shot.kind, shot.cost)) {
+        const x = shot.toX + dx;
+        const y = shot.toY + dy;
+        if (x >= 0 && y >= 0 && x < state.width && y < state.height) taken.add(y * state.width + x);
+      }
     }
     return taken;
   }
@@ -231,10 +241,26 @@ export class Gunner {
       const owner = state.owner[i] as number;
       return owner !== 0 && !sameTeam(state, this.playerId, owner - 1);
     };
+    // The Allerdickste Bertha's crater is wider than a castle's ring: aimed as people aim it,
+    // at whatever takes the most wall — every block it clears counting, the weakest wall's
+    // double, which opens a castle — from anywhere in reach of the rival's wall. Hugging the
+    // weakest wall as Bertha does left half its circle on open ground: 9.0 blocks a shot
+    // against a tester's 14.8 (2026-10-19).
+    const wide = tower.kind === 'biggest';
+    const weigh = (i: number): number => (weakest.has(i) ? (wide ? 2 : 3) : 1);
+    let from: Iterable<number> = weakest;
+    if (wide) {
+      const island = state.players[opponent]?.islandId;
+      const walls: number[] = [];
+      for (let i = 0; i < state.structure.length; i++) {
+        if (state.structure[i] === Structure.Wall && state.owner[i] === island) walls.push(i);
+      }
+      from = walls;
+    }
     let best: number | null = null;
     let bestScore = 0;
     const seen = new Set<number>();
-    for (const block of weakest) {
+    for (const block of from) {
       const bx = block % state.width;
       const by = (block - bx) / state.width;
       for (const [ox, oy] of [[0, 0], ...offsets] as const) {
@@ -253,7 +279,8 @@ export class Gunner {
           const y = cy + dy;
           if (x < 0 || y < 0 || x >= state.width || y >= state.height) continue;
           const i = y * state.width + x;
-          if (rivalWall(i)) score += weakest.has(i) ? 3 : 1;
+          // Not what its own shells already in the air will take.
+          if (rivalWall(i) && !(wide && taken.has(i))) score += weigh(i);
         }
         if (score > bestScore) {
           bestScore = score;

@@ -9341,3 +9341,28 @@ floodlights warm up and their flashes start one by one, and Sakura's petals turn
 at a time. **They still pop**: Cartoon's clock starts ringing, Office's phones, and Noir's detective
 looking round quicker — a pose switched, a ring being sudden. Oktoberfest's notes rise one by
 one from the tents, which comes in by itself.
+
+## 14h. The Allerdickste Bertha re-balanced, with bots that aim it as people do (2026-10-19)
+
+The play-testers found the Allerdickste Bertha very strong, at least at cost 2. Its balance
+(13zz) had been measured bot against bot, and the bots used it badly. In the testers' recordings
+(one match, one tester, 12 shells, all cost 2) a shell took **14.8 wall blocks**, up to 29,
+opening two or three castles nearly every time, and with three of them, the cap, about 60 blocks
+a combat phase; in bot matches a shell took 9.0. Two causes, both in `combat.ts`:
+
+- **The aim.** Like Big Bertha it was centred on the weakest wall, its blocks counting three, but
+  its crater is wider than a castle's ring, so half of it fell on open ground. Now it scores every
+  rival block it clears, the weakest wall's double, from any centre in reach of the rival's wall.
+  As fired, its crater covered 87% of the most any centre could take, the tester's 64%.
+- **Its own guns.** Over the shell's ten seconds the bot's cannons kept shooting the wall under the
+  crater, so it landed on 42% of what it was aimed at, the tester's 73%. A bot now counts every
+  tile under its shells' craters as taken, as it does a shot's target, and a second or third
+  Allerdickste aims away from them: **16.4 blocks a shell**, a little above the tester's.
+
+Big Bertha and the Lightning Tower aim as before, so their balance stands. Against these bots
+the old radii won almost everything, so the soak was run again at Level 5, 96 matches a pairing,
+cost 2 / cost 3 against no tower and 3 against 2: 4.5 / 5.5 gave **94 / 97** and 55; 3.5 / 4 gave
+78 / 88 and 50; 3 / 3.5 gave 76 / 80 and 52; 2.5 / 3 gave 70 / 77 and 51; **2 / 2.5 gave 63 / 64
+and 48**, kept — 13 and 21 tiles, both 5 across, the old balance's shares again. The cap of three
+towers of any kind and both costs stay (the user's). The tower menu tells its crater by its tiles
+(13 and 21), not blocks across, which is 5 for both costs (the user's).

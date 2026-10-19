@@ -8,7 +8,7 @@ import {
   type SpecialKind,
   type TowerVariant,
 } from '@bollwerk/config';
-import { specialRefusal, type MatchState } from '@bollwerk/sim';
+import { circleOffsets, specialRefusal, type MatchState } from '@bollwerk/sim';
 
 import { placeableCannons } from './controls.js';
 import { t } from './i18n.js';
@@ -75,10 +75,11 @@ export function towerWhat(variant: TowerVariant, ruleset: Ruleset = defaultRules
         ? t('tower.lightningWhat', { n: config.jumps, r: config.jumpRadius })
         : '';
     case 'biggest':
-      // Its crater a circle round the tile hit, told as the Architect's reach is: blocks across.
+      // Its crater told by the tiles it covers, as the rules count them (`circleOffsets`): both
+      // costs are 5 across, so blocks across could not tell 13 tiles from 21 (the user's).
       return 'craterRadius' in config
         ? t('tower.biggestWhat', {
-            n: Math.round(2 * config.craterRadius),
+            n: circleOffsets(config.craterRadius).length,
             s: config.flightMs / 1000,
           })
         : '';

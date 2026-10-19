@@ -63,8 +63,8 @@
       }
     },
     "biggest": {
-      "2": { "footprint": [2, 2], "flightMs": 10000, "craterRadius": 4.5 },
-      "3": { "footprint": [2, 2], "flightMs": 10000, "craterRadius": 5.5 }
+      "2": { "footprint": [2, 2], "flightMs": 10000, "craterRadius": 2 },
+      "3": { "footprint": [2, 2], "flightMs": 10000, "craterRadius": 2.5 }
     }
   },
   "build": {

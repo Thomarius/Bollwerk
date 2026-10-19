@@ -53,7 +53,9 @@ const at = (state: MatchState, x: number, y: number): number =>
   state.structure[y * state.width + x] as number;
 
 describe('the Allerdickste Bertha', () => {
-  it('clears circles: 29 tiles at radius 3, 49 at 4, 69 at 4.5, 97 at 5.5', () => {
+  it('clears circles: 13 tiles at radius 2, 21 at 2.5, 29 at 3, 49 at 4, 69 at 4.5, 97 at 5.5', () => {
+    expect(circleOffsets(2)).toHaveLength(13);
+    expect(circleOffsets(2.5)).toHaveLength(21);
     expect(circleOffsets(3)).toHaveLength(29);
     expect(circleOffsets(4)).toHaveLength(49);
     expect(circleOffsets(4.5)).toHaveLength(69);
@@ -80,8 +82,9 @@ describe('the Allerdickste Bertha', () => {
   });
 
   it('spares its owner’s own wall, though its crater reaches across the channel', () => {
+    // Aimed at the rival shore, two tiles from its own wall across the channel and from theirs.
     const state = board('G');
-    land(state, shotAt(state, 10, 6));
+    land(state, shotAt(state, 9, 6));
     expect(at(state, 7, 6)).toBe(Structure.Wall);
     expect(at(state, 11, 6)).toBe(Structure.Empty);
   });

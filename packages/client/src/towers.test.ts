@@ -177,8 +177,9 @@ describe('the lobby with special towers', () => {
     // A Bertha whose shell flies slower than a gun's says so.
     expect(towerWhat('bertha2', ruleset)).not.toBe(towerWhat('bertha3', ruleset));
     // The Allerdickste's crater and her flight, as the rules have them.
-    expect(towerWhat('biggest2')).toContain('9 blocks across');
-    expect(towerWhat('biggest3')).toContain('11 blocks across');
+    // Told by its tiles: radius 2 and 2.5 are both 5 across, 13 and 21 tiles.
+    expect(towerWhat('biggest2')).toContain('13 tiles');
+    expect(towerWhat('biggest3')).toContain('21 tiles');
     expect(towerWhat('biggest3')).toContain('10 seconds');
   });
 });

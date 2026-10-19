@@ -529,7 +529,7 @@
   },
   "tower.rapidWhat": "{n} Kanonen übereinander auf dem Platz einer, jede mit eigenem Nachladen.",
   "tower.lightningWhat": "Schlägt sofort ein und springt dann {n}-mal auf Mauern im Umkreis von {r} Blöcken — feuert zuerst, sobald er bereit ist.",
-  "tower.biggestWhat": "Eine gewaltige Granate pro Kampfphase: Sie fliegt {s} Sekunden, ob nah oder fern, und reißt jeden Mauerblock in einem Kreis von {n} Blöcken Durchmesser um den Einschlag weg — feuert zuerst, sobald sie bereit ist.",
+  "tower.biggestWhat": "Eine gewaltige Granate pro Kampfphase: Sie fliegt {s} Sekunden, ob nah oder fern, und reißt jeden Mauerblock in einem Kreis von {n} Feldern um den Einschlag weg — feuert zuerst, sobald sie bereit ist.",
   "tower.cost": {
     "one": "{n} Kanone",
     "other": "{n} Kanonen"

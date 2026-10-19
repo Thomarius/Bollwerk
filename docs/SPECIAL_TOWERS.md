@@ -221,9 +221,10 @@ whenever it is ready, as she does (the user's: no button of its own).
   lands in the intermission, which waits for the last shot down — accepted (the user's: nobody
   holds their first shot for long).
 - **Its crater a circle**: every tile whose centre is within `craterRadius` of the tile aimed at
-  — **4.5** at cost 2 (69 tiles, 9 across), **5.5** at cost 3 (97, 11 across), set by the soaks
-  (§5 BB) from a first try of 3 and 4; a fractional radius moves it a few tiles at a time, as the
-  Architect's reach does. Only opponents' walls, as every shot.
+  — **2** at cost 2 (13 tiles, 5 across), **2.5** at cost 3 (21, 5 across and fuller), set by the
+  soaks (§5 BB) once the bots aimed it as people do; it was 4.5 and 5.5 (69 and 97 tiles), which
+  in people's hands took a whole castle's ring a shot (2026-10-19, ARCHIVE 14h). A fractional
+  radius moves it a few tiles at a time, as the Architect's reach does. Only opponents' walls, as every shot.
 - **A tower like the rest**: 2×2, at both costs, under the cap of three (the user's).
 - **Seen and heard**: a lit bomb for its emblem; while it is ready, its circle outlined under the
   cursor and a ring of flames as wide; a blast over every tile it clears, longer than Bertha's;
@@ -498,9 +499,24 @@ cost 3 against none, then 3 against 2:
 | 4.5 / 5             | 63 / 49      | 40           |
 | **4.5 / 5.5**       | **63 / 63**  | **52**       |
 
-Kept: 4.5 and 5.5. A wall is a thin line, so a wider circle takes only a few more of its blocks,
-and one shell a phase is worth less than the cannons it costs until the crater is wide; the
-dearer variant needs a radius one larger to make up for its third cannon.
+Kept then: 4.5 and 5.5. A wall is a thin line, so a wider circle takes only a few more of its
+blocks, and one shell a phase is worth less than the cannons it costs until the crater is wide;
+the dearer variant needs a radius one larger to make up for its third cannon.
+
+**Re-balanced 2026-10-19** (ARCHIVE 14h): the testers found it very strong, and their shots took
+14.8 blocks each where the bots' took 9.0 — the bots hugged the weakest wall with a crater wider
+than a castle's ring, and shot their own guns into the crater while the shell flew. Aimed as people
+aim it (16.4 blocks a shot), the old radii won almost everything, so the soak was run again:
+
+| radius (cost 2 / 3) | against none | head to head |
+| ------------------- | ------------ | ------------ |
+| 4.5 / 5.5           | 94 / 97      | 55           |
+| 3.5 / 4             | 78 / 88      | 50           |
+| 3 / 3.5             | 76 / 80      | 52           |
+| 2.5 / 3             | 70 / 77      | 51           |
+| **2 / 2.5**         | **63 / 64**  | **48**       |
+
+Kept: 2 and 2.5 — 13 and 21 tiles, both 5 across, the old balance's shares again.
 
 ### After ST8 — two decisions
 
