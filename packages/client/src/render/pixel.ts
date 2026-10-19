@@ -59,6 +59,7 @@ import {
   type ThemeLayers,
   type ViewTransform,
   shotLift,
+  shotScale,
   type FinishLook,
   GunAims,
   mixed,
@@ -1439,7 +1440,7 @@ export class PixelTheme implements Theme {
       above.circle(tileX(view, x + 0.5), tileY(view, y + 0.5), shadow);
       above.fill({ color: hex(this.art.palette.shadow), alpha: 0.4 - 0.2 * height });
 
-      const size = 0.6 * (1 + 0.55 * height);
+      const size = 0.6 * (1 + 0.55 * height) * shotScale(shot, this.art);
       const ball = this.place(
         this.effectLayer,
         this.torchlit ? KEY.burningShot : KEY.shot,

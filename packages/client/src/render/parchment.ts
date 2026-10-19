@@ -34,6 +34,7 @@ import {
   mixed,
   playerColour,
   shotLift,
+  shotScale,
   tileX,
   tileY,
   type Aim,
@@ -1352,7 +1353,7 @@ export class ParchmentTheme implements Theme {
       g.circle(gx, gy, t * 0.14 * (1 - 0.4 * height));
       g.fill({ color: hex(this.art.palette.shadow), alpha: 0.25 - 0.1 * height });
       const head = at(p);
-      g.circle(head.x, head.y, t * (0.15 + 0.07 * height));
+      g.circle(head.x, head.y, t * (0.15 + 0.07 * height) * shotScale(shot, this.art));
       g.fill({ color: ink });
       drawShotTarget(g, view, shot, p, this.art, frame.humanPlayer);
     }

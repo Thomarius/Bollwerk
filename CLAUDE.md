@@ -346,8 +346,6 @@ which a test session needs the server rebuilt and every page reloaded for):
   and a test without the cap of three. Their balance is closed and they are **off by default for
   good** — a wacky addition, not the base game (ARCHIVE 13zw); a new tower is balanced at Level 5
   only, its variants against each other and against no tower (the user's).
-- **Bigger shots for the Berthas in every style** (item 5, the user's): no style draws a shot by
-  its gun's kind yet; a shared scale by `shot.kind` and `shot.cost` in `theme.ts`.
 - **The testers' choice of cannon icon** (item 3): each style's own gun or the generic cannon,
   `art.cannonIcons` (`"style"`, the default, or `"generic"`); `?icons=sheet` shows every style's.
 

@@ -38,6 +38,7 @@ import {
   hex,
   iconFrame,
   shotLift,
+  shotScale,
   tileX,
   tileY,
   type Aim,
@@ -1408,7 +1409,7 @@ export class OperaTheme extends ShapeTheme implements Theme {
       g.fill({ color: 0x000000, alpha: 0.25 - 0.1 * high });
       g.circle(x, y - t * 0.2, t * 0.42);
       g.fill({ color: this.colour(shot.owner, 'light'), alpha: 0.35 });
-      const size = t * (0.7 + 0.2 * high);
+      const size = t * (0.7 + 0.2 * high) * shotScale(shot, this.art);
       const rock = motionReduced() ? 0 : Math.sin(this.clock / 140 + shot.id) * 0.35;
       // The note and its shadow, drawn for a few heights and scaled the rest of the way.
       const flags = 1 + (shot.id % 2);

@@ -32,6 +32,7 @@ import {
   hex,
   iconFrame,
   shotLift,
+  shotScale,
   tileX,
   tileY,
   type Cell,
@@ -1693,7 +1694,7 @@ export class ChocolateTheme extends ShapeTheme implements Theme {
       });
       stamps.place(shade, gx, gy, { alpha: 0.28 - 0.14 * high });
       const hy = tileY(view, shot.fromY + (shot.toY - shot.fromY) * p + 0.5 - lift);
-      const r = t * (0.2 + 0.1 * high);
+      const r = t * (0.2 + 0.1 * high) * shotScale(shot, this.art);
       const spin = p * Math.PI * 5 + shot.id;
       const ux = Math.cos(spin);
       const uy = Math.sin(spin) * 0.6;

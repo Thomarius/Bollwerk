@@ -51,6 +51,7 @@ import {
   iconFrame,
   mixed,
   shotLift,
+  shotScale,
   tileX,
   tileY,
   type Cell,
@@ -1338,7 +1339,9 @@ export class ElectricTheme extends ShapeTheme implements Theme {
         drawBall(k, t * 0.19, this.colour(shot.owner, 'base'), this.colour(shot.owner, 'light')),
       );
       const pulse = still ? 1 : 0.9 + 0.2 * Math.random();
-      this.ballStamps.place(ball, x, y, { scale: (1 + 0.25 * high) * pulse });
+      this.ballStamps.place(ball, x, y, {
+        scale: (1 + 0.25 * high) * pulse * shotScale(shot, this.art),
+      });
       if (!still) {
         // Tendrils licking off it, fresh every frame.
         for (let k = 0; k < 2; k++) {

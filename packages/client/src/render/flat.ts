@@ -37,6 +37,7 @@ import {
   type ThemeLayers,
   type ViewTransform,
   shotLift,
+  shotScale,
   type Cell,
   type Debris,
   shotProgress,
@@ -407,7 +408,11 @@ export class FlatTheme implements Theme {
       const lift = shotLift(shot, t);
       const colour = playerColour(this.art, shot.owner, 'light');
 
-      g.circle(tileX(view, x + 0.5), tileY(view, y + 0.5 - lift), Math.max(2, view.tile * 0.35));
+      g.circle(
+        tileX(view, x + 0.5),
+        tileY(view, y + 0.5 - lift),
+        Math.max(2, view.tile * 0.35 * shotScale(shot, this.art)),
+      );
       g.fill({ color: colour });
 
       // Where it will come down, for the watching player's own shots only.

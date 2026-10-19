@@ -9276,7 +9276,7 @@ What the sketches decided:
   wrong. The gun's box is its chalk outline alone: a wash of the owner's colour over the turf
   turned red olive.
 - The Rapid Cannon simply has its ball back while a barrel is loaded; no tower animation of its
-  own. The Berthas' bigger shots were judged a thing for every style (PLAN §11 item 5).
+  own. The Berthas' bigger shots were judged a thing for every style (ARCHIVE 14e).
 
 **The stadium**: pitches ringed by a running track, the sea the stands — a crowd seen from above in
 rows of seats, drawn once on a canvas for the tile and laid in as a fill, toned into navy so it is
@@ -9293,3 +9293,14 @@ lifted towards white, since red over green was khaki.
 2-second window: Stadium effects 0.71–0.82 ms and render 1.54–1.66 ms, 1,600–2,400 vertices
 rebuilt a frame in one `Graphics`; Noir 0.87 and 2.18 ms, 3,900 in three; Cartoon 1.11 and
 4.49 ms, 5,500 in three. All at 60 fps.
+
+## 14e. The Berthas' shots drawn bigger, in every style (2026-10-19)
+
+The user's, out of the Sports design: a Big Bertha's shell and the Allerdickste Bertha's are
+drawn bigger than a cannon's in every look, since their craters are wide and their shots should
+read as heavy. One factor a kind, `effects.towerShotScale` (Bertha 1.5, the Allerdickste 2.2, at
+either cost), read by `shotScale` in `theme.ts`; each of the nineteen styles' shot drawings (Night
+shares Medieval's) multiplies its shot's size by it at the one place it sets it — a radius, a
+sprite's size or a stamp's scale — so its glow and highlights grow with it. Trails, shadows and
+the target marker stay as they are. Every other gun, the Rapid Cannon's barrels too, flies as a
+cannon's.

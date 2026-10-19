@@ -1065,6 +1065,14 @@ export const ArtConfigSchema = z
       finalStampMs: z.number().int().positive(),
       /** Embers drifting up the screen's edges through the final round (11.15). */
       finalEmberCount: z.number().int().nonnegative(),
+      /**
+       * How much bigger a tower's shot is drawn than a cannon's, in every style: Big Bertha's
+       * and the Allerdickste Bertha's, whose craters are wide. The rest fly as cannons.
+       */
+      towerShotScale: z.strictObject({
+        bertha: z.number().positive(),
+        biggest: z.number().positive(),
+      }),
     }),
     /**
      * The camera, which moves only while nothing is playable: onto the viewer's island as

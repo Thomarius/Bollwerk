@@ -40,6 +40,7 @@ import {
   hex,
   mixed,
   shotLift,
+  shotScale,
   shotProgress,
   tileX,
   tileY,
@@ -987,7 +988,7 @@ export class ChristmasTheme extends ShapeTheme implements Theme {
         this.glow.disc(sx, sy, t * 0.25, light, 0.25 * (1 - k * 0.25));
       }
       const [x, y] = at(p);
-      this.ballStamps.place(ball, x, y, { scale: 1 + 0.25 * high });
+      this.ballStamps.place(ball, x, y, { scale: (1 + 0.25 * high) * shotScale(shot, this.art) });
       drawShotTarget(this.effectGfx, view, shot, p, this.art, frame.humanPlayer);
     }
     this.ballStamps.end();

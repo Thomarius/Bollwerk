@@ -48,6 +48,7 @@ import {
   mixed,
   playerColour,
   shotLift,
+  shotScale,
   tileX,
   tileY,
   type Cell,
@@ -1868,7 +1869,7 @@ export class CyberpunkTheme implements Theme {
         cap: 'round',
         join: 'round',
       });
-      const size = view.tile * (0.16 + 0.08 * height);
+      const size = view.tile * (0.16 + 0.08 * height) * shotScale(shot, this.art);
       glow.circle(head.x, head.y, size * 2.2);
       glow.fill({ color: colour, alpha: 0.4 });
       const core = this.effectCore;

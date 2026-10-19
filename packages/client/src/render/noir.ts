@@ -40,6 +40,7 @@ import {
   drawShotTarget,
   hex,
   shotLift,
+  shotScale,
   shotProgress,
   tileX,
   tileY,
@@ -1003,7 +1004,10 @@ export class NoirTheme extends ShapeTheme implements Theme {
         g.moveTo(sx, sy).lineTo(sx - ux * t * back, sy - uy * t * back);
       }
       g.stroke({ width: Math.max(1, t * 0.045), color: NOIR_PAPER, alpha: 0.85 });
-      this.shellStamps.place(shell, x, y, { rotation: Math.atan2(uy, ux) });
+      this.shellStamps.place(shell, x, y, {
+        rotation: Math.atan2(uy, ux),
+        scale: shotScale(shot, this.art),
+      });
       drawShotTarget(this.effectGfx, view, shot, p, this.art, frame.humanPlayer);
     }
     this.shellStamps.end();

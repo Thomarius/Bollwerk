@@ -38,6 +38,7 @@ import {
   hex,
   iconFrame,
   shotLift,
+  shotScale,
   tileX,
   tileY,
   type Cell,
@@ -1261,7 +1262,7 @@ export class OfficeTheme extends ShapeTheme implements Theme {
       const high = Math.min(1, shotLift(shot, p) / 3);
       g.ellipse(here.gx, here.gy, t * 0.24, t * 0.08);
       g.fill({ color: 0x000000, alpha: 0.25 - 0.1 * high });
-      const size = t * (0.85 + 0.25 * high);
+      const size = t * (0.85 + 0.25 * high) * shotScale(shot, this.art);
       const plane = this.book.get(`plane|${shot.owner}`, t, (k) =>
         drawPlane(k, 0, 0, t * 0.85, 0, this.colour(shot.owner, 'base'), this.dark),
       );

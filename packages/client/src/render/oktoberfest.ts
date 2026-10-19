@@ -38,6 +38,7 @@ import {
   hex,
   iconFrame,
   shotLift,
+  shotScale,
   tileX,
   tileY,
   type Cell,
@@ -1193,7 +1194,7 @@ export class OktoberfestTheme extends ShapeTheme implements Theme {
         g.circle(b.x, b.y, t * (0.11 - 0.02 * k));
       }
       g.fill({ color: this.colour(shot.owner, 'light'), alpha: 0.7 });
-      const size = t * (0.3 + 0.1 * high);
+      const size = t * (0.3 + 0.1 * high) * shotScale(shot, this.art);
       // Drawn for a few heights between low and high, and scaled the rest of the way; a stamp
       // an owner, since each is salted in its owner's colour inside a ring of it. The ring was
       // a faint wash and the salt white, which read as a brown blob in flight (S9).

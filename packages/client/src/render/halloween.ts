@@ -39,6 +39,7 @@ import {
   hex,
   iconFrame,
   shotLift,
+  shotScale,
   tileX,
   tileY,
   type Cell,
@@ -1456,7 +1457,7 @@ export class HalloweenTheme extends ShapeTheme implements Theme {
         g.circle(back.x, back.y, t * (0.22 - 0.035 * k));
         g.fill({ color: this.colour(shot.owner, 'light'), alpha: 0.35 - 0.07 * k });
       }
-      const r = t * (0.2 + 0.08 * high);
+      const r = t * (0.2 + 0.08 * high) * shotScale(shot, this.art);
       g.circle(here.x, here.y, r * 1.9);
       g.fill({ color: this.colour(shot.owner, 'base'), alpha: 0.3 });
       g.circle(here.x, here.y, r);

@@ -2010,6 +2010,16 @@ export function shotLift(shot: Pick<Shot, 'fromX' | 'fromY' | 'toX' | 'toY'>, t:
   return Math.sin(Math.PI * t) * Math.min(range * ARC_RISE, ARC_MAX_TILES);
 }
 
+/**
+ * How much bigger this shot is drawn than a cannon's: Big Bertha's and the Allerdickste
+ * Bertha's (`effects.towerShotScale`), 1 for every other gun. Each style multiplies its shot's
+ * size by it where it draws the shot, so the heavy guns' shells read as heavy in every look.
+ */
+export function shotScale(shot: Pick<Shot, 'kind'>, art: ArtConfig): number {
+  const scale = art.effects.towerShotScale;
+  return shot.kind === 'bertha' ? scale.bertha : shot.kind === 'biggest' ? scale.biggest : 1;
+}
+
 /** Top-left of a tile in screen space. */
 export function tileX(view: ViewTransform, x: number): number {
   return view.originX + x * view.tile;

@@ -38,6 +38,7 @@ import {
   mixed,
   playerColour,
   shotLift,
+  shotScale,
   tileX,
   tileY,
   type Aim,
@@ -1093,7 +1094,8 @@ export class BlueprintTheme implements Theme {
       // The projectile stamped, by its colour and its radius to an eighth of a pixel: a
       // ring is a hundred vertices, and redrawn for every shot in the air each frame the
       // heads were most of what this style rebuilt (about 1,800 vertices at eight players).
-      const exact = t * (0.2 + 0.08 * Math.min(1, shotLift(shot, p) / 3));
+      const exact =
+        t * (0.2 + 0.08 * Math.min(1, shotLift(shot, p) / 3)) * shotScale(shot, this.art);
       const r = Math.round(exact * 8) / 8;
       const projectile = this.headBook.get(`${colour}|${r}`, t, (h) => {
         h.circle(0, 0, r);

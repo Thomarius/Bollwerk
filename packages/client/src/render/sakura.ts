@@ -38,6 +38,7 @@ import {
   hex,
   iconFrame,
   shotLift,
+  shotScale,
   tileX,
   tileY,
   type Aim,
@@ -1640,7 +1641,7 @@ export class SakuraTheme extends ShapeTheme implements Theme {
         t * 0.1,
       );
       g.fill({ color: 0x000000, alpha: 0.2 - 0.1 * high });
-      const r = t * (0.18 + 0.07 * high);
+      const r = t * (0.18 + 0.07 * high) * shotScale(shot, this.art);
       // The stroke behind it, wide at the ball and tapering away.
       const step = span <= 0 ? 0 : 1.2 / span;
       const spine: { x: number; y: number }[] = [];

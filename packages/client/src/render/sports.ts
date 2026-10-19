@@ -55,6 +55,7 @@ import {
   drawShotTarget,
   hex,
   shotLift,
+  shotScale,
   shotProgress,
   tileX,
   tileY,
@@ -1016,7 +1017,7 @@ export class SportsTheme extends ShapeTheme implements Theme {
         alpha: 0.32 - 0.12 * high,
       });
       const turn = inFlight(launch.sport, nx - bx, ny - by, still ? 0 : p);
-      const grow = 1 + 0.25 * high;
+      const grow = (1 + 0.25 * high) * shotScale(shot, this.art);
       const ball = this.book.get(`ball|${launch.sport}`, t, (k) => drawBall(k, t, launch.sport));
       this.ballStamps.place(ball, tileX(view, bx), tileY(view, by), {
         rotation: still && turn.scaleY === 1 ? 0 : turn.rotation,

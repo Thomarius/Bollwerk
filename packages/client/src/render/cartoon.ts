@@ -39,6 +39,7 @@ import {
   drawShotTarget,
   hex,
   shotLift,
+  shotScale,
   shotProgress,
   tileX,
   tileY,
@@ -1101,7 +1102,7 @@ export class CartoonTheme extends ShapeTheme implements Theme {
       this.underGfx.ellipse(gx, gy, t * 0.2, t * 0.07);
       this.underGfx.fill({ color: INK, alpha: 0.3 - 0.1 * high });
       const turn = still ? 0 : Math.floor(p * 8) * 0.5 * Math.sign(shot.toX - shot.fromX || 1);
-      const scale = 1 + 0.25 * high;
+      const scale = (1 + 0.25 * high) * shotScale(shot, this.art);
       this.bombStamps.place(bomb, gx, y, { rotation: turn, scale });
       const fx = gx + Math.sin(turn) * t * 0.42 * scale + Math.cos(turn) * t * 0.05 * scale;
       const fy = y - Math.cos(turn) * t * 0.42 * scale + Math.sin(turn) * t * 0.05 * scale;

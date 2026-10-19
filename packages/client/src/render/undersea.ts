@@ -50,6 +50,7 @@ import {
   iconFrame,
   mixed,
   shotLift,
+  shotScale,
   tileX,
   tileY,
   type Cell,
@@ -1308,7 +1309,7 @@ export class UnderseaTheme extends ShapeTheme implements Theme {
       );
       this.urchinStamps.place(urchin, here.x, here.y, {
         rotation: motionReduced() ? 0 : this.clock / 200 + shot.id,
-        scale: 1 + 0.25 * high,
+        scale: (1 + 0.25 * high) * shotScale(shot, this.art),
       });
       drawShotTarget(g, view, shot, p, this.art, frame.humanPlayer);
     }

@@ -43,6 +43,7 @@ import {
   mixed,
   playerColour,
   shotLift,
+  shotScale,
   tileX,
   tileY,
   type Aim,
@@ -1274,7 +1275,7 @@ export class BricksTheme implements Theme {
       g.ellipse(gx, gy, t * (0.28 - 0.12 * high), t * (0.14 - 0.06 * high));
       g.fill({ color: 0x000000, alpha: 0.3 - 0.15 * high });
       const hy = tileY(view, shot.fromY + (shot.toY - shot.fromY) * p + 0.5 - lift);
-      const r = t * (0.26 + 0.12 * high);
+      const r = t * (0.26 + 0.12 * high) * shotScale(shot, this.art);
       g.circle(gx, hy, r);
       g.fill({ color: this.colour(shot.owner, 'base') });
       g.stroke({ width: 1, color: this.colour(shot.owner, 'dark') });
