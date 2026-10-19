@@ -9317,3 +9317,27 @@ sealed before the last piece, four after, the round ending in the same step). No
 asks the phase as of the events it has handled: the seal is checked before the batch is handled,
 so that is the phase the batch began in, wherever its steps were taken — in the frame, on a
 worker's answer, or from a room's messages.
+
+## 14g. The climax in every build phase's last seconds (2026-10-19)
+
+The user's: each style's climax — Chocolate's drips, Halloween's eyes, Sakura's maple leaves,
+Oktoberfest's band, Opera's finale, Office's deadline, the deep coming up under the sea,
+Electric's storm, Cartoon's alarm clock ringing, Christmas's blizzard and shaken globe, Noir's
+storm and its detective looking round faster, the Stadium's floodlights — played only in overtime
+and the final round. Now also over the last `effects.climaxBuildSeconds` (5) of every build
+phase, the moment the corner pieces hurry (`pressing`); not the cannon phase nor combat; overtime
+and the final round as before. 0 restores the old rule.
+
+`climaxLevel` in `corner.ts` says how far in, 0 to 1: 1 in overtime and the final round; in the
+build phase's last seconds coming in over the first of them; `climax` is whether it is above 0.
+Every caller used it for its own effect alone — none for anything else, so none stayed on the old
+rule. The overtime border and the final round's dusk and embers never asked it and keep their
+meaning. Eased in, at no cost outside the climax: Chocolate's melt creeps down from the top,
+Halloween's eyes open slowly, Opera's calm staves crossfade into the swell (they swapped at once
+and the waves jumped on, their phase now run on frame by frame) and its spotlights brighten,
+Office's tubes and the deep's dark and lures fade in, the undersea light dims gradually, the rain
+of Electric and Noir and Christmas's snow thicken over the second, the globe's shaking grows, the
+floodlights warm up and their flashes start one by one, and Sakura's petals turn to leaves a few
+at a time. **They still pop**: Cartoon's clock starts ringing, Office's phones, and Noir's detective
+looking round quicker — a pose switched, a ring being sudden. Oktoberfest's notes rise one by
+one from the tents, which comes in by itself.

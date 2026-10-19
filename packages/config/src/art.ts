@@ -1069,6 +1069,12 @@ export const ArtConfigSchema = z
        * How much bigger a tower's shot is drawn than a cannon's, in every style: Big Bertha's
        * and the Allerdickste Bertha's, whose craters are wide. The rest fly as cannons.
        */
+      /**
+       * The last seconds of every build phase in which each style plays its climax — Chocolate's
+       * drips, Halloween's eyes, Noir's storm — as in overtime and the final round, when the
+       * corner pieces hurry too. 0 keeps the climax to overtime and the final round alone.
+       */
+      climaxBuildSeconds: z.number().nonnegative(),
       towerShotScale: z.strictObject({
         bertha: z.number().positive(),
         biggest: z.number().positive(),

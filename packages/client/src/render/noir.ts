@@ -8,7 +8,7 @@ import { perf } from '../perf.js';
 import type { TimerSpot } from '../timerSpot.js';
 
 import { cannonBase } from './cannonBase.js';
-import { climax, cornerSpot } from './corner.js';
+import { climax, climaxLevel, cornerSpot } from './corner.js';
 import { IslandParts } from './islandParts.js';
 import { hash } from './noise.js';
 import { weatherFor, type Weather } from './pixel/atmosphere.js';
@@ -556,7 +556,7 @@ export class NoirTheme extends ShapeTheme implements Theme {
       const cx = tileX(view, spot.x);
       const cy = tileY(view, spot.y);
       const still = motionReduced();
-      const every = climax(state) ? 1400 : 4200;
+      const every = climax(state, this.art) ? 1400 : 4200;
       const looking = still ? 0 : Math.floor(this.clock / every) % 2;
       this.cornerMemos.draw('detective', `${viewKey(view)}|${looking}`, (g) =>
         drawDetective(g, cx, cy, s, looking === 1),
@@ -1145,9 +1145,12 @@ export class NoirTheme extends ShapeTheme implements Theme {
     const rows = (view.height - view.top) / t;
     this.rainStamps.begin();
     this.mist.begin(t);
-    const storm = climax(state);
-    const rain = storm || (this.weather !== 'fog' && this.weather !== 'clear');
-    const count = !rain ? 0 : storm ? this.style.stormRainCount : this.style.rainCount;
+    // Coming in, the rain thickens into the storm over the second.
+    const level = climaxLevel(state, this.art);
+    const storm = level > 0;
+    const showers = this.weather !== 'fog' && this.weather !== 'clear';
+    const base = showers ? this.style.rainCount : 0;
+    const count = Math.round(base + (this.style.stormRainCount - base) * level);
     if (!still) {
       while (this.drops.length < count) {
         this.drops.push({
@@ -1163,7 +1166,7 @@ export class NoirTheme extends ShapeTheme implements Theme {
         k.stroke({ width: Math.max(1, t * 0.035), color: 0xc8c8d0 });
       });
       const dt = deltaMs / 1000;
-      const slant = storm ? 0.32 : 0.18;
+      const slant = 0.18 + 0.14 * level;
       for (const d of this.drops) {
         d.y += d.speed * dt;
         d.x += d.speed * slant * dt;
@@ -1263,7 +1266,7 @@ export class NoirTheme extends ShapeTheme implements Theme {
   private drawFlashes(state: MatchState, view: ViewTransform, deltaMs: number): void {
     const g = this.flashGfx;
     if (motionReduced()) return;
-    if (!climax(state)) {
+    if (!climax(state, this.art)) {
       this.strike = -1;
       return;
     }

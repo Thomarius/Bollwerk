@@ -556,14 +556,14 @@ export class CartoonTheme extends ShapeTheme implements Theme {
   /**
    * The alarm clock on legs in the corner: a round white body on two bells, a face on its
    * dial, hose arms and legs in white gloves and big shoes, dancing on the beat. At the
-   * climax — overtime and the final round — it rings wildly, its hammer hammering, the
+   * climax (`climaxLevel`) it rings wildly, its hammer hammering, the
    * bells shaking, its mouth wide.
    */
   private drawClock(state: MatchState, view: ViewTransform): void {
     this.clockMemos.begin();
     const spot = this.corner;
     if (spot !== null) {
-      const ringing = climax(state) && !motionReduced();
+      const ringing = climax(state, this.art) && !motionReduced();
       const key = `${viewKey(view)}|${this.step}|${ringing}`;
       this.clockMemos.draw('clock', key, (g) => this.drawClockFigure(g, view, spot, ringing));
     }

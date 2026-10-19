@@ -8,7 +8,7 @@ import type { TimerSpot } from '../timerSpot.js';
 
 import { cannonBase } from './cannonBase.js';
 import { hash } from './noise.js';
-import { climax, cornerSpot, pressing } from './corner.js';
+import { climax, climaxLevel, cornerSpot, pressing } from './corner.js';
 import { IslandParts } from './islandParts.js';
 import { outerOcean } from './ocean.js';
 import { weatherFor, type Weather } from './pixel/atmosphere.js';
@@ -187,8 +187,8 @@ const FINISH: FinishLook = { spark: 'bolts', flag: 'rod' };
  * plates and a grid in the owner's colour with current pulsing along it. Guns are Tesla towers,
  * a drum, rings and a sphere, an arc leaping from the sphere as they fire ball lightning; a
  * silenced one is grounded, its cable hanging loose. A hit chains through the cage to the blocks
- * beside it. A Jacob's ladder climbs in the corner; as the storm breaks — overtime and the
- * final round — bolts fork down onto the outer sea, and the sky flickers. The storm's own
+ * beside it. A Jacob's ladder climbs in the corner; as the storm breaks — the climax —
+ * bolts fork down onto the outer sea, and the sky flickers. The storm's own
  * lightning is white: a player's colour in an arc means it is theirs, and live.
  */
 export class ElectricTheme extends ShapeTheme implements Theme {
@@ -331,9 +331,9 @@ export class ElectricTheme extends ShapeTheme implements Theme {
     return hex(this.art.palette.shadow);
   }
 
-  /** As the storm breaks: overtime, and the final round. */
+  /** As the storm breaks: the climax (`climaxLevel`). */
   private storm(state: MatchState): boolean {
-    return climax(state);
+    return climax(state, this.art);
   }
 
   // ------------------------------------------------------------------ terrain
@@ -1609,15 +1609,16 @@ export class ElectricTheme extends ShapeTheme implements Theme {
     const rows = (view.height - view.top) / t;
     this.dropStamps.begin();
     this.mist.begin(t);
-    const storm = this.storm(state);
+    // Coming in, the rain thickens over the second rather than all at once.
+    const level = climaxLevel(state, this.art);
     const hail = this.weather === 'snow';
     const count = hail
       ? this.style.hailCount
       : this.weather === 'rain'
-        ? this.style.rainCount * (storm ? 1.5 : 1)
-        : this.weather === 'overcast' || storm
+        ? this.style.rainCount * (1 + 0.5 * level)
+        : this.weather === 'overcast'
           ? this.style.rainCount * 0.4
-          : 0;
+          : this.style.rainCount * 0.4 * level;
     if (!still && count > 0) {
       while (this.drops.length < count) {
         this.drops.push({

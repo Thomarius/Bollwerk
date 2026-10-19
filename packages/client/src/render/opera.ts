@@ -8,7 +8,7 @@ import { timerSpot, type TimerSpot } from '../timerSpot.js';
 
 import { hash } from './noise.js';
 import { GOLD, drawLyre, drawQuaver, drawRest } from './music.js';
-import { climax, roseSpot } from './corner.js';
+import { climaxLevel, roseSpot } from './corner.js';
 import { IslandParts } from './islandParts.js';
 import { release } from './release.js';
 import { OperaSeaLife } from './seaLife.js';
@@ -167,7 +167,7 @@ function blackAfter(n: number): boolean {
  * Sealed ground is a page of the score, ruled in the owner's colour, a melody written on it.
  * Guns are brass horns, muted when silenced; shots are notes. A hit on a wall knocks a key
  * out with a sour note; the sweep runs off in a glissando; a piece set down lands as a
- * chord. In the finale — overtime and the final round — the staves swell and spotlights
+ * chord. In the finale — the climax — the staves swell and spotlights
  * sweep the board.
  */
 /** The icon's footprint against its box: the coil and the bell span some 0.6 of it. */
@@ -268,6 +268,8 @@ export class OperaTheme extends ShapeTheme implements Theme {
   /** The houses playing, raised as a flag is: by sealing, and silenced by a breach. */
   private readonly playing = new FlagHoist();
   private clock = 0;
+  /** How far the staves' waves have run on, in tiles (`stavePhase`). */
+  private staveRun = 0;
 
   constructor(private readonly seed = 1) {
     super();
@@ -545,7 +547,7 @@ export class OperaTheme extends ShapeTheme implements Theme {
       for (let n = 0; n < staves; n++) {
         for (let line = 0; line < 5; line++) {
           for (let x = x0 - wave; x <= x0 + w + step; x += step) {
-            const y = this.staveY(n, x, finale, 0) + line * 0.2;
+            const y = this.staveY(n, x, finale ? 1 : 0, 0) + line * 0.2;
             if (x === x0 - wave) g.moveTo(tileX(view, x), tileY(view, y));
             else g.lineTo(tileX(view, x), tileY(view, y));
           }
@@ -612,15 +614,22 @@ export class OperaTheme extends ShapeTheme implements Theme {
   // ------------------------------------------------------------------ the sea, moving
 
   /** How far the waves have run, in tiles. */
-  private stavePhase(finale: boolean): number {
-    const speed = this.style.staveTilesPerSecond * (finale ? 1.6 : 1);
-    return motionReduced() ? 0 : (this.clock / 1000) * speed;
+  /**
+   * How far the staves' waves have run on, in tiles: moved on each frame at the melody's speed,
+   * quicker in the finale (`swell` 0 to 1), so a change of speed carries on from where they
+   * were rather than jumping to where the quicker speed would have had them.
+   */
+  private stavePhase(): number {
+    return motionReduced() ? 0 : this.staveRun;
   }
 
-  /** Where stave `n`'s top line runs at `x`, in tiles, with the waves run on by `phase`. */
-  private staveY(n: number, x: number, finale: boolean, phase = this.stavePhase(finale)): number {
+  /**
+   * Where stave `n`'s top line runs at `x`, in tiles, with the waves run on by `phase`;
+   * `swell` from the calm (0) to the finale's swell (1).
+   */
+  private staveY(n: number, x: number, swell: number, phase = this.stavePhase()): number {
     const s = this.style;
-    const amp = s.staveAmplitudeTiles * (finale ? 1.7 : 1);
+    const amp = s.staveAmplitudeTiles * (1 + 0.7 * swell);
     return (
       this.sheet.y0 +
       1.5 +
@@ -639,7 +648,9 @@ export class OperaTheme extends ShapeTheme implements Theme {
     const t = view.tile;
     const { palette } = this.art;
     const still = motionReduced();
-    const finale = climax(state);
+    // Coming in, the calm staves give way to the swelling ones, crossfaded.
+    const swell = climaxLevel(state, this.art);
+    this.staveRun += (this.style.staveTilesPerSecond * (1 + 0.6 * swell) * deltaMs) / 1000;
 
     // Ink where a shot came down on the stage, fading over the rounds after.
     this.drawBlots(state, view);
@@ -647,19 +658,21 @@ export class OperaTheme extends ShapeTheme implements Theme {
     // The staves, following the swell: the built set slid on by the phase, a wavelength
     // being the same wave again.
     const { x0, w } = this.sheet;
-    const phase = this.stavePhase(finale);
+    const phase = this.stavePhase();
     const wave = this.style.staveWavelengthTiles;
-    this.stavesCalm.visible = !finale;
-    this.stavesSwell.visible = finale;
-    (finale ? this.stavesSwell : this.stavesCalm).x = (((phase % wave) + wave) % wave) * t;
+    this.stavesCalm.visible = swell < 1;
+    this.stavesSwell.visible = swell > 0;
+    this.stavesCalm.alpha = 1 - swell;
+    this.stavesSwell.alpha = swell;
+    this.stavesCalm.x = this.stavesSwell.x = (((phase % wave) + wave) % wave) * t;
     // The notes riding them, running on with the melody.
-    const run = still ? 0 : (this.style.staveTilesPerSecond * (finale ? 1.6 : 1) * deltaMs) / 1000;
+    const run = still ? 0 : (this.style.staveTilesPerSecond * (1 + 0.6 * swell) * deltaMs) / 1000;
     const stamps = this.riderStamps;
     stamps.begin();
     for (const r of this.riders) {
       r.x += run;
       if (r.x > x0 + w) r.x -= w;
-      const y = this.staveY(r.stave, r.x, finale, phase) + r.step * 0.1 + 0.05;
+      const y = this.staveY(r.stave, r.x, swell, phase) + r.step * 0.1 + 0.05;
       if (!this.open(r.x, y)) continue;
       const note = this.book.get(`quaver${r.flags}`, t, (q) =>
         drawQuaver(q, 0, 0, t * 0.6, hex(palette.waterFoam), 0.75, r.flags),
@@ -1547,10 +1560,11 @@ export class OperaTheme extends ShapeTheme implements Theme {
     this.glisses = this.glisses.filter((s) => s.age < GLISS_MS);
   }
 
-  /** The finale — overtime and the final round: spotlights sweeping across the board. */
+  /** The finale — the climax (`climaxLevel`): spotlights sweeping across the board. */
   private drawSpotlights(state: MatchState, view: ViewTransform): void {
-    const finale = climax(state);
-    if (!finale) return;
+    // Coming in, the spotlights brighten.
+    const finale = climaxLevel(state, this.art);
+    if (finale === 0) return;
     const g = this.lateGfx;
     const t = view.tile;
     const still = motionReduced();
@@ -1566,7 +1580,7 @@ export class OperaTheme extends ShapeTheme implements Theme {
         [3.2, 1],
       ] as const) {
         g.circle(x, y, t * r);
-        g.fill({ color: 0xfff6dc, alpha: this.style.spotlightAlpha * a });
+        g.fill({ color: 0xfff6dc, alpha: this.style.spotlightAlpha * a * finale });
       }
     }
   }

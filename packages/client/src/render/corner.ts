@@ -1,3 +1,4 @@
+import type { ArtConfig } from '@bollwerk/config';
 import { Terrain, type MatchState } from '@bollwerk/sim';
 
 import { inFinalRound } from '../scores.js';
@@ -18,12 +19,29 @@ export function cornerSpot(state: MatchState, view: ViewTransform): TimerSpot | 
   return roseSpot(state, right, bottom, timerSpot(state));
 }
 
+/** How long the build phase's closing climax takes to come in, in seconds. */
+const CLIMAX_EASE_SECONDS = 1;
+
 /**
- * The match's climax — overtime, and the final round — when a style turns up its weather
- * or its music: the storm breaking, the deadline, the deep coming up, the season turning.
+ * How far into its climax the match is, 0 to 1, when a style turns up its weather or its
+ * music: the storm breaking, the deadline, the deep coming up, the season turning. Wholly in
+ * overtime and the final round; and over the last `effects.climaxBuildSeconds` of every build
+ * phase (2026-10-19), as the corner pieces hurry (`pressing`), coming in over a second there so
+ * nothing pops in mid-phase. 0 elsewhere — the cannon phase and combat included. Not the
+ * overtime border nor the final round's dusk, which say what they say only then.
  */
-export function climax(state: MatchState): boolean {
-  return (state.phase === 'build' && state.overtime) || inFinalRound(state);
+export function climaxLevel(state: MatchState, art: ArtConfig): number {
+  if ((state.phase === 'build' && state.overtime) || inFinalRound(state)) return 1;
+  const closing = art.effects.climaxBuildSeconds;
+  if (state.phase !== 'build' || closing <= 0) return 0;
+  const left = (state.phaseEndTick - state.tick) / state.ruleset.tickRateHz;
+  if (left >= closing) return 0;
+  return Math.min(1, (closing - left) / Math.min(CLIMAX_EASE_SECONDS, closing));
+}
+
+/** Whether the match is at its climax at all (`climaxLevel`). */
+export function climax(state: MatchState, art: ArtConfig): boolean {
+  return climaxLevel(state, art) > 0;
 }
 
 /**

@@ -1447,6 +1447,7 @@
     "aimLineAlpha": 0.55,
     "finalStampMs": 2600,
     "finalEmberCount": 18,
+    "climaxBuildSeconds": 5,
     "towerShotScale": {
       "bertha": 1.5,
       "biggest": 2.2

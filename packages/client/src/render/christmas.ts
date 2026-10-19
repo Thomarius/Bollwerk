@@ -7,7 +7,7 @@ import { perf } from '../perf.js';
 import type { TimerSpot } from '../timerSpot.js';
 
 import { cannonBase } from './cannonBase.js';
-import { climax, cornerSpot } from './corner.js';
+import { climaxLevel, cornerSpot } from './corner.js';
 import { IslandParts } from './islandParts.js';
 import { hash } from './noise.js';
 import { weatherFor, type Weather } from './pixel/atmosphere.js';
@@ -474,7 +474,7 @@ export class ChristmasTheme extends ShapeTheme implements Theme {
   /**
    * The snow globe in the corner: on a turned wooden base with a gold plaque, a glass globe
    * holding a cottage with a lit window and a fir in the snow, flakes settling slowly in it.
-   * At the climax — overtime and the final round — someone shakes it: it rocks, and its snow
+   * At the climax (`climaxLevel`) someone shakes it: it rocks, and its snow
    * whirls up into a blizzard.
    */
   private drawGlobe(state: MatchState, view: ViewTransform): void {
@@ -483,8 +483,10 @@ export class ChristmasTheme extends ShapeTheme implements Theme {
     const spot = this.corner;
     if (spot !== null) {
       const still = motionReduced();
-      const shaken = climax(state) && !still;
-      const rock = shaken ? Math.round(Math.sin(this.clock / 90) * 3) : 0;
+      // Coming in, the shaking grows.
+      const shake = still ? 0 : climaxLevel(state, this.art);
+      const shaken = shake > 0;
+      const rock = shaken ? Math.round(Math.sin(this.clock / 90) * 3 * shake) : 0;
       const t = view.tile;
       const s = spot.size * t;
       const cx = tileX(view, spot.x) + rock * s * 0.01;
@@ -1116,12 +1118,14 @@ export class ChristmasTheme extends ShapeTheme implements Theme {
     const rows = (view.height - view.top) / t;
     this.snowStamps.begin();
     this.mist.begin(t);
-    const blizzard = this.weather === 'snow' || climax(state);
-    const count = blizzard
-      ? this.style.blizzardCount
-      : this.weather === 'clear'
-        ? this.style.snowCount * 0.6
-        : this.style.snowCount;
+    // Coming in, the snow thickens into the blizzard over the second.
+    const whirl = climaxLevel(state, this.art);
+    const blizzard = this.weather === 'snow' || whirl > 0;
+    const calm = this.weather === 'clear' ? this.style.snowCount * 0.6 : this.style.snowCount;
+    const count =
+      this.weather === 'snow'
+        ? this.style.blizzardCount
+        : calm + (this.style.blizzardCount - calm) * whirl;
     if (!still) {
       while (this.flakes.length < count) {
         this.flakes.push({

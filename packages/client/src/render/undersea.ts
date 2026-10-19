@@ -8,7 +8,7 @@ import type { TimerSpot } from '../timerSpot.js';
 
 import { cannonBase } from './cannonBase.js';
 import { hash } from './noise.js';
-import { climax, cornerSpot, pressing } from './corner.js';
+import { climax, climaxLevel, cornerSpot, pressing } from './corner.js';
 import { IslandParts } from './islandParts.js';
 import { weatherFor, type Weather } from './pixel/atmosphere.js';
 import {
@@ -173,7 +173,7 @@ const FINISH: FinishLook = { spark: 'bubbles', flag: 'trident' };
  * is the giant clam at the door open on a glowing pearl — a breach shuts it. Sealed ground is
  * a meadow of seagrass in the owner's colour. Guns are pufferfish, puffing up round as they
  * fire sea urchins; a silenced one hangs limp. A shipwreck with an octopus on it lies in the
- * corner; as the deep comes up — overtime and the final round — the light dims, anglerfish
+ * corner; as the deep comes up — the climax — the light dims, anglerfish
  * lures glow at the edges and now and then a whale's shadow passes over.
  */
 export class UnderseaTheme extends ShapeTheme implements Theme {
@@ -323,9 +323,9 @@ export class UnderseaTheme extends ShapeTheme implements Theme {
     return hex(this.art.palette.shadow);
   }
 
-  /** As the deep comes up: overtime, and the final round. */
+  /** As the deep comes up: the climax (`climaxLevel`). */
   private deep(state: MatchState): boolean {
-    return climax(state);
+    return climax(state, this.art);
   }
 
   // ------------------------------------------------------------------ terrain
@@ -1563,7 +1563,7 @@ export class UnderseaTheme extends ShapeTheme implements Theme {
   }
 
   /**
-   * The deep coming up — overtime and the final round: the water darkening toward the
+   * The deep coming up — the climax (`climaxLevel`): the water darkening toward the
    * screen's edges, anglerfish lures glowing and bobbing there in the dark, and now and then
    * the shadow of a whale passing over the whole board.
    */
@@ -1573,6 +1573,8 @@ export class UnderseaTheme extends ShapeTheme implements Theme {
       this.sinceWhale = 0;
       return;
     }
+    // Coming in, the dark gathers and the lures glow up.
+    const level = climaxLevel(state, this.art);
     const g = this.lateGfx;
     const t = view.tile;
     const still = motionReduced();
@@ -1586,7 +1588,7 @@ export class UnderseaTheme extends ShapeTheme implements Theme {
       g.rect(W - d - band, top + d, band, H - 2 * d);
       g.rect(d + band, top + d, W - 2 * d - 2 * band, band);
       g.rect(d + band, top + H - d - band, W - 2 * d - 2 * band, band);
-      g.fill({ color: 0x020a12, alpha: 0.12 });
+      g.fill({ color: 0x020a12, alpha: 0.12 * level });
     }
     // The lures, each on its stalk over a fish barely seen in the dark.
     const lures = this.style.lures;
@@ -1600,19 +1602,19 @@ export class UnderseaTheme extends ShapeTheme implements Theme {
       const fx = x - side * t * 0.9;
       const fy = y + t * 0.9;
       g.ellipse(fx, fy, t * 1, t * 0.6);
-      g.fill({ color: 0x0a1a24, alpha: 0.85 });
+      g.fill({ color: 0x0a1a24, alpha: 0.85 * level });
       for (let k = 0; k < 3; k++) {
         const tx = fx + side * t * (0.55 + 0.12 * k);
         g.poly([tx - t * 0.04, fy - t * 0.05, tx + t * 0.04, fy - t * 0.05, tx, fy + t * 0.1]);
       }
-      g.fill({ color: 0xdfeef2, alpha: 0.7 });
+      g.fill({ color: 0xdfeef2, alpha: 0.7 * level });
       g.moveTo(fx + side * t * 0.3, fy - t * 0.5).quadraticCurveTo(
         x - side * t * 0.2,
         y - t * 0.3,
         x,
         y,
       );
-      g.stroke({ width: Math.max(1, t * 0.05), color: 0x1a3442 });
+      g.stroke({ width: Math.max(1, t * 0.05), color: 0x1a3442, alpha: level });
       const flicker = still ? 1 : 0.75 + 0.25 * Math.sin(this.clock / 230 + n * 3);
       for (const [r, a] of [
         [0.9, 0.08],
@@ -1620,10 +1622,10 @@ export class UnderseaTheme extends ShapeTheme implements Theme {
         [0.3, 0.2],
       ] as const) {
         g.circle(x, y, t * r);
-        g.fill({ color: 0xbff4ff, alpha: a * flicker });
+        g.fill({ color: 0xbff4ff, alpha: a * flicker * level });
       }
       g.circle(x, y, t * 0.14);
-      g.fill({ color: 0xf4feff, alpha: flicker });
+      g.fill({ color: 0xf4feff, alpha: flicker * level });
     }
     if (still) return;
     this.sinceWhale += deltaMs;
@@ -1680,7 +1682,7 @@ export class UnderseaTheme extends ShapeTheme implements Theme {
     const top = view.top;
     const H = view.height - top;
     const lean = H * 0.35;
-    const dim = this.deep(state) ? 0.4 : 1;
+    const dim = 1 - 0.6 * climaxLevel(state, this.art);
     for (let n = 0; n < this.style.shafts; n++) {
       const sway = still ? 0 : Math.sin(this.clock / 9000 + n * 2.3) * t * 2;
       const x = view.width * ((n + 0.3 + 0.4 * hash(n, this.seed, 960)) / this.style.shafts) + sway;

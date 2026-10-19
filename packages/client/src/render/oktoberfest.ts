@@ -1356,13 +1356,13 @@ export class OktoberfestTheme extends ShapeTheme implements Theme {
   }
 
   /**
-   * In overtime and the final round the band strikes up: notes rise from every sealed tent,
+   * At the climax (`climaxLevel`) the band strikes up: notes rise from every sealed tent,
    * swaying as they go — "Ein Prosit", one last time.
    */
   private drawBand(state: MatchState, view: ViewTransform, frame: EffectFrame): void {
     const g = this.lateGfx;
     const t = view.tile;
-    const playing = climax(state);
+    const playing = climax(state, this.art);
     if (playing && !motionReduced()) {
       for (const castle of state.castles) {
         if (frame.castleSealed[castle.id] !== true) continue;

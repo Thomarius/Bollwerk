@@ -48,7 +48,7 @@ import {
 } from './theme.js';
 import { hash } from './noise.js';
 import { weatherFor } from './pixel/atmosphere.js';
-import { climax, roseSpot } from './corner.js';
+import { climaxLevel, roseSpot } from './corner.js';
 import { ChocolateSeaLife } from './seaLife.js';
 import type { SceneryItem } from './scenery.js';
 import { SceneryLayer } from './sceneryLayer.js';
@@ -1843,12 +1843,13 @@ export class ChocolateTheme extends ShapeTheme implements Theme {
   }
 
   /**
-   * The heat of overtime and the final round: chocolate melting down from the top of the
+   * The heat of the climax (`climaxLevel`): chocolate melting down from the top of the
    * board, drips gathering and falling, while the shared border and dusk carry the meaning.
    */
   private drawHeat(state: MatchState, view: ViewTransform): void {
-    const hot = climax(state);
-    if (!hot) return;
+    // Coming in, the melt creeps down from the top of the board.
+    const heat = climaxLevel(state, this.art);
+    if (heat === 0) return;
     const g = this.lateGfx;
     const t = view.tile;
     const { palette } = this.art;
@@ -1856,13 +1857,13 @@ export class ChocolateTheme extends ShapeTheme implements Theme {
     const right = Math.min(view.width, view.originX + this.width * t);
     const top = Math.max(view.top, view.originY);
     const still = motionReduced();
-    g.rect(left, top, right - left, t * 0.28);
+    g.rect(left, top, right - left, t * 0.28 * heat);
     const count = Math.max(6, Math.round((right - left) / (t * 1.8)));
     for (let k = 0; k < count; k++) {
       const x = left + ((right - left) * (k + 0.5)) / count + (hash(k, 160) - 0.5) * t;
       const period = 2600 + 1800 * hash(k, 161);
       const phase = still ? 0.5 : (((this.clock / period + hash(k, 162)) % 1) + 1) % 1;
-      const max = t * (0.8 + 1.4 * hash(k, 163));
+      const max = t * (0.8 + 1.4 * hash(k, 163)) * heat;
       const grow = Math.min(1, phase / 0.75);
       const length = max * grow;
       const w = t * (0.2 + 0.1 * hash(k, 164));
@@ -1879,7 +1880,7 @@ export class ChocolateTheme extends ShapeTheme implements Theme {
     g.stroke({ width: Math.max(1, t * 0.05), color: hex(palette.shadow), alpha: 0.6 });
     for (let k = 0; k < count; k++) {
       const x = left + ((right - left) * (k + 0.5)) / count + (hash(k, 160) - 0.5) * t;
-      g.moveTo(x - t * 0.04, top + t * 0.1).lineTo(x - t * 0.04, top + t * 0.45);
+      g.moveTo(x - t * 0.04, top + t * 0.1 * heat).lineTo(x - t * 0.04, top + t * 0.45 * heat);
     }
     g.stroke({ width: Math.max(1, t * 0.05), color: hex(palette.waterFoam), alpha: 0.5 });
   }

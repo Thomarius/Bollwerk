@@ -8,7 +8,7 @@ import type { TimerSpot } from '../timerSpot.js';
 
 import { cannonBase } from './cannonBase.js';
 import { clearDrawn } from './clearDrawn.js';
-import { climax, cornerSpot, pressing } from './corner.js';
+import { climaxLevel, cornerSpot, pressing } from './corner.js';
 import { IslandParts } from './islandParts.js';
 import { hash } from './noise.js';
 import { release } from './release.js';
@@ -1162,12 +1162,14 @@ export class SportsTheme extends ShapeTheme implements Theme {
   }
 
   /**
-   * The climax — overtime and the final round: the floodlights on, a glow from each corner of
+   * The climax (`climaxLevel`): the floodlights on, a glow from each corner of
    * the stadium, and camera flashes popping in the stands. None of the flashes with motion
    * reduced.
    */
   private drawClimax(state: MatchState, view: ViewTransform): void {
-    if (!climax(state)) return;
+    // Coming in, the floodlights warm up and the flashes start one by one.
+    const level = climaxLevel(state, this.art);
+    if (level === 0) return;
     const { floodlightAlpha, flashesPerSecond } = this.style;
     const r = Math.max(view.width, view.height) * 0.35;
     for (const [fx, fy] of [
@@ -1176,7 +1178,7 @@ export class SportsTheme extends ShapeTheme implements Theme {
       [0, view.height],
       [view.width, view.height],
     ] as const) {
-      this.glow.disc(fx, fy, r, 0xfff6dc, floodlightAlpha);
+      this.glow.disc(fx, fy, r, 0xfff6dc, floodlightAlpha * level);
     }
     if (motionReduced()) return;
     // Each flash a short pop at a spot drawn from its slot of time, so none needs keeping.
@@ -1184,7 +1186,7 @@ export class SportsTheme extends ShapeTheme implements Theme {
     const n = Math.floor(this.clock / slot);
     for (let k = n - 2; k <= n; k++) {
       const age = this.clock - k * slot;
-      if (age > 140) continue;
+      if (age > 140 || hash(k, this.seed, 9132) >= level) continue;
       const fx = hash(k, this.seed, 9130) * view.width;
       const fy = view.top + hash(k, this.seed, 9131) * (view.height - view.top);
       const tx = Math.floor((fx - view.originX) / view.tile);

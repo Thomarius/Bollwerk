@@ -421,7 +421,11 @@ styles made the name mean nothing), Night, Cyberpunk, Blueprint, Parchment, Toy 
 dirty tracking and input mapping; a theme owns only what things look like. Adding a style
 is a name in `ArtStyleSchema`, the looks it is made for in `STYLE_LOOKS`, a `Theme`, a
 case in `createTheme`, a menu title in `titles.ts` and a banner class in `hud.ts`; the
-types refuse a style missing any of them. All
+types refuse a style missing any of them. **The climax** (`climaxLevel` in `corner.ts`), when
+a style turns up its own weather or music — Chocolate's drips, Noir's storm, Opera's finale: overtime,
+the final round, and the last `effects.climaxBuildSeconds` (5) of every build phase, as the corner
+pieces hurry, eased in over a second there (ARCHIVE 14g; 0 keeps it to the first two). The
+overtime border and the final round's dusk and embers keep to overtime and the final round. All
 sprites are generated at boot from `art.default.json` plus the match seed — nothing binary
 is committed except audio.
 
@@ -938,7 +942,7 @@ puddle; a player who is out has their wall turn grey-white with sugar bloom. Sea
 iced in a pastel of the owner's colour, edged with piped dollops and sprinkled. The piece in
 hand is an empty mould, cracked where it does not fit; a piece set down is poured from above
 and wobbles as it sets. In a snowy match (the pixel style's weather from the seed) sprinkles
-fall and lie on the wall tops; in overtime and the final round dark chocolate melts down
+fall and lie on the wall tops; at the climax dark chocolate melts down
 from the top of the board. Scenery is lollipops, soft meringue swirls, candy floss and
 cookies; on the outer river a paddle-boat, marshmallows bobbing on the current and a
 whirlpool under a glass pipe's mouth. Its banner is a bar opened out of gold foil, its HUD a
@@ -964,7 +968,7 @@ fading; the bog splashes slime; open ground keeps a scorch with embers. The swee
 blocks into the ground like graves; a player who is out has grey stone thick with webs.
 Sealed ground is tinted and warded by candles along its edge, flickering. The piece in hand
 is a spectral wall, its outline wavering, cracked where it does not fit; set down, it
-materialises out of mist. In the witching hour — overtime and the final round — pairs of
+materialises out of mist. In the witching hour — the climax — pairs of
 eyes open in the dark at the screen's edges and blink. Weather from the seed: fog doubles
 the fog, snow falls as autumn leaves. Scenery is dead trees, pumpkins (never lit: only a
 sealed house's grins), toadstools, headstones and now and then a small skull; on the outer
@@ -994,7 +998,7 @@ tiles and a curled cloud**, the prints' swirl, which is also its smoke and the p
 piece pressed down; a shot on land leaves a splash of ink; the sweep scatters blocks into
 petals; a player who is out has walls weathered grey with moss on them. The piece in hand is
 outlined in one brush stroke, and where it does not fit the stroke breaks up dry and frayed.
-**Cherry petals drift over everything**, and in overtime and the final round **the season
+**Cherry petals drift over everything**, and at the climax **the season
 turns**: they fall as maple leaves. Weather from the seed: fog is drifting bands of mist,
 rain Hiroshige's slanting streaks, snow falls and whitens the caps. Scenery is cherry trees,
 gnarled pines, bamboo and garden rocks, one in three a stone lantern — no torii or red
@@ -1020,7 +1024,7 @@ colour, the brass tap their muzzle, and **they fire pretzels**, spinning, a ring
 owner's colour round each; a silenced keg rolls onto its side and drips into a puddle. A hit
 on a wall throws foam, bottles and crown caps; a shot on land spills a puddle of beer; the
 sweep returns a crate for its **deposit**, a coin flipping up where it stood; a crate set
-down clinks. In overtime and the final round **the band plays**: notes rise from every
+down clinks. At the climax **the band plays**: notes rise from every
 sealed tent. A **Ferris wheel** turns in the corner Parchment gives its compass rose, its
 rim lit and its gondolas hanging level. Scenery is beer-garden chestnut trees, tables with
 their benches — so a copse of them is a beer garden — gingerbread hearts dropped on their
@@ -1054,7 +1058,7 @@ at sea spreads rings of sound, on land an ink blot; the sweep runs off in **a gl
 piece set down lands as **a chord**; the piece in hand is sketched in pencil and crossed out
 where it does not fit. **A conductor** stands on his podium in the corner Parchment gives
 its compass rose, his baton beating time in four, quicker over a phase's last seconds and
-in overtime. In **the finale** — overtime and the final round — the staves swell and
+in overtime. In **the finale** — the climax — the staves swell and
 quicken and **two spotlights** sweep the board. Scenery is golden harps, music stands with
 their chairs — a copse of them a section of the orchestra — singers of the choir in black
 robes, mouths open, metronomes, and one boulder in three a grand piano with its lid up; on
@@ -1089,7 +1093,7 @@ sweep **shreds** its panels; a piece set down **unfolds out of its flat-pack**; 
 hand is **a selection with marching ants**, a "not allowed" sign over it where it does not
 fit. **A water cooler** stands in the corner Parchment gives its compass rose, glugging a
 bubble now and then, two colleagues gossiping beside it under a balloon of "…". In **the
-deadline** — overtime and the final round — the fluorescent tubes at the screen's edges
+deadline** — the climax — the fluorescent tubes at the screen's edges
 flicker and **every desk's phone rings**. Weather from the seed: snow is shredded paper from
 the vents, rain the ceiling leaking into grey pails, fog the haze of burnt popcorn. Scenery is
 potted ficus, open-plan desks with their computers — a copse of them a cluster — snake plants
@@ -1131,7 +1135,7 @@ little stars of spray where it does not fit. **A shipwreck** lies in the corner 
 its compass rose, its bow rising from a mound of sand, portholes along it, weed hanging and a
 bubble now and then — and **an octopus draped over the bow**, its arms swaying, blinking, which
 blanches pale and dark by turns and curls its arms quicker while the clock presses. As **the
-deep comes up** — overtime and the final round — the light dims, the water darkens toward the
+deep comes up** — the climax — the light dims, the water darkens toward the
 screen's edges, **anglerfish lures** glow and bob there over the fish barely seen below, and
 now and then **a whale's shadow** passes over the whole board. Weather from the seed: snow is
 thick marine snow, rain the surface far above pocked by it, rings spreading faintly and the
@@ -1229,7 +1233,7 @@ splash. The sweep pops a block in a puff; a piece set down lands with dust puffi
 **The piece in hand is carried in two white gloves**, bobbing on the beat; where it does not fit
 it turns grey and shakes, and a glove wags a finger — in form, since red is a player's. **An
 alarm clock on legs** dances in the corner, its hands ticking round a step each beat, and rings
-wildly at the climax, overtime and the final round, hammer hammering, mouth wide. **The film**:
+wildly at the climax, hammer hammering, mouth wide. **The film**:
 grain new at each step, a faint flicker, a hair now and then and scratches running down it, all
 none under reduced motion, and a vignette drawn once on a small canvas and stretched over the
 window (a Pixi radial gradient lost its stops' alpha). Weather from the seed: rain in short
@@ -1251,7 +1255,7 @@ white glove. The player colours are the shared ones; nothing else on the board h
 **Christmas** (`christmas.ts`, `art.christmas`, `yule.ts`), for either look: **Christmas Eve on
 snowy islands in a midnight sea** — the user's idea, its design left to us, ARCHIVE 12zc. Snow
 always falls, drifting; **a blizzard**, thick, fast and slanting on the wind, in snowy weather and
-at the climax, overtime and the final round. The sea is midnight blue, lighter where it laps the
+at the climax. The sea is midnight blue, lighter where it laps the
 ice, starlight glinting in it; the land snow, soft blue drifts and frost glints on it, an ice shelf
 along the coast. Walls are **presents** wrapped in the owner's colour, a dot of their light in two
 corners, white ribbon tied round each and a bow on one in three, dark seams between the boxes —

@@ -124,6 +124,8 @@ interface Drift {
   spin: number;
   colour: number;
   size: number;
+  /** A maple leaf, the season turned, rather than a petal. */
+  leaf: boolean;
 }
 
 /** A keep on a castle's tiles: where its parts stand on screen. */
@@ -1761,17 +1763,31 @@ export class SakuraTheme extends ShapeTheme implements Theme {
 
   /**
    * What drifts over the whole screen: cherry petals on the wind; maple leaves once the
-   * season turns, in overtime and the final round; snow in a snowy match; in rain,
+   * season turns, at the climax (`climaxLevel`); snow in a snowy match; in rain,
    * Hiroshige's slanting streaks with a few petals still. None under reduced motion.
    */
   private drawDrifts(state: MatchState, view: ViewTransform, deltaMs: number): void {
     if (motionReduced()) return;
     const g = this.lateGfx;
     const t = view.tile;
-    const autumn = climax(state);
+    const autumn = climax(state, this.art);
     if (autumn !== this.autumn) {
       this.autumn = autumn;
-      for (const d of this.drifts) d.colour = this.driftColour();
+      // Back to blossom at once, as the round ends.
+      if (!autumn) {
+        for (const d of this.drifts) {
+          d.leaf = false;
+          d.colour = this.driftColour();
+        }
+      }
+    }
+    // The season turning a petal at a time, most of them within the second it comes in.
+    if (autumn) {
+      for (const d of this.drifts) {
+        if (d.leaf || Math.random() >= deltaMs / 700) continue;
+        d.leaf = true;
+        d.colour = this.driftColour();
+      }
     }
     const snow = this.weather === 'snow';
     const rain = this.weather === 'rain';
@@ -1792,6 +1808,7 @@ export class SakuraTheme extends ShapeTheme implements Theme {
         spin: (Math.random() - 0.5) * 3,
         colour: streak ? 0xdfe6ee : snow ? 0xffffff : this.driftColour(),
         size: streak ? 0 : t * (snow ? 0.08 + Math.random() * 0.06 : 0.14 + Math.random() * 0.06),
+        leaf: this.autumn,
       });
     }
     const dt = deltaMs / 1000;
@@ -1816,7 +1833,7 @@ export class SakuraTheme extends ShapeTheme implements Theme {
       if (snow) {
         g.circle(d.x, d.y, d.size);
         g.fill({ color: d.colour, alpha: 0.9 });
-      } else if (this.autumn) {
+      } else if (d.leaf) {
         drawMapleLeaf(g, d.x, d.y, d.size * 1.7, d.angle, d.colour, 0.95);
       } else {
         drawPetal(g, d.x, d.y, d.size, d.angle, d.colour, 0.9);

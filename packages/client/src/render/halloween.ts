@@ -7,7 +7,7 @@ import { perf } from '../perf.js';
 import { timerSpot, type TimerSpot } from '../timerSpot.js';
 
 import { hash } from './noise.js';
-import { climax, roseSpot } from './corner.js';
+import { climaxLevel, roseSpot } from './corner.js';
 import { weatherFor, type Weather } from './pixel/atmosphere.js';
 import { HalloweenSeaLife } from './seaLife.js';
 import type { SceneryItem } from './scenery.js';
@@ -179,7 +179,7 @@ const FINISH: FinishLook = { spark: 'spirits', flag: 'tattered' };
  * when silenced; shots are spectral fireballs. A hit on a wall sets a little ghost free;
  * the sweep sinks blocks into the ground like graves; a piece in hand is a spectral wall that
  * materialises as it goes down. Sealed ground is tinted and warded by candles round its edge.
- * In the witching hour — overtime and the final round — eyes open in the dark at the edges.
+ * In the witching hour — the climax — eyes open in the dark at the edges.
  */
 export class HalloweenTheme extends ShapeTheme implements Theme {
   readonly id = 'halloween' as const;
@@ -1584,13 +1584,14 @@ export class HalloweenTheme extends ShapeTheme implements Theme {
   }
 
   /**
-   * The witching hour — overtime and the final round: pairs of eyes open in the dark at the
+   * The witching hour — the climax (`climaxLevel`): pairs of eyes open in the dark at the
    * screen's edges, glow, blink and close again. The shared border and dusk carry the
    * meaning; this is the mood.
    */
   private drawWitchingHour(state: MatchState, view: ViewTransform): void {
-    const hot = climax(state);
-    if (!hot) return;
+    // Coming in, the eyes open slowly.
+    const hot = climaxLevel(state, this.art);
+    if (hot === 0) return;
     const g = this.lateGfx;
     const t = view.tile;
     const still = motionReduced();
@@ -1611,7 +1612,9 @@ export class HalloweenTheme extends ShapeTheme implements Theme {
       if (phase > 0.7) continue;
       // Opening, open, blinking once, closing.
       const open =
-        Math.min(1, phase / 0.08, (0.7 - phase) / 0.08) * (Math.abs(phase - 0.4) < 0.02 ? 0.1 : 1);
+        Math.min(1, phase / 0.08, (0.7 - phase) / 0.08) *
+        (Math.abs(phase - 0.4) < 0.02 ? 0.1 : 1) *
+        hot;
       const size = t * (0.22 + 0.1 * hash(k, 264));
       for (const s of [-1, 1]) {
         g.ellipse(x + s * size * 1.4, y, size * 1.6, size * 1.2 * open);

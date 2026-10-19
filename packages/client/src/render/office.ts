@@ -9,7 +9,7 @@ import { timerSpot, type TimerSpot } from '../timerSpot.js';
 import { cannonBase } from './cannonBase.js';
 import { hash } from './noise.js';
 import { IslandParts } from './islandParts.js';
-import { climax, roseSpot } from './corner.js';
+import { climax, climaxLevel, roseSpot } from './corner.js';
 import { weatherFor, type Weather } from './pixel/atmosphere.js';
 import type { SceneryItem } from './scenery.js';
 import { SceneryLayer } from './sceneryLayer.js';
@@ -165,7 +165,7 @@ const FINISH: FinishLook = { spark: 'memo', flag: 'necktie' };
  * booked: the owner's carpet tiles inside a border of floor tape. Guns are photocopiers on the
  * five-star base of an office chair, turning to their target and throwing paper planes; a
  * silenced one has "out of order" taped to it. A water cooler stands in the corner, two
- * colleagues gossiping beside it; in the deadline — overtime and the final round — the
+ * colleagues gossiping beside it; in the deadline — the climax — the
  * fluorescent tubes flicker and the phones on every desk ring.
  */
 export class OfficeTheme extends ShapeTheme implements Theme {
@@ -290,9 +290,9 @@ export class OfficeTheme extends ShapeTheme implements Theme {
     return hex(this.art.palette.shadow);
   }
 
-  /** In the deadline: overtime, and the final round. */
+  /** In the deadline: the climax (`climaxLevel`). */
   private deadline(state: MatchState): boolean {
-    return climax(state);
+    return climax(state, this.art);
   }
 
   // ------------------------------------------------------------------ terrain
@@ -1517,7 +1517,9 @@ export class OfficeTheme extends ShapeTheme implements Theme {
 
   /** In the deadline the fluorescent tubes at the screen's edges flicker, as they do at five. */
   private drawTubes(state: MatchState, view: ViewTransform): void {
-    if (!this.deadline(state)) return;
+    // Coming in, the tubes brighten into their flicker.
+    const level = climaxLevel(state, this.art);
+    if (level === 0) return;
     const g = this.lateGfx;
     const t = view.tile;
     const still = motionReduced();
@@ -1534,9 +1536,12 @@ export class OfficeTheme extends ShapeTheme implements Theme {
         const x = side === 0 ? t * 0.4 : view.width - t * 1;
         const y = top + (h * (n + 0.5)) / tubes - t * 2;
         g.roundRect(x - t * 0.5, y - t * 0.5, t * 1.6, t * 5, t * 0.5);
-        g.fill({ color: 0xe8f4ff, alpha: this.style.flickerAlpha * 0.6 * blink });
+        g.fill({ color: 0xe8f4ff, alpha: this.style.flickerAlpha * 0.6 * blink * level });
         g.roundRect(x, y, t * 0.6, t * 4, t * 0.3);
-        g.fill({ color: 0xf4fbff, alpha: Math.min(1, this.style.flickerAlpha * 3) * blink });
+        g.fill({
+          color: 0xf4fbff,
+          alpha: Math.min(1, this.style.flickerAlpha * 3) * blink * level,
+        });
       }
     }
   }
