@@ -161,6 +161,8 @@ export const CyberpunkStyleSchema = z.strictObject({
   hovercraftTilesPerSecond: z.number().positive(),
   /** The holographic billboard in the corner (PLAN 11.24): one turn of its emblem. */
   billboardTurnMs: z.number().int().positive(),
+  /** Its emblem turning so many times as fast when the corner hurries (`hurry`). */
+  hurriedBillboardTurn: z.number().min(1),
   /** Sealed ground's lit floor: the hexes' size (circumradius), their light and its edge's. */
   floorHexTiles: z.number().positive(),
   floorAlpha: z.number().min(0).max(1),
@@ -177,6 +179,16 @@ export const CyberpunkStyleSchema = z.strictObject({
   mastBlinkMs: z.number().int().positive(),
   /** The band of RGB-split glitch across the board as a phase's banner arrives. */
   phaseGlitchMs: z.number().int().nonnegative(),
+  /**
+   * The climax, "system overload" (`climaxLevel`), each at its full: how many times faster
+   * the circuit's pulses run and the adverts flicker, how many times thicker the rain falls,
+   * and how often a glitch's slices may tear across a screen edge, and for how long.
+   */
+  climaxPulseSpeedup: z.number().min(1),
+  climaxAdSpeedup: z.number().min(1),
+  climaxRainFactor: z.number().min(1),
+  climaxTearEveryMs: z.number().int().positive(),
+  climaxTearMs: z.number().int().positive(),
 });
 export type CyberpunkStyleConfig = z.infer<typeof CyberpunkStyleSchema>;
 
@@ -202,6 +214,16 @@ export const BlueprintStyleSchema = z.strictObject({
   tagMinTilePx: z.number().positive(),
   /** The drafting compass swinging its arc round a ring as it seals, for so long. */
   compassMs: z.number().int().positive(),
+  /**
+   * The rush job, the climax: red-pencil dimension lines round the board, this far outside
+   * its edge in tiles, ticked every so many tiles, at this alpha at their height; and a
+   * T-square of so many tiles sliding along the widest margin, there and back in so long.
+   */
+  rushOffsetTiles: z.number().positive(),
+  rushTickTiles: z.number().int().positive(),
+  rushAlpha: z.number().min(0).max(1),
+  rushSquareTiles: z.number().positive(),
+  rushSquareMs: z.number().int().positive(),
 });
 export type BlueprintStyleConfig = z.infer<typeof BlueprintStyleSchema>;
 
@@ -231,6 +253,20 @@ export const NightStyleSchema = z.strictObject({
   brazierGlowAlpha: z.number().min(0).max(1),
   /** A lighthouse's beam at its brightest, by the lamp, fading toward its reach. */
   beamAlpha: z.number().min(0).max(1),
+  /**
+   * The blood moon, Night's climax (`climaxLevel`): the colour the moon's path on the water
+   * turns to, the lighthouses' beams turning so many times as fast and so much brighter, the
+   * gate torches' flames so much taller, the lantern on the corner's boat flaring by so much
+   * more, and so many times the fireflies.
+   */
+  bloodMoonColour: HexColor,
+  climaxBeamSpeed: z.number().min(1),
+  climaxBeamBrighter: z.number().min(1),
+  climaxTorchTaller: z.number().min(1),
+  climaxLanternFlare: z.number().nonnegative(),
+  climaxFireflies: z.number().min(1),
+  /** The boat's yard lantern swinging so many times as fast when the corner hurries (`hurry`). */
+  hurriedLanternSwing: z.number().min(1),
 });
 export type NightStyleConfig = z.infer<typeof NightStyleSchema>;
 
@@ -306,6 +342,16 @@ export const PixelStyleSchema = z.strictObject({
   /** Masons walking off from a piece just laid: the most at once, and how long each walks. */
   masons: z.number().int().nonnegative(),
   masonMs: z.number().int().positive(),
+  /**
+   * The beacons are lit, Medieval's climax (`climaxLevel`): fires on rock stacks in the sea
+   * round the board, this many, catching one after another so many milliseconds apart; the
+   * windmill's sails turning once in so long at its height, and the clouds hurrying on a
+   * wind so many times as strong.
+   */
+  beacons: z.number().int().nonnegative(),
+  beaconCatchMs: z.number().int().positive(),
+  windmillClimaxTurnMs: z.number().int().positive(),
+  climaxWind: z.number().min(1),
 });
 export type PixelStyleConfig = z.infer<typeof PixelStyleSchema>;
 
@@ -354,6 +400,18 @@ export const ParchmentStyleSchema = z.strictObject({
   /** Each island's name, lettered in script across its land, and how faint. */
   islandNames: z.array(z.string().min(1).max(24)).min(8),
   nameAlpha: z.number().min(0).max(1),
+  /**
+   * The climax, "fair winds turn foul": the old chart's wind heads at the screen's corners,
+   * this many tiles across their face, each blowing so many gale strokes across the sea, one
+   * crossing in so long, at most so dark; the needle over the compass rose swinging up to so
+   * far either way; and a sea serpent surfacing this often besides the usual ones.
+   */
+  windHeadTiles: z.number().positive(),
+  galeStrokesPerHead: z.number().int().nonnegative(),
+  galeMs: z.number().int().positive(),
+  galeAlpha: z.number().min(0).max(1),
+  needleSwingRadians: z.number().nonnegative(),
+  climaxSerpentEveryMs: z.number().int().positive(),
 });
 export type ParchmentStyleConfig = z.infer<typeof ParchmentStyleSchema>;
 
@@ -397,6 +455,18 @@ export const BricksStyleSchema = z.strictObject({
   /** The studs popping off a castle as it seals: how long they fly, and how many. */
   studPopMs: z.number().int().positive(),
   studPops: z.number().int().min(0),
+  /**
+   * The climax's light-up bricks: a ring of the sea plate's studs round the islands, so many
+   * tiles out from them, a bulb every so many studs along it, lit as a marquee's chase of a
+   * step so long, in a yellow-white no player wears.
+   */
+  climaxRingTiles: z.number().int().min(1),
+  climaxBulbEvery: z.number().int().positive(),
+  climaxChaseMs: z.number().int().positive(),
+  climaxBulbColour: HexColor,
+  /** And the crane working so many times faster at the climax, its hook faster still. */
+  climaxCraneSpeed: z.number().min(1),
+  climaxHookSpeed: z.number().min(1),
 });
 export type BricksStyleConfig = z.infer<typeof BricksStyleSchema>;
 
@@ -436,6 +506,19 @@ export const GlassStyleSchema = z.strictObject({
   /** One pane in so many shimmers, brightening and fading, and how strongly. */
   shimmerOneIn: z.number().int().min(1),
   shimmerAlpha: z.number().min(0).max(1),
+  /**
+   * The climax, the sun breaking through: two more shafts beside the first, each this
+   * strong, every shaft sweeping so many times faster and warmer, towards `emberMid`.
+   */
+  climaxLightAlpha: z.number().min(0).max(1),
+  climaxLightSpeed: z.number().min(1),
+  climaxLightWarmth: z.number().min(0).max(1),
+  /** In the climax one pane in so many shimmers, its beat so many times quicker. */
+  climaxShimmerOneIn: z.number().int().min(1),
+  climaxShimmerBeat: z.number().min(1),
+  /** In the climax the lit roses' glow so many times stronger, and the sand's thread wider. */
+  climaxRoseGlow: z.number().min(1),
+  climaxSandWidth: z.number().min(1),
   /** The streaks and seed bubbles in the glass, and the painted waves and leaf veins. */
   textureAlpha: z.number().min(0).max(1),
   paintAlpha: z.number().min(0).max(1),

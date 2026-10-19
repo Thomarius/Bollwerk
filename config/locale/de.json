@@ -113,6 +113,7 @@
   "plan.sheetOpen": "BLATT {round}",
   "plan.keep": "BURG {tag}",
   "plan.final": "ENDFASSUNG",
+  "plan.rush": "EILT",
   "round.label": "Runde {round}",
   "round.labelOf": "Runde {round} / {cap}",
   "round.finalOf": "letzte Runde {round} / {cap}",

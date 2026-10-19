@@ -5,7 +5,7 @@ import { Container, FillPattern, Graphics, Sprite, Texture } from 'pixi.js';
 import { motionReduced } from '../motion.js';
 import type { TimerSpot } from '../timerSpot.js';
 
-import { cornerSpot } from './corner.js';
+import { climaxLevel, cornerSpot, hurry } from './corner.js';
 import { IslandParts } from './islandParts.js';
 import { Discs, Memos, viewKey } from './stamps.js';
 import {
@@ -103,6 +103,17 @@ const RECOIL_MS = 160;
 const ICON_FILL = 1;
 /** How many beats the shimmering panes are shared among. */
 const SHIMMER_GROUPS = 6;
+/**
+ * The climax's two more shafts: where each stands along the sweep after the first, and its
+ * width against the first's — uneven, so three shafts read as sun through tracery rather
+ * than a pattern.
+ */
+const CLIMAX_SHAFTS: readonly { offset: number; width: number }[] = [
+  { offset: 0.31, width: 0.55 },
+  { offset: 0.64, width: 0.8 },
+];
+/** The sparkles running down the hourglass's thread of sand in the climax. */
+const SAND_SPARKS = 4;
 const RIPPLE_MS = 520;
 const GLINT_MS = 340;
 
@@ -156,6 +167,23 @@ export class GlassTheme implements Theme {
    * no wall's colour is touched.
    */
   private readonly light = new Sprite();
+  /**
+   * The climax's sun breaking through (`climaxLevel`): two more shafts of the same texture,
+   * made once and hidden outside it. Never more than three: each is a screen-tall additive
+   * sprite, paid for in fill rate.
+   */
+  private readonly shafts = CLIMAX_SHAFTS.map(() => new Sprite());
+  /**
+   * How far the shafts have swept, and the shimmer's beat, each carried on by the frame's
+   * time at its speed — not read off the clock — so neither jumps as the climax quickens it.
+   */
+  private lightPhase = 0;
+  private shimmerClock = 0;
+  /**
+   * The panes that shimmer only in the climax, many more than the few always shimmering:
+   * laid with them, in groups of their own, hidden outside it.
+   */
+  private readonly climaxShimmer = new Container();
   /** The hourglass in the corner (PLAN 11.24), drawn about its middle so it can turn over. */
   private readonly hourglassGfx = new Graphics();
   private hourglass: TimerSpot | null = null;
@@ -215,9 +243,27 @@ export class GlassTheme implements Theme {
     this.shimmer.blendMode = 'add';
     this.light.blendMode = 'add';
     this.light.anchor.set(0.5);
+    for (const shaft of this.shafts) {
+      shaft.texture = this.light.texture;
+      shaft.blendMode = 'add';
+      shaft.anchor.set(0.5);
+      shaft.visible = false;
+    }
+    this.climaxShimmer.blendMode = 'add';
+    this.climaxShimmer.visible = false;
     this.roseGlow.container.blendMode = 'add';
-    layers.terrain.addChild(this.terrainStrips.container, this.shimmer, this.hourglassGfx);
-    layers.territory.addChild(this.territory.container, this.scenery.gfx, this.light);
+    layers.terrain.addChild(
+      this.terrainStrips.container,
+      this.shimmer,
+      this.climaxShimmer,
+      this.hourglassGfx,
+    );
+    layers.territory.addChild(
+      this.territory.container,
+      this.scenery.gfx,
+      this.light,
+      ...this.shafts,
+    );
     layers.structures.addChild(this.structures.container);
     layers.effects.addChild(
       this.seaLife.container,
@@ -239,11 +285,13 @@ export class GlassTheme implements Theme {
     this.roseGlow.destroy();
     this.seaLife.destroy();
     const shaft = this.light.texture;
+    for (const s of this.shafts) s.destroy();
     this.light.destroy();
     shaft.destroy(true);
     for (const p of [...this.oldGrains, this.grain?.pattern]) p?.texture.destroy(true);
     this.grain = null;
     release(this.shimmer);
+    release(this.climaxShimmer);
     release(this.terrainStrips.container);
     this.lateGfx.destroy();
     this.crowns.gfx.destroy();
@@ -569,6 +617,7 @@ export class GlassTheme implements Theme {
    * One pane in `shimmerOneIn`, chosen from the seed, white over its glass in one of a few
    * groups, each faded on its own slow beat in `drawEffects`: a few panes catching the
    * light, here and there, where every pane on its own beat would be a Graphics a pane.
+   * One in `climaxShimmerOneIn` more goes into the climax's groups, faded in only then.
    */
   private layShimmer(
     state: MatchState,
@@ -577,18 +626,29 @@ export class GlassTheme implements Theme {
     paneAt: (x: number, y: number) => number,
   ): void {
     const t = view.tile;
-    while (this.shimmer.children.length < SHIMMER_GROUPS) this.shimmer.addChild(new Graphics());
-    const groups = this.shimmer.children as Graphics[];
-    for (const g of groups) clearDrawn(g);
-    const used = new Set<number>();
+    for (const c of [this.shimmer, this.climaxShimmer]) {
+      while (c.children.length < SHIMMER_GROUPS) c.addChild(new Graphics());
+    }
+    const always = this.shimmer.children as Graphics[];
+    const late = this.climaxShimmer.children as Graphics[];
+    for (const g of [...always, ...late]) clearDrawn(g);
+    const used = new Set<Graphics>();
     for (const { x, y } of cells) {
       const pane = paneAt(x, y);
-      if (hash(pane, state.seed, 21) * this.style.shimmerOneIn >= 1) continue;
+      const pick = hash(pane, state.seed, 21);
+      const groups =
+        pick * this.style.shimmerOneIn < 1
+          ? always
+          : pick * this.style.climaxShimmerOneIn < 1
+            ? late
+            : null;
+      if (groups === null) continue;
       const group = Math.floor(hash(pane, state.seed, 22) * SHIMMER_GROUPS) % SHIMMER_GROUPS;
-      (groups[group] as Graphics).rect(tileX(view, x), tileY(view, y), t, t);
-      used.add(group);
+      const g = groups[group] as Graphics;
+      g.rect(tileX(view, x), tileY(view, y), t, t);
+      used.add(g);
     }
-    for (const n of used) (groups[n] as Graphics).fill({ color: 0xfff6dc });
+    for (const g of used) g.fill({ color: 0xfff6dc });
   }
 
   // ------------------------------------------------------------------ territory
@@ -960,12 +1020,14 @@ export class GlassTheme implements Theme {
    * An hourglass of leaded glass in the corner: two bulbs, each cut into panes in their
    * lead, between dark plates on posts; its sand running down with the phase's clock, and
    * the glass turned over as each new phase begins. Between phases the sand lies run out.
+   * As it hurries (`hot`, from `hurry`) its thread of sand runs thicker, sparks falling down it.
    */
   private drawHourglass(
     state: MatchState,
     view: ViewTransform,
     spot: TimerSpot,
     deltaMs: number,
+    hot: number,
   ): void {
     const g = this.hourglassGfx;
     const { palette } = this.art;
@@ -1070,8 +1132,18 @@ export class GlassTheme implements Theme {
       g.fill({ color: sand });
     }
     if (left > 0.01 && run < 1 && turn >= 1 && !still) {
-      g.rect(-Math.max(0.5, neck * 0.35), 0, Math.max(1, neck * 0.7), h * 0.96 - h * 0.92 * run);
+      // In the climax the thread runs thicker, and sparks of light fall down it.
+      const thread = Math.max(1, neck * 0.7) * (1 + (this.style.climaxSandWidth - 1) * hot);
+      const fall = h * 0.96 - h * 0.92 * run;
+      g.rect(-thread / 2, 0, thread, fall);
       g.fill({ color: sand, alpha: 0.9 });
+      if (hot > 0) {
+        for (let k = 0; k < SAND_SPARKS; k++) {
+          const along = (this.clock / 520 + k / SAND_SPARKS) % 1;
+          g.circle(0, fall * along, Math.max(0.8, thread * 0.45));
+        }
+        g.fill({ color: 0xfff6dc, alpha: hot });
+      }
     }
     // The lead: round each bulb, and across it where its panes meet.
     for (const dir of [-1, 1] as const) {
@@ -1096,9 +1168,11 @@ export class GlassTheme implements Theme {
   // ------------------------------------------------------------------ effects
 
   drawEffects(state: MatchState, view: ViewTransform, frame: EffectFrame): void {
+    const hot = climaxLevel(state, this.art);
     clearDrawn(this.hourglassGfx);
     if (this.hourglass !== null) {
-      this.drawHourglass(state, view, this.hourglass, frame.deltaMs);
+      // Its sand runs thick whenever the corner hurries (`hurry`), not only in the climax.
+      this.drawHourglass(state, view, this.hourglass, frame.deltaMs, hurry(state, this.art));
     }
     const g = this.effectGfx;
     clearDrawn(g);
@@ -1115,8 +1189,8 @@ export class GlassTheme implements Theme {
     drawChoices(g, view, frame.choices, this.art);
     this.drawBarrels(state, view, frame.deltaMs);
     this.drawFlags(state, view, frame);
-    this.drawRoses(state, view, frame);
-    this.moveLight(view);
+    this.drawRoses(state, view, frame, hot);
+    this.moveLight(view, frame.deltaMs, hot);
     this.drawShots(state, view, frame);
     this.drawRipples(view, frame.deltaMs);
     this.drawShards(view, frame.deltaMs);
@@ -1135,33 +1209,69 @@ export class GlassTheme implements Theme {
    * The light through the window: the shaft carried slowly across it, from off one side to
    * off the other and round again, and the shimmering panes faded each on their group's
    * beat. Only moved and faded — nothing here is drawn again.
+   *
+   * In the climax (`hot`, 0 to 1) the sun breaks through: two more shafts fade in beside
+   * the first, all of them warmer and sweeping quicker, and many more panes shimmer, on a
+   * quicker beat. Outside it the extra shafts and panes are hidden, costing nothing.
    */
-  private moveLight(view: ViewTransform): void {
+  private moveLight(view: ViewTransform, deltaMs: number, hot: number): void {
     const still = motionReduced();
+    const { style } = this;
     const w = view.width;
     const h = view.height;
     const reach = Math.hypot(w, h) * 1.2;
-    const phase = still ? 0.4 : (this.clock % this.style.lightSweepMs) / this.style.lightSweepMs;
-    const width = w * this.style.lightWidth;
-    this.light.position.set(-width + (w + 2 * width) * phase, h / 2);
-    this.light.scale.set(width / LIGHT_TEXTURE_PX, reach / 4);
-    // Falling from the upper left, as the sun through a south window in the afternoon.
-    this.light.rotation = 0.42;
-    this.light.alpha = this.style.lightAlpha;
-    this.light.tint = hex(this.art.palette.emberHot);
-    this.shimmer.children.forEach((g, n) => {
-      const beat = still ? 0.5 : 0.5 + 0.5 * Math.sin(this.clock / (2300 + n * 370) + n * 1.9);
-      g.alpha = this.style.shimmerAlpha * beat * beat * beat;
+    const dt = still ? 0 : Math.max(0, deltaMs);
+    this.lightPhase =
+      (this.lightPhase + (dt * (1 + (style.climaxLightSpeed - 1) * hot)) / style.lightSweepMs) % 1;
+    this.shimmerClock += dt * (1 + (style.climaxShimmerBeat - 1) * hot);
+    const phase = still ? 0.4 : this.lightPhase;
+    const width = w * style.lightWidth;
+    const tint = mixed(
+      hex(this.art.palette.emberHot),
+      hex(this.art.palette.emberMid),
+      style.climaxLightWarmth * hot,
+    );
+    const place = (sprite: Sprite, at: number, wide: number): void => {
+      sprite.position.set(-wide + (w + 2 * wide) * (at % 1), h / 2);
+      sprite.scale.set(wide / LIGHT_TEXTURE_PX, reach / 4);
+      // Falling from the upper left, as the sun through a south window in the afternoon.
+      sprite.rotation = 0.42;
+      sprite.tint = tint;
+    };
+    place(this.light, phase, width);
+    this.light.alpha = style.lightAlpha;
+    CLIMAX_SHAFTS.forEach((spec, k) => {
+      const shaft = this.shafts[k] as Sprite;
+      shaft.visible = hot > 0;
+      if (!shaft.visible) return;
+      place(shaft, phase + spec.offset, width * spec.width);
+      shaft.alpha = style.climaxLightAlpha * hot;
     });
+    const beatOf = (n: number): number => {
+      const beat = still
+        ? 0.5
+        : 0.5 + 0.5 * Math.sin(this.shimmerClock / (2300 + n * 370) + n * 1.9);
+      return beat * beat * beat;
+    };
+    this.shimmer.children.forEach((g, n) => {
+      g.alpha = style.shimmerAlpha * beatOf(n);
+    });
+    this.climaxShimmer.visible = hot > 0;
+    if (hot > 0) {
+      this.climaxShimmer.children.forEach((g, n) => {
+        g.alpha = style.shimmerAlpha * hot * beatOf(n + SHIMMER_GROUPS);
+      });
+    }
   }
 
   /**
    * What sealing changes on a rose: sealed — the flag up, as `FlagHoist` says — its gold
    * centre lit, glowing softly on a slow breath; breached, a crack in lead across one petal,
    * the centre dark. A `Graphics` a castle, drawn again only when that changes (`Memos`),
-   * and the glow a stamped disc, added.
+   * and the glow a stamped disc, added — in the climax (`hot`) stronger and wider, the
+   * sun full on the gold.
    */
-  private drawRoses(state: MatchState, view: ViewTransform, frame: EffectFrame): void {
+  private drawRoses(state: MatchState, view: ViewTransform, frame: EffectFrame, hot: number): void {
     const { palette } = this.art;
     const memo = this.roseMemo;
     const lead = this.lead(view);
@@ -1219,12 +1329,13 @@ export class GlassTheme implements Theme {
       });
       if (lit) {
         const breath = still ? 1 : 0.8 + 0.2 * Math.sin(this.clock / 900 + castle.id);
+        const glow = 1 + (this.style.climaxRoseGlow - 1) * hot;
         this.roseGlow.disc(
           cx,
           cy,
-          inner * 0.62,
+          inner * 0.62 * (1 + 0.25 * hot),
           hex(palette.uiAccent),
-          0.32 * breath * (raised ?? 1),
+          Math.min(1, 0.32 * breath * glow * (raised ?? 1)),
         );
       }
     }

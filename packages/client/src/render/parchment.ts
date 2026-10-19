@@ -2,6 +2,7 @@ import type { ArtConfig, ParchmentStyleConfig } from '@bollwerk/config';
 import { Rng, Structure, Terrain, type Cannon, type MatchState, type Shot } from '@bollwerk/sim';
 import { Container, Graphics, Sprite, Text, Texture } from 'pixi.js';
 
+import { motionReduced } from '../motion.js';
 import { timerSpot } from '../timerSpot.js';
 
 import { ParchmentSeaLife } from './seaLife.js';
@@ -52,7 +53,8 @@ import type { SceneryItem } from './scenery.js';
 import { SceneryLayer } from './sceneryLayer.js';
 import { hatch, outline, trace, wallGeometry, type Segment } from './walls.js';
 import { cannonBase } from './cannonBase.js';
-import { roseSpot } from './corner.js';
+import { climaxLevel, hurry, roseSpot } from './corner.js';
+import { hash } from './noise.js';
 import { along, loops, rounded, wavered, type Point } from './inkline.js';
 import { clearDrawn } from './clearDrawn.js';
 import { release } from './release.js';
@@ -141,6 +143,20 @@ export class ParchmentTheme implements Theme {
   /** The sea, its contours and the land, in strips of rows (`TerrainStrips`). */
   private readonly terrainStrips = new TerrainStrips();
   private readonly roseGfx = new Graphics();
+  /** Where the rose stands, for the needle over it. */
+  private roseAt: ReturnType<typeof roseSpot> = null;
+  /** Where the big timer stands, which no gust crosses (the rose once muddied its figures). */
+  private timerAt: ReturnType<typeof timerSpot> = null;
+  /**
+   * The climax's needle over the rose, swinging: drawn a frame at a time on its own, so the
+   * rose stays drawn once. Empty outside the climax.
+   */
+  private readonly needleGfx = new Graphics();
+  /**
+   * The climax's wind heads and gale strokes, over the sea but under sealed ground, walls and
+   * shots, so a gust never passes for a shot's course. Empty outside the climax.
+   */
+  private readonly galeGfx = new Graphics();
   /** Sealed ground, an island to a `Graphics`, redrawn where it changes. */
   private readonly territory = new IslandParts(1, 'territory');
   private readonly ghostMotion = new GhostMotion();
@@ -202,7 +218,13 @@ export class ParchmentTheme implements Theme {
     this.art = art;
     this.style = art.parchment;
     this.layers = layers;
-    layers.terrain.addChild(this.terrainStrips.container, this.roseGfx, this.nameLayer);
+    layers.terrain.addChild(
+      this.terrainStrips.container,
+      this.roseGfx,
+      this.needleGfx,
+      this.galeGfx,
+      this.nameLayer,
+    );
     layers.territory.addChild(this.scenery.gfx, this.territory.container, this.stainGfx);
     layers.structures.addChild(this.structures.container);
     layers.effects.addChild(
@@ -225,6 +247,8 @@ export class ParchmentTheme implements Theme {
     release(this.terrainStrips.container);
     for (const g of [
       this.roseGfx,
+      this.needleGfx,
+      this.galeGfx,
       this.stainGfx,
       this.effectGfx,
       this.crowns.gfx,
@@ -474,7 +498,8 @@ export class ParchmentTheme implements Theme {
   private roseSpotFor(state: MatchState, view: ViewTransform): ReturnType<typeof roseSpot> {
     const right = Math.floor((view.width - view.originX) / view.tile) - state.width;
     const bottom = Math.floor((view.height - view.originY) / view.tile) - state.height;
-    return roseSpot(state, right, bottom, timerSpot(state));
+    this.timerAt = timerSpot(state);
+    return roseSpot(state, right, bottom, this.timerAt);
   }
 
   /**
@@ -533,6 +558,7 @@ export class ParchmentTheme implements Theme {
     const g = this.roseGfx;
     clearDrawn(g);
     this.seaLife.rose = spot;
+    this.roseAt = spot;
     if (spot === null) return;
     const ink = hex(this.art.palette.rockDark);
     const cx = tileX(view, spot.x);
@@ -560,6 +586,204 @@ export class ParchmentTheme implements Theme {
       g.poly([cx, cy, tip.x, tip.y, rr.x, rr.y]);
       g.stroke({ width: 1, color: ink, alpha: long ? 0.3 : 0.2 });
     }
+  }
+
+  /**
+   * The climax's needle, as far as the rose hurries (`hurry`: the climax, or any phase's last
+   * seconds): a compass needle laid over the rose, swinging wildly as foul weather comes in —
+   * two beats out of step, so it never settles into a pendulum. Absent otherwise; with motion
+   * reduced it stands still, knocked askew.
+   */
+  private drawNeedle(view: ViewTransform, level: number): void {
+    const g = this.needleGfx;
+    clearDrawn(g);
+    const spot = this.roseAt;
+    if (level === 0 || spot === null) return;
+    const ink = hex(this.art.palette.rockDark);
+    const cx = tileX(view, spot.x);
+    const cy = tileY(view, spot.y);
+    const r = (spot.size * view.tile) / 2 - view.tile * 0.2;
+    const swing = this.style.needleSwingRadians * level;
+    const angle = motionReduced()
+      ? swing * 0.3
+      : swing * (0.65 * Math.sin(this.clock / 260) + 0.35 * Math.sin(this.clock / 97 + 1.7));
+    const ux = Math.sin(angle);
+    const uy = -Math.cos(angle);
+    const reach = r * 0.82;
+    const side = r * 0.1;
+    const tip = [cx + ux * reach, cy + uy * reach];
+    const tail = [cx - ux * reach, cy - uy * reach];
+    const left = [cx - uy * side, cy + ux * side];
+    const right = [cx + uy * side, cy - ux * side];
+    // The north half inked, the south left as paper and outlined, as a needle is engraved.
+    g.poly([...left, ...tip, ...right]);
+    g.fill({ color: ink, alpha: 0.85 * level });
+    g.poly([...left, ...tail, ...right]);
+    g.fill({ color: hex(this.art.palette.grassLight), alpha: 0.85 * level });
+    g.stroke({ width: 1, color: ink, alpha: 0.85 * level });
+    g.circle(cx, cy, Math.max(1.5, r * 0.07));
+    g.fill({ color: ink, alpha: level });
+  }
+
+  /**
+   * The climax, "fair winds turn foul" (`climaxLevel`): the old chart's wind heads — puffed
+   * cheeks in a cartouche of cloud — fade in at the screen's corners, clear of the HUD bar and
+   * of the rose's corner, and blow curling gale strokes across the sea towards the middle.
+   * Engraved in the brown ink, nothing a player's colour; every stroke placed by its hash
+   * against the clock, so none is kept, and none drawn over land, where it could be read as a
+   * shot's course, nor over the big timer's figures. Nothing at all outside the climax; still with motion reduced.
+   */
+  private drawGale(state: MatchState, view: ViewTransform, level: number): void {
+    const g = this.galeGfx;
+    clearDrawn(g);
+    if (level === 0) return;
+    const t = view.tile;
+    const ink = hex(this.art.palette.rockDark);
+    const paper = hex(this.art.palette.grassLight);
+    const line = Math.max(1, this.style.inkWidthPx);
+    const still = motionReduced();
+    const radius = Math.max(14, (this.style.windHeadTiles * t) / 2);
+    const inset = radius * 2;
+    // The bottom-left corner is the sound switch's and the pause button's: the head sits
+    // above them.
+    const heads: [number, number][] = [
+      [inset, view.top + inset + t * 0.5],
+      [view.width - inset, view.top + inset + t * 0.5],
+      [inset, view.height - inset - Math.max(t * 2, 44)],
+    ];
+    const midX = view.width / 2;
+    const midY = (view.top + view.height) / 2;
+    const reach = Math.hypot(view.width, view.height - view.top) * 0.5;
+    const water = (px: number, py: number): boolean => {
+      const x = Math.floor((px - view.originX) / t);
+      const y = Math.floor((py - view.originY) / t);
+      const timer = this.timerAt;
+      if (
+        timer !== null &&
+        Math.max(Math.abs(x + 0.5 - timer.x), Math.abs(y + 0.5 - timer.y)) < timer.size / 2 + 0.5
+      ) {
+        return false;
+      }
+      if (x < 0 || y < 0 || x >= state.width || y >= state.height) return true;
+      return state.terrain[y * state.width + x] !== Terrain.Land;
+    };
+    const strokes = this.style.galeStrokesPerHead;
+    heads.forEach(([hx, hy], h) => {
+      const blow = Math.atan2(midY - hy, midX - hx);
+      for (let j = 0; j < strokes; j++) {
+        const k = h * strokes + j;
+        const period = this.style.galeMs * (0.8 + 0.4 * hash(k, 1, 410));
+        const phase = still ? hash(k, 2, 410) : (this.clock / period + hash(k, 2, 410)) % 1;
+        const a = blow + (hash(k, 3, 410) - 0.5) * 0.8;
+        const ux = Math.cos(a);
+        const uy = Math.sin(a);
+        const length = t * (2.5 + 1.5 * hash(k, 4, 410));
+        // Its tail starts at the lips, never behind the head.
+        const front = radius * 1.4 + length + phase * reach;
+        const turn = hash(k, 5, 410) < 0.5 ? 1 : -1;
+        const points = galeStroke(hx, hy, ux, uy, front, length, turn, t, hash(k, 6, 410) * 6);
+        let down = false;
+        for (let n = 1; n < points.length; n += 2) {
+          const x0 = points[n - 1] as number;
+          const y0 = points[n] as number;
+          const x1 = points[n + 1];
+          const y1 = points[n + 2];
+          if (x1 === undefined || y1 === undefined) break;
+          if (!water(x0, y0) || !water(x1, y1)) {
+            down = false;
+            continue;
+          }
+          if (!down) g.moveTo(x0, y0);
+          g.lineTo(x1, y1);
+          down = true;
+        }
+        g.stroke({
+          width: line,
+          color: ink,
+          alpha: this.style.galeAlpha * level * Math.sin(Math.PI * phase),
+          cap: 'round',
+        });
+      }
+      this.drawWindHead(g, hx, hy, blow, radius, level, still, ink, paper, line, h);
+    });
+  }
+
+  /** One wind head: a face in a scalloped cloud, its cheeks puffed, blowing along `blow`. */
+  private drawWindHead(
+    g: Graphics,
+    cx: number,
+    cy: number,
+    blow: number,
+    radius: number,
+    level: number,
+    still: boolean,
+    ink: number,
+    paper: number,
+    line: number,
+    h: number,
+  ): void {
+    const ux = Math.cos(blow);
+    const uy = Math.sin(blow);
+    const alpha = level;
+    // The cloud it sits in, scallops round the side away from the blow.
+    for (let i = 0; i < 7; i++) {
+      const b = blow + Math.PI + (i / 6 - 0.5) * 3;
+      const s = radius * 0.34 * (0.85 + 0.3 * hash(h, i, 420));
+      g.circle(cx + Math.cos(b) * radius * 0.86, cy + Math.sin(b) * radius * 0.86, s);
+    }
+    g.fill({ color: paper, alpha });
+    g.stroke({ width: line, color: ink, alpha });
+    const face = radius * 0.78;
+    g.circle(cx, cy, face);
+    g.fill({ color: paper, alpha });
+    g.stroke({ width: line, color: ink, alpha });
+    // Shading in chords on the side away from the blow, as an engraver cuts it.
+    for (let i = 0; i < 4; i++) {
+      const off = face * (0.35 + 0.15 * i);
+      const half = Math.sqrt(Math.max(0, face * face - off * off)) * 0.85;
+      const mx = cx - ux * off;
+      const my = cy - uy * off;
+      g.moveTo(mx - uy * half, my + ux * half).lineTo(mx + uy * half, my - ux * half);
+    }
+    g.stroke({ width: Math.max(1, line * 0.6), color: ink, alpha: alpha * 0.6 });
+    // The face upright and turned towards the blow: the lips pursed low on that side, the
+    // cheeks puffed out either side of them, bulging past the face's outline.
+    const mouthX = cx + ux * face * 0.4;
+    const mouthY = cy + face * 0.4;
+    const puff = still ? 1 : 1 + 0.08 * Math.sin(this.clock / 170 + h * 2);
+    for (const s of [-1, 1]) {
+      g.circle(mouthX + s * face * 0.42, mouthY - face * 0.14, face * 0.33 * puff);
+    }
+    g.fill({ color: paper, alpha });
+    g.stroke({ width: line, color: ink, alpha });
+    g.circle(mouthX, mouthY, face * 0.12);
+    g.stroke({ width: line * 1.2, color: ink, alpha });
+    // Eyes screwed shut with the effort, under knitted brows.
+    const eyeY = cy - face * 0.28;
+    const eyeX = cx + ux * face * 0.2;
+    for (const s of [-1, 1]) {
+      const ex = eyeX + s * face * 0.28;
+      const w = face * 0.12;
+      g.moveTo(ex - w, eyeY).quadraticCurveTo(ex, eyeY + w * 0.7, ex + w, eyeY);
+      g.moveTo(ex - w * 1.1, eyeY - w * (s < 0 ? 1.4 : 0.7));
+      g.lineTo(ex + w * 1.1, eyeY - w * (s < 0 ? 0.7 : 1.4));
+    }
+    g.stroke({ width: line, color: ink, alpha });
+    // The breath leaving the lips, a fan of three strokes running into the gale.
+    for (const s of [-1, 0, 1]) {
+      const a = blow + s * 0.28;
+      const bx = Math.cos(a);
+      const by = Math.sin(a);
+      const from = face * 0.2;
+      const to = radius * 1.5;
+      g.moveTo(mouthX + bx * from, mouthY + by * from).quadraticCurveTo(
+        mouthX + bx * to * 0.6 - by * face * 0.15 * s,
+        mouthY + by * to * 0.6 + bx * face * 0.15 * s,
+        mouthX + bx * to,
+        mouthY + by * to,
+      );
+    }
+    g.stroke({ width: line, color: ink, alpha: alpha * 0.7, cap: 'round' });
   }
 
   /**
@@ -1047,8 +1271,13 @@ export class ParchmentTheme implements Theme {
     clearDrawn(g);
     clearDrawn(this.lateGfx);
     clearDrawn(this.aboveCrownsGfx);
+    const foul = climaxLevel(state, this.art);
+    this.seaLife.stir = foul;
     this.seaLife.draw(g, view, this.art, frame.deltaMs);
     this.clock += frame.deltaMs;
+    // The needle is the rose's own hurry, so it swings in every phase's last seconds too.
+    this.drawNeedle(view, hurry(state, this.art));
+    this.drawGale(state, view, foul);
     if (state.round !== this.round) {
       this.round = state.round;
       const rounds = this.art.generators.fx.craterRounds;
@@ -1493,4 +1722,49 @@ function drawParchmentScenery(
       g.stroke({ width: 1, color: ink, alpha: 0.45 });
     }
   }
+}
+
+/**
+ * One gale stroke as a flat list of points: a wavering line `length` long ending `front`
+ * from the head along (`ux`, `uy`), then curling over into a shrinking spiral on its `turn`
+ * side, the curl the old charts draw a gust with.
+ */
+function galeStroke(
+  hx: number,
+  hy: number,
+  ux: number,
+  uy: number,
+  front: number,
+  length: number,
+  turn: number,
+  t: number,
+  wave: number,
+): number[] {
+  const nx = -uy * turn;
+  const ny = ux * turn;
+  const points: number[] = [];
+  const steps = 8;
+  for (let i = 0; i <= steps; i++) {
+    const s = i / steps;
+    const d = front - length * (1 - s);
+    const lateral = Math.sin(s * Math.PI * 2 + wave) * t * 0.18 * s;
+    points.push(hx + ux * d + nx * lateral, hy + uy * d + ny * lateral);
+  }
+  // The curl: round a centre beside the front, the way the line is going, tightening.
+  const fx = points[points.length - 2] as number;
+  const fy = points[points.length - 1] as number;
+  const rc = t * 0.5;
+  const ccx = fx + nx * rc;
+  const ccy = fy + ny * rc;
+  const start = Math.atan2(fy - ccy, fx - ccx);
+  // Whichever way round the circle carries on along (`ux`, `uy`) at the front.
+  const dir = -Math.sin(start) * ux + Math.cos(start) * uy > 0 ? 1 : -1;
+  const turns = 8;
+  for (let i = 1; i <= turns; i++) {
+    const s = i / turns;
+    const phi = start + dir * s * Math.PI * 1.6;
+    const r = rc * (1 - 0.5 * s);
+    points.push(ccx + Math.cos(phi) * r, ccy + Math.sin(phi) * r);
+  }
+  return points;
 }

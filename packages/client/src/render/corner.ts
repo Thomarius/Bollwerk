@@ -22,6 +22,9 @@ export function cornerSpot(state: MatchState, view: ViewTransform): TimerSpot | 
 /** How long the build phase's closing climax takes to come in, in seconds. */
 const CLIMAX_EASE_SECONDS = 1;
 
+/** How long before a phase ends the clock presses (`pressing`), in seconds. */
+const PRESSING_SECONDS = 5;
+
 /**
  * How far into its climax the match is, 0 to 1, when a style turns up its weather or its
  * music: the storm breaking, the deadline, the deep coming up, the season turning. Wholly in
@@ -51,7 +54,22 @@ export function climax(state: MatchState, art: ArtConfig): boolean {
 export function pressing(state: MatchState): boolean {
   const left = (state.phaseEndTick - state.tick) / state.ruleset.tickRateHz;
   if (state.phase === 'build' && state.overtime) return true;
-  return state.phase !== 'intermission' && state.phase !== 'game_over' && left < 5;
+  return state.phase !== 'intermission' && state.phase !== 'game_over' && left < PRESSING_SECONDS;
+}
+
+/**
+ * How hurried a corner piece is, 0 to 1: through its style's climax as far as that has come
+ * in (`climaxLevel`), and whenever the clock presses (`pressing`) — the cannon phase's and
+ * combat's last seconds too — eased in over a second as the climax is. For the styles whose
+ * climax quickens their corner piece, so it hurries when every other style's does
+ * (2026-10-19, the user's).
+ */
+export function hurry(state: MatchState, art: ArtConfig): number {
+  const level = climaxLevel(state, art);
+  if (!pressing(state)) return level;
+  if (state.phase === 'build' && state.overtime) return 1;
+  const left = (state.phaseEndTick - state.tick) / state.ruleset.tickRateHz;
+  return Math.max(level, Math.min(1, (PRESSING_SECONDS - left) / CLIMAX_EASE_SECONDS));
 }
 
 /** Squares tried for the compass rose, largest first. */

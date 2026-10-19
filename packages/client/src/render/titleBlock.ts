@@ -21,9 +21,10 @@ const FONT = "'Arial Narrow', Arial, Helvetica, sans-serif";
  * Blueprint's piece in the corner (PLAN 11.24): the title block every drawing keeps in its
  * bottom-right corner — the project, BOLLWERK; the sheet, the round of the rounds; the
  * scale, and a north arrow. Inked in anew as each round begins, line by line and then the
- * lettering, and in the final round stamped across in red. The lines are redrawn only while
- * it inks and when anything in them changes; the lettering is text, rastered when its words
- * do — the sheet's number and the language.
+ * lettering, and in the final round stamped across in red — FINAL; at a build phase's climax
+ * before then, RUSH, crooked the other way. The lines are redrawn only while it inks and when
+ * anything in them changes; the lettering is text, rastered when its words do — the sheet's
+ * number and the language.
  */
 export class TitleBlock {
   readonly container = new Container();
@@ -38,8 +39,10 @@ export class TitleBlock {
   private inking = INK_MS;
   private stamping = STAMP_MS;
   private round = -1;
-  private final = false;
+  /** The stamp's word as a key (`plan.final`, `plan.rush`), or null with none. */
+  private stamped: string | null = null;
   private key = '';
+  private stampKey = '';
 
   constructor() {
     this.stamp.addChild(this.stampFrame, this.stampText);
@@ -57,16 +60,20 @@ export class TitleBlock {
     art: ArtConfig,
     deltaMs: number,
     still: boolean,
+    rush = 0,
   ): void {
     if (state.round !== this.round) {
       // Inked in as a round begins — but not the board's first, which is drawn whole.
       this.inking = this.round < 0 || still ? INK_MS : 0;
       this.round = state.round;
     }
-    const final = inFinalRound(state);
-    if (final !== this.final) {
-      this.stamping = still || !final ? STAMP_MS : 0;
-      this.final = final;
+    // FINAL outranks RUSH: the final round's whole build phase is its climax, and the word
+    // that says why is the one to keep. `rush` is the climax's level, given by Blueprint; the
+    // stamp comes down once it is wholly in, the punctuation after the dimension lines.
+    const word = inFinalRound(state) ? 'plan.final' : rush >= 1 ? 'plan.rush' : null;
+    if (word !== this.stamped) {
+      this.stamping = still || word === null ? STAMP_MS : 0;
+      this.stamped = word;
     }
     const step = Math.max(0, deltaMs);
     const inked = Math.min(1, (this.inking += step) / INK_MS);
@@ -127,7 +134,7 @@ export class TitleBlock {
     const words = {
       title: 'BOLLWERK',
       sheet: cap === null ? t('plan.sheetOpen', { round }) : t('plan.sheet', { round, cap }),
-      stamp: t('plan.final'),
+      stamp: word === null ? '' : t(word),
     };
     const letter = (
       text: Text,
@@ -162,19 +169,26 @@ export class TitleBlock {
     const lettered = Math.max(0, (inked - 0.75) / 0.25);
     for (const text of [this.title, this.sheet, this.scale]) text.alpha = lettered;
 
-    // The stamp: pressed down across the block in red, a little crooked, in the final round.
-    this.stamp.visible = final;
-    if (!final) return;
+    // The stamp: pressed down across the block in red, a little crooked, in the final round;
+    // RUSH crooked the other way and lower, slapped on in a hurry.
+    this.stamp.visible = word !== null;
+    if (word === null) return;
     const red = hex(art.palette.uiInvalid);
     const stampSize = size(0.3);
     letter(this.stampText, words.stamp, stampSize, 0, 0, red, true);
     const sw = this.stampText.width + stampSize * 0.8;
     const sh = stampSize * 1.6;
-    clearDrawn(this.stampFrame);
-    this.stampFrame.rect(-sw / 2, -sh / 2, sw, sh);
-    this.stampFrame.stroke({ width: Math.max(2, stampSize * 0.14), color: red });
-    this.stamp.position.set(x + w * 0.5, y + h * 0.55);
-    this.stamp.rotation = -0.2;
+    // Its frame redrawn only as its word or size changes, not every frame it shows.
+    const stampKey = `${sw},${sh},${red}`;
+    if (stampKey !== this.stampKey) {
+      this.stampKey = stampKey;
+      clearDrawn(this.stampFrame);
+      this.stampFrame.rect(-sw / 2, -sh / 2, sw, sh);
+      this.stampFrame.stroke({ width: Math.max(2, stampSize * 0.14), color: red });
+    }
+    const rushed = word === 'plan.rush';
+    this.stamp.position.set(x + w * (rushed ? 0.46 : 0.5), y + h * (rushed ? 0.62 : 0.55));
+    this.stamp.rotation = rushed ? 0.16 : -0.2;
     this.stamp.scale.set(1 + 0.6 * (1 - stamped));
     this.stamp.alpha = 0.95 * stamped;
   }

@@ -113,6 +113,7 @@
   "plan.sheetOpen": "SHEET {round}",
   "plan.keep": "KEEP {tag}",
   "plan.final": "FINAL",
+  "plan.rush": "RUSH",
   "round.label": "round {round}",
   "round.labelOf": "round {round} / {cap}",
   "round.finalOf": "final round {round} / {cap}",

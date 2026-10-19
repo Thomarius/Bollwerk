@@ -2,7 +2,7 @@ import { defaultArtConfig, type ArtConfig } from '@bollwerk/config';
 import { stateFromAscii, type MatchState } from '@bollwerk/sim';
 import { describe, expect, it } from 'vitest';
 
-import { climax, climaxLevel, pressing } from './corner.js';
+import { climax, climaxLevel, hurry, pressing } from './corner.js';
 
 const board = (): MatchState =>
   stateFromAscii(`
@@ -35,6 +35,26 @@ describe('the corner pieces hurrying', () => {
   it('never between phases, nor once the match is over', () => {
     expect(pressing(at('intermission', 1))).toBe(false);
     expect(pressing(at('game_over', -10))).toBe(false);
+  });
+});
+
+describe('a corner piece hurried', () => {
+  const art = defaultArtConfig;
+
+  it("in every timed phase's last seconds, eased in over the first of them", () => {
+    expect(hurry(at('combat', 12), art)).toBe(0);
+    expect(hurry(at('combat', 4.5), art)).toBeCloseTo(0.5);
+    expect(hurry(at('cannon_place', 3), art)).toBe(1);
+    expect(hurry(at('build', 2, true), art)).toBe(1);
+    expect(hurry(at('intermission', 1), art)).toBe(0);
+  });
+
+  it('through the whole climax, the final round included', () => {
+    const final = at('combat', 8);
+    final.ruleset = { ...final.ruleset, scoring: { ...final.ruleset.scoring, maxRounds: 4 } };
+    final.round = 4;
+    expect(hurry(final, art)).toBe(1);
+    expect(hurry(at('build', 4.5), art)).toBeCloseTo(0.5);
   });
 });
 

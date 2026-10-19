@@ -131,6 +131,14 @@ SCENES=(
   "banner-sports|$WATCH&snapshot=cannon_place&round=2&style=sports|5000"
   "menu-sports|$BASE/?buildStyle=flat&combatStyle=sports|4000"
   "eight-night|$BASE/?autostart=1&players=8&seed=3&snapshot=combat&round=3&style=night|3000"
+  # The climaxes of the first eight styles (PLAN 11 item 5), in the final round's build phase.
+  "final-pixel|$GAME&snapshot=build&round=10&style=pixel|8000"
+  "final-night|$GAME&snapshot=build&round=10&style=night|8000"
+  "final-cyber|$GAME&snapshot=build&round=10&style=cyberpunk|8000"
+  "final-blueprint|$GAME&snapshot=build&round=10&style=blueprint|8000"
+  "final-parchment|$GAME&snapshot=build&round=10&style=parchment|8000"
+  "final-bricks|$GAME&snapshot=build&round=10&style=bricks|8000"
+  "final-glass|$GAME&snapshot=build&round=10&style=glass|8000"
   "standings|$GAME&snapshot=build&round=2&style=flat|25500"
   "final-round|$GAME&snapshot=cannon_place&round=9&style=flat|27500"
   # The summary is held back for art.summary.delayMs while the fireworks play.

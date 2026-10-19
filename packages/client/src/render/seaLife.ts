@@ -16,7 +16,7 @@ import {
 } from './ocean.js';
 import { drawBat } from './spooky.js';
 import { StampBook, Stamps, viewKey } from './stamps.js';
-import { hex, tileX, tileY, type ViewTransform } from './theme.js';
+import { hex, tileX, tileY, type Cell, type ViewTransform } from './theme.js';
 import { drawCrest } from './ukiyo.js';
 import { GOLD, drawQuaver, drawSwan } from './music.js';
 import { FOAM, drawMass, drawReveller } from './wiesn.js';
@@ -128,6 +128,13 @@ export class ParchmentSeaLife extends OceanDrawn {
   private readonly serpents = new Surfacings();
   /** The compass rose, which no serpent surfaces on. */
   rose: { x: number; y: number; size: number } | null = null;
+  /**
+   * How far into the climax the match is (`climaxLevel`), set by the style each frame: while
+   * it is, serpents surface besides the usual ones, every `climaxSerpentEveryMs` — a second
+   * watch rather than a shorter wait, since the usual one may be half a minute off.
+   */
+  stir = 0;
+  private readonly stirred = new Surfacings();
 
   override layout(state: MatchState, view: ViewTransform, art: ArtConfig): void {
     super.layout(state, view, art);
@@ -205,12 +212,19 @@ export class ParchmentSeaLife extends OceanDrawn {
     // The serpent: three coils rising out of the water and sinking back as it swims on,
     // each an inked arch with the engraver's second line inside it, the head leading.
     const rose = this.rose;
-    this.serpents.step(this.ocean, deltaMs, p.serpentEveryMs, p.serpentMs, (cell) =>
+    const open = (cell: Cell): boolean =>
       rose === null
         ? true
-        : Math.hypot(cell.x + 0.5 - rose.x, cell.y + 0.5 - rose.y) > rose.size / 2 + 2,
-    );
-    for (const s of this.serpents.items) {
+        : Math.hypot(cell.x + 0.5 - rose.x, cell.y + 0.5 - rose.y) > rose.size / 2 + 2;
+    this.serpents.step(this.ocean, deltaMs, p.serpentEveryMs, p.serpentMs, open);
+    if (this.stir > 0) {
+      this.stirred.step(this.ocean, deltaMs, p.climaxSerpentEveryMs, p.serpentMs, open);
+    } else {
+      // Out of the climax none new comes up, and those up sink back as ever.
+      for (const s of this.stirred.items) s.ageMs += deltaMs;
+      this.stirred.items = this.stirred.items.filter((s) => s.ageMs < p.serpentMs);
+    }
+    for (const s of [...this.serpents.items, ...this.stirred.items]) {
       const life = s.ageMs / p.serpentMs;
       const rise = Math.sin(Math.PI * Math.min(1, life));
       const x = s.x + s.dir * life * 1.2;

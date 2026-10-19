@@ -176,6 +176,10 @@ Full detail in PLAN.md §1. The parts that surprise people:
 **Done** (2026-10-18; the latest release **v0.9.11**, 2026-10-18, protocol 28, recording format 4,
 which a test session needs the server rebuilt and every page reloaded for):
 
+- **A climax for every style but Minimal** (ARCHIVE 14i, 2026-10-19): Medieval's beacons lit
+  round the sea, Night's blood moon, Cyberpunk's overload, Blueprint's rush job, Parchment's wind
+  heads, Toy bricks' light-up studs and Stained glass's sun breaking through — and their corner
+  pieces hurrying in every phase's last seconds, as the others' do (`hurry` in `corner.ts`).
 - **Stadium, the Sports style** (ARCHIVE 14d, 2026-10-19): the twentieth look, its guns
   pictogram sportsmen of ten ball sports (`sports/figures.ts`), a sport to a gun by its id and the
   seed, ready the moment before the strike with the ball apart from the figure, the shot's ball
@@ -346,9 +350,6 @@ which a test session needs the server rebuilt and every page reloaded for):
   and a test without the cap of three. Their balance is closed and they are **off by default for
   good** — a wacky addition, not the base game (ARCHIVE 13zw); a new tower is balanced at Level 5
   only, its variants against each other and against no tower (the user's).
-- **A climax for every style but Minimal** (item 5, the user's): the seven looks with none of
-  their own — Medieval, Night, Cyberpunk, Blueprint, Parchment, Toy bricks, Stained glass — each
-  to get one, designed with the user first, scaled by `climaxLevel` so it eases in.
 - **The testers' choice of cannon icon** (item 3): each style's own gun or the generic cannon,
   `art.cannonIcons` (`"style"`, the default, or `"generic"`); `?icons=sheet` shows every style's.
 

@@ -3,18 +3,18 @@ import { Rng, Structure, Terrain, type Cannon, type MatchState, type Shot } from
 import { BlurFilter, Container, Graphics, Sprite, Texture } from 'pixi.js';
 
 import { bloomWanted, motionReduced } from '../motion.js';
-import { inFinalRound } from '../scores.js';
 import type { TimerSpot } from '../timerSpot.js';
 
-import { cornerSpot } from './corner.js';
+import { climaxLevel, cornerSpot, hurry } from './corner.js';
 import { SEA_NE, SEA_NW, SEA_SE, SEA_SW, filletCorners } from './pixel/coast.js';
 import { daylight, shadowCast, weatherFor, type Weather } from './pixel/atmosphere.js';
 import { PILE_CORNERS, pileCorner, ringCorners, spreadOut, type RingCorner } from './pixel/life.js';
 import { OceanLife } from './pixel/ocean.js';
 import { release } from './release.js';
 import { SceneryTracker, placeScenery } from './scenery.js';
+import { hash } from './noise.js';
 import { Discs, SpritePool, StampBook, Stamps } from './stamps.js';
-import { seaDepth } from './ocean.js';
+import { behindCorner, outerOcean, seaDepth } from './ocean.js';
 import {
   CASTLE_CHIMNEY,
   CASTLE_WINDOWS,
@@ -307,6 +307,8 @@ export class PixelTheme implements Theme {
   /** Night: fireflies over the land, and lighthouses on the sea off each island. */
   private land: Cell[] = [];
   private fireflies: { x: number; y: number; phase: number; drift: number }[] = [];
+  /** How many of them fly outside the climax; the rest come out as it rises. */
+  private firefliesShown = 0;
   private lighthouses: Cell[] = [];
   private glints: Glint[] = [];
   private crests: Glint[] = [];
@@ -322,6 +324,24 @@ export class PixelTheme implements Theme {
   private bannerElapsed = 0;
   /** Milliseconds since the theme began drawing, for anything that loops. */
   private clock = 0;
+  /** How far into its climax the match is as this frame draws (`climaxLevel`). */
+  private climax = 0;
+  /** How hurried the corner's piece is this frame (`hurry`): its climax, or the clock pressing. */
+  private hurried = 0;
+  /**
+   * Medieval's beacons, on rock stacks in the open sea round the board, in the order they
+   * catch; and the clock when the climax came, from which each catches, or -1 outside it.
+   */
+  private beacons: Cell[] = [];
+  private beaconsSince = -1;
+  /**
+   * The windmill's sails and Night's beams, as angles carried from frame to frame: they
+   * turn faster at the climax, and an angle of the clock over a period that shrinks jumps.
+   */
+  private sailTurn = 0.4;
+  private beamTurn = 0;
+  /** The boat's yard lantern's swing, carried on likewise, as it swings faster when hurried. */
+  private lanternTurn = 0;
 
   /** Flagstones on sealed ground, under the scorch marks and the greying of the out. */
   private readonly courtLayer = new Container();
@@ -662,6 +682,7 @@ export class PixelTheme implements Theme {
     this.ocean.layout(state, view, this.art);
     this.weather = this.torchlit ? 'clear' : weatherFor(state.seed, this.art.pixel.weatherOdds);
     this.layoutNight(state);
+    this.layoutBeacons(state, view);
     this.layoutSheep(state);
     this.scenery.sync(state, this.art.scenery);
     this.layoutScenery();
@@ -1318,6 +1339,8 @@ export class PixelTheme implements Theme {
     clearDrawn(this.aboveCrownsGfx);
 
     this.clock += frame.deltaMs;
+    this.climax = climaxLevel(state, this.art);
+    this.hurried = hurry(state, this.art);
     this.phase = state.phase;
     this.board = state;
     this.animateWater(frame.deltaMs);
@@ -1341,7 +1364,7 @@ export class PixelTheme implements Theme {
     this.airDiscs.begin(view.tile);
     const still = motionReduced();
     this.drawSea(view, frame.deltaMs, still);
-    this.drawCorner(state, view, still);
+    this.drawCorner(view, frame.deltaMs, still);
     this.drawClouds(view, frame.deltaMs, still);
     this.drawDaylight(state, view);
     this.drawRain(view, frame.deltaMs, still);
@@ -1353,6 +1376,7 @@ export class PixelTheme implements Theme {
     this.beamStamps.end();
     this.drawWindows(state, view, frame);
     this.drawChimneys(state, view, frame, still);
+    this.drawBeacons(view, still);
     this.drawSheep(state, view, frame.deltaMs, still);
     this.drawMasons(view, frame.deltaMs);
 
@@ -1610,7 +1634,9 @@ export class PixelTheme implements Theme {
         return { x: x0 + Math.random() * spanX, y: y0 + Math.random() * spanY, blobs, reach: size };
       });
     }
-    const drift = still ? 0 : style.windTilesPerSecond * (deltaMs / 1000);
+    // The clouds hurry as the climax comes, on a wind rising by its level.
+    const gust = 1 + (style.climaxWind - 1) * this.climax;
+    const drift = still ? 0 : style.windTilesPerSecond * gust * (deltaMs / 1000);
     const colour = hex(fog ? this.art.palette.uiInk : this.art.palette.shadow);
     const rings = [1, 0.86, 0.72, 0.58, 0.44, 0.3];
     const alpha = (style.cloudShadowAlpha * (heavy ? 1.25 : fog ? 1.1 : 1)) / rings.length;
@@ -1661,7 +1687,7 @@ export class PixelTheme implements Theme {
   }
 
   /** The corner's piece: the windmill by day, the fishing boat at Night. */
-  private drawCorner(state: MatchState, view: ViewTransform, still: boolean): void {
+  private drawCorner(view: ViewTransform, deltaMs: number, still: boolean): void {
     const g = this.cornerGfx;
     clearDrawn(g);
     const spot = this.corner;
@@ -1675,24 +1701,29 @@ export class PixelTheme implements Theme {
     const dot = (x: number, y: number, w = 1, h = 1): void => {
       g.rect(left + Math.round(x) * p, top + Math.round(y) * p, w * p, h * p);
     };
-    if (this.torchlit) this.drawFishingBoat(state, still, dot, left, top, p);
-    else this.drawWindmill(dot, still);
+    if (this.torchlit) this.drawFishingBoat(still, deltaMs, dot, left, top, p);
+    else this.drawWindmill(dot, deltaMs, still);
   }
 
   /**
    * Medieval's windmill on a rocky islet: a tapered stone tower under a wooden cap, its four
-   * sails of cloth on their frames turning — quicker in rain — drawn a pixel at a time as
-   * they turn, so they stay pixel art at any angle; and its reflection in the sea below,
-   * as the castles on a south coast have theirs.
+   * sails of cloth on their frames turning — quicker in rain, racing at the climax — drawn a
+   * pixel at a time as they turn, so they stay pixel art at any angle; and its reflection in
+   * the sea below, as the castles on a south coast have theirs.
    */
   private drawWindmill(
     dot: (x: number, y: number, w?: number, h?: number) => void,
+    deltaMs: number,
     still: boolean,
   ): void {
     const g = this.cornerGfx;
     const { palette } = this.art;
-    const turnMs =
-      this.weather === 'rain' ? this.art.pixel.windmillRainTurnMs : this.art.pixel.windmillTurnMs;
+    const style = this.art.pixel;
+    const turnMs = this.weather === 'rain' ? style.windmillRainTurnMs : style.windmillTurnMs;
+    // Turns a second, eased from the weather's toward the climax's as it hurries: through
+    // the climax, and in every phase's last seconds, as the other styles' corner pieces do.
+    const rate = 1 / turnMs + (1 / style.windmillClimaxTurnMs - 1 / turnMs) * this.hurried;
+    if (!still) this.sailTurn = (this.sailTurn + deltaMs * rate * Math.PI * 2) % (Math.PI * 2);
     // The reflection, three wavering strips under the islet.
     for (let k = 0; k < 3; k++) {
       const shift = still ? 0 : Math.round(Math.sin(this.clock / 420 + k * 1.3));
@@ -1725,7 +1756,7 @@ export class PixelTheme implements Theme {
     dot(15, 14, 10, 1);
     g.fill({ color: hex(palette.craterDark) });
     // The sails: four arms from the hub, cloth along the outer part of each, one side.
-    const turn = still ? 0.4 : (this.clock / turnMs) * Math.PI * 2;
+    const turn = still ? 0.4 : this.sailTurn;
     const hub = { x: 20, y: 13 };
     for (let arm = 0; arm < 4; arm++) {
       const a = turn + (arm * Math.PI) / 2;
@@ -1745,11 +1776,11 @@ export class PixelTheme implements Theme {
   /**
    * Night's fishing boat at anchor, rocking on the swell: a cabin with its window lit, a
    * furled sail, and two lanterns — one swaying from the yard — each lighting the water
-   * under it as the torches light the ground, and flaring in the final round.
+   * under it as the torches light the ground, and flaring at the climax.
    */
   private drawFishingBoat(
-    state: MatchState,
     still: boolean,
+    deltaMs: number,
     dot: (x: number, y: number, w?: number, h?: number) => void,
     left: number,
     top: number,
@@ -1758,10 +1789,11 @@ export class PixelTheme implements Theme {
     const g = this.cornerGfx;
     const { palette } = this.art;
     const bob = still ? 0 : Math.round(Math.sin(this.clock / 1700));
-    const flare = inFinalRound(state) ? 1.5 : 1;
-    const swing = still
-      ? 0
-      : 0.35 * Math.sin((this.clock / this.art.pixel.lanternSwingMs) * Math.PI * 2);
+    const flare = 1 + this.art.night.climaxLanternFlare * this.climax;
+    // The yard lantern swings faster when the corner hurries (`hurry`).
+    const quicker = 1 + (this.art.night.hurriedLanternSwing - 1) * this.hurried;
+    this.lanternTurn = (this.lanternTurn + (deltaMs * quicker) / this.art.pixel.lanternSwingMs) % 1;
+    const swing = still ? 0 : 0.35 * Math.sin(this.lanternTurn * Math.PI * 2);
     const lanterns = [
       { x: 27 + Math.sin(swing) * 5, y: 11 + bob + Math.cos(swing) * 5 },
       { x: 10, y: 20 + bob },
@@ -2050,9 +2082,11 @@ export class PixelTheme implements Theme {
         .sort((a, b) => Math.hypot(b.x - mx, b.y - my) - Math.hypot(a.x - mx, a.y - my))[0];
       if (far !== undefined) this.lighthouses.push(far);
     }
-    // Their towers are drawn with the terrain (`planTerrain`).
+    // Their towers are drawn with the terrain (`planTerrain`). Fireflies enough for the
+    // climax, of which only the first are shown outside it.
     const count = Math.round((this.land.length * this.art.pixel.firefliesPerHundredTiles) / 100);
-    for (let k = 0; k < count; k++) {
+    this.firefliesShown = count;
+    for (let k = 0; k < Math.round(count * this.art.night.climaxFireflies); k++) {
       const at = this.land[Math.floor(Math.random() * this.land.length)] as Cell;
       this.fireflies.push({
         x: at.x + Math.random(),
@@ -2067,10 +2101,16 @@ export class PixelTheme implements Theme {
    * Night on the sea and land: a path of moonlight shimmering on the outer ocean, fireflies
    * winking over the fields, and a lighthouse off each island whose beam turns slowly over
    * the water — lit into the ground, under the walls, like the torches' pools.
+   *
+   * At the climax a blood moon (`climaxLevel`): its path on the water turns amber-red, the
+   * beams sweep faster and brighter and the fireflies thicken — only the tints, strengths
+   * and speeds of what is drawn anyway, so it costs nothing more, and nothing new on the
+   * board could be taken for a shot.
    */
   private drawNight(view: ViewTransform, deltaMs: number, still: boolean): void {
     if (!this.torchlit) return;
-    const { palette } = this.art;
+    const { palette, night } = this.art;
+    const level = this.climax;
     const t = view.tile;
     const px = Math.max(1, Math.round(t / this.art.tileSizePx));
     const sea = this.seaGfx;
@@ -2092,6 +2132,7 @@ export class PixelTheme implements Theme {
       const lines = rows.length * 3;
       // Three strengths, a fill each, rather than a fill per glint.
       const strengths = [0.18, 0.32, 0.5];
+      const moonlight = mixed(0xdfe8ff, hex(night.bloodMoonColour), level);
       for (let level = 0; level < strengths.length; level++) {
         for (let line = 0; line < lines; line++) {
           const near = line / Math.max(1, lines - 1);
@@ -2112,13 +2153,19 @@ export class PixelTheme implements Theme {
             sea.rect(x, y, length, px);
           }
         }
-        sea.fill({ color: 0xdfe8ff, alpha: strengths[level] as number });
+        sea.fill({ color: moonlight, alpha: strengths[level] as number });
       }
     }
 
     // Lighthouses: the tower is a sprite with the terrain; its lamp glows and its beam turns
     // over the water.
-    const turn = still ? 0 : (this.clock / this.art.pixel.beamTurnMs) * Math.PI * 2;
+    const speed = 1 + (night.climaxBeamSpeed - 1) * level;
+    if (!still) {
+      this.beamTurn += ((deltaMs * speed) / this.art.pixel.beamTurnMs) * Math.PI * 2;
+      this.beamTurn %= Math.PI * 2;
+    }
+    const turn = still ? 0 : this.beamTurn;
+    const brighter = 1 + (night.climaxBeamBrighter - 1) * level;
     const fullReach = t * this.art.pixel.beamTiles;
     const beam = this.beamBook.get('beam', t, (g) =>
       drawBeam(g, t, fullReach, this.art.night.beamAlpha),
@@ -2140,13 +2187,13 @@ export class PixelTheme implements Theme {
       // the edge is a smaller wedge rather than one cut off square.
       const reach = Math.min(fullReach, beamRoom(cx, cy, angle, bounds));
       if (reach > t * 0.5) {
-        this.beamStamps.place(beam, cx, cy, {
-          rotation: angle,
-          scale: reach / fullReach,
-          tint: hex(palette.emberHot),
-        });
+        const at = { rotation: angle, scale: reach / fullReach, tint: hex(palette.emberHot) };
+        this.beamStamps.place(beam, cx, cy, at);
+        // Brighter at the climax by the same wedge laid again, fainter: the beams blend
+        // additively, and a stamp's own alpha cannot pass 1.
+        if (brighter > 1) this.beamStamps.place(beam, cx, cy, { ...at, alpha: brighter - 1 });
       }
-      const pulse = still ? 1 : 0.85 + 0.15 * Math.sin(this.clock / 300 + k);
+      const pulse = (still ? 1 : 0.85 + 0.15 * Math.sin(this.clock / 300 + k)) * brighter;
       this.airDiscs.disc(cx, cy, t * 0.45, hex(palette.emberMid), 0.3 * pulse);
       this.airDiscs.disc(cx, cy, t * 0.2, hex(palette.emberHot), 0.35 * pulse);
     });
@@ -2154,11 +2201,16 @@ export class PixelTheme implements Theme {
     // Fireflies wandering and winking; none when motion is reduced.
     if (still) return;
     const dt = deltaMs / 1000;
-    for (const fly of this.fireflies) {
+    const extra = this.fireflies.length - this.firefliesShown;
+    const flying = this.firefliesShown + extra * level;
+    for (const [k, fly] of this.fireflies.entries()) {
+      // The last of those coming out fades in, so they thicken rather than pop.
+      const out = Math.min(1, flying - k);
+      if (out <= 0) break;
       fly.drift += (Math.random() - 0.5) * 2 * dt;
       fly.x += Math.cos(fly.drift) * 0.3 * dt;
       fly.y += Math.sin(fly.drift) * 0.3 * dt;
-      const glow = Math.max(0, Math.sin(this.clock / 700 + fly.phase));
+      const glow = Math.max(0, Math.sin(this.clock / 700 + fly.phase)) * out;
       if (glow <= 0.05) continue;
       const x = tileX(view, fly.x);
       const y = tileY(view, fly.y);
@@ -2596,6 +2648,181 @@ export class PixelTheme implements Theme {
     this.chunks = this.chunks.filter((c) => c.age < span);
   }
 
+  /**
+   * Where Medieval's beacons stand, measured when the board is laid out: in the outer
+   * ocean round the board (`outerOcean`), where no shot flies, a few tiles off the land's
+   * edge and clear of the screen's edges and the corner's windmill, one to each of
+   * `beacons` bearings from the board's middle, in order round it so they catch going
+   * round. A bearing with no open water beyond the board on screen has none.
+   */
+  private layoutBeacons(state: MatchState, view: ViewTransform): void {
+    this.beacons = [];
+    const wanted = this.art.pixel.beacons;
+    if (this.torchlit || wanted === 0) return;
+    const ocean = outerOcean(state, view);
+    let bx0 = state.width;
+    let by0 = state.height;
+    let bx1 = -1;
+    let by1 = -1;
+    for (let i = 0; i < state.terrain.length; i++) {
+      if (state.terrain[i] !== Terrain.Land) continue;
+      const x = i % state.width;
+      const y = (i - x) / state.width;
+      bx0 = Math.min(bx0, x);
+      bx1 = Math.max(bx1, x);
+      by0 = Math.min(by0, y);
+      by1 = Math.max(by1, y);
+    }
+    if (bx1 < 0) return;
+    const yMax = ocean.cells.reduce((m, c) => Math.max(m, c.y), -Infinity);
+    const corner = this.corner;
+    const cx = (bx0 + bx1 + 1) / 2;
+    const cy = (by0 + by1 + 1) / 2;
+    const sector = (Math.PI * 2) / wanted;
+    const best: (Cell | null)[] = Array.from({ length: wanted }, () => null);
+    const cost: number[] = Array.from({ length: wanted }, () => Infinity);
+    for (const cell of ocean.cells) {
+      // Two tiles of headroom for the smoke, under the HUD bar's edge; a tile from the
+      // screen's sides; never in the windmill's square or beside it.
+      if (cell.x <= ocean.x0 || cell.x >= ocean.x1 || cell.y < ocean.y0 + 2 || cell.y >= yMax)
+        continue;
+      if (corner !== null && behindCorner({ ...corner, size: corner.size + 3 }, cell.x, cell.y))
+        continue;
+      const off = Math.hypot(
+        Math.max(bx0 - cell.x - 1, 0, cell.x - bx1 - 1),
+        Math.max(by0 - cell.y - 1, 0, cell.y - by1 - 1),
+      );
+      // A bearing clockwise from straight up, so the fires go round as a clock's hand.
+      const bearing = Math.atan2(cell.x + 0.5 - cx, cy - cell.y - 0.5);
+      const k = Math.round((bearing < 0 ? bearing + Math.PI * 2 : bearing) / sector) % wanted;
+      // About two tiles off the land, the exact tile varied a little by the cell.
+      const c = Math.abs(off - 2) + hash(cell.x, cell.y, 470) * 0.8;
+      if (c < (cost[k] as number)) {
+        cost[k] = c;
+        best[k] = cell;
+      }
+    }
+    for (const cell of best) {
+      // Two bearings may meet at one stretch of sea: no stack within four tiles of another.
+      if (cell === null) continue;
+      if (this.beacons.some((b) => Math.hypot(b.x - cell.x, b.y - cell.y) < 4)) continue;
+      this.beacons.push(cell);
+    }
+  }
+
+  /**
+   * The beacons are lit, Medieval's climax (`climaxLevel`): a fire catches on each rock
+   * stack in the sea round the board, one after another going round, as beacons carried
+   * the warning from hill to hill; embers rising from it and its smoke drifting off — more
+   * of it in rain — and its glow carrying through fog. Out in the outer ocean, where no shot
+   * flies, a steady flame in the pixel style's own sprites, never a shot or a hit. Nothing
+   * at all outside the climax; with motion reduced, every fire lit at once and still.
+   */
+  private drawBeacons(view: ViewTransform, still: boolean): void {
+    const level = this.climax;
+    if (level === 0 || this.torchlit || this.beacons.length === 0) {
+      this.beaconsSince = -1;
+      return;
+    }
+    if (this.beaconsSince < 0) this.beaconsSince = this.clock;
+    const { palette } = this.art;
+    const t = view.tile;
+    const px = Math.max(1, Math.round(t / this.art.tileSizePx));
+    const sea = this.seaGfx;
+    const fog = this.weather === 'fog';
+    const rain = this.weather === 'rain';
+    const catchMs = this.art.pixel.beaconCatchMs;
+    const warm = hex(palette.emberMid);
+    const hot = hex(palette.emberHot);
+    // The stacks, every one in the same few fills: rock, its lit top, its waterline and the
+    // wood piled on it, coming up with the level.
+    const stack = (fill: number, dx: number, dy: number, w: number, h: number): void => {
+      for (const b of this.beacons) {
+        const x = Math.round(tileX(view, b.x + 0.5) / px) * px;
+        const y = Math.round(tileY(view, b.y + 0.75) / px) * px;
+        sea.rect(x + dx * px, y + dy * px, w * px, h * px);
+      }
+      sea.fill({ color: fill, alpha: level });
+    };
+    stack(hex(palette.waterFoam), -9, 2, 18, 1);
+    stack(hex(palette.rockMid), -8, -2, 16, 4);
+    stack(hex(palette.rockLight), -5, -5, 10, 3);
+    stack(hex(palette.rockDark), -8, 1, 16, 1);
+    stack(hex(palette.rockDark), 4, -2, 4, 3);
+    stack(hex(palette.craterMid), -4, -7, 8, 2);
+    stack(hex(palette.craterDark), -5, -6, 10, 1);
+
+    const smokes = rain ? 5 : 3;
+    const smokeMs = this.art.pixel.chimneySmokeMs;
+    for (const [k, b] of this.beacons.entries()) {
+      const since = still ? 1 : (this.clock - this.beaconsSince - k * catchMs) / 400;
+      const lit = Math.max(0, Math.min(1, since)) * level;
+      if (lit <= 0) continue;
+      const bx = b.x + 0.5;
+      const top = b.y + 0.75 - (6 * px) / t;
+      const flicker = still
+        ? 1
+        : 0.82 + 0.1 * Math.sin(this.clock / 90 + k * 1.7) + 0.08 * Math.sin(this.clock / 53 + k);
+      // The fire, a brazier's flame larger, catching from small.
+      const frameNo = still ? 0 : Math.floor(this.clock / 110 + k) % 3;
+      // Its light on the water under the stack, wavering as the windmill's reflection does.
+      for (let r = 0; r < 2; r++) {
+        const shift = still ? 0 : Math.round(Math.sin(this.clock / 300 + k + r * 1.3));
+        const rx = Math.round(tileX(view, bx) / px) * px + (shift - 5 + r * 2) * px;
+        const ry = Math.round(tileY(view, b.y + 0.75) / px) * px + (4 + r * 2) * px;
+        sea.rect(rx, ry, (10 - r * 4) * px, px);
+      }
+      sea.fill({ color: hot, alpha: 0.45 * lit });
+      const w = 0.85 * (0.5 + 0.5 * lit);
+      const fire = this.place(this.lightLayer, KEY.flame(frameNo), view, bx - w / 2, top, w);
+      fire.height = ((t * w * 8) / 6) * flicker;
+      fire.y = tileY(view, top) - fire.height;
+      fire.alpha = lit * (fog ? 0.75 : 1);
+      // Its glow, soft as the torches' pools are, three discs each inside the last: wider
+      // through fog, where the fire itself is dimmed.
+      const gx = tileX(view, bx);
+      const gy = tileY(view, top) - fire.height * 0.4;
+      const reach = t * (fog ? 2 : 1.3) * flicker;
+      for (const [r, a] of [
+        [1, 0.06],
+        [0.6, 0.08],
+        [0.3, 0.14],
+      ] as const) {
+        this.airDiscs.disc(gx, gy, reach * r, r > 0.5 ? warm : hot, a * lit);
+      }
+      if (still) continue;
+      // Embers rising and winking out, and smoke drifting off on the wind.
+      for (let e = 0; e < 2; e++) {
+        const period = 900 + 500 * hash(k, e, 471);
+        const u = (this.clock / period + hash(k, e, 472)) % 1;
+        const size = 0.18;
+        const spark = this.place(
+          this.lightLayer,
+          KEY.ember,
+          view,
+          bx - size / 2 + (hash(k, e, 473) - 0.5) * 0.5 + u * 0.25,
+          top - 0.5 - u * 1.3,
+          size,
+        );
+        spark.alpha = lit * (1 - u);
+      }
+      for (let m = 0; m < smokes; m++) {
+        const u = (this.clock / smokeMs + m / smokes + k * 0.37) % 1;
+        const size = 0.3 + 0.5 * u;
+        const puff = this.place(
+          this.lightLayer,
+          KEY.smoke(m % 2),
+          view,
+          bx - size / 2 + u * 0.8 + Math.sin(u * 5 + k) * 0.08,
+          top - 0.7 - u * 1.4 - size / 2,
+          size,
+        );
+        puff.tint = rain ? 0x8a8c94 : 0xb4b4ba;
+        puff.alpha = (rain ? 0.6 : 0.45) * lit * (1 - u) * Math.min(1, u * 6);
+      }
+    }
+  }
+
   /** Whether this is Night, which is lit by torches; the pixel style is not. */
   private get torchlit(): boolean {
     return this.id === 'night';
@@ -2606,13 +2833,15 @@ export class PixelTheme implements Theme {
    * pool of light on the ground round them, so a lit castle reads as sealed and a dark
    * one as breached across the map: a breach douses them with a puff of smoke, and
    * sealing again lights them. Muzzle flashes light the ground round a gun for a moment,
-   * and a smouldering breach glows as long as its embers do.
+   * and a smouldering breach glows as long as its embers do. At the climax the torches'
+   * flames flare taller, under the blood moon (`drawNight`).
    */
   private drawTorchlight(state: MatchState, view: ViewTransform, frame: EffectFrame): void {
     const night = this.art.night;
     const { palette } = this.art;
     const g = this.effectGfx;
     const warm = hex(palette.emberMid);
+    const tall = 1 + (night.climaxTorchTaller - 1) * this.climax;
     const pool = (x: number, y: number, radius: number, alpha: number): void => {
       // Three discs, each inside the last, so the light is brightest at its heart.
       for (const k of [1, 0.66, 0.36]) {
@@ -2674,11 +2903,15 @@ export class PixelTheme implements Theme {
         const sway = Math.sin(this.clock / (night.torchFlickerMs * 1.9) + k * 2) * t * 0.03;
         const fx = sx + sway;
         const fy = sy - t * 0.25;
-        g.circle(fx, fy, t * 0.16 * f);
+        // Flaring taller at the climax, from the same foot.
+        const outer = t * 0.16 * f;
+        const inner = t * 0.08 * f;
+        g.ellipse(fx, fy - outer * (tall - 1), outer, outer * tall);
         g.fill({ color: warm, alpha: 0.95 });
-        g.circle(fx, fy + t * 0.03, t * 0.08 * f);
+        g.ellipse(fx, fy + t * 0.03 - inner * (tall - 1), inner, inner * tall);
         g.fill({ color: hex(palette.emberHot) });
-        this.airDiscs.disc(fx, fy, t * 0.55 * f, warm, 0.28 * f);
+        const halo = 1 + 0.3 * (tall - 1);
+        this.airDiscs.disc(fx, fy - outer * (tall - 1), t * 0.55 * f * halo, warm, 0.28 * f);
       });
     }
 

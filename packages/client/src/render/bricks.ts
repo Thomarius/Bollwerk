@@ -12,7 +12,7 @@ import {
 import { motionReduced } from '../motion.js';
 import type { TimerSpot } from '../timerSpot.js';
 
-import { cornerSpot } from './corner.js';
+import { climaxLevel, cornerSpot, hurry } from './corner.js';
 import { IslandParts } from './islandParts.js';
 import { hash } from './noise.js';
 import { Circling, behindCorner, outerOcean } from './ocean.js';
@@ -184,6 +184,14 @@ export class BricksTheme implements Theme {
   /** Whether each castle was sealed at the last frame, to see one seal. */
   private sealedBefore: readonly boolean[] | null = null;
   private clock = 0;
+  /**
+   * The crane's swing and its hook's travel, in swings and lifts, run up a frame at a time:
+   * worked out from the clock, a swing hurried at the climax would jump to another place.
+   */
+  private cranePhase = 0.15;
+  private hookPhase = 0.3;
+  /** The climax's ring of bulbs, sea studs in order round the islands, for this terrain. */
+  private ring: { terrain: Uint8Array; studs: readonly Cell[] } | null = null;
 
   init(layers: ThemeLayers, art: ArtConfig): Promise<void> {
     this.art = art;
@@ -800,17 +808,31 @@ export class BricksTheme implements Theme {
    * A crane built of bricks on a barge in the corner: a studded grey barge, a white cab on
    * its turntable, a dark lattice jib swinging round — shorter as it turns toward or away
    * from the viewer — and a brick on its hook, lowered to the deck and lifted again twice a
-   * swing. In white, grey and black: a crane's yellow would be the amber player's. Its
-   * hazard light strobes white in overtime. Still, mid-swing, when motion is reduced.
+   * swing. In white, grey and black: a crane's yellow would be the amber player's. When it
+   * hurries (`hurried`: the climax, or any phase's last seconds) it works against the clock,
+   * its jib swinging and its hook running faster; at the climax (`level`) its hazard light
+   * strobes white too. Still, mid-swing, when motion is reduced.
    */
-  private drawCrane(state: MatchState, view: ViewTransform, spot: TimerSpot): void {
+  private drawCrane(
+    view: ViewTransform,
+    spot: TimerSpot,
+    level: number,
+    hurried: number,
+    deltaMs: number,
+  ): void {
     const g = this.craneGfx;
     const { palette } = this.art;
     // A third larger than its square, which a crane's open lattice does not fill.
     const s = spot.size * view.tile * 1.35;
     const still = motionReduced();
     const edge = { width: Math.max(1, s * 0.012), color: hex(palette.shadow), alpha: 0.6 };
-    const phase = still ? 0.15 : (this.clock / this.style.craneSwingMs) % 1;
+    const swings = deltaMs / this.style.craneSwingMs;
+    this.cranePhase =
+      (this.cranePhase + swings * (1 + (this.style.climaxCraneSpeed - 1) * hurried)) % 1;
+    // Two lifts a swing at rest, as before the climax hurried it.
+    this.hookPhase =
+      (this.hookPhase + 2 * swings * (1 + (this.style.climaxHookSpeed - 1) * hurried)) % 1;
+    const phase = still ? 0.15 : this.cranePhase;
     const bob = still ? 0 : Math.sin(this.clock / 900) * s * 0.008;
     const cx = tileX(view, spot.x);
     const water = tileY(view, spot.y) + s * 0.28;
@@ -874,7 +896,7 @@ export class BricksTheme implements Theme {
     g.stroke({ width: Math.max(1, s * 0.016), color: hex(palette.rockDark) });
 
     // The hook's cable, paying out to the deck and back twice a swing, and the brick on it.
-    const drop = 0.5 - 0.5 * Math.cos(phase * Math.PI * 4);
+    const drop = 0.5 - 0.5 * Math.cos((still ? 0.3 : this.hookPhase) * Math.PI * 2);
     const hookY = tip.y + s * 0.08 + (deck - s * 0.1 - tip.y - s * 0.08) * drop;
     g.moveTo(tip.x, tip.y).lineTo(tip.x, hookY);
     g.stroke({ width: 1, color: hex(palette.rockDark) });
@@ -883,16 +905,13 @@ export class BricksTheme implements Theme {
     g.stroke(edge);
     studs(tip.x - s * 0.07, hookY - s * 0.006, 2, s * 0.07, hex(palette.rockLight));
 
-    // The hazard light on the cab, strobing white in overtime.
-    const strobe =
-      state.phase === 'build' &&
-      state.overtime &&
-      (still || Math.floor(this.clock / 180) % 3 === 0);
+    // The hazard light on the cab, strobing white at the climax, its glow by the level.
+    const strobe = level > 0 && (still || Math.floor(this.clock / 180) % 3 === 0);
     g.circle(cabX + cabW * 0.25, cabTop - s * 0.04, s * 0.022);
     g.fill({ color: strobe ? 0xffffff : hex(palette.rockMid) });
     if (strobe) {
       g.circle(cabX + cabW * 0.25, cabTop - s * 0.04, s * 0.07);
-      g.fill({ color: 0xffffff, alpha: 0.35 });
+      g.fill({ color: 0xffffff, alpha: 0.35 * level });
     }
   }
 
@@ -904,8 +923,11 @@ export class BricksTheme implements Theme {
     clearDrawn(this.lateGfx);
     this.seaLife.draw(g, view, this.art, frame.deltaMs);
     this.clock += frame.deltaMs;
+    const level = climaxLevel(state, this.art);
     clearDrawn(this.craneGfx);
-    if (this.crane !== null) this.drawCrane(state, view, this.crane);
+    if (this.crane !== null) {
+      this.drawCrane(view, this.crane, level, hurry(state, this.art), frame.deltaMs);
+    }
     drawDrain(g, view, frame.drain, this.art);
     drawSealGlow(g, view, frame.sealGlow, this.art);
     this.landings.draw(g, view, this.art, frame.deltaMs);
@@ -921,6 +943,7 @@ export class BricksTheme implements Theme {
     this.winnerBanners.draw(this.lateGfx, view, state, this.art, frame.celebrate, frame.deltaMs);
     this.fireworks.draw(this.lateGfx, view, this.art, frame.celebrate, frame.deltaMs);
     this.stamps.begin();
+    this.drawMarquee(state, view, level);
     this.drawPops(state, view, frame);
     this.drawGulls(view, frame.deltaMs);
     this.stamps.end();
@@ -1107,6 +1130,86 @@ export class BricksTheme implements Theme {
       });
     }
     memo.end();
+  }
+
+  /**
+   * The climax's light-up bricks (`climaxLevel`): a ring of the sea plate's studs round the
+   * islands lit as the bulbs round a toy marquee, a chase running round it, all coming up by
+   * the level. Yellow-white, which no player wears, and round studs on the sea where no shot
+   * falls, so never a hit. Stamped, nothing at all outside the climax; lit but still when
+   * motion is reduced.
+   */
+  private drawMarquee(state: MatchState, view: ViewTransform, level: number): void {
+    if (level <= 0) return;
+    const t = view.tile;
+    const { climaxChaseMs, climaxBulbColour } = this.style;
+    const bulb = this.book.get('bulb', t, (g) => {
+      const r = (t * this.style.studScale) / 2;
+      // A glow on the plate round the stud, the stud lit through, and its shine.
+      g.circle(0, 0, r * 3.6);
+      g.fill({ color: 0xffffff, alpha: 0.1 });
+      g.circle(0, 0, r * 2.4);
+      g.fill({ color: 0xffffff, alpha: 0.25 });
+      g.circle(0, r * 0.25, r * 1.3);
+      g.fill({ color: 0x000000, alpha: 0.3 });
+      g.circle(0, 0, r * 1.3);
+      g.fill({ color: 0xffffff });
+    });
+    const tint = hex(climaxBulbColour);
+    const studs = this.ringStuds(state);
+    const step = motionReduced() ? 0 : Math.floor(this.clock / climaxChaseMs);
+    for (let k = 0; k < studs.length; k++) {
+      const { x, y } = studs[k]!;
+      if (behindCorner(this.crane, x + 0.5, y + 0.5)) continue;
+      // Three bulbs to a beat, as a marquee's chase: one lit, the one behind it fading.
+      const beat = (((k - step) % 3) + 3) % 3;
+      const lit = beat === 0 ? 1 : beat === 1 ? 0.5 : 0.25;
+      this.stamps.place(bulb, tileX(view, x + 0.5), tileY(view, y + 0.5), {
+        tint,
+        alpha: lit * level,
+        scale: beat === 0 ? 1.15 : 1,
+      });
+    }
+  }
+
+  /**
+   * The sea studs the climax's bulbs stand on, in order clockwise round a rectangle
+   * `climaxRingTiles` out from the islands' land: on the plate's own studs — on tiles whose
+   * coordinates sum even, as `studPattern` lays them — so its corners carry studs too.
+   */
+  private ringStuds(state: MatchState): readonly Cell[] {
+    if (this.ring !== null && this.ring.terrain === state.terrain) return this.ring.studs;
+    let minX = state.width;
+    let minY = state.height;
+    let maxX = -1;
+    let maxY = -1;
+    for (let y = 0; y < state.height; y++) {
+      for (let x = 0; x < state.width; x++) {
+        if (state.terrain[y * state.width + x] !== Terrain.Land) continue;
+        minX = Math.min(minX, x);
+        minY = Math.min(minY, y);
+        maxX = Math.max(maxX, x);
+        maxY = Math.max(maxY, y);
+      }
+    }
+    const studs: Cell[] = [];
+    if (maxX >= 0) {
+      const out = this.style.climaxRingTiles;
+      const x0 = minX - out;
+      // Pulled in a tile where needed, so every corner falls on a stud.
+      const y0 = (x0 + minY - out) % 2 === 0 ? minY - out : minY - out + 1;
+      const x1 = (maxX + out - x0) % 2 === 0 ? maxX + out : maxX + out - 1;
+      const y1 = (maxY + out - y0) % 2 === 0 ? maxY + out : maxY + out - 1;
+      const all: Cell[] = [];
+      for (let x = x0; x < x1; x += 2) all.push({ x, y: y0 });
+      for (let y = y0; y < y1; y += 2) all.push({ x: x1, y });
+      for (let x = x1; x > x0; x -= 2) all.push({ x, y: y1 });
+      for (let y = y1; y > y0; y -= 2) all.push({ x: x0, y });
+      const every = this.style.climaxBulbEvery;
+      for (let k = 0; k < all.length; k += every) studs.push(all[k]!);
+    }
+    this.ring = { terrain: state.terrain, studs };
+    return studs;
   }
 
   /**

@@ -14,7 +14,8 @@ import { bloomWanted, motionReduced } from '../motion.js';
 import { timerSpot, type TimerSpot } from '../timerSpot.js';
 import { bannerProgress } from '../transition.js';
 
-import { cornerSpot } from './corner.js';
+import { climaxLevel, cornerSpot, hurry } from './corner.js';
+import { hash } from './noise.js';
 
 import { IslandParts } from './islandParts.js';
 import { CyberpunkSeaLife } from './seaLife.js';
@@ -319,6 +320,19 @@ export class CyberpunkTheme implements Theme {
   private readonly winnerBanners = new WinnerBanners(FINISH);
   private readonly flags = new FlagHoist();
   private clock = 0;
+  /**
+   * The climax's level this frame (`climaxLevel`), and the clocks it hurries: the pulses'
+   * and the adverts', each advanced by the frame's time at its own speed, so they run
+   * faster from where they are rather than jumping as the level changes.
+   */
+  private climax = 0;
+  private pulseClock = 0;
+  private adClock = 0;
+  /**
+   * The billboard's cube, turned on likewise: quicker when the corner hurries (`hurry`) —
+   * through the climax and in every phase's last seconds, as other styles' pieces do.
+   */
+  private cubeTurn = 0;
   /** Rain over the city, in tile coordinates, across the area drawn. */
   private rain: { x: number; y: number; speed: number }[] = [];
   private drawn = { x0: 0, y0: 0, x1: 0, y1: 0 };
@@ -732,7 +746,10 @@ export class CyberpunkTheme implements Theme {
     return passes;
   }
 
-  /** The adverts flicker on their own beats, out now and then for a moment, as cheap signs do. */
+  /**
+   * The adverts flicker on their own beats, out now and then for a moment, as cheap signs do;
+   * at the climax faster and stuttering, by their alpha alone, since they are drawn once.
+   */
   private flickerAds(): void {
     const still = motionReduced();
     this.ads.children.forEach((ad, k) => {
@@ -740,9 +757,13 @@ export class CyberpunkTheme implements Theme {
         ad.alpha = 0.8;
         return;
       }
-      const beat = this.clock / (170 + 60 * k) + k * 4.1;
-      const out = Math.sin(beat) > 0.93 || Math.sin(beat * 0.37 + 1) > 0.97;
-      ad.alpha = out ? 0.15 : 0.75 + 0.15 * Math.sin(this.clock / 300 + k);
+      const beat = this.adClock / (170 + 60 * k) + k * 4.1;
+      // At the climax they stutter too: out for a moment in some slots of 70 ms, more of
+      // them the higher the level.
+      const stutter =
+        this.climax > 0 && hash(Math.floor(this.clock / 70), k, 9201) < 0.3 * this.climax;
+      const out = stutter || Math.sin(beat) > 0.93 || Math.sin(beat * 0.37 + 1) > 0.97;
+      ad.alpha = out ? 0.15 : 0.75 + 0.15 * Math.sin(this.adClock / 300 + k);
     });
   }
 
@@ -866,7 +887,8 @@ export class CyberpunkTheme implements Theme {
 
   /**
    * Thin rain over the city, falling fast and nearly straight, faint in the sea's neon so
-   * it reads as weather and never as a shot. None when motion is reduced.
+   * it reads as weather and never as a shot. None when motion is reduced; thicker at the
+   * climax.
    */
   private drawRain(view: ViewTransform, deltaMs: number): void {
     if (motionReduced()) {
@@ -874,7 +896,11 @@ export class CyberpunkTheme implements Theme {
       return;
     }
     const { x0, y0, x1, y1 } = this.drawn;
-    const wanted = Math.round(((x1 - x0) * (y1 - y0) * this.style.rainPerThousandTiles) / 1000);
+    // Thicker at the climax, and thinned again after it.
+    const per =
+      this.style.rainPerThousandTiles * (1 + (this.style.climaxRainFactor - 1) * this.climax);
+    const wanted = Math.round(((x1 - x0) * (y1 - y0) * per) / 1000);
+    if (this.rain.length > wanted) this.rain.length = wanted;
     while (this.rain.length < wanted) {
       this.rain.push({
         x: x0 + Math.random() * (x1 - x0),
@@ -1430,6 +1456,12 @@ export class CyberpunkTheme implements Theme {
     clearDrawn(this.lateGfx);
     this.seaLife.draw(g, view, this.art, frame.deltaMs, glow);
     this.clock += frame.deltaMs;
+    const level = climaxLevel(state, this.art);
+    this.climax = level;
+    this.pulseClock += frame.deltaMs * (1 + (this.style.climaxPulseSpeedup - 1) * level);
+    this.adClock += frame.deltaMs * (1 + (this.style.climaxAdSpeedup - 1) * level);
+    const quicker = 1 + (this.style.hurriedBillboardTurn - 1) * hurry(state, this.art);
+    this.cubeTurn = (this.cubeTurn + (frame.deltaMs * quicker) / this.style.billboardTurnMs) % 1;
 
     this.flickerAds();
     this.drawPulses(view);
@@ -1461,6 +1493,7 @@ export class CyberpunkTheme implements Theme {
     this.drawSparks(view, frame.deltaMs);
     if (this.billboard !== null) this.drawBillboard(state, view, this.billboard);
     this.drawPhaseGlitch(state, view, frame);
+    this.drawEdgeTears(view);
     this.winnerBanners.draw(this.lateGfx, view, state, this.art, frame.celebrate, frame.deltaMs);
     this.fireworks.draw(this.lateGfx, view, this.art, frame.celebrate, frame.deltaMs);
   }
@@ -1479,7 +1512,6 @@ export class CyberpunkTheme implements Theme {
     if (this.glitchAge >= span) return;
     this.glitchAge += frame.deltaMs;
     if (motionReduced()) return;
-    const core = this.effectCore;
     const t = view.tile;
     const fade = Math.max(0, 1 - this.glitchAge / span);
     const jump = Math.floor(this.glitchAge / 45);
@@ -1487,36 +1519,78 @@ export class CyberpunkTheme implements Theme {
       const v = Math.sin((jump + 1) * 12.9898 + k * 78.233) * 43758.5453;
       return v - Math.floor(v);
     };
-    const split = Math.max(2, this.style.splitPx * 2);
-    const magenta = hex(this.art.palette.emberMid);
-    const cyan = hex(this.art.palette.waterFoam);
-    const white = hex(this.art.palette.uiInk);
     const y0 = view.top + (view.height - view.top) * (0.15 + 0.7 * r(0));
     for (let k = 0; k < 6; k++) {
       const y = y0 + (k - 2.5) * t * 0.5 + r(k + 1) * t * 0.3;
       const h = Math.max(2, t * (0.1 + 0.3 * r(k + 7)));
       const w = view.width * (0.25 + 0.6 * r(k + 13));
       const x = (view.width - w) * r(k + 19);
-      // The two colours apart across the slice as well as along it, so each edge shows one.
-      core.rect(x - split, y - split / 2, w, h);
-      core.fill({ color: magenta, alpha: 0.35 * fade });
-      core.rect(x + split, y + split / 2, w, h);
-      core.fill({ color: cyan, alpha: 0.35 * fade });
-      core.rect(x, y + h / 2, w, 1);
-      core.fill({ color: white, alpha: 0.5 * fade });
+      this.glitchSlice(x, y, w, h, fade);
     }
   }
 
-  /** A pulse running along each trace and off its end, then round again. */
+  /**
+   * One slice of glitch: magenta and cyan split either side of a white line, into
+   * `effectCore`, never bloomed. The two colours apart across the slice as well as along
+   * it, so each edge shows one.
+   */
+  private glitchSlice(x: number, y: number, w: number, h: number, fade: number): void {
+    const core = this.effectCore;
+    const split = Math.max(2, this.style.splitPx * 2);
+    core.rect(x - split, y - split / 2, w, h);
+    core.fill({ color: hex(this.art.palette.emberMid), alpha: 0.35 * fade });
+    core.rect(x + split, y + split / 2, w, h);
+    core.fill({ color: hex(this.art.palette.waterFoam), alpha: 0.35 * fade });
+    core.rect(x, y + h / 2, w, 1);
+    core.fill({ color: hex(this.art.palette.uiInk), alpha: 0.5 * fade });
+  }
+
+  /**
+   * At the climax, now and then a few of the phase glitch's slices tear in from a screen
+   * edge, left or right, and reach no more than a sixth across, so the board in the middle
+   * is never covered. One chance in each slot of `climaxTearEveryMs`, taken with the level's
+   * odds and placed by the slot's hash, so nothing needs keeping. None with motion reduced.
+   */
+  private drawEdgeTears(view: ViewTransform): void {
+    if (this.climax === 0 || motionReduced()) return;
+    const every = this.style.climaxTearEveryMs;
+    const span = this.style.climaxTearMs;
+    const n = Math.floor(this.clock / every);
+    const age = this.clock - n * every;
+    if (age > span || hash(n, this.seed, 9210) >= this.climax) return;
+    const t = view.tile;
+    const fade = this.climax * (1 - age / span);
+    const left = hash(n, this.seed, 9211) < 0.5;
+    const y0 = view.top + (view.height - view.top) * (0.1 + 0.8 * hash(n, this.seed, 9212));
+    // The slices jump every 40 ms, as the phase glitch's do.
+    const jump = Math.floor(age / 40);
+    for (let k = 0; k < 3; k++) {
+      const r = (salt: number): number => hash(n * 8 + jump, k, 9220 + salt);
+      const y = y0 + (k - 1) * t * 0.45 + r(0) * t * 0.25;
+      const h = Math.max(2, t * (0.1 + 0.25 * r(1)));
+      const w = view.width * (0.05 + 0.11 * r(2));
+      this.glitchSlice(left ? 0 : view.width - w, y, w, h, fade);
+    }
+  }
+
+  /**
+   * A pulse running along each trace and off its end, then round again. At the climax they
+   * race (`pulseClock`, up to `climaxPulseSpeedup` times as fast) and turn from cyan toward
+   * magenta: the circuit overloading.
+   */
   private drawPulses(view: ViewTransform): void {
     const glow = this.effectGlow;
-    const colour = hex(this.art.palette.waterFoam);
+    const colour = mixed(
+      hex(this.art.palette.waterFoam),
+      hex(this.art.palette.emberMid),
+      0.8 * this.climax,
+    );
     const speed = this.style.pulseTilesPerSecond;
     const size = Math.max(1.5, view.tile * 0.14);
     for (const trace of this.traces) {
       // Half the time on the trace, half off it, so the sea is not lit all at once.
       const cycle = trace.length * 2;
-      const at = ((this.clock / 1000) * speed + trace.phase * cycle) % cycle;
+      const at = ((this.pulseClock / 1000) * speed + trace.phase * cycle) % cycle;
       if (at > trace.length) continue;
       const head = along(trace, at);
       const tail = along(trace, Math.max(0, at - 1.2));
@@ -2066,7 +2140,8 @@ export class CyberpunkTheme implements Theme {
 
     const mx = px + panel.w / 2;
     const my = panel.y + panel.h / 2;
-    const overtime = state.phase === 'build' && state.overtime;
+    // In overtime and once the climax is well in, a warning flashing in the cube's place.
+    const overtime = (state.phase === 'build' && state.overtime) || this.climax >= 0.5;
     if (overtime) {
       // A warning, flashing: a triangle with its mark.
       if (still || Math.floor(this.clock / 250) % 2 === 0) {
@@ -2080,7 +2155,7 @@ export class CyberpunkTheme implements Theme {
       return;
     }
     // The emblem: a cube turning about its upright, tipped toward the viewer.
-    const turn = (still ? 0 : (this.clock / this.style.billboardTurnMs) * Math.PI * 2) + 0.6;
+    const turn = (still ? 0 : this.cubeTurn * Math.PI * 2) + 0.6;
     // Tipped well over and a little round, so it never stands face on and reads as an 8.
     const tip = 0.62;
     const r = panel.h * 0.27;

@@ -6,7 +6,7 @@ import { t as t_ } from '../i18n.js';
 import { motionReduced } from '../motion.js';
 import type { TimerSpot } from '../timerSpot.js';
 
-import { cornerSpot } from './corner.js';
+import { climaxLevel, cornerSpot } from './corner.js';
 import { IslandParts } from './islandParts.js';
 import { TitleBlock, titleBlockRect } from './titleBlock.js';
 import { loops, rounded } from './inkline.js';
@@ -152,6 +152,12 @@ export class BlueprintTheme implements Theme {
   private readonly structures = new IslandParts();
   private readonly effectGfx = new Graphics();
   /**
+   * The rush job's dimension lines round the board (`drawRush`), redrawn only as they run
+   * out: still once the climax is wholly in, they would be a few hundred segments for nothing.
+   */
+  private readonly rushGfx = new Graphics();
+  private rushKey = '';
+  /**
    * Sealed keeps' walls filled in, over `effectGfx`, redrawn only as a keep is sealed or
    * breached; and the drafting compass over them, as it was drawn after them.
    */
@@ -219,6 +225,7 @@ export class BlueprintTheme implements Theme {
     layers.effects.addChild(
       this.seaLife.course,
       this.effectGfx,
+      this.rushGfx,
       this.keepGfx,
       this.compassGfx,
       this.gunMemo.container,
@@ -254,7 +261,7 @@ export class BlueprintTheme implements Theme {
     this.scenery.destroy();
     this.seaLife.course.destroy();
     release(this.terrainStrips.container);
-    for (const g of [this.effectGfx, this.overlayGfx]) {
+    for (const g of [this.effectGfx, this.rushGfx, this.overlayGfx]) {
       g.destroy();
     }
     for (const tag of this.tags) tag.destroy();
@@ -866,10 +873,20 @@ export class BlueprintTheme implements Theme {
     clearDrawn(this.topGfx);
     this.seaLife.draw(g, view, this.art, frame.deltaMs);
     this.clock += frame.deltaMs;
+    const rush = climaxLevel(state, this.art);
     this.titleBlock.container.visible = this.corner !== null;
     if (this.corner !== null) {
-      this.titleBlock.draw(state, view, this.corner, this.art, frame.deltaMs, motionReduced());
+      this.titleBlock.draw(
+        state,
+        view,
+        this.corner,
+        this.art,
+        frame.deltaMs,
+        motionReduced(),
+        rush,
+      );
     }
+    this.drawRush(state, view, rush);
     drawDrain(g, view, frame.drain, this.art);
     drawSealGlow(g, view, frame.sealGlow, this.art);
     this.landings.draw(g, view, this.art, frame.deltaMs);
@@ -886,6 +903,211 @@ export class BlueprintTheme implements Theme {
     this.drawFades(view, frame.deltaMs);
     this.winnerBanners.draw(this.topGfx, view, state, this.art, frame.celebrate, frame.deltaMs);
     this.fireworks.draw(this.topGfx, view, this.art, frame.celebrate, frame.deltaMs);
+  }
+
+  /**
+   * The rush job — the climax (`climaxLevel`): the drawing hurried to the deadline. Red-pencil
+   * dimension lines run out along the board's four sides in the margin, ticked as a measuring
+   * tape is, their arrowheads at the tips; a T-square slides along the widest margin; and the
+   * title block is stamped RUSH (`TitleBlock`). Only in the margin, so nothing on an island is
+   * hidden, and thin lines in the paper's red — the FINAL stamp's — never a player's ink. A
+   * side with no room clear of the HUD bar and the window's edge is left out.
+   */
+  private drawRush(state: MatchState, view: ViewTransform, level: number): void {
+    const g = this.rushGfx;
+    if (level === 0) {
+      if (this.rushKey !== '') {
+        this.rushKey = '';
+        clearDrawn(g);
+      }
+      return;
+    }
+    const t = view.tile;
+    const { rushOffsetTiles, rushTickTiles, rushAlpha, rushSquareTiles, rushSquareMs } = this.style;
+    const left = tileX(view, 0);
+    const right = tileX(view, state.width);
+    const top = tileY(view, 0);
+    const bottom = tileY(view, state.height);
+    const d = rushOffsetTiles * t;
+    // Rows or columns of open sea along an edge, up to two, from the edge inward.
+    const land = (x: number, y: number): boolean =>
+      state.terrain[y * state.width + x] === Terrain.Land;
+    const open = (lines: number, each: number, at: (k: number, i: number) => boolean): number => {
+      let k = 0;
+      while (k < Math.min(2, lines)) {
+        for (let i = 0; i < each; i++) if (at(k, i)) return k;
+        k++;
+      }
+      return k;
+    };
+    const { width: bw, height: bh } = state;
+    // Each side clockwise from its first corner, the board's edge, the way out of it, the room
+    // beyond it to the HUD bar or the window's edge, and the open sea inside it.
+    const side = (
+      ax: number,
+      ay: number,
+      bx: number,
+      by: number,
+      nx: number,
+      ny: number,
+      room: number,
+      sea: number,
+    ) => ({ ax, ay, bx, by, nx, ny, room, sea });
+    const sides = [
+      side(
+        left,
+        top,
+        right,
+        top,
+        0,
+        -1,
+        top - view.top,
+        open(bh, bw, (k, i) => land(i, k)),
+      ),
+      side(
+        right,
+        top,
+        right,
+        bottom,
+        1,
+        0,
+        view.width - right,
+        open(bw, bh, (k, i) => land(bw - 1 - k, i)),
+      ),
+      side(
+        right,
+        bottom,
+        left,
+        bottom,
+        0,
+        1,
+        view.height - bottom,
+        open(bh, bw, (k, i) => land(i, bh - 1 - k)),
+      ),
+      side(
+        left,
+        bottom,
+        left,
+        top,
+        -1,
+        0,
+        left,
+        open(bw, bh, (k, i) => land(k, i)),
+      ),
+    ]
+      // Outside the board where the margin has room; where the HUD bar or the window's edge
+      // crowds it, half a tile inside, over the board's own open sea — squeezed between the
+      // board and the bar it hugged the bar's rule — or, with no open sea there, left out.
+      .map((s) => ({ ...s, d: s.room >= d + t * 0.4 ? d : s.sea > 0 ? -t * 0.5 : null }))
+      .filter((s): s is typeof s & { d: number } => s.d !== null);
+    const red = hex(this.art.palette.uiInvalid);
+
+    const key = `${viewKey(view)},${state.width},${state.height},${level},${red}`;
+    if (key !== this.rushKey) {
+      this.rushKey = key;
+      clearDrawn(g);
+      const tick = t * 0.16;
+      const head = t * 0.45;
+      for (const { ax, ay, bx, by, nx, ny, d, sea } of sides) {
+        const length = Math.hypot(bx - ax, by - ay);
+        const ux = (bx - ax) / length;
+        const uy = (by - ay) / length;
+        // The tape runs out from the side's first corner as the climax comes in.
+        const run = length * level;
+        const sx = ax + nx * d;
+        const sy = ay + ny * d;
+        const ex = sx + ux * run;
+        const ey = sy + uy * run;
+        g.moveTo(sx, sy).lineTo(ex, ey);
+        // Extension lines from just off the board's edge to past the dimension line.
+        const from = Math.max(d - t * 0.75, sea > 0 ? t * (0.2 - sea) : t * 0.25);
+        const extend = (px: number, py: number): void => {
+          g.moveTo(px + nx * from, py + ny * from);
+          g.lineTo(px + nx * (d + t * 0.3), py + ny * (d + t * 0.3));
+        };
+        extend(ax, ay);
+        if (level >= 1) extend(bx, by);
+        // Ticks every so many tiles, longer at the drafting grid's heavy lines.
+        const every = rushTickTiles * t;
+        for (let k = 1; k * every < run - head; k++) {
+          const major = (k * rushTickTiles) % this.style.gridMajorEvery === 0;
+          const h = major ? tick * 2 : tick;
+          const px = sx + ux * k * every;
+          const py = sy + uy * k * every;
+          g.moveTo(px + nx * h, py + ny * h).lineTo(px - nx * h * 0.4, py - ny * h * 0.4);
+        }
+        g.stroke({ width: Math.max(1, t * 0.07), color: red, alpha: rushAlpha * level });
+        // The arrowheads: one at the corner it starts from, one at the tip running out.
+        const arrow = (px: number, py: number, dx: number, dy: number): void => {
+          g.poly([
+            px,
+            py,
+            px - dx * head + -dy * head * 0.35,
+            py - dy * head + dx * head * 0.35,
+            px - dx * head - -dy * head * 0.35,
+            py - dy * head - dx * head * 0.35,
+          ]);
+        };
+        if (run > head * 2) {
+          arrow(sx, sy, -ux, -uy);
+          arrow(ex, ey, ux, uy);
+          g.fill({ color: red, alpha: rushAlpha * level });
+        }
+      }
+    }
+
+    // The T-square, along the widest margin, beyond the dimension line: its blade along the
+    // side, its head across it at the near end. Still at the side's middle with motion reduced.
+    const widest = sides.reduce<(typeof sides)[number] | null>(
+      (best, side) => (best === null || side.room > best.room ? side : best),
+      null,
+    );
+    const blade = rushSquareTiles * t;
+    const across = t * 2.2;
+    if (widest === null || widest.room < widest.d + t * 0.6 + across + t * 0.3) return;
+    const { ax, ay, bx, by, nx, ny } = widest;
+    const length = Math.hypot(bx - ax, by - ay);
+    if (length < blade + t) return;
+    const ux = (bx - ax) / length;
+    const uy = (by - ay) / length;
+    // There and back, easing at each end as a hand does.
+    const lap = motionReduced() ? 0.5 : (this.clock / rushSquareMs) % 1;
+    const swing = lap < 0.5 ? lap * 2 : 2 - lap * 2;
+    const along = (length - blade) * (0.5 - 0.5 * Math.cos(Math.PI * swing));
+    const off = widest.d + t * 0.6 + across / 2;
+    const ox = ax + ux * along + nx * off;
+    const oy = ay + uy * along + ny * off;
+    const w = t * 0.4;
+    const fx = this.effectGfx;
+    const corners = (x0: number, y0: number, l: number, h: number, vx: number, vy: number) => {
+      // A rectangle from (x0, y0), l along (vx, vy) and h either side across it.
+      const cx = -vy;
+      const cy = vx;
+      return [
+        x0 + cx * h,
+        y0 + cy * h,
+        x0 + vx * l + cx * h,
+        y0 + vy * l + cy * h,
+        x0 + vx * l - cx * h,
+        y0 + vy * l - cy * h,
+        x0 - cx * h,
+        y0 - cy * h,
+      ];
+    };
+    const ink = hex(this.art.palette.uiInk);
+    fx.poly(corners(ox, oy, blade, w / 2, ux, uy));
+    fx.poly(corners(ox - (nx * across) / 2, oy - (ny * across) / 2, across, w * 0.7, nx, ny));
+    fx.fill({ color: hex(this.art.palette.rockLight), alpha: 0.24 * level });
+    fx.poly(corners(ox, oy, blade, w / 2, ux, uy));
+    fx.poly(corners(ox - (nx * across) / 2, oy - (ny * across) / 2, across, w * 0.7, nx, ny));
+    // Its graduations along the blade's inner edge, every half tile.
+    for (let k = 1; k * t * 0.5 < blade; k++) {
+      const px = ox + ux * k * t * 0.5 - nx * (w / 2);
+      const py = oy + uy * k * t * 0.5 - ny * (w / 2);
+      const h = k % 2 === 0 ? w * 0.5 : w * 0.28;
+      fx.moveTo(px, py).lineTo(px + nx * h, py + ny * h);
+    }
+    fx.stroke({ width: Math.max(1, t * 0.08), color: ink, alpha: 0.9 * level });
   }
 
   /** A sealed keep's walls are filled in solid, as a plan fills what is built. */

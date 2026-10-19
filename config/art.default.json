@@ -1297,6 +1297,7 @@
     "hovercraftEveryMs": 15000,
     "hovercraftTilesPerSecond": 1.6,
     "billboardTurnMs": 7000,
+    "hurriedBillboardTurn": 3,
     "floorHexTiles": 0.4,
     "floorAlpha": 0.4,
     "floorEdgeAlpha": 0.75,
@@ -1304,7 +1305,12 @@
     "cityClearTiles": 4,
     "holoAds": 2,
     "mastBlinkMs": 1400,
-    "phaseGlitchMs": 140
+    "phaseGlitchMs": 140,
+    "climaxPulseSpeedup": 3,
+    "climaxAdSpeedup": 3,
+    "climaxRainFactor": 2.5,
+    "climaxTearEveryMs": 320,
+    "climaxTearMs": 120
   },
   "blueprint": {
     "lineWidthPx": 2,
@@ -1317,7 +1323,12 @@
     "shipTilesPerSecond": 0.45,
     "landContourTiles": [2, 4],
     "tagMinTilePx": 16,
-    "compassMs": 1400
+    "compassMs": 1400,
+    "rushOffsetTiles": 1,
+    "rushTickTiles": 1,
+    "rushAlpha": 0.85,
+    "rushSquareTiles": 8,
+    "rushSquareMs": 9000
   },
   "night": {
     "torchPoolTiles": 4.4,
@@ -1330,7 +1341,14 @@
     "breachGlowAlpha": 0.18,
     "braziersPerIsland": 3,
     "brazierGlowAlpha": 0.2,
-    "beamAlpha": 0.7
+    "beamAlpha": 0.7,
+    "bloodMoonColour": "#ff7a4a",
+    "climaxBeamSpeed": 2,
+    "climaxBeamBrighter": 1.4,
+    "climaxTorchTaller": 1.7,
+    "climaxLanternFlare": 0.5,
+    "climaxFireflies": 2.5,
+    "hurriedLanternSwing": 2
   },
   "pixel": {
     "glintsPerTileSecond": 0.012,
@@ -1370,7 +1388,11 @@
     "sheepTilesPerSecond": 0.3,
     "chimneySmokeMs": 3400,
     "masons": 8,
-    "masonMs": 1700
+    "masonMs": 1700,
+    "beacons": 12,
+    "beaconCatchMs": 260,
+    "windmillClimaxTurnMs": 1500,
+    "climaxWind": 4
   },
   "scenery": {
     "clustersPerHundredTiles": 1.8,
@@ -1406,7 +1428,13 @@
       "Terra Incognita",
       "Insula Serena"
     ],
-    "nameAlpha": 0.42
+    "nameAlpha": 0.42,
+    "windHeadTiles": 4,
+    "galeStrokesPerHead": 6,
+    "galeMs": 2800,
+    "galeAlpha": 0.7,
+    "needleSwingRadians": 2.4,
+    "climaxSerpentEveryMs": 7000
   },
   "bricks": {
     "studScale": 0.34,
@@ -1428,7 +1456,13 @@
     "printedTileOdds": 0.06,
     "gulls": 2,
     "studPopMs": 900,
-    "studPops": 10
+    "studPops": 10,
+    "climaxRingTiles": 2,
+    "climaxBulbEvery": 2,
+    "climaxChaseMs": 150,
+    "climaxBulbColour": "#ffeeb0",
+    "climaxCraneSpeed": 3,
+    "climaxHookSpeed": 4
   },
   "effects": {
     "sealFloodTilesPerSecond": 16,
@@ -1498,6 +1532,13 @@
     "lightWidth": 0.22,
     "shimmerOneIn": 9,
     "shimmerAlpha": 0.12,
+    "climaxLightAlpha": 0.13,
+    "climaxLightSpeed": 2.5,
+    "climaxLightWarmth": 0.6,
+    "climaxShimmerOneIn": 3,
+    "climaxShimmerBeat": 2.5,
+    "climaxRoseGlow": 2,
+    "climaxSandWidth": 2.4,
     "textureAlpha": 0.42,
     "paintAlpha": 0.24
   },

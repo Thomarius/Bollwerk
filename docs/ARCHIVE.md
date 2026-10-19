@@ -9366,3 +9366,44 @@ cost 2 / cost 3 against no tower and 3 against 2: 4.5 / 5.5 gave **94 / 97** and
 and 48**, kept — 13 and 21 tiles, both 5 across, the old balance's shares again. The cap of three
 towers of any kind and both costs stay (the user's). The tower menu tells its crater by its tiles
 (13 and 21), not blocks across, which is 5 for both costs (the user's).
+
+## 14i. A climax for every style but Minimal (2026-10-19)
+
+PLAN 11 item 5, the user's: the seven looks with no climax of their own each got one, designed
+with the user first and approved together. Each follows the twelve before it (14g): it returns at
+once at `climaxLevel` 0, so it costs nothing outside the climax; it is scaled by the level, so it
+eases in; anything that speeds up carries its phase from frame to frame rather than reading the
+clock over a shrinking period, which jumps; its tunables are keys in the style's art config.
+No new filter or bloomed layer anywhere — Cyberpunk's four blurs already cost 1.8 ms (12r).
+
+- **Medieval, the beacons are lit**: fires catch one after another, going round, on rock stacks
+  in the outer ocean round the board (laid out with the terrain), in the pixel style's own flame,
+  ember and smoke sprites — more smoke in rain, the glow wider through fog; the windmill races and
+  the clouds hurry.
+- **Night, the blood moon**: the moon's path turns amber-red, the beams turn twice as fast and
+  brighter (the wedge laid again, fainter, since a stamp's alpha stops at 1), the torches flare
+  taller, the fireflies thicken; the boat's lantern flare, the final round's alone before, comes
+  with the climax.
+- **Cyberpunk, system overload**: the sea's circuit pulses race and turn magenta, the adverts
+  stutter, the rain thickens, the phase glitch's slices tear at the screen's edges (in
+  `effectCore`, never bloomed), and the billboard's warning comes with the climax.
+- **Blueprint, rush job**: red dimension lines run out round the board's sides (kept, so drawn
+  again only while the level changes), a T-square slides along the margin, and the title block is
+  stamped RUSH (`plan.rush`, EILT in German) — FINAL still in the final round.
+- **Parchment, fair winds turn foul**: three wind heads in their clouds — the fourth corner is the
+  rose's — blow curling gale strokes over the sea, never over land, where one could pass for a
+  shot's course; a needle swings over the rose; the sea serpent surfaces more often.
+- **Toy bricks, light-up bricks**: the sea plate's studs in a ring round the islands light up as
+  a marquee's chase, yellow-white, one stamp; the crane hurries and its hazard light strobes.
+- **Stained glass, the sun breaks through**: two more shafts of the same texture, hidden outside
+  the climax — three at most, each a screen of fill rate — warmer and sweeping quicker; many more
+  panes shimmer, laid once into groups of their own; the roses glow brighter; the hourglass's
+  sand runs thicker, sparks falling down it.
+
+**And their corner pieces hurry as the others' do** (the user's): `hurry` in `corner.ts` is the
+climax's level, or 1 eased in whenever the clock presses (`pressing`) — the cannon phase's and
+combat's last seconds too. The windmill, the boat's lantern, the billboard's cube, the crane, the
+hourglass's thread and the rose's needle follow it; the rest keeps to the climax. Blueprint's
+title block has nothing to hurry. Checked in final-round screenshots (`final-pixel` …
+`final-glass` in `tools/screenshots.sh`, 8 s each, the jump to round 10 being slow); not yet
+watched in play nor measured with `&perf=1`.
