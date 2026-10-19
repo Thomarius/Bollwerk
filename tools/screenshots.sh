@@ -122,6 +122,14 @@ SCENES=(
   "eight-noir|$BASE/?autostart=1&players=8&seed=3&snapshot=combat&round=3&style=noir|3500"
   "final-noir|$BASE/?autostart=1&players=3&seed=5&snapshot=combat&round=10&style=noir|4000"
   "menu-noir|$BASE/?buildStyle=flat&combatStyle=noir|4000"
+  # Sports (docs/SPORTS_STYLE.md): the sportsmen, the trophies, the stands; its banner's
+  # "Kick-off!" under the call, a watched match caught as the banner crosses.
+  "build-sports|$GAME&snapshot=build&round=3&style=sports|2500"
+  "combat-sports|$BASE/?autostart=1&players=2&seed=5&snapshot=combat&round=3&style=sports|4200"
+  "eight-sports|$BASE/?autostart=1&players=8&seed=3&snapshot=combat&round=3&style=sports|3500"
+  "final-sports|$BASE/?autostart=1&players=3&seed=5&snapshot=combat&round=10&style=sports|4000"
+  "banner-sports|$WATCH&snapshot=cannon_place&round=2&style=sports|5000"
+  "menu-sports|$BASE/?buildStyle=flat&combatStyle=sports|4000"
   "eight-night|$BASE/?autostart=1&players=8&seed=3&snapshot=combat&round=3&style=night|3000"
   "standings|$GAME&snapshot=build&round=2&style=flat|25500"
   "final-round|$GAME&snapshot=cannon_place&round=9&style=flat|27500"

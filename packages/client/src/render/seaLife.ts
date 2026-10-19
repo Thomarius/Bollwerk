@@ -2092,3 +2092,52 @@ export class NoirSeaLife extends OceanDrawn {
     }
   }
 }
+
+/**
+ * Sports: now and then a blimp drifts over the outer stands, silver-grey, an amber band of
+ * lights along its side, its fins at the back and a gondola slung under it, its shadow on the
+ * crowd below.
+ */
+export class SportsSeaLife extends OceanDrawn {
+  private readonly blimps = new Crossings();
+
+  override layout(state: MatchState, view: ViewTransform, art: ArtConfig): void {
+    super.layout(state, view, art);
+    this.blimps.layout(this.ocean, art.sports.blimpEveryMs);
+  }
+
+  protected frame(g: Graphics, view: ViewTransform, art: ArtConfig, deltaMs: number): void {
+    const { blimpEveryMs, blimpTilesPerSecond } = art.sports;
+    const t = view.tile;
+    const ink = Math.max(1, t * 0.05);
+    this.blimps.step(this.ocean, deltaMs, blimpEveryMs, blimpTilesPerSecond, 1);
+    for (const b of this.blimps.items) {
+      if (this.behind(b.x, b.y)) continue;
+      const d = b.dir;
+      const x = tileX(view, b.x);
+      const y = tileY(view, b.y) + Math.sin(this.clock / 1300 + b.y) * t * 0.06;
+      g.ellipse(x - d * t * 0.3, y + t * 0.9, t * 1.2, t * 0.22);
+      g.fill({ color: 0x000000, alpha: 0.18 });
+      // The fins, then the envelope over them.
+      g.poly([x - d * t * 0.9, y, x - d * t * 1.45, y - t * 0.42, x - d * t * 1.3, y]);
+      g.poly([x - d * t * 0.9, y, x - d * t * 1.45, y + t * 0.42, x - d * t * 1.3, y]);
+      g.fill({ color: 0x8a8c92 });
+      g.stroke({ width: ink, color: 0x1c1d22, join: 'round' });
+      g.ellipse(x, y, t * 1.3, t * 0.45);
+      g.fill({ color: 0xd8dade });
+      g.stroke({ width: ink, color: 0x1c1d22 });
+      g.ellipse(x - t * 0.1, y - t * 0.2, t * 0.8, t * 0.1);
+      g.fill({ color: 0xffffff, alpha: 0.5 });
+      g.rect(x - t * 0.75, y - t * 0.06, t * 1.5, t * 0.14);
+      g.fill({ color: 0x1c1d22 });
+      for (let k = 0; k < 7; k++) {
+        const on = Math.floor(this.clock / 180 + k) % 3 !== 0;
+        g.rect(x - t * 0.68 + k * t * 0.2, y - t * 0.03, t * 0.12, t * 0.08);
+        g.fill({ color: 0xf2c230, alpha: on ? 1 : 0.35 });
+      }
+      g.roundRect(x - t * 0.22, y + t * 0.42, t * 0.44, t * 0.16, t * 0.05);
+      g.fill({ color: 0x55575c });
+      g.stroke({ width: ink, color: 0x1c1d22 });
+    }
+  }
+}

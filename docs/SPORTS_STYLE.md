@@ -10,6 +10,47 @@ pastels.
 
 ---
 
+## 0. Decided (2026-10-19, with the user)
+
+What follows below is the first idea; where it disagrees, this section holds.
+
+- **The pool, ten**: Soccer, Basketball, Tennis, Baseball, American football, Golf, Volleyball,
+  Badminton (the shuttlecock), Ice hockey (the puck), and Handball — chosen over Curling from
+  the first sketch, whose stone read worst of all at 12–16 pixels. Water polo out: it needs
+  water where the guns stand on land.
+- **Random per gun**, from the seed and the cannon's id: a mix of sports on every island.
+- **Pictograms in the owner's jersey**: head, limbs and equipment in ink, the torso drawn white
+  and the stamp tinted the owner's colour; the ball a stamp of its own, untinted, in its own
+  colours. So the shapes are sports × poses, whatever the number of players, and the ball is
+  removed by not placing it.
+- **Poses**: **ready is the moment before the strike, the ball apart from the figure** (the
+  user's, from the first sketch: a ball in hand merged with its figure) — tossed above the
+  server, falling before the badminton smash, before the volleyball spike in the air, on the
+  ground ahead of the kicker, the golfer and the slapshot, cocked behind the thrower's head; the
+  release meets the ball where ready shows it. A subtle idle (the figure breathing, the ball
+  doing its sport's small motion — placed stamps moved, no shape redrawn), phased by cannon id;
+  reloading is **the
+  same idle without the ball**, tried first, before any pose of its own; firing is a release and
+  a follow-through, no wind-up, since the shot exists from its tick; inert, **sat on a bench,
+  the ball beside it** while it has one. Reduced motion stands each still.
+- **The ball leaves from the ball**: drawn at the simulated path plus the offset from the
+  gun's centre to the hand or foot, mirrored with the figure and shrinking to nothing by the
+  landing, so it starts in the figure and lands on its target; the shadow from the feet. The
+  sim's `fromX` is untouched. In flight the shuttlecock and the football turn along their
+  velocity, cork and nose first; the puck flies flat; the round balls spin.
+- **The gun's base**: the chalk outline alone, no wash of the owner's colour, which muddied the
+  turf (red read olive).
+- **Horizontal mirroring only**, to face the target, as Cartoon's guns; never turned.
+- **Towers**: no animation of their own. A Rapid Cannon's figure is simply ready again while it
+  has a barrel loaded (`isLoaded`). The emblem badge stays. Bigger shots for the Berthas are for
+  every style, not this one's (PLAN §11).
+- **The cannon icon**: one sport, ready; a sport drawn afresh each round if cheap — the same
+  for every gun of that round.
+- **Castles**: trophies, not goals, since the sports are mixed. **Walls** simple to read:
+  advertising boards are likely too busy. **The stands** must be quick to draw.
+
+---
+
 ## 1. Why Sports
 
 - **The game already speaks it**: a score, overtime as extra time, the final round as the final

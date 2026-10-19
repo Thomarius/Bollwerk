@@ -21,6 +21,7 @@ import { ElectricTheme } from './electric.js';
 import { CartoonTheme } from './cartoon.js';
 import { ChristmasTheme } from './christmas.js';
 import { NoirTheme } from './noir.js';
+import { SportsTheme } from './sports.js';
 import { OperaTheme } from './opera.js';
 import { release } from './release.js';
 import { SakuraTheme } from './sakura.js';
@@ -88,6 +89,8 @@ export function createTheme(style: ArtStyle, seed = 1): Theme {
       return new ChristmasTheme(seed);
     case 'noir':
       return new NoirTheme(seed);
+    case 'sports':
+      return new SportsTheme(seed);
   }
 }
 
@@ -815,7 +818,7 @@ export class Scene {
       made = new Map();
       this.icons.set(theme, made);
     }
-    const key = `${player}:${cssPx}`;
+    const key = `${player}:${cssPx}:${theme.iconKey?.() ?? ''}`;
     const known = made.get(key);
     if (known !== undefined) return known;
     const root = new Container();

@@ -415,9 +415,9 @@ sender's seat**, so a client cannot act for someone else.
 
 ## 7. `packages/client`
 
-Nineteen visual styles — Minimal (`flat`), Medieval (`pixel`: named Pixel art until the other
+Twenty visual styles — Minimal (`flat`), Medieval (`pixel`: named Pixel art until the other
 styles made the name mean nothing), Night, Cyberpunk, Blueprint, Parchment, Toy bricks
-(`bricks`), Stained glass (`glass`), Chocolate (`chocolate`), Halloween (`halloween`), Sakura (`sakura`), Oktoberfest (`oktoberfest`), Opera (`opera`), Office (`office`), Under the sea (`undersea`), Electric (`electric`), Cartoon (`cartoon`), Christmas (`christmas`) and Noir (`noir`) — behind one `Theme` interface: the scene owns the camera, the layer stacks,
+(`bricks`), Stained glass (`glass`), Chocolate (`chocolate`), Halloween (`halloween`), Sakura (`sakura`), Oktoberfest (`oktoberfest`), Opera (`opera`), Office (`office`), Under the sea (`undersea`), Electric (`electric`), Cartoon (`cartoon`), Christmas (`christmas`), Noir (`noir`) and Stadium (`sports`) — behind one `Theme` interface: the scene owns the camera, the layer stacks,
 dirty tracking and input mapping; a theme owns only what things look like. Adding a style
 is a name in `ArtStyleSchema`, the looks it is made for in `STYLE_LOOKS`, a `Theme`, a
 case in `createTheme`, a menu title in `titles.ts` and a banner class in `hud.ts`; the
@@ -569,7 +569,7 @@ top saying whether a click chooses the building or the combat look, each card ba
 the look it is chosen for. The styles are in alphabetical order by name, so a new one finds
 its place, and **Random** comes last, a die for its picture: **a new style at every
 banner that brings its look** (`LookRotation`, ARCHIVE 12q), repeating none until every
-style has been shown — both looks random share one cycle of all nineteen, one random cycles
+style has been shown — both looks random share one cycle of all twenty, one random cycles
 through all but the other look's — and never the style the banner takes away, nor the one a
 look last had across a cycle's end. Each next look is made a step a frame, hidden, in the
 intermission after the build phase (`Scene.prepare`), and goes on screen once the look it
@@ -1321,6 +1321,31 @@ strip of ink ruled in white**, lettered in white capitals inked thick, its lines
 testers, 2026-10-09); its HUD black comic panels with white gutters; its title blocky capitals lit
 white above a grey band, a hatched shadow cast; its finish ink drops and a necktie for a flag.
 
+**Stadium** (`sports.ts`, `sports/figures.ts`, `sports/stands.ts`, `art.sports`; ARCHIVE 14d,
+designed with the user in `SPORTS_STYLE.md`), for either look: **a stadium**. Each island a pitch,
+its turf mown in stripes, a red running track at its coast between chalk lines; the sea **the
+stands**, a crowd seated in rows of navy seats, a pattern drawn once on a canvas for the tile and
+laid in as a fill in screen space, with a concrete concourse where it meets the pitches. **The
+guns are sportsmen** of ten ball sports — soccer, basketball, tennis, baseball, American
+football, golf, volleyball, badminton, ice hockey and handball — a sport to a gun by its id and the
+seed (`sportOf`), pictograms on one skeleton, each sport a table of joint angles: drawn in ink with
+the jersey white and stamped tinted the owner's colour, the ball a stamp of its own. Ready is the
+moment before the strike, the ball apart from the figure; firing, a release and a
+follow-through, **the ball leaving from where it was** (the sim's path plus the offset to it,
+shrinking to nothing by the landing); reloading, the same figure without its ball, which grows
+back into it as the shot lands; silenced, sat on a bench, its ball beside it. Mirrored to face
+the target, never turned. The cannon icon is the round's sport (`iconSport`, `Theme.iconKey`).
+Walls are **padded barriers** in the owner's colour, a white stripe along the face; castles
+**trophies** on plinths of it, shining while sealed, a glint crossing them, tarnished and tipped
+once the player is out; sealed ground fresh-mown turf, lit, washed in the owner's colour. A shot
+lands with its ball bouncing off and a puff of chalk, padding flying; into the stands it is caught,
+arms shooting up. A castle sealed stands the crowd up in **a wave** running both ways from it (the
+same crowd drawn on its feet, laid over the seated one in a band). A blimp crosses the outer
+stands; a scoreboard stands in the corner, the phase's seconds in amber lamps, red and flashing
+when the clock presses; at the climax the floodlights and camera flashes. Its banner and HUD an
+LED scoreboard, the banner's call with the stadium's words under it ("Kick-off!", "Half-time!",
+`BANNER_FLAVOUR`); its title jersey lettering; its finish confetti and a supporters' scarf.
+
 The thirteen shape-drawn styles share `walls.ts`: the wall geometry (tops, faces, rim), and
 hatching laid on one lattice so neighbouring tiles hatch as one fill.
 
@@ -1645,8 +1670,13 @@ fit (ARCHIVE 12z), its remaining steps dropped (the user's decision, 2026-10-14;
    plan is in [`STYLE_MUSIC.md`](./STYLE_MUSIC.md).
 5. **A Sports style** (the users' choice of the themes brainstormed, 2026-10-18; an idea, not yet
    designed): a stadium, its guns stick figures of ball sports throwing, kicking or serving their
-   own balls, each without its ball until the shot lands. Written down in
-   [`SPORTS_STYLE.md`](./SPORTS_STYLE.md).
+   own balls, each without its ball until the shot lands. Designed with the user in
+   [`SPORTS_STYLE.md`](./SPORTS_STYLE.md) and built (ARCHIVE 14d, 2026-10-19). Open: the users'
+   check in play — the crowd's calm, the sealed turf's wash, the figures at 12 pixels — then the
+   design retired into the ARCHIVE.
+6. **Bigger shots for the Berthas, in every style** (the user's, 2026-10-19, out of the Sports
+   design): no style draws a shot by its gun's kind today. A shared scale by `shot.kind` and
+   `shot.cost` in `theme.ts`, applied by each style where it places its shot.
 
 Only open work is kept here. Finished packages move to `ARCHIVE.md` under their old
 numbers — 11.1 scoring, 11.7 team mode, 11.8 the visual pass, 11.9 the themes, 11.10 the

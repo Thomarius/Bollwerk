@@ -1276,6 +1276,7 @@ const TITLES: Record<ArtStyle, (text: string, art: ArtConfig) => Title> = {
   cartoon: cartoonTitle,
   christmas: christmasTitle,
   noir: noirTitle,
+  sports: sportsTitle,
 };
 
 /**
@@ -1313,6 +1314,35 @@ export function noirTitle(text: string, _art: ArtConfig): Title {
   ctx.lineCap = 'square';
   ctx.beginPath();
   for (const [x1, y1, x2, y2] of wordOutline(cells, has)) {
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x2, y2);
+  }
+  ctx.stroke();
+  return { src: canvas.toDataURL(), ...title };
+}
+
+/**
+ * The stadium's title: the word in block letters as a jersey's number is — gold, lighter
+ * across their tops, outlined thick in navy and cast in a hard navy shadow.
+ */
+export function sportsTitle(text: string, _art: ArtConfig): Title {
+  const { canvas, ctx, cells, has } = drawnCanvas(text);
+  const title = { cellPx: DRAWN_CELL, padPx: DRAWN_PAD, tailPx: 0, smooth: true, flicker: false };
+  if (ctx === null) return { src: canvas.toDataURL(), ...title };
+  const at = (v: number): number => DRAWN_PAD + v * DRAWN_CELL;
+  const drop = DRAWN_CELL * 0.4;
+  ctx.fillStyle = '#1a2238';
+  for (const { x, y } of cells) ctx.fillRect(at(x) + drop, at(y) + drop, DRAWN_CELL, DRAWN_CELL);
+  for (const { x, y } of cells) {
+    ctx.fillStyle = y < 2 ? '#ffe27a' : '#f2c230';
+    ctx.fillRect(at(x), at(y), DRAWN_CELL, DRAWN_CELL);
+  }
+  const edges = wordOutline(cells, has);
+  ctx.lineCap = 'square';
+  ctx.strokeStyle = '#1a2238';
+  ctx.lineWidth = 4;
+  ctx.beginPath();
+  for (const [x1, y1, x2, y2] of edges) {
     ctx.moveTo(x1, y1);
     ctx.lineTo(x2, y2);
   }

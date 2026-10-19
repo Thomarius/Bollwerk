@@ -1178,6 +1178,28 @@
         "uiValid": "#8fe08a",
         "uiInvalid": "#ff5050"
       }
+    },
+    "sports": {
+      "palette": {
+        "waterDeep": "#1a2238",
+        "waterMid": "#232c46",
+        "waterShallow": "#b8bac0",
+        "waterFoam": "#f4f4ee",
+        "sand": "#c4553a",
+        "grassDark": "#3f8a33",
+        "grassMid": "#4f9a3e",
+        "grassLight": "#5bab49",
+        "rockDark": "#55575c",
+        "rockMid": "#8a8c92",
+        "rockLight": "#c8cacf",
+        "shadow": "#10141c",
+        "craterDark": "#4a3220",
+        "craterMid": "#6e4a2c",
+        "uiInk": "#f4f4ee",
+        "uiAccent": "#f2c230",
+        "uiValid": "#8fe08a",
+        "uiInvalid": "#ff5a5a"
+      }
     }
   },
   "dither": {
@@ -1659,5 +1681,19 @@
     "lightningEveryMs": 7000,
     "boatEveryMs": 22000,
     "boatTilesPerSecond": 0.9
+  },
+  "sports": {
+    "floorAlpha": 0.38,
+    "breatheMs": 1500,
+    "ballBeatMs": 900,
+    "catchMs": 160,
+    "waveMs": 2600,
+    "waveTilesPerSecond": 16,
+    "waveRows": 7,
+    "wavesAtOnce": 3,
+    "flashesPerSecond": 9,
+    "floodlightAlpha": 0.1,
+    "blimpEveryMs": 30000,
+    "blimpTilesPerSecond": 1.2
   }
 }

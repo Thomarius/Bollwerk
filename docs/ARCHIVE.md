@@ -9237,3 +9237,53 @@ the first menu, kept by the browser between visits by the server's `ETag` and 30
 re-encoded at 96 kbps and loudness normalised, played compressed rather than decoded whole.
 Protocol 28 still, the state hash and recording format unchanged: a v0.9.10 page can still join,
 and v0.9.10's recordings replay.
+
+## 14d. Stadium, the Sports style (2026-10-19)
+
+The users' choice of the themes brainstormed (2026-10-18), designed with the user in
+`docs/SPORTS_STYLE.md` before a line of the style was written, through two rounds of sketches on a
+dev page since removed: the guns in every state at tiles of 12, 16, 24 and 32 pixels, and a patch
+of the stands. The twentieth style, `sports`, named Stadium in the menu.
+
+**The guns are sportsmen** (the user's idea): ten ball sports, a sport to a gun by
+`hash(cannon id, seed)`, so every client sees the same mix. One skeleton for all, each sport a
+table of joint angles for ready, release and follow-through, and one seated pose for the bench.
+Pictograms in ink with the jersey white, stamped and tinted the owner's colour, so the shapes are
+sports × poses whatever the number of players; the ball a stamp of its own in its own colours.
+What the sketches decided:
+
+- **The pool.** Curling's stone read worst of all at 12–16 pixels; Handball took its place. Water
+  polo out: it needs water where the guns stand on land. Baseball is a batter, not a pitcher, who
+  read as a handball thrower; golf a golfer at address, the backswing's club looking odd.
+- **Ready is the moment before the strike, the ball apart from the figure** (the user's, from the
+  first sketch): a ball in hand merged with its figure at a small tile. The tennis ball tossed high,
+  the shuttlecock falling cork first towards the player, the volleyball above a spiker in the air,
+  the ball on the ground before the kicker, the golfer and the slapshot, the baseball incoming. The
+  release meets it there, so the shot leaves from that very spot.
+- **Reloading is the ready pose without its ball**, tried first and kept: flight time is the reload,
+  so the ball in the air is the missing one. It grows back into the figure as the shot lands.
+- **The ball flies from the ball**: drawn at the sim's path plus the offset from the shot's start
+  to the ball in the figure, mirrored with it, shrinking to nothing by the landing; the shadow from
+  the feet. The sim is untouched. The shuttlecock and the football turn along their velocity on
+  screen (the first had it backwards); the puck spins, which the user liked better than flat.
+- **Mirrored only**, to face the target, never turned: a figure upside down or facing down reads
+  wrong. The gun's box is its chalk outline alone: a wash of the owner's colour over the turf
+  turned red olive.
+- The Rapid Cannon simply has its ball back while a barrel is loaded; no tower animation of its
+  own. The Berthas' bigger shots were judged a thing for every style (PLAN §11 item 6).
+
+**The stadium**: pitches ringed by a running track, the sea the stands — a crowd seen from above in
+rows of seats, drawn once on a canvas for the tile and laid in as a fill, toned into navy so it is
+a ground for the pitches and not their rival (its first draft, at full colour, was noise). A wave
+is the same crowd drawn on its feet, laid over the seated one in a band rows long, running both
+ways from a castle as it is sealed: a few rectangles a row, nothing while none runs. Padded
+barriers for walls, trophies for castles (goals would have picked a sport), a scoreboard in the
+corner, a blimp, floodlights and flashes at the climax; the banner and HUD an LED scoreboard with
+the stadium's words under the call (`BANNER_FLAVOUR` in `hud.ts`); confetti and a supporters'
+scarf to finish (`FinishLook` gained `confetti` and `scarf`). Sealed ground's wash went over turf
+lifted towards white, since red over green was khaki.
+
+**Cost**, `&perf=1` in a watched eight-player combat (round 3, 1600×1000, GPU on), means of a
+2-second window: Stadium effects 0.71–0.82 ms and render 1.54–1.66 ms, 1,600–2,400 vertices
+rebuilt a frame in one `Graphics`; Noir 0.87 and 2.18 ms, 3,900 in three; Cartoon 1.11 and
+4.49 ms, 5,500 in three. All at 60 fps.

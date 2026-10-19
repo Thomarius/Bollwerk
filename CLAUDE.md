@@ -60,7 +60,7 @@ Client dev query parameters: `?autostart=1&players=3&seed=7` (a random seed with
 leave your seat undriven on the way, so you are soon knocked out), `&speed=10`,
 `&perf=1` for the frame-time readout (ARCHIVE 12n: a fixed 30 s window, Copy for the figures),
 `&bots=thread` to keep a local match's bots off their worker (ARCHIVE 13k),
-`&style=flat|pixel|night|cyberpunk|blueprint|parchment|bricks|glass|chocolate|halloween|sakura|oktoberfest|opera|office|undersea|electric|cartoon|christmas|noir` for both looks (a one-look style sets only its own)
+`&style=flat|pixel|night|cyberpunk|blueprint|parchment|bricks|glass|chocolate|halloween|sakura|oktoberfest|opera|office|undersea|electric|cartoon|christmas|noir|sports` for both looks (a one-look style sets only its own)
 (`&buildStyle=`, `&combatStyle=` for one), `&watch=1&level=8` to observe a bot match (`&personality=offensive` fixes every bot's),
 `&rounds=12` for the round cap, `&specials=1` for special towers (`&tower=bertha3`, a tower at its cost, the person's),
 `&teams=2` for teams of two in seat order, `?icons=sheet` every style's cannon icon side by side
@@ -85,7 +85,7 @@ rounds.
 | `analysis`       | Per-round match statistics, for bot soaks and recorded human play alike.   |
 | `tournament`     | Tournament mode's core: schedule, brackets, quick rolls, saves. No DOM.    |
 | `server`         | Authoritative match server, rooms, WebSocket, match recordings.            |
-| `client`         | Pixi renderer, nineteen visual styles, controls, HUD, netcode client.      |
+| `client`         | Pixi renderer, twenty visual styles, controls, HUD, netcode client.        |
 | `desktop`        | Electron app for releases: the server behind a minimal window (M14).       |
 | `tools/headless` | Bot-vs-bot soak runs and map dumps.                                        |
 
@@ -303,11 +303,12 @@ which a test session needs the server rebuilt and every page reloaded for):
   `Siting`; main.ts is app, prefs, session, menu, lobbyFlow and matchScreen, the last with
   `BoardEffects`; a room's match is `MatchRunner`; the styles since Chocolate extend
   `ShapeTheme`; seats are dealt by `dealSeats` and bots driven by `takeBotTurns`.
-- **The looks**: nineteen styles for either look — Minimal, Medieval, Night, Cyberpunk,
+- **The looks**: twenty styles for either look — Minimal, Medieval, Night, Cyberpunk,
   Blueprint, Parchment, Toy bricks, Stained glass, Chocolate (ARCHIVE 11zy), Halloween
   (12a), Sakura (12d), Oktoberfest (12e), Opera (12f), Office (12l), Under the sea (12u),
   Electric (12v), Cartoon, a rubber-hose reel in black and white (12zb), Christmas (12zc),
-  and Noir, a crime city at night as a cel-shaded graphic novel, hatched in ink (12zn) —
+  Noir, a crime city at night as a cel-shaded graphic novel, hatched in ink (12zn), and
+  Stadium (`sports`), whose guns are sportsmen of ten ball sports (14d) —
   each carried to the panels, the big timer, the island banners and the finish (ARCHIVE
   11zz), each with a piece in the sea's corner (`corner.ts`, 12t); chosen from a gallery with
   Random, a new style every round (12q), and changeable mid-match from the pause menu (12b).

@@ -63,6 +63,11 @@ export interface Theme {
    * animation. `iconFrame` gives the made-up view, cannon and aim the board's code draws with.
    */
   drawCannonIcon(root: Container, size: number, player: number): void;
+  /**
+   * What the icon depends on beyond the player and the size, where a style's icon is not one
+   * fixed picture — Sports' is the round's sport — so it is drawn again when this changes.
+   */
+  iconKey?(): string;
 
   /** Releases textures and display objects. */
   destroy(): void;
@@ -848,7 +853,8 @@ export interface FinishLook {
    * `bubbles` bubbles tinted in the owner's colours rising among little fish darting out;
    * `bolts` forked lightning in the owner's colours crackling out from the burst; `stars`
    * cartoon stars in the owner's colours, inked round, tumbling out; `flakes` snowflakes in
-   * the owner's colours, turning as they drift down.
+   * the owner's colours, turning as they drift down; `confetti` strips of paper in the
+   * owner's colours, white and gold, fluttering down over a stadium.
    */
   spark:
     | 'square'
@@ -867,7 +873,8 @@ export interface FinishLook {
     | 'bubbles'
     | 'bolts'
     | 'stars'
-    | 'flakes';
+    | 'flakes'
+    | 'confetti';
   /**
    * `swallowtail` a forked banner; `hologram` a flickering projection; `pennant` a flag in
    * plan; `brick` a square flag of bricks; `leaded` a banner of glass in its lead; `candy` a
@@ -878,7 +885,8 @@ export interface FinishLook {
    * a pennant flying under the head of a bronze trident; `rod` a pennant cut like a bolt on a
    * copper lightning rod, a spark crackling at its point; `glove` a pennant inked round, a
    * white star on it, on a black pole held up by a white glove; `stocking` a Christmas
-   * stocking in the owner's colour hung from a gold pole with a star at its top.
+   * stocking in the owner's colour hung from a gold pole with a star at its top; `scarf` a
+   * supporters' scarf in the owner's colour, barred white and fringed, held up on a pole.
    */
   flag:
     | 'swallowtail'
@@ -895,7 +903,8 @@ export interface FinishLook {
     | 'trident'
     | 'rod'
     | 'glove'
-    | 'stocking';
+    | 'stocking'
+    | 'scarf';
 }
 
 const PLAIN_FINISH: FinishLook = { spark: 'square', flag: 'swallowtail' };
@@ -1062,6 +1071,39 @@ export class WinnerBanners {
             head + clothH * 0.45,
           ]);
           g.fill({ color: 0xf4f8ff });
+          continue;
+        }
+        if (flag === 'scarf') {
+          // A supporters' scarf held out from the pole's top: the owner's colour barred
+          // white, a fringe at its end, rippling.
+          const head = up + clothH * 0.2;
+          const long = clothW * 1.5;
+          const deep = clothH * 0.42;
+          const bars = 5;
+          for (let k = 0; k < bars; k++) {
+            const a = (k / bars) * long;
+            const b = ((k + 1) / bars) * long;
+            const wa = wave * (a / long);
+            const wb = wave * (b / long);
+            g.poly([
+              x + a,
+              head + wa,
+              x + b,
+              head + wb,
+              x + b,
+              head + deep + wb,
+              x + a,
+              head + deep + wa,
+            ]);
+            g.fill({ color: k % 2 === 0 ? base : 0xffffff });
+          }
+          g.poly([x, head, x + long, head + wave, x + long, head + deep + wave, x, head + deep]);
+          g.stroke({ width: rim, color: 0x1c1d22, alpha: 0.8, join: 'round' });
+          for (let k = 0; k < 4; k++) {
+            const fy = head + wave + (deep * (k + 0.5)) / 4;
+            g.moveTo(x + long, fy).lineTo(x + long + tile * 0.18, fy + wave * 0.2);
+          }
+          g.stroke({ width: Math.max(1, rim * 0.8), color: base });
           continue;
         }
         if (flag === 'stocking') {
@@ -1244,6 +1286,14 @@ export class WinnerBanners {
       }
       return;
     }
+    if (flag === 'scarf') {
+      // A white pole, a gold ball at its top.
+      g.moveTo(x, foot).lineTo(x, top);
+      g.stroke({ width: width + 1, color: 0xf4f4ee });
+      g.circle(x, top, width + 1);
+      g.fill({ color: 0xe8c25a });
+      return;
+    }
     if (flag === 'stocking') {
       // A gold pole, a star at its top.
       g.moveTo(x, foot).lineTo(x, top);
@@ -1394,11 +1444,18 @@ export class Fireworks {
       const colours =
         kind === 'sprinkle'
           ? [playerColour(art, rocket.owner, 'base'), ...SPRINKLE_COLOURS]
-          : [
-              playerColour(art, rocket.owner, 'light'),
-              playerColour(art, rocket.owner, 'base'),
-              hex(art.palette.uiInk),
-            ];
+          : kind === 'confetti'
+            ? [
+                playerColour(art, rocket.owner, 'base'),
+                playerColour(art, rocket.owner, 'light'),
+                0xffffff,
+                0xe8c25a,
+              ]
+            : [
+                playerColour(art, rocket.owner, 'light'),
+                playerColour(art, rocket.owner, 'base'),
+                hex(art.palette.uiInk),
+              ];
       const count =
         kind === 'brick' || kind === 'blot' || kind === 'stars' || kind === 'flakes'
           ? 22
@@ -1421,7 +1478,11 @@ export class Fireworks {
           angle: Math.random() * Math.PI * 2,
           // A blossom's petals are the sparks that spin; its streaks, the ones that do not.
           spin:
-            kind === 'blossom' || kind === 'memo' || kind === 'bubbles' || kind === 'flakes'
+            kind === 'blossom' ||
+            kind === 'memo' ||
+            kind === 'bubbles' ||
+            kind === 'flakes' ||
+            kind === 'confetti'
               ? k % 2 === 0
                 ? 2 + Math.random() * 4
                 : 0
@@ -1433,7 +1494,8 @@ export class Fireworks {
 
     // Ink lingers, bricks fall heavier, spirits float up and a blossom's petals drift down
     // slowly; the rest burst and fade as sparks do.
-    const drifts = kind === 'blossom' || kind === 'memo' || kind === 'flakes';
+    const drifts =
+      kind === 'blossom' || kind === 'memo' || kind === 'flakes' || kind === 'confetti';
     const life =
       kind === 'blot' || kind === 'spirits' || kind === 'bubbles' ? 1900 : drifts ? 1700 : 1200;
     const fall =
@@ -1510,6 +1572,23 @@ export class Fireworks {
           // A little fish in the owner's colour, darting out along its burst.
           drawFish(g, x, y, size * 1.6, Math.atan2(spark.vy, spark.vx), spark.colour, alpha);
         }
+      } else if (kind === 'confetti') {
+        // A strip of paper, fluttering: narrowed as it turns edge on.
+        const c = Math.cos(spark.angle);
+        const sn = Math.sin(spark.angle);
+        const w = size * 0.55;
+        const h = size * 0.22 * (0.25 + 0.75 * Math.abs(Math.sin(spark.age / 110 + spark.x)));
+        g.poly([
+          x - c * w + sn * h,
+          y - sn * w - c * h,
+          x + c * w + sn * h,
+          y + sn * w - c * h,
+          x + c * w - sn * h,
+          y + sn * w + c * h,
+          x - c * w - sn * h,
+          y - sn * w + c * h,
+        ]);
+        g.fill({ color: spark.colour, alpha });
       } else if (kind === 'memo') {
         const c = Math.cos(spark.angle);
         const s = Math.sin(spark.angle);

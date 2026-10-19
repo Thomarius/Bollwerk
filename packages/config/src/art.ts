@@ -54,7 +54,8 @@ export type PlayerPalette = z.infer<typeof PlayerPaletteSchema>;
  * on a sea whose waves are staves, `office` an open-plan office at war with itself,
  * `undersea` a coral reef on the seabed, the deep all round it, `electric` a storm
  * laboratory under a thunderstorm, `cartoon` a 1930s rubber-hose cartoon in black and white, `christmas` a snowy island on Christmas Eve,
- * `noir` a crime city at night drawn as a cel-shaded graphic novel.
+ * `noir` a crime city at night drawn as a cel-shaded graphic novel, `sports` a stadium whose
+ * guns are sportsmen of ten ball sports throwing, kicking and hitting their balls.
  */
 export const ArtStyleSchema = z.enum([
   'flat',
@@ -76,6 +77,7 @@ export const ArtStyleSchema = z.enum([
   'cartoon',
   'christmas',
   'noir',
+  'sports',
 ]);
 export type ArtStyle = z.infer<typeof ArtStyleSchema>;
 
@@ -813,6 +815,35 @@ export const NoirStyleSchema = z.strictObject({
 });
 export type NoirStyleConfig = z.infer<typeof NoirStyleSchema>;
 
+/**
+ * The Sports look (docs/SPORTS_STYLE.md): a stadium — the islands pitches ringed by a running
+ * track, the sea the stands, their crowd a pattern laid in once. The guns are pictogram
+ * sportsmen in the owner's jersey, a sport to a gun by its id; the castles trophies.
+ */
+export const SportsStyleSchema = z.strictObject({
+  /** The owner's colour washed over the turf of sealed ground. */
+  floorAlpha: z.number().min(0).max(1),
+  /** One breath of a ready figure, and one beat of its ball's dribble or toss. */
+  breatheMs: z.number().int().positive(),
+  ballBeatMs: z.number().int().positive(),
+  /** A ball coming back into a figure's hands as its shot lands, growing in. */
+  catchMs: z.number().int().positive(),
+  /** The wave going round the stands as a castle is sealed: how long, how fast, how far. */
+  waveMs: z.number().int().positive(),
+  waveTilesPerSecond: z.number().positive(),
+  /** Rows of the stands either side of the castle that stand up for it. */
+  waveRows: z.number().int().positive(),
+  /** At most this many waves going round at once. */
+  wavesAtOnce: z.number().int().positive(),
+  /** Camera flashes in the stands each second at the climax, and the floodlights' glow. */
+  flashesPerSecond: z.number().nonnegative(),
+  floodlightAlpha: z.number().min(0).max(1),
+  /** The blimp crossing the outer stands now and then, and how fast. */
+  blimpEveryMs: z.number().int().positive(),
+  blimpTilesPerSecond: z.number().positive(),
+});
+export type SportsStyleConfig = z.infer<typeof SportsStyleSchema>;
+
 /** One of the two looks a match is drawn in. */
 export type ArtLook = 'build' | 'combat';
 
@@ -864,6 +895,7 @@ export const STYLE_LOOKS: Record<ArtStyle, readonly ArtLook[]> = {
   cartoon: ['build', 'combat'],
   christmas: ['build', 'combat'],
   noir: ['build', 'combat'],
+  sports: ['build', 'combat'],
 };
 
 export function styleServes(
@@ -994,6 +1026,7 @@ export const ArtConfigSchema = z
     cartoon: CartoonStyleSchema,
     christmas: ChristmasStyleSchema,
     noir: NoirStyleSchema,
+    sports: SportsStyleSchema,
     scenery: ScenerySchema,
     /** Effects both styles draw alike, because they carry information. */
     effects: z.strictObject({

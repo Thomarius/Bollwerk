@@ -49,6 +49,7 @@ const BANNER_CLASS: Record<ArtStyle, string> = {
   cartoon: 'banner-cartoon',
   christmas: 'banner-christmas',
   noir: 'banner-noir',
+  sports: 'banner-sports',
 };
 
 /**
@@ -76,6 +77,22 @@ const HUD_SKIN: Record<ArtStyle, string> = {
   cartoon: 'hud-cartoon',
   christmas: 'hud-christmas',
   noir: 'hud-noir',
+  sports: 'hud-sports',
+};
+
+/**
+ * A style's own words under the phase's call, where it has them: the stadium's "Kick-off!"
+ * under "Fire!", "Half-time!" under "Rebuild" (docs/SPORTS_STYLE.md). `final` rides under the
+ * final round's banner.
+ */
+const BANNER_FLAVOUR: Partial<Record<ArtStyle, Partial<Record<Phase | 'final', TextKey>>>> = {
+  sports: {
+    castle_select: 'sports.call.castleSelect',
+    combat: 'sports.call.combat',
+    build: 'sports.call.build',
+    cannon_place: 'sports.call.cannonPlace',
+    final: 'sports.call.final',
+  },
 };
 
 const PHASE_LABEL: Record<Phase, TextKey> = {
@@ -226,6 +243,13 @@ export class Hud {
     const banner = document.createElement('div');
     banner.className = `phase-call ${BANNER_CLASS[style]}${title === null ? '' : ' titled'}`;
     banner.textContent = text;
+    const flavour = BANNER_FLAVOUR[style]?.[title === null ? phase : 'final'];
+    if (flavour !== undefined) {
+      const small = document.createElement('small');
+      small.className = 'flavour';
+      small.textContent = t(flavour);
+      banner.append(small);
+    }
     for (const line of lines) {
       const small = document.createElement('small');
       small.textContent = line.text;

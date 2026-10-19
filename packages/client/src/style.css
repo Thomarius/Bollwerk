@@ -2929,7 +2929,8 @@ body.hud-undersea,
 body.hud-electric,
 body.hud-cartoon,
 body.hud-christmas,
-body.hud-noir {
+body.hud-noir,
+body.hud-sports {
   --hud-panel: var(--hud-box);
 }
 
@@ -4473,6 +4474,136 @@ body.hud-noir #banner.final-round::before {
 body.hud-noir .embers i {
   background: #f4f2ec;
   box-shadow: 0 0 4px 1px rgb(255 255 255 / 40%);
+}
+
+/* Sports: the banner and the HUD a stadium's scoreboard — a dark board in a grey metal frame,
+   lettered in amber lamps that glow, a faint grid of unlit lamps behind them; the words under
+   the call ("Kick-off!") in white, the news in amber. */
+.phase-call.banner-sports {
+  border-top: 4px solid #8a8c92;
+  border-bottom: 4px solid #8a8c92;
+  box-shadow:
+    0 0 0 2px #1c1d22,
+    0 6px 18px #0009;
+  background-color: #101216;
+  background-image: radial-gradient(circle, #f2c2301a 0 1.2px, transparent 1.6px);
+  background-size: 6px 6px;
+  color: #f2c230;
+  font-family: 'Courier New', Courier, monospace;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-shadow:
+    0 0 6px #f2c230aa,
+    0 0 18px #f2c23055;
+}
+
+.phase-call.banner-sports small {
+  color: #f4f4ee;
+  font-family: 'Courier New', Courier, monospace;
+  letter-spacing: 0.08em;
+  text-shadow: 0 0 6px #ffffff55;
+}
+
+.phase-call.banner-sports small.flavour {
+  color: #ff8a40;
+  text-shadow: 0 0 6px #ff8a4088;
+}
+
+.phase-call.banner-sports small.news {
+  color: #f2c230;
+}
+
+body.hud-sports {
+  --hud-bar: #101216;
+  --hud-rule: 3px solid #8a8c92;
+  --hud-pad-top: 0.35rem;
+  --hud-ink: #f4f4ee;
+  --hud-muted: #9a9ca2;
+  --hud-accent: #f2c230;
+  --hud-box: #15181e;
+  --hud-box-edge: 2px solid #8a8c92;
+  --hud-box-shadow: 0 3px 0 #000a;
+  --hud-track: #ffffff22;
+  --hud-font: 'Courier New', Courier, monospace;
+}
+
+/* The bar the scoreboard's face: a grid of unlit lamps, the clock and scores lit amber. */
+body.hud-sports #hud .bar {
+  background-color: #101216;
+  background-image: radial-gradient(circle, #ffffff10 0 1px, transparent 1.4px);
+  background-size: 5px 5px;
+}
+
+body.hud-sports #hud .phase .timer,
+body.hud-sports #hud .roster .score {
+  color: #f2c230;
+  text-shadow: 0 0 6px #f2c23088;
+}
+
+/* The big timer in amber lamps, glowing; red in the last seconds, as a shot clock runs out. */
+body.hud-sports .big-timer {
+  color: rgb(242 194 48 / 90%);
+  font-family: 'Courier New', Courier, monospace;
+  font-weight: 700;
+  text-shadow:
+    0 0 10px rgb(242 194 48 / 70%),
+    0 3px 0 rgb(0 0 0 / 50%);
+}
+
+body.hud-sports .big-timer.urgent {
+  color: rgb(255 80 64 / 92%);
+  text-shadow:
+    0 0 12px rgb(255 80 64 / 75%),
+    0 3px 0 rgb(0 0 0 / 50%);
+}
+
+/* Island banners a small scoreboard each: dark, framed in metal, lettered in amber; the stamps
+   in red lamps. */
+body.hud-sports .island-banner:not(.out),
+body.hud-sports .team-tag,
+body.hud-sports .you-are-here {
+  border: 2px solid #8a8c92;
+  border-radius: 3px;
+  background: #101216;
+  box-shadow: 0 3px 6px #0008;
+  color: #f2c230;
+  font-family: 'Courier New', Courier, monospace;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-shadow: 0 0 6px #f2c23088;
+}
+
+body.hud-sports .island-banner.out,
+body.hud-sports .final-stamp {
+  border: 3px solid #8a8c92 !important;
+  border-radius: 3px;
+  background: #101216;
+  box-shadow: 0 4px 10px #0009;
+  color: #ff5040;
+  font-family: 'Courier New', Courier, monospace;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-shadow: 0 0 8px #ff504099;
+}
+
+/* The final minutes under the floodlights: the edges washed in cold white light, and the
+   embers confetti in the stands' colours. */
+body.hud-sports #banner.final-round::before {
+  box-shadow: inset 0 0 20vmin rgb(255 246 220 / 22%);
+}
+
+body.hud-sports .embers i {
+  background: #f2c230;
+  border-radius: 1px;
+  box-shadow: none;
+}
+
+body.hud-sports .embers i:nth-child(3n) {
+  background: #f4f4ee;
+}
+
+body.hud-sports .embers i:nth-child(3n + 1) {
+  background: #ff8a40;
 }
 
 /* ---------- the gallery of looks (ARCHIVE 12b) ---------- */

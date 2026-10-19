@@ -52,6 +52,7 @@ const STYLE_NAMES: Record<LookChoice, TextKey> = {
   cartoon: 'style.cartoon',
   christmas: 'style.christmas',
   noir: 'style.noir',
+  sports: 'style.sports',
   random: 'style.random',
 };
 
