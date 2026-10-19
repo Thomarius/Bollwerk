@@ -482,8 +482,7 @@ export async function runSession(
     hud.labels.showPlaceIcons(scene.screenAt(ghost.tile.x + w + 0.3, ghost.tile.y), icons, hint);
   }
 
-  /** `phaseBefore` is the phase the frame's steps began in, which the seal's fanfare asks. */
-  function applyEvents(events: readonly MatchEvent[], phaseBefore: Phase): void {
+  function applyEvents(events: readonly MatchEvent[]): void {
     matchLog.note(events, session.state);
     let structuresChanged = false;
     let territoryChanged = false;
@@ -630,7 +629,7 @@ export async function runSession(
     }
     const sealing = board.refresh(structuresChanged, territoryChanged);
     if (sealing !== null) {
-      matchAudio.sealed(session.state, sealing.sealedBefore, sealing.sealedAfter, phaseBefore);
+      matchAudio.sealed(session.state, sealing.sealedBefore, sealing.sealedAfter);
       hints = buildHints(session.state, session.humanPlayer, board.live);
     }
   }
@@ -708,7 +707,6 @@ export async function runSession(
     if (first) preparing?.remove();
 
     perf.begin('sim');
-    const phaseBefore = session.state.phase;
     const events = session.advance(delta);
     if (session.finished && !finishedSeen) {
       finishedSeen = true;
@@ -722,7 +720,7 @@ export async function runSession(
       session.state.players.map((p) => p.name),
       session.finished,
     );
-    applyEvents(events, phaseBefore);
+    applyEvents(events);
     matchAudio.handle(events);
     matchAudio.frame(session.state);
     perf.end('sim');

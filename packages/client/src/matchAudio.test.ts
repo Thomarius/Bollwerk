@@ -160,11 +160,14 @@ describe('match audio', () => {
       players: [{ islandId: 1 }],
       castles: [{ id: 0, islandId: 1 }],
     } as unknown as MatchState;
-    // The frame began in the build phase and ends in the intermission the piece brought on.
-    match.sealed(board, [false], [true], 'build');
+    // The events began in the build phase and end in the intermission the piece brought on:
+    // asked before they are handled, so still building, wherever the steps were taken.
+    match.handle([phase('build')]);
+    match.sealed(board, [false], [true]);
     expect(audio.sfx).toEqual(['enclosure_success']);
-    // A frame wholly outside building stays silent.
-    match.sealed(board, [false], [true], 'intermission');
+    // Events wholly outside building stay silent.
+    match.handle([phase('intermission', 'cannon_place')]);
+    match.sealed(board, [false], [true]);
     expect(audio.sfx).toHaveLength(1);
   });
 

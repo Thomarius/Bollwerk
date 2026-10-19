@@ -192,17 +192,20 @@ export class MatchAudio {
    * castle — made no sound at all, and the one time it did play, at the end of round
    * one, it was lost under the scoring. Only while building: a castle chosen after a
    * continue is sealed by its ring, which is not the player's doing and has its own cue.
+   *
+   * Asked before `handle` is given the same events, so `phase` is still the phase they began
+   * in: the last piece of an overtime ends the round in the step that seals with it, and the
+   * board already reads the intermission (play-testing, 2026-10-16). The phase the frame
+   * began in was asked once, which missed it all the same where the steps are not taken in the
+   * frame — a local match's bots in their worker step the match as it answers, between frames,
+   * so the frame began in the intermission already (play-testing, 2026-10-19).
    */
   sealed(
     state: Pick<MatchState, 'phase' | 'castles' | 'players'>,
     before: readonly boolean[],
     after: readonly boolean[],
-    phaseBefore: MatchState['phase'] = state.phase,
   ): void {
-    // The phase the frame's steps began in as well as the one they end in: the last piece of
-    // an overtime ends the round in the same step, so the frame that seals with it already
-    // reads the intermission, and the fanfare was lost (play-testing, 2026-10-16).
-    const building = state.phase === 'build' || phaseBefore === 'build';
+    const building = state.phase === 'build' || this.phase === 'build';
     if (this.watching || !building) return;
     const island = state.players[this.humanPlayer]?.islandId;
     const newlySealed = state.castles.some(

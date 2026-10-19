@@ -9304,3 +9304,16 @@ shares Medieval's) multiplies its shot's size by it at the one place it sets it 
 sprite's size or a stamp's scale — so its glow and highlights grow with it. Trails, shadows and
 the target marker stay as they are. Every other gun, the Rapid Cannon's barrels too, flies as a
 cannon's.
+
+## 14f. The fanfare for the overtime's last piece, again (2026-10-19)
+
+A tester's seal with the overtime's last piece made no sound, though it had been fixed once
+(2026-10-16): the check asked the phase the frame began in as well as the one it ended in. That
+held only where the steps are taken in the frame. A local match's bots plan in their worker, and
+the page steps the match as the worker answers, between frames: the frame began in the
+intermission already, and the step's events, the sealing piece among them, were handed over in
+it. Found by replaying the tester's recording (`20261019-112754-local-10j5zwj`, round 5: no castle
+sealed before the last piece, four after, the round ending in the same step). Now `MatchAudio`
+asks the phase as of the events it has handled: the seal is checked before the batch is handled,
+so that is the phase the batch began in, wherever its steps were taken — in the frame, on a
+worker's answer, or from a room's messages.
