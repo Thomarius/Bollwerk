@@ -9407,3 +9407,11 @@ hourglass's thread and the rose's needle follow it; the rest keeps to the climax
 title block has nothing to hurry. Checked in final-round screenshots (`final-pixel` …
 `final-glass` in `tools/screenshots.sh`, 8 s each, the jump to round 10 being slow); not yet
 watched in play nor measured with `&perf=1`.
+
+## 14j. The climaxes play-tested, and the cannon icon chosen (2026-10-19)
+
+The users checked the seven new climaxes (14i) in the game, with their corner pieces hurrying,
+and found nothing to change. And the testers decided PLAN 11 item 3: **each style's own gun** is
+the icon beside the cursor in the cannon phase (13zv), as it already was by default. Against the
+plan, the generic cannon is not removed (the users'): `art.cannonIcons: "generic"` stays, to
+switch back to; config only, as before.

@@ -1226,7 +1226,8 @@ export const ArtConfigSchema = z
     /**
      * The icons beside the cursor in the cannon phase, a cannon each still to place: the style's
      * own gun, drawn small (`drawCannonIcon`), or one generic cannon for every style, as before
-     * (2026-10-17). Both kept until the testers' readings decide between them.
+     * (2026-10-17). The testers chose the style's own (2026-10-19, ARCHIVE 14j); the generic
+     * stays, to switch back to.
      */
     cannonIcons: z.enum(['style', 'generic']),
     tileSizePx: z.number().int().positive(),

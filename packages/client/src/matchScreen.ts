@@ -467,8 +467,8 @@ export async function runSession(
       special !== null && controls.placingTower
         ? { kind: variantKind(special), cost: variantCost(special) }
         : null;
-    // The style's own gun, or the generic one for every style (`art.cannonIcons`), while the
-    // testers' readings decide between them.
+    // The style's own gun, the testers' choice, or the generic one for every style, kept to
+    // switch back to (`art.cannonIcons`).
     const cannon =
       defaultConfigBundle.art.cannonIcons === 'style'
         ? cannonImg(scene.cannonIcon(human, placeIconPx()))

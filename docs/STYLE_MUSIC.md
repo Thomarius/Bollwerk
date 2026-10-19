@@ -1,6 +1,6 @@
 # Audio loaded once, and music for the styles — plan
 
-Two packages, in order (PLAN §11 item 4). **A** changes how the game's audio is loaded and played,
+Two packages, in order (PLAN §11 item 3). **A** changes how the game's audio is loaded and played,
 for the files it has today. **B** builds on it: some styles bring a track of their own, played at
 times in place of the shared music. The user keeps every original music file outside the
 repository.

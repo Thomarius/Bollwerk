@@ -180,6 +180,7 @@ which a test session needs the server rebuilt and every page reloaded for):
   round the sea, Night's blood moon, Cyberpunk's overload, Blueprint's rush job, Parchment's wind
   heads, Toy bricks' light-up studs and Stained glass's sun breaking through — and their corner
   pieces hurrying in every phase's last seconds, as the others' do (`hurry` in `corner.ts`).
+  Checked in play by the users (ARCHIVE 14j).
 - **Stadium, the Sports style** (ARCHIVE 14d, 2026-10-19): the twentieth look, its guns
   pictogram sportsmen of ten ball sports (`sports/figures.ts`), a sport to a gun by its id and the
   seed, ready the moment before the strike with the ball apart from the figure, the shot's ball
@@ -192,7 +193,9 @@ which a test session needs the server rebuilt and every page reloaded for):
   compressed and played by an `<audio>` element through the music bus — the page's memory in an
   eight-player match 633 MB → 356 MB.
 - **Each style's own cannon as the placement icon** (ARCHIVE 13zv, v0.9.9), drawn by the style
-  (`drawCannonIcon`) and rendered once to an image; the towers' own sounds (13zx).
+  (`drawCannonIcon`) and rendered once to an image; the towers' own sounds (13zx). The testers'
+  choice (ARCHIVE 14j); the generic cannon kept behind `art.cannonIcons: "generic"`, to switch
+  back to; `?icons=sheet` shows every style's.
 
 - **Special towers** (2026-10-14 to 2026-10-16, ARCHIVE 13zk–13zo, the design and what is open in
   `docs/SPECIAL_TOWERS.md`): Big Bertha, the Architect, the Rapid Cannon and (2026-10-17, ARCHIVE
@@ -342,7 +345,7 @@ which a test session needs the server rebuilt and every page reloaded for):
 
 **Next** — PLAN §11, towards a first feature-ready version:
 
-- **The styles' own music** (item 4, Package B of `docs/STYLE_MUSIC.md`), the next session's work,
+- **The styles' own music** (item 3, Package B of `docs/STYLE_MUSIC.md`), the next session's work,
   once the user has the tracks: some styles' own track, played with a chance (`styleTrackChance`,
   50%) at every start of a look and paused per style for `styleTrackPauseRounds` (3) after —
   both in the audio manifest — on the framework Package A built (ARCHIVE 14b).
@@ -350,8 +353,6 @@ which a test session needs the server rebuilt and every page reloaded for):
   and a test without the cap of three. Their balance is closed and they are **off by default for
   good** — a wacky addition, not the base game (ARCHIVE 13zw); a new tower is balanced at Level 5
   only, its variants against each other and against no tower (the user's).
-- **The testers' choice of cannon icon** (item 3): each style's own gun or the generic cannon,
-  `art.cannonIcons` (`"style"`, the default, or `"generic"`); `?icons=sheet` shows every style's.
 
 Closed for good: the bot learning work (ARCHIVE 13zg) and French (the user's decisions). Signing
 the Windows app was explained (PLAN §12) and is not pursued for now.
