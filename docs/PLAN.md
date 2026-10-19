@@ -1672,6 +1672,13 @@ fit (ARCHIVE 12z), its remaining steps dropped (the user's decision, 2026-10-14;
    Package B (B1–B2), some styles' own tracks, played with a chance at every start of a look and
    paused per style for some rounds after — the next session's, once the user has the tracks. The
    plan is in [`STYLE_MUSIC.md`](./STYLE_MUSIC.md).
+5. **A climax for every style but Minimal** (the user's, 2026-10-19): twelve styles turn up their
+   own weather or music at the climax (`climaxLevel`, §7; ARCHIVE 14g); seven have none of their
+   own — Medieval and Night (one drawing; their corner piece flares only in the final round),
+   Cyberpunk, Blueprint, Parchment, Toy bricks and Stained glass; Cyberpunk, Toy bricks and
+   Stained glass have only a touch to their corner piece in overtime. Each to get one in its own setting, designed with the user
+   before it is built, scaled by `climaxLevel` so it eases in, and drawn cheaply ("Drawing a style
+   cheaply" in CLAUDE.md). Minimal stays plain, on purpose.
 
 Only open work is kept here. Finished packages move to `ARCHIVE.md` under their old
 numbers — 11.1 scoring, 11.7 team mode, 11.8 the visual pass, 11.9 the themes, 11.10 the

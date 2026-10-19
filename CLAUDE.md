@@ -346,6 +346,9 @@ which a test session needs the server rebuilt and every page reloaded for):
   and a test without the cap of three. Their balance is closed and they are **off by default for
   good** — a wacky addition, not the base game (ARCHIVE 13zw); a new tower is balanced at Level 5
   only, its variants against each other and against no tower (the user's).
+- **A climax for every style but Minimal** (item 5, the user's): the seven looks with none of
+  their own — Medieval, Night, Cyberpunk, Blueprint, Parchment, Toy bricks, Stained glass — each
+  to get one, designed with the user first, scaled by `climaxLevel` so it eases in.
 - **The testers' choice of cannon icon** (item 3): each style's own gun or the generic cannon,
   `art.cannonIcons` (`"style"`, the default, or `"generic"`); `?icons=sheet` shows every style's.
 
@@ -548,8 +551,10 @@ its header but the simulation does not — so the server stamps each header with
   for that player but zeroes the count only as combat begins (it is hashed). The client shows
   `placeableCannons`, never the raw count.
 - **One frame's events can span a phase change**: the overtime's last piece ends the round in
-  the same step, so a check of `state.phase` after the frame reads the intermission. The seal's
-  fanfare asks the phase the frame began in too (`matchAudio.sealed`).
+  the same step, so a check of `state.phase` after the frame reads the intermission — and a
+  local match's bots in their worker step it between frames, so the frame may begin there too.
+  The seal's fanfare asks the phase as of the events it has handled (`matchAudio.sealed`,
+  ARCHIVE 14f).
 - **A local match's bots think in a Web Worker, in lockstep** (ARCHIVE 13k): one bot
   planning its walls takes 15 to 50 ms. The page holds the match and sends each tick's turn
   with the person's moves on it; the worker's `BotTable` (`client/src/bots/`) plays them on a
