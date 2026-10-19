@@ -19,8 +19,7 @@ is uncredited. Every sound is from OpenGameArt.org, but three music tracks from 
 License, credited to their authors as they ask).
 
 **`docs/PLAN.md` is the design and the open work** — read it before changing rules,
-terrain or bots; a design of its own (`docs/SPECIAL_TOWERS.md`, `docs/STYLE_MUSIC.md`,
-`docs/SPORTS_STYLE.md`) lives
+terrain or bots; a design of its own (`docs/SPECIAL_TOWERS.md`, `docs/STYLE_MUSIC.md`) lives
 beside it until built, then is retired into the ARCHIVE. **`docs/ARCHIVE.md`** records how each decision
 was reached, with the measurements and the reverted attempts; consult it before re-trying
 something. This file is the orientation.
@@ -177,6 +176,11 @@ Full detail in PLAN.md §1. The parts that surprise people:
 **Done** (2026-10-18; the latest release **v0.9.11**, 2026-10-18, protocol 28, recording format 4,
 which a test session needs the server rebuilt and every page reloaded for):
 
+- **Stadium, the Sports style** (ARCHIVE 14d, 2026-10-19): the twentieth look, its guns
+  pictogram sportsmen of ten ball sports (`sports/figures.ts`), a sport to a gun by its id and the
+  seed, ready the moment before the strike with the ball apart from the figure, the shot's ball
+  leaving from that spot; the sea the stands (`sports/stands.ts`), a wave going round as a castle
+  is sealed; the cheapest of the shape-drawn styles measured.
 - **Audio loaded once** (ARCHIVE 14b, 2026-10-18, v0.9.11; Package A of `docs/STYLE_MUSIC.md`):
   every sound and music file fetched once behind a loading screen before the first menu, its bar
   counting bytes; the server's `ETag`, `Cache-Control: no-cache` and 304s, so a reload downloads
@@ -342,8 +346,8 @@ which a test session needs the server rebuilt and every page reloaded for):
   and a test without the cap of three. Their balance is closed and they are **off by default for
   good** — a wacky addition, not the base game (ARCHIVE 13zw); a new tower is balanced at Level 5
   only, its variants against each other and against no tower (the user's).
-- **A Sports style** (item 5), after the music: an idea in `docs/SPORTS_STYLE.md` — a stadium,
-  its guns stick figures of ball sports with their balls, the ball missing until the shot lands.
+- **Bigger shots for the Berthas in every style** (item 5, the user's): no style draws a shot by
+  its gun's kind yet; a shared scale by `shot.kind` and `shot.cost` in `theme.ts`.
 - **The testers' choice of cannon icon** (item 3): each style's own gun or the generic cannon,
   `art.cannonIcons` (`"style"`, the default, or `"generic"`); `?icons=sheet` shows every style's.
 

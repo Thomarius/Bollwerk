@@ -816,7 +816,7 @@ export const NoirStyleSchema = z.strictObject({
 export type NoirStyleConfig = z.infer<typeof NoirStyleSchema>;
 
 /**
- * The Sports look (docs/SPORTS_STYLE.md): a stadium — the islands pitches ringed by a running
+ * The Sports look (ARCHIVE 14d): a stadium — the islands pitches ringed by a running
  * track, the sea the stands, their crowd a pattern laid in once. The guns are pictogram
  * sportsmen in the owner's jersey, a sport to a gun by its id; the castles trophies.
  */

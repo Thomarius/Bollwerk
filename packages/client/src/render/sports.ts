@@ -182,7 +182,7 @@ function standsPattern(tile: number, standing: boolean): FillPattern {
 }
 
 /**
- * The Sports look, for either look (docs/SPORTS_STYLE.md): a stadium. The islands are pitches,
+ * The Sports look, for either look (ARCHIVE 14d): a stadium. The islands are pitches,
  * striped turf ringed by a running track; the sea is the stands, the crowd a pattern laid in
  * once, a wave going round it when a castle is sealed. Walls are padded barriers in the
  * owner's colour, castles trophies on plinths of it — shining while sealed. **The guns are

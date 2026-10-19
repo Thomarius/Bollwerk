@@ -82,7 +82,7 @@ const HUD_SKIN: Record<ArtStyle, string> = {
 
 /**
  * A style's own words under the phase's call, where it has them: the stadium's "Kick-off!"
- * under "Fire!", "Half-time!" under "Rebuild" (docs/SPORTS_STYLE.md). `final` rides under the
+ * under "Fire!", "Half-time!" under "Rebuild" (ARCHIVE 14d). `final` rides under the
  * final round's banner.
  */
 const BANNER_FLAVOUR: Partial<Record<ArtStyle, Partial<Record<Phase | 'final', TextKey>>>> = {

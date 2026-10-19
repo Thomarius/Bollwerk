@@ -1322,7 +1322,7 @@ testers, 2026-10-09); its HUD black comic panels with white gutters; its title b
 white above a grey band, a hatched shadow cast; its finish ink drops and a necktie for a flag.
 
 **Stadium** (`sports.ts`, `sports/figures.ts`, `sports/stands.ts`, `art.sports`; ARCHIVE 14d,
-designed with the user in `SPORTS_STYLE.md`), for either look: **a stadium**. Each island a pitch,
+designed with the user through two rounds of sketches), for either look: **a stadium**. Each island a pitch,
 its turf mown in stripes, a red running track at its coast between chalk lines; the sea **the
 stands**, a crowd seated in rows of navy seats, a pattern drawn once on a canvas for the tile and
 laid in as a fill in screen space, with a concrete concourse where it meets the pitches. **The
@@ -1668,13 +1668,7 @@ fit (ARCHIVE 12z), its remaining steps dropped (the user's decision, 2026-10-14;
    Package B (B1–B2), some styles' own tracks, played with a chance at every start of a look and
    paused per style for some rounds after — the next session's, once the user has the tracks. The
    plan is in [`STYLE_MUSIC.md`](./STYLE_MUSIC.md).
-5. **A Sports style** (the users' choice of the themes brainstormed, 2026-10-18; an idea, not yet
-   designed): a stadium, its guns stick figures of ball sports throwing, kicking or serving their
-   own balls, each without its ball until the shot lands. Designed with the user in
-   [`SPORTS_STYLE.md`](./SPORTS_STYLE.md) and built (ARCHIVE 14d, 2026-10-19). Open: the users'
-   check in play — the crowd's calm, the sealed turf's wash, the figures at 12 pixels — then the
-   design retired into the ARCHIVE.
-6. **Bigger shots for the Berthas, in every style** (the user's, 2026-10-19, out of the Sports
+5. **Bigger shots for the Berthas, in every style** (the user's, 2026-10-19, out of the Sports
    design): no style draws a shot by its gun's kind today. A shared scale by `shot.kind` and
    `shot.cost` in `theme.ts`, applied by each style where it places its shot.
 
@@ -1686,7 +1680,7 @@ test-session feedback, in ARCHIVE 11w; 11.5 the small items and 11.6 the bots, i
 11.16 help for new players, the menu and the sea, and 11.17 the desktop app, in ARCHIVE
 11zt; 11.18 the fourth visual pass, in ARCHIVE 11zv; 11.19 every style to the edges, in
 ARCHIVE 11zz; 11.20 more languages, in ARCHIVE 12g; 11.21 UPnP, in ARCHIVE 12j; 11.2 points decide, 11.3 two players,
-11.4 measurements never taken and 11.13 the bots' loose ends, closed by the weekend soak, in ARCHIVE 12h; 11.22 rendering performance, in ARCHIVE 12n, its bots planning on the same ticks in ARCHIVE 12p; 11.23 random looks every round, in ARCHIVE 12q; Cyberpunk under Glowing, in ARCHIVE 12r; the slow plan late in a build phase, in ARCHIVE 12s; 11 item 3, the bots in a worker with the smaller rendering leads, in ARCHIVE 13k; the next item 3, wipes between heavy looks, in ARCHIVE 13o; 11.24 a piece in the corner for every style, in ARCHIVE 12t; Under the sea and Electric, in ARCHIVE 12u and 12v; Cartoon and Christmas, in ARCHIVE 12zb and 12zc; the refactoring of 2026-10-07, in ARCHIVE 12w; the bot learning work (the old item 3), closed in ARCHIVE 13zg; bots that hold ground as people do (the old item 1), in ARCHIVE 13zj; scoring by ground and guns (the next item 3), approved by the test sessions, in ARCHIVE 13zd and 13ze; special towers' finished packages ST1–ST6, in ARCHIVE 13zo, ST4 closed in 13zw; each style's own cannon icon (the old item 3, CI1–CI4), in ARCHIVE 13zv — so the open sections keep theirs.
+11.4 measurements never taken and 11.13 the bots' loose ends, closed by the weekend soak, in ARCHIVE 12h; 11.22 rendering performance, in ARCHIVE 12n, its bots planning on the same ticks in ARCHIVE 12p; 11.23 random looks every round, in ARCHIVE 12q; Cyberpunk under Glowing, in ARCHIVE 12r; the slow plan late in a build phase, in ARCHIVE 12s; 11 item 3, the bots in a worker with the smaller rendering leads, in ARCHIVE 13k; the next item 3, wipes between heavy looks, in ARCHIVE 13o; 11.24 a piece in the corner for every style, in ARCHIVE 12t; Under the sea and Electric, in ARCHIVE 12u and 12v; Cartoon and Christmas, in ARCHIVE 12zb and 12zc; the refactoring of 2026-10-07, in ARCHIVE 12w; the bot learning work (the old item 3), closed in ARCHIVE 13zg; bots that hold ground as people do (the old item 1), in ARCHIVE 13zj; scoring by ground and guns (the next item 3), approved by the test sessions, in ARCHIVE 13zd and 13ze; special towers' finished packages ST1–ST6, in ARCHIVE 13zo, ST4 closed in 13zw; each style's own cannon icon (the old item 3, CI1–CI4), in ARCHIVE 13zv; the Sports style (the old item 5), its design retired, in ARCHIVE 14d — so the open sections keep theirs.
 
 ## 12. Deferred (explicitly out of scope for v1)
 

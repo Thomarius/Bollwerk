@@ -122,7 +122,7 @@ SCENES=(
   "eight-noir|$BASE/?autostart=1&players=8&seed=3&snapshot=combat&round=3&style=noir|3500"
   "final-noir|$BASE/?autostart=1&players=3&seed=5&snapshot=combat&round=10&style=noir|4000"
   "menu-noir|$BASE/?buildStyle=flat&combatStyle=noir|4000"
-  # Sports (docs/SPORTS_STYLE.md): the sportsmen, the trophies, the stands; its banner's
+  # Sports (ARCHIVE 14d): the sportsmen, the trophies, the stands; its banner's
   # "Kick-off!" under the call, a watched match caught as the banner crosses.
   "build-sports|$GAME&snapshot=build&round=3&style=sports|2500"
   "combat-sports|$BASE/?autostart=1&players=2&seed=5&snapshot=combat&round=3&style=sports|4200"

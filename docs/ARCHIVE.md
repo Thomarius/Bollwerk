@@ -9240,9 +9240,15 @@ and v0.9.10's recordings replay.
 
 ## 14d. Stadium, the Sports style (2026-10-19)
 
-The users' choice of the themes brainstormed (2026-10-18), designed with the user in
-`docs/SPORTS_STYLE.md` before a line of the style was written, through two rounds of sketches on a
-dev page since removed: the guns in every state at tiles of 12, 16, 24 and 32 pixels, and a patch
+The users' choice (2026-10-18) of the themes brainstormed — Sports, Superheroes, Comic books,
+Anime / Kawaii, Mythology. Mythology as Greek vase painting (black figures on terracotta, the
+meander as the wall) was the runner-up; Superheroes and Comic books would make one pop-art comic
+style between them; Anime / Kawaii overlaps Sakura, Chocolate and Cartoon and fights the player
+colours with its pastels. Sports because the game already speaks it — a score, overtime, the
+final round, teams, a tournament with a league and a knockout — and the player colours are team
+jerseys; generic sport only, no clubs, leagues, logos nor the Olympic pictograms. Designed with
+the user in `docs/SPORTS_STYLE.md`, retired into this entry once built, before a line of the
+style was written, through two rounds of sketches on a dev page since removed: the guns in every state at tiles of 12, 16, 24 and 32 pixels, and a patch
 of the stands. The twentieth style, `sports`, named Stadium in the menu.
 
 **The guns are sportsmen** (the user's idea): ten ball sports, a sport to a gun by
@@ -9270,7 +9276,7 @@ What the sketches decided:
   wrong. The gun's box is its chalk outline alone: a wash of the owner's colour over the turf
   turned red olive.
 - The Rapid Cannon simply has its ball back while a barrel is loaded; no tower animation of its
-  own. The Berthas' bigger shots were judged a thing for every style (PLAN §11 item 6).
+  own. The Berthas' bigger shots were judged a thing for every style (PLAN §11 item 5).
 
 **The stadium**: pitches ringed by a running track, the sea the stands — a crowd seen from above in
 rows of seats, drawn once on a canvas for the tile and laid in as a fill, toned into navy so it is

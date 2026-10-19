@@ -1,7 +1,7 @@
 import type { Graphics } from 'pixi.js';
 
 /**
- * The Sports style's guns: pictogram sportsmen of ten ball sports (docs/SPORTS_STYLE.md §0),
+ * The Sports style's guns: pictogram sportsmen of ten ball sports (ARCHIVE 14d),
  * one skeleton for all, each sport a table of joint angles for its poses — data, not ten
  * drawings. A figure is drawn in ink with its jersey white, so a stamp of it tinted by the
  * owner's colour wears their jersey and leaves the ink ink; its ball is a stamp of its own,
