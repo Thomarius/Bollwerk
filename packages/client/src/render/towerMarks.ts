@@ -1,5 +1,14 @@
 import { variantCost, variantKind, type ArtConfig, type SpecialKind } from '@bollwerk/config';
-import { inRepairReach, repairRadiusOf, type CannonKind, type MatchState } from '@bollwerk/sim';
+import {
+  FREEZE_PENDING,
+  FROZEN_TO_END,
+  inRepairReach,
+  repairRadiusOf,
+  ticksFor,
+  type CannonKind,
+  type Freeze,
+  type MatchState,
+} from '@bollwerk/sim';
 import { Container, Graphics } from 'pixi.js';
 
 import { motionReduced } from '../motion.js';
@@ -127,6 +136,13 @@ interface Beam {
   ms: number;
 }
 
+/** A Frost Cannon's shot landing: a burst of frost over the tile it froze. */
+interface FrostBurst {
+  x: number;
+  y: number;
+  ms: number;
+}
+
 /** Walls an Architect rebuilt, shimmering as they come back. */
 interface Repair {
   tiles: readonly number[];
@@ -157,6 +173,30 @@ const BEAM_REACH_MS = 70;
 const BEAM_HOLD_MS = 110;
 const BEAM_FADE_MS = 380;
 const BEAM_MS = BEAM_REACH_MS + BEAM_HOLD_MS + BEAM_FADE_MS;
+
+/** A frozen tile's ice: its body, its rim and its shine, the same in every style. */
+const ICE = 0xbfe8ff;
+const ICE_RIM = 0xf4fcff;
+const MELTWATER = 0x6cb8f0;
+/** A Frost Cannon's landing burst. */
+const FROST_BURST_MS = 520;
+/** The ice left as a tile thaws, as a share of the tile: it never melts to nothing before it is gone. */
+const ICE_LEAST = 0.4;
+
+/**
+ * How much of a freeze is left, 1 to 0: whole until its build phase opens, then melting towards
+ * its thaw — a whole phase's towards the phase's end, and all but gone in the overtime.
+ */
+function iceLeft(state: MatchState, f: Freeze): number {
+  if (state.phase !== 'build' || f.thawTick === FREEZE_PENDING) return 1;
+  const phaseTicks = ticksFor(state.ruleset.phases.buildMs, state.ruleset.tickRateHz);
+  if (f.thawTick === FROZEN_TO_END) {
+    if (state.overtime) return 0.05;
+    return Math.min(1, Math.max(0, (state.phaseEndTick - state.tick) / phaseTicks));
+  }
+  const span = Math.max(1, Math.ceil(f.share * phaseTicks));
+  return Math.min(1, Math.max(0, (f.thawTick - state.tick) / span));
+}
 
 /**
  * Where a line from (fromX, fromY) through (toX, toY) leaves a board this big, in tiles as a
@@ -354,6 +394,9 @@ export class TowerMarks {
    * Architect's circle is what it is there to show.
    */
   reachAlways = false;
+  /** The Frost Cannons' ice, every frame while any tile is frozen, melting as it thaws. */
+  private readonly ice = new Graphics();
+  private iceShown = false;
   /** The towers' emblems, drawn again only when one changes. */
   private readonly emblems = new Graphics();
   /** The ghost's emblem, every frame while there is one. */
@@ -364,15 +407,17 @@ export class TowerMarks {
   private blasts: Blast[] = [];
   private bolts: Bolt[] = [];
   private beams: Beam[] = [];
+  private frostBursts: FrostBurst[] = [];
   private repairs: Repair[] = [];
 
   constructor() {
-    this.root.addChild(this.reach, this.emblems, this.effects, this.ghost);
+    this.root.addChild(this.reach, this.ice, this.emblems, this.effects, this.ghost);
   }
 
   /** Every tower's emblem: its owner's light colour while it fires, stone grey while inert. */
   draw(state: MatchState, view: ViewTransform, art: ArtConfig, humanPlayer: number): void {
     this.drawReach(state, view, art, humanPlayer);
+    this.drawIce(state, view);
     let key = `${viewKey(view)}|${art.players.map((p) => p.light).join(',')}`;
     for (const c of state.cannons) {
       if (c.kind !== 'cannon')
@@ -385,6 +430,46 @@ export class TowerMarks {
       if (c.kind === 'cannon') continue;
       const fill = c.active ? playerColour(art, c.owner, 'light') : 0x9a9aa4;
       drawEmblem(this.emblems, view, c.kind, c.cost, c.x, c.y, c.w, c.h, fill);
+    }
+  }
+
+  /**
+   * Every frozen tile as a block of ice over the board (the user's Frost Cannon, 2026-10-21):
+   * whole until its build phase opens, then shrinking and puddling as it thaws, so a player sees
+   * when it will take a piece again. Cleared once, then left alone, while nothing is frozen.
+   */
+  private drawIce(state: MatchState, view: ViewTransform): void {
+    if (state.frozen.length === 0) {
+      if (this.iceShown) clearDrawn(this.ice);
+      this.iceShown = false;
+      return;
+    }
+    this.iceShown = true;
+    const g = this.ice;
+    g.clear();
+    const t = view.tile;
+    for (const f of state.frozen) {
+      const x = f.tile % state.width;
+      const y = (f.tile - x) / state.width;
+      const left = iceLeft(state, f);
+      const [cx, cy] = [tileX(view, x + 0.5), tileY(view, y + 0.5)];
+      // The meltwater spreading under it as it goes.
+      if (left < 1) {
+        g.ellipse(cx, cy + t * 0.18, t * (0.42 + 0.2 * (1 - left)), t * (0.2 + 0.1 * (1 - left)));
+        g.fill({ color: MELTWATER, alpha: 0.45 * (1 - left) + 0.1 });
+      }
+      const size = t * (ICE_LEAST + (0.92 - ICE_LEAST) * left);
+      const [bx, by] = [cx - size / 2, cy - size / 2 + (t - size) * 0.12];
+      g.roundRect(bx, by, size, size, size * 0.18);
+      g.fill({ color: ICE, alpha: 0.88 });
+      g.stroke({ width: Math.max(1, t / 14), color: ICE_RIM, alpha: 0.95 });
+      // A shine across its top left, and a crack, so it reads as ice and not as a tile.
+      g.moveTo(bx + size * 0.2, by + size * 0.5).lineTo(bx + size * 0.5, by + size * 0.2);
+      g.stroke({ width: Math.max(1, t / 9), color: 0xffffff, alpha: 0.85, cap: 'round' });
+      g.moveTo(bx + size * 0.62, by + size * 0.55)
+        .lineTo(bx + size * 0.72, by + size * 0.7)
+        .lineTo(bx + size * 0.66, by + size * 0.84);
+      g.stroke({ width: Math.max(1, t / 18), color: MELTWATER, alpha: 0.7 });
     }
   }
 
@@ -552,6 +637,11 @@ export class TowerMarks {
     this.beams.push({ fromX, fromY, endX, endY, hits, colour, ms: 0 });
   }
 
+  /** A Frost Cannon's shot has landed here, freezing the tile. */
+  noteFrost(x: number, y: number): void {
+    this.frostBursts.push({ x, y, ms: 0 });
+  }
+
   /** A Bertha's shot has landed here, clearing these tiles round it. */
   noteBlast(x: number, y: number, crater: readonly (readonly [number, number])[]): void {
     this.blasts.push({ x, y, crater, reach: craterReach(crater), ms: 0 });
@@ -596,7 +686,8 @@ export class TowerMarks {
       this.blasts.length === 0 &&
       this.repairs.length === 0 &&
       this.bolts.length === 0 &&
-      this.beams.length === 0
+      this.beams.length === 0 &&
+      this.frostBursts.length === 0
     ) {
       clearDrawn(this.effects);
       return;
@@ -723,6 +814,31 @@ export class TowerMarks {
         g.fill({ color: 0xffffff, alpha: flash });
       }
     }
+    for (const burst of this.frostBursts) {
+      burst.ms += deltaMs;
+      // A ring of frost spreading and fading, and six crystals thrown out from the tile.
+      const t = still ? 0.5 : Math.min(1, burst.ms / FROST_BURST_MS);
+      const fade = still ? 0.6 : 1 - t;
+      const [cx, cy] = [tileX(view, burst.x + 0.5), tileY(view, burst.y + 0.5)];
+      g.circle(cx, cy, view.tile * (0.5 + 1.1 * t));
+      g.stroke({ width: Math.max(2, view.tile * 0.2 * fade), color: ICE, alpha: fade });
+      for (let k = 0; k < 6; k++) {
+        const a = (k / 6) * Math.PI * 2 + Math.PI / 6;
+        const r0 = view.tile * (0.3 + 0.6 * t);
+        const r1 = r0 + view.tile * 0.35;
+        g.moveTo(cx + Math.cos(a) * r0, cy + Math.sin(a) * r0).lineTo(
+          cx + Math.cos(a) * r1,
+          cy + Math.sin(a) * r1,
+        );
+      }
+      g.stroke({
+        width: Math.max(1.5, view.tile * 0.1),
+        color: ICE_RIM,
+        alpha: fade,
+        cap: 'round',
+      });
+    }
+    this.frostBursts = this.frostBursts.filter((b) => b.ms < FROST_BURST_MS);
     this.beams = this.beams.filter((b) => b.ms < BEAM_MS);
     this.bolts = this.bolts.filter((b) => b.ms < b.strikes.length * BOLT_STEP_MS + BOLT_FADE_MS);
     this.blasts = this.blasts.filter((b) => b.ms < blastMs(b));

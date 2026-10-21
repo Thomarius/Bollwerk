@@ -518,6 +518,7 @@ describe('the Architect’s repair', () => {
       player: 0,
       tiles: [WEST],
       towers: 1,
+      thawed: [],
     });
     // The attacker keeps the points: the shots landed.
     expect(state.players[1]!.wallsDestroyed).toBe(2);

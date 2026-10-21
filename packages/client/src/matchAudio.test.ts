@@ -302,7 +302,7 @@ describe('match audio', () => {
 describe('special towers in the sound', () => {
   const shot = (
     id: number,
-    kind: 'cannon' | 'bertha' | 'rapid' | 'lightning' | 'biggest' | 'laser',
+    kind: 'cannon' | 'bertha' | 'rapid' | 'lightning' | 'biggest' | 'laser' | 'frost',
   ): MatchEvent => ({
     kind: 'shot_fired',
     tick: 1,
@@ -396,11 +396,18 @@ describe('special towers in the sound', () => {
     expect(audio.sfx).toEqual(['laser_fire']);
   });
 
+  it('lands a Frost Cannon as a cannon, its freeze heard over the impact', () => {
+    const { audio, match } = setup();
+    match.handle([shot(8, 'frost')]);
+    match.handle([landed(8), { kind: 'tile_frozen', tick: 40, shotId: 8, owner: 1, tile: 105 }]);
+    expect(audio.sfx).toEqual(['cannon_fire', 'shot_impact', 'frost_impact']);
+  });
+
   it('knocks twice for each of the player’s own Architects that rebuilt, not a rival’s', () => {
     const { audio, match } = setup();
     match.handle([
-      { kind: 'walls_repaired', tick: 5, player: 1, tiles: [3], towers: 1 },
-      { kind: 'walls_repaired', tick: 5, player: HUMAN, tiles: [4, 5], towers: 2 },
+      { kind: 'walls_repaired', tick: 5, player: 1, tiles: [3], towers: 1, thawed: [] },
+      { kind: 'walls_repaired', tick: 5, player: HUMAN, tiles: [4, 5], towers: 2, thawed: [] },
     ]);
     expect(audio.sfx).toEqual(Array(4).fill('walls_repaired'));
     expect(audio.delays).toEqual([0, 300, 600, 900]);

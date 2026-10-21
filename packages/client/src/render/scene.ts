@@ -894,6 +894,11 @@ export class Scene {
     this.towers.noteBlast(x, y, crater);
   }
 
+  /** A Frost Cannon's shot has frozen this tile: its burst, over whichever look is in front. */
+  noteFrost(x: number, y: number): void {
+    this.towers.noteFrost(x, y);
+  }
+
   /** An Architect has rebuilt these walls for this player: they shimmer back. */
   noteRepair(tiles: readonly number[], width: number, player: number): void {
     this.towers.noteRepair(

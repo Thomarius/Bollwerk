@@ -9,6 +9,7 @@ import {
   type PlayerState,
 } from './types.js';
 import { pieceAt, pieceCells } from './pieces.js';
+import { isFrozen } from './frost.js';
 import { footprintOf, specialRefusal } from './specials.js';
 
 /**
@@ -39,7 +40,8 @@ export type Rejection =
   | 'special_at_opening'
   | 'special_this_round'
   | 'special_cap'
-  | 'special_too_dear';
+  | 'special_too_dear'
+  | 'frozen';
 
 export function playerOf(state: MatchState, id: number): PlayerState | null {
   return state.players[id] ?? null;
@@ -99,6 +101,7 @@ export function cellsRefusal(
     const i = ty * state.width + tx;
     if (state.terrain[i] !== Terrain.Land) return 'not_land';
     if (state.structure[i] !== Structure.Empty) return 'occupied';
+    if (isFrozen(state, i)) return 'frozen';
     if (
       state.ruleset.build.restrictToOwnIsland &&
       !mayBuildOn(state, player, state.islandId[i] as number)

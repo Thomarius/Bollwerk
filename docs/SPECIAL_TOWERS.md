@@ -12,8 +12,8 @@ issues found (2026-10-17, ARCHIVE 13zp), and ST7 put the towers into How to play
 screenshot scenes (13zr). ST4 is closed, its remaining soaks dropped, the towers off by default
 for good and the bots' buying rule kept (the user's, ARCHIVE 13zw). Open: two decisions left after
 ST8 — the next tower and a test without the cap of three (§5); the towers' own sounds, TS, are
-in (ARCHIVE 13zx). The sixth tower, the Laser Tower (§2.6, 2026-10-21), is built and balanced,
-its play-test by the users open. Like PLAN.md it says what is configurable and why and leaves the
+in (ARCHIVE 13zx). The sixth tower, the Laser Tower (§2.6, 2026-10-21), is built, balanced and
+played by the user; the seventh, the Frost Cannon (§2.7), built and balanced, its play-test open. Like PLAN.md it says what is configurable and why and leaves the
 values to `config/*.json`; when a package is done its summary moves to ARCHIVE.md and this file
 keeps only what is open.
 
@@ -53,15 +53,16 @@ keeps only what is open.
   nineteen.
 - **The first version brings three towers**: **Big Bertha** (offence), **Architect** (defence),
   **Rapid Cannon** (more guns in less room). Each is deterministic without new randomness, simple
-  in the rules, and gives the bots a clear placement rule. More may follow (§4). The fourth, the
+  in the rules, and gives the bots a clear placement rule. More follow by the user's designs. The fourth, the
   **Lightning Tower** (offence by chain strikes, §2.4), came on 2026-10-17, the user's design.
 - **The sixth, the Laser Tower** (a beam through the first walls on its line, §2.6), came on
-  2026-10-21, the user's design.
+  2026-10-21, the user's design; the seventh, the **Frost Cannon** (a shot that freezes the tile it
+  hits against building, §2.7), the same day — a risky one, the user's on purpose.
 - **Every tower comes at two costs, 2 and 3 cannons** (the user's, 2026-10-16): a player chooses
   the tower and the cost that suits them — a variant (§2.3). The cost-3 variant is the stronger
   tower, since it is bought only in rounds its owner holds a second castle. Never a cost of 1. A
   variant that cannot be balanced may be left out in config, so a tower can come at one cost.
-  The later towers (§4) are designed with both costs in mind, each by its own lever.
+  Every later tower is designed with both costs in mind, each by its own lever.
 - **The balance goal** (the user's, loosened 2026-10-16 — the towers are a fun, wacky addition,
   not a tournament standard): each variant wins **50–70%** against an equal player using none, and
   a tower's two variants **40–60%** head to head. **From the Lightning Tower on** (the user's,
@@ -109,8 +110,8 @@ keeps only what is open.
   sealed ground** like any gun (so an investment outside a safe wall is a real risk — wanted:
   it rewards the big, safe enclosure people build), it is never destroyed, it scores as **the cannons
   it cost** at each resolution, and a continue wipes it with everything else.
-- **Towers of two sorts.** A tower whose shot does something on impact — Big Bertha now, Chain
-  Lightning or Scattershot later — is an **impact tower**. A tower that fires ordinary shots — the
+- **Towers of two sorts.** A tower whose shot does something on impact — Big Bertha, the Lightning
+  Tower, the Allerdickste Bertha, the Laser Tower — is an **impact tower**. A tower that fires ordinary shots — the
   Architect, the Rapid Cannon, however quick its reload — is not: it changes nothing about where
   to aim, and fires as any gun.
 - **Every shot is a left click**, and the sim chooses the gun (`findReadyCannon`): the nearest
@@ -119,8 +120,8 @@ keeps only what is open.
 - **Two reload rings** on the cursor: the one of today for the ordinary guns, and a second for
   the impact towers, filling towards the next one to be ready. While an impact tower is ready
   **the aiming cursor glows** — one glow for every kind at first, each kind's own animation later
-  (sparks for Chain Lightning). Neither shows for a player with no impact tower.
-- Passive abilities (the Architect's repair, the Bastion's walls) need no firing.
+  (the Lightning Tower's crackle, the Berthas' flames, the Laser's line). Neither shows for a player with no impact tower.
+- Passive abilities (the Architect's repair) need no firing.
 
 ### 2.3 The first three towers
 
@@ -276,6 +277,46 @@ whenever it is ready it fires first, as Big Bertha does.
   fire it, clears most — the weakest wall's blocks counting three, any other rival's one, for the
   walls it is sure to clear — so a beam along a thin wall, or through it to the ring behind,
   wins; and buy and site it as an ordinary gun goes.
+
+### 2.7 The Frost Cannon
+
+The user's design (2026-10-21), meant as a risky tower: a shot like a cannon's, but the tile it
+hits cannot be built on in the next build phase. A precise hit can make a castle's ring
+unsealable — the very risk the Magma Thrower was dropped for (§1), taken on deliberately this
+time, and measured rather than assumed (§5 FR). An impact tower: whenever it is ready it fires
+first.
+
+- **It lands as an ordinary shot** — a cannon's flight, its reload — and clears the wall it hits
+  as a cannon does, one tile, scoring as one. Its area is never to grow (the user's): one tile is
+  dangerous enough.
+- **The tile it hits is frozen**, wall or bare ground alike (the user's: the simplest rule), for
+  the **first `freezeShare` of the next build phase** — nothing may be laid on it (`frozen`, a
+  refusal of its own). A whole phase's freeze lasts through the overtime only where
+  `throughOvertime` says so; less than a whole phase thaws at that share of the phase's 20
+  seconds. The cannon phase after is never frozen: every freeze ends with the build phase. A sea
+  tile it hits is not frozen, the sea taking no piece anyway; a tile frozen twice keeps the longer
+  freeze.
+- **Counters**: an Architect thaws every frozen tile of its owner's island in its reach as the
+  barrage ends, as it rebuilds the walls (the user's); and a continue wipes the island's freezes
+  with the rest of it — the island starts afresh (the user's). No cap on freezes (the user's).
+- **The levers by cost**: **60% of the phase at cost 2; the whole phase at cost 3, thawing as the
+  clock runs out, before the overtime** — set by the soaks (§5 FR), the reload a cannon's.
+  Dropped as levers, by the user: a wider area, freezing only some shots a phase, and a cap a
+  victim — hard to explain or to grasp.
+- **Determinism**: the freezes are a list in the match (`frozen`), each a tile, its share, whether
+  it lasts through the overtime and its thaw tick, given as the build phase opens
+  (`startFreezes`); hashed only while there are any, so a match without them hashes as it always
+  did, and copied by a rollout, which opens that phase too.
+- **Seen and heard**: a snowflake for its emblem; each frozen tile a block of ice over the board
+  in every style, whole until its build phase opens, then shrinking and puddling towards its thaw,
+  so the player sees when it will take a piece; a burst of frost where the shot lands. It lands
+  with a cannon's impact, the user's `tower_frost.mp3` over it (`frost_impact`).
+- **Bots**: aim it as Bertha, at the chosen opponent's weakest wall (its crater one tile); and in
+  building treat a frozen tile of their own island as one no piece covers, so their seal routes
+  round it, until it thaws (`markUncoverable`, `coverable`).
+- **The risk measured**: the statistics' `frozenAtBuild` (tiles of the island frozen as the phase
+  opened) and `repairFrozen` (of the cells the tightest seal still lacked on the last tick, those
+  frozen) — rounds a freeze may have cost.
 
 ---
 
@@ -474,28 +515,6 @@ Built in ST3.
 
 ---
 
-## 4. Towers for later
-
-In the order the user liked them; each to be designed in detail and agreed before it is built,
-with a variant at each cost (§1) and the lever that tells them apart — the Bastion's radius,
-Scattershot's extra shots, the Mortar's shots a phase. Chain Lightning was built as the Lightning
-Tower (§2.4).
-
-- **Bastion** (liked): the walls within a radius of 2 need two hits to fall — a crack on the
-  first, cleared on the second; cracks heal as each build phase opens. Defensive, simple in the
-  rules (a cracked flag per tile, hashed), and it blunts the minimum-cut problem — a thin wall
-  stops being fatal. Drawn as a crack on the wall, in every style. The next tower after the first
-  three.
-- **Scattershot**: three more shots land at random beside the target. Random tiles chosen on the
-  island hit, so the extra shots are not mostly wasted on the sea. An impact tower.
-- **Siege Mortar** (experimental): fires itself, once a combat phase, at a target's weakest point.
-  It helps players who aim less well — the casual side of the gap — but it takes control away;
-  the user is curious whether people like that. To try in a test session before it is kept.
-- **Keep** (shelved): a 3×3 tower counting as a castle for sealing — an extra castle where one
-  builds it. Very hard to balance; not planned.
-
----
-
 ## 5. Work packages
 
 In order. Each ends with `npm run check` passing and the user's go-ahead to commit. ST1–ST3,
@@ -581,13 +600,36 @@ Kept: 2 and 2.5 — every figure inside the goal, the two costs alike against no
 dearer a little the stronger. Bots with the starting values cleared 2.67 and 3.33 walls a beam
 against a cannon's 0.75: a line through a wall finds nearly as many as it may take.
 
+### FR — The Frost Cannon's balance
+
+Built 2026-10-21 (§2.7). Measured at Level 5 only (§1): each variant against no tower and the two
+head to head, 96 matches a pairing (±5), the share of the build phase frozen the lever (ARCHIVE
+14l). Cost 2 / cost 3 against none, then 3 against 2:
+
+| freeze (cost 2 / 3)          | against none | head to head |
+| ---------------------------- | ------------ | ------------ |
+| 50% / 100%, overtime too     | 58 / 74      | 64           |
+| 50% / 75%                    | 58 / 57      | 46           |
+| **60% / 100%, not overtime** | **59 / 70**  | **56**       |
+
+Kept: 60% and the whole phase until the clock runs out (the user's) — every figure inside the
+goal, the dearer the stronger. The overtime's 3 seconds took Frost 3 from 74 to 70 against no
+tower on the same seeds, a hint within the noise: it is when the ring's last piece goes in.
+
+The risk, 24 matches a setting at the starting values, the rival's rounds: failed 12.3% against
+no tower, 12.5% against Frost 2 (never a frozen tile left on the last tick), 13.3% against Frost
+3, 12 of whose 32 failed rounds had a frozen tile in the seal still missing — some 5% of rounds.
+About 5.5 tiles of an island frozen a build phase; the bots building round them. A freeze rarely
+forces a lost life: the whole phase's wins came from its victims holding less ground.
+
 ### After ST8 — two decisions
 
 ST8, the testers' matches with towers on, closed with no issues found (2026-10-17, ARCHIVE 13zp).
-Left from it, each the user's to decide: §4's next tower, and a test without the cap of three
+Left from it, each the user's to decide: the next tower, and a test without the cap of three
 towers on an island (`maxOwned`, null for none). The next tower was the user's own, the Laser
-Tower (§2.6, 2026-10-21); the Bastion, the one liked most of §4, is still there for later. Open
-now: the Laser's play-test by the users, and the test without the cap.
+Tower (§2.6, 2026-10-21), played by the user with two fixes (ARCHIVE 14k). Later towers come by
+the user's own designs, the list of candidates removed (2026-10-21). Open: the test without the
+cap.
 
 ---
 

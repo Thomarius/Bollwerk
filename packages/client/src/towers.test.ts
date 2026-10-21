@@ -196,6 +196,10 @@ describe('the lobby with special towers', () => {
     };
     expect(towerWhat('laser2', fractional)).toContain('first 3 wall blocks');
     expect(towerWhat('laser2', fractional)).toContain('one more 25%');
+    // The Frost Cannon's freeze: the whole phase until the clock runs out at cost 3, its first
+    // 60% at cost 2.
+    expect(towerWhat('frost3')).toContain('until its clock runs out');
+    expect(towerWhat('frost2')).toContain('first 60%');
   });
 });
 
@@ -208,6 +212,7 @@ describe('the tower menu', () => {
       { kind: 'lightning', costs: [2, 3] },
       { kind: 'biggest', costs: [2, 3] },
       { kind: 'laser', costs: [2, 3] },
+      { kind: 'frost', costs: [2, 3] },
     ]);
     const html = towerMenuMarkup('bertha2');
     expect(html).not.toContain('data-kind="none"');
@@ -220,9 +225,25 @@ describe('the tower menu', () => {
     const before = language();
     try {
       setLanguage('en');
-      expect(order()).toEqual(['biggest', 'architect', 'bertha', 'laser', 'lightning', 'rapid']);
+      expect(order()).toEqual([
+        'biggest',
+        'architect',
+        'bertha',
+        'frost',
+        'laser',
+        'lightning',
+        'rapid',
+      ]);
       setLanguage('de');
-      expect(order()).toEqual(['biggest', 'architect', 'lightning', 'bertha', 'laser', 'rapid']);
+      expect(order()).toEqual([
+        'biggest',
+        'architect',
+        'lightning',
+        'bertha',
+        'frost',
+        'laser',
+        'rapid',
+      ]);
     } finally {
       setLanguage(before);
     }

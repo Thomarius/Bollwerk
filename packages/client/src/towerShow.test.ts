@@ -81,6 +81,18 @@ describe('the tower menu’s preview, played by the rules', () => {
     expect(pierced('laser3')).toBe(3);
   });
 
+  it('lands the Frost Cannon’s shot as a cannon’s, and freezes the tile it hit', () => {
+    for (const variant of ['frost2', 'frost3'] as const) {
+      const { show, events } = play(variant, 3500);
+      const first = impacts(events)[0];
+      if (first?.kind !== 'shot_impact') throw new Error('no shot');
+      expect(first.destroyed).toHaveLength(1);
+      const frozen = events.find((e) => e.kind === 'tile_frozen');
+      expect(frozen?.kind === 'tile_frozen' && frozen.tile).toBe(first.destroyed[0]);
+      expect(show.state.frozen).toHaveLength(1);
+    }
+  });
+
   it('lands the Allerdickste Bertha’s shell after ten seconds, cost 3’s clearing more', () => {
     const cleared = (variant: TowerVariant): number => {
       const { events } = play(variant, 12_000);

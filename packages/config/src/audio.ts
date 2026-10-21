@@ -37,6 +37,8 @@ export const SFX_CUES = [
   'lightning_strike',
   /** A Laser Tower's beam, once however many walls it burns through. */
   'laser_fire',
+  /** A Frost Cannon's shot freezing the tile it hit, over the ordinary impact. */
+  'frost_impact',
   /** The player's own Architect rebuilding their walls as a barrage ends, twice a tower. */
   'walls_repaired',
 ] as const;

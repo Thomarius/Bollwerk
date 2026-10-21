@@ -542,6 +542,12 @@ export async function runSession(
           if (debris.length > 0) structuresChanged = true;
           break;
         }
+        case 'tile_frozen':
+          scene.noteFrost(
+            event.tile % session.state.width,
+            Math.floor(event.tile / session.state.width),
+          );
+          break;
         case 'walls_repaired':
           scene.noteRepair(event.tiles, session.state.width, event.player);
           structuresChanged = true;

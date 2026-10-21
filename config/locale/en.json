@@ -306,6 +306,7 @@
   "rejection.special_this_round": "one tower a round",
   "rejection.special_cap": "tower limit reached",
   "rejection.special_too_dear": "not enough cannons",
+  "rejection.frozen": "frozen",
   "menu.prevBuild": "The previous building look",
   "menu.prevCombat": "The previous combat look",
   "menu.pickBuild": "Choose the building look from all of them",
@@ -525,6 +526,7 @@
   "tower.lightning": "Lightning Tower",
   "tower.biggest": "Allerdickste Bertha",
   "tower.laser": "Laser Tower",
+  "tower.frost": "Frost Cannon",
   "tower.berthaWhat": "Clears a cross of five wall blocks, and fires first whenever it is ready. Its shell flies as fast as a cannon's.",
   "tower.berthaFastWhat": "Clears a cross of five wall blocks, and fires first whenever it is ready. Its shell flies faster than a cannon's, so it reloads sooner.",
   "tower.berthaSlowWhat": "Clears a cross of five wall blocks, and fires first whenever it is ready. Its shell flies slower than a cannon's, so it reloads later.",
@@ -537,6 +539,9 @@
   "tower.biggestWhat": "One enormous shell each combat phase: it flies {s} seconds, near or far, and clears every wall block in a circle of {n} tiles where it lands — fires first whenever it is ready.",
   "tower.laserWhat": "Fires a beam on the instant through the first {n} wall blocks in its line, however far — fires first whenever it is ready.",
   "tower.laserChanceWhat": "Fires a beam on the instant through the first {n} wall blocks in its line, however far, and one more {p}% of the time — fires first whenever it is ready.",
+  "tower.frostWhat": "Freezes the tile it hits for the whole next build phase, overtime too: nothing can be built there — fires first whenever it is ready.",
+  "tower.frostClockWhat": "Freezes the tile it hits for the next build phase until its clock runs out: nothing can be built there — fires first whenever it is ready.",
+  "tower.frostShareWhat": "Freezes the tile it hits for the first {p}% of the next build phase: nothing can be built there until it thaws — fires first whenever it is ready.",
   "tower.cost": {
     "one": "{n} cannon",
     "other": "{n} cannons"

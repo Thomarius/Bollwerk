@@ -28,6 +28,7 @@ const NAME_KEY = {
   lightning: 'tower.lightning',
   biggest: 'tower.biggest',
   laser: 'tower.laser',
+  frost: 'tower.frost',
 } as const;
 
 /** A tower's name, without its cost. */
@@ -93,6 +94,13 @@ export function towerWhat(variant: TowerVariant, ruleset: Ruleset = defaultRules
         ? t('tower.laserWhat', { n: whole })
         : t('tower.laserChanceWhat', { n: whole, p: chance });
     }
+    case 'frost':
+      // The whole phase, overtime too, at 1; else the share of it, from its start.
+      if (!('freezeShare' in config)) return '';
+      if (config.freezeShare < 1) {
+        return t('tower.frostShareWhat', { p: Math.round(config.freezeShare * 100) });
+      }
+      return t(config.throughOvertime ? 'tower.frostWhat' : 'tower.frostClockWhat');
   }
 }
 

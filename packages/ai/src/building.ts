@@ -5,6 +5,7 @@ import {
   computeEnclosure,
   buildRefusal,
   cellsRefusal,
+  isFrozen,
   currentPieceId,
   pieceById,
   pieceCells,
@@ -180,6 +181,7 @@ export class Builder {
       plannedAt: -1,
       plan: [...this.plan],
       unreachable: new Set(this.unreachable),
+      frozenOut: new Set(this.frozenOut),
       spareKept: this.spareKept === null ? null : [...this.spareKept],
     });
     return copy;
@@ -203,6 +205,11 @@ export class Builder {
    * the next plan routes around them.
    */
   private unreachable = new Set<number>();
+  /**
+   * Of those, the tiles ruled out because a Frost Cannon froze them, given back as they thaw: a
+   * freeze for half the phase leaves its tile free for the rest (2026-10-21).
+   */
+  private frozenOut = new Set<number>();
 
   private nextPlacementTick = 0;
   /**
@@ -236,6 +243,18 @@ export class Builder {
    */
   private markUncoverable(state: MatchState): void {
     const island = state.players[this.playerId]?.islandId;
+    // Thawed since the last look: free again, unless no piece could cover it anyway, which the
+    // pass below finds afresh.
+    for (const i of this.frozenOut) {
+      if (isFrozen(state, i)) continue;
+      this.frozenOut.delete(i);
+      this.unreachable.delete(i);
+    }
+    for (const f of state.frozen) {
+      if (state.islandId[f.tile] !== island || !isFrozen(state, f.tile)) continue;
+      if (!this.unreachable.has(f.tile)) this.frozenOut.add(f.tile);
+      this.unreachable.add(f.tile);
+    }
     for (let i = 0; i < state.structure.length; i++) {
       if (
         state.islandId[i] !== island ||
@@ -301,6 +320,7 @@ export class Builder {
     if (this.planRound !== state.round) {
       this.planRound = state.round;
       this.unreachable.clear();
+      this.frozenOut.clear();
       this.plan = [];
       this.plannedAt = -1;
       this.widerKey = null;
@@ -1212,6 +1232,7 @@ export class Builder {
     this.plan = [];
     this.plannedAt = -1;
     this.unreachable.clear();
+    this.frozenOut.clear();
   }
 }
 

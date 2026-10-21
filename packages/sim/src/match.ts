@@ -18,6 +18,7 @@ import {
 } from './placement.js';
 import { streamFor } from './rng.js';
 import { fire, resolveImpacts } from './shots.js';
+import { startFreezes, thawExpired } from './frost.js';
 import { repairWalls } from './specials.js';
 import { denseTeams, tableTeamSize, teamScore } from './teams.js';
 import { generateTerrain } from './terrain.js';
@@ -144,6 +145,7 @@ export function createMatch(options: MatchOptions): MatchState {
     cannons: [],
     shots: [],
     lostWalls: [],
+    frozen: [],
     nextCannonId: 0,
     nextShotId: 0,
     winners: [],
@@ -291,6 +293,8 @@ function finishCastleSelect(state: MatchState): void {
 function wipeIsland(state: MatchState, playerId: number): void {
   const player = state.players[playerId] as PlayerState;
   stripEliminated(state, playerId);
+  // Its freezes too: the island starts afresh (the user's, 2026-10-21).
+  state.frozen = state.frozen.filter((f) => state.islandId[f.tile] !== player.islandId);
   for (let i = 0; i < state.structure.length; i++) {
     if (state.islandId[i] !== player.islandId) continue;
     if (state.structure[i] === Structure.Wall) {
@@ -600,6 +604,8 @@ function beginPendingPhase(state: MatchState): void {
     cannon_place: state.ruleset.phases.cannonPlaceMs,
   };
   enterPhase(state, next, durations[next] ?? 0);
+  // The Frost Cannons' freezes run from the build phase's first tick.
+  if (next === 'build') startFreezes(state);
 }
 
 /**
@@ -658,6 +664,7 @@ function advancePhase(state: MatchState): void {
       return;
     }
     case 'build': {
+      thawExpired(state);
       const overtimeTicks = ticksFor(state.ruleset.build.overtimeMs, state.ruleset.tickRateHz);
       if (!state.overtime && state.tick >= state.phaseEndTick && overtimeTicks > 0) {
         // The clock has run out; everyone may still place the piece they are holding.
@@ -669,6 +676,8 @@ function advancePhase(state: MatchState): void {
         state.overtime && state.players.every((p) => p.eliminated || p.overtimeSpent);
       if (state.tick >= state.phaseEndTick || allSpent) {
         state.overtime = false;
+        // Every freeze ends with the phase, a whole phase's too: the cannon phase is never frozen.
+        state.frozen = [];
         resolveRound(state);
       }
       return;
@@ -844,6 +853,7 @@ const CANNON_KIND_CODES: readonly string[] = [
   'lightning',
   'biggest',
   'laser',
+  'frost',
 ];
 /** The same for loadouts; a variant added goes at the end. */
 const VARIANT_CODES: readonly TowerVariant[] = [
@@ -859,6 +869,8 @@ const VARIANT_CODES: readonly TowerVariant[] = [
   'biggest3',
   'laser2',
   'laser3',
+  'frost2',
+  'frost3',
 ];
 
 export function hashMatchState(state: MatchState, version = HASH_VERSION): string {
@@ -949,5 +961,16 @@ export function hashMatchState(state: MatchState, version = HASH_VERSION): strin
   for (const s of state.shots) h.u32(kindCode(s.kind)).i32(s.cost);
   h.u32(state.lostWalls.length);
   for (const i of state.lostWalls) h.i32(i);
+  // The Frost Cannons' freezes, only where there are any: a match without them hashes as it
+  // always did, so recordings from before them replay to the same fingerprints.
+  if (state.frozen.length > 0) {
+    h.u32(state.frozen.length);
+    for (const f of state.frozen) {
+      h.i32(f.tile)
+        .i32(f.thawTick)
+        .i32(Math.round(f.share * 1e6))
+        .bool(f.throughOvertime);
+    }
+  }
   return h.hex;
 }

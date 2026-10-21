@@ -14,6 +14,7 @@ export const SPECIAL_KINDS = [
   'lightning',
   'biggest',
   'laser',
+  'frost',
 ] as const;
 export const SpecialKindSchema = z.enum(SPECIAL_KINDS);
 export type SpecialKind = z.infer<typeof SpecialKindSchema>;
@@ -42,6 +43,8 @@ export const TOWER_VARIANTS = [
   'biggest3',
   'laser2',
   'laser3',
+  'frost2',
+  'frost3',
 ] as const satisfies readonly `${SpecialKind}${TowerCost}`[];
 export const TowerVariantSchema = z.enum(TOWER_VARIANTS);
 export type TowerVariant = z.infer<typeof TowerVariantSchema>;
@@ -136,6 +139,26 @@ const LaserSchema = z.strictObject({
 });
 
 /**
+ * The Frost Cannon (2026-10-21, the user's): an ordinary shot, but the tile it hits — wall or
+ * ground — is frozen for the first `freezeShare` of the next build phase, nothing to be built on
+ * it (`freezeTile`). Its reload an ordinary shot's flight, times `flightFactor`.
+ */
+const FrostSchema = z.strictObject({
+  ...towerFields,
+  /**
+   * The share of the next build phase a tile it hits stays frozen, from its start; the balance's
+   * lever (the user's). 1 is the whole phase, its overtime too.
+   */
+  freezeShare: z.number().positive().max(1),
+  /**
+   * Whether a whole phase's freeze (`freezeShare` 1) lasts through the overtime too, or thaws as
+   * the build clock runs out (the user's, 2026-10-21, a lever of its own). Less than a whole
+   * phase ends before the overtime either way.
+   */
+  throughOvertime: z.boolean(),
+});
+
+/**
  * Special towers (docs/SPECIAL_TOWERS.md): a cannon with an ability of its own, bought in
  * the cannon phase for several ordinary ones. Whether they are played at all is `enabled`,
  * which a match's settings write; the rest is each variant's balance.
@@ -170,6 +193,11 @@ export const SpecialsSchema = z.strictObject({
    * before it — v0.9.11's recordings — and then not offered.
    */
   laser: byCost(LaserSchema).optional(),
+  /**
+   * Freezes the tile it hits against building (2026-10-21). Absent from rulesets written before
+   * it, and then not offered.
+   */
+  frost: byCost(FrostSchema).optional(),
 });
 export type Specials = z.infer<typeof SpecialsSchema>;
 export type BerthaVariant = z.infer<typeof BerthaSchema>;
@@ -178,13 +206,15 @@ export type RapidVariant = z.infer<typeof RapidSchema>;
 export type LightningVariant = z.infer<typeof LightningSchema>;
 export type BiggestVariant = z.infer<typeof BiggestSchema>;
 export type LaserVariant = z.infer<typeof LaserSchema>;
+export type FrostVariant = z.infer<typeof FrostSchema>;
 export type VariantConfig =
   | BerthaVariant
   | ArchitectVariant
   | RapidVariant
   | LightningVariant
   | BiggestVariant
-  | LaserVariant;
+  | LaserVariant
+  | FrostVariant;
 
 /** The variants the ruleset offers, in their order everywhere. */
 export function offeredVariants(specials: Specials): TowerVariant[] {

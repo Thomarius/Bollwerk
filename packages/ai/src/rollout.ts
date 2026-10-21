@@ -149,6 +149,9 @@ function copyOf(state: MatchState, events: MatchState['events'] = []): MatchStat
     castles: state.castles.map((c) => ({ ...c })),
     cannons: state.cannons.map((c) => ({ ...c })),
     shots: state.shots.map((s) => ({ ...s })),
+    // Replaced rather than changed by the sim, but copied all the same: a rollout opening its
+    // build phase gives each freeze its thaw tick, which must not reach the match it copies.
+    frozen: state.frozen.map((f) => ({ ...f })),
     winners: [...state.winners],
     events: [...events],
   };

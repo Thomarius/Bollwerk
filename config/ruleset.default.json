@@ -69,6 +69,10 @@
     "laser": {
       "2": { "footprint": [2, 2], "flightFactor": 1, "pierce": 2 },
       "3": { "footprint": [2, 2], "flightFactor": 1, "pierce": 2.5 }
+    },
+    "frost": {
+      "2": { "footprint": [2, 2], "flightFactor": 1, "freezeShare": 0.6, "throughOvertime": false },
+      "3": { "footprint": [2, 2], "flightFactor": 1, "freezeShare": 1, "throughOvertime": false }
     }
   },
   "build": {

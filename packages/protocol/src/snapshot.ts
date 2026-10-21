@@ -132,6 +132,17 @@ export const SnapshotSchema = z.strictObject({
   cannons: z.array(CannonSchema),
   shots: z.array(ShotSchema),
   lostWalls: z.array(z.number().int().nonnegative()),
+  /** The Frost Cannons' freezes; absent from a snapshot of a match without them. */
+  frozen: z
+    .array(
+      z.strictObject({
+        tile: z.number().int().nonnegative(),
+        share: z.number().positive().max(1),
+        throughOvertime: z.boolean(),
+        thawTick: z.number().int(),
+      }),
+    )
+    .optional(),
   nextCannonId: z.number().int().nonnegative(),
   nextShotId: z.number().int().nonnegative(),
   winners: z.array(z.number().int().nonnegative()),
@@ -162,6 +173,7 @@ export function captureSnapshot(state: MatchState): Snapshot {
     cannons: state.cannons.map((c) => ({ ...c })),
     shots: state.shots.map((s) => ({ ...s })),
     lostWalls: [...state.lostWalls],
+    ...(state.frozen.length > 0 ? { frozen: state.frozen.map((f) => ({ ...f })) } : {}),
     nextCannonId: state.nextCannonId,
     nextShotId: state.nextShotId,
     winners: [...state.winners],
@@ -195,6 +207,7 @@ export function applySnapshot(state: MatchState, snapshot: Snapshot): void {
   state.cannons = snapshot.cannons.map((c) => ({ ...c }));
   state.shots = snapshot.shots.map((s) => ({ ...s }));
   state.lostWalls = [...snapshot.lostWalls];
+  state.frozen = (snapshot.frozen ?? []).map((f) => ({ ...f }));
   state.nextCannonId = snapshot.nextCannonId;
   state.nextShotId = snapshot.nextShotId;
   state.winners = [...snapshot.winners];

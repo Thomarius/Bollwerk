@@ -303,6 +303,7 @@
   "rejection.special_this_round": "ein Turm pro Runde",
   "rejection.special_cap": "Turmlimit erreicht",
   "rejection.special_too_dear": "zu wenige Kanonen",
+  "rejection.frozen": "gefroren",
   "menu.prevBuild": "Die vorige Optik zum Bauen",
   "menu.prevCombat": "Die vorige Optik zum Kämpfen",
   "menu.pickBuild": "Die Optik zum Bauen aus allen wählen",
@@ -522,6 +523,7 @@
   "tower.lightning": "Blitzturm",
   "tower.biggest": "Allerdickste Berta",
   "tower.laser": "Laserturm",
+  "tower.frost": "Frostkanone",
   "tower.berthaWhat": "Reißt ein Kreuz aus fünf Mauerblöcken und feuert zuerst, sobald sie bereit ist. Ihre Granate fliegt so schnell wie eine Kanonenkugel.",
   "tower.berthaFastWhat": "Reißt ein Kreuz aus fünf Mauerblöcken und feuert zuerst, sobald sie bereit ist. Ihre Granate fliegt schneller als eine Kanonenkugel, also lädt sie früher nach.",
   "tower.berthaSlowWhat": "Reißt ein Kreuz aus fünf Mauerblöcken und feuert zuerst, sobald sie bereit ist. Ihre Granate fliegt langsamer als eine Kanonenkugel, also lädt sie später nach.",
@@ -534,6 +536,9 @@
   "tower.biggestWhat": "Eine gewaltige Granate pro Kampfphase: Sie fliegt {s} Sekunden, ob nah oder fern, und reißt jeden Mauerblock in einem Kreis von {n} Feldern um den Einschlag weg — feuert zuerst, sobald sie bereit ist.",
   "tower.laserWhat": "Schießt sofort einen Strahl durch die ersten {n} Mauerblöcke auf seiner Linie, wie weit auch immer — feuert zuerst, sobald er bereit ist.",
   "tower.laserChanceWhat": "Schießt sofort einen Strahl durch die ersten {n} Mauerblöcke auf seiner Linie, wie weit auch immer, in {p} % der Fälle einen mehr — feuert zuerst, sobald er bereit ist.",
+  "tower.frostWhat": "Friert das getroffene Feld für die ganze nächste Bauphase ein, die Verlängerung mit: Dort kann nichts gebaut werden — feuert zuerst, sobald sie bereit ist.",
+  "tower.frostClockWhat": "Friert das getroffene Feld in der nächsten Bauphase ein, bis ihre Uhr abläuft: Dort kann nichts gebaut werden — feuert zuerst, sobald sie bereit ist.",
+  "tower.frostShareWhat": "Friert das getroffene Feld für die ersten {p} % der nächsten Bauphase ein: Bis es taut, kann dort nichts gebaut werden — feuert zuerst, sobald sie bereit ist.",
   "tower.cost": {
     "one": "{n} Kanone",
     "other": "{n} Kanonen"

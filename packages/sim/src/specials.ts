@@ -8,6 +8,7 @@ import {
   type TowerVariant,
 } from '@bollwerk/config';
 
+import { thawTiles } from './frost.js';
 import type { Rejection } from './placement.js';
 import { craterOffsets } from './shots.js';
 import {
@@ -34,7 +35,13 @@ import {
  * tower that fires ordinary shots, however quickly, fires as any gun.
  */
 export function isImpactTower(kind: CannonKind): boolean {
-  return kind === 'bertha' || kind === 'lightning' || kind === 'biggest' || kind === 'laser';
+  return (
+    kind === 'bertha' ||
+    kind === 'lightning' ||
+    kind === 'biggest' ||
+    kind === 'laser' ||
+    kind === 'frost'
+  );
 }
 
 /**
@@ -213,8 +220,10 @@ export function noteLostWall(state: MatchState, tile: number): void {
 /**
  * The Architects' repair, once a barrage is over and its last shot down: each active
  * Architect rebuilds its owner's walls lost to shots within its cost's `repairRadius` of its
- * footprint's centre (`inRepairReach`), where the tile is still free, in seat order. A breach the owner has already
- * built over, or a wall swept as an orphan, is never touched — only what shots took.
+ * footprint's centre (`inRepairReach`), where the tile is still free, in seat order. A breach the
+ * owner has already built over, or a wall swept as an orphan, is never touched — only what shots
+ * took. And it thaws every tile of its owner's island a Frost Cannon froze within that reach (the
+ * user's, 2026-10-21): the Architect is the freeze's counter.
  *
  * Active as of the last time the enclosure was solved, the rule that lets a gun fire:
  * shots landing do not refresh it, so an Architect behind a breach still repairs, which
@@ -222,37 +231,45 @@ export function noteLostWall(state: MatchState, tile: number): void {
  */
 export function repairWalls(state: MatchState): void {
   const lost = state.lostWalls;
-  if (lost.length === 0) return;
+  if (lost.length === 0 && state.frozen.length === 0) return;
   state.lostWalls = [];
   for (const player of state.players) {
     if (player.eliminated) continue;
     const tiles: number[] = [];
-    // Each Architect that rebuilt anything, for the sound of each at work.
+    const thawed = new Set<number>();
+    // Each Architect that rebuilt or thawed anything, for the sound of each at work.
     let towers = 0;
     for (const cannon of state.cannons) {
       if (cannon.owner !== player.id || cannon.kind !== 'architect' || !cannon.active) continue;
-      const before = tiles.length;
+      const before = tiles.length + thawed.size;
       const r = repairRadiusOf(state.ruleset, cannon.cost);
+      const inReach = (i: number): boolean => {
+        const x = i % state.width;
+        return inRepairReach(cannon, r, x, (i - x) / state.width);
+      };
       for (const i of lost) {
         if (state.islandId[i] !== player.islandId || state.structure[i] !== Structure.Empty) {
           continue;
         }
-        const x = i % state.width;
-        const y = (i - x) / state.width;
-        if (!inRepairReach(cannon, r, x, y)) continue;
+        if (!inReach(i)) continue;
         state.structure[i] = Structure.Wall;
         state.owner[i] = player.islandId;
         tiles.push(i);
       }
-      if (tiles.length > before) towers++;
+      for (const f of state.frozen) {
+        if (state.islandId[f.tile] === player.islandId && inReach(f.tile)) thawed.add(f.tile);
+      }
+      if (tiles.length + thawed.size > before) towers++;
     }
-    if (tiles.length > 0) {
+    thawTiles(state, thawed);
+    if (tiles.length > 0 || thawed.size > 0) {
       state.events.push({
         kind: 'walls_repaired',
         tick: state.tick,
         player: player.id,
         tiles,
         towers,
+        thawed: [...thawed],
       });
     }
   }

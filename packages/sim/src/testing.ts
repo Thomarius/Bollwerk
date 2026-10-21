@@ -17,7 +17,8 @@ import {
  *
  * `.` water   `,` empty land   `#` wall   `@` castle   `*` cannon
  * `B` Big Bertha   `A` Architect   `R` Rapid Cannon   `L` Lightning Tower, `G` Allerdickste
- *   Bertha, `X` Laser Tower — special towers at cost 3; `b` `a` `r` `l` `g` `x` the same at cost 2
+ *   Bertha, `X` Laser Tower, `F` Frost Cannon — special towers at cost 3; `b` `a` `r` `l` `g` `x` `f` the
+ *   same at cost 2
  * `1`-`4` empty land belonging to that island (default is island 1)
  *
  * Adjacent `@`, `*` or tower glyphs are grouped into one structure by bounding box.
@@ -44,6 +45,8 @@ const GUN_GLYPHS: Readonly<Record<string, { kind: CannonKind; cost: number }>> =
   g: { kind: 'biggest', cost: 2 },
   X: { kind: 'laser', cost: 3 },
   x: { kind: 'laser', cost: 2 },
+  F: { kind: 'frost', cost: 3 },
+  f: { kind: 'frost', cost: 2 },
 };
 
 export function stateFromAscii(
@@ -175,6 +178,7 @@ export function stateFromAscii(
     cannons,
     shots: [],
     lostWalls: [],
+    frozen: [],
     nextCannonId: cannons.length,
     nextShotId: 0,
     winners: [],

@@ -118,6 +118,20 @@ export interface Cannon {
   shotIds: number[];
 }
 
+/**
+ * A tile frozen by a Frost Cannon: nothing may be built on it until `thawTick` of the build
+ * phase after the shot landed. Until that phase opens, `thawTick` is `FREEZE_PENDING`; from then
+ * on the tick it thaws, or `FROZEN_TO_END` for a freeze that lasts the whole phase.
+ */
+export interface Freeze {
+  tile: number;
+  /** The share of the build phase it lasts, from the variant that froze it. */
+  share: number;
+  /** Whether a whole phase's freeze lasts through the overtime, from the same variant. */
+  throughOvertime: boolean;
+  thawTick: number;
+}
+
 export interface Shot {
   id: number;
   cannonId: number;
@@ -219,6 +233,16 @@ export type MatchEvent =
       player: number;
       tiles: number[];
       towers: number;
+      /** Frozen tiles the Architects thawed, every one of them in reach. */
+      thawed: number[];
+    }
+  | {
+      /** A Frost Cannon's shot has landed: the tile it froze for the next build phase. */
+      kind: 'tile_frozen';
+      tick: number;
+      shotId: number;
+      owner: number;
+      tile: number;
     }
   | { kind: 'player_eliminated'; tick: number; player: number; round: number }
   | {
@@ -294,6 +318,12 @@ export interface MatchState {
    * Architect, so the repair needs no record kept in advance.
    */
   lostWalls: number[];
+  /**
+   * Tiles a Frost Cannon has hit since the last build phase, frozen against building in the
+   * next (docs/SPECIAL_TOWERS.md §2.7); emptied as that phase ends. Empty in a classic match,
+   * and then not hashed, so its fingerprint is as it always was.
+   */
+  frozen: Freeze[];
 
   nextCannonId: number;
   nextShotId: number;

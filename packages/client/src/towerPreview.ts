@@ -174,6 +174,9 @@ export class TowerPreview {
           changed ||= event.destroyed.length > 0;
           break;
         }
+        case 'tile_frozen':
+          scene.noteFrost(event.tile % state.width, Math.floor(event.tile / state.width));
+          break;
         case 'walls_repaired':
           scene.noteRepair(event.tiles, state.width, event.player);
           changed = true;

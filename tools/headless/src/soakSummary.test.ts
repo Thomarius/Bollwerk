@@ -39,6 +39,8 @@ function row(
     special: '',
     towersOwned: 0,
     wallsRepaired: 0,
+    frozenAtBuild: 0,
+    repairFrozen: 0,
     ...extra,
   };
 }

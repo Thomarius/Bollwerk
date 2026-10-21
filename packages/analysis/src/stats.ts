@@ -6,7 +6,7 @@ import {
   type ConfigBundle,
 } from '@bollwerk/config';
 import { cannonRoom, cheapestPlanFor, coverable, pocketCount } from '@bollwerk/ai';
-import { Structure, type MatchEvent, type MatchState } from '@bollwerk/sim';
+import { Structure, isFrozen, type MatchEvent, type MatchState } from '@bollwerk/sim';
 
 /** Who played a seat: a bot's level and personality, or a person, from a recording. */
 export type Tier = BotSetup | 'human';
@@ -79,6 +79,13 @@ export interface StatRow {
   towersOwned: number;
   /** Wall its Architects rebuilt as this round's barrage ended. */
   wallsRepaired: number;
+  /** Tiles of its island a Frost Cannon had frozen as the build phase opened. */
+  frozenAtBuild: number;
+  /**
+   * Of the cells the tightest seal still missed on the last tick, how many were frozen: a
+   * round a freeze may have cost, the Frost Cannon's risk (docs/SPECIAL_TOWERS.md §2.7).
+   */
+  repairFrozen: number;
 }
 
 const STAT_COLUMNS: (keyof StatRow)[] = [
@@ -109,6 +116,8 @@ const STAT_COLUMNS: (keyof StatRow)[] = [
   'special',
   'towersOwned',
   'wallsRepaired',
+  'frozenAtBuild',
+  'repairFrozen',
 ];
 
 /**
@@ -192,6 +201,8 @@ export class RoundStats {
   private readonly repairAtBuild = new Map<number, number>();
   private readonly repairLeft = new Map<number, number>();
   private readonly repairStuck = new Map<number, number>();
+  private readonly frozenAtBuild = new Map<number, number>();
+  private readonly repairFrozen = new Map<number, number>();
 
   constructor(
     private readonly bundle: ConfigBundle,
@@ -219,13 +230,17 @@ export class RoundStats {
         this.repairLeft.set(p.id, plan?.cost ?? Number.POSITIVE_INFINITY);
         const missing = plan?.tiles.filter((i) => state.structure[i] === Structure.Empty) ?? [];
         this.repairStuck.set(p.id, missing.filter((i) => !coverable(state, p.id, i)).length);
+        this.repairFrozen.set(p.id, missing.filter((i) => isFrozen(state, i)).length);
       }
     }
 
     for (const event of events) {
       if (event.kind === 'phase_changed' && event.phase === 'build') {
         for (const p of state.players) {
-          if (!p.eliminated) this.repairAtBuild.set(p.id, tightestRepair(p.id));
+          if (p.eliminated) continue;
+          this.repairAtBuild.set(p.id, tightestRepair(p.id));
+          const frozen = state.frozen.filter((f) => state.islandId[f.tile] === p.islandId);
+          this.frozenAtBuild.set(p.id, frozen.length);
         }
       } else if (event.kind === 'piece_placed') {
         this.placed.set(event.player, (this.placed.get(event.player) ?? 0) + 1);
@@ -278,6 +293,8 @@ export class RoundStats {
             special: state.players[result.player]?.special ?? '',
             towersOwned: towers,
             wallsRepaired: this.repaired.get(result.player) ?? 0,
+            frozenAtBuild: this.frozenAtBuild.get(result.player) ?? 0,
+            repairFrozen: this.repairFrozen.get(result.player) ?? 0,
           });
         }
         this.placed.clear();
@@ -286,6 +303,8 @@ export class RoundStats {
         this.repairAtBuild.clear();
         this.repairLeft.clear();
         this.repairStuck.clear();
+        this.frozenAtBuild.clear();
+        this.repairFrozen.clear();
       }
     }
   }

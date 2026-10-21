@@ -1,4 +1,11 @@
-import { Structure, Terrain, pieceById, poolForRound, type MatchState } from '@bollwerk/sim';
+import {
+  Structure,
+  Terrain,
+  isFrozen,
+  pieceById,
+  poolForRound,
+  type MatchState,
+} from '@bollwerk/sim';
 
 type Ruleset = MatchState['ruleset'];
 
@@ -70,10 +77,12 @@ export function coverable(
         break;
       }
       const j = y * width + x;
+      // A frozen tile takes no piece while it is frozen (the Frost Cannon's).
       fits =
         state.terrain[j] === Terrain.Land &&
         structure[j] === Structure.Empty &&
-        state.islandId[j] === island;
+        state.islandId[j] === island &&
+        !isFrozen(state, j);
     }
     if (fits) return true;
   }

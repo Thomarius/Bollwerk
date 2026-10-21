@@ -2,6 +2,7 @@ import type { CraterPattern } from '@bollwerk/config';
 
 import { distanceFixed, distanceSquared } from './math.js';
 import { playerOf, type Rejection } from './placement.js';
+import { freezeTile } from './frost.js';
 import { fireLaser, laserCount, traceLaser } from './laser.js';
 import { strikeLightning } from './lightning.js';
 import {
@@ -273,6 +274,8 @@ export function resolveImpacts(state: MatchState): void {
       y: shot.toY,
       destroyed,
     });
+    // A Frost Cannon's lands as any shot, and freezes the tile it hit for the next build phase.
+    if (shot.kind === 'frost') freezeTile(state, shot);
   }
 
   state.shots = remaining;

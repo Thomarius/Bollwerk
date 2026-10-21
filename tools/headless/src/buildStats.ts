@@ -248,6 +248,7 @@ for (const [title, value, digits] of [
   ['pieces laid', (x: StatRow) => x.piecesPlaced, 1],
   ['special towers owned', (x: StatRow) => x.towersOwned, 1],
   ['walls the Architects rebuilt', (x: StatRow) => x.wallsRepaired, 1],
+  ['tiles frozen as the build opened', (x: StatRow) => x.frozenAtBuild, 1],
 ] as const) {
   console.log(`\n${title}, by stage: ${STAGES.map((s) => s.name.padStart(6)).join(' ')}`);
   for (const key of order) {

@@ -9473,3 +9473,46 @@ not saved (the user's choice over a fixed default). With six cards the panel is 
 enough for "Schnellfeuer-" at a soft hyphen in the German name: the browser's own hyphenation
 had broken it as "Schnellfeu-erkanone", and at 46rem it ran past its card. The rules still take a
 seat with none, which an old page or recording may send.
+
+## 14l. The Frost Cannon (2026-10-21)
+
+The user's design, discussed with them before building (SPECIAL_TOWERS.md §2.7): a seventh tower,
+`frost`, at costs 2 and 3, a risky one on purpose — a shot like a cannon's whose tile, wall or bare
+ground, can take no piece in the next build phase, so a precise hit can leave a ring unsealable,
+the risk the Magma Thrower was dropped for. Settled with the user: frozen for a share of the build
+phase from its start, never into the cannon phase; every tile hit, ground too (the simplest
+rule); impact tower rules; an Architect thaws what it reaches; a continue wipes the island's
+freezes; no cap. A one-tile area always, and neither some shots a phase nor a cap a victim as
+levers — too hard to explain. Themes weighed: frost, bubblegum, a sheep, a stink bomb, napalm,
+scrap, a clock; frost kept, its thaw the rule.
+
+In the sim (`frost.ts`): the freezes a list in the match, each a tile, its share, whether it lasts
+the overtime and its thaw tick, given as the build phase opens (`startFreezes`), dropped as they
+thaw (`thawExpired`) and all of them as the phase ends; placement refused on a frozen tile
+(`frozen`); hashed only while there are any, so a classic match and every older recording hash as
+before; the snapshot carries them. A rollout's copy copies them too: it opens the build phase
+itself, and sharing the list would have written the real match's thaw ticks from a bot's look
+ahead. `throughOvertime` came after the first soak, the user asking whether the overtime mattered.
+Hash version 4 and recording format 4 stand; protocol 30.
+
+Bots aim it as Bertha, at the weakest wall; in building, a frozen tile of their own island is one
+no piece covers (`coverable`), ruled out of their seal while it is frozen and given back as it
+thaws (`markUncoverable`). Every build phase went as the bots' rollouts had planned it. The
+statistics gained `frozenAtBuild` and `repairFrozen`, to measure the risk.
+
+**Balanced at Level 5**, 96 matches a pairing (±5), cost 2 / cost 3 against no tower and 3 against
+2: the user's start, 50% / 100% through the overtime, gave 58 / 74 and 64; 50% / 75% gave 58 / 57
+and 46, the dearer no longer the stronger; **60% / 100% until the clock runs out gave 59 / 70 and
+56**, kept (the user's). Losing the overtime took Frost 3 from 74 to 70 on the same seeds, a hint
+within the noise. The risk, 24 matches a setting at the start: the rival failed 12.3% of rounds
+against no tower, 12.5% against Frost 2 and 13.3% against Frost 3, in 12 of the 32 with a frozen
+tile in the seal still missing — some 5% of rounds; about 5.5 tiles of an island frozen a build
+phase, the bots building round them. A freeze seldom forces a lost life; the whole phase won by
+leaving its victims less ground.
+
+In the client: a snowflake emblem; each frozen tile a block of ice in every style, whole until its
+build phase opens, then shrinking and puddling towards its thaw, so the time left shows; a burst
+of frost where the shot lands, and the user's `tower_frost.mp3` over the cannon's impact
+(`frost_impact`, CC0 from OpenGameArt under `sfx/`); the menu's card, its preview, How to play,
+and its texts. Checked by eye in Minimal: the ice in the gaps the frost made, the bots' walls
+round it. Its play-test by the user is open.

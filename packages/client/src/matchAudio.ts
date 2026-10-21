@@ -98,6 +98,12 @@ export class MatchAudio {
           this.audio.play('lightning_strike');
           break;
 
+        case 'tile_frozen':
+          // The freeze over the shot's own impact, which `shot_impact` has played on the same
+          // tick (the user's tower_frost.mp3, 2026-10-21).
+          this.audio.play('frost_impact');
+          break;
+
         case 'laser_fired':
           // Once a beam, however many walls it burns through (the user's tower_laser.mp3).
           this.audio.play('laser_fire');
