@@ -13,6 +13,7 @@ export * from './placement.js';
 export * from './shots.js';
 export * from './specials.js';
 export * from './lightning.js';
+export * from './laser.js';
 export * from './match.js';
 export * from './scoring.js';
 export * from './teams.js';

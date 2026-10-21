@@ -7,6 +7,7 @@ import {
 } from '@bollwerk/config';
 import {
   craterTilesOf,
+  strikesOnFiring,
   footprintOf,
   owesCastleChoice,
   type MatchEvent,
@@ -510,8 +511,9 @@ export async function runSession(
           break;
         }
         case 'shot_fired':
-          // A Lightning Tower's has struck already (`lightning_struck`); nothing of it flies.
-          if (event.shot.kind === 'lightning') break;
+          // A Lightning Tower's has struck already (`lightning_struck`), a Laser Tower's too
+          // (`laser_fired`); nothing of either flies.
+          if (strikesOnFiring(event.shot.kind)) break;
           scene.noteShot(event.shot);
           // Either Bertha's, for the blast its landing sets off over the tiles it clears.
           if (hasBlast(event.shot.kind)) {
@@ -519,14 +521,19 @@ export async function runSession(
             heavyShots.set(event.shot.id, craterTilesOf(session.state.ruleset, kind, cost));
           }
           break;
-        case 'lightning_struck': {
+        case 'lightning_struck':
+        case 'laser_fired': {
           const { width, islandId } = session.state;
-          scene.noteLightning(event.fromX, event.fromY, event.path, event.owner);
           const debris = event.destroyed.map((i) => ({
             x: i % width,
             y: Math.floor(i / width),
             owner: (islandId[i] as number) - 1,
           }));
+          if (event.kind === 'lightning_struck') {
+            scene.noteLightning(event.fromX, event.fromY, event.path, event.owner);
+          } else {
+            scene.noteLaser(event.fromX, event.fromY, event.endX, event.endY, debris, event.owner);
+          }
           for (const d of debris) scene.noteImpact(d.x, d.y, [d]);
           const human = session.humanPlayer;
           if (human >= 0 && !motionReduced() && debris.some((d) => d.owner === human)) {

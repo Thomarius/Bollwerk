@@ -38,6 +38,12 @@ export const EMBLEMS: Record<SpecialKind, readonly (readonly number[])[]> = {
       0.092,
     ],
   ],
+  // A lens at the foot, its beam drawn out to the top right corner.
+  laser: [
+    [0.06, 0.94, 0.06, 0.62, 0.38, 0.62, 0.38, 0.94],
+    [0.3, 0.6, 0.86, 0.04, 0.96, 0.14, 0.4, 0.7],
+    [0.56, 0.12, 0.62, 0.02, 0.66, 0.16, 0.76, 0.22, 0.64, 0.24, 0.6, 0.34, 0.56, 0.24, 0.46, 0.2],
+  ],
 };
 
 /** A cannon seen from the side, for the icons: a barrel raised over a wheel, in a unit box. */

@@ -9415,3 +9415,61 @@ and found nothing to change. And the testers decided PLAN 11 item 3: **each styl
 the icon beside the cursor in the cannon phase (13zv), as it already was by default. Against the
 plan, the generic cannon is not removed (the users'): `art.cannonIcons: "generic"` stays, to
 switch back to; config only, as before.
+
+## 14k. The Laser Tower (2026-10-21)
+
+The user's design, settled with them before building (SPECIAL_TOWERS.md §2.6): a sixth tower,
+`laser`, at costs 2 and 3, 2×2 and under the cap of three, the next tower the user chose over the
+Bastion of §4. An impact tower that fires first whenever it is ready. Its beam runs on the instant
+from the tower's centre through the centre of the tile clicked to the map's edge and clears the
+first `pierce` walls on its line, any live opponent's, across a channel too; its owner's own, a
+teammate's and the rubble of the eliminated it passes over. The click sets only the direction, and
+a click on one's own island is still refused, as for every shot (the user's). Its reload is an
+ordinary shot's flight **to the first wall it clears** (the user's: to the tile clicked, a click by
+the tower's own shore would reload in no time), to the tile clicked if it clears none; the shot
+stays in the air that long and lands nothing (`strikesOnFiring`, shared with the Lightning Tower).
+A fraction of `pierce` is the chance of one wall more (the user's), drawn per shot from
+`streamFor(seed, 'laser:' + id)`, whole lever or not.
+
+The line is walked exactly in doubled coordinates (`traceLaser`, pure, so the bots try aims with
+it). Through a tile's corner the ray steps diagonally, touching neither side tile: a sealing wall
+is 4-connected, so it always holds one of the two tiles the ray enters, and no beam slips through.
+A 2×2 tower's centre is itself a corner, so a beam from it meets such corners often — the first
+test board had the walls on the wrong side of one. The kind and its variants are appended to the
+hash's codes and `specials.laser` is optional, so hash version 4 and recording format 4 stand and
+v0.9.11's recordings replay; protocol 29.
+
+**Balanced at Level 5**, 96 matches a pairing (±5), `pierce` the lever, cost 2 / cost 3 against no
+tower and 3 against 2: 3 / 4 gave 77 / 84 and 52 — the bots' beams cleared 2.67 and 3.33 walls of
+the 3 and 4 they might, a cannon's shot 0.75, since a line through a wall finds nearly as many as
+it may take; 2 / 3 gave 66 / 75 and 56; 1.5 / 2.5 gave 52 / 67 and 59; **2 / 2.5 gave 66 / 67 and
+56**, kept — every figure inside the goal, the costs alike against no tower.
+
+In the client: a lens and its beam for its emblem; while it is ready, a faint line from the tower
+through the cursor to the board's edge, a red glow round a white core (the red alone vanished over
+a red island), and not the walls it would clear; its beam drawn out from the tower in its owner's
+colour round a white core, held and faded, each wall flashing as it burns (`noteLaser` in
+`TowerMarks`); the menu's seventh card, the panel widened to 54rem to keep one row; its preview,
+a beam along the rival's top wall; How to play. Heard once a beam (`laser_fire`), the user's
+`tower_laser.mp3`. Bots aim it at the block of the chosen opponent's wall whose traced beam clears
+most, the weakest wall's blocks counting three, and buy and site it as any tower. `shotStats.ts`
+now counts the Lightning and Laser Towers' walls by kind, which it had missed, as their shots land
+nothing. Checked by eye in Minimal and Cyberpunk.
+
+**The users' first test** (2026-10-21): it works. Two changes. The aiming line is in the player's
+colour round its white core, as their beam is, no longer red. And the beam flashed back up for a
+moment at the very end of its fade, in play and in the menu's preview: on the frame that passed its
+end, before it was dropped, its fade fell a little below 0, and Pixi packs a colour's alpha as
+`alpha * 255 << 24`, so −0.04 came out as 246 of 255, nearly opaque, on a narrow line. The fade is
+now held at 0 and a faded effect not drawn; the Lightning Tower's bolt had the same flaw, fixed
+alike. The sound is CC0 from OpenGameArt, under `sfx/`'s credit (the user's).
+
+**The tower menu alphabetical, and no "No tower"** (2026-10-21, the user's): the cards by their
+names in the language shown (`menuTowers`), English and German each in their own order;
+`SPECIAL_KINDS` keeps the order the towers were added, which the bots' draws depend on. The card
+for none went, since buying a tower is always optional; a person who never chose one, or had
+none saved, brings a variant drawn at random once a visit, among every one offered as a bot's is,
+not saved (the user's choice over a fixed default). With six cards the panel is 52rem, wide
+enough for "Schnellfeuer-" at a soft hyphen in the German name: the browser's own hyphenation
+had broken it as "Schnellfeu-erkanone", and at 46rem it ran past its card. The rules still take a
+seat with none, which an old page or recording may send.

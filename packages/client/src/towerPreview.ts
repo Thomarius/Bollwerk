@@ -6,7 +6,7 @@ import {
   type ArtStyle,
   type TowerVariant,
 } from '@bollwerk/config';
-import { computeEnclosure, craterTilesOf, type MatchEvent } from '@bollwerk/sim';
+import { computeEnclosure, craterTilesOf, strikesOnFiring, type MatchEvent } from '@bollwerk/sim';
 
 import { LookRotation } from './looks.js';
 import { motionReduced } from './motion.js';
@@ -115,7 +115,8 @@ export class TowerPreview {
           (e) =>
             e.kind === 'walls_repaired' ||
             e.kind === 'shot_impact' ||
-            e.kind === 'lightning_struck',
+            e.kind === 'lightning_struck' ||
+            e.kind === 'laser_fired',
         )
       ) {
         if (show.state.shots.length === 0) break;
@@ -133,7 +134,7 @@ export class TowerPreview {
     for (const event of events) {
       switch (event.kind) {
         case 'shot_fired':
-          if (event.shot.kind !== 'lightning') scene.noteShot(event.shot);
+          if (!strikesOnFiring(event.shot.kind)) scene.noteShot(event.shot);
           break;
         case 'lightning_struck': {
           scene.noteLightning(event.fromX, event.fromY, event.path, event.owner);
@@ -142,6 +143,19 @@ export class TowerPreview {
             scene.noteImpact(at.x, at.y, [{ ...at, owner: (state.islandId[i] as number) - 1 }]);
           }
           changed ||= event.destroyed.length > 0;
+          break;
+        }
+        case 'laser_fired': {
+          const hits = event.destroyed.map((i) => ({
+            x: i % state.width,
+            y: Math.floor(i / state.width),
+          }));
+          scene.noteLaser(event.fromX, event.fromY, event.endX, event.endY, hits, event.owner);
+          for (const at of hits) {
+            const i = at.y * state.width + at.x;
+            scene.noteImpact(at.x, at.y, [{ ...at, owner: (state.islandId[i] as number) - 1 }]);
+          }
+          changed ||= hits.length > 0;
           break;
         }
         case 'shot_impact': {

@@ -843,6 +843,7 @@ const CANNON_KIND_CODES: readonly string[] = [
   'rapid',
   'lightning',
   'biggest',
+  'laser',
 ];
 /** The same for loadouts; a variant added goes at the end. */
 const VARIANT_CODES: readonly TowerVariant[] = [
@@ -856,6 +857,8 @@ const VARIANT_CODES: readonly TowerVariant[] = [
   'lightning3',
   'biggest2',
   'biggest3',
+  'laser2',
+  'laser3',
 ];
 
 export function hashMatchState(state: MatchState, version = HASH_VERSION): string {

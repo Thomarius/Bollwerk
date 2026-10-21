@@ -67,6 +67,20 @@ describe('the tower menu’s preview, played by the rules', () => {
     expect(chain('lightning3')).toBe(4);
   });
 
+  it('burns the Laser Tower’s beam along the rival’s wall at once, a third at cost 3 by its chance', () => {
+    const pierced = (variant: TowerVariant): number => {
+      const { events } = play(variant, 2000);
+      const beam = events.find((e) => e.kind === 'laser_fired');
+      if (beam?.kind !== 'laser_fired') throw new Error('no beam');
+      // Burnt on the tick it fired; nothing of it lands later.
+      expect(beam.tick).toBe(fired(events)[0]!.tick);
+      expect(impacts(events)).toEqual([]);
+      return beam.destroyed.length;
+    };
+    expect(pierced('laser2')).toBe(2);
+    expect(pierced('laser3')).toBe(3);
+  });
+
   it('lands the Allerdickste Bertha’s shell after ten seconds, cost 3’s clearing more', () => {
     const cleared = (variant: TowerVariant): number => {
       const { events } = play(variant, 12_000);

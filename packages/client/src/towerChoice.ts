@@ -9,9 +9,9 @@ import {
 } from '@bollwerk/config';
 
 import { escape } from './html.js';
-import { t } from './i18n.js';
+import { language, t } from './i18n.js';
 import { store, stored } from './storage.js';
-import { cannonSvg, towerSvg } from './towerIcons.js';
+import { towerSvg } from './towerIcons.js';
 import { towerCostText, towerName, towerWhat } from './towers.js';
 
 /**
@@ -57,18 +57,27 @@ export function variantForCard(
   return `${kind}${cost}` as TowerVariant;
 }
 
-/** The menu's choosing part, drawn again on every choice; the preview stays beside it. */
+/**
+ * The menu's cards in the order they are shown: by name, alphabetically in the language shown
+ * (the user's, 2026-10-21) — not `SPECIAL_KINDS`' order, which is the order they were added and
+ * which the bots' draws keep.
+ */
+export function menuTowers(): { kind: SpecialKind; costs: number[] }[] {
+  const lang = language();
+  return offeredTowers().sort((a, b) => towerName(a.kind).localeCompare(towerName(b.kind), lang));
+}
+
+/**
+ * The menu's choosing part, drawn again on every choice; the preview stays beside it. Every card
+ * a tower: no card for none (the user's, 2026-10-21), since a tower brought need never be bought.
+ */
 export function towerMenuMarkup(chosen: TowerVariant | null): string {
   const kind = chosen === null ? null : variantKind(chosen);
-  const card = (k: SpecialKind | null): string => {
-    const icon = k === null ? cannonSvg('currentColor') : towerSvg(k, 'currentColor');
-    return (
-      `<button type="button" class="card${k === kind ? ' chosen' : ''}" data-kind="${k ?? 'none'}">` +
-      `${icon}<span class="name">${escape(towerName(k))}</span></button>`
-    );
-  };
-  const towers = offeredTowers();
-  const cards = [card(null), ...towers.map((o) => card(o.kind))].join('');
+  const card = (k: SpecialKind): string =>
+    `<button type="button" class="card${k === kind ? ' chosen' : ''}" data-kind="${k}">` +
+    `${towerSvg(k, 'currentColor')}<span class="name">${escape(towerName(k))}</span></button>`;
+  const towers = menuTowers();
+  const cards = towers.map((o) => card(o.kind)).join('');
   let costs = '';
   if (kind !== null) {
     const offered = towers.find((o) => o.kind === kind)?.costs ?? [];
@@ -83,7 +92,7 @@ export function towerMenuMarkup(chosen: TowerVariant | null): string {
   }
   const what =
     chosen === null
-      ? escape(t('tower.noneWhat'))
+      ? ''
       : `${escape(towerWhat(chosen))} <em>${escape(t(variantCost(chosen) >= 3 ? 'tower.affordSecond' : 'tower.affordMain'))}</em>`;
   return `<div class="cards">${cards}</div>${costs}<p class="what">${what}</p>`;
 }

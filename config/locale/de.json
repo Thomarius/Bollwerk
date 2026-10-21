@@ -518,9 +518,10 @@
   "tower.none": "Kein Turm",
   "tower.bertha": "Dicke Berta",
   "tower.architect": "Baumeister",
-  "tower.rapid": "Schnellfeuerkanone",
+  "tower.rapid": "Schnellfeuer­kanone",
   "tower.lightning": "Blitzturm",
   "tower.biggest": "Allerdickste Berta",
+  "tower.laser": "Laserturm",
   "tower.berthaWhat": "Reißt ein Kreuz aus fünf Mauerblöcken und feuert zuerst, sobald sie bereit ist. Ihre Granate fliegt so schnell wie eine Kanonenkugel.",
   "tower.berthaFastWhat": "Reißt ein Kreuz aus fünf Mauerblöcken und feuert zuerst, sobald sie bereit ist. Ihre Granate fliegt schneller als eine Kanonenkugel, also lädt sie früher nach.",
   "tower.berthaSlowWhat": "Reißt ein Kreuz aus fünf Mauerblöcken und feuert zuerst, sobald sie bereit ist. Ihre Granate fliegt langsamer als eine Kanonenkugel, also lädt sie später nach.",
@@ -531,6 +532,8 @@
   "tower.rapidWhat": "{n} Kanonen übereinander auf dem Platz einer, jede mit eigenem Nachladen.",
   "tower.lightningWhat": "Schlägt sofort ein und springt dann {n}-mal auf Mauern im Umkreis von {r} Blöcken — feuert zuerst, sobald er bereit ist.",
   "tower.biggestWhat": "Eine gewaltige Granate pro Kampfphase: Sie fliegt {s} Sekunden, ob nah oder fern, und reißt jeden Mauerblock in einem Kreis von {n} Feldern um den Einschlag weg — feuert zuerst, sobald sie bereit ist.",
+  "tower.laserWhat": "Schießt sofort einen Strahl durch die ersten {n} Mauerblöcke auf seiner Linie, wie weit auch immer — feuert zuerst, sobald er bereit ist.",
+  "tower.laserChanceWhat": "Schießt sofort einen Strahl durch die ersten {n} Mauerblöcke auf seiner Linie, wie weit auch immer, in {p} % der Fälle einen mehr — feuert zuerst, sobald er bereit ist.",
   "tower.cost": {
     "one": "{n} Kanone",
     "other": "{n} Kanonen"
@@ -540,7 +543,6 @@
   "towerMenu.cost": "Preis",
   "towerMenu.preview": "Was er tut",
   "towerMenu.open": "Wähle deinen Spezialturm",
-  "tower.noneWhat": "Kein Spezialturm: jede verdiente Kanone ist eine gewöhnliche Kanone.",
   "tower.affordMain": "Bezahlbar, sobald deine Hauptburg umschlossen ist.",
   "tower.affordSecond": "Nur in Runden bezahlbar, in denen du auch eine zweite Burg hältst.",
   "lobby.specials": "Spezialtürme",

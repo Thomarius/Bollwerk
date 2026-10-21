@@ -1,4 +1,4 @@
-import { variantCost, variantKind, type SpecialKind } from '@bollwerk/config';
+import { variantCost, variantKind } from '@bollwerk/config';
 import {
   barrelsOf,
   canPlaceAnyCannon,
@@ -23,7 +23,7 @@ import {
 } from '@bollwerk/sim';
 
 import type { Ghost, Scene } from './render/scene.js';
-import type { Cell } from './render/theme.js';
+import type { Cell, NextTower } from './render/theme.js';
 import { sealingCells } from './sealPreview.js';
 
 /** What a click means for this player right now. */
@@ -157,10 +157,15 @@ export function nextTowerShot(
   playerId: number,
   x: number,
   y: number,
-): { kind: SpecialKind; crater: readonly (readonly [number, number])[] } | null {
+): NextTower | null {
   const next = findReadyCannon(state, playerId, x, y);
   if (next === null || next.kind === 'cannon' || !isImpactTower(next.kind)) return null;
-  return { kind: next.kind, crater: craterTilesOf(state.ruleset, next.kind, next.cost) };
+  return {
+    kind: next.kind,
+    crater: craterTilesOf(state.ruleset, next.kind, next.cost),
+    fromX: next.x + (next.w - 1) / 2,
+    fromY: next.y + (next.h - 1) / 2,
+  };
 }
 
 /**

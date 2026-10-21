@@ -1617,8 +1617,9 @@ every resolution against an independent search, not only on unit pictures.
 
 ## 11. Open work
 
-**Where to start (2026-10-18).** The latest release is **v0.9.11** (2026-10-18, protocol 28). Next:
-item 3's Package B, the styles' own music, once the user has the tracks.
+**Where to start (2026-10-21).** The latest release is **v0.9.11** (2026-10-18, protocol 28; the
+tree is at 29 since the Laser Tower). Next: item 2's Laser Tower played by the users, and item 3's
+Package B, the styles' own music, once the user has the tracks.
 Up to **v0.8.3**: the game and online play, bots as skill levels and personalities, the styles
 with their corner pieces, random looks every round, English and German, the desktop app, UPnP,
 the balance soak and the rendering work (ARCHIVE 12h–12v), the refactoring (12w) and stronger
@@ -1655,11 +1656,14 @@ fit (ARCHIVE 12z), its remaining steps dropped (the user's decision, 2026-10-14;
 
 2. **Special towers** (the user's idea, 2026-10-11): each player may bring one special tower,
    bought in the cannon phase for two or three cannons — Big Bertha, Architect, Rapid Cannon,
-   the Lightning Tower (ARCHIVE 13zs) and the Allerdickste Bertha (13zz), each at both costs — chosen in the tower menu, with an on/off switch among the match settings
+   the Lightning Tower (ARCHIVE 13zs), the Allerdickste Bertha (13zz) and the Laser Tower (14k),
+   each at both costs — chosen in the tower menu, with an on/off switch among the match settings
    (off by default, for good: a wacky addition, not the base game — the user's, ARCHIVE 13zw).
    Built, in How to play (ARCHIVE 13zr), and play-tested by the users with no issues found (13zp);
-   the balance closed, its remaining soaks dropped and the bots' buying rule kept (13zw). Open: two
-   decisions — the next tower (the Bastion is liked most) and a test without the cap of three.
+   the balance closed, its remaining soaks dropped and the bots' buying rule kept (13zw). The next
+   tower was the user's Laser Tower (2026-10-21, ARCHIVE 14k), built and balanced at Level 5. Open:
+   its play-test by the users, and the decision on a test without the cap of three; the Bastion
+   (liked most) stays among the towers for later.
    Their own sounds are in (TS, ARCHIVE 13zx). The design
    and these packages are in
    [`SPECIAL_TOWERS.md`](./SPECIAL_TOWERS.md).

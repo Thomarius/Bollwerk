@@ -115,6 +115,18 @@ interface Bolt {
   ms: number;
 }
 
+/** A Laser Tower's beam as it plays: from the tower to its end, in tiles, and what it cleared. */
+interface Beam {
+  fromX: number;
+  fromY: number;
+  endX: number;
+  endY: number;
+  /** The walls it cleared, each flashing as the beam reaches it. */
+  hits: { x: number; y: number }[];
+  colour: number;
+  ms: number;
+}
+
 /** Walls an Architect rebuilt, shimmering as they come back. */
 interface Repair {
   tiles: readonly number[];
@@ -137,6 +149,35 @@ const BOLT_FADE_MS = 420;
 const FLASH_MS = 180;
 /** Electric white-blue for the cursor's crackle, read in every style as the amber is. */
 const SPARK = 0xc8ecff;
+/**
+ * A beam is drawn out from the tower over `BEAM_REACH_MS`, so its direction is seen, holds for
+ * `BEAM_HOLD_MS` and fades over `BEAM_FADE_MS`.
+ */
+const BEAM_REACH_MS = 70;
+const BEAM_HOLD_MS = 110;
+const BEAM_FADE_MS = 380;
+const BEAM_MS = BEAM_REACH_MS + BEAM_HOLD_MS + BEAM_FADE_MS;
+
+/**
+ * Where a line from (fromX, fromY) through (toX, toY) leaves a board this big, in tiles as a
+ * shot's coordinates are (a tile's centre its index, its edges half a tile either side).
+ */
+function edgeOf(
+  fromX: number,
+  fromY: number,
+  toX: number,
+  toY: number,
+  width: number,
+  height: number,
+): { x: number; y: number } {
+  const dx = toX - fromX;
+  const dy = toY - fromY;
+  let t = Infinity;
+  if (dx !== 0) t = Math.min(t, ((dx > 0 ? width - 0.5 : -0.5) - fromX) / dx);
+  if (dy !== 0) t = Math.min(t, ((dy > 0 ? height - 0.5 : -0.5) - fromY) / dy);
+  if (!Number.isFinite(t)) return { x: toX, y: toY };
+  return { x: fromX + dx * t, y: fromY + dy * t };
+}
 
 /** A jagged course from one point to another, `kinks` bends sideways along it, in tiles. */
 function kinked(
@@ -322,6 +363,7 @@ export class TowerMarks {
   private key = '';
   private blasts: Blast[] = [];
   private bolts: Bolt[] = [];
+  private beams: Beam[] = [];
   private repairs: Repair[] = [];
 
   constructor() {
@@ -410,6 +452,7 @@ export class TowerMarks {
         performance.now(),
       );
     }
+    this.drawLaserLine(state, view, ghost, playerColour(art, humanPlayer, 'light'));
     const variant = ghost.tower;
     if (
       variant === null ||
@@ -463,6 +506,52 @@ export class TowerMarks {
     );
   }
 
+  /**
+   * A ready Laser Tower's line (the user's, 2026-10-21): faint, from the tower through the
+   * cursor to the board's edge, since the click sets only its direction, in the player's colour
+   * as their beam is (the users', 2026-10-21; red at first). Not the walls it would clear — that
+   * is for the player to read.
+   */
+  private drawLaserLine(
+    state: MatchState,
+    view: ViewTransform,
+    ghost: Ghost,
+    colour: number,
+  ): void {
+    const next = ghost.nextTower;
+    if (!ghost.aiming || ghost.tile === null || next?.kind !== 'laser') return;
+    if (ghost.impact?.ready !== true) return;
+    const { x, y } = ghost.tile;
+    if (x === next.fromX && y === next.fromY) return;
+    const end = edgeOf(next.fromX, next.fromY, x, y, state.width, state.height);
+    const [ax, ay] = [tileX(view, next.fromX + 0.5), tileY(view, next.fromY + 0.5)];
+    const [bx, by] = [tileX(view, end.x + 0.5), tileY(view, end.y + 0.5)];
+    // A glow round a white core, as the beam is: the colour alone vanished over an island
+    // of the same colour.
+    for (const [width, tint, alpha] of [
+      [Math.max(3, view.tile * 0.3), colour, 0.3],
+      [Math.max(1, view.tile / 14), 0xffffff, 0.6],
+    ] as const) {
+      this.ghost.moveTo(ax, ay).lineTo(bx, by);
+      this.ghost.stroke({ width, color: tint, alpha, cap: 'round' });
+    }
+  }
+
+  /**
+   * A Laser Tower's beam: from the tower's centre to where it ended (in tiles, as a shot's
+   * `fromX`), through the walls it cleared, in its owner's colour round a white core.
+   */
+  noteLaser(
+    fromX: number,
+    fromY: number,
+    endX: number,
+    endY: number,
+    hits: { x: number; y: number }[],
+    colour: number,
+  ): void {
+    this.beams.push({ fromX, fromY, endX, endY, hits, colour, ms: 0 });
+  }
+
   /** A Bertha's shot has landed here, clearing these tiles round it. */
   noteBlast(x: number, y: number, crater: readonly (readonly [number, number])[]): void {
     this.blasts.push({ x, y, crater, reach: craterReach(crater), ms: 0 });
@@ -503,7 +592,12 @@ export class TowerMarks {
   }
 
   drawEffects(view: ViewTransform, deltaMs: number): void {
-    if (this.blasts.length === 0 && this.repairs.length === 0 && this.bolts.length === 0) {
+    if (
+      this.blasts.length === 0 &&
+      this.repairs.length === 0 &&
+      this.bolts.length === 0 &&
+      this.beams.length === 0
+    ) {
       clearDrawn(this.effects);
       return;
     }
@@ -562,7 +656,11 @@ export class TowerMarks {
       const reached = Math.min(bolt.strikes.length, Math.floor(bolt.ms / BOLT_STEP_MS) + 1);
       const end = bolt.strikes[reached - 1] as number;
       const done = bolt.strikes.length * BOLT_STEP_MS;
-      const fade = still ? 1 : 1 - Math.max(0, (bolt.ms - done) / BOLT_FADE_MS);
+      // Never below 0: on the frame that passes its end, before it is dropped, the fade fell a
+      // little under it, and a negative alpha came out of Pixi's colour packing nearly opaque —
+      // the effect flashed back at its very end (the users', 2026-10-21).
+      const fade = still ? 1 : Math.max(0, 1 - Math.max(0, (bolt.ms - done) / BOLT_FADE_MS));
+      if (fade <= 0) continue;
       const at = (p: { x: number; y: number }) => ({ x: tileX(view, p.x), y: tileY(view, p.y) });
       for (const [width, colour, alpha] of [
         [Math.max(3, view.tile * 0.4), bolt.colour, 0.35],
@@ -588,6 +686,44 @@ export class TowerMarks {
         g.fill({ color: SPARK, alpha: flash });
       }
     }
+    for (const beam of this.beams) {
+      beam.ms += deltaMs;
+      // Drawn out from the tower, held, then faded and narrowed; at once and held, still.
+      const reach = still ? 1 : Math.min(1, beam.ms / BEAM_REACH_MS);
+      // Never below 0, as the bolt's fade.
+      const fade = still
+        ? 1
+        : Math.max(0, 1 - Math.max(0, (beam.ms - BEAM_REACH_MS - BEAM_HOLD_MS) / BEAM_FADE_MS));
+      if (fade <= 0) continue;
+      const [ax, ay] = [tileX(view, beam.fromX + 0.5), tileY(view, beam.fromY + 0.5)];
+      const [ex, ey] = [tileX(view, beam.endX + 0.5), tileY(view, beam.endY + 0.5)];
+      const [bx, by] = [ax + (ex - ax) * reach, ay + (ey - ay) * reach];
+      for (const [width, colour, alpha] of [
+        [Math.max(4, view.tile * 0.55), beam.colour, 0.3],
+        [Math.max(2, view.tile * 0.22), beam.colour, 0.85],
+        [Math.max(1, view.tile * 0.08), 0xffffff, 1],
+      ] as const) {
+        g.moveTo(ax, ay).lineTo(bx, by);
+        g.stroke({
+          width: width * (0.4 + 0.6 * fade),
+          color: colour,
+          alpha: alpha * fade,
+          cap: 'round',
+        });
+      }
+      // Each wall it burns through flashes as the beam reaches it.
+      const length = Math.hypot(beam.endX - beam.fromX, beam.endY - beam.fromY) || 1;
+      for (const hit of beam.hits) {
+        const along = Math.hypot(hit.x - beam.fromX, hit.y - beam.fromY) / length;
+        if (along > reach + 1e-6) continue;
+        const since = beam.ms - along * BEAM_REACH_MS;
+        const flash = still ? 0.35 : 0.45 * Math.max(0, 1 - since / (BEAM_HOLD_MS + FLASH_MS));
+        if (flash <= 0) continue;
+        g.circle(tileX(view, hit.x + 0.5), tileY(view, hit.y + 0.5), view.tile * 0.5);
+        g.fill({ color: 0xffffff, alpha: flash });
+      }
+    }
+    this.beams = this.beams.filter((b) => b.ms < BEAM_MS);
     this.bolts = this.bolts.filter((b) => b.ms < b.strikes.length * BOLT_STEP_MS + BOLT_FADE_MS);
     this.blasts = this.blasts.filter((b) => b.ms < blastMs(b));
     this.repairs = this.repairs.filter((r) => r.ms < REPAIR_MS);

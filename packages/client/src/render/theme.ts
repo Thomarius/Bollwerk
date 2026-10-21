@@ -133,6 +133,15 @@ export interface Debris {
   owner: number;
 }
 
+/** The impact tower a click would fire: its kind, its crater, and its centre in tiles. */
+export interface NextTower {
+  kind: SpecialKind;
+  crater: readonly (readonly [number, number])[];
+  /** The tower's centre, as a shot's `fromX` and `fromY`. */
+  fromX: number;
+  fromY: number;
+}
+
 export interface Ghost {
   /** Tile the pointer is over, or null when off the map. */
   tile: { x: number; y: number } | null;
@@ -177,10 +186,11 @@ export interface Ghost {
   impact?: { ready: true } | { ready: false; reload: number } | null;
   /**
    * While aiming, the impact tower a click here would fire and the crater it would clear
-   * (`nextTowerShot`): Big Bertha's cross outlined under the cursor, and her flames round it.
-   * Null or absent when the next shot is an ordinary gun's.
+   * (`nextTowerShot`): Big Bertha's cross outlined under the cursor, and her flames round it;
+   * from where it stands, the Laser Tower's line. Null or absent when the next shot is an
+   * ordinary gun's.
    */
-  nextTower?: { kind: SpecialKind; crater: readonly (readonly [number, number])[] } | null;
+  nextTower?: NextTower | null;
 }
 
 /**

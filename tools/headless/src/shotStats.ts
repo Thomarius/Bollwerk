@@ -281,6 +281,19 @@ function shotObserver(
         k.shots++;
         k.walls += event.destroyed.length;
         byKind.set(kind, k);
+      } else if (event.kind === 'lightning_struck' || event.kind === 'laser_fired') {
+        // Struck as they fire, so counted by their kind here and nowhere else: their shot lands
+        // nothing, so it is neither a hit nor a miss of the tile clicked, nor one never landed.
+        for (const d of event.destroyed) destroyedBy.set(d, event.owner);
+        const entry = launched.get(event.shotId);
+        if (entry === undefined) continue;
+        launched.delete(event.shotId);
+        const gun = `${entry.shot.kind}${entry.shot.cost}`;
+        const kind = `${keyOf[event.owner] as string} ${gun}`;
+        const k = byKind.get(kind) ?? { shots: 0, walls: 0 };
+        k.shots++;
+        k.walls += event.destroyed.length;
+        byKind.set(kind, k);
       }
     }
     if (state.phase === 'combat' && phase !== null) {

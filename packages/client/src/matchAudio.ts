@@ -77,10 +77,10 @@ export class MatchAudio {
           break;
 
         case 'shot_fired':
-          // Every gun but the Lightning Tower fires with a cannon's sound, Big Bertha and the
-          // Rapid Cannon too (the user's, 2026-10-17); either Bertha's shot is kept for its landing. A
-          // Lightning Tower's is heard as it strikes (`lightning_struck`), on the same tick.
-          if (event.shot.kind === 'lightning') break;
+          // Every gun but the Lightning and Laser Towers fires with a cannon's sound, Big Bertha
+          // and the Rapid Cannon too (the user's, 2026-10-17); either Bertha's shot is kept for
+          // its landing. The other two are heard as they strike, on the same tick.
+          if (event.shot.kind === 'lightning' || event.shot.kind === 'laser') break;
           if (event.shot.kind === 'bertha') this.heavy.set(event.shot.id, 'tower_impact');
           if (event.shot.kind === 'biggest') this.heavy.set(event.shot.id, 'tower_biggest_impact');
           this.audio.play('cannon_fire');
@@ -96,6 +96,11 @@ export class MatchAudio {
         case 'lightning_struck':
           // Once a strike, however many walls it jumps to.
           this.audio.play('lightning_strike');
+          break;
+
+        case 'laser_fired':
+          // Once a beam, however many walls it burns through (the user's tower_laser.mp3).
+          this.audio.play('laser_fire');
           break;
 
         case 'walls_repaired':

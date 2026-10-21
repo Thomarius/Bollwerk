@@ -12,7 +12,8 @@ issues found (2026-10-17, ARCHIVE 13zp), and ST7 put the towers into How to play
 screenshot scenes (13zr). ST4 is closed, its remaining soaks dropped, the towers off by default
 for good and the bots' buying rule kept (the user's, ARCHIVE 13zw). Open: two decisions left after
 ST8 — the next tower and a test without the cap of three (§5); the towers' own sounds, TS, are
-in (ARCHIVE 13zx). Like PLAN.md it says what is configurable and why and leaves the
+in (ARCHIVE 13zx). The sixth tower, the Laser Tower (§2.6, 2026-10-21), is built and balanced,
+its play-test by the users open. Like PLAN.md it says what is configurable and why and leaves the
 values to `config/*.json`; when a package is done its summary moves to ARCHIVE.md and this file
 keeps only what is open.
 
@@ -27,9 +28,11 @@ keeps only what is open.
 - **An on/off switch** for special towers among the match settings, beside lives and rounds:
   classic matches stay possible, and a test session can compare both. **Off by default**, for
   good (the user's, 2026-10-17, ARCHIVE 13zw): the towers are a wacky addition, not the base game. A tournament's setup has the same switch (§3.3).
-- **Each player chooses one tower for the match** (or none), each their own. A person's choice is
-  remembered in their preferences ("none" the first time). **Bots draw theirs at random** from the
-  seed — never "none" — and the draw is shown in the lobby, as the map is.
+- **Each player brings one tower for the match**, each their own — never none (the user's,
+  2026-10-21: buying is always optional, so a tower brought need never be bought, and "No tower"
+  chose nothing). A person's choice is remembered in their preferences; never chosen, theirs is
+  drawn at random for the visit, as a bot's is. **Bots draw theirs at random** from the seed, and
+  the draw is shown in the lobby, as the map is.
 - **Bought in the cannon phase only** — the one phase without hurry — by exchanging ordinary
   cannon placements. **At most one special tower a round**, **at most three standing on the
   island**, and **never in the opening placement** after a castle is chosen (the match's start, or
@@ -52,6 +55,8 @@ keeps only what is open.
   **Rapid Cannon** (more guns in less room). Each is deterministic without new randomness, simple
   in the rules, and gives the bots a clear placement rule. More may follow (§4). The fourth, the
   **Lightning Tower** (offence by chain strikes, §2.4), came on 2026-10-17, the user's design.
+- **The sixth, the Laser Tower** (a beam through the first walls on its line, §2.6), came on
+  2026-10-21, the user's design.
 - **Every tower comes at two costs, 2 and 3 cannons** (the user's, 2026-10-16): a player chooses
   the tower and the cost that suits them — a variant (§2.3). The cost-3 variant is the stronger
   tower, since it is bought only in rounds its owner holds a second castle. Never a cost of 1. A
@@ -73,8 +78,8 @@ keeps only what is open.
 
 ### 2.1 Choosing and buying
 
-- With special towers switched on, every seat — person or bot — has a **chosen tower or none**
-  for the whole match (its loadout). People choose in the lobby; bots' are drawn from the seed when
+- With special towers switched on, every seat — person or bot — has a **chosen tower** for the
+  whole match (its loadout); the rules still take none, which an old page or recording may send. People choose in the lobby; bots' are drawn from the seed when
   the table is set (§3.5).
 - In a cannon phase that is not the player's opening one (`owesCastleChoice` was false when the
   phase began), a player holding at least the tower's **cost** in cannons to place, with fewer
@@ -234,6 +239,44 @@ whenever it is ready, as she does (the user's: no button of its own).
 - **Bots** aim it as Big Bertha, where its crater takes the most of an opponent's weakest wall,
   and buy and site it as an ordinary gun goes.
 
+### 2.6 The Laser Tower
+
+The user's design (2026-10-21): a beam that burns through walls in a line. An impact tower:
+whenever it is ready it fires first, as Big Bertha does.
+
+- **The click sets only the direction.** The beam runs from the tower's centre through the
+  centre of the tile clicked and on to the map's edge, and clears **the first walls on its line**
+  — `pierce` of them — however far they are: any live opponent's, so it crosses a channel to a
+  second opponent (the user's); its owner's own walls, a teammate's and an eliminated player's
+  rubble it passes over, uncounted. A click on one's own island or a teammate's is refused, as
+  for every shot (the user's), so a beam is aimed at or past its target.
+- **It strikes on the instant**, as the Lightning Tower does: the walls fall on the tick it fires,
+  each scoring as one, and an Architect rebuilds them as any shot's.
+- **Its reload is an ordinary shot's flight to the first wall it clears**, times `flightFactor`
+  (1 to start), not to the tile clicked — the user's: clicked by the tower's own shore in the
+  enemy's direction, the beam would otherwise reload in no time. Clearing nothing, it reloads by
+  the flight to the tile clicked. The shot stays in the air that long and lands nothing, so every
+  reload rule and the cursor's ring hold.
+- **The line is exact**: every tile the ray passes through, walked in doubled coordinates
+  (`traceLaser`). A ray through a tile's corner steps diagonally, touching neither side tile; a
+  sealing wall is 4-connected, so a corner it holds is always one of the two tiles the ray does
+  enter, and no beam slips through a wall. A 2×2 tower's centre is a tile corner, so its beam
+  meets such corners often.
+- **Its lever by cost is `pierce`**, the walls it clears — **2 at cost 2, 2.5 at cost 3**, set by
+  the soaks (§5 LZ; 3 and 4 to start, far too strong). A fraction is the chance of one more (the
+  user's: 3.5 clears 3, and a fourth half the time),
+  drawn from a stream of its own for every shot (`streamFor(seed, laser:id)`), drawn whole lever
+  or not, so every client draws the same.
+- **Seen and heard**: a lens with its beam for its emblem; while it is ready, a faint line from
+  the tower through the cursor to the board's edge (the user's), a glow in the player's colour
+  round a white core, as their beam is (the users', red at first), and not the walls it would clear — that is for the player to read; its beam drawn out from the
+  tower in its owner's colour round a white core, held and faded, each wall flashing as it burns;
+  heard once a beam (`laser_fire`, the user's `tower_laser.mp3`).
+- **Bots** aim it at the block of the chosen opponent's wall whose beam, traced as the rules will
+  fire it, clears most — the weakest wall's blocks counting three, any other rival's one, for the
+  walls it is sure to clear — so a beam along a thin wall, or through it to the ring behind,
+  wins; and buy and site it as an ordinary gun goes.
+
 ---
 
 ## 3. Where it lives
@@ -322,13 +365,16 @@ Built in ST5 and ST6 together (2026-10-14), so people can play with towers; the 
 
 - **Lobby** (`lobby.ts`, `lobbyFlow.ts`): the host's switch, **Special towers** On/Off, beside lives
   and rounds; a guest reads it in the table's statement. While on, a person's own seat has a button
-  showing their choice — its emblem, name and a pip a cannon it costs, or none — remembered for the next table (`towers.ts`, `bollwerk.tower`; a choice saved
-  before the costs names no variant, so reads as none) and sent to a room as it opens; anyone
+  showing their choice — its emblem, name and a pip a cannon it costs — remembered for the next
+  table (`towers.ts`, `bollwerk.tower`), and never chosen, drawn at random once a visit, not saved
+  (as is a choice of none saved before 2026-10-21, or one saved before the costs, a bare kind that
+  names no variant), and sent to a room as it opens; anyone
   else's seat shows their choice, and each bot's seat the variant drawn for it. The same in a
   tournament's lobby, and a switch in the tournament's setup.
 - **The tower menu** (`towerMenu.ts`, `towerChoice.ts`; the user's, 2026-10-16), opened by that
-  button, where one list of every variant had stopped scaling: a card for none and each tower — its
-  emblem and name (a line on its role, offence or defence, went: the user's, 2026-10-17) — a switch for the chosen tower's
+  button, where one list of every variant had stopped scaling: a card for each tower, by name
+  alphabetically in the language shown (`menuTowers`; the user's, 2026-10-21, the card for none
+  gone with it) — its emblem and name (a line on its role, offence or defence, went: the user's, 2026-10-17) — a switch for the chosen tower's
   cost, a cost the rules do not offer greyed, a card's click keeping the cost chosen, tower and cost
   independent — the last cost chosen when none was (`bollwerk.towerCost`), else the cheapest; a
   cost remembered by tower had switched back as its card was clicked, which confused the users
@@ -338,7 +384,7 @@ Built in ST5 and ST6 together (2026-10-14), so people can play with towers; the 
   only closes; it closes itself when the lobby goes, a match begins or towers are switched off.
   Its **preview** (`towerShow.ts`, `towerPreview.ts`) plays the chosen variant by the rules
   themselves on two small islands — the sim's `fire`, `resolveImpacts` and `repairWalls` on a loop:
-  an ordinary cannon for none, Bertha's cross (cost 2's shell visibly slower), the Rapid's barrels
+  Bertha's cross (cost 2's shell visibly slower), the Rapid's barrels
   in turn, a rival's barrage on the Architect and the walls in its reach coming back, its circle
   outlined — in the player's combat look, a style drawn from their favourites where it is Random;
   under reduced motion a still of the moment that shows it.
@@ -518,11 +564,30 @@ aim it (16.4 blocks a shot), the old radii won almost everything, so the soak wa
 
 Kept: 2 and 2.5 — 13 and 21 tiles, both 5 across, the old balance's shares again.
 
+### LZ — The Laser Tower's balance
+
+Built 2026-10-21 (§2.6). Measured at Level 5 only (§1): each variant against no tower and the two
+head to head, 96 matches a pairing (±5), `pierce` the lever (ARCHIVE 14k). Cost 2 / cost 3 against
+none, then 3 against 2:
+
+| pierce (cost 2 / 3) | against none | head to head |
+| ------------------- | ------------ | ------------ |
+| 3 / 4               | 77 / 84      | 52           |
+| 2 / 3               | 66 / 75      | 56           |
+| 1.5 / 2.5           | 52 / 67      | 59           |
+| **2 / 2.5**         | **66 / 67**  | **56**       |
+
+Kept: 2 and 2.5 — every figure inside the goal, the two costs alike against no tower and the
+dearer a little the stronger. Bots with the starting values cleared 2.67 and 3.33 walls a beam
+against a cannon's 0.75: a line through a wall finds nearly as many as it may take.
+
 ### After ST8 — two decisions
 
 ST8, the testers' matches with towers on, closed with no issues found (2026-10-17, ARCHIVE 13zp).
-Left from it, each the user's to decide: §4's next tower (the Bastion is the one liked most), and
-a test without the cap of three towers on an island (`maxOwned`, null for none).
+Left from it, each the user's to decide: §4's next tower, and a test without the cap of three
+towers on an island (`maxOwned`, null for none). The next tower was the user's own, the Laser
+Tower (§2.6, 2026-10-21); the Bastion, the one liked most of §4, is still there for later. Open
+now: the Laser's play-test by the users, and the test without the cap.
 
 ---
 

@@ -7,7 +7,14 @@ export type CraterPattern = z.infer<typeof CraterPatternSchema>;
 const ms = z.number().int().nonnegative();
 
 /** The special towers a player may bring (docs/SPECIAL_TOWERS.md), in their order everywhere. */
-export const SPECIAL_KINDS = ['bertha', 'architect', 'rapid', 'lightning', 'biggest'] as const;
+export const SPECIAL_KINDS = [
+  'bertha',
+  'architect',
+  'rapid',
+  'lightning',
+  'biggest',
+  'laser',
+] as const;
 export const SpecialKindSchema = z.enum(SPECIAL_KINDS);
 export type SpecialKind = z.infer<typeof SpecialKindSchema>;
 
@@ -33,6 +40,8 @@ export const TOWER_VARIANTS = [
   'lightning3',
   'biggest2',
   'biggest3',
+  'laser2',
+  'laser3',
 ] as const satisfies readonly `${SpecialKind}${TowerCost}`[];
 export const TowerVariantSchema = z.enum(TOWER_VARIANTS);
 export type TowerVariant = z.infer<typeof TowerVariantSchema>;
@@ -112,6 +121,21 @@ const BiggestSchema = z.strictObject({
 });
 
 /**
+ * The Laser Tower (2026-10-21, the user's): a beam on the instant from the tower through the
+ * tile aimed at and on to the map's edge, clearing the first `pierce` opponents' walls on its
+ * line (`fireLaser`). Its reload is an ordinary shot's flight to the first wall it clears —
+ * to the tile aimed at if it clears none — times `flightFactor`.
+ */
+const LaserSchema = z.strictObject({
+  ...towerFields,
+  /**
+   * Walls the beam clears before it stops; the balance's lever. A fraction is the chance of
+   * one more — 3.5 clears 3, and a fourth half the time (the user's).
+   */
+  pierce: z.number().positive(),
+});
+
+/**
  * Special towers (docs/SPECIAL_TOWERS.md): a cannon with an ability of its own, bought in
  * the cannon phase for several ordinary ones. Whether they are played at all is `enabled`,
  * which a match's settings write; the rest is each variant's balance.
@@ -141,6 +165,11 @@ export const SpecialsSchema = z.strictObject({
    * v0.9.9's recordings — and then not offered.
    */
   biggest: byCost(BiggestSchema).optional(),
+  /**
+   * A beam through the first walls on its line (2026-10-21). Absent from rulesets written
+   * before it — v0.9.11's recordings — and then not offered.
+   */
+  laser: byCost(LaserSchema).optional(),
 });
 export type Specials = z.infer<typeof SpecialsSchema>;
 export type BerthaVariant = z.infer<typeof BerthaSchema>;
@@ -148,8 +177,14 @@ export type ArchitectVariant = z.infer<typeof ArchitectSchema>;
 export type RapidVariant = z.infer<typeof RapidSchema>;
 export type LightningVariant = z.infer<typeof LightningSchema>;
 export type BiggestVariant = z.infer<typeof BiggestSchema>;
+export type LaserVariant = z.infer<typeof LaserSchema>;
 export type VariantConfig =
-  BerthaVariant | ArchitectVariant | RapidVariant | LightningVariant | BiggestVariant;
+  | BerthaVariant
+  | ArchitectVariant
+  | RapidVariant
+  | LightningVariant
+  | BiggestVariant
+  | LaserVariant;
 
 /** The variants the ruleset offers, in their order everywhere. */
 export function offeredVariants(specials: Specials): TowerVariant[] {

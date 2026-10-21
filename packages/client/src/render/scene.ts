@@ -1,5 +1,5 @@
 import { defaultArtConfig, type ArtConfig, type ArtStyle } from '@bollwerk/config';
-import type { MatchState, Shot } from '@bollwerk/sim';
+import { strikesOnFiring, type MatchState, type Shot } from '@bollwerk/sim';
 import { Application, BigPool, Container, Graphics, Rectangle, RenderTexture } from 'pixi.js';
 
 import type { CameraShot } from '../camera.js';
@@ -553,7 +553,7 @@ export class Scene {
     if (slot.warming.length > 0 || slot.effectsPrimed || last === null) return;
     if (performance.now() >= until) return;
     slot.effectsPrimed = true;
-    slot.theme.drawEffects(withoutLightning(last.state), this.view, {
+    slot.theme.drawEffects(withoutInstantShots(last.state), this.view, {
       tickFraction: last.tickFraction,
       deltaMs: 0,
       castleSealed: last.castleSealed[look],
@@ -719,7 +719,7 @@ export class Scene {
     const art = this.slots[this.shown.to].art;
     this.towers.draw(state, this.view, art, humanPlayer);
     this.towers.drawEffects(this.view, deltaMs);
-    const shown = withoutLightning(state);
+    const shown = withoutInstantShots(state);
     for (const slot of this.visible()) {
       slot.theme.drawEffects(shown, this.view, {
         tickFraction,
@@ -770,7 +770,7 @@ export class Scene {
   drawOverlay(state: MatchState, ghost: Ghost, humanPlayer: number): void {
     const to = this.slots[this.shown.to];
     this.towers.drawGhost(state, this.view, ghost, to.art, humanPlayer);
-    const shown = withoutLightning(state);
+    const shown = withoutInstantShots(state);
     for (const slot of this.visible()) {
       slot.theme.drawOverlay(shown, this.view, slot === to ? ghost : NO_GHOST, humanPlayer);
     }
@@ -860,6 +860,28 @@ export class Scene {
       fromX,
       fromY,
       path,
+      playerColour(this.slots[this.shown.to].art, player, 'light'),
+    );
+  }
+
+  /**
+   * A Laser Tower's beam: from the tower to where it ended, through the walls it cleared, in
+   * the firer's colour, over whichever look is in front.
+   */
+  noteLaser(
+    fromX: number,
+    fromY: number,
+    endX: number,
+    endY: number,
+    hits: { x: number; y: number }[],
+    player: number,
+  ): void {
+    this.towers.noteLaser(
+      fromX,
+      fromY,
+      endX,
+      endY,
+      hits,
       playerColour(this.slots[this.shown.to].art, player, 'light'),
     );
   }
@@ -1033,11 +1055,11 @@ export class Scene {
 }
 
 /**
- * The match as the styles are to draw it: a Lightning Tower's shot struck as it was fired, and
- * what stays in the air after is only its reload (`strikeLightning`), so no style draws it
- * flying. The state itself where there is none, as there nearly always is.
+ * The match as the styles are to draw it: a Lightning Tower's or Laser Tower's shot struck as
+ * it was fired, and what stays in the air after is only its reload (`strikesOnFiring`), so no
+ * style draws it flying. The state itself where there is none, as there nearly always is.
  */
-function withoutLightning(state: MatchState): MatchState {
-  if (!state.shots.some((s) => s.kind === 'lightning')) return state;
-  return { ...state, shots: state.shots.filter((s) => s.kind !== 'lightning') };
+function withoutInstantShots(state: MatchState): MatchState {
+  if (!state.shots.some((s) => strikesOnFiring(s.kind))) return state;
+  return { ...state, shots: state.shots.filter((s) => !strikesOnFiring(s.kind)) };
 }

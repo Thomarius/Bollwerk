@@ -7,7 +7,7 @@ import { TowerPreview } from './towerPreview.js';
 
 /**
  * The special tower menu (the user's, 2026-10-16): where the lobby's list of every variant
- * had stopped scaling, a window of cards — none, then each tower by its emblem and name —
+ * had stopped scaling, a window of cards — each tower by its emblem and name, alphabetically —
  * and under them a switch for the chosen tower's cost, a line on what that
  * variant does by its own numbers and when it can be afforded, and a preview of it played by
  * the rules (`towerPreview.ts`). A click chooses at once, as in the gallery of looks; Done
@@ -67,9 +67,7 @@ export function openTowerMenu(options: TowerMenuOptions): void {
       const kind = card.dataset['kind'];
       // The cost stays as it is when the tower changes.
       const cost = chosen !== null ? variantCost(chosen) : rememberedCost();
-      choose(
-        kind === 'none' || kind === undefined ? null : variantForCard(kind as SpecialKind, cost),
-      );
+      if (kind !== undefined) choose(variantForCard(kind as SpecialKind, cost));
       return;
     }
     const cost = target.closest<HTMLButtonElement>('.cost');

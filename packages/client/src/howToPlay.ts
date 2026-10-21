@@ -704,6 +704,7 @@ const TOWER_ROUND: readonly { kind: SpecialKind; cost: number }[] = [
   { kind: 'rapid', cost: 3 },
   { kind: 'lightning', cost: 2 },
   { kind: 'biggest', cost: 3 },
+  { kind: 'laser', cost: 2 },
 ];
 const TOWER_MS = 3000;
 

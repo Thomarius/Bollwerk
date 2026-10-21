@@ -1,6 +1,6 @@
 import {
-  TOWER_VARIANTS,
   defaultRuleset,
+  offeredVariants,
   variantConfig,
   variantCost,
   variantKind,
@@ -27,6 +27,7 @@ const NAME_KEY = {
   rapid: 'tower.rapid',
   lightning: 'tower.lightning',
   biggest: 'tower.biggest',
+  laser: 'tower.laser',
 } as const;
 
 /** A tower's name, without its cost. */
@@ -46,7 +47,7 @@ export function variantName(variant: TowerVariant | null): string {
 /**
  * One line on what a variant does, with its own numbers from the rules: the Architect's
  * reach, the Rapid Cannon's barrels, a Big Bertha's shell against a gun's, the Lightning
- * Tower's jumps and their reach.
+ * Tower's jumps and their reach, the Laser Tower's walls pierced.
  */
 export function towerWhat(variant: TowerVariant, ruleset: Ruleset = defaultRuleset): string {
   const kind = variantKind(variant);
@@ -83,6 +84,15 @@ export function towerWhat(variant: TowerVariant, ruleset: Ruleset = defaultRules
             s: config.flightMs / 1000,
           })
         : '';
+    case 'laser': {
+      // A fraction of `pierce` is the chance of one wall more, told as such.
+      if (!('pierce' in config)) return '';
+      const whole = Math.floor(config.pierce);
+      const chance = Math.round((config.pierce - whole) * 100);
+      return chance === 0
+        ? t('tower.laserWhat', { n: whole })
+        : t('tower.laserChanceWhat', { n: whole, p: chance });
+    }
   }
 }
 
@@ -94,15 +104,22 @@ export function towerCostText(cost: number): string {
 /** Where the menu remembers the tower last chosen, as it does the name. */
 const TOWER_KEY = 'bollwerk.tower';
 
+/** A tower drawn for a player who has not chosen one, the same for the whole visit. */
+let drawn: TowerVariant | null = null;
+
 /**
- * The tower the player chose last, or none the first time — and for a choice saved before
- * towers came at two costs, a bare kind, which names no variant.
+ * The tower the player chose last — or, never chosen, a tower drawn at random among every one
+ * the rules offer at either cost, as a bot's is (the user's, 2026-10-21: there is no "none", since
+ * a tower brought need never be bought). Drawn once a visit and not saved, so it stays a surprise
+ * until the player chooses; the same for a choice of none saved before then, and for one saved
+ * before towers came at two costs, a bare kind, which names no variant.
  */
-export function preferredTower(): TowerVariant | null {
+export function preferredTower(): TowerVariant {
   const saved = stored(TOWER_KEY);
-  return (TOWER_VARIANTS as readonly string[]).includes(saved ?? '')
-    ? (saved as TowerVariant)
-    : null;
+  const offered = offeredVariants(defaultRuleset.specials);
+  if ((offered as readonly string[]).includes(saved ?? '')) return saved as TowerVariant;
+  drawn ??= offered[Math.floor(Math.random() * offered.length)] as TowerVariant;
+  return drawn;
 }
 
 export function saveTower(variant: TowerVariant | null): void {

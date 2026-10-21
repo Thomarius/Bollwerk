@@ -34,7 +34,16 @@ import {
  * tower that fires ordinary shots, however quickly, fires as any gun.
  */
 export function isImpactTower(kind: CannonKind): boolean {
-  return kind === 'bertha' || kind === 'lightning' || kind === 'biggest';
+  return kind === 'bertha' || kind === 'lightning' || kind === 'biggest' || kind === 'laser';
+}
+
+/**
+ * Whether a kind's shot does all it does on the tick it is fired — the Lightning Tower's
+ * strike, the Laser Tower's beam — so nothing of it flies: what stays in the air is only its
+ * reload, which lands nothing.
+ */
+export function strikesOnFiring(kind: CannonKind): boolean {
+  return kind === 'lightning' || kind === 'laser';
 }
 
 /** The variant a tower of this kind and cost is; null for an ordinary cannon. */

@@ -5462,8 +5462,9 @@ body.reduced-effects .look-gallery .card img {
   display: flex;
   flex-direction: column;
   gap: 0.9rem;
-  /* Six cards to a row: none and five towers. */
-  width: min(46rem, 94vw);
+  /* Six cards to a row: the six towers, none no longer a card (2026-10-21) — and wide enough for
+     "Schnellfeuer-" on a card's first line, which 46rem was not. */
+  width: min(52rem, 94vw);
   max-height: 92vh;
   overflow-y: auto;
   padding: 1.2rem 1.4rem;
@@ -5519,8 +5520,14 @@ body.reduced-effects .look-gallery .card img {
 }
 
 .tower-menu .card .name {
+  max-width: 100%;
   font-size: 13px;
   letter-spacing: 0.04em;
+  /* A long German word broken at its soft hyphen — "Schnellfeuer-kanone" ran past its card, and
+     the browser's own hyphenation broke it as "Schnellfeu-erkanone" — and anywhere at all where
+     a name has none. */
+  hyphens: manual;
+  overflow-wrap: anywhere;
 }
 
 .tower-menu .costs {

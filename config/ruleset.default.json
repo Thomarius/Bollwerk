@@ -65,6 +65,10 @@
     "biggest": {
       "2": { "footprint": [2, 2], "flightMs": 10000, "craterRadius": 2 },
       "3": { "footprint": [2, 2], "flightMs": 10000, "craterRadius": 2.5 }
+    },
+    "laser": {
+      "2": { "footprint": [2, 2], "flightFactor": 1, "pierce": 2 },
+      "3": { "footprint": [2, 2], "flightFactor": 1, "pierce": 2.5 }
     }
   },
   "build": {

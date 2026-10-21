@@ -302,7 +302,7 @@ describe('match audio', () => {
 describe('special towers in the sound', () => {
   const shot = (
     id: number,
-    kind: 'cannon' | 'bertha' | 'rapid' | 'lightning' | 'biggest',
+    kind: 'cannon' | 'bertha' | 'rapid' | 'lightning' | 'biggest' | 'laser',
   ): MatchEvent => ({
     kind: 'shot_fired',
     tick: 1,
@@ -375,6 +375,25 @@ describe('special towers in the sound', () => {
       },
     ]);
     expect(audio.sfx).toEqual(['lightning_strike']);
+  });
+
+  it('sounds a Laser Tower once as it fires, however many walls it burns', () => {
+    const { audio, match } = setup();
+    match.handle([
+      shot(7, 'laser'),
+      {
+        kind: 'laser_fired',
+        tick: 1,
+        shotId: 7,
+        owner: 1,
+        fromX: 0,
+        fromY: 0,
+        endX: 9,
+        endY: 5,
+        destroyed: [1, 2, 3],
+      },
+    ]);
+    expect(audio.sfx).toEqual(['laser_fire']);
   });
 
   it('knocks twice for each of the player’s own Architects that rebuilt, not a rival’s', () => {

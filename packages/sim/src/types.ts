@@ -172,6 +172,18 @@ export type MatchEvent =
       destroyed: number[];
     }
   | {
+      /** A Laser Tower's beam, on the tick it fired: from the tower to where it ends. */
+      kind: 'laser_fired';
+      tick: number;
+      shotId: number;
+      owner: number;
+      fromX: number;
+      fromY: number;
+      endX: number;
+      endY: number;
+      destroyed: number[];
+    }
+  | {
       kind: 'piece_placed';
       tick: number;
       player: number;

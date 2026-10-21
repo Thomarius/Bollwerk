@@ -17,7 +17,7 @@ import {
  * or an ordinary cannon, for none — and a rival's on the right, and a loop of shots fired
  * with the sim's own `fire`, landed by `resolveImpacts` and, for the Architect, rebuilt by
  * `repairWalls`. So every number is the chosen variant's own: Bertha's cross and her flight,
- * the Architect's reach, the Rapid's barrels. No Pixi here; `towerPreview.ts` draws it.
+ * the Architect's reach, the Rapid's barrels, the Laser's walls pierced. No Pixi here; `towerPreview.ts` draws it.
  */
 
 /** `XX` is the chooser's gun, as `stateFromAscii` writes it: `*`, or a tower's letter. */
@@ -43,6 +43,12 @@ const FACING = [
   { x: 17, y: 5 },
 ] as const;
 /**
+ * The Laser Tower's aim: the rival's top wall, from the gun at (8.5, 4.5), so the beam runs
+ * along it — through the west wall's top, then that wall a block after another, as many as the
+ * variant pierces (two, and at cost 3 a third half the time).
+ */
+const ALONG_TOP = { x: 22, y: 2 } as const;
+/**
  * The rival's barrage on the chooser's Architect, at (8, 4): the east wall beside it, which
  * both costs rebuild; the top wall above it, which only cost 3's wider reach takes in; and a
  * corner far from it, which neither does — so the reach is seen where it ends.
@@ -65,6 +71,8 @@ const GLYPH: Record<TowerVariant, string> = {
   lightning3: 'L',
   biggest2: 'g',
   biggest3: 'G',
+  laser2: 'x',
+  laser3: 'X',
 };
 
 /** Before the first shot of a loop, after its last lands, and before the repair. */
@@ -187,6 +195,8 @@ export class TowerShow {
         ...t,
         at: AIM_MS + k * BARREL_MS,
       }));
+    } else if (variant !== null && variantKind(variant) === 'laser') {
+      this.plan = [{ player: 0, ...ALONG_TOP, at: AIM_MS }];
     } else {
       this.plan = [{ player: 0, ...FACING[0], at: AIM_MS }];
     }

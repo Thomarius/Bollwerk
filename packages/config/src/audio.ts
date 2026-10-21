@@ -35,6 +35,8 @@ export const SFX_CUES = [
   'tower_biggest_impact',
   /** A Lightning Tower's strike, once however many walls it jumps to. */
   'lightning_strike',
+  /** A Laser Tower's beam, once however many walls it burns through. */
+  'laser_fire',
   /** The player's own Architect rebuilding their walls as a barrage ends, twice a tower. */
   'walls_repaired',
 ] as const;

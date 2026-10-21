@@ -72,6 +72,10 @@
       "file": "sfx/tower_lightning.mp3",
       "volume": 0.6
     },
+    "laser_fire": {
+      "file": "sfx/tower_laser.mp3",
+      "volume": 0.6
+    },
     "walls_repaired": {
       "file": "sfx/tower_architect.mp3",
       "volume": 0.6

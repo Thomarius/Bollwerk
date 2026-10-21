@@ -12,9 +12,10 @@ import { SnapshotSchema } from './snapshot.js';
 /**
  * Bumped on any breaking change to the message set; mismatched clients are rejected. 27: the
  * Lightning Tower, a variant and a ruleset key a v0.9.7 page does not know (2026-10-17). 28:
- * the Allerdickste Bertha, the same again for v0.9.9 (2026-10-17).
+ * the Allerdickste Bertha, the same again for v0.9.9 (2026-10-17). 29: the Laser Tower, the
+ * same for v0.9.11 (2026-10-21).
  */
-export const PROTOCOL_VERSION = 28;
+export const PROTOCOL_VERSION = 29;
 
 /**
  * A player's intent. The server overwrites `player` with the sender's own seat before

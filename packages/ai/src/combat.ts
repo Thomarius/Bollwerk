@@ -2,6 +2,7 @@ import {
   variantConfig,
   variantOf,
   type BotProfile,
+  type LaserVariant,
   type LightningVariant,
   type TowerCost,
 } from '@bollwerk/config';
@@ -15,6 +16,7 @@ import {
   holdingsOf,
   sameTeam,
   strikable,
+  traceLaser,
   type Action,
   type Cannon,
   type Holding,
@@ -235,6 +237,7 @@ export class Gunner {
     const weakest = new Set(weakestWall(state, opponent));
     if (weakest.size === 0) return null;
     if (tower.kind === 'lightning') return this.lightningTarget(state, tower, weakest, taken);
+    if (tower.kind === 'laser') return this.laserTarget(state, tower, opponent, weakest, taken);
     const offsets = craterTilesOf(state.ruleset, tower.kind, tower.cost);
     const rivalWall = (i: number): boolean => {
       if (state.structure[i] !== Structure.Wall) return false;
@@ -325,6 +328,46 @@ export class Gunner {
       if (score > bestScore) {
         bestScore = score;
         best = block;
+      }
+    }
+    return best;
+  }
+
+  /**
+   * Where a Laser Tower's beam clears most: aimed at a block of the opponent's wall, the beam
+   * traced as the rules will fire it (`traceLaser`), each block of the weakest wall it clears
+   * counting three and any other of a rival's wall one — so a beam along a thin wall, or
+   * through it to the ring behind, wins. Counted for the walls it is sure to clear, not those
+   * its fraction may add. Its own shots' tiles are passed over.
+   */
+  private laserTarget(
+    state: MatchState,
+    tower: Cannon,
+    opponent: number,
+    weakest: ReadonlySet<number>,
+    taken: ReadonlySet<number>,
+  ): number | null {
+    const config = variantConfig(
+      state.ruleset.specials,
+      variantOf('laser', tower.cost as TowerCost),
+    ) as LaserVariant;
+    const count = Math.max(1, Math.floor(config.pierce));
+    const fromX = tower.x + (tower.w - 1) / 2;
+    const fromY = tower.y + (tower.h - 1) / 2;
+    const island = state.players[opponent]?.islandId;
+    let best: number | null = null;
+    let bestScore = 0;
+    for (let i = 0; i < state.structure.length; i++) {
+      if (state.structure[i] !== Structure.Wall || state.owner[i] !== island || taken.has(i)) {
+        continue;
+      }
+      const x = i % state.width;
+      const beam = traceLaser(state, this.playerId, fromX, fromY, x, (i - x) / state.width, count);
+      let score = 0;
+      for (const t of beam.cleared) score += weakest.has(t) ? 3 : 1;
+      if (score > bestScore) {
+        bestScore = score;
+        best = i;
       }
     }
     return best;

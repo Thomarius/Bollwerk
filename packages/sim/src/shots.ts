@@ -2,6 +2,7 @@ import type { CraterPattern } from '@bollwerk/config';
 
 import { distanceFixed, distanceSquared } from './math.js';
 import { playerOf, type Rejection } from './placement.js';
+import { fireLaser, laserCount, traceLaser } from './laser.js';
 import { strikeLightning } from './lightning.js';
 import {
   craterTilesOf,
@@ -10,6 +11,7 @@ import {
   isImpactTower,
   isLoaded,
   noteLostWall,
+  strikesOnFiring,
 } from './specials.js';
 import { sameTeam } from './teams.js';
 import { Structure, type Cannon, type MatchState, type Shot } from './types.js';
@@ -170,10 +172,25 @@ export function fire(
     launchTick: state.tick,
     impactTick: state.tick + shotFlightTicks(state, cannon, fromX, fromY, tx, ty),
   };
+  // The Laser Tower's beam is traced before it is fired, since its reload is the flight to the
+  // first wall it clears — not to the tile clicked, which only sets the direction: aimed so,
+  // a click by the tower's own shore would reload in no time (the user's).
+  const beam =
+    shot.kind === 'laser'
+      ? traceLaser(state, playerId, fromX, fromY, tx, ty, laserCount(state, shot))
+      : null;
+  const first = beam?.cleared[0];
+  if (first !== undefined) {
+    const factor = flightFactorOf(state.ruleset, cannon.kind, cannon.cost);
+    const wx = first % state.width;
+    const wy = (first - wx) / state.width;
+    shot.impactTick = state.tick + flightTicks(state, fromX, fromY, wx, wy, factor);
+  }
   cannon.shotIds.push(shot.id);
   state.shots.push(shot);
   state.events.push({ kind: 'shot_fired', tick: state.tick, shot });
   if (shot.kind === 'lightning') strikeLightning(state, shot);
+  if (beam !== null) fireLaser(state, shot, beam);
   return { shot };
 }
 
@@ -234,9 +251,9 @@ export function resolveImpacts(state: MatchState): void {
       const barrel = cannon.shotIds.indexOf(shot.id);
       if (barrel >= 0) cannon.shotIds.splice(barrel, 1);
     }
-    // The Lightning Tower struck as it fired (`strikeLightning`): what is in the air until now
-    // is only its reload, an ordinary shot's flight, which lands nothing.
-    if (shot.kind === 'lightning') continue;
+    // The Lightning Tower struck as it fired (`strikeLightning`), the Laser Tower too
+    // (`fireLaser`): what is in the air until now is only their reload, which lands nothing.
+    if (strikesOnFiring(shot.kind)) continue;
 
     const offsets = craterTilesOf(state.ruleset, shot.kind, shot.cost);
     const destroyed: number[] = [];

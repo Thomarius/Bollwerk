@@ -1,4 +1,4 @@
-import { defaultRuleset } from '@bollwerk/config';
+import { defaultRuleset, offeredVariants } from '@bollwerk/config';
 import { drawnSpecial } from '@bollwerk/ai';
 import type { Seat } from '@bollwerk/protocol';
 import { applyEnclosure, stateFromAscii, withSpecials, type MatchState } from '@bollwerk/sim';
@@ -7,7 +7,8 @@ import { describe, expect, it } from 'vitest';
 import { impactReadiness } from './controls.js';
 import { lobbyMarkup, type LobbyView } from './lobby.js';
 import { offeredTowers, towerMenuMarkup, variantForCard } from './towerChoice.js';
-import { towerLine, towerName, towerWhat, variantName } from './towers.js';
+import { language, setLanguage } from './i18n.js';
+import { preferredTower, towerLine, towerName, towerWhat, variantName } from './towers.js';
 
 /** Player 0's sealed ring, in a cannon phase, bringing Big Bertha with three cannons. */
 function cannonPhase(): MatchState {
@@ -181,25 +182,56 @@ describe('the lobby with special towers', () => {
     expect(towerWhat('biggest2')).toContain('13 tiles');
     expect(towerWhat('biggest3')).toContain('21 tiles');
     expect(towerWhat('biggest3')).toContain('10 seconds');
+    // The Laser's walls pierced, and a fraction told as the chance of one more.
+    expect(towerWhat('laser2')).toContain('first 2 wall blocks');
+    expect(towerWhat('laser2')).not.toContain('one more');
+    expect(towerWhat('laser3')).toContain('first 2 wall blocks');
+    expect(towerWhat('laser3')).toContain('one more 50%');
+    const fractional = {
+      ...defaultRuleset,
+      specials: {
+        ...specials,
+        laser: { '2': { ...specials.laser!['2']!, pierce: 3.25 } },
+      },
+    };
+    expect(towerWhat('laser2', fractional)).toContain('first 3 wall blocks');
+    expect(towerWhat('laser2', fractional)).toContain('one more 25%');
   });
 });
 
 describe('the tower menu', () => {
-  it('offers none and every tower, each at the costs the rules offer', () => {
+  it('offers every tower at the costs the rules offer, and no card for none', () => {
     expect(offeredTowers()).toEqual([
       { kind: 'bertha', costs: [2, 3] },
       { kind: 'architect', costs: [2, 3] },
       { kind: 'rapid', costs: [2, 3] },
       { kind: 'lightning', costs: [2, 3] },
       { kind: 'biggest', costs: [2, 3] },
+      { kind: 'laser', costs: [2, 3] },
     ]);
-    const html = towerMenuMarkup(null);
-    for (const kind of ['none', 'bertha', 'architect', 'rapid', 'lightning', 'biggest']) {
-      expect(html).toContain(`data-kind="${kind}"`);
+    const html = towerMenuMarkup('bertha2');
+    expect(html).not.toContain('data-kind="none"');
+    expect(html).toContain('class="card chosen" data-kind="bertha"');
+  });
+
+  it('shows the cards alphabetically by their names in the language shown', () => {
+    const order = (): string[] =>
+      [...towerMenuMarkup('bertha2').matchAll(/data-kind="(\w+)"/g)].map((m) => m[1] as string);
+    const before = language();
+    try {
+      setLanguage('en');
+      expect(order()).toEqual(['biggest', 'architect', 'bertha', 'laser', 'lightning', 'rapid']);
+      setLanguage('de');
+      expect(order()).toEqual(['biggest', 'architect', 'lightning', 'bertha', 'laser', 'rapid']);
+    } finally {
+      setLanguage(before);
     }
-    expect(html).toContain('class="card chosen" data-kind="none"');
-    // None has no cost to choose.
-    expect(html).not.toContain('class="costs"');
+  });
+
+  it('draws a tower for a player who never chose one, the same all visit', () => {
+    const drawn = preferredTower();
+    expect(offeredVariants(defaultRuleset.specials)).toContain(drawn);
+    expect(preferredTower()).toBe(drawn);
   });
 
   it('shows the chosen tower’s cost and what that variant does', () => {
