@@ -9516,3 +9516,13 @@ of frost where the shot lands, and the user's `tower_frost.mp3` over the cannon'
 (`frost_impact`, CC0 from OpenGameArt under `sfx/`); the menu's card, its preview, How to play,
 and its texts. Checked by eye in Minimal: the ice in the gaps the frost made, the bots' walls
 round it. Its play-test by the user is open.
+
+**The ice made plainer** (2026-10-21, the user's first look in play): the blocks blended into some
+styles and player colours, and a block shrinking as it thawed looked passable while it was not.
+Now each is the whole tile, a dark rim outside a white one and a shadow, a glint running across it
+every few seconds (still under reduced motion); solid until it thaws, its time left shown by cracks
+spreading across it, its going by a shatter of shards — as it thaws, as an Architect thaws it, or
+as the phase ends; and a red cross on every frozen cell under the piece in hand, which had only
+turned invalid without saying why. The user's choice of seven ideas: contrast, full size, the
+glint, cracks and shatter, the cross; a surface pattern, a pie timer and a pulse as the phase
+opens left out.

@@ -308,8 +308,10 @@ first.
   (`startFreezes`); hashed only while there are any, so a match without them hashes as it always
   did, and copied by a rollout, which opens that phase too.
 - **Seen and heard**: a snowflake for its emblem; each frozen tile a block of ice over the board
-  in every style, whole until its build phase opens, then shrinking and puddling towards its thaw,
-  so the player sees when it will take a piece; a burst of frost where the shot lands. It lands
+  in every style, the whole tile, a dark rim outside a white one and a shadow, so it reads on any
+  ground and colour, a glint running across it now and then; solid to the end, cracks spreading
+  across it as its thaw nears, then shattering (the users': shrinking read as passable); a red
+  cross on any frozen cell under the piece in hand; a burst of frost where the shot lands. It lands
   with a cannon's impact, the user's `tower_frost.mp3` over it (`frost_impact`).
 - **Bots**: aim it as Bertha, at the chosen opponent's weakest wall (its crater one tile); and in
   building treat a frozen tile of their own island as one no piece covers, so their seal routes

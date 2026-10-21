@@ -3,6 +3,7 @@ import {
   FREEZE_PENDING,
   FROZEN_TO_END,
   inRepairReach,
+  isFrozen,
   repairRadiusOf,
   ticksFor,
   type CannonKind,
@@ -174,14 +175,26 @@ const BEAM_HOLD_MS = 110;
 const BEAM_FADE_MS = 380;
 const BEAM_MS = BEAM_REACH_MS + BEAM_HOLD_MS + BEAM_FADE_MS;
 
-/** A frozen tile's ice: its body, its rim and its shine, the same in every style. */
-const ICE = 0xbfe8ff;
-const ICE_RIM = 0xf4fcff;
-const MELTWATER = 0x6cb8f0;
-/** A Frost Cannon's landing burst. */
+/** A frozen tile's ice: its body, its rims and its shine, the same in every style. */
+const ICE = 0xc6ecff;
+const ICE_RIM = 0xffffff;
+const ICE_DARK = 0x0c2a44;
+/** Its margin inside the tile, as a share of it: the block is the tile, nearly to its edges. */
+const ICE_INSET = 0.07;
+/** A glint across each block every so often, and how long it takes. */
+const GLINT_EVERY_MS = 3200;
+const GLINT_MS = 420;
+/** A Frost Cannon's landing burst, and a freeze's shatter as it goes. */
 const FROST_BURST_MS = 520;
-/** The ice left as a tile thaws, as a share of the tile: it never melts to nothing before it is gone. */
-const ICE_LEAST = 0.4;
+const SHATTER_MS = 420;
+/** The cracks a block takes on as its thaw nears, in a unit box, one after another. */
+const CRACKS: readonly (readonly number[])[] = [
+  [0.5, 0.5, 0.62, 0.36, 0.7, 0.12],
+  [0.5, 0.5, 0.36, 0.62, 0.2, 0.74],
+  [0.5, 0.5, 0.68, 0.6, 0.88, 0.66],
+  [0.5, 0.5, 0.44, 0.3, 0.3, 0.16],
+  [0.5, 0.5, 0.56, 0.74, 0.5, 0.9],
+];
 
 /**
  * How much of a freeze is left, 1 to 0: whole until its build phase opens, then melting towards
@@ -397,6 +410,9 @@ export class TowerMarks {
   /** The Frost Cannons' ice, every frame while any tile is frozen, melting as it thaws. */
   private readonly ice = new Graphics();
   private iceShown = false;
+  /** The tiles frozen last frame, so a freeze gone since shatters. */
+  private frozenTiles = new Set<number>();
+  private shatters: FrostBurst[] = [];
   /** The towers' emblems, drawn again only when one changes. */
   private readonly emblems = new Graphics();
   /** The ghost's emblem, every frame while there is one. */
@@ -439,6 +455,15 @@ export class TowerMarks {
    * when it will take a piece again. Cleared once, then left alone, while nothing is frozen.
    */
   private drawIce(state: MatchState, view: ViewTransform): void {
+    // Every freeze gone since the last frame shatters: thawed, swept by the phase's end or by an
+    // Architect alike.
+    const now = new Set(state.frozen.map((f) => f.tile));
+    for (const tile of this.frozenTiles) {
+      if (!now.has(tile)) {
+        this.shatters.push({ x: tile % state.width, y: Math.floor(tile / state.width), ms: 0 });
+      }
+    }
+    this.frozenTiles = now;
     if (state.frozen.length === 0) {
       if (this.iceShown) clearDrawn(this.ice);
       this.iceShown = false;
@@ -448,28 +473,53 @@ export class TowerMarks {
     const g = this.ice;
     g.clear();
     const t = view.tile;
+    const clock = motionReduced() ? 0 : performance.now();
     for (const f of state.frozen) {
       const x = f.tile % state.width;
       const y = (f.tile - x) / state.width;
-      const left = iceLeft(state, f);
-      const [cx, cy] = [tileX(view, x + 0.5), tileY(view, y + 0.5)];
-      // The meltwater spreading under it as it goes.
-      if (left < 1) {
-        g.ellipse(cx, cy + t * 0.18, t * (0.42 + 0.2 * (1 - left)), t * (0.2 + 0.1 * (1 - left)));
-        g.fill({ color: MELTWATER, alpha: 0.45 * (1 - left) + 0.1 });
+      // Whole and solid to the end, a full tile (the user's, 2026-10-21: shrinking read as
+      // passable); the time left shows in its cracks, and its going in a shatter.
+      const [bx, by] = [tileX(view, x) + t * ICE_INSET, tileY(view, y) + t * ICE_INSET];
+      const size = t * (1 - 2 * ICE_INSET);
+      g.roundRect(bx + t * 0.06, by + t * 0.08, size, size, size * 0.16);
+      g.fill({ color: 0x000000, alpha: 0.3 });
+      g.roundRect(bx, by, size, size, size * 0.16);
+      g.fill({ color: ICE, alpha: 0.95 });
+      // A dark rim outside a light one: the ice alone vanished on light grounds and pale colours.
+      g.stroke({ width: Math.max(2, t / 7), color: ICE_DARK, alpha: 0.9, alignment: 1 });
+      g.roundRect(bx, by, size, size, size * 0.16);
+      g.stroke({ width: Math.max(1, t / 16), color: ICE_RIM, alpha: 1, alignment: 0 });
+      g.moveTo(bx + size * 0.18, by + size * 0.46).lineTo(bx + size * 0.46, by + size * 0.18);
+      g.stroke({ width: Math.max(1, t / 10), color: 0xffffff, alpha: 0.9, cap: 'round' });
+      // A glint running across it now and then, each tile on a beat of its own.
+      const beat = (clock + f.tile * 977) % GLINT_EVERY_MS;
+      if (clock > 0 && beat < GLINT_MS) {
+        const along = beat / GLINT_MS;
+        const gx = bx - size * 0.3 + along * size * 1.6;
+        g.moveTo(
+          Math.max(bx, gx - size * 0.3),
+          by + size * Math.min(1, (gx - bx) / size + 0.3),
+        ).lineTo(
+          Math.min(bx + size, gx + size * 0.3),
+          by + size * Math.max(0, (gx - bx) / size - 0.3),
+        );
+        g.stroke({
+          width: Math.max(2, t / 6),
+          color: 0xffffff,
+          alpha: 0.75 * Math.sin(along * Math.PI),
+          cap: 'round',
+        });
       }
-      const size = t * (ICE_LEAST + (0.92 - ICE_LEAST) * left);
-      const [bx, by] = [cx - size / 2, cy - size / 2 + (t - size) * 0.12];
-      g.roundRect(bx, by, size, size, size * 0.18);
-      g.fill({ color: ICE, alpha: 0.88 });
-      g.stroke({ width: Math.max(1, t / 14), color: ICE_RIM, alpha: 0.95 });
-      // A shine across its top left, and a crack, so it reads as ice and not as a tile.
-      g.moveTo(bx + size * 0.2, by + size * 0.5).lineTo(bx + size * 0.5, by + size * 0.2);
-      g.stroke({ width: Math.max(1, t / 9), color: 0xffffff, alpha: 0.85, cap: 'round' });
-      g.moveTo(bx + size * 0.62, by + size * 0.55)
-        .lineTo(bx + size * 0.72, by + size * 0.7)
-        .lineTo(bx + size * 0.66, by + size * 0.84);
-      g.stroke({ width: Math.max(1, t / 18), color: MELTWATER, alpha: 0.7 });
+      // Cracks spreading as the thaw nears, one after another.
+      const cracked = Math.floor((1 - iceLeft(state, f)) * (CRACKS.length + 1));
+      for (let k = 0; k < Math.min(cracked, CRACKS.length); k++) {
+        const crack = CRACKS[(k + f.tile) % CRACKS.length] as readonly number[];
+        g.moveTo(bx + (crack[0] as number) * size, by + (crack[1] as number) * size);
+        for (let p = 2; p < crack.length; p += 2) {
+          g.lineTo(bx + (crack[p] as number) * size, by + (crack[p + 1] as number) * size);
+        }
+      }
+      if (cracked > 0) g.stroke({ width: Math.max(1, t / 14), color: ICE_DARK, alpha: 0.75 });
     }
   }
 
@@ -538,6 +588,7 @@ export class TowerMarks {
       );
     }
     this.drawLaserLine(state, view, ghost, playerColour(art, humanPlayer, 'light'));
+    this.drawFrozenUnderPiece(state, view, ghost);
     const variant = ghost.tower;
     if (
       variant === null ||
@@ -589,6 +640,27 @@ export class TowerMarks {
       view.tile * (next.kind === 'biggest' ? craterReach(next.crater) + 0.6 : 1.1),
       performance.now(),
     );
+  }
+
+  /**
+   * A red cross on every frozen cell under the piece in hand (the user's, 2026-10-21): the ghost
+   * only turned invalid, and did not say why.
+   */
+  private drawFrozenUnderPiece(state: MatchState, view: ViewTransform, ghost: Ghost): void {
+    if (state.frozen.length === 0 || ghost.tile === null || ghost.cells.length === 0) return;
+    const t = view.tile;
+    let any = false;
+    for (const [dx, dy] of ghost.cells) {
+      const [x, y] = [ghost.tile.x + dx, ghost.tile.y + dy];
+      if (x < 0 || y < 0 || x >= state.width || y >= state.height) continue;
+      if (!isFrozen(state, y * state.width + x)) continue;
+      const [l, top] = [tileX(view, x) + t * 0.2, tileY(view, y) + t * 0.2];
+      this.ghost.moveTo(l, top).lineTo(l + t * 0.6, top + t * 0.6);
+      this.ghost.moveTo(l + t * 0.6, top).lineTo(l, top + t * 0.6);
+      any = true;
+    }
+    if (any)
+      this.ghost.stroke({ width: Math.max(2, t / 6), color: 0xff2b2b, alpha: 0.95, cap: 'round' });
   }
 
   /**
@@ -687,7 +759,8 @@ export class TowerMarks {
       this.repairs.length === 0 &&
       this.bolts.length === 0 &&
       this.beams.length === 0 &&
-      this.frostBursts.length === 0
+      this.frostBursts.length === 0 &&
+      this.shatters.length === 0
     ) {
       clearDrawn(this.effects);
       return;
@@ -839,6 +912,24 @@ export class TowerMarks {
       });
     }
     this.frostBursts = this.frostBursts.filter((b) => b.ms < FROST_BURST_MS);
+    for (const shatter of this.shatters) {
+      shatter.ms += deltaMs;
+      // The block breaking into shards that fly apart and fade, and a splash where it stood.
+      const t = still ? 0.4 : Math.min(1, shatter.ms / SHATTER_MS);
+      const fade = 1 - t;
+      const [cx, cy] = [tileX(view, shatter.x + 0.5), tileY(view, shatter.y + 0.5)];
+      const s = view.tile * 0.24 * (1 - 0.5 * t);
+      for (let k = 0; k < 4; k++) {
+        const a = (k / 4) * Math.PI * 2 + Math.PI / 4;
+        const r = view.tile * (0.2 + 0.7 * t);
+        const [px, py] = [cx + Math.cos(a) * r, cy + Math.sin(a) * r + view.tile * 0.3 * t * t];
+        g.poly([px, py - s, px + s, py, px, py + s, px - s, py]);
+      }
+      g.fill({ color: ICE, alpha: fade });
+      g.circle(cx, cy, view.tile * (0.3 + 0.4 * t));
+      g.stroke({ width: Math.max(1.5, view.tile * 0.1), color: ICE_RIM, alpha: 0.7 * fade });
+    }
+    this.shatters = this.shatters.filter((b) => b.ms < SHATTER_MS);
     this.beams = this.beams.filter((b) => b.ms < BEAM_MS);
     this.bolts = this.bolts.filter((b) => b.ms < b.strikes.length * BOLT_STEP_MS + BOLT_FADE_MS);
     this.blasts = this.blasts.filter((b) => b.ms < blastMs(b));
