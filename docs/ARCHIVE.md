@@ -9581,3 +9581,28 @@ lavender circle round the tile aimed at — where a gun's nearest tile is still 
 cursor, drawn as the sleeping guns' are, still under reduced motion; the shared glow gives way to
 it, as to the Berthas' flames and the Lightning Tower's crackle. The cursor's tower now carries
 its cost (`NextTower.cost`), for its variant's reach.
+
+## 14o. Eight towers at one table (2026-10-23)
+
+A check of the user's, for trends only: eight-player tables at Level 5, one special tower of each
+kind a seat — every cost-2 variant, every cost-3 one, and each kind at a cost drawn per chunk —
+192 matches each, the towers rotated across seats chunk by chunk, the same seeds throughout
+(`soaks/eight/run.py`, not in the repository). Mean placing, 1 to 8 (±0.2):
+
+| tower        | all cost 2 | all cost 3 | cost drawn |
+| ------------ | ---------- | ---------- | ---------- |
+| Architect    | 3.76       | 4.18       | 3.65       |
+| Laser        | 4.03       | 4.01       | 4.07       |
+| Lightning    | 4.12       | 3.89       | 3.91       |
+| Big Bertha   | 4.10       | 4.45       | 4.47       |
+| Allerdickste | 4.79       | 4.12       | 4.37       |
+| Rapid Cannon | 4.78       | 4.90       | 5.06       |
+| Lullaby      | 5.22       | 5.08       | 4.96       |
+| Frost        | 5.20       | 5.36       | 5.51       |
+
+The same order in all three: the Architect, Laser and Lightning ahead, the Frost Cannon, Lullaby
+Tower and Rapid Cannon behind. Read as the setup's: among eight, a tower that hinders one rival —
+the frost, the lullaby — helps the six others as much as its owner, where in the two-player soaks
+that rival was the only one; a tower that guards its owner gains from being shot at from every
+side; and walls cleared score, so the towers clearing many gain points by it. No change made (the
+user's: the outliers explained by the setup); a four-player check offered and not wanted.
