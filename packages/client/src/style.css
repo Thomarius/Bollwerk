@@ -2942,7 +2942,8 @@ body.hud-electric,
 body.hud-cartoon,
 body.hud-christmas,
 body.hud-noir,
-body.hud-sports {
+body.hud-sports,
+body.hud-pirates {
   --hud-panel: var(--hud-box);
 }
 
@@ -4616,6 +4617,141 @@ body.hud-sports .embers i:nth-child(3n) {
 
 body.hud-sports .embers i:nth-child(3n + 1) {
   background: #ff8a40;
+}
+
+/* Pirates: the banner a torn sail, sun-bleached canvas with ragged ends, lettered in black
+   with the words under the call in a tarred red; the HUD a deck of planks under a rope rule,
+   its figures in gold. */
+.phase-call.banner-pirates {
+  border-top: 3px solid #8a6a3a;
+  border-bottom: 3px solid #8a6a3a;
+  box-shadow: 0 6px 18px #0008;
+  background:
+    repeating-linear-gradient(90deg, #0000 0 46px, #00000010 46px 48px),
+    linear-gradient(#f4e8c8, #e6d4a8);
+  color: #1c140c;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-weight: 700;
+  font-style: italic;
+  letter-spacing: 0.05em;
+  text-shadow: 0 2px 0 #fff6;
+  clip-path: polygon(
+    0 8%,
+    3% 0,
+    9% 6%,
+    16% 0,
+    100% 0,
+    97% 30%,
+    100% 52%,
+    98% 78%,
+    100% 100%,
+    88% 94%,
+    80% 100%,
+    0 100%,
+    2.5% 70%,
+    0 46%,
+    2% 24%
+  );
+}
+
+.phase-call.banner-pirates small {
+  color: #3a2614;
+  font-style: normal;
+  text-shadow: none;
+}
+
+.phase-call.banner-pirates small.flavour {
+  color: #9a2418;
+  font-style: italic;
+}
+
+.phase-call.banner-pirates small.news {
+  color: #6a4a10;
+}
+
+body.hud-pirates {
+  --hud-bar: #6a4424;
+  --hud-rule: 4px solid #d8c08a;
+  --hud-pad-top: 0.35rem;
+  --hud-ink: #f6ecd2;
+  --hud-muted: #d8c4a0;
+  --hud-accent: #f0c048;
+  --hud-box: #4a2e18;
+  --hud-box-edge: 2px solid #c8a868;
+  --hud-box-shadow: 0 3px 0 #0008;
+  --hud-track: #ffffff22;
+  --hud-font: Georgia, 'Times New Roman', serif;
+}
+
+/* The bar a ship's deck: planks along it, their seams dark. */
+body.hud-pirates #hud .bar {
+  background-color: #6a4424;
+  background-image:
+    repeating-linear-gradient(0deg, #0000 0 15px, #2a180c 15px 16px),
+    repeating-linear-gradient(90deg, #0000 0 157px, #2a180c66 157px 158px);
+}
+
+body.hud-pirates #hud .phase .timer,
+body.hud-pirates #hud .roster .score {
+  color: #f0c048;
+  text-shadow: 0 1px 0 #2a180c;
+}
+
+/* The big timer carved in driftwood: pale weathered wood, cut deep in shadow; red-hot in the
+   last seconds, as a fuse burns down. */
+body.hud-pirates .big-timer {
+  color: rgb(236 218 180 / 92%);
+  font-family: Georgia, 'Times New Roman', serif;
+  font-weight: 700;
+  text-shadow:
+    0 2px 0 rgb(90 58 30 / 90%),
+    0 4px 0 rgb(40 24 12 / 60%);
+}
+
+body.hud-pirates .big-timer.urgent {
+  color: rgb(255 120 60 / 94%);
+  text-shadow:
+    0 0 10px rgb(255 120 60 / 60%),
+    0 3px 0 rgb(40 24 12 / 70%);
+}
+
+/* Island banners a wooden sign nailed up; the stamps a black flag lettered in bone. */
+body.hud-pirates .island-banner:not(.out),
+body.hud-pirates .team-tag,
+body.hud-pirates .you-are-here {
+  border: 2px solid #3a2614;
+  border-radius: 2px;
+  background:
+    repeating-linear-gradient(0deg, #0000 0 9px, #3a261455 9px 10px),
+    linear-gradient(#b88048, #9a6636);
+  box-shadow: 0 3px 6px #0008;
+  color: #fff4dc;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-weight: 700;
+  text-shadow: 0 1px 0 #3a2614;
+}
+
+body.hud-pirates .island-banner.out,
+body.hud-pirates .final-stamp {
+  border: 3px solid #f6f0e0 !important;
+  border-radius: 2px;
+  background: #16120e;
+  box-shadow: 0 4px 10px #0009;
+  color: #f6f0e0;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+/* The last broadside: the edges darkened as the squall comes in, and the embers sparks from
+   the guns' slow match. */
+body.hud-pirates #banner.final-round::before {
+  box-shadow: inset 0 0 22vmin rgb(10 20 30 / 35%);
+}
+
+body.hud-pirates .embers i {
+  background: #ffb040;
+  box-shadow: 0 0 4px 1px rgb(255 160 60 / 50%);
 }
 
 /* ---------- the gallery of looks (ARCHIVE 12b) ---------- */

@@ -59,7 +59,7 @@ Client dev query parameters: `?autostart=1&players=3&seed=7` (a random seed with
 leave your seat undriven on the way, so you are soon knocked out), `&speed=10`,
 `&perf=1` for the frame-time readout (ARCHIVE 12n: a fixed 30 s window, Copy for the figures),
 `&bots=thread` to keep a local match's bots off their worker (ARCHIVE 13k),
-`&style=flat|pixel|night|cyberpunk|blueprint|parchment|bricks|glass|chocolate|halloween|sakura|oktoberfest|opera|office|undersea|electric|cartoon|christmas|noir|sports` for both looks (a one-look style sets only its own)
+`&style=flat|pixel|night|cyberpunk|blueprint|parchment|bricks|glass|chocolate|halloween|sakura|oktoberfest|opera|office|undersea|electric|cartoon|christmas|noir|sports|pirates` for both looks (a one-look style sets only its own)
 (`&buildStyle=`, `&combatStyle=` for one), `&watch=1&level=8` to observe a bot match (`&personality=offensive` fixes every bot's),
 `&rounds=12` for the round cap, `&specials=1` for special towers (`&tower=bertha3`, a tower at its cost, the person's),
 `&teams=2` for teams of two in seat order, `?icons=sheet` every style's cannon icon side by side
@@ -84,7 +84,7 @@ rounds.
 | `analysis`       | Per-round match statistics, for bot soaks and recorded human play alike.   |
 | `tournament`     | Tournament mode's core: schedule, brackets, quick rolls, saves. No DOM.    |
 | `server`         | Authoritative match server, rooms, WebSocket, match recordings.            |
-| `client`         | Pixi renderer, twenty visual styles, controls, HUD, netcode client.        |
+| `client`         | Pixi renderer, 21 visual styles, controls, HUD, netcode client.            |
 | `desktop`        | Electron app for releases: the server behind a minimal window (M14).       |
 | `tools/headless` | Bot-vs-bot soak runs and map dumps.                                        |
 
@@ -173,9 +173,15 @@ Full detail in PLAN.md §1. The parts that surprise people:
 
 ## Status
 
-**Done** (2026-10-21; the latest release **v0.9.11**, 2026-10-18, protocol 28, recording format 4,
+**Done** (2026-10-23; the latest release **v0.9.11**, 2026-10-18, protocol 28, recording format 4,
 which a test session needs the server rebuilt and every page reloaded for):
 
+- **Pirates** (ARCHIVE 14q, 2026-10-23, the user's idea, its elements their choices): the
+  twenty-first look, a pirates' cove in Caribbean daylight — log stockades stained and roped in
+  the owner's colour, forts flying the Jolly Roger while sealed, ship's cannon with **a parrot in a
+  pirate hat on every gun ready to fire**, scared up by its shot and landing again as the gun is
+  loaded (`parrotFlight`), a plug in a silenced gun's muzzle; chain shot, tiki torches, ghost
+  crabs, a galleon in the corner and the Kraken at the climax. Not yet checked in play by the users.
 - **The Lullaby Tower** (ARCHIVE 14m, 2026-10-23, the user's design, reworked; protocol 31, not
   yet released): an eighth special tower, a cannon's shot that lulls the 2 (cost 2) or 3 (cost 3)
   enemy guns nearest the tile hit within 8 tiles — a cannon asleep at once, a special tower after 2
@@ -334,12 +340,12 @@ which a test session needs the server rebuilt and every page reloaded for):
   `Siting`; main.ts is app, prefs, session, menu, lobbyFlow and matchScreen, the last with
   `BoardEffects`; a room's match is `MatchRunner`; the styles since Chocolate extend
   `ShapeTheme`; seats are dealt by `dealSeats` and bots driven by `takeBotTurns`.
-- **The looks**: twenty styles for either look — Minimal, Medieval, Night, Cyberpunk,
+- **The looks**: twenty-one styles for either look — Minimal, Medieval, Night, Cyberpunk,
   Blueprint, Parchment, Toy bricks, Stained glass, Chocolate (ARCHIVE 11zy), Halloween
   (12a), Sakura (12d), Oktoberfest (12e), Opera (12f), Office (12l), Under the sea (12u),
   Electric (12v), Cartoon, a rubber-hose reel in black and white (12zb), Christmas (12zc),
-  Noir, a crime city at night as a cel-shaded graphic novel, hatched in ink (12zn), and
-  Stadium (`sports`), whose guns are sportsmen of ten ball sports (14d) —
+  Noir, a crime city at night as a cel-shaded graphic novel, hatched in ink (12zn),
+  Stadium (`sports`), whose guns are sportsmen of ten ball sports (14d), and Pirates (14q) —
   each carried to the panels, the big timer, the island banners and the finish (ARCHIVE
   11zz), each with a piece in the sea's corner (`corner.ts`, 12t); chosen from a gallery with
   Random, a new style every round (12q), and changeable mid-match from the pause menu (12b).

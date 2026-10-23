@@ -22,6 +22,7 @@ import { CartoonTheme } from './cartoon.js';
 import { ChristmasTheme } from './christmas.js';
 import { NoirTheme } from './noir.js';
 import { SportsTheme } from './sports.js';
+import { PiratesTheme } from './pirates.js';
 import { OperaTheme } from './opera.js';
 import { release } from './release.js';
 import { SakuraTheme } from './sakura.js';
@@ -91,6 +92,8 @@ export function createTheme(style: ArtStyle, seed = 1): Theme {
       return new NoirTheme(seed);
     case 'sports':
       return new SportsTheme(seed);
+    case 'pirates':
+      return new PiratesTheme(seed);
   }
 }
 

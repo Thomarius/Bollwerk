@@ -12,6 +12,7 @@ import { drawBubble, drawFish } from './reef.js';
 import { COPPER, drawArc, jag } from './spark.js';
 import { INK, PAPER, drawGlove, drawStar } from './toon.js';
 import { GOLD, drawSnowflake, drawStocking } from './yule.js';
+import { BONE, TAR, drawDoubloon, drawJewel, drawSkullAndBones } from './jolly.js';
 
 /**
  * A visual style.
@@ -871,7 +872,8 @@ export interface FinishLook {
    * `bolts` forked lightning in the owner's colours crackling out from the burst; `stars`
    * cartoon stars in the owner's colours, inked round, tumbling out; `flakes` snowflakes in
    * the owner's colours, turning as they drift down; `confetti` strips of paper in the
-   * owner's colours, white and gold, fluttering down over a stadium.
+   * owner's colours, white and gold, fluttering down over a stadium; `doubloons` gold coins
+   * spinning out among jewels in the owner's colours, from a pirates' chest.
    */
   spark:
     | 'square'
@@ -891,7 +893,8 @@ export interface FinishLook {
     | 'bolts'
     | 'stars'
     | 'flakes'
-    | 'confetti';
+    | 'confetti'
+    | 'doubloons';
   /**
    * `swallowtail` a forked banner; `hologram` a flickering projection; `pennant` a flag in
    * plan; `brick` a square flag of bricks; `leaded` a banner of glass in its lead; `candy` a
@@ -903,7 +906,8 @@ export interface FinishLook {
    * copper lightning rod, a spark crackling at its point; `glove` a pennant inked round, a
    * white star on it, on a black pole held up by a white glove; `stocking` a Christmas
    * stocking in the owner's colour hung from a gold pole with a star at its top; `scarf` a
-   * supporters' scarf in the owner's colour, barred white and fringed, held up on a pole.
+   * supporters' scarf in the owner's colour, barred white and fringed, held up on a pole;
+   * `jolly` the Jolly Roger in the owner's colour, flown from a ship's mast with a yard across it.
    */
   flag:
     | 'swallowtail'
@@ -921,7 +925,8 @@ export interface FinishLook {
     | 'rod'
     | 'glove'
     | 'stocking'
-    | 'scarf';
+    | 'scarf'
+    | 'jolly';
 }
 
 const PLAIN_FINISH: FinishLook = { spark: 'square', flag: 'swallowtail' };
@@ -1123,6 +1128,34 @@ export class WinnerBanners {
           g.stroke({ width: Math.max(1, rim * 0.8), color: base });
           continue;
         }
+        if (flag === 'jolly') {
+          // The Jolly Roger in the owner's colour, flying from the mast's top, a skull and
+          // crossbones in bone on it.
+          const head = up;
+          const cloth = [
+            x,
+            head,
+            x + clothW,
+            head + wave,
+            x + clothW,
+            head + clothH + wave,
+            x,
+            head + clothH,
+          ];
+          g.poly(cloth);
+          g.fill({ color: base });
+          g.poly(cloth);
+          g.stroke({ width: rim, color: TAR, alpha: 0.85, join: 'round' });
+          drawSkullAndBones(
+            g,
+            x + clothW * 0.5,
+            head + clothH * 0.42 + wave * 0.5,
+            clothH * 0.2,
+            BONE,
+            base,
+          );
+          continue;
+        }
         if (flag === 'stocking') {
           // A stocking in the owner's colour hung from an arm at the pole's top, swinging.
           const hang = foot - (pole - clothH * 1.5) * hoist - clothH * 1.5;
@@ -1311,6 +1344,17 @@ export class WinnerBanners {
       g.fill({ color: 0xe8c25a });
       return;
     }
+    if (flag === 'jolly') {
+      // A ship's mast of tarred timber, a yard across it under the flag, a round top.
+      const yard = (foot - top) * 0.16;
+      g.moveTo(x, foot).lineTo(x, top);
+      g.stroke({ width: width + 1, color: TAR });
+      g.moveTo(x - yard, top + yard * 0.9).lineTo(x + yard, top + yard * 0.9);
+      g.stroke({ width: Math.max(1.5, width * 0.8), color: TAR, cap: 'round' });
+      g.circle(x, top, width + 1);
+      g.fill({ color: 0xc8a050 });
+      return;
+    }
     if (flag === 'stocking') {
       // A gold pole, a star at its top.
       g.moveTo(x, foot).lineTo(x, top);
@@ -1461,24 +1505,33 @@ export class Fireworks {
       const colours =
         kind === 'sprinkle'
           ? [playerColour(art, rocket.owner, 'base'), ...SPRINKLE_COLOURS]
-          : kind === 'confetti'
+          : kind === 'doubloons'
             ? [
                 playerColour(art, rocket.owner, 'base'),
-                playerColour(art, rocket.owner, 'light'),
-                0xffffff,
-                0xe8c25a,
-              ]
-            : [
-                playerColour(art, rocket.owner, 'light'),
                 playerColour(art, rocket.owner, 'base'),
-                hex(art.palette.uiInk),
-              ];
+                playerColour(art, rocket.owner, 'light'),
+                playerColour(art, rocket.owner, 'light'),
+              ]
+            : kind === 'confetti'
+              ? [
+                  playerColour(art, rocket.owner, 'base'),
+                  playerColour(art, rocket.owner, 'light'),
+                  0xffffff,
+                  0xe8c25a,
+                ]
+              : [
+                  playerColour(art, rocket.owner, 'light'),
+                  playerColour(art, rocket.owner, 'base'),
+                  hex(art.palette.uiInk),
+                ];
       const count =
         kind === 'brick' || kind === 'blot' || kind === 'stars' || kind === 'flakes'
           ? 22
-          : kind === 'spirits'
-            ? 16
-            : 40;
+          : kind === 'doubloons'
+            ? 28
+            : kind === 'spirits'
+              ? 16
+              : 40;
       for (let k = 0; k < count; k++) {
         const angle = (k / count) * Math.PI * 2 + Math.random() * 0.2;
         const speed = 3.5 + Math.random() * 3.5;
@@ -1494,16 +1547,22 @@ export class Fireworks {
               : (colours[k % colours.length] as number),
           angle: Math.random() * Math.PI * 2,
           // A blossom's petals are the sparks that spin; its streaks, the ones that do not.
+          // Doubloons spin fast on their upright axis; the jewels between them tumble slowly
+          // the other way, and are told from them by that.
           spin:
-            kind === 'blossom' ||
-            kind === 'memo' ||
-            kind === 'bubbles' ||
-            kind === 'flakes' ||
-            kind === 'confetti'
+            kind === 'doubloons'
               ? k % 2 === 0
-                ? 2 + Math.random() * 4
-                : 0
-              : (Math.random() - 0.5) * 12,
+                ? 6 + Math.random() * 5
+                : -(1 + Math.random() * 3)
+              : kind === 'blossom' ||
+                  kind === 'memo' ||
+                  kind === 'bubbles' ||
+                  kind === 'flakes' ||
+                  kind === 'confetti'
+                ? k % 2 === 0
+                  ? 2 + Math.random() * 4
+                  : 0
+                : (Math.random() - 0.5) * 12,
         });
       }
     }
@@ -1515,16 +1574,19 @@ export class Fireworks {
       kind === 'blossom' || kind === 'memo' || kind === 'flakes' || kind === 'confetti';
     const life =
       kind === 'blot' || kind === 'spirits' || kind === 'bubbles' ? 1900 : drifts ? 1700 : 1200;
+    // Gold falls heavy, nearly as bricks do.
     const fall =
       kind === 'brick'
         ? 6
-        : kind === 'spirits'
-          ? -1.4
-          : kind === 'bubbles'
-            ? -1.8
-            : drifts
-              ? 1.4
-              : 2.2;
+        : kind === 'doubloons'
+          ? 4.5
+          : kind === 'spirits'
+            ? -1.4
+            : kind === 'bubbles'
+              ? -1.8
+              : drifts
+                ? 1.4
+                : 2.2;
     const t0 = view.tile;
     for (const spark of this.sparks) {
       spark.age += deltaMs;
@@ -1589,6 +1651,9 @@ export class Fireworks {
           // A little fish in the owner's colour, darting out along its burst.
           drawFish(g, x, y, size * 1.6, Math.atan2(spark.vy, spark.vx), spark.colour, alpha);
         }
+      } else if (kind === 'doubloons') {
+        if (spark.spin > 0) drawDoubloon(g, x, y, size * 0.6, spark.angle, alpha);
+        else drawJewel(g, x, y, size * 0.6, spark.angle, spark.colour, alpha);
       } else if (kind === 'confetti') {
         // A strip of paper, fluttering: narrowed as it turns edge on.
         const c = Math.cos(spark.angle);

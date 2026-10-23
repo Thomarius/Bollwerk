@@ -55,7 +55,8 @@ export type PlayerPalette = z.infer<typeof PlayerPaletteSchema>;
  * `undersea` a coral reef on the seabed, the deep all round it, `electric` a storm
  * laboratory under a thunderstorm, `cartoon` a 1930s rubber-hose cartoon in black and white, `christmas` a snowy island on Christmas Eve,
  * `noir` a crime city at night drawn as a cel-shaded graphic novel, `sports` a stadium whose
- * guns are sportsmen of ten ball sports throwing, kicking and hitting their balls.
+ * guns are sportsmen of ten ball sports throwing, kicking and hitting their balls, `pirates`
+ * a pirates' cove in Caribbean daylight, log stockades and ship's cannon with parrots on them.
  */
 export const ArtStyleSchema = z.enum([
   'flat',
@@ -78,6 +79,7 @@ export const ArtStyleSchema = z.enum([
   'christmas',
   'noir',
   'sports',
+  'pirates',
 ]);
 export type ArtStyle = z.infer<typeof ArtStyleSchema>;
 
@@ -927,6 +929,48 @@ export const SportsStyleSchema = z.strictObject({
 });
 export type SportsStyleConfig = z.infer<typeof SportsStyleSchema>;
 
+/**
+ * The Pirates look (ARCHIVE 14q): a pirates' cove in bright Caribbean daylight — turquoise
+ * shallows, white sand and jungle, log stockades lashed in the owner's colour, timber forts
+ * flying the Jolly Roger while sealed, and ship's cannon with a parrot in a pirate hat on each
+ * one ready to fire. A galleon at anchor in the corner; the Kraken rises at the climax.
+ */
+export const PiratesStyleSchema = z.strictObject({
+  /** The owner's colour washed over the sand of sealed ground. */
+  floorAlpha: z.number().min(0).max(1),
+  /** Tiki torches at the corners of each player's sealed ground, at most. */
+  torchesPerPlayer: z.number().int().nonnegative(),
+  /** A perched parrot's bob, and how long it takes to fly off its gun and to land again. */
+  parrotBobMs: z.number().int().positive(),
+  parrotTakeOffMs: z.number().int().positive(),
+  parrotLandMs: z.number().int().positive(),
+  /** The share of wall hits that throw a gold coin out of the stockade. */
+  coinOdds: z.number().min(0).max(1),
+  /** Crabs scuttling over each island's open sand, and how fast they go when they run. */
+  crabsPerIsland: z.number().int().nonnegative(),
+  crabTilesPerSecond: z.number().positive(),
+  /** A sloop and a rowboat crossing the outer sea now and then, and how fast. */
+  sloopEveryMs: z.number().int().positive(),
+  sloopTilesPerSecond: z.number().positive(),
+  rowboatEveryMs: z.number().int().positive(),
+  rowboatTilesPerSecond: z.number().positive(),
+  /** A bottle with a message bobbing up, and dolphins leaping, now and then, and for how long. */
+  bottleEveryMs: z.number().int().positive(),
+  bottleLifeMs: z.number().int().positive(),
+  dolphinEveryMs: z.number().int().positive(),
+  dolphinLifeMs: z.number().int().positive(),
+  /** Gulls wheeling over the outer sea. */
+  gulls: z.number().int().nonnegative(),
+  /** The galleon in the corner rocking at anchor: one roll, and one when hurried. */
+  galleonRollMs: z.number().int().positive(),
+  galleonHurriedRollMs: z.number().int().positive(),
+  /** The climax: the Kraken's arms rising round the board, the squall's dark and its rain. */
+  krakenArms: z.number().int().nonnegative(),
+  squallAlpha: z.number().min(0).max(1),
+  rainCount: z.number().int().nonnegative(),
+});
+export type PiratesStyleConfig = z.infer<typeof PiratesStyleSchema>;
+
 /** One of the two looks a match is drawn in. */
 export type ArtLook = 'build' | 'combat';
 
@@ -979,6 +1023,7 @@ export const STYLE_LOOKS: Record<ArtStyle, readonly ArtLook[]> = {
   christmas: ['build', 'combat'],
   noir: ['build', 'combat'],
   sports: ['build', 'combat'],
+  pirates: ['build', 'combat'],
 };
 
 export function styleServes(
@@ -1110,6 +1155,7 @@ export const ArtConfigSchema = z
     christmas: ChristmasStyleSchema,
     noir: NoirStyleSchema,
     sports: SportsStyleSchema,
+    pirates: PiratesStyleSchema,
     scenery: ScenerySchema,
     /** Effects both styles draw alike, because they carry information. */
     effects: z.strictObject({

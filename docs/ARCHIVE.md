@@ -9616,3 +9616,60 @@ the button. And the host's switch for special towers is remembered (`preferredSp
 `bollwerk.specials`): a local table, a room created — the room opens on the rules' default, so the
 page asks for towers on just after the welcome — and a new tournament's setup all start as it was
 last set, in either place; never set, off. Checked in play by the user.
+
+## 14q. Pirates, a twenty-first style (2026-10-23)
+
+The user's idea. Discussed before building: **Caribbean daylight, not a treasure map** — Parchment
+is already the old sea chart, with its rose, engraved ship, serpent and wind heads — and a
+storybook tone, bold outlines and warm colour, skulls only where pirates use them (the flags, a
+little scenery), as Halloween keeps them. Chosen by the user from two or three proposals each: **a
+log stockade** for the walls, over stacked barrels and crates or coral stone (Under the sea's);
+**the cannon alone with a parrot in a pirate hat on it when ready**, over a gunner figure (the
+user's twist on the parrot proposed); **chain shot**, over round shot; **a galleon at anchor** for
+the corner piece, over Skull Rock; and banner words under the call. The climax (the Kraken) and the
+title (planks) were the recommendations, taken when the user left them open. Named Pirates /
+Piraten; nothing from any film or game of pirates — the Jolly Roger and _Treasure Island_ are
+everyone's.
+
+What carries meaning: **sealed is the Jolly Roger in the owner's colour flying over the fort**
+(`FlagHoist`), struck by a breach, the fort's windows lit while it flies; **a gun ready to fire has
+its parrot on it** — a shot scares it up, it circles over the gun until the gun is loaded again
+(`isLoaded`), then lands (`parrotFlight`, tested); **a silenced gun has a wooden plug in its
+muzzle** (a tampion, which ships used) and no parrot. A silenced gun is not a sleeping one, since
+the Lullaby Tower's sleep has its own Zs (the design's one conflict, noted before building). The
+walls take the owner's colour as stained stakes and a rope lashed along their face. Sealed ground
+is swept sand under the owner's wash, **raked in furrows** — the first screenshots showed an
+azure player's sealed ground plain pale blue, the reef's own turquoise — with tiki torches at its
+corners (`torchSpots`, tested: the corners, at most `torchesPerPlayer`, spread). A player who is
+out has grey driftwood, a fort with its roof stove in and its pole snapped.
+
+The rest: the deep ocean with a swell of short arcs, the slope lighter, turquoise shallows over the
+reef, foam on the beach, white sand round jungle; ship's cannon on painted truck carriages, mirrored
+to face their target and kicking back, a flash and smoke at the muzzle; a hit throws splinters in
+the stockade's stain and, one time in three (`coinOdds`), a doubloon; a miss in the sea a column of
+spray; ghost crabs that amble sideways over open sand and run from shots, never on sealed ground or
+anything built; palms, huts, barrels, a half-buried chest, cannonballs, an X, a skull for scenery;
+a sloop, a rowboat, a bottle with a message, dolphins and gulls on the outer sea. **The climax**:
+the squall comes in, the board darkening and rain driving across, and **the Kraken rises** — slate
+arms out of the outer ocean round the screen's sides, clear of the galleon, curling and swaying on
+a phase carried frame to frame. The corner's galleon rolls quicker, its flag flies harder and its
+lookout sweeps his spyglass faster when hurried (`hurry`). The banner a torn sail lettered in black
+("Fire at will!" / „Feuer frei!" under the call), the HUD a deck of planks under a rope rule, the
+timer carved driftwood, the island banners wooden signs, the title nailed-up planks; doubloons
+and jewels and the Jolly Roger on a mast to finish (`FinishLook` gained `doubloons` and `jolly`,
+the skull, coin and jewel in `jolly.ts`).
+
+**Cost**, `&perf=1` in a watched eight-player combat (round 3, 1600×1000, headless Chrome with the
+GPU on), two runs each alternating with Stadium: 60 fps, effects 0.67 ms and render 1.40–1.79 ms
+a frame against Stadium's 0.71–0.74 and 1.43–1.90; 2 000–3 600 vertices rebuilt a frame in one
+`Graphics` against Stadium's 770 (Noir's 3 900). The crabs, drawn afresh each frame at first,
+were 7 800 of them; they are stamps now, a context a step of their legs.
+
+Seen in screenshots building, in the cannon phase, in combat at two, three and eight players, in
+the final round with the Kraken, its banner set on the page by hand, and the menu's title. What the
+first look changed: the flying parrots circled too low over their guns, now higher; a highlight
+along each stake top read as planks laid across them, and went; the jungle's clearings made a
+chequer, now faint; the Kraken's arms lay over flat and were placed almost anywhere on the outer
+sea, now upright, longer, curling only at the tip and kept to a band along the screen's sides; the
+rain fell in one line after a snapshot's long first frame. Not yet watched in play nor checked by
+the user.

@@ -2155,3 +2155,202 @@ export class SportsSeaLife extends OceanDrawn {
     }
   }
 }
+
+/**
+ * Pirates: now and then a sloop sails across the outer sea under a black flag, its sails
+ * bellied; a rowboat pulls across, two oars sweeping; a bottle with a message bobs up and drifts
+ * a while; dolphins leap; gulls wheel overhead. Timber, canvas, glass and grey, no player's.
+ */
+export class PiratesSeaLife extends OceanDrawn {
+  private readonly sloops = new Crossings();
+  private readonly rowboats = new Crossings();
+  private readonly bottles = new Surfacings();
+  private readonly dolphins = new Surfacings();
+  private readonly gulls = new Circling();
+
+  override layout(state: MatchState, view: ViewTransform, art: ArtConfig): void {
+    super.layout(state, view, art);
+    this.sloops.layout(this.ocean, art.pirates.sloopEveryMs);
+    this.rowboats.layout(this.ocean, art.pirates.rowboatEveryMs);
+    this.gulls.layout(this.ocean, art.pirates.gulls, [1.5, 3]);
+  }
+
+  protected frame(g: Graphics, view: ViewTransform, art: ArtConfig, deltaMs: number): void {
+    const style = art.pirates;
+    const t = view.tile;
+    const ink = Math.max(1, t * 0.04);
+    const tar = 0x3a2614;
+    const foam = hex(art.palette.waterFoam);
+    this.sloops.step(this.ocean, deltaMs, style.sloopEveryMs, style.sloopTilesPerSecond, 1.6);
+    this.rowboats.step(this.ocean, deltaMs, style.rowboatEveryMs, style.rowboatTilesPerSecond);
+    const open = (c: Cell): boolean => !this.behind(c.x + 0.5, c.y + 0.5);
+    this.bottles.step(this.ocean, deltaMs, style.bottleEveryMs, style.bottleLifeMs, open);
+    this.dolphins.step(this.ocean, deltaMs, style.dolphinEveryMs, style.dolphinLifeMs, open);
+    this.gulls.step(deltaMs);
+
+    for (const s of this.sloops.items) {
+      if (this.behind(s.x, s.y)) continue;
+      const d = s.dir;
+      const bob = Math.sin(this.clock / 700 + s.y) * 0.04;
+      const y = s.y + bob;
+      // The wake, the hull, the mast, the mainsail and the jib, the flag at the masthead.
+      g.moveTo(tileX(view, s.x - d * 0.7), tileY(view, y + 0.3)).lineTo(
+        tileX(view, s.x - d * 1.8),
+        tileY(view, y + 0.38),
+      );
+      g.stroke({ width: Math.max(1, t * 0.06), color: foam, alpha: 0.6 });
+      g.poly(
+        shape(view, s.x, y, d, [
+          [-0.75, 0.05],
+          [0.85, 0.0],
+          [0.55, 0.32],
+          [-0.6, 0.32],
+        ]),
+      );
+      g.fill({ color: 0x6a4424 });
+      g.stroke({ width: ink, color: tar, join: 'round' });
+      g.moveTo(tileX(view, s.x), tileY(view, y + 0.02)).lineTo(
+        tileX(view, s.x),
+        tileY(view, y - 1.4),
+      );
+      g.stroke({ width: Math.max(1, t * 0.06), color: tar });
+      g.poly(
+        shape(view, s.x, y, d, [
+          [-0.06, -1.3],
+          [-0.06, -0.1],
+          [-0.7, -0.12],
+          [-0.5, -0.8],
+        ]),
+      );
+      g.poly(
+        shape(view, s.x, y, d, [
+          [0.06, -1.25],
+          [0.8, -0.05],
+          [0.08, -0.12],
+        ]),
+      );
+      g.fill({ color: 0xefe4c8 });
+      g.stroke({ width: ink, color: 0x8a7a5a, join: 'round' });
+      g.poly(
+        shape(view, s.x, y, d, [
+          [0, -1.4],
+          [-0.32, -1.36],
+          [-0.3, -1.18],
+          [0, -1.22],
+        ]),
+      );
+      g.fill({ color: 0x16120e });
+    }
+
+    for (const r of this.rowboats.items) {
+      if (this.behind(r.x, r.y)) continue;
+      const d = r.dir;
+      const y = r.y + Math.sin(this.clock / 600 + r.x) * 0.03;
+      const stroke = Math.sin(this.clock / 420);
+      g.poly(
+        shape(view, r.x, y, d, [
+          [-0.45, 0.0],
+          [0.5, -0.02],
+          [0.32, 0.18],
+          [-0.36, 0.18],
+        ]),
+      );
+      g.fill({ color: 0x8a5a30 });
+      g.stroke({ width: ink, color: tar, join: 'round' });
+      // Two rowers' heads and their oars, sweeping.
+      for (const ox of [-0.15, 0.15]) {
+        const hx = tileX(view, r.x + d * ox);
+        const hy = tileY(view, y - 0.1);
+        g.moveTo(hx, hy + t * 0.05).lineTo(hx - d * t * (0.15 + 0.15 * stroke), hy + t * 0.35);
+        g.moveTo(hx, hy + t * 0.05).lineTo(hx - d * t * (0.15 + 0.15 * stroke), hy - t * 0.12);
+      }
+      g.stroke({ width: Math.max(1, t * 0.04), color: 0xb88a56 });
+      for (const ox of [-0.15, 0.15]) {
+        g.circle(tileX(view, r.x + d * ox), tileY(view, y - 0.12), t * 0.08);
+      }
+      g.fill({ color: 0xd8a878 });
+    }
+
+    for (const b of this.bottles.items) {
+      const k = b.ageMs / style.bottleLifeMs;
+      const fade = k < 0.15 ? k / 0.15 : k > 0.85 ? (1 - k) / 0.15 : 1;
+      const x = tileX(view, b.x + b.dir * k * 0.8);
+      const y = tileY(view, b.y) + Math.sin(this.clock / 400 + b.x) * t * 0.05;
+      const tilt = 0.9 + Math.sin(this.clock / 700 + b.y) * 0.25;
+      const c = Math.cos(tilt) * b.dir;
+      const sn = Math.sin(tilt);
+      const at = (u: number, v: number): [number, number] => [
+        x + (c * u - sn * v) * t,
+        y + (sn * u * b.dir + Math.cos(tilt) * v) * t,
+      ];
+      g.ellipse(x, y + t * 0.08, t * 0.3, t * 0.07);
+      g.stroke({ width: Math.max(1, t * 0.04), color: foam, alpha: 0.6 * fade });
+      g.poly([
+        ...at(-0.22, -0.08),
+        ...at(0.12, -0.08),
+        ...at(0.22, -0.04),
+        ...at(0.22, 0.04),
+        ...at(0.12, 0.08),
+        ...at(-0.22, 0.08),
+      ]);
+      g.fill({ color: 0x8a7040, alpha: 0.85 * fade });
+      g.stroke({ width: ink, color: tar, alpha: fade });
+      g.poly([...at(-0.15, -0.035), ...at(0.08, -0.035), ...at(0.08, 0.035), ...at(-0.15, 0.035)]);
+      g.fill({ color: 0xf4ead0, alpha: fade });
+      g.poly([...at(0.22, -0.035), ...at(0.29, -0.035), ...at(0.29, 0.035), ...at(0.22, 0.035)]);
+      g.fill({ color: 0xc8a068, alpha: fade });
+    }
+
+    for (const p of this.dolphins.items) {
+      // One leap from the water and back into it over its life, a splash at either end.
+      const k = p.ageMs / style.dolphinLifeMs;
+      const along = (k - 0.5) * 1.6 * p.dir;
+      const up = Math.sin(k * Math.PI) * 0.8;
+      const x = tileX(view, p.x + along);
+      const y = tileY(view, p.y - up);
+      const angle = Math.atan2(-Math.cos(k * Math.PI) * 0.8 * Math.PI, 1.6 * p.dir);
+      const c = Math.cos(angle);
+      const sn = Math.sin(angle);
+      const at = (u: number, v: number): [number, number] => [
+        x + (c * u - sn * v) * t,
+        y + (sn * u + c * v) * t,
+      ];
+      const flip = p.dir;
+      g.poly([
+        ...at(-0.45, 0),
+        ...at(-0.2, -0.13 * flip),
+        ...at(0.25, -0.12 * flip),
+        ...at(0.45, 0),
+        ...at(0.25, 0.08 * flip),
+        ...at(-0.25, 0.08 * flip),
+      ]);
+      g.poly([...at(0.0, -0.12 * flip), ...at(-0.12, -0.28 * flip), ...at(0.12, -0.12 * flip)]);
+      g.poly([...at(-0.42, 0), ...at(-0.6, -0.12), ...at(-0.6, 0.12)]);
+      g.fill({ color: 0x8a96a0 });
+      g.stroke({ width: ink, color: 0x3a444c, join: 'round' });
+      for (const end of [0.1, 0.9]) {
+        const q = 1 - Math.min(1, Math.abs(k - end) / 0.12);
+        if (q <= 0) continue;
+        g.ellipse(
+          tileX(view, p.x + (end - 0.5) * 1.6 * p.dir),
+          tileY(view, p.y),
+          t * 0.3 * q,
+          t * 0.1 * q,
+        );
+        g.stroke({ width: Math.max(1, t * 0.05), color: foam, alpha: q });
+      }
+    }
+
+    for (const c of this.gulls.items) {
+      const { x, y } = Circling.at(c);
+      if (this.behind(x, y)) continue;
+      const flap = Math.sin(this.clock / 140 + c.cx) * t * 0.1;
+      const gx = tileX(view, x);
+      const gy = tileY(view, y);
+      g.moveTo(gx - t * 0.3, gy - flap)
+        .quadraticCurveTo(gx - t * 0.12, gy - t * 0.18, gx, gy)
+        .quadraticCurveTo(gx + t * 0.12, gy - t * 0.18, gx + t * 0.3, gy - flap);
+      g.stroke({ width: Math.max(1.5, t * 0.07), color: 0xf6f6f2, cap: 'round', join: 'round' });
+    }
+  }
+}

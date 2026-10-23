@@ -1200,6 +1200,28 @@
         "uiValid": "#8fe08a",
         "uiInvalid": "#ff5a5a"
       }
+    },
+    "pirates": {
+      "palette": {
+        "waterDeep": "#0d4f86",
+        "waterMid": "#1773a8",
+        "waterShallow": "#3fcfbc",
+        "waterFoam": "#f2fffb",
+        "sand": "#f1dfab",
+        "grassDark": "#2f7d3c",
+        "grassMid": "#409a47",
+        "grassLight": "#5db356",
+        "rockDark": "#6b5a48",
+        "rockMid": "#9a8670",
+        "rockLight": "#cdbb9c",
+        "shadow": "#10202a",
+        "craterDark": "#5a4026",
+        "craterMid": "#8a6a42",
+        "uiInk": "#f6ecd2",
+        "uiAccent": "#e8b440",
+        "uiValid": "#8fe08a",
+        "uiInvalid": "#ff5a5a"
+      }
     }
   },
   "dither": {
@@ -1741,5 +1763,29 @@
     "floodlightAlpha": 0.1,
     "blimpEveryMs": 30000,
     "blimpTilesPerSecond": 1.2
+  },
+  "pirates": {
+    "floorAlpha": 0.4,
+    "torchesPerPlayer": 6,
+    "parrotBobMs": 1300,
+    "parrotTakeOffMs": 320,
+    "parrotLandMs": 260,
+    "coinOdds": 0.35,
+    "crabsPerIsland": 2,
+    "crabTilesPerSecond": 2.4,
+    "sloopEveryMs": 24000,
+    "sloopTilesPerSecond": 0.9,
+    "rowboatEveryMs": 31000,
+    "rowboatTilesPerSecond": 0.6,
+    "bottleEveryMs": 17000,
+    "bottleLifeMs": 7000,
+    "dolphinEveryMs": 9000,
+    "dolphinLifeMs": 1600,
+    "gulls": 3,
+    "galleonRollMs": 4200,
+    "galleonHurriedRollMs": 1500,
+    "krakenArms": 5,
+    "squallAlpha": 0.18,
+    "rainCount": 110
   }
 }

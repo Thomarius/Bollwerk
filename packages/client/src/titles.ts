@@ -1277,6 +1277,7 @@ const TITLES: Record<ArtStyle, (text: string, art: ArtConfig) => Title> = {
   christmas: christmasTitle,
   noir: noirTitle,
   sports: sportsTitle,
+  pirates: piratesTitle,
 };
 
 /**
@@ -1345,6 +1346,74 @@ export function sportsTitle(text: string, _art: ArtConfig): Title {
   for (const [x1, y1, x2, y2] of edges) {
     ctx.moveTo(x1, y1);
     ctx.lineTo(x2, y2);
+  }
+  ctx.stroke();
+  return { src: canvas.toDataURL(), ...title };
+}
+
+/**
+ * The pirates' title: each letter's strokes nailed up out of planks — a plank to every run of
+ * cells along a row, sun-bleached timber with a grain and a nail at either end, in a dark tarred
+ * outline over a hard shadow — as a sign on a beach would be.
+ */
+export function piratesTitle(text: string, _art: ArtConfig): Title {
+  const { canvas, ctx, cells, has } = drawnCanvas(text);
+  const title = { cellPx: DRAWN_CELL, padPx: DRAWN_PAD, tailPx: 0, smooth: true, flicker: false };
+  if (ctx === null) return { src: canvas.toDataURL(), ...title };
+  const at = (v: number): number => DRAWN_PAD + v * DRAWN_CELL;
+  // The runs of cells along each row, one plank each.
+  const planks: { x: number; y: number; n: number }[] = [];
+  for (const { x, y } of cells) {
+    if (has(x - 1, y)) continue;
+    let n = 1;
+    while (has(x + n, y)) n++;
+    planks.push({ x, y, n });
+  }
+  const drop = DRAWN_CELL * 0.35;
+  ctx.fillStyle = '#10202a';
+  for (const { x, y } of cells) ctx.fillRect(at(x) + drop, at(y) + drop, DRAWN_CELL, DRAWN_CELL);
+  for (const [k, { x, y, n }] of planks.entries()) {
+    const px = at(x) + 0.5;
+    const py = at(y) + 0.5;
+    const w = n * DRAWN_CELL - 1;
+    const h = DRAWN_CELL - 1;
+    ctx.fillStyle = k % 3 === 0 ? '#c89058' : k % 3 === 1 ? '#b88048' : '#d29c62';
+    ctx.fillRect(px, py, w, h);
+    ctx.fillStyle = '#f0c890';
+    ctx.fillRect(px, py, w, 2);
+    ctx.strokeStyle = '#7a4c24';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    for (const f of [0.45, 0.72]) {
+      ctx.moveTo(px + 2, py + h * f);
+      ctx.lineTo(px + w - 2, py + h * f + (k % 2 === 0 ? 1 : -1));
+    }
+    ctx.stroke();
+    ctx.fillStyle = '#3a2614';
+    for (const nx of [px + 3, px + w - 3]) {
+      ctx.beginPath();
+      ctx.arc(nx, py + h / 2, 1.3, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+  const edges = wordOutline(cells, has);
+  ctx.lineCap = 'square';
+  ctx.strokeStyle = '#3a2614';
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  for (const [x1, y1, x2, y2] of edges) {
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x2, y2);
+  }
+  ctx.stroke();
+  // The seams between planks, a row above another.
+  ctx.strokeStyle = '#5a3418';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  for (const { x, y } of cells) {
+    if (!has(x, y + 1)) continue;
+    ctx.moveTo(at(x), at(y + 1));
+    ctx.lineTo(at(x + 1), at(y + 1));
   }
   ctx.stroke();
   return { src: canvas.toDataURL(), ...title };

@@ -130,6 +130,15 @@ SCENES=(
   "final-sports|$BASE/?autostart=1&players=3&seed=5&snapshot=combat&round=10&style=sports|4000"
   "banner-sports|$WATCH&snapshot=cannon_place&round=2&style=sports|5000"
   "menu-sports|$BASE/?buildStyle=flat&combatStyle=sports|4000"
+  # Pirates (ARCHIVE 14q): the stockades, the forts' Jolly Rogers, the parrots on the guns,
+  # the galleon in the corner; the Kraken in the final round; "Fire at will!" under the call.
+  "build-pirates|$GAME&snapshot=build&round=3&style=pirates|4500"
+  "cannons-pirates|$GAME&snapshot=cannon_place&round=2&style=pirates|2500"
+  "combat-pirates|$BASE/?autostart=1&players=2&seed=5&snapshot=combat&round=3&style=pirates|4200"
+  "eight-pirates|$BASE/?autostart=1&players=8&seed=3&snapshot=combat&round=3&style=pirates|3500"
+  "final-pirates|$BASE/?autostart=1&players=3&seed=5&snapshot=combat&round=10&style=pirates|8000"
+  "banner-pirates|$WATCH&snapshot=cannon_place&round=2&style=pirates|5000"
+  "menu-pirates|$BASE/?style=pirates|4000"
   "eight-night|$BASE/?autostart=1&players=8&seed=3&snapshot=combat&round=3&style=night|3000"
   # The climaxes of the first eight styles (PLAN 11 item 5), in the final round's build phase.
   "final-pixel|$GAME&snapshot=build&round=10&style=pixel|8000"

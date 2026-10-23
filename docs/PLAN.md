@@ -415,9 +415,9 @@ sender's seat**, so a client cannot act for someone else.
 
 ## 7. `packages/client`
 
-Twenty visual styles — Minimal (`flat`), Medieval (`pixel`: named Pixel art until the other
+Twenty-one visual styles — Minimal (`flat`), Medieval (`pixel`: named Pixel art until the other
 styles made the name mean nothing), Night, Cyberpunk, Blueprint, Parchment, Toy bricks
-(`bricks`), Stained glass (`glass`), Chocolate (`chocolate`), Halloween (`halloween`), Sakura (`sakura`), Oktoberfest (`oktoberfest`), Opera (`opera`), Office (`office`), Under the sea (`undersea`), Electric (`electric`), Cartoon (`cartoon`), Christmas (`christmas`), Noir (`noir`) and Stadium (`sports`) — behind one `Theme` interface: the scene owns the camera, the layer stacks,
+(`bricks`), Stained glass (`glass`), Chocolate (`chocolate`), Halloween (`halloween`), Sakura (`sakura`), Oktoberfest (`oktoberfest`), Opera (`opera`), Office (`office`), Under the sea (`undersea`), Electric (`electric`), Cartoon (`cartoon`), Christmas (`christmas`), Noir (`noir`), Stadium (`sports`) and Pirates (`pirates`) — behind one `Theme` interface: the scene owns the camera, the layer stacks,
 dirty tracking and input mapping; a theme owns only what things look like. Adding a style
 is a name in `ArtStyleSchema`, the looks it is made for in `STYLE_LOOKS`, a `Theme`, a
 case in `createTheme`, a menu title in `titles.ts` and a banner class in `hud.ts`; the
@@ -573,7 +573,7 @@ top saying whether a click chooses the building or the combat look, each card ba
 the look it is chosen for. The styles are in alphabetical order by name, so a new one finds
 its place, and **Random** comes last, a die for its picture: **a new style at every
 banner that brings its look** (`LookRotation`, ARCHIVE 12q), repeating none until every
-style has been shown — both looks random share one cycle of all twenty, one random cycles
+style has been shown — both looks random share one cycle of all twenty-one, one random cycles
 through all but the other look's — and never the style the banner takes away, nor the one a
 look last had across a cycle's end. Each next look is made a step a frame, hidden, in the
 intermission after the build phase (`Scene.prepare`), and goes on screen once the look it
@@ -1349,6 +1349,32 @@ stands; a scoreboard stands in the corner, the phase's seconds in amber lamps, r
 when the clock presses; at the climax the floodlights and camera flashes. Its banner and HUD an
 LED scoreboard, the banner's call with the stadium's words under it ("Kick-off!", "Half-time!",
 `BANNER_FLAVOUR`); its title jersey lettering; its finish confetti and a supporters' scarf.
+
+**Pirates** (`pirates.ts`, `jolly.ts`, `art.pirates`; ARCHIVE 14q, its elements chosen by the
+user), for either look: **a pirates' cove in bright Caribbean daylight** — not a treasure map,
+which Parchment already is. The ocean deep blue under a swell of short arcs, lighter over the
+slope, turquoise over the reef's shallows, foam on the beach; each island white sand round jungle.
+Walls are **a log stockade**, three sharpened stakes to a tile stained with the owner's colour, a
+rope of their light colour lashed along the face. Castles are **timber forts** under a roof in
+the owner's colour, and **sealed is the Jolly Roger in the owner's colour flying from the fort's
+pole** (`FlagHoist`), its windows lit; struck by a breach. **The guns are ship's cannon** on
+painted truck carriages, mirrored to face the target, kicking back as they fire; **a gun ready to
+fire has its parrot on it**, in the owner's colour under a black tricorn — a shot scares it up,
+it circles over the gun until the gun is loaded again, then lands (`parrotFlight`); **a silenced
+gun has a wooden plug in its muzzle** and no parrot (never asleep: sleep is the Lullaby Tower's).
+Shots are **chain shot**, whirling; a hit throws splinters in the stockade's stain and now and
+then a doubloon (`coinOdds`); a miss in the sea a column of spray. Sealed ground is sand swept
+pale under the owner's wash, raked in furrows so it is never the shallows, **tiki torches at its
+corners** (`torchSpots`). Ghost crabs amble sideways over open sand and run from shots, never on
+sealed ground or anything built. Scenery is palms, huts, barrels, a half-buried chest,
+cannonballs, an X and a skull; on the outer sea a sloop under a black flag, a rowboat, a bottle
+with a message, dolphins and gulls. **A galleon rides at anchor in the corner**, rolling, its
+lookout sweeping his spyglass, quicker when hurried. **At the climax the Kraken rises**: a squall
+darkens the board and drives rain across, and slate arms come up out of the outer ocean round the
+screen's sides, curling and swaying. Its banner a torn sail lettered in black, the call's words
+under it ("Fire at will!", `BANNER_FLAVOUR`); its HUD a deck of planks under a rope rule; its timer
+carved driftwood; its island banners wooden signs; its title nailed-up planks; its finish
+doubloons and jewels, and the Jolly Roger on a mast.
 
 The thirteen shape-drawn styles share `walls.ts`: the wall geometry (tops, faces, rim), and
 hatching laid on one lattice so neighbouring tiles hatch as one fill.

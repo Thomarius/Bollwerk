@@ -50,6 +50,7 @@ const BANNER_CLASS: Record<ArtStyle, string> = {
   christmas: 'banner-christmas',
   noir: 'banner-noir',
   sports: 'banner-sports',
+  pirates: 'banner-pirates',
 };
 
 /**
@@ -78,12 +79,13 @@ const HUD_SKIN: Record<ArtStyle, string> = {
   christmas: 'hud-christmas',
   noir: 'hud-noir',
   sports: 'hud-sports',
+  pirates: 'hud-pirates',
 };
 
 /**
  * A style's own words under the phase's call, where it has them: the stadium's "Kick-off!"
- * under "Fire!", "Half-time!" under "Rebuild" (ARCHIVE 14d). `final` rides under the
- * final round's banner.
+ * under "Fire!", "Half-time!" under "Rebuild" (ARCHIVE 14d); the pirates' "Fire at will!"
+ * (ARCHIVE 14q). `final` rides under the final round's banner.
  */
 const BANNER_FLAVOUR: Partial<Record<ArtStyle, Partial<Record<Phase | 'final', TextKey>>>> = {
   sports: {
@@ -92,6 +94,13 @@ const BANNER_FLAVOUR: Partial<Record<ArtStyle, Partial<Record<Phase | 'final', T
     build: 'sports.call.build',
     cannon_place: 'sports.call.cannonPlace',
     final: 'sports.call.final',
+  },
+  pirates: {
+    castle_select: 'pirates.call.castleSelect',
+    combat: 'pirates.call.combat',
+    build: 'pirates.call.build',
+    cannon_place: 'pirates.call.cannonPlace',
+    final: 'pirates.call.final',
   },
 };
 
