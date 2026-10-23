@@ -86,6 +86,8 @@ export interface StatRow {
    * round a freeze may have cost, the Frost Cannon's risk (docs/SPECIAL_TOWERS.md §2.7).
    */
   repairFrozen: number;
+  /** Seconds of sleep its Lullaby Towers' shots put on rivals' guns this round. */
+  sleepDealt: number;
 }
 
 const STAT_COLUMNS: (keyof StatRow)[] = [
@@ -118,6 +120,7 @@ const STAT_COLUMNS: (keyof StatRow)[] = [
   'wallsRepaired',
   'frozenAtBuild',
   'repairFrozen',
+  'sleepDealt',
 ];
 
 /**
@@ -203,6 +206,7 @@ export class RoundStats {
   private readonly repairStuck = new Map<number, number>();
   private readonly frozenAtBuild = new Map<number, number>();
   private readonly repairFrozen = new Map<number, number>();
+  private readonly sleepDealt = new Map<number, number>();
 
   constructor(
     private readonly bundle: ConfigBundle,
@@ -246,6 +250,8 @@ export class RoundStats {
         this.placed.set(event.player, (this.placed.get(event.player) ?? 0) + 1);
       } else if (event.kind === 'shot_fired') {
         this.fired.set(event.shot.owner, (this.fired.get(event.shot.owner) ?? 0) + 1);
+      } else if (event.kind === 'gun_slept') {
+        this.sleepDealt.set(event.owner, (this.sleepDealt.get(event.owner) ?? 0) + event.ms / 1000);
       } else if (event.kind === 'walls_repaired') {
         this.repaired.set(
           event.player,
@@ -295,6 +301,7 @@ export class RoundStats {
             wallsRepaired: this.repaired.get(result.player) ?? 0,
             frozenAtBuild: this.frozenAtBuild.get(result.player) ?? 0,
             repairFrozen: this.repairFrozen.get(result.player) ?? 0,
+            sleepDealt: this.sleepDealt.get(result.player) ?? 0,
           });
         }
         this.placed.clear();
@@ -305,6 +312,7 @@ export class RoundStats {
         this.repairStuck.clear();
         this.frozenAtBuild.clear();
         this.repairFrozen.clear();
+        this.sleepDealt.clear();
       }
     }
   }

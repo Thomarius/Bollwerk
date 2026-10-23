@@ -3,6 +3,7 @@ import {
   variantOf,
   type BotProfile,
   type LaserVariant,
+  type LullabyVariant,
   type LightningVariant,
   type TowerCost,
 } from '@bollwerk/config';
@@ -11,8 +12,10 @@ import {
   Terrain,
   craterTilesOf,
   heldValue,
+  isAwake,
   isImpactTower,
   isLoaded,
+  lullTargets,
   holdingsOf,
   sameTeam,
   strikable,
@@ -52,7 +55,12 @@ export class Gunner {
     const delay = Math.round((this.profile.readyDelayMs * state.ruleset.tickRateHz) / 1000);
     let ready = false;
     for (const cannon of state.cannons) {
-      if (cannon.owner !== this.playerId || !cannon.active || !isLoaded(cannon)) {
+      if (
+        cannon.owner !== this.playerId ||
+        !cannon.active ||
+        !isLoaded(cannon) ||
+        !isAwake(state, cannon)
+      ) {
         this.readySince.delete(cannon.id);
         continue;
       }
@@ -218,6 +226,7 @@ export class Gunner {
   private readyImpactTower(state: MatchState): Cannon | null {
     for (const cannon of state.cannons) {
       if (cannon.owner !== this.playerId || !cannon.active || !isLoaded(cannon)) continue;
+      if (!isAwake(state, cannon)) continue;
       if (isImpactTower(cannon.kind)) return cannon;
     }
     return null;
@@ -238,6 +247,7 @@ export class Gunner {
     if (weakest.size === 0) return null;
     if (tower.kind === 'lightning') return this.lightningTarget(state, tower, weakest, taken);
     if (tower.kind === 'laser') return this.laserTarget(state, tower, opponent, weakest, taken);
+    if (tower.kind === 'lullaby') return this.lullabyTarget(state, tower, opponent, weakest, taken);
     const offsets = craterTilesOf(state.ruleset, tower.kind, tower.cost);
     const rivalWall = (i: number): boolean => {
       if (state.structure[i] !== Structure.Wall) return false;
@@ -365,6 +375,42 @@ export class Gunner {
       const beam = traceLaser(state, this.playerId, fromX, fromY, x, (i - x) / state.width, count);
       let score = 0;
       for (const t of beam.cleared) score += weakest.has(t) ? 3 : 1;
+      if (score > bestScore) {
+        bestScore = score;
+        best = i;
+      }
+    }
+    return best;
+  }
+
+  /**
+   * Where a Lullaby Tower's shot does most: always at a block of the opponent's wall, the weakest
+   * wall's counting three and any other one (the bots' way, the user's), and two more where its
+   * lullaby reaches as many viable guns as it may (`lullTargets`, as the rules will choose them) —
+   * every block alike while it reaches anywhere, so then the weakest wall decides. Its own shots'
+   * tiles are passed over.
+   */
+  private lullabyTarget(
+    state: MatchState,
+    tower: Cannon,
+    opponent: number,
+    weakest: ReadonlySet<number>,
+    taken: ReadonlySet<number>,
+  ): number | null {
+    const variant = variantConfig(
+      state.ruleset.specials,
+      variantOf('lullaby', tower.cost as TowerCost),
+    ) as LullabyVariant;
+    const island = state.players[opponent]?.islandId;
+    let best: number | null = null;
+    let bestScore = 0;
+    for (let i = 0; i < state.structure.length; i++) {
+      if (state.structure[i] !== Structure.Wall || state.owner[i] !== island || taken.has(i)) {
+        continue;
+      }
+      const x = i % state.width;
+      const reached = lullTargets(state, this.playerId, x, (i - x) / state.width, variant).length;
+      const score = (weakest.has(i) ? 3 : 1) + (reached >= variant.targets ? 2 : 0);
       if (score > bestScore) {
         bestScore = score;
         best = i;

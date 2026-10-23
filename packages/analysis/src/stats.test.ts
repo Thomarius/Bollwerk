@@ -44,6 +44,7 @@ describe('the pieces budget', () => {
       wallsRepaired: 0,
       frozenAtBuild: 0,
       repairFrozen: 0,
+      sleepDealt: 0,
     };
     const [head, line] = statsCsv([row]).trim().split('\n');
     const cells = Object.fromEntries(

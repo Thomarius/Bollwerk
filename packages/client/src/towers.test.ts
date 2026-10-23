@@ -200,6 +200,12 @@ describe('the lobby with special towers', () => {
     // 60% at cost 2.
     expect(towerWhat('frost3')).toContain('until its clock runs out');
     expect(towerWhat('frost2')).toContain('first 60%');
+    // The Lullaby Tower's guns lulled by its cost, its reach and its sleep.
+    expect(towerWhat('lullaby2')).toContain('lulls the 2 enemy guns');
+    expect(towerWhat('lullaby3')).toContain('lulls the 3 enemy guns');
+    expect(towerWhat('lullaby3')).toContain('within 8 blocks');
+    expect(towerWhat('lullaby3')).toContain('for 3 seconds');
+    expect(towerWhat('lullaby3')).toContain('after 2 lullabies');
   });
 });
 
@@ -213,6 +219,7 @@ describe('the tower menu', () => {
       { kind: 'biggest', costs: [2, 3] },
       { kind: 'laser', costs: [2, 3] },
       { kind: 'frost', costs: [2, 3] },
+      { kind: 'lullaby', costs: [2, 3] },
     ]);
     const html = towerMenuMarkup('bertha2');
     expect(html).not.toContain('data-kind="none"');
@@ -232,6 +239,7 @@ describe('the tower menu', () => {
         'frost',
         'laser',
         'lightning',
+        'lullaby',
         'rapid',
       ]);
       setLanguage('de');
@@ -242,6 +250,7 @@ describe('the tower menu', () => {
         'bertha',
         'frost',
         'laser',
+        'lullaby',
         'rapid',
       ]);
     } finally {

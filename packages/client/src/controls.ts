@@ -10,6 +10,7 @@ import {
   findReadyCannon,
   footprintOf,
   isImpactTower,
+  isAwake,
   isLoaded,
   owesCastleChoice,
   specialRefusal,
@@ -108,7 +109,8 @@ export function nextReload(state: MatchState, playerId: number, tickFraction = 0
   const now = state.tick + tickFraction;
   let soonest: { launchTick: number; impactTick: number } | null = null;
   for (const cannon of state.cannons) {
-    if (cannon.owner !== playerId || !cannon.active) continue;
+    // A gun asleep (a Lullaby Tower's doing) is neither ready nor coming round.
+    if (cannon.owner !== playerId || !cannon.active || !isAwake(state, cannon)) continue;
     if (isLoaded(cannon)) return null;
     const shot = landingFirst(state, cannon);
     if (shot !== null && (soonest === null || shot.impactTick < soonest.impactTick)) {
@@ -135,6 +137,7 @@ export function impactReadiness(
   let soonest: { launchTick: number; impactTick: number } | null = null;
   for (const cannon of state.cannons) {
     if (cannon.owner !== playerId || !cannon.active || !isImpactTower(cannon.kind)) continue;
+    if (!isAwake(state, cannon)) continue;
     if (isLoaded(cannon)) return { ready: true };
     const shot = landingFirst(state, cannon);
     if (shot !== null && (soonest === null || shot.impactTick < soonest.impactTick)) {

@@ -302,7 +302,7 @@ describe('match audio', () => {
 describe('special towers in the sound', () => {
   const shot = (
     id: number,
-    kind: 'cannon' | 'bertha' | 'rapid' | 'lightning' | 'biggest' | 'laser' | 'frost',
+    kind: 'cannon' | 'bertha' | 'rapid' | 'lightning' | 'biggest' | 'laser' | 'frost' | 'lullaby',
   ): MatchEvent => ({
     kind: 'shot_fired',
     tick: 1,
@@ -401,6 +401,16 @@ describe('special towers in the sound', () => {
     match.handle([shot(8, 'frost')]);
     match.handle([landed(8), { kind: 'tile_frozen', tick: 40, shotId: 8, owner: 1, tile: 105 }]);
     expect(audio.sfx).toEqual(['cannon_fire', 'shot_impact', 'frost_impact']);
+  });
+
+  it('lands a Lullaby Tower as a cannon, its lullaby heard over the impact when a gun sleeps', () => {
+    const { audio, match } = setup();
+    match.handle([shot(9, 'lullaby')]);
+    match.handle([
+      landed(9),
+      { kind: 'gun_slept', tick: 40, shotId: 9, owner: 1, cannonId: 3, until: 130, ms: 3000 },
+    ]);
+    expect(audio.sfx).toEqual(['cannon_fire', 'shot_impact', 'lullaby']);
   });
 
   it('knocks twice for each of the player’s own Architects that rebuilt, not a rival’s', () => {

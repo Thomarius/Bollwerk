@@ -17,7 +17,7 @@ import {
  *
  * `.` water   `,` empty land   `#` wall   `@` castle   `*` cannon
  * `B` Big Bertha   `A` Architect   `R` Rapid Cannon   `L` Lightning Tower, `G` Allerdickste
- *   Bertha, `X` Laser Tower, `F` Frost Cannon — special towers at cost 3; `b` `a` `r` `l` `g` `x` `f` the
+ *   Bertha, `X` Laser Tower, `F` Frost Cannon, `Z` Lullaby Tower — special towers at cost 3; `b` `a` `r` `l` `g` `x` `f` `z` the
  *   same at cost 2
  * `1`-`4` empty land belonging to that island (default is island 1)
  *
@@ -47,6 +47,8 @@ const GUN_GLYPHS: Readonly<Record<string, { kind: CannonKind; cost: number }>> =
   x: { kind: 'laser', cost: 2 },
   F: { kind: 'frost', cost: 3 },
   f: { kind: 'frost', cost: 2 },
+  Z: { kind: 'lullaby', cost: 3 },
+  z: { kind: 'lullaby', cost: 2 },
 };
 
 export function stateFromAscii(

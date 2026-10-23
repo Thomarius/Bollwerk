@@ -527,6 +527,7 @@
   "tower.biggest": "Allerdickste Bertha",
   "tower.laser": "Laser Tower",
   "tower.frost": "Frost Cannon",
+  "tower.lullaby": "Lullaby Tower",
   "tower.berthaWhat": "Clears a cross of five wall blocks, and fires first whenever it is ready. Its shell flies as fast as a cannon's.",
   "tower.berthaFastWhat": "Clears a cross of five wall blocks, and fires first whenever it is ready. Its shell flies faster than a cannon's, so it reloads sooner.",
   "tower.berthaSlowWhat": "Clears a cross of five wall blocks, and fires first whenever it is ready. Its shell flies slower than a cannon's, so it reloads later.",
@@ -542,6 +543,8 @@
   "tower.frostWhat": "Freezes the tile it hits for the whole next build phase, overtime too: nothing can be built there — fires first whenever it is ready.",
   "tower.frostClockWhat": "Freezes the tile it hits for the next build phase until its clock runs out: nothing can be built there — fires first whenever it is ready.",
   "tower.frostShareWhat": "Freezes the tile it hits for the first {p}% of the next build phase: nothing can be built there until it thaws — fires first whenever it is ready.",
+  "tower.lullabyWhat": "Its shot lulls the {n} enemy guns nearest the tile it hits, within {r} blocks: a cannon falls asleep for {s} seconds at once, a special tower after {t} lullabies; an Architect as a cannon; the Allerdickste Bertha never sleeps — fires first whenever it is ready.",
+  "tower.lullabyAnyWhat": "Its shot lulls the {n} enemy guns nearest the tile it hits: a cannon falls asleep for {s} seconds at once, a special tower after {t} lullabies; an Architect as a cannon; the Allerdickste Bertha never sleeps — fires first whenever it is ready.",
   "tower.cost": {
     "one": "{n} cannon",
     "other": "{n} cannons"

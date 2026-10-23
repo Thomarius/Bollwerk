@@ -93,6 +93,23 @@ describe('the tower menu’s preview, played by the rules', () => {
     }
   });
 
+  it('lands the Lullaby Tower’s shot as a cannon’s, and puts the rival’s cannons to sleep', () => {
+    for (const variant of ['lullaby2', 'lullaby3'] as const) {
+      const { show, events } = play(variant, 3500);
+      const first = impacts(events)[0];
+      if (first?.kind !== 'shot_impact') throw new Error('no shot');
+      expect(first.destroyed).toHaveLength(1);
+      // Both of the rival's cannons, a lullaby each, asleep at once.
+      const slept = events.filter((e) => e.kind === 'gun_slept');
+      expect(slept).toHaveLength(2);
+      for (const e of slept) {
+        if (e.kind !== 'gun_slept') continue;
+        expect(e.ms).toBe(3000);
+        expect(show.state.cannons.find((c) => c.id === e.cannonId)?.owner).toBe(1);
+      }
+    }
+  });
+
   it('lands the Allerdickste Bertha’s shell after ten seconds, cost 3’s clearing more', () => {
     const cleared = (variant: TowerVariant): number => {
       const { events } = play(variant, 12_000);

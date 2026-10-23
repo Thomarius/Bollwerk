@@ -15,6 +15,7 @@ export const SPECIAL_KINDS = [
   'biggest',
   'laser',
   'frost',
+  'lullaby',
 ] as const;
 export const SpecialKindSchema = z.enum(SPECIAL_KINDS);
 export type SpecialKind = z.infer<typeof SpecialKindSchema>;
@@ -45,6 +46,8 @@ export const TOWER_VARIANTS = [
   'laser3',
   'frost2',
   'frost3',
+  'lullaby2',
+  'lullaby3',
 ] as const satisfies readonly `${SpecialKind}${TowerCost}`[];
 export const TowerVariantSchema = z.enum(TOWER_VARIANTS);
 export type TowerVariant = z.infer<typeof TowerVariantSchema>;
@@ -159,6 +162,37 @@ const FrostSchema = z.strictObject({
 });
 
 /**
+ * The Lullaby Tower (2026-10-21, the user's, an area of effect): an ordinary shot, and the
+ * `targets` viable enemy guns nearest the tile it hits, within `sleepRadius`, are lulled once
+ * each; a gun lulled as often as it cost falls asleep for `sleepMs`, its reload paused
+ * (`singLullaby`). Its own reload an ordinary shot's flight, times `flightFactor`.
+ */
+const LullabySchema = z.strictObject({
+  ...towerFields,
+  /** How long a gun sleeps, in milliseconds of combat; a lever (the user's). */
+  sleepMs: z.number().int().positive(),
+  /**
+   * How far from the tile hit a gun is reached, in tiles to the nearest tile of its footprint;
+   * null for anywhere on the map. A lever.
+   */
+  sleepRadius: z.number().positive().nullable(),
+  /** How many guns a shot lulls at most, the nearest first; a lever. */
+  targets: z.number().int().positive(),
+  /** Kinds of tower never lulled (the user's: the Allerdickste Bertha). */
+  immune: z.array(SpecialKindSchema),
+  /**
+   * Kinds of tower lulled as a cannon is, asleep after one lullaby (the user's: the Architect,
+   * which fires as a cannon in combat; its repair, after combat, untouched).
+   */
+  asCannons: z.array(SpecialKindSchema),
+  /**
+   * Lullabies a special tower needs to fall asleep, whatever it cost; null for as many as it
+   * cost. A lever: 2 kept (the soaks, 2026-10-22), a cannon always 1.
+   */
+  towerLulls: z.number().int().positive().nullable(),
+});
+
+/**
  * Special towers (docs/SPECIAL_TOWERS.md): a cannon with an ability of its own, bought in
  * the cannon phase for several ordinary ones. Whether they are played at all is `enabled`,
  * which a match's settings write; the rest is each variant's balance.
@@ -198,6 +232,11 @@ export const SpecialsSchema = z.strictObject({
    * it, and then not offered.
    */
   frost: byCost(FrostSchema).optional(),
+  /**
+   * Puts the nearest enemy gun to sleep (2026-10-21). Absent from rulesets written before it, and
+   * then not offered.
+   */
+  lullaby: byCost(LullabySchema).optional(),
 });
 export type Specials = z.infer<typeof SpecialsSchema>;
 export type BerthaVariant = z.infer<typeof BerthaSchema>;
@@ -207,6 +246,7 @@ export type LightningVariant = z.infer<typeof LightningSchema>;
 export type BiggestVariant = z.infer<typeof BiggestSchema>;
 export type LaserVariant = z.infer<typeof LaserSchema>;
 export type FrostVariant = z.infer<typeof FrostSchema>;
+export type LullabyVariant = z.infer<typeof LullabySchema>;
 export type VariantConfig =
   | BerthaVariant
   | ArchitectVariant
@@ -214,7 +254,8 @@ export type VariantConfig =
   | LightningVariant
   | BiggestVariant
   | LaserVariant
-  | FrostVariant;
+  | FrostVariant
+  | LullabyVariant;
 
 /** The variants the ruleset offers, in their order everywhere. */
 export function offeredVariants(specials: Specials): TowerVariant[] {

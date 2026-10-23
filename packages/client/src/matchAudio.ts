@@ -58,6 +58,8 @@ export class MatchAudio {
   private countedAt = -1;
   /** Either Bertha's shots in the air, by id, with the cue of each one's heavier landing. */
   private readonly heavy = new Map<number, SfxCue>();
+  /** The last shot whose lullaby was heard, so several guns asleep to one shot sound once. */
+  private lullabied = -1;
 
   constructor(
     private readonly audio: Cues,
@@ -96,6 +98,14 @@ export class MatchAudio {
         case 'lightning_struck':
           // Once a strike, however many walls it jumps to.
           this.audio.play('lightning_strike');
+          break;
+
+        case 'gun_slept':
+          // The lullaby over the shot's own impact, played on the same tick, when a gun falls
+          // asleep (the user's tower_lullaby.mp3, 2026-10-21) — once a shot, however many sleep.
+          if (this.lullabied === event.shotId) break;
+          this.lullabied = event.shotId;
+          this.audio.play('lullaby');
           break;
 
         case 'tile_frozen':

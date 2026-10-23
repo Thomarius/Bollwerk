@@ -3,7 +3,9 @@ import {
   FREEZE_PENDING,
   FROZEN_TO_END,
   inRepairReach,
+  isAwake,
   isFrozen,
+  sleepThreshold,
   repairRadiusOf,
   ticksFor,
   type CannonKind,
@@ -413,6 +415,9 @@ export class TowerMarks {
   /** The tiles frozen last frame, so a freeze gone since shatters. */
   private frozenTiles = new Set<number>();
   private shatters: FrostBurst[] = [];
+  /** The guns a Lullaby Tower has put to sleep, every frame while any sleeps. */
+  private readonly sleep = new Graphics();
+  private sleepShown = false;
   /** The towers' emblems, drawn again only when one changes. */
   private readonly emblems = new Graphics();
   /** The ghost's emblem, every frame while there is one. */
@@ -427,13 +432,14 @@ export class TowerMarks {
   private repairs: Repair[] = [];
 
   constructor() {
-    this.root.addChild(this.reach, this.ice, this.emblems, this.effects, this.ghost);
+    this.root.addChild(this.reach, this.ice, this.emblems, this.sleep, this.effects, this.ghost);
   }
 
   /** Every tower's emblem: its owner's light colour while it fires, stone grey while inert. */
   draw(state: MatchState, view: ViewTransform, art: ArtConfig, humanPlayer: number): void {
     this.drawReach(state, view, art, humanPlayer);
     this.drawIce(state, view);
+    this.drawSleep(state, view);
     let key = `${viewKey(view)}|${art.players.map((p) => p.light).join(',')}`;
     for (const c of state.cannons) {
       if (c.kind !== 'cannon')
@@ -520,6 +526,78 @@ export class TowerMarks {
         }
       }
       if (cracked > 0) g.stroke({ width: Math.max(1, t / 14), color: ICE_DARK, alpha: 0.75 });
+    }
+  }
+
+  /**
+   * Every gun asleep (the user's Lullaby Tower, 2026-10-21), and every tower lulled towards it: a
+   * gun asleep has its footprint dimmed, and over it a
+   * rising stack of Zs, one for every second of sleep left, the last fading as it wakes — so the
+   * time left is counted out. Dark round white, as the ice is, to read on any ground.
+   */
+  private drawSleep(state: MatchState, view: ViewTransform): void {
+    const asleep = state.cannons.filter((c) => !isAwake(state, c));
+    const lulled = state.cannons.filter((c) => c.lulled !== undefined && isAwake(state, c));
+    if (asleep.length === 0 && lulled.length === 0) {
+      if (this.sleepShown) clearDrawn(this.sleep);
+      this.sleepShown = false;
+      return;
+    }
+    this.sleepShown = true;
+    const g = this.sleep;
+    g.clear();
+    const t = view.tile;
+    const clock = motionReduced() ? 0 : performance.now();
+    // A tower lulled short of its sleep: a pip for every lullaby it needs under its emblem's badge
+    // row, those it has taken filled — so its owner, and its rival, see it is coming.
+    for (const c of lulled) {
+      const lullaby = state.ruleset.specials.lullaby;
+      const threshold = sleepThreshold(c, lullaby?.['3'] ?? lullaby?.['2'] ?? null);
+      const r = t * 0.13;
+      const gap = t * 0.38;
+      const [cx, cy] = [tileX(view, c.x + c.w / 2), tileY(view, c.y) + t * 0.22];
+      for (let k = 0; k < threshold; k++) {
+        const x = cx + (k - (threshold - 1) / 2) * gap;
+        g.circle(x, cy, r);
+        g.fill({ color: k < (c.lulled as number) ? 0xffffff : 0x0a0a20, alpha: 0.95 });
+        g.circle(x, cy, r);
+        g.stroke({ width: Math.max(1.5, t / 12), color: 0x0a0a20, alpha: 0.95 });
+      }
+    }
+    for (const c of asleep) {
+      g.rect(tileX(view, c.x), tileY(view, c.y), c.w * t, c.h * t);
+      g.fill({ color: 0x0a0a20, alpha: 0.35 });
+    }
+    // The Zs' strokes, outlined in a second pass, so every Z reads over every other.
+    const zs: { x: number; y: number; size: number; alpha: number }[] = [];
+    for (const c of asleep) {
+      const leftMs = (((c.asleepUntil as number) - state.tick) * 1000) / state.ruleset.tickRateHz;
+      const count = Math.min(3, Math.max(1, Math.ceil(leftMs / 1000)));
+      // The last of a second fades out with it, so the stack is seen to count down.
+      const fadeLast = Math.min(1, leftMs / 1000 - (count - 1));
+      const [cx, cy] = [tileX(view, c.x + c.w * 0.7), tileY(view, c.y + c.h * 0.35)];
+      for (let k = 0; k < count; k++) {
+        const bob = clock === 0 ? 0 : Math.sin(clock / 400 + k * 1.3 + c.id) * t * 0.06;
+        zs.push({
+          x: cx + k * t * 0.36 + bob,
+          y: cy - k * t * 0.55,
+          size: t * (0.58 - 0.1 * k),
+          alpha: k === count - 1 ? Math.max(0.25, fadeLast) : 1,
+        });
+      }
+    }
+    for (const [width, colour] of [
+      [Math.max(3, t / 5), 0x0a0a20],
+      [Math.max(1.5, t / 11), 0xffffff],
+    ] as const) {
+      for (const z of zs) {
+        const h = z.size;
+        g.moveTo(z.x - h / 2, z.y - h / 2)
+          .lineTo(z.x + h / 2, z.y - h / 2)
+          .lineTo(z.x - h / 2, z.y + h / 2)
+          .lineTo(z.x + h / 2, z.y + h / 2);
+        g.stroke({ width, color: colour, alpha: z.alpha, join: 'round', cap: 'round' });
+      }
     }
   }
 

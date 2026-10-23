@@ -103,6 +103,8 @@ const pct = (n: number, d: number): string => (d === 0 ? '-' : `${((100 * n) / d
 const perMatch: string[] = [];
 /** Shots landed and wall cleared, by group and the kind of gun that fired. */
 const byKind = new Map<string, { shots: number; walls: number }>();
+/** The guns Lullaby Towers put to sleep, by group and the kind of gun slept: `bot L5 bertha3`. */
+const slept = new Map<string, number>();
 
 /** Chebyshev distance from (x, y) to the nearest live opponent's wall, up to 3; 3 means farther. */
 function nearestOpponentWall(state: MatchState, shooter: number, x: number, y: number): number {
@@ -281,6 +283,12 @@ function shotObserver(
         k.shots++;
         k.walls += event.destroyed.length;
         byKind.set(kind, k);
+      } else if (event.kind === 'gun_slept') {
+        const gun = state.cannons.find((c) => c.id === event.cannonId);
+        const kind =
+          gun === undefined || gun.kind === 'cannon' ? 'cannon' : `${gun.kind}${gun.cost}`;
+        const key = `${keyOf[event.owner] as string} ${kind}`;
+        slept.set(key, (slept.get(key) ?? 0) + 1);
       } else if (event.kind === 'lightning_struck' || event.kind === 'laser_fired') {
         // Struck as they fire, so counted by their kind here and nowhere else: their shot lands
         // nothing, so it is neither a hit nor a miss of the tile clicked, nor one never landed.
@@ -467,6 +475,12 @@ if (kinds.some((k) => !k.endsWith(' cannon'))) {
     console.log(
       `${key.padEnd(24)} shots ${String(k.shots).padStart(6)}  walls ${String(k.walls).padStart(6)}  a shot ${(k.walls / (k.shots || 1)).toFixed(2)}`,
     );
+  }
+}
+if (slept.size > 0) {
+  console.log('\nguns put to sleep by Lullaby Towers, by the kind of gun slept');
+  for (const key of [...slept.keys()].sort()) {
+    console.log(`${key.padEnd(24)} ${String(slept.get(key)).padStart(6)}`);
   }
 }
 if (perMatch.length > 0) {

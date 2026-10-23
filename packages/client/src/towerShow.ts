@@ -75,6 +75,8 @@ const GLYPH: Record<TowerVariant, string> = {
   laser3: 'X',
   frost2: 'f',
   frost3: 'F',
+  lullaby2: 'z',
+  lullaby3: 'Z',
 };
 
 /** Before the first shot of a loop, after its last lands, and before the repair. */
@@ -212,6 +214,10 @@ export class TowerShow {
     state.shots = [];
     state.lostWalls = [];
     state.frozen = [];
-    for (const cannon of state.cannons) cannon.shotIds = [];
+    for (const cannon of state.cannons) {
+      cannon.shotIds = [];
+      delete cannon.asleepUntil;
+      delete cannon.lulled;
+    }
   }
 }

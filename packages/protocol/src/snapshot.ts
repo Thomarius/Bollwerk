@@ -83,6 +83,10 @@ const CannonSchema = z.strictObject({
   h: z.number().int().positive(),
   active: z.boolean(),
   shotIds: z.array(z.number().int().nonnegative()),
+  /** Asleep until this tick, a Lullaby Tower's doing; absent while awake. */
+  asleepUntil: z.number().int().optional(),
+  /** Lullabies taken towards its sleep; absent at none. */
+  lulled: z.number().int().positive().optional(),
 });
 
 const ShotSchema = z.strictObject({
@@ -204,7 +208,12 @@ export function applySnapshot(state: MatchState, snapshot: Snapshot): void {
   state.owner = decodeRle(snapshot.owner, size);
   state.territory = decodeRle(snapshot.territory, size);
   state.castles = snapshot.castles.map((c) => ({ ...c }));
-  state.cannons = snapshot.cannons.map((c) => ({ ...c }));
+  // A gun awake carries no `asleepUntil` at all, as the match makes it.
+  state.cannons = snapshot.cannons.map(({ asleepUntil, lulled, ...c }) => ({
+    ...c,
+    ...(asleepUntil === undefined ? {} : { asleepUntil }),
+    ...(lulled === undefined ? {} : { lulled }),
+  }));
   state.shots = snapshot.shots.map((s) => ({ ...s }));
   state.lostWalls = [...snapshot.lostWalls];
   state.frozen = (snapshot.frozen ?? []).map((f) => ({ ...f }));

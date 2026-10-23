@@ -3,6 +3,7 @@ import type { CraterPattern } from '@bollwerk/config';
 import { distanceFixed, distanceSquared } from './math.js';
 import { playerOf, type Rejection } from './placement.js';
 import { freezeTile } from './frost.js';
+import { isAwake, singLullaby } from './lullaby.js';
 import { fireLaser, laserCount, traceLaser } from './laser.js';
 import { strikeLightning } from './lightning.js';
 import {
@@ -69,6 +70,8 @@ export function findReadyCannon(state: MatchState, playerId: number, tx: number,
   let bestImpact = false;
   for (const cannon of state.cannons) {
     if (cannon.owner !== playerId || !cannon.active || !isLoaded(cannon)) continue;
+    // Asleep, a Lullaby Tower's doing: it fires nothing yet.
+    if (!isAwake(state, cannon)) continue;
     const impact = isImpactTower(cannon.kind);
     if (bestImpact && !impact) continue;
     const d = distanceSquared(cannonCentreX(cannon), cannonCentreY(cannon), tx, ty);
@@ -276,6 +279,8 @@ export function resolveImpacts(state: MatchState): void {
     });
     // A Frost Cannon's lands as any shot, and freezes the tile it hit for the next build phase.
     if (shot.kind === 'frost') freezeTile(state, shot);
+    // A Lullaby Tower's, and the enemy gun nearest it falls asleep.
+    if (shot.kind === 'lullaby') singLullaby(state, shot);
   }
 
   state.shots = remaining;

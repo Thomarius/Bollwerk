@@ -41,6 +41,7 @@ function row(
     wallsRepaired: 0,
     frozenAtBuild: 0,
     repairFrozen: 0,
+    sleepDealt: 0,
     ...extra,
   };
 }

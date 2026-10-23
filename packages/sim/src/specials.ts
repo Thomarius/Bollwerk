@@ -40,7 +40,8 @@ export function isImpactTower(kind: CannonKind): boolean {
     kind === 'lightning' ||
     kind === 'biggest' ||
     kind === 'laser' ||
-    kind === 'frost'
+    kind === 'frost' ||
+    kind === 'lullaby'
   );
 }
 

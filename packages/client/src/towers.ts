@@ -29,6 +29,7 @@ const NAME_KEY = {
   biggest: 'tower.biggest',
   laser: 'tower.laser',
   frost: 'tower.frost',
+  lullaby: 'tower.lullaby',
 } as const;
 
 /** A tower's name, without its cost. */
@@ -101,6 +102,20 @@ export function towerWhat(variant: TowerVariant, ruleset: Ruleset = defaultRules
         return t('tower.frostShareWhat', { p: Math.round(config.freezeShare * 100) });
       }
       return t(config.throughOvertime ? 'tower.frostWhat' : 'tower.frostClockWhat');
+    case 'lullaby':
+      if (!('sleepMs' in config)) return '';
+      {
+        // A tower's lullabies, told by the dearer of the costs where it has none of its own.
+        const lulls = config.towerLulls ?? 3;
+        return config.sleepRadius === null
+          ? t('tower.lullabyAnyWhat', { n: config.targets, s: config.sleepMs / 1000, t: lulls })
+          : t('tower.lullabyWhat', {
+              n: config.targets,
+              s: config.sleepMs / 1000,
+              r: config.sleepRadius,
+              t: lulls,
+            });
+      }
   }
 }
 

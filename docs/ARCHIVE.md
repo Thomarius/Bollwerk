@@ -9526,3 +9526,48 @@ as the phase ends; and a red cross on every frozen cell under the piece in hand,
 turned invalid without saying why. The user's choice of seven ideas: contrast, full size, the
 glint, cracks and shatter, the cross; a surface pattern, a pie timer and a pulse as the phase
 opens left out.
+
+## 14m. The Lullaby Tower (2026-10-21 to 2026-10-23)
+
+The user's design, discussed before building (SPECIAL_TOWERS.md §2.8): an eighth tower, `lullaby`,
+an impact tower whose shot hits as a cannon's and sings enemy guns to sleep — a gun asleep fires
+nothing, its reload paused, so a sleep costs it exactly that long whenever it falls (the user asked
+whether the reload could pause; it can: the sleep runs from when the gun could next have fired).
+Every gun wakes as combat ends; nothing carries over. Themes weighed: a net, a cork, a lullaby, an
+EMP; the lullaby kept, its Zs counting the seconds down.
+
+**The first design**, the user's: one gun a shot, the enemy's nearest within 1.5 tiles of the tile
+hit, for 2 or 3 seconds. Balanced at Level 5 it was weak — 52 / 43 against no tower — and 4 / 6
+seconds barely moved it (42 / 52; 26–35 against the cost-3 impact towers), with the bots aiming
+for towers in reach. Counted by kind, its sleep fell on a Bertha in 7% of its shots: bots stand
+their towers off the walls, and the nearest gun to a wall is a cannon. A cannon in reach worth 2
+to the bots' aim had them breach less and win less; set back to 1.
+
+**Reworked by the user** as an area of effect: the `targets` nearest viable guns within
+`sleepRadius` — 2 at cost 2, 3 at cost 3 — each lulled once, a cannon asleep at once, a special
+tower once lulled as often as its threshold; the Allerdickste Bertha and the Architect immune
+(`immune`), a gun asleep not viable. At any range it worked: 72 / 80 against none, 55 / 44 against
+the Rapid Cannon. Then a matrix of the user's, overnight: range 5 and 8, each with towers asleep
+after 2 lullabies, towers lulled first, lullabies kept between combats, and the last two together
+(table in SPECIAL_TOWERS.md §5 LB). No change touches a match without towers; range 5 lost to the
+Rapid Cannon whatever was changed (30–41 at cost 3). Kept, the user's: **range 8, towers asleep
+after 2 lullabies** — 57 / 71 against none, 51 head to head, 53 / 49 against the Rapid Cannon;
+towers first (mixed) and lullabies kept (no gain anywhere) dropped with their levers. Against the
+impact towers: Lullaby 2 48 / 52 / 52 against Bertha, Laser and Lightning at cost 2, on par as
+meant; Lullaby 3 43 / 51 / 43 against them at cost 3, 48 against the immune Allerdickste.
+
+In the sim (`lullaby.ts`): `lullTargets`, pure, nearest first, ties by id; a gun's `asleepUntil`
+and `lulled`, hashed only while any gun has one; the snapshot carries both; `findReadyCannon`
+passes a sleeping gun over. Bots aim at the weakest wall, two more for a block whose lullaby
+reaches as many viable guns as it may, and treat their own sleeping guns as not ready. Protocol 31. In the client: a crescent moon; a sleeping gun dimmed under Zs counting its seconds; a tower
+lulled short of sleep a row of pips; the reload rings ignoring a sleeping gun; the user's
+`tower_lullaby.mp3` over the cannon's impact once a shot that puts a gun to sleep; the menu's card,
+preview, How to play and texts. `shotStats.ts` counts guns slept by kind; the statistics' new
+`sleepDealt`. An overnight runner left in the background was stopped, its loop carried on, and two
+ran the matrix at once: the chunks are deterministic, so only the time was doubled; a runner now
+starts as a process of its own.
+
+**The Architect lulled as a cannon** (2026-10-23, the user's): it fires as a cannon in combat, so it
+is no longer immune but sleeps after one lullaby as a cannon does (`asCannons`); its repair, after
+combat, is untouched, every sleep over by then. Not soaked again: the user's judgement, the
+balance otherwise unchanged. The Allerdickste Bertha alone stays immune.

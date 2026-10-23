@@ -116,6 +116,13 @@ export interface Cannon {
    * (`isLoaded`): one for every gun but a Rapid Cannon, which has one per cannon it cost.
    */
   shotIds: number[];
+  /**
+   * Asleep, put to sleep by a Lullaby Tower, until this tick: it fires nothing before. Absent
+   * while awake, and every gun's taken away as the combat phase ends.
+   */
+  asleepUntil?: number;
+  /** Lullabies it has taken towards its sleep, short of its threshold; absent at none. */
+  lulled?: number;
 }
 
 /**
@@ -235,6 +242,26 @@ export type MatchEvent =
       towers: number;
       /** Frozen tiles the Architects thawed, every one of them in reach. */
       thawed: number[];
+    }
+  | {
+      /** A Lullaby Tower's shot has lulled a gun: its lullabies now, of the threshold it sleeps at. */
+      kind: 'gun_lulled';
+      tick: number;
+      shotId: number;
+      owner: number;
+      cannonId: number;
+      lulled: number;
+      threshold: number;
+    }
+  | {
+      /** A Lullaby Tower's shot has put a gun to sleep, until a tick, for this long. */
+      kind: 'gun_slept';
+      tick: number;
+      shotId: number;
+      owner: number;
+      cannonId: number;
+      until: number;
+      ms: number;
     }
   | {
       /** A Frost Cannon's shot has landed: the tile it froze for the next build phase. */

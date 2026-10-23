@@ -14,9 +14,9 @@ import { SnapshotSchema } from './snapshot.js';
  * Lightning Tower, a variant and a ruleset key a v0.9.7 page does not know (2026-10-17). 28:
  * the Allerdickste Bertha, the same again for v0.9.9 (2026-10-17). 29: the Laser Tower, the
  * same for v0.9.11 (2026-10-21). 30: the Frost Cannon, its variants, its ruleset key and the
- * snapshot's freezes (2026-10-21).
+ * snapshot's freezes (2026-10-21). 31: the Lullaby Tower, the same and a gun's sleep (2026-10-21).
  */
-export const PROTOCOL_VERSION = 30;
+export const PROTOCOL_VERSION = 31;
 
 /**
  * A player's intent. The server overwrites `player` with the sender's own seat before

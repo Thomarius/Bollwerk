@@ -73,6 +73,28 @@
     "frost": {
       "2": { "footprint": [2, 2], "flightFactor": 1, "freezeShare": 0.6, "throughOvertime": false },
       "3": { "footprint": [2, 2], "flightFactor": 1, "freezeShare": 1, "throughOvertime": false }
+    },
+    "lullaby": {
+      "2": {
+        "footprint": [2, 2],
+        "flightFactor": 1,
+        "sleepMs": 3000,
+        "sleepRadius": 8,
+        "targets": 2,
+        "immune": ["biggest"],
+        "asCannons": ["architect"],
+        "towerLulls": 2
+      },
+      "3": {
+        "footprint": [2, 2],
+        "flightFactor": 1,
+        "sleepMs": 3000,
+        "sleepRadius": 8,
+        "targets": 3,
+        "immune": ["biggest"],
+        "asCannons": ["architect"],
+        "towerLulls": 2
+      }
     }
   },
   "build": {

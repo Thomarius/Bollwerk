@@ -19,6 +19,7 @@ import {
 import { streamFor } from './rng.js';
 import { fire, resolveImpacts } from './shots.js';
 import { startFreezes, thawExpired } from './frost.js';
+import { wakeAll } from './lullaby.js';
 import { repairWalls } from './specials.js';
 import { denseTeams, tableTeamSize, teamScore } from './teams.js';
 import { generateTerrain } from './terrain.js';
@@ -660,7 +661,11 @@ function advancePhase(state: MatchState): void {
       return;
     }
     case 'combat': {
-      if (state.tick >= state.phaseEndTick) enterIntermission(state, 'build');
+      if (state.tick >= state.phaseEndTick) {
+        // Every gun a Lullaby Tower put to sleep wakes with the barrage's end: nothing carries over.
+        wakeAll(state);
+        enterIntermission(state, 'build');
+      }
       return;
     }
     case 'build': {
@@ -854,6 +859,7 @@ const CANNON_KIND_CODES: readonly string[] = [
   'biggest',
   'laser',
   'frost',
+  'lullaby',
 ];
 /** The same for loadouts; a variant added goes at the end. */
 const VARIANT_CODES: readonly TowerVariant[] = [
@@ -871,6 +877,8 @@ const VARIANT_CODES: readonly TowerVariant[] = [
   'laser3',
   'frost2',
   'frost3',
+  'lullaby2',
+  'lullaby3',
 ];
 
 export function hashMatchState(state: MatchState, version = HASH_VERSION): string {
@@ -971,6 +979,15 @@ export function hashMatchState(state: MatchState, version = HASH_VERSION): strin
         .i32(Math.round(f.share * 1e6))
         .bool(f.throughOvertime);
     }
+  }
+  // The guns asleep or lulled, only while any is: a match without them hashes as it always did.
+  const lulled = state.cannons.filter((c) => c.asleepUntil !== undefined || c.lulled !== undefined);
+  if (lulled.length > 0) {
+    h.u32(lulled.length);
+    for (const c of lulled)
+      h.i32(c.id)
+        .i32(c.asleepUntil ?? -1)
+        .i32(c.lulled ?? 0);
   }
   return h.hex;
 }

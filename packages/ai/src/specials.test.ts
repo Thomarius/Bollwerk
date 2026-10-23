@@ -3,6 +3,7 @@ import {
   Rng,
   applyEnclosure,
   craterOffsets,
+  lullTargets,
   stateFromAscii,
   withSpecials,
   type MatchState,
@@ -127,5 +128,46 @@ describe('a bot firing Big Bertha', () => {
     // The thin east side, not the doubled west, and a whole cross of it: three blocks.
     expect(action.x).toBeGreaterThan(18);
     expect(walls).toBe(3);
+  });
+});
+
+describe('a bot firing a Lullaby Tower', () => {
+  // Its Lullaby Tower (cost 2) ready; in the rival's ring two cannons by the east wall, one above
+  // the other.
+  const ART = `
+      .............................
+      .##########......##########..
+      .#,,,,,,,,#......#,,,,,**,#..
+      .#,@@,,zz,#......#,,@@,**,#..
+      .#,@@,,zz,#......#,,@@,,,,#..
+      .#,,,,,,,,#......#,,,,,**,#..
+      .#,,,,,,,,#......#,,,,,**,#..
+      .##########......##########..
+      .............................
+    `;
+
+  it('aims at the rival’s wall where its lullaby reaches anywhere', () => {
+    const state = board(ART);
+    const action = bot().think(state, new Rng(1));
+    if (action?.kind !== 'fire') throw new Error('no shot');
+    const i = action.y * state.width + action.x;
+    expect(state.structure[i]).toBe(1);
+    expect(state.owner[i]).toBe(2);
+  });
+
+  it('prefers a block reaching as many guns as it lulls, where it has a reach', () => {
+    const state = board(ART);
+    const variant = state.ruleset.specials.lullaby!['2']!;
+    state.ruleset = {
+      ...state.ruleset,
+      specials: {
+        ...state.ruleset.specials,
+        lullaby: { ...state.ruleset.specials.lullaby!, '2': { ...variant, sleepRadius: 2.5 } },
+      },
+    };
+    const action = bot().think(state, new Rng(1));
+    if (action?.kind !== 'fire') throw new Error('no shot');
+    const reach = lullTargets(state, 0, action.x, action.y, { ...variant, sleepRadius: 2.5 });
+    expect(reach).toHaveLength(2);
   });
 });

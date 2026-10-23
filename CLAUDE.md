@@ -176,6 +176,13 @@ Full detail in PLAN.md §1. The parts that surprise people:
 **Done** (2026-10-21; the latest release **v0.9.11**, 2026-10-18, protocol 28, recording format 4,
 which a test session needs the server rebuilt and every page reloaded for):
 
+- **The Lullaby Tower** (ARCHIVE 14m, 2026-10-23, the user's design, reworked; protocol 31, not
+  yet released): an eighth special tower, a cannon's shot that lulls the 2 (cost 2) or 3 (cost 3)
+  enemy guns nearest the tile hit within 8 tiles — a cannon asleep at once, a special tower after 2
+  lullabies, the Allerdickste Bertha immune, an Architect lulled as a cannon — asleep for 3 seconds, its reload
+  paused, every gun awake as combat ends (`lullaby.ts`, `asleepUntil`, `lulled`). Balanced at
+  Level 5: on par with the cost-2 impact towers (48–52%), 43–51% against the cost-3 ones, 53 / 49%
+  against the Rapid Cannon. To be played by the user.
 - **The Frost Cannon** (ARCHIVE 14l, 2026-10-21, the user's design, risky on purpose; protocol
   30, not yet released): a seventh special tower, a cannon's shot that freezes the tile it hits,
   wall or ground, against building — for 60% of the next build phase at cost 2, the whole phase
@@ -362,7 +369,8 @@ which a test session needs the server rebuilt and every page reloaded for):
   once the user has the tracks: some styles' own track, played with a chance (`styleTrackChance`,
   50%) at every start of a look and paused per style for `styleTrackPauseRounds` (3) after —
   both in the audio manifest — on the framework Package A built (ARCHIVE 14b).
-- **Special towers** (item 2): the Frost Cannon played by the user (ARCHIVE 14l), and the user's
+- **Special towers** (item 2): the Frost Cannon and the Lullaby Tower played by the user (ARCHIVE
+  14l, 14m), and the user's
   decision on a test without the cap of three; later towers come by the user's own designs. Their balance is closed and they are **off by default for
   good** — a wacky addition, not the base game (ARCHIVE 13zw); a new tower is balanced at Level 5
   only, its variants against each other and against no tower (the user's).

@@ -57,7 +57,8 @@ keeps only what is open.
   **Lightning Tower** (offence by chain strikes, §2.4), came on 2026-10-17, the user's design.
 - **The sixth, the Laser Tower** (a beam through the first walls on its line, §2.6), came on
   2026-10-21, the user's design; the seventh, the **Frost Cannon** (a shot that freezes the tile it
-  hits against building, §2.7), the same day — a risky one, the user's on purpose.
+  hits against building, §2.7), the same day — a risky one, the user's on purpose; and the
+  eighth, the **Lullaby Tower** (a shot that lulls the enemy guns nearest it to sleep, §2.8).
 - **Every tower comes at two costs, 2 and 3 cannons** (the user's, 2026-10-16): a player chooses
   the tower and the cost that suits them — a variant (§2.3). The cost-3 variant is the stronger
   tower, since it is bought only in rounds its owner holds a second castle. Never a cost of 1. A
@@ -319,6 +320,46 @@ first.
 - **The risk measured**: the statistics' `frozenAtBuild` (tiles of the island frozen as the phase
   opened) and `repairFrozen` (of the cells the tightest seal still lacked on the last tick, those
   frozen) — rounds a freeze may have cost.
+
+### 2.8 The Lullaby Tower
+
+The user's design (2026-10-21, reworked 2026-10-22): a tower that sings enemy guns to sleep for a
+while — a direct and passing answer to guns, above all to special towers. An impact tower:
+whenever it is ready it fires first (the user's).
+
+- **It shoots as a cannon does** — a cannon's flight and reload, the wall it hits cleared, one tile,
+  scoring as one — and sings besides (the user's): **the `targets` viable enemy guns nearest the
+  tile hit**, within `sleepRadius` of it (to the nearest tile of a gun's footprint), are **lulled
+  once each** — 2 guns at cost 2, 3 at cost 3 (`lullTargets`). Viable: active, awake, and of a kind
+  not `immune` — the Allerdickste Bertha never sleeps (the user's); the Architect, which fires as a
+  cannon in combat, is lulled as one (`asCannons`, the user's, 2026-10-23), its repair after combat
+  untouched.
+- **A gun lulled as often as its threshold falls asleep**: a cannon at once, a special tower after
+  `towerLulls` lullabies (2) — so a hit among cannons silences several, and a tower takes two
+  (the user's design, the threshold by cost at first, `null`). Asleep, a gun fires nothing for
+  `sleepMs`, **its reload paused**: it may fire again `sleepMs` after the moment it would have —
+  now if it was loaded, else as its first shot in the air lands — so a sleep costs its gun that
+  long whenever it falls. Its shot in the air lands; an Architect still rebuilds; a gun asleep still
+  scores. A Rapid Cannon sleeps as one gun.
+- **Only in combat, nothing carried over**: a shot landing in the intermission lulls nothing, and
+  every gun wakes, its lullabies forgotten, as the combat phase ends.
+- **The levers by cost**: `targets` (2, 3), `sleepRadius` (8; null for anywhere), `sleepMs` (3
+  seconds both), `towerLulls` (2), `immune`. Set by the soaks (§5 LB).
+- **The first design**, one gun a shot — the nearest within 1.5 tiles, asleep for 2 or 3 seconds —
+  was too weak: bots stand their towers off the walls, so its sleep fell on a tower in 7% of shots;
+  4 and 6 seconds changed little (ARCHIVE 14m).
+- **Determinism**: a gun asleep carries `asleepUntil`, a gun lulled short of its sleep `lulled`;
+  both hashed only while any gun has one, so a match without them hashes as before; carried in the
+  snapshot.
+- **Seen and heard**: a crescent moon for its emblem; a gun asleep dimmed, a rising stack of Zs over
+  it, one for each second left, the last fading as it wakes (the user's); a tower lulled short of
+  its sleep a row of pips, those lullabies taken filled; dark round white to read on any ground.
+  The reload rings pass a sleeping gun over. The user's `tower_lullaby.mp3` over the cannon's
+  impact, once a shot that puts any gun to sleep (`lullaby`).
+- **Bots** always aim at a block of the opponent's wall, the weakest wall's counting three and any
+  other one, and two more where the lullaby reaches as many viable guns as it may (the user's);
+  a bot's own gun asleep is not ready to it. The statistics' `sleepDealt`: seconds of sleep a
+  player's shots put on rival guns a round; `shotStats.ts` counts the guns slept by kind.
 
 ---
 
@@ -623,6 +664,39 @@ no tower, 12.5% against Frost 2 (never a frozen tile left on the last tick), 13.
 3, 12 of whose 32 failed rounds had a frozen tile in the seal still missing — some 5% of rounds.
 About 5.5 tiles of an island frozen a build phase; the bots building round them. A freeze rarely
 forces a lost life: the whole phase's wins came from its victims holding less ground.
+
+### LB — The Lullaby Tower's balance
+
+Built 2026-10-21, reworked 2026-10-22 (§2.8). Measured at Level 5, 96 matches a pairing (±5).
+Against no tower only for comparison (the user's: not a game anyone plays with towers on); the
+goal against the Rapid Cannon "on par", and against impact towers ahead of the cost-3 ones and on
+par with the cost-2 ones (the user's).
+
+The first design, one gun the nearest within 1.5 tiles: 2 / 3 seconds gave 52 / 43 against none;
+4 / 6 seconds 42 / 52, and against the cost-3 impact towers 26–35 — its sleep fell on a tower in
+7% of shots. The area of effect (2 / 3 guns lulled, 3 seconds), cost 2 / cost 3 against none,
+3 against 2, then 2 against Rapid 2 and 3 against Rapid 3:
+
+| range, change              | against none | head to head | against Rapid |
+| -------------------------- | ------------ | ------------ | ------------- |
+| anywhere                   | 72 / 80      | 57           | 55 / 44       |
+| 5                          | 56 / 58      | 50           | 45 / 30       |
+| 5, towers need 2 lulls     | 56 / 58      | 47           | 45 / 38       |
+| 5, towers first            | 56 / 58      | 53           | 49 / 40       |
+| 5, lulls kept              | 56 / 58      | 54           | 47 / 41       |
+| 5, towers first and kept   | 56 / 58      | 46           | 52 / 35       |
+| 8                          | 57 / 71      | 52           | 53 / 43       |
+| **8, towers need 2 lulls** | **57 / 71**  | **51**       | **53 / 49**   |
+| 8, towers first            | 57 / 71      | 65           | 56 / 44       |
+| 8, lulls kept              | 57 / 71      | 57           | 46 / 36       |
+| 8, towers first and kept   | 57 / 71      | 51           | 63 / 41       |
+
+Against no tower the radius alone decides — no change touches a match without towers. Kept: range
+8, towers asleep after 2 lullabies (the user's). Towers first was mixed and lulls kept no gain
+anywhere; both dropped. Then against the impact towers: Lullaby 2 against Bertha 2, Laser 2 and
+Lightning 2 48 / 52 / 52 — on par, as meant; Lullaby 3 against Bertha 3, Laser 3 and Lightning 3
+43 / 51 / 43, and the Allerdickste Bertha, immune, 48 — on par or a little behind, short of the
+lead meant against cost 3.
 
 ### After ST8 — two decisions
 

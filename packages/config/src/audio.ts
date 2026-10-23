@@ -39,6 +39,8 @@ export const SFX_CUES = [
   'laser_fire',
   /** A Frost Cannon's shot freezing the tile it hit, over the ordinary impact. */
   'frost_impact',
+  /** A Lullaby Tower's shot putting a gun to sleep, over the ordinary impact. */
+  'lullaby',
   /** The player's own Architect rebuilding their walls as a barrage ends, twice a tower. */
   'walls_repaired',
 ] as const;
