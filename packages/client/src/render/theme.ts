@@ -140,6 +140,8 @@ export interface NextTower {
   /** The tower's centre, as a shot's `fromX` and `fromY`. */
   fromX: number;
   fromY: number;
+  /** Its cost, for its variant's levers: the Lullaby Tower's reach. */
+  cost: number;
 }
 
 export interface Ghost {
@@ -359,7 +361,12 @@ function drawImpactReadiness(
   // Both Berthas and the Lightning Tower bring their own, drawn over both looks (`TowerMarks`):
   // their flames and crater, its crackle.
   const own = ghost.nextTower?.kind;
-  if (impact.ready && (own === 'bertha' || own === 'biggest' || own === 'lightning')) return;
+  if (
+    impact.ready &&
+    (own === 'bertha' || own === 'biggest' || own === 'lightning' || own === 'lullaby')
+  ) {
+    return;
+  }
   if (impact.ready) {
     const r = view.tile * 1.1;
     g.circle(cx, cy, r);

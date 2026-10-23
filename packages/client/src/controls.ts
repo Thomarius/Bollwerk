@@ -168,6 +168,7 @@ export function nextTowerShot(
     crater: craterTilesOf(state.ruleset, next.kind, next.cost),
     fromX: next.x + (next.w - 1) / 2,
     fromY: next.y + (next.h - 1) / 2,
+    cost: next.cost,
   };
 }
 

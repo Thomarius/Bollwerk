@@ -1617,9 +1617,10 @@ every resolution against an independent search, not only on unit pictures.
 
 ## 11. Open work
 
-**Where to start (2026-10-21).** The latest release is **v0.9.11** (2026-10-18, protocol 28; the
-tree is at 29 since the Laser Tower). Next: item 2's Frost Cannon and Lullaby Tower played by the user, and item 3's
-Package B, the styles' own music, once the user has the tracks.
+**Where to start (2026-10-23).** The latest release is **v0.9.11** (2026-10-18, protocol 28; the
+tree is at 31 since the Laser Tower, the Frost Cannon and the Lullaby Tower, all three played by
+the user). Next: item 3's Package B, the styles' own music, once the user has the tracks, and item
+2's next tower, by the user's design.
 Up to **v0.8.3**: the game and online play, bots as skill levels and personalities, the styles
 with their corner pieces, random looks every round, English and German, the desktop app, UPnP,
 the balance soak and the rendering work (ARCHIVE 12h–12v), the refactoring (12w) and stronger
@@ -1664,9 +1665,8 @@ fit (ARCHIVE 12z), its remaining steps dropped (the user's decision, 2026-10-14;
    tower was the user's Laser Tower (2026-10-21, ARCHIVE 14k), built, balanced at Level 5 and
    played by the user; then the Frost Cannon (ARCHIVE 14l), a risky one on purpose, built and
    balanced at Level 5; and the Lullaby Tower (ARCHIVE 14m), reworked as an area of effect and
-   balanced at Level 5. Open: the Frost Cannon's and the Lullaby Tower's play-tests by the user,
-   and the decision on a test without the cap of three; later towers come by the user's own
-   designs.
+   balanced at Level 5 — both played by the user, working (2026-10-23, ARCHIVE 14n). Open: the
+   decision on a test without the cap of three; later towers come by the user's own designs.
    Their own sounds are in (TS, ARCHIVE 13zx). The design
    and these packages are in
    [`SPECIAL_TOWERS.md`](./SPECIAL_TOWERS.md).

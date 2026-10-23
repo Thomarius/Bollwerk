@@ -182,14 +182,14 @@ which a test session needs the server rebuilt and every page reloaded for):
   lullabies, the Allerdickste Bertha immune, an Architect lulled as a cannon — asleep for 3 seconds, its reload
   paused, every gun awake as combat ends (`lullaby.ts`, `asleepUntil`, `lulled`). Balanced at
   Level 5: on par with the cost-2 impact towers (48–52%), 43–51% against the cost-3 ones, 53 / 49%
-  against the Rapid Cannon. To be played by the user.
+  against the Rapid Cannon. Played by the user (14n); its reach and Zs on the cursor after.
 - **The Frost Cannon** (ARCHIVE 14l, 2026-10-21, the user's design, risky on purpose; protocol
   30, not yet released): a seventh special tower, a cannon's shot that freezes the tile it hits,
   wall or ground, against building — for 60% of the next build phase at cost 2, the whole phase
   until the clock runs out at cost 3 — an Architect in reach thawing it, a continue wiping it
   (`frost.ts`, `state.frozen`, hashed only while there are any). Bots build round frozen tiles.
   Balanced at Level 5 to 59 / 70% against no tower, 56% head to head; a freeze cost the rival a
-  round in some 5% of rounds at the whole phase's first setting. To be played by the user.
+  round in some 5% of rounds at the whole phase's first setting. Played by the user (14n).
 - **The Laser Tower** (ARCHIVE 14k, 2026-10-21, the user's design; protocol 29, not yet
   released): a sixth special tower, a beam on the instant from the tower through the tile clicked
   to the map's edge, clearing the first 2 walls on its line (2.5 at cost 3, the fraction a chance)
@@ -369,9 +369,7 @@ which a test session needs the server rebuilt and every page reloaded for):
   once the user has the tracks: some styles' own track, played with a chance (`styleTrackChance`,
   50%) at every start of a look and paused per style for `styleTrackPauseRounds` (3) after —
   both in the audio manifest — on the framework Package A built (ARCHIVE 14b).
-- **Special towers** (item 2): the Frost Cannon and the Lullaby Tower played by the user (ARCHIVE
-  14l, 14m), and the user's
-  decision on a test without the cap of three; later towers come by the user's own designs. Their balance is closed and they are **off by default for
+- **Special towers** (item 2): the user's decision on a test without the cap of three; later towers come by the user's own designs. Their balance is closed and they are **off by default for
   good** — a wacky addition, not the base game (ARCHIVE 13zw); a new tower is balanced at Level 5
   only, its variants against each other and against no tower (the user's).
 

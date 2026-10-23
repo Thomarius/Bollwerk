@@ -13,7 +13,8 @@ screenshot scenes (13zr). ST4 is closed, its remaining soaks dropped, the towers
 for good and the bots' buying rule kept (the user's, ARCHIVE 13zw). Open: two decisions left after
 ST8 — the next tower and a test without the cap of three (§5); the towers' own sounds, TS, are
 in (ARCHIVE 13zx). The sixth tower, the Laser Tower (§2.6, 2026-10-21), is built, balanced and
-played by the user; the seventh, the Frost Cannon (§2.7), built and balanced, its play-test open. Like PLAN.md it says what is configurable and why and leaves the
+played by the user; the seventh and eighth, the Frost Cannon (§2.7) and the Lullaby Tower (§2.8),
+built, balanced and played by the user (2026-10-23). Like PLAN.md it says what is configurable and why and leaves the
 values to `config/*.json`; when a package is done its summary moves to ARCHIVE.md and this file
 keeps only what is open.
 
@@ -354,8 +355,10 @@ whenever it is ready it fires first (the user's).
 - **Seen and heard**: a crescent moon for its emblem; a gun asleep dimmed, a rising stack of Zs over
   it, one for each second left, the last fading as it wakes (the user's); a tower lulled short of
   its sleep a row of pips, those lullabies taken filled; dark round white to read on any ground.
-  The reload rings pass a sleeping gun over. The user's `tower_lullaby.mp3` over the cannon's
-  impact, once a shot that puts any gun to sleep (`lullaby`).
+  The reload rings pass a sleeping gun over. While it is ready, under the cursor its reach a soft
+  lavender circle and Zs circling the cursor (the user's, after their play-test). The user's
+  `tower_lullaby.mp3` over the cannon's impact, once a shot that puts any gun to sleep
+  (`lullaby`).
 - **Bots** always aim at a block of the opponent's wall, the weakest wall's counting three and any
   other one, and two more where the lullaby reaches as many viable guns as it may (the user's);
   a bot's own gun asleep is not ready to it. The statistics' `sleepDealt`: seconds of sleep a

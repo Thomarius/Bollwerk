@@ -213,6 +213,36 @@ function iceLeft(state: MatchState, f: Freeze): number {
   return Math.min(1, Math.max(0, (f.thawTick - state.tick) / span));
 }
 
+/** The Lullaby Tower's own colour, for its reach under the cursor: a soft lavender. */
+const LULLABY = 0xc9b8ff;
+/** The Zs circling the cursor while a Lullaby Tower is ready, and one turn's length. */
+const LULLABY_ZS = 4;
+const LULLABY_TURN_MS = 2600;
+
+/**
+ * Zs, each a stroke dark round white so it reads on any ground: the sleeping guns' and the
+ * cursor's alike.
+ */
+function drawZs(
+  g: Graphics,
+  zs: readonly { x: number; y: number; size: number; alpha: number }[],
+  tile: number,
+): void {
+  for (const [width, colour] of [
+    [Math.max(3, tile / 5), 0x0a0a20],
+    [Math.max(1.5, tile / 11), 0xffffff],
+  ] as const) {
+    for (const z of zs) {
+      const h = z.size;
+      g.moveTo(z.x - h / 2, z.y - h / 2)
+        .lineTo(z.x + h / 2, z.y - h / 2)
+        .lineTo(z.x - h / 2, z.y + h / 2)
+        .lineTo(z.x + h / 2, z.y + h / 2);
+      g.stroke({ width, color: colour, alpha: z.alpha, join: 'round', cap: 'round' });
+    }
+  }
+}
+
 /**
  * Where a line from (fromX, fromY) through (toX, toY) leaves a board this big, in tiles as a
  * shot's coordinates are (a tile's centre its index, its edges half a tile either side).
@@ -586,19 +616,7 @@ export class TowerMarks {
         });
       }
     }
-    for (const [width, colour] of [
-      [Math.max(3, t / 5), 0x0a0a20],
-      [Math.max(1.5, t / 11), 0xffffff],
-    ] as const) {
-      for (const z of zs) {
-        const h = z.size;
-        g.moveTo(z.x - h / 2, z.y - h / 2)
-          .lineTo(z.x + h / 2, z.y - h / 2)
-          .lineTo(z.x - h / 2, z.y + h / 2)
-          .lineTo(z.x + h / 2, z.y + h / 2);
-        g.stroke({ width, color: colour, alpha: z.alpha, join: 'round', cap: 'round' });
-      }
-    }
+    drawZs(g, zs, t);
   }
 
   /**
@@ -666,6 +684,7 @@ export class TowerMarks {
       );
     }
     this.drawLaserLine(state, view, ghost, playerColour(art, humanPlayer, 'light'));
+    this.drawLullaby(state, view, ghost);
     this.drawFrozenUnderPiece(state, view, ghost);
     const variant = ghost.tower;
     if (
@@ -718,6 +737,50 @@ export class TowerMarks {
       view.tile * (next.kind === 'biggest' ? craterReach(next.crater) + 0.6 : 1.1),
       performance.now(),
     );
+  }
+
+  /**
+   * A ready Lullaby Tower under the cursor (the user's, 2026-10-23): its reach outlined round the
+   * tile aimed at, a soft circle where a gun's nearest tile is still within `sleepRadius` — none
+   * for one that reaches anywhere — and Zs circling the cursor, as the guns it puts to sleep
+   * wear them.
+   */
+  private drawLullaby(state: MatchState, view: ViewTransform, ghost: Ghost): void {
+    const next = ghost.nextTower;
+    if (!ghost.aiming || ghost.tile === null || next?.kind !== 'lullaby') return;
+    if (ghost.impact?.ready !== true) return;
+    const t = view.tile;
+    const [cx, cy] = [tileX(view, ghost.tile.x + 0.5), tileY(view, ghost.tile.y + 0.5)];
+    const variant = state.ruleset.specials.lullaby?.[next.cost as 2 | 3];
+    const radius = variant?.sleepRadius ?? null;
+    if (radius !== null) {
+      // To a tile's centre within the radius, and half a tile on to that tile's edge.
+      const r = (radius + 0.5) * t;
+      this.ghost.circle(cx, cy, r);
+      this.ghost.fill({ color: LULLABY, alpha: 0.07 });
+      this.ghost.circle(cx, cy, r);
+      this.ghost.stroke({ width: Math.max(1.5, t / 10), color: 0x0a0a20, alpha: 0.35 });
+      this.ghost.circle(cx, cy, r);
+      this.ghost.stroke({ width: Math.max(1, t / 16), color: LULLABY, alpha: 0.85 });
+    }
+    // The Zs going round the cursor's ring, each rising and falling a little as it goes.
+    const clock = motionReduced() ? 0 : performance.now();
+    const turn = (clock / LULLABY_TURN_MS) * Math.PI * 2;
+    const orbit = t * 1.25;
+    const zs = [];
+    for (let k = 0; k < LULLABY_ZS; k++) {
+      const a = turn + (k / LULLABY_ZS) * Math.PI * 2;
+      const bob = clock === 0 ? 0 : Math.sin(clock / 300 + k * 1.7) * t * 0.06;
+      zs.push({
+        x: cx + Math.cos(a) * orbit,
+        y: cy + Math.sin(a) * orbit + bob,
+        size: t * (0.36 + 0.08 * Math.sin(a + 1)),
+        alpha: 1,
+      });
+    }
+    this.ghost.circle(cx, cy, orbit);
+    this.ghost.stroke({ width: Math.max(2, t * 0.18), color: LULLABY, alpha: 0.25 });
+    drawZs(this.ghost, zs, t);
   }
 
   /**

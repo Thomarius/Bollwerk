@@ -9571,3 +9571,13 @@ starts as a process of its own.
 is no longer immune but sleeps after one lullaby as a cannon does (`asCannons`); its repair, after
 combat, is untouched, every sleep over by then. Not soaked again: the user's judgement, the
 balance otherwise unchanged. The Allerdickste Bertha alone stays immune.
+
+## 14n. The Frost Cannon and the Lullaby Tower played (2026-10-23)
+
+The user played both and found them working. One change from it: the Lullaby Tower's cursor had
+only the ready glow every impact tower shares. Now, while it is ready, its reach is a soft
+lavender circle round the tile aimed at — where a gun's nearest tile is still within
+`sleepRadius`, half a tile out past the tile centres it measures to — and four Zs circle the
+cursor, drawn as the sleeping guns' are, still under reduced motion; the shared glow gives way to
+it, as to the Berthas' flames and the Lightning Tower's crackle. The cursor's tower now carries
+its cost (`NextTower.cost`), for its variant's reach.
