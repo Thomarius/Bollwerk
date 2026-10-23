@@ -124,6 +124,22 @@ export function towerCostText(cost: number): string {
   return t('tower.cost', { n: cost });
 }
 
+/** Where the menus remember whether the last table played special towers. */
+const SPECIALS_KEY = 'bollwerk.specials';
+
+/**
+ * Whether a new table plays special towers: as the host last set one, in the lobby or a
+ * tournament's setup — never set, the rules' default (off, ARCHIVE 13zw).
+ */
+export function preferredSpecials(): boolean {
+  const saved = stored(SPECIALS_KEY);
+  return saved === null ? defaultRuleset.specials.enabled : saved === '1';
+}
+
+export function saveSpecials(on: boolean): void {
+  store(SPECIALS_KEY, on ? '1' : '0');
+}
+
 /** Where the menu remembers the tower last chosen, as it does the name. */
 const TOWER_KEY = 'bollwerk.tower';
 

@@ -1,4 +1,4 @@
-import { defaultRuleset, offeredVariants } from '@bollwerk/config';
+import { defaultRuleset, offeredVariants, variantCost, variantKind } from '@bollwerk/config';
 import { drawnSpecial } from '@bollwerk/ai';
 import type { Seat } from '@bollwerk/protocol';
 import { applyEnclosure, stateFromAscii, withSpecials, type MatchState } from '@bollwerk/sim';
@@ -8,7 +8,7 @@ import { impactReadiness } from './controls.js';
 import { lobbyMarkup, type LobbyView } from './lobby.js';
 import { offeredTowers, towerMenuMarkup, variantForCard } from './towerChoice.js';
 import { language, setLanguage } from './i18n.js';
-import { preferredTower, towerLine, towerName, towerWhat, variantName } from './towers.js';
+import { preferredTower, towerLine, towerName, towerWhat } from './towers.js';
 
 /** Player 0's sealed ring, in a cannon phase, bringing Big Bertha with three cannons. */
 function cannonPhase(): MatchState {
@@ -152,8 +152,15 @@ describe('the lobby with special towers', () => {
     expect(html).toContain('id="my-special"');
     expect(html).toContain('data-variant="architect2"');
     expect(html).not.toContain('<select id="my-special"');
-    expect(html).toContain(variantName('rapid3'));
-    expect(html).toContain(variantName(drawnSpecial(42, 2, defaultRuleset.specials)));
+    // Everyone else's shown as the button is, icon, name and a pip a cannon, not to be pressed.
+    const badges = [...html.matchAll(/<span class="tower-badge"[^>]*>(.*?)<\/span><\/span>/g)];
+    const drawn = drawnSpecial(42, 2, defaultRuleset.specials);
+    expect(badges.map((b) => b[1])).toEqual([
+      expect.stringMatching(new RegExp(`<svg.*${towerName('rapid')}.*>•••$`)),
+      expect.stringMatching(
+        new RegExp(`<svg.*${towerName(variantKind(drawn))}.*>${'•'.repeat(variantCost(drawn))}$`),
+      ),
+    ]);
   });
 
   it('describes each variant by its own numbers', () => {

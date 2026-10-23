@@ -19,7 +19,7 @@ import { teamLetter } from './scores.js';
 import { shapeSvg } from './shapes.js';
 import { escape } from './html.js';
 import { cannonSvg, towerSvg } from './towerIcons.js';
-import { towerName, towerWhat, variantName } from './towers.js';
+import { towerName, towerWhat } from './towers.js';
 
 /**
  * The lobby, as markup — one lobby for online and offline.
@@ -181,8 +181,9 @@ export function specialsSwitch(on: boolean): string {
 
 /**
  * A seat's special tower, where the match plays them: the person's own a button opening the
- * tower menu, showing their choice — each tower at each cost, or none; anyone else's, a person's choice or a bot's draw from the seed and its
- * seat (`drawnSpecial`), as a tag.
+ * tower menu, showing their choice — each tower at each cost, or none; anyone else's, a person's
+ * choice or a bot's draw from the seed and its seat (`drawnSpecial`), shown as the button is —
+ * icon, name and a pip a cannon — but not to be pressed (the user's, 2026-10-23).
  */
 function towerControl(
   view: LobbyView,
@@ -190,27 +191,30 @@ function towerControl(
   special: TowerVariant | null | 'bot',
 ): string {
   if (!view.settings.specials) return '';
-  if (special === 'bot') {
-    const drawn = drawnSpecial(view.seed, index, defaultRuleset.specials);
-    return `<em class="tag tower" title="${escape(towerWhat(drawn))}">${escape(t('lobby.botTower', { tower: variantName(drawn) }))}</em>`;
-  }
-  if (index !== view.humanPlayer) {
-    return special === null
-      ? ''
-      : `<em class="tag tower" title="${escape(towerWhat(special))}">${escape(variantName(special))}</em>`;
+  if (special === 'bot' || index !== view.humanPlayer) {
+    const shown =
+      special === 'bot' ? drawnSpecial(view.seed, index, defaultRuleset.specials) : special;
+    if (shown === null) return '';
+    const badge = `<span class="tower-badge" title="${escape(towerWhat(shown))}">${towerFace(shown)}</span>`;
+    return `<span class="tower-choice">${t('lobby.theirTower')} ${badge}</span>`;
   }
   // A button showing the choice, opening the tower menu (`towerMenu.ts`): the list of every
   // variant had stopped scaling (the user's, 2026-10-16).
-  const icon =
-    special === null ? cannonSvg('currentColor') : towerSvg(variantKind(special), 'currentColor');
-  const pips =
-    special === null ? '' : `<span class="pips">${'•'.repeat(variantCost(special))}</span>`;
   const button =
     `<button type="button" id="my-special" class="tower-button" data-variant="${special ?? ''}" ` +
     `title="${escape(t('towerMenu.open'))}" aria-label="${escape(t('towerMenu.open'))}">` +
-    `${icon}<span>${escape(special === null ? towerName(null) : towerName(variantKind(special)))}</span>${pips}</button>`;
+    `${towerFace(special)}</button>`;
   // What it does is told in the menu, not under the button (the user's, 2026-10-16).
   return `<span class="tower-choice">${t('lobby.yourTower')} ${button}</span>`;
+}
+
+/** A tower as a seat shows it: its icon, its name, and a pip for each cannon it costs. */
+function towerFace(special: TowerVariant | null): string {
+  if (special === null)
+    return `${cannonSvg('currentColor')}<span>${escape(towerName(null))}</span>`;
+  const kind = variantKind(special);
+  const pips = `<span class="pips">${'•'.repeat(variantCost(special))}</span>`;
+  return `${towerSvg(kind, 'currentColor')}<span>${escape(towerName(kind))}</span>${pips}`;
 }
 
 /**

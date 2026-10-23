@@ -451,12 +451,14 @@ Built in ST2, the costs in ST3b.
 Built in ST5 and ST6 together (2026-10-14), so people can play with towers; the costs in ST3b.
 
 - **Lobby** (`lobby.ts`, `lobbyFlow.ts`): the host's switch, **Special towers** On/Off, beside lives
-  and rounds; a guest reads it in the table's statement. While on, a person's own seat has a button
+  and rounds, remembered for the next table, a room created and a tournament's setup alike
+  (`bollwerk.specials`, off until first set; 2026-10-23); a guest reads it in the table's statement. While on, a person's own seat has a button
   showing their choice — its emblem, name and a pip a cannon it costs — remembered for the next
   table (`towers.ts`, `bollwerk.tower`), and never chosen, drawn at random once a visit, not saved
   (as is a choice of none saved before 2026-10-21, or one saved before the costs, a bare kind that
   names no variant), and sent to a room as it opens; anyone
-  else's seat shows their choice, and each bot's seat the variant drawn for it. The same in a
+  else's seat shows their choice, and each bot's seat the variant drawn for it, as the button is
+  drawn but not to be pressed ("Brings", the user's, 2026-10-23; it had been a line of text). The same in a
   tournament's lobby, and a switch in the tournament's setup.
 - **The tower menu** (`towerMenu.ts`, `towerChoice.ts`; the user's, 2026-10-16), opened by that
   button, where one list of every variant had stopped scaling: a card for each tower, by name

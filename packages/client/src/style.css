@@ -1789,14 +1789,15 @@ body.hud-bricks #hud .roster .line .shape path {
 }
 
 /* A seat's special tower on a line of its own under the seat, whoever's it is. */
-.seats .seat .tag.tower,
 .seats .seat .tower-choice {
   flex-basis: 100%;
 }
 
 /* The person's own: a button showing the choice, opening the tower menu (towerMenu.ts). As
-   wide as it says, unlike the menu's buttons. */
-.seats .seat .tower-button {
+   wide as it says, unlike the menu's buttons. Anyone else's looks the same, a badge not to be
+   pressed, its border quieter. */
+.seats .seat .tower-button,
+.seats .seat .tower-badge {
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
@@ -1809,7 +1810,16 @@ body.hud-bricks #hud .roster .line .shape path {
   background: transparent;
   color: var(--ink);
   font: inherit;
+  vertical-align: middle;
+}
+
+.seats .seat .tower-button {
   cursor: pointer;
+}
+
+.seats .seat .tower-badge {
+  border-color: color-mix(in srgb, var(--accent) 45%, transparent);
+  cursor: help;
 }
 
 .seats .seat .tower-button:hover {
@@ -1817,12 +1827,14 @@ body.hud-bricks #hud .roster .line .shape path {
   color: var(--ink);
 }
 
-.seats .seat .tower-button svg {
+.seats .seat .tower-button svg,
+.seats .seat .tower-badge svg {
   width: 1.2rem;
   height: 1.2rem;
 }
 
-.seats .seat .tower-button .pips {
+.seats .seat .tower-button .pips,
+.seats .seat .tower-badge .pips {
   color: var(--accent);
   letter-spacing: 0.1em;
 }

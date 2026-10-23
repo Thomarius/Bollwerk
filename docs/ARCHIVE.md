@@ -9606,3 +9606,13 @@ the frost, the lullaby — helps the six others as much as its owner, where in t
 that rival was the only one; a tower that guards its owner gains from being shot at from every
 side; and walls cleared score, so the towers clearing many gain points by it. No change made (the
 user's: the outliers explained by the setup); a four-player check offered and not wanted.
+
+## 14p. Towers in the lobby alike, and the switch remembered (2026-10-23)
+
+Two small additions of the user's. Every seat's tower in the lobby is now drawn as the person's
+own button is — the tower's emblem, its name and a pip a cannon — after "Brings", a badge not to
+be pressed, its border quieter; it had been a line of text ("Brings Big Bertha · 2 cannons"), unlike
+the button. And the host's switch for special towers is remembered (`preferredSpecials`,
+`bollwerk.specials`): a local table, a room created — the room opens on the rules' default, so the
+page asks for towers on just after the welcome — and a new tournament's setup all start as it was
+last set, in either place; never set, off. Checked in play by the user.

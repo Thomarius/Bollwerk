@@ -561,7 +561,7 @@
   "lobby.specialsOn": "On",
   "lobby.yourTower": "Your tower",
   "lobby.towerAria": "Your special tower",
-  "lobby.botTower": "Brings {tower}",
+  "lobby.theirTower": "Brings",
   "lobby.specialsStatement": "Each player brings a special tower.",
   "hud.towerOffer": "Right button: {tower} for {cost}",
   "hud.towerPlacing": "Placing {tower} · right button for a cannon",

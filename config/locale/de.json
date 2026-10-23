@@ -558,7 +558,7 @@
   "lobby.specialsOn": "An",
   "lobby.yourTower": "Dein Turm",
   "lobby.towerAria": "Dein Spezialturm",
-  "lobby.botTower": "Bringt {tower}",
+  "lobby.theirTower": "Bringt",
   "lobby.specialsStatement": "Jeder bringt einen Spezialturm mit.",
   "hud.towerOffer": "Rechte Taste: {tower} für {cost}",
   "hud.towerPlacing": "{tower} wird gesetzt · rechte Taste für eine Kanone",

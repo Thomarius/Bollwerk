@@ -21,6 +21,7 @@ import {
   writeTournament,
 } from './tournamentSaves.js';
 import { resumeMarkup } from './tournamentResume.js';
+import { saveSpecials } from './towers.js';
 
 /** The menu's way into tournaments: a new one set up, or a saved one picked to go on with. */
 
@@ -84,6 +85,7 @@ export function openNewTournament(common: Common, exits: TournamentExits): void 
       case 'lives':
         return change({ continues: number(target) - 1 });
       case 'specials':
+        saveSpecials((target as HTMLSelectElement).value === 'on');
         return change({ specials: (target as HTMLSelectElement).value === 'on' });
       case 'mate-level':
         return change({

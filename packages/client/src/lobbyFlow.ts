@@ -38,7 +38,7 @@ import { openBracket } from './tournamentBracketView.js';
 import { openLeague } from './tournamentLeagueView.js';
 import { endingMarkup, tournamentTab } from './tournamentView.js';
 import { openTowerMenu } from './towerMenu.js';
-import { preferredTower, saveTower } from './towers.js';
+import { preferredSpecials, preferredTower, saveSpecials, saveTower } from './towers.js';
 
 /** The lobby, one screen whether a server holds the table or the browser does. */
 
@@ -113,6 +113,7 @@ export function drawLobby(view: LobbyView, on: LobbyHandlers): void {
   const specials = document.querySelector<HTMLSelectElement>('#specials');
   specials?.addEventListener('change', () => {
     audio.play('select');
+    saveSpecials(specials.value === 'on');
     on.table({ settings: { ...view.settings, specials: specials.value === 'on' } });
   });
   const mine = document.querySelector<HTMLButtonElement>('#my-special');
@@ -322,6 +323,9 @@ export async function openLobby(
     // A room draws its own random map; a seed asked for in the address is the host's
     // to set, like any other choice of theirs.
     if (code === null && params.get('seed') !== null) connection.send({ type: 'configure', seed });
+    // Special towers as this host last set them; the room opens on the rules' default, off.
+    if (code === null && preferredSpecials())
+      connection.send({ type: 'configure', settings: { specials: preferredSpecials() } });
     roomLobby(common, connection, code, first);
     return;
   }
@@ -354,7 +358,11 @@ function localLobby(
 ): void {
   const limits = defaultConfigBundle.ruleset.players;
   const start = reshapeTable(
-    { settings: DEFAULT_SETTINGS, playerCount: limits.min, teams: defaultTeams(limits.min, 1) },
+    {
+      settings: { ...DEFAULT_SETTINGS, specials: preferredSpecials() },
+      playerCount: limits.min,
+      teams: defaultTeams(limits.min, 1),
+    },
     { playerCount },
     limits,
     1,
