@@ -194,7 +194,7 @@ export async function runSession(
   const livesLost = new Map<number, LifeLost>();
   const gained = new Map<number, PointsGained>();
   /** What the board points out to a player building; see `hints.ts`. */
-  let hints: BuildHints = { unsealed: [] };
+  let hints: BuildHints = { unsealed: [], cornerGaps: [] };
 
   // A top corner of each island, for its team's name; terrain never changes. Not the top
   // middle, where the big timer sits on the islands in the middle column, and of the two

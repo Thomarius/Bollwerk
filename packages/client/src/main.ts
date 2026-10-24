@@ -43,6 +43,11 @@ if (params.get('icons') === 'sheet') {
   void import('./iconSheet.js')
     .then(({ showBoardSheet }) => showBoardSheet())
     .catch((e: unknown) => showError('icons', e));
+} else if (params.get('gaps') === 'preview') {
+  // The corner gaps' candidate marks, in every style (`gapPreview.ts`).
+  void import('./gapPreview.js')
+    .then(({ showGapPreview }) => showGapPreview())
+    .catch((e: unknown) => showError('gaps', e));
 } else {
   // Every sound and music file first, behind a loading screen (docs/STYLE_MUSIC.md §2.3);
   // then the page the query asks for.

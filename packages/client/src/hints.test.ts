@@ -32,12 +32,39 @@ describe('build hints', () => {
 
   it('says nothing once a castle is sealed', () => {
     const state = building(BREACHED.replace('.,###,####,.', '.,########,.'));
-    expect(buildHints(state, 0, computeEnclosure(state))).toEqual({ unsealed: [] });
+    expect(buildHints(state, 0, computeEnclosure(state))).toEqual({ unsealed: [], cornerGaps: [] });
   });
 
   it('says nothing outside the build phase', () => {
     const state = building(BREACHED);
     state.phase = 'combat';
     expect(buildHints(state, 0, computeEnclosure(state)).unsealed).toEqual([]);
+  });
+
+  /** Two castles: the left sealed, the right's ring missing its south-east corner block. */
+  const SECOND = `
+    ..................
+    .,,,,,,,,,,,,,,,,.
+    .,######,,######,.
+    .,#,,,,#,,#,,,,#,.
+    .,#,@@,#,,#,@@,#,.
+    .,#,@@,#,,#,@@,#,.
+    .,#,,,,#,,#,,,,#,.
+    .,######,,#####,,.
+    .,,,,,,,,,,,,,,,,.
+    ..................
+  `;
+
+  it("pings a castle's corner gap while another castle is sealed", () => {
+    const state = building(SECOND);
+    const hints = buildHints(state, 0, computeEnclosure(state));
+    expect(hints.unsealed).toEqual([]);
+    expect(hints.cornerGaps.map(({ x, y }) => [x, y])).toEqual([[15, 7]]);
+  });
+
+  it('pings nothing outside the build phase', () => {
+    const state = building(SECOND);
+    state.phase = 'cannon_place';
+    expect(buildHints(state, 0, computeEnclosure(state)).cornerGaps).toEqual([]);
   });
 });

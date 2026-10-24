@@ -9673,3 +9673,32 @@ chequer, now faint; the Kraken's arms lay over flat and were placed almost anywh
 sea, now upright, longer, curling only at the tip and kept to a band along the screen's sides; the
 rain fell in one line after a snapshot's long first frame. Not yet watched in play nor checked by
 the user.
+
+## 14r. Corner gaps pinged (2026-10-24)
+
+The user's idea: a ring that is missing only a corner block, or a thick wall holed in its two rows
+one column apart, looks sealed and is not — the escape flood is 8-connected and the wall is not,
+so the sea slips between two blocks that meet at a point. Discussed before building. **The rule**:
+a castle has only corner gaps left when a 4-connected flood would leave it sealed and the real
+one does not; every leak of its ground is then a diagonal step through a 2×2 window with wall on
+one diagonal and open tiles on the other, one inside and one out — had either side tile been open,
+it would join the two orthogonally — so the windows found are all of them, and filling one open
+tile of each seals it (`cornerGaps.ts`, tested on both of the user's pictures, a straight gap, a
+sealed castle, another player and a wall meeting the sea at a point). The user's choices: **your
+own island only**; **the build phase only**; **only castles' ground**, no castleless pocket (a
+pocket in a thick wall would be pinged for nothing); **marked at the pinch point**, the corner the
+two walls share, never a tile — the leak marks of 10t were taken out for reading as the one right
+repair, and either tile closes a corner; and a corner no piece can fill marked like any other,
+since knowing is still worth something. Pinged whatever else is sealed: a second castle is where
+they hide (`buildHints`, its `cornerGaps`, worked out at each change of the board).
+
+**The mark** was chosen from four drawn through every style on one page (`?gaps=preview`): a
+breathing ring, a four-pointed glint along the leak, chevrons running in along it, and a ping —
+the ping taken by the user, at about 1.1–1.4 tiles across. The glint read as an ×, like a target
+or a "not here"; the chevrons on a diagonal read as wall corners. The ping is two rings going out
+from a dot and fading, in the UI's ink over a halo of its opposite, so it stands off Parchment's
+dark ink and the red player's walls alike (`drawCornerGaps` in `theme.ts`, drawn by
+`drawBuildHints`, which every style calls); still rings under reduced motion. Weakest on the light
+floors of Office, Cartoon and Christmas, where the white ink leans on its dark halo. The page stays,
+drawn through the match's own overlay, for checking the ping in every style. Not yet seen in play
+by the users.

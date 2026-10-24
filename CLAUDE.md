@@ -63,7 +63,8 @@ leave your seat undriven on the way, so you are soon knocked out), `&speed=10`,
 (`&buildStyle=`, `&combatStyle=` for one), `&watch=1&level=8` to observe a bot match (`&personality=offensive` fixes every bot's),
 `&rounds=12` for the round cap, `&specials=1` for special towers (`&tower=bertha3`, a tower at its cost, the person's),
 `&teams=2` for teams of two in seat order, `?icons=sheet` every style's cannon icon side by side
-(`?icons=boards` each style's board, for checking a refactor pixel for pixel), `&lang=de` for a
+(`?icons=boards` each style's board, for checking a refactor pixel for pixel), `?gaps=preview`
+the corner gaps' ping in every style, `&lang=de` for a
 language (not saved). `?tournament=new` and `?tournament=resume` open the tournament screens,
 `?tournament=demo&seed=N` a tournament of teams of two between matches (saved as `t-demo`), and
 `&snapshot=game_over` plays a tournament's match out at once, its result counted. `?host=8` opens
@@ -176,6 +177,10 @@ Full detail in PLAN.md §1. The parts that surprise people:
 **Done** (2026-10-23; the latest release **v0.9.11**, 2026-10-18, protocol 28, recording format 4,
 which a test session needs the server rebuilt and every page reloaded for):
 
+- **Corner gaps pinged** (ARCHIVE 14r, 2026-10-24, the user's idea): in the build phase a castle
+  of your own with only corner gaps left — sealed by a 4-connected flood, not by the real one —
+  has each leak pinged at the corner its two walls share, never on a tile (`cornerGaps.ts`,
+  `drawCornerGaps`); chosen from four marks on `?gaps=preview`. Not yet seen in play by the users.
 - **Pirates** (ARCHIVE 14q, 2026-10-23, the user's idea, its elements their choices): the
   twenty-first look, a pirates' cove in Caribbean daylight — log stockades stained and roped in
   the owner's colour, forts flying the Jolly Roger while sealed, ship's cannon with **a parrot in a

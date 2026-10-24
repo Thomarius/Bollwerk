@@ -2,6 +2,8 @@ import type { ArtConfig, ArtStyle, SpecialKind, TowerVariant } from '@bollwerk/c
 import { findReadyCannon, type Cannon, type MatchState, type Shot } from '@bollwerk/sim';
 import { Graphics, type Container } from 'pixi.js';
 
+import type { CornerGap } from '../cornerGaps.js';
+import { motionReduced } from '../motion.js';
 import type { DrainWash, SealGlow } from '../seal.js';
 
 import { viewKey } from './stamps.js';
@@ -162,6 +164,8 @@ export interface Ghost {
   ring?: { tiles: readonly number[]; width: number; owner: number };
   /** The player's castles, when none of them is sealed. */
   unsealed: readonly { x: number; y: number; w: number; h: number }[];
+  /** Leaks of the player's castles with only corner gaps left (`cornerGaps.ts`). */
+  cornerGaps?: readonly CornerGap[];
   /**
    * Where the build phase's last seconds stand within the current one, 0 as a tick
    * sounds (`countdownBeat`); null or absent outside them.
@@ -388,9 +392,9 @@ function drawImpactReadiness(
 }
 
 /**
- * Outlines a player's castles while none of them is sealed. Shared by both styles: it
- * is information, not decoration, and should read the same in either. It pulses, so it
- * is not mistaken for part of the board.
+ * Outlines a player's castles while none of them is sealed, and pings their corner gaps.
+ * Shared by every style: it is information, not decoration, and should read the same in
+ * each. It moves, so it is not mistaken for part of the board.
  */
 export function drawBuildHints(
   g: Graphics,
@@ -399,6 +403,7 @@ export function drawBuildHints(
   art: ArtConfig,
   nowMs: number,
 ): void {
+  drawCornerGaps(g, view, ghost.cornerGaps ?? [], art, nowMs);
   if (ghost.unsealed.length === 0) return;
   const pulse = 0.75 + 0.25 * Math.sin(nowMs / 180);
   // The UI's ink rather than its red: red vanished on the red player's own island, and
@@ -429,6 +434,47 @@ export function drawBuildHints(
     );
   }
   g.stroke({ width: reach, color: hex(art.palette.uiInvalid), alpha: 0.25 + 0.75 * flash });
+}
+
+/**
+ * A ping at each corner gap: rings going out from a dot on the pinch point and fading, the
+ * one candidate of four that drew the eye from across the board (`?gaps=preview`, chosen
+ * by the user). On the point and on no tile, since either open tile of the window closes
+ * it. The UI's ink, over a halo of its opposite, so it stands off a wall of its own shade
+ * (Parchment's ink is dark, the rest light) and on every player's colour. Still rings
+ * under reduced motion.
+ */
+export function drawCornerGaps(
+  g: Graphics,
+  view: ViewTransform,
+  gaps: readonly CornerGap[],
+  art: ArtConfig,
+  nowMs: number,
+): void {
+  if (gaps.length === 0) return;
+  const ink = hex(art.palette.uiInk);
+  const lit = 0.299 * (ink >> 16) + 0.587 * ((ink >> 8) & 255) + 0.114 * (ink & 255);
+  const halo = lit > 127 ? 0x000000 : 0xffffff;
+  const t = view.tile;
+  const line = Math.max(3, Math.round(t / 6));
+  const still = motionReduced();
+  for (const gap of gaps) {
+    const px = tileX(view, gap.x);
+    const py = tileY(view, gap.y);
+    for (let k = 0; k < 2; k++) {
+      const phase = still ? 0.25 + k * 0.35 : (nowMs / 1200 + k / 2) % 1;
+      const r = t * (0.2 + phase);
+      const fade = 1 - phase;
+      g.circle(px, py, r);
+      g.stroke({ width: line + 2, color: halo, alpha: 0.35 * fade });
+      g.circle(px, py, r);
+      g.stroke({ width: line, color: ink, alpha: fade });
+    }
+    g.circle(px, py, t * 0.22);
+    g.fill({ color: halo, alpha: 0.5 });
+    g.circle(px, py, t * 0.16);
+    g.fill({ color: ink });
+  }
 }
 
 /**
