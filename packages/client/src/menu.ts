@@ -3,7 +3,7 @@ import { type RoomListing } from '@bollwerk/protocol';
 
 import { howToPlaySeen, openHowToPlay } from './howToPlay.js';
 import { openCredits } from './credits.js';
-import { volumeSliders } from './volume.js';
+import { openOptions } from './options.js';
 import {
   lookName,
   lookPicture,
@@ -14,11 +14,8 @@ import {
 } from './looks.js';
 import { escape } from './html.js';
 import { REFRESH_MS, gamesMarkup, parseRoomList } from './browser.js';
-import { isLanguage, languageOptions, saveLanguage, setLanguage, t } from './i18n.js';
+import { t } from './i18n.js';
 import { SplitTitle } from './decor.js';
-import { saveEffects, storedEffects } from './motion.js';
-import { parseSharpness, saveSharpness, sharpnessOptions, storedSharpness } from './sharpness.js';
-import { EFFECTS } from './pause.js';
 import { app, showError, audio } from './app.js';
 import { preferredStyles, saveStyles, storedName, saveName } from './prefs.js';
 import { openLobby } from './lobbyFlow.js';
@@ -145,9 +142,6 @@ export function showMenu(notice: string | null = null): void {
       <label>${t('menu.name')} <input id="name" type="text" maxlength="16" value="${escape(t('menu.defaultName'))}" /></label>
       <div class="look" data-look="build">${t('menu.buildLook')} ${lookPicker('build')}</div>
       <div class="look" data-look="combat">${t('menu.combatLook')} ${lookPicker('combat')}</div>
-      <label>${t('settings.language')} <select id="language">${languageOptions()}</select></label>
-      <label>${t('settings.effects')} <select id="effects">${EFFECTS.map(([value, key]) => `<option value="${value}">${t(key)}</option>`).join('')}</select></label>
-      <label>${t('settings.sharpness')} <select id="sharpness">${sharpnessOptions()}</select></label>
       <div class="split tournament-row">
         <button id="new-tournament">${t('menu.newTournament')}</button>
         <button id="resume-tournament"${savedTournaments().length === 0 ? ' disabled' : ''}>${t('menu.resumeTournament')}</button>
@@ -156,7 +150,10 @@ export function showMenu(notice: string | null = null): void {
         <button id="play">${t('menu.singleMatch')}</button>
         <button id="visibility" data-public="true" title="${t('menu.visibilityTitle')}">${t('menu.public')}</button>
       </div>
-      <button id="how-to-play" class="quiet${howToPlaySeen() ? '' : ' fresh'}">${t('menu.howToPlay')}</button>
+      <div class="split">
+        <button id="how-to-play" class="quiet${howToPlaySeen() ? '' : ' fresh'}">${t('menu.howToPlay')}</button>
+        <button id="options" class="quiet">${t('menu.options')}</button>
+      </div>
       <div class="split">
         <input id="code" type="text" maxlength="8" placeholder="${t('menu.codePlaceholder')}" />
         <button id="join">${t('menu.join')}</button>
@@ -184,38 +181,25 @@ export function showMenu(notice: string | null = null): void {
   const nameField = document.querySelector<HTMLInputElement>('#name');
   if (nameField) nameField.value = storedName();
   menuChoices = { ...styles };
-  // A change of language writes the menu afresh, keeping a name typed but not yet saved.
-  const languageField = document.querySelector<HTMLSelectElement>('#language');
-  languageField?.addEventListener('change', () => {
-    audio.play('select');
-    if (!isLanguage(languageField.value)) return;
-    // The default name is the language's own, so only a name somebody typed is kept.
+  // Options (2026-10-24): the language, the Graphics, the Motion and the volumes, in a panel
+  // over the menu. A name typed is read as it opens, while the default name is still the old
+  // language's, since only a name somebody typed is kept.
+  const typedBefore = (): string | null => {
     const typed = document.querySelector<HTMLInputElement>('#name')?.value.trim();
-    if (typed && typed !== t('menu.defaultName')) saveName(typed);
-    saveLanguage(languageField.value);
-    setLanguage(languageField.value);
-    showMenu(notice);
+    return typed && typed !== t('menu.defaultName') ? typed : null;
+  };
+  document.querySelector('#options')?.addEventListener('click', () => {
+    audio.play('select');
+    const typed = typedBefore();
+    openOptions({
+      audio,
+      // The language changed: the menu written afresh, keeping a name typed but not yet saved.
+      languageChanged: () => {
+        if (typed !== null) saveName(typed);
+        showMenu(notice);
+      },
+    });
   });
-  const effectsField = document.querySelector<HTMLSelectElement>('#effects');
-  const sharpnessField = document.querySelector<HTMLSelectElement>('#sharpness');
-  // The two volumes, under the looks, the Effects and the Sharpness (PLAN 11.18 Y4).
-  sharpnessField?.closest('label')?.after(volumeSliders(audio));
-  if (sharpnessField) {
-    sharpnessField.value = storedSharpness();
-    sharpnessField.addEventListener('change', () =>
-      saveSharpness(parseSharpness(sharpnessField.value)),
-    );
-  }
-  if (effectsField) {
-    effectsField.value = storedEffects();
-    effectsField.addEventListener('change', () =>
-      saveEffects(
-        effectsField.value === 'reduced' || effectsField.value === 'high'
-          ? effectsField.value
-          : 'full',
-      ),
-    );
-  }
 
   // The title in both chosen looks at once, split by a banner's line that sweeps across
   // as either choice changes — what the two choices mean, shown rather than said. A random

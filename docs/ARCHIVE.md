@@ -9702,3 +9702,45 @@ dark ink and the red player's walls alike (`drawCornerGaps` in `theme.ts`, drawn
 floors of Office, Cartoon and Christmas, where the white ink leans on its dark halo. The page stays,
 drawn through the match's own overlay, for checking the ping in every style. Not yet seen in play
 by the users.
+
+## 14s. Graphics and Motion in place of Effects and Sharpness (2026-10-24)
+
+**The user's wish**: one setting with easy levels, High, Medium and Low, in place of Effects
+(Glowing, Standard, Reduced) and Sharpness (Sharp, Fast). Discussed first: Reduced was not a
+level of quality but of comfort — no shake, no flicker, no camera moves, for whoever gets queasy,
+whatever their machine — so it became a switch of its own, **Motion**, Full or Reduced
+(`motion.ts`, the user's choice). **Graphics** (`graphics.ts`) steps down by the dearest thing
+left: High is the screen's density with the glow of Night, Cyberpunk and Electric bloomed; Medium,
+the default, the same without the bloom; Low one pixel a pixel, the browser scaling it up. On a
+screen of density 1 Low is Medium, which the user accepted. Both are dropdowns, as every other
+setting is, in the menu and the pause menu; the Graphics label's title says what High and Low do.
+
+**Saved choices carried over** while the new keys are absent: Fast becomes Low, winning over
+Glowing, since it was chosen for a slow machine; Glowing alone High; anything else Medium; and the
+old Reduced becomes Motion's Reduced (`carriedGraphics`, tested). The stylesheet's class is
+`reduced-motion` now.
+
+**The bloom taken at once**: it was a filter read as a look was made, so Glowing waited for the
+next match, with a note in the pause menu to say so. Now every bloomed layer is registered
+(`render/bloom.ts`), its blur made the first time High asks for it — below High none is made —
+and put on or taken off as the level changes; a layer leaves the registry as it is destroyed, its
+blur destroyed with it, which the old filters never were. The cannon icon's key names the bloom,
+since Cyberpunk's glow is a blur in the icon itself. Checked in the page: Cyberpunk, Night and
+Electric switched mid-match, the pause menu's choices saved, no errors. **Night's four blurs**
+(ground and air light, each a pair) ran at full resolution, unlike Cyberpunk's and Electric's
+since 12r; they run at half now. Not measured on the GPU, with or without the bloom, at any of the
+three; nor yet seen in play by the users.
+
+## 14t. The menu's Options (2026-10-24)
+
+**The user's wish**: the settings that are not about a match took most of the menu. Language,
+Graphics, Motion and the music and sounds volumes moved into **Options**, a panel over the menu
+in the family of How to play and the Credits (`options.ts`), opened by a button beside How to
+play and closed by its button or a click on the dimmed menu around it. The building and combat
+looks stay on the menu, one of the game's highlights (the user's). A change of language writes
+the panel and the menu behind it afresh, keeping a name typed but not saved, as the menu did
+before. The pause menu is unchanged, its settings in one row as before. Checked in the page: the
+menu, the panel in English and German, the choices saved, no errors.
+
+**And the Public / Private switch beside Play** the other way round, the user's: Public, the
+default, in the accent, and Private muted, where it had been the exception that was marked.

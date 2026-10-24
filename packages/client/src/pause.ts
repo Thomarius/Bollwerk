@@ -9,8 +9,8 @@ import {
   t,
 } from './i18n.js';
 import { escape } from './html.js';
-import { saveEffects, storedEffects, type EffectsLevel } from './motion.js';
-import { parseSharpness, saveSharpness, sharpnessOptions, storedSharpness } from './sharpness.js';
+import { graphicsOptions, parseGraphics, saveGraphics, storedGraphics } from './graphics.js';
+import { motionOptions, parseMotion, saveMotion, storedMotion } from './motion.js';
 import { refreshVolumeSliders, volumeSliders, type VolumeTarget } from './volume.js';
 
 /**
@@ -20,7 +20,7 @@ import { refreshVolumeSliders, volumeSliders, type VolumeTarget } from './volume
  * controls, being what games use for this; everything it does also has something on
  * screen to click.
  *
- * The overlay is the match's menu (PLAN 11.18 Y2): Resume, the Effects and Sound settings
+ * The overlay is the match's menu (PLAN 11.18 Y2): Resume, the Graphics, Motion and Sound settings
  * as the main menu has them, and Leave match, which asks once more before it goes — one
  * stray click should not end somebody's match.
  */
@@ -51,26 +51,17 @@ export interface PauseActions {
   looks?(): void;
 }
 
-/** The Effects choices as the main menu names them. */
-export const EFFECTS: readonly [EffectsLevel, TextKey][] = [
-  ['high', 'effects.high'],
-  ['full', 'effects.full'],
-  ['reduced', 'effects.reduced'],
-];
-
 export class PauseControls {
   private readonly button: HTMLButtonElement;
   private readonly overlay: HTMLDivElement;
   private line!: HTMLParagraphElement;
   private sound!: HTMLButtonElement;
   private leaving!: HTMLButtonElement;
-  private glowNote!: HTMLElement;
   private sliders!: HTMLElement;
   /** What the line says, so the DOM is touched only when it changes. */
   private shown: string | null = null;
   private paused = false;
   private over = false;
-  private readonly glowAtStart = storedEffects() === 'high';
   private readonly stopListening: () => void;
   private readonly key = (event: KeyboardEvent): void => {
     if (event.key !== 'Escape' || this.over) return;
@@ -109,51 +100,44 @@ export class PauseControls {
     const actions = this.actions;
     this.button.textContent = this.paused ? t('pause.resume') : t('pause.button');
     this.button.title = t('pause.buttonTitle');
-    const options = EFFECTS.map(
-      ([value, key]) => `<option value="${value}">${escape(t(key))}</option>`,
-    ).join('');
     this.overlay.innerHTML =
       `<div class="panel"><strong>${t('pause.title')}</strong><p class="who"></p>` +
       `<button class="resume">${t('pause.resume')}</button>` +
       `<div class="settings">` +
-      `<label>${t('settings.effects')} <select class="effects">${options}</select></label>` +
-      `<label>${t('settings.sharpness')} <select class="sharpness">${sharpnessOptions()}</select></label>` +
+      `<label title="${escape(t('settings.graphicsTitle'))}">${t('settings.graphics')} <select class="graphics">${graphicsOptions()}</select></label>` +
+      `<label>${t('settings.motion')} <select class="motion">${motionOptions()}</select></label>` +
       `<label>${t('settings.language')} <select class="language">${languageOptions()}</select></label>` +
       `<button class="sound quiet"></button>` +
       (actions.looks === undefined
         ? ''
         : `<button class="looks quiet">${t('pause.looks')}</button>`) +
-      `</div><small class="glow-note" hidden>${t('pause.glowNote')}</small>` +
+      `</div>` +
       `<button class="leave-match quiet">${t('pause.leave')}</button>` +
       `<small>${t('pause.escHint')}</small></div>`;
     this.line = this.overlay.querySelector<HTMLParagraphElement>('.who')!;
     this.sound = this.overlay.querySelector<HTMLButtonElement>('.sound')!;
     this.leaving = this.overlay.querySelector<HTMLButtonElement>('.leave-match')!;
-    this.glowNote = this.overlay.querySelector<HTMLElement>('.glow-note')!;
     this.sliders = volumeSliders(actions.volumes);
     this.overlay.querySelector('.settings')?.after(this.sliders);
-    const effects = this.overlay.querySelector<HTMLSelectElement>('.effects')!;
-    effects.value = storedEffects();
-    // Taken at once: the match redraws at the new resolution (`onSharpness`).
-    const sharpness = this.overlay.querySelector<HTMLSelectElement>('.sharpness')!;
-    sharpness.value = storedSharpness();
-    sharpness.addEventListener('change', () => {
+    // Both taken at once: the match redraws at the level's resolution (`onGraphics`), its
+    // bloom put on or taken off (`render/bloom.ts`), and the motion read every frame.
+    const graphics = this.overlay.querySelector<HTMLSelectElement>('.graphics')!;
+    graphics.value = storedGraphics();
+    graphics.addEventListener('change', () => {
       actions.click();
-      saveSharpness(parseSharpness(sharpness.value));
+      saveGraphics(parseGraphics(graphics.value) ?? 'medium');
+    });
+    const motion = this.overlay.querySelector<HTMLSelectElement>('.motion')!;
+    motion.value = storedMotion();
+    motion.addEventListener('change', () => {
+      actions.click();
+      saveMotion(parseMotion(motion.value) ?? 'full');
     });
     this.showSound();
 
     this.overlay.querySelector('.resume')?.addEventListener('click', () => {
       actions.click();
       actions.toggle(false);
-    });
-    // Motion takes effect at once; the glow is a filter chosen as a match's looks are made.
-    effects.addEventListener('change', () => {
-      actions.click();
-      const level = (EFFECTS.find(([value]) => value === effects.value)?.[0] ??
-        'full') as EffectsLevel;
-      saveEffects(level);
-      this.glowNote.hidden = (level === 'high') === this.glowAtStart;
     });
     // The language, mid-match: the HUD takes it at the next frame, this menu at once.
     const language = this.overlay.querySelector<HTMLSelectElement>('.language')!;
@@ -204,7 +188,8 @@ export class PauseControls {
     this.line.textContent = text ?? '';
     if (opening) {
       // As the menu opens: the settings as they stand, and the leave asked for afresh.
-      this.overlay.querySelector<HTMLSelectElement>('.effects')!.value = storedEffects();
+      this.overlay.querySelector<HTMLSelectElement>('.graphics')!.value = storedGraphics();
+      this.overlay.querySelector<HTMLSelectElement>('.motion')!.value = storedMotion();
       this.showSound();
       refreshVolumeSliders(this.sliders, this.actions.volumes);
       this.leaving.classList.remove('confirm');

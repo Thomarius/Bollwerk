@@ -597,9 +597,9 @@ first sweep, so it cannot stutter it.
 
 **Around a match** (11.18): "Preparing the board" stands over the screen while a match's
 looks are built, painted before that work starts. Paused, the overlay is the match's menu —
-Resume, Effects, Sound, the music and sounds volumes, and Leave match, which asks once
-more. A player knocked out sees "You're out — watching" with Back to menu. The menu and the
-pause menu carry two volume sliders, music and sounds, over the manifest's mix (the corner
+Resume, Graphics, Motion, Sound, the music and sounds volumes, and Leave match, which asks once
+more. A player knocked out sees "You're out — watching" with Back to menu. The menu's Options and
+the pause menu carry two volume sliders, music and sounds, over the manifest's mix (the corner
 switch stays the mute), and a bot seat in the lobby shows its level as ten pips. At the end
 the summary names up to **three awards** (`awards.ts`) — from Wrecker, Landlord, Castle
 collector, Iron wall, Comeback, Front-runner, Photo finish, Last stand, Phoenix, Late
@@ -680,12 +680,14 @@ colour from the castle (`drawChoices`); hovering one shows faintly the ring it w
 get, from the sim's own `startingRingTiles`. From then on **a crown stands on each
 player's main castle** (`drawMainCastles`) — in the owner's colour while it is sealed,
 stone grey and cracked once breached, as the look's own sealed castles say: one shared mark rather than the original's second tower drawn in seven
-styles. The menu's **Effects** setting, Glowing, Standard or
-Reduced (`motion.ts`; stored as high, full and reduced, the names until 2026-10-01, when
-"Full" read as more than "High"): reduced does what the system's reduced-motion setting does — no
-flicker, no beat, no slide, no title sweep, no rain — and also stops the board's shake;
-either one reduces. Glowing is Standard with the glow of Night, Cyberpunk and Electric bloomed by a real
-blur filter, asked for rather than given since it costs frame rate at eight players.
+styles. Two settings in the menu's Options and the pause menu, both taken at once (2026-10-24, ARCHIVE
+14s, in place of Effects and Sharpness): **Graphics**, High, Medium or Low (`graphics.ts`) — High
+the glow of Night, Cyberpunk and Electric bloomed by a real blur filter at half resolution
+(`render/bloom.ts`), put on and taken off the looks already made; Medium, the default, without
+it; Low the board drawn at one pixel a pixel, the browser scaling it up, which on a screen of
+density 1 is Medium. And **Motion**, Full or Reduced (`motion.ts`), a matter of comfort rather
+than of the machine: reduced does what the system's reduced-motion setting does — no flicker, no
+beat, no slide, no title sweep, no rain — and also stops the board's shake; either one reduces.
 
 **The roster** is kept across frames rather than rebuilt, so its entries can move:
 free-for-all is in standing, best first, and a change of places slides; scores count up
@@ -1406,7 +1408,7 @@ on black, never red, in its last seconds. **Toy bricks' score bar** sets each pl
 a light stud tile, so the blue player's reads on blue. **Stained glass's trees** are leaded
 crowns of four leaf panes over a short trunk.
 
-**Sharpness** (`sharpness.ts`, 2026-10-09): beside the Effects, in the menu and the pause menu,
+**Sharpness** (`sharpness.ts`, 2026-10-09; since 2026-10-24 Graphics' Low, ARCHIVE 14s): beside the Effects, in the menu and the pause menu,
 Sharp draws the board at the screen's density (at most 2) and Fast at 1, the browser scaling it
 up — a screen of density 2 has four times the pixels to fill, which on an integrated graphics
 chip holds the frame rate down more than the drawing does. Taken at once mid-match: the window is
@@ -1493,7 +1495,7 @@ as their forms — read through `packages/config` and shown by `i18n.ts` (`t`, `
 `formatNumber`, `listOf`, by the language's own `Intl` rules). Every language must have
 exactly English's keys and placeholders, or `locale.test.ts` fails; a text a language lacks
 shows in English. **A text is a key until it is shown**: tables held at module level keep
-keys, so a change of language reaches them. The language is chosen in the menu and the pause
+keys, so a change of language reaches them. The language is chosen in the menu's Options and the pause
 menu, saved as `bollwerk.language`, the browser's own on a first visit, and `&lang=` for
 screenshots; the HUD follows at the next frame, panels built once listen for the change. It
 is the page's own: nothing translated travels, and players at one table may each read their

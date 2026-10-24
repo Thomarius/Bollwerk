@@ -8,7 +8,7 @@ import type { Look } from '../transition.js';
 import { clearDrawn } from './clearDrawn.js';
 import { withDrawBudget } from './islandParts.js';
 import { StripContainer } from './terrainStrips.js';
-import { renderResolution } from '../sharpness.js';
+import { bloomWanted, renderResolution } from '../graphics.js';
 
 import { BlueprintTheme } from './blueprint.js';
 import { BricksTheme } from './bricks.js';
@@ -594,7 +594,7 @@ export class Scene {
    * whenever the window was the height that limited the tile size.
    */
   resize(state: MatchState, width: number, height: number, topInset = 0): void {
-    // At the sharpness as it stands, which the pause menu may have changed since.
+    // At the Graphics level as it stands, which the pause menu may have changed since.
     this.app.renderer.resize(width, height, renderResolution());
     const usable = Math.max(1, height - topInset);
     const tile = Math.max(1, Math.floor(Math.min(width / state.width, usable / state.height)));
@@ -821,7 +821,8 @@ export class Scene {
       made = new Map();
       this.icons.set(theme, made);
     }
-    const key = `${player}:${cssPx}:${theme.iconKey?.() ?? ''}`;
+    // Bloomed or not as the level stands: Cyberpunk's glow is a blur in the icon itself.
+    const key = `${player}:${cssPx}:${bloomWanted()}:${theme.iconKey?.() ?? ''}`;
     const known = made.get(key);
     if (known !== undefined) return known;
     const root = new Container();

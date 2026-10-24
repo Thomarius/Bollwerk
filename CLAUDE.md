@@ -177,6 +177,12 @@ Full detail in PLAN.md §1. The parts that surprise people:
 **Done** (2026-10-23; the latest release **v0.9.11**, 2026-10-18, protocol 28, recording format 4,
 which a test session needs the server rebuilt and every page reloaded for):
 
+- **Graphics and Motion** (ARCHIVE 14s, 2026-10-24, the user's wish): one Graphics setting, High
+  (the dark styles' glow bloomed, `render/bloom.ts`, taken on and off live), Medium (the default)
+  and Low (one pixel a pixel), in place of Effects' Glowing and Sharpness; Motion, Full or Reduced,
+  a switch of its own; old choices carried over. With them in the menu's **Options** (ARCHIVE
+  14t), a panel beside How to play holding the language, Graphics, Motion and the volumes, so
+  the menu keeps the looks. Not yet seen in play by the users.
 - **Corner gaps pinged** (ARCHIVE 14r, 2026-10-24, the user's idea): in the build phase a castle
   of your own with only corner gaps left — sealed by a 4-connected flood, not by the real one —
   has each leak pinged at the corner its two walls share, never on a tile (`cornerGaps.ts`,
@@ -357,8 +363,8 @@ which a test session needs the server rebuilt and every page reloaded for):
 - **Around a match**: How to play, the ranking between rounds, awards, a rematch, music
   and sounds volumes, a pause menu with Leave match; rounds of test-session feedback
   (ARCHIVE 11n–11w, 11ze, 12zl). Mouse only; Esc for pause is the one key.
-- **Languages**: English and German, every text in `config/locale/`, chosen in the menu and
-  pause menu, the desktop window in the system's language (M15, ARCHIVE 12g). A text is a key
+- **Languages**: English and German, every text in `config/locale/`, chosen in the menu's
+  Options and the pause menu, the desktop window in the system's language (M15, ARCHIVE 12g). A text is a key
   until shown (`t` in `client/src/i18n.ts`); a new text goes into every locale file, or
   `locale.test.ts` fails.
 - **Releases**: the desktop app, a portable file for Windows and Linux (M14, ARCHIVE

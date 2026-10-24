@@ -24,7 +24,7 @@ import { matchPalette, playerCssColour, useMatchPalette } from './colours.js';
 import { matchShapes, playerShape, useMatchShapes } from './shapes.js';
 import { NetworkBadge } from './network.js';
 import { WatchingStrip } from './watching.js';
-import { onSharpness } from './sharpness.js';
+import { onGraphics, storedGraphics } from './graphics.js';
 import { LookRotation, openLookGallery } from './looks.js';
 import { t } from './i18n.js';
 import { Hud } from './hud.js';
@@ -34,7 +34,7 @@ import { announcementLines, announcementTitle, isTeamMatch, ranking, teamName } 
 import { buildHints, type BuildHints } from './hints.js';
 import { timerSpot } from './timerSpot.js';
 import { MatchLog } from './summary.js';
-import { motionReduced, storedEffects } from './motion.js';
+import { motionReduced, storedMotion } from './motion.js';
 import { PauseControls } from './pause.js';
 import { openingShot, winnerShot } from './camera.js';
 import { perf } from './perf.js';
@@ -277,8 +277,9 @@ export async function runSession(
   };
   fit();
   globalThis.addEventListener('resize', fit);
-  // A sharpness chosen in the pause menu is the window resized at the new resolution.
-  const stopSharpness = onSharpness(fit);
+  // A Graphics level chosen in the pause menu is the window resized at its resolution; the
+  // bloom follows by itself (`render/bloom.ts`).
+  const stopGraphics = onGraphics(fit);
 
   // No hidden keys: the end screen has a button back to the menu, and sound its switch in
   // the corner. R once did the first and M the second, unannounced, at the user's request
@@ -359,7 +360,7 @@ export async function runSession(
     watching.destroy();
     hud.useSkin(null);
     globalThis.removeEventListener('resize', fit);
-    stopSharpness();
+    stopGraphics();
     scene.destroy();
     session.dispose?.();
   };
@@ -708,7 +709,8 @@ export async function runSession(
     url: globalThis.location.search,
     styles: `build ${scene.styles.build}, combat ${scene.styles.combat}`,
     players: String(session.state.players.length),
-    effects: storedEffects(),
+    graphics: storedGraphics(),
+    motion: storedMotion(),
   }));
   let last = performance.now();
   const loop = (now: number): void => {

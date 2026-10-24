@@ -10,7 +10,8 @@ import {
   type GraphicsContext,
 } from 'pixi.js';
 
-import { bloomWanted, motionReduced } from '../motion.js';
+import { bloomWanted } from '../graphics.js';
+import { motionReduced } from '../motion.js';
 import { timerSpot, type TimerSpot } from '../timerSpot.js';
 import { bannerProgress } from '../transition.js';
 
@@ -22,6 +23,7 @@ import { CyberpunkSeaLife } from './seaLife.js';
 import { seaDepth } from './ocean.js';
 import { trace, wallGeometry } from './walls.js';
 import { Memos, StampBook, Stamps, viewKey } from './stamps.js';
+import { bloom } from './bloom.js';
 import { release } from './release.js';
 import {
   FlagHoist,
@@ -351,13 +353,11 @@ export class CyberpunkTheme implements Theme {
       this.overlayGlow,
     ]) {
       glow.blendMode = 'add';
-      // High effects: the glow bloomed by a real blur, not only a wider shape under it. At
+      // High graphics: the glow bloomed by a real blur, not only a wider shape under it. At
       // half resolution, where a blur loses nothing to the eye: each is a texture the size
       // of the screen and four passes over it, and the five at full resolution took the GPU
       // from 6.6 to 15.1 ms a frame at eight players, 57 to 39.5 fps; at half, 8.5 ms.
-      if (bloomWanted()) {
-        glow.filters = [new BlurFilter({ strength: 5, quality: 2, resolution: 0.5 })];
-      }
+      bloom(glow, { strength: 5, quality: 2, resolution: 0.5 });
     }
     // The lit floor of sealed ground, the cores, the lights and the adverts: added, never bloomed.
     for (const lit of [

@@ -88,7 +88,7 @@ describe('terrain drawn in strips', () => {
     expect(withDrawBudget(1, () => strips.draw(state, view, record.plan))).toBe(false);
     strips.draw(state, { ...view, tile: 9 }, record.plan);
     expect(record.plans).toBe(2);
-    // Finished, as a window fitted again or a new sharpness redraws it.
+    // Finished, as a window fitted again or a new Graphics level redraws it.
     strips.draw(state, { ...view, tile: 9 }, record.plan);
     expect(record.plans).toBe(3);
   });

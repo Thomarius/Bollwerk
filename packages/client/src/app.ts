@@ -3,7 +3,7 @@ import { defaultConfigBundle, validateConfigBundle } from '@bollwerk/config';
 import { Audio } from './audio.js';
 import { onLanguageChange, setLanguage, startingLanguage, t } from './i18n.js';
 import { installBackdrop } from './decor.js';
-import { applyEffects } from './motion.js';
+import { applyMotion } from './motion.js';
 import { perf } from './perf.js';
 
 /**
@@ -27,7 +27,7 @@ setLanguage(startingLanguage(new URLSearchParams(globalThis.location.search).get
 
 installBackdrop(defaultConfigBundle.art);
 
-applyEffects();
+applyMotion();
 
 /** Surfaces failures on the page: a renderer that throws otherwise looks like a black screen. */
 export function showError(source: string, detail: unknown): void {

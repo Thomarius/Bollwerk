@@ -1,8 +1,8 @@
 import type { ArtConfig, ElectricStyleConfig } from '@bollwerk/config';
 import { Structure, type Castle, type MatchState, type Shot } from '@bollwerk/sim';
-import { BlurFilter, type Container, Graphics } from 'pixi.js';
+import { type Container, Graphics } from 'pixi.js';
 
-import { bloomWanted, motionReduced } from '../motion.js';
+import { motionReduced } from '../motion.js';
 import { perf } from '../perf.js';
 import type { TimerSpot } from '../timerSpot.js';
 
@@ -67,6 +67,7 @@ import {
 import { hatch, outline, trace, wallGeometry, type Segment } from './walls.js';
 import { ShapeTheme } from './shapeTheme.js';
 import { clearDrawn } from './clearDrawn.js';
+import { bloom } from './bloom.js';
 import { release } from './release.js';
 import { TerrainStrips, whole, type TerrainPass, type TerrainPlan } from './terrainStrips.js';
 
@@ -274,10 +275,8 @@ export class ElectricTheme extends ShapeTheme implements Theme {
     this.style = art.electric;
     this.weather = weatherFor(this.seed, art.pixel.weatherOdds);
     this.glowGfx.blendMode = 'add';
-    // "Glowing": the halos bloomed, at half resolution as Cyberpunk's are (ARCHIVE 12r).
-    if (bloomWanted()) {
-      this.glowGfx.filters = [new BlurFilter({ strength: 5, quality: 2, resolution: 0.5 })];
-    }
+    // High graphics: the halos bloomed, at half resolution as Cyberpunk's are (ARCHIVE 12r).
+    bloom(this.glowGfx, { strength: 5, quality: 2, resolution: 0.5 });
     layers.terrain.addChild(this.terrainStrips.container, this.scorchGfx, this.flowGfx);
     layers.territory.addChild(
       this.scenery.gfx,

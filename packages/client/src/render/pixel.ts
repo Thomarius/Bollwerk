@@ -1,8 +1,8 @@
 import type { ArtConfig, ArtStyle } from '@bollwerk/config';
 import { Rng, Structure, Terrain, type Cannon, type MatchState, type Shot } from '@bollwerk/sim';
-import { BlurFilter, Container, Graphics, Sprite, Texture } from 'pixi.js';
+import { Container, Graphics, Sprite, Texture } from 'pixi.js';
 
-import { bloomWanted, motionReduced } from '../motion.js';
+import { motionReduced } from '../motion.js';
 import type { TimerSpot } from '../timerSpot.js';
 
 import { climaxLevel, cornerSpot, hurry } from './corner.js';
@@ -10,6 +10,7 @@ import { SEA_NE, SEA_NW, SEA_SE, SEA_SW, filletCorners } from './pixel/coast.js'
 import { daylight, shadowCast, weatherFor, type Weather } from './pixel/atmosphere.js';
 import { PILE_CORNERS, pileCorner, ringCorners, spreadOut, type RingCorner } from './pixel/life.js';
 import { OceanLife } from './pixel/ocean.js';
+import { bloom } from './bloom.js';
 import { release } from './release.js';
 import { SceneryTracker, placeScenery } from './scenery.js';
 import { hash } from './noise.js';
@@ -461,13 +462,14 @@ export class PixelTheme implements Theme {
       light.blendMode = 'add';
     }
     for (const light of [this.airLight, this.airDiscs.container]) light.blendMode = 'add';
-    if (this.torchlit && bloomWanted()) {
-      // High effects: the light bloomed by a real blur rather than only the wider shapes.
+    if (this.torchlit) {
+      // High graphics: the light bloomed by a real blur rather than only the wider shapes. At
+      // half resolution, as Cyberpunk's and Electric's are: four blurs of the whole screen.
       for (const light of [this.groundLight, this.groundDiscs.container]) {
-        light.filters = [new BlurFilter({ strength: 6, quality: 2 })];
+        bloom(light, { strength: 6, quality: 2, resolution: 0.5 });
       }
       for (const light of [this.airLight, this.airDiscs.container]) {
-        light.filters = [new BlurFilter({ strength: 4, quality: 2 })];
+        bloom(light, { strength: 4, quality: 2, resolution: 0.5 });
       }
     }
     layers.effects.addChild(this.effectGfx);
