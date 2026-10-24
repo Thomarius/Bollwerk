@@ -940,7 +940,9 @@ export interface FinishLook {
     | 'stars'
     | 'flakes'
     | 'confetti'
-    | 'doubloons';
+    | 'doubloons'
+    | 'laurel'
+    | 'nuggets';
   /**
    * `swallowtail` a forked banner; `hologram` a flickering projection; `pennant` a flag in
    * plan; `brick` a square flag of bricks; `leaded` a banner of glass in its lead; `candy` a
@@ -974,6 +976,10 @@ export interface FinishLook {
     | 'scarf'
     | 'jolly';
 }
+
+/** Mythology's laurel leaves, and the Wild West's gold. */
+const LAUREL = 0x5e7a34;
+const NUGGET = 0xe8b830;
 
 const PLAIN_FINISH: FinishLook = { spark: 'square', flag: 'swallowtail' };
 
@@ -1551,29 +1557,43 @@ export class Fireworks {
       const colours =
         kind === 'sprinkle'
           ? [playerColour(art, rocket.owner, 'base'), ...SPRINKLE_COLOURS]
-          : kind === 'doubloons'
+          : kind === 'laurel'
             ? [
                 playerColour(art, rocket.owner, 'base'),
-                playerColour(art, rocket.owner, 'base'),
+                LAUREL,
                 playerColour(art, rocket.owner, 'light'),
-                playerColour(art, rocket.owner, 'light'),
+                LAUREL,
               ]
-            : kind === 'confetti'
+            : kind === 'nuggets'
               ? [
+                  NUGGET,
                   playerColour(art, rocket.owner, 'base'),
+                  NUGGET,
                   playerColour(art, rocket.owner, 'light'),
-                  0xffffff,
-                  0xe8c25a,
                 ]
-              : [
-                  playerColour(art, rocket.owner, 'light'),
-                  playerColour(art, rocket.owner, 'base'),
-                  hex(art.palette.uiInk),
-                ];
+              : kind === 'doubloons'
+                ? [
+                    playerColour(art, rocket.owner, 'base'),
+                    playerColour(art, rocket.owner, 'base'),
+                    playerColour(art, rocket.owner, 'light'),
+                    playerColour(art, rocket.owner, 'light'),
+                  ]
+                : kind === 'confetti'
+                  ? [
+                      playerColour(art, rocket.owner, 'base'),
+                      playerColour(art, rocket.owner, 'light'),
+                      0xffffff,
+                      0xe8c25a,
+                    ]
+                  : [
+                      playerColour(art, rocket.owner, 'light'),
+                      playerColour(art, rocket.owner, 'base'),
+                      hex(art.palette.uiInk),
+                    ];
       const count =
         kind === 'brick' || kind === 'blot' || kind === 'stars' || kind === 'flakes'
           ? 22
-          : kind === 'doubloons'
+          : kind === 'doubloons' || kind === 'nuggets'
             ? 28
             : kind === 'spirits'
               ? 16
@@ -1604,7 +1624,8 @@ export class Fireworks {
                   kind === 'memo' ||
                   kind === 'bubbles' ||
                   kind === 'flakes' ||
-                  kind === 'confetti'
+                  kind === 'confetti' ||
+                  kind === 'laurel'
                 ? k % 2 === 0
                   ? 2 + Math.random() * 4
                   : 0
@@ -1617,14 +1638,18 @@ export class Fireworks {
     // Ink lingers, bricks fall heavier, spirits float up and a blossom's petals drift down
     // slowly; the rest burst and fade as sparks do.
     const drifts =
-      kind === 'blossom' || kind === 'memo' || kind === 'flakes' || kind === 'confetti';
+      kind === 'blossom' ||
+      kind === 'memo' ||
+      kind === 'flakes' ||
+      kind === 'confetti' ||
+      kind === 'laurel';
     const life =
       kind === 'blot' || kind === 'spirits' || kind === 'bubbles' ? 1900 : drifts ? 1700 : 1200;
     // Gold falls heavy, nearly as bricks do.
     const fall =
       kind === 'brick'
         ? 6
-        : kind === 'doubloons'
+        : kind === 'doubloons' || kind === 'nuggets'
           ? 4.5
           : kind === 'spirits'
             ? -1.4
@@ -1700,6 +1725,46 @@ export class Fireworks {
       } else if (kind === 'doubloons') {
         if (spark.spin > 0) drawDoubloon(g, x, y, size * 0.6, spark.angle, alpha);
         else drawJewel(g, x, y, size * 0.6, spark.angle, spark.colour, alpha);
+      } else if (kind === 'laurel') {
+        // A laurel leaf, its midrib along it, turning as it drifts down.
+        const c = Math.cos(spark.angle);
+        const sn = Math.sin(spark.angle);
+        const w = size * 0.6;
+        const h = size * 0.22;
+        const leaf: number[] = [];
+        for (let k = 0; k < 10; k++) {
+          const a = (k / 10) * Math.PI * 2;
+          const lx = Math.cos(a) * w;
+          const ly = Math.sin(a) * h;
+          leaf.push(x + lx * c - ly * sn, y + lx * sn + ly * c);
+        }
+        g.poly(leaf);
+        g.fill({ color: spark.colour, alpha });
+        g.moveTo(x - c * w, y - sn * w).lineTo(x + c * w, y + sn * w);
+        g.stroke({ width: Math.max(1, size * 0.08), color: 0x1e1612, alpha: alpha * 0.7 });
+      } else if (kind === 'nuggets') {
+        // Gold nuggets tumbling, and sheriff's stars in the owner's colours between them.
+        if (spark.colour === NUGGET) {
+          const pts: number[] = [];
+          for (let k = 0; k < 6; k++) {
+            const a = spark.angle + (k / 6) * Math.PI * 2;
+            const r = size * (0.32 + (0.14 * ((k * 37) % 3)) / 2);
+            pts.push(x + Math.cos(a) * r, y + Math.sin(a) * r);
+          }
+          g.poly(pts);
+          g.fill({ color: NUGGET, alpha });
+          g.stroke({ width: Math.max(1, size * 0.08), color: 0x8a6420, alpha });
+        } else {
+          const pts: number[] = [];
+          for (let k = 0; k < 10; k++) {
+            const a = spark.angle + (k / 10) * Math.PI * 2;
+            const r = size * (k % 2 === 0 ? 0.5 : 0.22);
+            pts.push(x + Math.cos(a) * r, y + Math.sin(a) * r);
+          }
+          g.poly(pts);
+          g.fill({ color: spark.colour, alpha });
+          g.stroke({ width: Math.max(1, size * 0.06), color: 0x3a2416, alpha });
+        }
       } else if (kind === 'confetti') {
         // A strip of paper, fluttering: narrowed as it turns edge on.
         const c = Math.cos(spark.angle);

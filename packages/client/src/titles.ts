@@ -1279,6 +1279,8 @@ const TITLES: Record<ArtStyle, (text: string, art: ArtConfig) => Title> = {
   sports: sportsTitle,
   pirates: piratesTitle,
   anime: animeTitle,
+  mythology: mythologyTitle,
+  wildwest: wildwestTitle,
 };
 
 /**
@@ -1320,6 +1322,76 @@ export function noirTitle(text: string, _art: ArtConfig): Title {
     ctx.lineTo(x2, y2);
   }
   ctx.stroke();
+  return { src: canvas.toDataURL(), ...title };
+}
+
+/**
+ * The Mythology title: the word in black figure on a band of clay, each letter's highlight
+ * incised through the black, a meander border above and below.
+ */
+export function mythologyTitle(text: string, _art: ArtConfig): Title {
+  const { canvas, ctx, cells, has, cols } = drawnCanvas(text);
+  const title = { cellPx: DRAWN_CELL, padPx: DRAWN_PAD, tailPx: 0, smooth: true, flicker: false };
+  if (ctx === null) return { src: canvas.toDataURL(), ...title };
+  const at = (v: number): number => DRAWN_PAD + v * DRAWN_CELL;
+  ctx.fillStyle = '#d98a52';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.fillStyle = '#1e1612';
+  for (const { x, y } of cells) ctx.fillRect(at(x), at(y), DRAWN_CELL, DRAWN_CELL);
+  // The incised highlight: a fine line of clay down the left of each letter's stroke.
+  ctx.fillStyle = '#d98a52';
+  for (const { x, y } of cells) {
+    if (has(x - 1, y)) continue;
+    ctx.fillRect(at(x) + 2, at(y) + 2, 1.5, DRAWN_CELL - 3);
+  }
+  // A meander in the glaze above and below, a key every cell and a half.
+  ctx.strokeStyle = '#1e1612';
+  ctx.lineWidth = 1.5;
+  for (const yy of [DRAWN_PAD * 0.25, at(7) + DRAWN_PAD * 0.15]) {
+    const h = DRAWN_PAD * 0.55;
+    for (let x = DRAWN_PAD * 0.25; x + h < at(cols) + DRAWN_PAD * 0.7; x += h * 1.15) {
+      ctx.beginPath();
+      ctx.moveTo(x, yy + h);
+      ctx.lineTo(x, yy);
+      ctx.lineTo(x + h, yy);
+      ctx.lineTo(x + h, yy + h * 0.7);
+      ctx.lineTo(x + h * 0.35, yy + h * 0.7);
+      ctx.lineTo(x + h * 0.35, yy + h * 0.35);
+      ctx.stroke();
+    }
+  }
+  return { src: canvas.toDataURL(), ...title };
+}
+
+/**
+ * The Wild West title: the word in wood type as a poster printed it, cream on a dark brown,
+ * its red second colour laid a little off register beneath, as old playbills were.
+ */
+export function wildwestTitle(text: string, _art: ArtConfig): Title {
+  const { canvas, ctx, cells, has } = drawnCanvas(text);
+  const title = { cellPx: DRAWN_CELL, padPx: DRAWN_PAD, tailPx: 0, smooth: true, flicker: false };
+  if (ctx === null) return { src: canvas.toDataURL(), ...title };
+  const at = (v: number): number => DRAWN_PAD + v * DRAWN_CELL;
+  ctx.fillStyle = '#b4302a';
+  for (const { x, y } of cells) ctx.fillRect(at(x) + 3, at(y) + 2, DRAWN_CELL, DRAWN_CELL);
+  ctx.fillStyle = '#f2e6c8';
+  for (const { x, y } of cells) ctx.fillRect(at(x), at(y), DRAWN_CELL, DRAWN_CELL);
+  const edges = wordOutline(cells, has);
+  ctx.lineCap = 'square';
+  ctx.strokeStyle = '#3a2416';
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  for (const [x1, y1, x2, y2] of edges) {
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x2, y2);
+  }
+  ctx.stroke();
+  // The wood's grain showing through the ink, a few pale nicks.
+  ctx.fillStyle = '#d8c8a0';
+  for (const { x, y } of cells) {
+    if ((x * 7 + y * 13) % 9 !== 0) continue;
+    ctx.fillRect(at(x) + 3, at(y) + 4, 4, 1);
+  }
   return { src: canvas.toDataURL(), ...title };
 }
 

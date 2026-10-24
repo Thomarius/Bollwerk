@@ -55,6 +55,8 @@ const STYLE_NAMES: Record<LookChoice, TextKey> = {
   sports: 'style.sports',
   pirates: 'style.pirates',
   anime: 'style.anime',
+  mythology: 'style.mythology',
+  wildwest: 'style.wildwest',
   random: 'style.random',
 };
 

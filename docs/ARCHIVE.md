@@ -9836,3 +9836,102 @@ scalloped outline and fainter; the shots were specks, now half again as big; the
 letters were lost on its white card, now inked; the soldier hero had no beret in the portrait;
 the focus lines reached over the islands for a whole final round, now kept to the screen's edges.
 Not yet seen in play by the users.
+
+## 14x. Mythos, a twenty-third style (2026-10-24)
+
+The first of the two last styles, the user's choice from their shortlist of eight (Wild West,
+Food, Beach, Mythology, Nordic, Egypt, Supermarket, Microscopic): Egypt was too near this one in
+age and technique and shared the Wild West's desert; Nordic, Beach, Food and Supermarket repeated
+Christmas, Pirates, Chocolate and Office; Microscopic is kept as a reserve. The runner-up when
+Stadium was chosen (14d). Pitched with options for every element, decided by the user, written up
+in a design note since retired into this entry, and built after a sketch page (`?styles=sketch`,
+removed once built) the user approved.
+
+**The idea: the board is a black-figure vase** — black glaze on the clay, details incised through
+the black, touches of white and purple-red. **The user's rule for this style and the next: one gun
+design, no people as guns**, since Stadium and Anime already vary theirs as figures.
+
+What carries meaning (`mythology.ts`, `mythology/drawings.ts`): the sea is **the wine-dark sea**,
+black glaze with waves incised to the clay and a line incised round each island; the islands the
+clay, ringed in black. **Walls are the meander**, the owner's colour laid on as slip with a Greek
+key in the glaze across each block, the keys of neighbouring blocks meeting in one band; **sealed
+ground a mosaic** in the owner's colour (`mosaicCanvas`, a `FillPattern` a player); castles
+**temples** whose **altar fire burns while sealed** (`FlagHoist`) and goes out in smoke at a
+breach; a player who is out has their columns toppled. **The guns are onagers** (the user's,
+over a single hero figure — clones of one man across an island — and a ballista, since the
+game's shots arc and a catapult lobs): ready, the arm lying back with a stone in its sling;
+firing, the arm swinging up against the padded crossbar; **reloading, the arm creaking back down
+as the shot flies**, which is the reload, taken the long way round from the crossbar so it swings
+back over the top (tested); silenced, the rope slack; a shield in the owner's colour hung on the
+frame, a vase's blazon on it by the gun's id. **Mirrored only** to face its target, the doc's
+fallback taken with the user: drawn in profile, as the painters drew, a turned engine would stand
+on its end. Shots are stones, the Berthas' pots of burning oil; a hit cracks the glaze and throws
+potsherds in the wall owner's colour.
+
+**The player colours on the clay**, the design's one risk: the clay a terracotta between the
+crimson and amber players, every owner's colour inside black; all eight checked on the sketch
+page and read. **The corner**: Sisyphus pushing his boulder up his hill, watching it roll down and
+trudging after it, quicker when the clock presses — in **a cup's tondo**, a disc of clay ringed in
+glaze, since black figures on the black sea were not seen (the first look). **The climax**: the
+gods leaning out of clouds at the screen's edges to watch — Zeus with a fillet and **a full beard
+(the user's: "Zeus is not Zeus without a proper beard")**, Hera crowned, Athena helmed, Poseidon
+bearded with his trident — jutting past the neck so it is seen against the cloud. Triremes and
+leaping dolphins in clay on the outer sea; olives, cypresses, amphorae, broken columns and herms
+for scenery; a frieze banner between meander borders ("Into battle!" / „In die Schlacht!"), a
+glaze HUD with a meander rule, the title in black figure on clay; **laurel leaves** to finish
+(`FinishLook` gained `laurel`).
+
+**Cost**, `&perf=1` in a watched eight-player combat (round 3, 1600×1000, GPU on, after its first
+seconds), alternating with Stadium: 60 fps; effects 0.9–1.0 ms and render 2.8–2.9 ms a frame
+against Stadium's 0.9–1.1 and 2.5–2.7; about 4,100 vertices rebuilt a frame against 3,900.
+
+What the first look changed: the arm swung the wrong way round mid-reload, forward and down;
+the gods' beards were black on their black necks, now jutting forward; an arc drawn without a
+move to its start joined the canvas's origin to the boulder in a line across the whole board
+(every arc now starts with one). Seen in screenshots building, in combat at two, three and eight
+players, in the final round, the banner crossing and the menu. Tested in play and approved by the
+users the same day.
+
+## 14y. Wild West, a twenty-fourth style (2026-10-24)
+
+The second of the two last styles (14x), designed and sketched with it. **A showdown at high noon
+among the mesas**: the frontier as the westerns showed it, its humour the genre's and never at a
+player, and **nothing of its darker history** — no "cowboys and Indians", no caricature of the
+Native peoples; the cast implied, never drawn.
+
+**There is no sea** (`wildwest.ts`, `wildwest/drawings.ts`): the islands are **mesas**, dusty
+ochre tops whose **cliffs of red rock in bands** drop below every south edge, a sliver down every
+east one, to **a canyon floor far below**, greyer and cooler with the distance, pebbled, the
+mesas' shadows on it. The design's one risk, the floor read as ground to build on: in the first
+sketch it read as paler ground; greyed, pebbled, shadowed and under taller cliffs it reads as
+lower, approved by the user. A cliff is shorter where another mesa stands close below.
+
+What carries meaning: walls **adobe whitewashed in the owner's colour**, brick showing here and
+there; sealed ground **a staked claim**, furrowed, a ribbon in the owner's colour round it, pegs,
+gold glinting; castles **frontier buildings** by id — saloon, sheriff's office, bank, store — each
+with **a windpump whose vanes in the owner's colour turn while sealed** (`FlagHoist`, the turn
+carried frame to frame), its trough full, stopping at a breach, its tail swinging loose; boarded
+up once its player is out. **The guns are mortar barrels** (the user's, over cannons wearing hats
+— Pirates' parrot again — and cacti, the desert's own scenery): ready, the mortar out of the top
+tilted at the target, its fuse sparking; firing, a hop and a puff of smoke; reloading, the mortar
+pulled in and the barrel rocking until the shot lands; silenced, the lid nailed shut with two
+planks; out, staved in and grey. Their hoops and star in the owner's colour, widened after the
+first sketch so it reads at a 12-pixel tile; no loose barrels in the scenery. Shots are dynamite,
+turning end over end; a hit throws adobe chips and dust, and at 0.3 of wall hits a sound word
+("KA-BLAM!" / „KA-BUMM!").
+
+**Tumbleweeds** (the user's): a few to each island rolling with the wind over its open ground and
+bouncing, never over walls, sealed ground, buildings or guns, a new one setting out where one
+stopped; now and then one across the canyon floor. A stagecoach and vultures on the floor;
+saguaros, wagon wheels at hitching posts, troughs, crates, cow skulls and red boulders for
+scenery; **a locomotive at its water tower** in the corner, puffing, whistling when the clock
+presses; **high noon** at the climax, the screen closing to a western's widescreen bars, the heat
+shimmering along them. A wanted-poster banner pinned with nails, one corner torn ("Draw!" /
+„Zieht!"), a poster-paper HUD, the title in wood type with its red off register; gold nuggets and
+sheriff's stars to finish (`FinishLook` gained `nuggets`).
+
+**Cost**, measured as Mythos's in the same runs: 60 fps; effects 1.1 ms and render 3.1–3.8 ms a
+frame against Stadium's 0.9–1.1 and 2.5–2.7; 5,000–5,700 vertices rebuilt a frame, Cartoon's
+order, the tumbleweeds, the gold glints and the floor's life among them. Seen in screenshots
+building, in combat at two, three and eight players, in the final round, the banner crossing and
+the menu. Tested in play and approved by the users the same day, with Mythos.

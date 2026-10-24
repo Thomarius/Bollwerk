@@ -415,9 +415,9 @@ sender's seat**, so a client cannot act for someone else.
 
 ## 7. `packages/client`
 
-Twenty-two visual styles — Minimal (`flat`), Medieval (`pixel`: named Pixel art until the other
+Twenty-four visual styles — Minimal (`flat`), Medieval (`pixel`: named Pixel art until the other
 styles made the name mean nothing), Night, Cyberpunk, Blueprint, Parchment, Toy bricks
-(`bricks`), Stained glass (`glass`), Chocolate (`chocolate`), Halloween (`halloween`), Sakura (`sakura`), Oktoberfest (`oktoberfest`), Opera (`opera`), Office (`office`), Under the sea (`undersea`), Electric (`electric`), Cartoon (`cartoon`), Christmas (`christmas`), Noir (`noir`), Stadium (`sports`), Pirates (`pirates`) and Anime (`anime`) — behind one `Theme` interface: the scene owns the camera, the layer stacks,
+(`bricks`), Stained glass (`glass`), Chocolate (`chocolate`), Halloween (`halloween`), Sakura (`sakura`), Oktoberfest (`oktoberfest`), Opera (`opera`), Office (`office`), Under the sea (`undersea`), Electric (`electric`), Cartoon (`cartoon`), Christmas (`christmas`), Noir (`noir`), Stadium (`sports`), Pirates (`pirates`), Anime (`anime`), Mythos (`mythology`) and Wild West (`wildwest`) — behind one `Theme` interface: the scene owns the camera, the layer stacks,
 dirty tracking and input mapping; a theme owns only what things look like. Adding a style
 is a name in `ArtStyleSchema`, the looks it is made for in `STYLE_LOOKS`, a `Theme`, a
 case in `createTheme`, a menu title in `titles.ts` and a banner class in `hud.ts`; the
@@ -573,7 +573,7 @@ top saying whether a click chooses the building or the combat look, each card ba
 the look it is chosen for. The styles are in alphabetical order by name, so a new one finds
 its place, and **Random** comes last, a die for its picture: **a new style at every
 banner that brings its look** (`LookRotation`, ARCHIVE 12q), repeating none until every
-style has been shown — both looks random share one cycle of all twenty-two, one random cycles
+style has been shown — both looks random share one cycle of all twenty-four, one random cycles
 through all but the other look's — and never the style the banner takes away, nor the one a
 look last had across a cycle's end. Each next look is made a step a frame, hidden, in the
 intermission after the build phase (`Scene.prepare`), and goes on screen once the look it
@@ -1396,6 +1396,23 @@ a ferry and gulls on the outer sea; at the climax a sunset and focus lines from 
 edges. Its banners **episode cards**: the episode over your hero's portrait, its face the
 moment's (`heroExpression`); its HUD white with screentone and pink; its finish inked stars.
 
+**Mythos** (`mythology.ts`, `mythology/`, `art.mythology`; ARCHIVE 14x, designed with the user),
+for either look: **the board as a black-figure vase** — black glaze on the clay, details incised.
+The wine-dark sea with incised waves; walls **the meander** in the owner's colour; sealed ground
+**a mosaic**; castles **temples** whose altar fire burns while sealed; **onager catapults** for
+guns, one design, a shield in the owner's colour on the frame, the arm swinging back over the top
+as the shot flies; stones and pots of burning oil; potsherds and cracked glaze at a hit. Sisyphus
+in a tondo in the corner; the bearded gods leaning out of clouds at the climax; triremes and
+dolphins; a frieze banner; laurel leaves to finish.
+
+**Wild West** (`wildwest.ts`, `wildwest/`, `art.wildwest`; ARCHIVE 14y, designed with the user),
+for either look: **mesas over a canyon floor at high noon**, no sea — cliffs of red rock in bands
+under every south edge, the floor greyer, pebbled, shadowed. Adobe walls whitewashed in the
+owner's colour; staked claims for sealed ground; frontier buildings with **windpumps turning while
+sealed**; **mortar barrels** for guns, one design, hoops in the owner's colour, lobbing dynamite;
+tumbleweeds rolling over open ground and the floor; a stagecoach and vultures; a locomotive in the
+corner; high noon's widescreen bars at the climax; a wanted-poster banner; nuggets to finish.
+
 The thirteen shape-drawn styles share `walls.ts`: the wall geometry (tops, faces, rim), and
 hatching laid on one lattice so neighbouring tiles hatch as one fill.
 
@@ -1722,15 +1739,6 @@ fit (ARCHIVE 12z), its remaining steps dropped (the user's decision, 2026-10-14;
    Package B (B1–B2), some styles' own tracks, played with a chance at every start of a look and
    paused per style for some rounds after — the next session's, once the user has the tracks. The
    plan is in [`STYLE_MUSIC.md`](./STYLE_MUSIC.md).
-4. **Two last styles** (the user's choice from their shortlist, 2026-10-24): **Mythology**, ancient
-   Greece as black-figure vase painting, and **the Wild West**, a showdown among the mesas.
-   Designed with the user, their elements decided — one gun design each, no people as guns:
-   onager catapults and mortar barrels — to be built next, a sketch page first:
-   [`MYTHOLOGY_STYLE.md`](./MYTHOLOGY_STYLE.md) and [`WILDWEST_STYLE.md`](./WILDWEST_STYLE.md).
-   Left out of the shortlist: Egypt (too near Mythology in age and technique, the desert the
-   Wild West's), Nordic (Christmas's snow, Medieval's castles), Beach (Pirates' and Anime's),
-   Food (Chocolate's), Supermarket (Office's tone) and Microscopic (the bold one, kept as a
-   reserve).
 
 Only open work is kept here. Finished packages move to `ARCHIVE.md` under their old
 numbers — 11.1 scoring, 11.7 team mode, 11.8 the visual pass, 11.9 the themes, 11.10 the

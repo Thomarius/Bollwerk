@@ -59,7 +59,7 @@ Client dev query parameters: `?autostart=1&players=3&seed=7` (a random seed with
 leave your seat undriven on the way, so you are soon knocked out), `&speed=10`,
 `&perf=1` for the frame-time readout (ARCHIVE 12n: a fixed 30 s window, Copy for the figures),
 `&bots=thread` to keep a local match's bots off their worker (ARCHIVE 13k),
-`&style=flat|pixel|night|cyberpunk|blueprint|parchment|bricks|glass|chocolate|halloween|sakura|oktoberfest|opera|office|undersea|electric|cartoon|christmas|noir|sports|pirates|anime` for both looks (a one-look style sets only its own)
+`&style=flat|pixel|night|cyberpunk|blueprint|parchment|bricks|glass|chocolate|halloween|sakura|oktoberfest|opera|office|undersea|electric|cartoon|christmas|noir|sports|pirates|anime|mythology|wildwest` for both looks (a one-look style sets only its own)
 (`&buildStyle=`, `&combatStyle=` for one), `&watch=1&level=8` to observe a bot match (`&personality=offensive` fixes every bot's),
 `&rounds=12` for the round cap, `&specials=1` for special towers (`&tower=bertha3`, a tower at its cost, the person's),
 `&teams=2` for teams of two in seat order, `?icons=sheet` every style's cannon icon side by side
@@ -85,7 +85,7 @@ rounds.
 | `analysis`       | Per-round match statistics, for bot soaks and recorded human play alike.   |
 | `tournament`     | Tournament mode's core: schedule, brackets, quick rolls, saves. No DOM.    |
 | `server`         | Authoritative match server, rooms, WebSocket, match recordings.            |
-| `client`         | Pixi renderer, 22 visual styles, controls, HUD, netcode client.            |
+| `client`         | Pixi renderer, 24 visual styles, controls, HUD, netcode client.            |
 | `desktop`        | Electron app for releases: the server behind a minimal window (M14).       |
 | `tools/headless` | Bot-vs-bot soak runs and map dumps.                                        |
 
@@ -187,6 +187,14 @@ which a test session needs the server rebuilt and every page reloaded for):
   of your own with only corner gaps left — sealed by a 4-connected flood, not by the real one —
   has each leak pinged at the corner its two walls share, never on a tile (`cornerGaps.ts`,
   `drawCornerGaps`); chosen from four marks on `?gaps=preview`. Not yet seen in play by the users.
+- **Mythos and Wild West** (ARCHIVE 14x, 14y, 2026-10-24, the two last styles, designed with the
+  user and sketched first): **Mythos** the board as a black-figure vase — the wine-dark sea, the
+  meander for walls, a mosaic for sealed ground, temples whose altar fire burns while sealed,
+  **onager catapults** whose arm swings back over the top as their shot flies, Sisyphus in a
+  tondo in the corner and the bearded gods watching at the climax. **Wild West** mesas over a
+  canyon floor — adobe walls, staked claims, windpumps turning while sealed, **mortar barrels**
+  lobbing dynamite, tumbleweeds, a locomotive, high noon's widescreen bars. The user's rule for
+  both: one gun design, no people as guns. Tested in play and approved by the users.
 - **Anime** (ARCHIVE 14w, 2026-10-24, the user's idea, designed with them on a sketch page): the
   twenty-second look, the match as an anime season — **the guns chibi heroes of eight clans, a
   clan to a team, their hair in the owner's colour**, an aura of flame growing while a shot flies
@@ -359,13 +367,14 @@ which a test session needs the server rebuilt and every page reloaded for):
   `Siting`; main.ts is app, prefs, session, menu, lobbyFlow and matchScreen, the last with
   `BoardEffects`; a room's match is `MatchRunner`; the styles since Chocolate extend
   `ShapeTheme`; seats are dealt by `dealSeats` and bots driven by `takeBotTurns`.
-- **The looks**: twenty-two styles for either look — Minimal, Medieval, Night, Cyberpunk,
+- **The looks**: twenty-four styles for either look — Minimal, Medieval, Night, Cyberpunk,
   Blueprint, Parchment, Toy bricks, Stained glass, Chocolate (ARCHIVE 11zy), Halloween
   (12a), Sakura (12d), Oktoberfest (12e), Opera (12f), Office (12l), Under the sea (12u),
   Electric (12v), Cartoon, a rubber-hose reel in black and white (12zb), Christmas (12zc),
   Noir, a crime city at night as a cel-shaded graphic novel, hatched in ink (12zn),
-  Stadium (`sports`), whose guns are sportsmen of ten ball sports (14d), Pirates (14q) and
-  Anime, the match as an anime season, its guns chibi heroes of eight clans (14w) —
+  Stadium (`sports`), whose guns are sportsmen of ten ball sports (14d), Pirates (14q),
+  Anime, the match as an anime season, its guns chibi heroes of eight clans (14w), Mythos, a
+  black-figure vase (14x), and the Wild West among the mesas (14y) —
   each carried to the panels, the big timer, the island banners and the finish (ARCHIVE
   11zz), each with a piece in the sea's corner (`corner.ts`, 12t); chosen from a gallery with
   Random, a new style every round (12q), and changeable mid-match from the pause menu (12b).
@@ -395,10 +404,6 @@ which a test session needs the server rebuilt and every page reloaded for):
   once the user has the tracks: some styles' own track, played with a chance (`styleTrackChance`,
   50%) at every start of a look and paused per style for `styleTrackPauseRounds` (3) after —
   both in the audio manifest — on the framework Package A built (ARCHIVE 14b).
-- **Two last styles** (item 4): Mythology as black-figure vase painting and the Wild West,
-  designed with the user in `docs/MYTHOLOGY_STYLE.md` and `docs/WILDWEST_STYLE.md`, every element
-  decided (one gun design each, no people: onager catapults, mortar barrels); next, a sketch
-  page each, as Anime had, then the themes.
 - **Special towers** (item 2): the user's decision on a test without the cap of three; later towers come by the user's own designs. Their balance is closed and they are **off by default for
   good** — a wacky addition, not the base game (ARCHIVE 13zw); a new tower is balanced at Level 5
   only, its variants against each other and against no tower (the user's).

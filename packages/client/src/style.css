@@ -2967,7 +2967,9 @@ body.hud-christmas,
 body.hud-noir,
 body.hud-sports,
 body.hud-pirates,
-body.hud-anime {
+body.hud-anime,
+body.hud-mythology,
+body.hud-wildwest {
   --hud-panel: var(--hud-box);
 }
 
@@ -4922,6 +4924,219 @@ body.hud-anime #banner.final-round::before {
 body.hud-anime .embers i {
   background: #fff;
   box-shadow: 0 0 5px 2px rgb(255 225 74 / 70%);
+}
+
+/* Mythology (ARCHIVE 14x): the banner a frieze — a band of black glaze between two
+   meander borders, the call in terracotta capitals, the style's words under it in the white. */
+.phase-call.banner-mythology {
+  border: none;
+  box-shadow: 0 6px 18px #0008;
+  background:
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='24' height='12' viewBox='0 0 24 12'><path d='M0 11 H3 V1 H15 V9 H8 V5 H11' fill='none' stroke='%23d98a52' stroke-width='1.6'/></svg>")
+      repeat-x top 4px left / 24px 12px,
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='24' height='12' viewBox='0 0 24 12'><path d='M0 11 H3 V1 H15 V9 H8 V5 H11' fill='none' stroke='%23d98a52' stroke-width='1.6'/></svg>")
+      repeat-x bottom 4px left / 24px 12px,
+    #1e1612;
+  padding-top: 1.7rem;
+  padding-bottom: 1.7rem;
+  color: #d98a52;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-weight: 700;
+  letter-spacing: 0.3em;
+}
+
+.phase-call.banner-mythology small {
+  color: #f2e6cc;
+  font-family: Georgia, 'Times New Roman', serif;
+  letter-spacing: 0.12em;
+}
+
+.phase-call.banner-mythology small.flavour {
+  color: #e8a070;
+  font-style: italic;
+}
+
+.phase-call.banner-mythology small.news {
+  color: #f2e6cc;
+}
+
+body.hud-mythology {
+  --hud-bar: #1e1612;
+  --hud-rule: 3px solid #d98a52;
+  --hud-pad-top: 0.35rem;
+  --hud-ink: #f2e6cc;
+  --hud-muted: #c8a888;
+  --hud-accent: #d98a52;
+  --hud-box: #2a201a;
+  --hud-box-edge: 2px solid #d98a52;
+  --hud-box-shadow: 0 3px 0 #0008;
+  --hud-track: #ffffff22;
+  --hud-font: Georgia, 'Times New Roman', serif;
+}
+
+/* The bar black glaze, a running meander in the clay along its foot. */
+body.hud-mythology #hud .bar {
+  background:
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='24' height='12' viewBox='0 0 24 12'><path d='M0 11 H3 V1 H15 V9 H8 V5 H11' fill='none' stroke='%23d98a52' stroke-width='1.6'/></svg>")
+      repeat-x bottom 2px left / 24px 12px,
+    #1e1612;
+}
+
+body.hud-mythology #hud .phase .timer,
+body.hud-mythology #hud .roster .score {
+  color: #e8a070;
+}
+
+/* The big timer in terracotta capitals, ringed in the glaze; reddening in the last seconds. */
+body.hud-mythology .big-timer {
+  color: rgb(217 138 82 / 92%);
+  font-family: Georgia, 'Times New Roman', serif;
+  font-weight: 700;
+  text-shadow:
+    0 2px 0 rgb(30 22 18 / 90%),
+    0 0 6px rgb(30 22 18 / 60%);
+}
+
+body.hud-mythology .big-timer.urgent {
+  color: rgb(242 230 204 / 96%);
+  text-shadow: 0 0 10px rgb(124 42 38 / 80%);
+}
+
+body.hud-mythology .island-banner:not(.out),
+body.hud-mythology .team-tag,
+body.hud-mythology .you-are-here {
+  border: 2px solid #1e1612;
+  border-radius: 2px;
+  background: #d98a52;
+  box-shadow: 0 3px 6px #0008;
+  color: #1e1612;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+body.hud-mythology .island-banner.out,
+body.hud-mythology .final-stamp {
+  border: 3px solid #d98a52 !important;
+  border-radius: 2px;
+  background: #1e1612;
+  color: #d98a52;
+  font-family: Georgia, 'Times New Roman', serif;
+  letter-spacing: 0.2em;
+}
+
+body.hud-mythology #banner.final-round::before {
+  box-shadow: inset 0 0 22vmin rgb(30 22 18 / 45%);
+}
+
+body.hud-mythology .embers i {
+  background: #f2e6cc;
+  box-shadow: 0 0 4px 1px rgb(217 138 82 / 60%);
+}
+
+/* The Wild West (ARCHIVE 14y): the banner a wanted poster pinned to boards — cream
+   paper, wood-type slab capitals in dark brown with a red shadow off register, nail heads at its
+   corners, one corner torn. */
+.phase-call.banner-wildwest {
+  border-top: 3px solid #6a4426;
+  border-bottom: 3px solid #6a4426;
+  box-shadow: 0 6px 18px #0008;
+  background:
+    radial-gradient(circle at 1.5% 22%, #3a2416 0 3px, transparent 4px),
+    radial-gradient(circle at 98.5% 22%, #3a2416 0 3px, transparent 4px),
+    radial-gradient(circle at 1.5% 78%, #3a2416 0 3px, transparent 4px),
+    linear-gradient(#f2e6c8, #e6d4ac);
+  color: #3a2416;
+  font-family: Rockwell, 'Courier New', Georgia, serif;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  text-shadow: 3px 2px 0 #b4302a88;
+  clip-path: polygon(0 0, 100% 0, 100% 72%, 97.5% 100%, 0 100%);
+}
+
+.phase-call.banner-wildwest small {
+  color: #5a3a22;
+  font-family: Rockwell, 'Courier New', Georgia, serif;
+  letter-spacing: 0.08em;
+  text-shadow: none;
+}
+
+.phase-call.banner-wildwest small.flavour {
+  color: #b4302a;
+}
+
+.phase-call.banner-wildwest small.news {
+  color: #3a2416;
+}
+
+body.hud-wildwest {
+  --hud-bar: #ecdcb8;
+  --hud-rule: 3px solid #6a4426;
+  --hud-pad-top: 0.35rem;
+  --hud-ink: #3a2416;
+  --hud-muted: #7a5a3a;
+  --hud-accent: #b4302a;
+  --hud-box: #f2e6c8;
+  --hud-box-edge: 2px solid #6a4426;
+  --hud-box-shadow: 0 3px 0 #3a241666;
+  --hud-track: #3a241622;
+  --hud-font: Rockwell, 'Courier New', Georgia, serif;
+}
+
+/* The bar a weathered poster: the paper's foxing in faint blotches. */
+body.hud-wildwest #hud .bar {
+  background:
+    radial-gradient(circle at 12% 40%, #c8a8701f 0 30px, transparent 60px),
+    radial-gradient(circle at 70% 70%, #c8a8701a 0 40px, transparent 80px), #ecdcb8;
+}
+
+body.hud-wildwest #hud .phase .timer,
+body.hud-wildwest #hud .roster .score {
+  color: #b4302a;
+}
+
+/* The big timer a pocket watch's figures: dark on the dust, red in the last seconds. */
+body.hud-wildwest .big-timer {
+  color: rgb(58 36 22 / 85%);
+  font-family: Rockwell, 'Courier New', Georgia, serif;
+  font-weight: 900;
+  text-shadow: 2px 2px 0 rgb(242 230 200 / 70%);
+}
+
+body.hud-wildwest .big-timer.urgent {
+  color: rgb(180 48 42 / 95%);
+}
+
+body.hud-wildwest .island-banner:not(.out),
+body.hud-wildwest .team-tag,
+body.hud-wildwest .you-are-here {
+  border: 2px solid #3a2416;
+  border-radius: 2px;
+  background: #f2e6c8;
+  box-shadow: 0 3px 6px #0006;
+  color: #3a2416;
+  font-family: Rockwell, 'Courier New', Georgia, serif;
+  font-weight: 900;
+}
+
+body.hud-wildwest .island-banner.out,
+body.hud-wildwest .final-stamp {
+  border: 3px solid #3a2416 !important;
+  border-radius: 2px;
+  background: #f2e6c8;
+  color: #b4302a;
+  font-family: Rockwell, 'Courier New', Georgia, serif;
+  font-weight: 900;
+  letter-spacing: 0.1em;
+}
+
+body.hud-wildwest #banner.final-round::before {
+  box-shadow: inset 0 0 22vmin rgb(255 200 120 / 25%);
+}
+
+body.hud-wildwest .embers i {
+  background: #f2e6c8;
+  box-shadow: 0 0 3px 1px rgb(200 168 112 / 60%);
 }
 
 /* ---------- the gallery of looks (ARCHIVE 12b) ---------- */

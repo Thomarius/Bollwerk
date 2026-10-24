@@ -24,6 +24,8 @@ import { NoirTheme } from './noir.js';
 import { SportsTheme } from './sports.js';
 import { PiratesTheme } from './pirates.js';
 import { AnimeTheme } from './anime.js';
+import { MythologyTheme } from './mythology.js';
+import { WildWestTheme } from './wildwest.js';
 import { OperaTheme } from './opera.js';
 import { release } from './release.js';
 import { SakuraTheme } from './sakura.js';
@@ -97,6 +99,10 @@ export function createTheme(style: ArtStyle, seed = 1): Theme {
       return new PiratesTheme(seed);
     case 'anime':
       return new AnimeTheme(seed);
+    case 'mythology':
+      return new MythologyTheme(seed);
+    case 'wildwest':
+      return new WildWestTheme(seed);
   }
 }
 

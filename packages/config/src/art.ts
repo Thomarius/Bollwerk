@@ -57,7 +57,9 @@ export type PlayerPalette = z.infer<typeof PlayerPaletteSchema>;
  * `noir` a crime city at night drawn as a cel-shaded graphic novel, `sports` a stadium whose
  * guns are sportsmen of ten ball sports throwing, kicking and hitting their balls, `pirates`
  * a pirates' cove in Caribbean daylight, log stockades and ship's cannon with parrots on them,
- * `anime` a summer's day in an anime, its guns chibi heroes of eight clans, a clan to a team.
+ * `anime` a summer's day in an anime, its guns chibi heroes of eight clans, a clan to a team,
+ * `mythology` ancient Greece as black-figure vase painting, its guns onager catapults, `wildwest`
+ * a showdown at high noon among the mesas, its guns mortar barrels.
  */
 export const ArtStyleSchema = z.enum([
   'flat',
@@ -82,6 +84,8 @@ export const ArtStyleSchema = z.enum([
   'sports',
   'pirates',
   'anime',
+  'mythology',
+  'wildwest',
 ]);
 export type ArtStyle = z.infer<typeof ArtStyleSchema>;
 
@@ -1013,6 +1017,61 @@ export const AnimeStyleSchema = z.strictObject({
 });
 export type AnimeStyleConfig = z.infer<typeof AnimeStyleSchema>;
 
+/**
+ * The Mythology look (ARCHIVE 14x): ancient Greece as black-figure vase painting —
+ * black glaze on the clay, details incised, the wine-dark sea; walls the meander, sealed ground a
+ * mosaic, temples whose altar fire burns while sealed, and onager catapults for guns.
+ */
+export const MythologyStyleSchema = z.strictObject({
+  /** An onager's arm swinging up as it fires; the altar fires' flicker. */
+  swingMs: z.number().int().positive(),
+  flickerMs: z.number().int().positive(),
+  /** The share of the sea's tiles with a wave incised in them. */
+  waveShare: z.number().min(0).max(1),
+  /** Sisyphus's climb and the boulder's fall, once round; and when the clock presses. */
+  sisyphusMs: z.number().int().positive(),
+  sisyphusHurriedMs: z.number().int().positive(),
+  /** The gods watching at the climax: their heads' size in tiles. */
+  godTiles: z.number().positive(),
+  /** Triremes rowing across the outer sea now and then, and dolphins leaping. */
+  triremeEveryMs: z.number().int().positive(),
+  triremeTilesPerSecond: z.number().positive(),
+  dolphinEveryMs: z.number().int().positive(),
+  dolphinLifeMs: z.number().int().positive(),
+});
+export type MythologyStyleConfig = z.infer<typeof MythologyStyleSchema>;
+
+/**
+ * The Wild West look (ARCHIVE 14y): mesas over a canyon floor at high noon — adobe
+ * walls, staked claims, frontier buildings with windpumps turning while sealed, and mortar
+ * barrels for guns lobbing dynamite; tumbleweeds rolling.
+ */
+export const WildWestStyleSchema = z.strictObject({
+  /** A barrel's hop as it fires, its rocking while it reloads, a windpump's turn. */
+  hopMs: z.number().int().positive(),
+  rockMs: z.number().int().positive(),
+  pumpTurnMs: z.number().int().positive(),
+  /** Tumbleweeds rolling over each island's open ground, and across the canyon floor. */
+  tumbleweedsPerIsland: z.number().int().nonnegative(),
+  tumbleweedTilesPerSecond: z.number().positive(),
+  floorTumbleweedEveryMs: z.number().int().positive(),
+  /** A stagecoach crossing the canyon floor now and then, and vultures circling. */
+  stagecoachEveryMs: z.number().int().positive(),
+  stagecoachTilesPerSecond: z.number().positive(),
+  vultures: z.number().int().nonnegative(),
+  /** Gold glinting in the claims each second, and the share of wall hits that letter a word. */
+  glintsPerSecond: z.number().nonnegative(),
+  wordChance: z.number().min(0).max(1),
+  wordMs: z.number().int().positive(),
+  /** High noon: the widescreen bars' share of the screen's height, and the heat's shimmer. */
+  barShare: z.number().min(0).max(0.5),
+  shimmerAlpha: z.number().min(0).max(1),
+  /** The locomotive's puff, calm and hurried. */
+  puffMs: z.number().int().positive(),
+  hurriedPuffMs: z.number().int().positive(),
+});
+export type WildWestStyleConfig = z.infer<typeof WildWestStyleSchema>;
+
 /** One of the two looks a match is drawn in. */
 export type ArtLook = 'build' | 'combat';
 
@@ -1067,6 +1126,8 @@ export const STYLE_LOOKS: Record<ArtStyle, readonly ArtLook[]> = {
   sports: ['build', 'combat'],
   pirates: ['build', 'combat'],
   anime: ['build', 'combat'],
+  mythology: ['build', 'combat'],
+  wildwest: ['build', 'combat'],
 };
 
 export function styleServes(
@@ -1200,6 +1261,8 @@ export const ArtConfigSchema = z
     sports: SportsStyleSchema,
     pirates: PiratesStyleSchema,
     anime: AnimeStyleSchema,
+    mythology: MythologyStyleSchema,
+    wildwest: WildWestStyleSchema,
     scenery: ScenerySchema,
     /** Effects both styles draw alike, because they carry information. */
     effects: z.strictObject({

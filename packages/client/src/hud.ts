@@ -52,6 +52,8 @@ const BANNER_CLASS: Record<ArtStyle, string> = {
   sports: 'banner-sports',
   pirates: 'banner-pirates',
   anime: 'banner-anime',
+  mythology: 'banner-mythology',
+  wildwest: 'banner-wildwest',
 };
 
 /**
@@ -82,6 +84,8 @@ const HUD_SKIN: Record<ArtStyle, string> = {
   sports: 'hud-sports',
   pirates: 'hud-pirates',
   anime: 'hud-anime',
+  mythology: 'hud-mythology',
+  wildwest: 'hud-wildwest',
 };
 
 /**
@@ -110,6 +114,20 @@ const BANNER_FLAVOUR: Partial<Record<ArtStyle, Partial<Record<Phase | 'final', T
     build: 'anime.call.build',
     cannon_place: 'anime.call.cannonPlace',
     final: 'anime.call.final',
+  },
+  mythology: {
+    castle_select: 'mythology.call.castleSelect',
+    combat: 'mythology.call.combat',
+    build: 'mythology.call.build',
+    cannon_place: 'mythology.call.cannonPlace',
+    final: 'mythology.call.final',
+  },
+  wildwest: {
+    castle_select: 'wildwest.call.castleSelect',
+    combat: 'wildwest.call.combat',
+    build: 'wildwest.call.build',
+    cannon_place: 'wildwest.call.cannonPlace',
+    final: 'wildwest.call.final',
   },
 };
 

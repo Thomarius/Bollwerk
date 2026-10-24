@@ -19,10 +19,10 @@ score among those still standing wins.
 - Play alone on your own computer, with friends on your home network, or over the internet;
   offline, the bots think in the background, so the game keeps a steady 60 frames a second
 - Guests in a room say when they are ready, and the host starts once everyone is
-- Twenty-two visual styles — Medieval, Minimal, Night, Cyberpunk, Blueprint, Parchment, Toy
-  bricks, Stained glass, Chocolate, Halloween, Sakura, Oktoberfest, Opera, Office, Under the sea, Electric, Cartoon, Christmas, Noir, Stadium, Pirates and Anime — one for building and one for combat, swapped by the
+- Twenty-four visual styles — Medieval, Minimal, Night, Cyberpunk, Blueprint, Parchment, Toy
+  bricks, Stained glass, Chocolate, Halloween, Sakura, Oktoberfest, Opera, Office, Under the sea, Electric, Cartoon, Christmas, Noir, Stadium, Pirates, Anime, Mythos and Wild West — one for building and one for combat, swapped by the
   banners as in Rampart, or a random one every round from the styles you mark as favourites
-- No images at all: every castle, wall, wave and explosion in all twenty-two styles is drawn by
+- No images at all: every castle, wall, wave and explosion in all twenty-four styles is drawn by
   code at runtime, as vector shapes, so the whole game is about 2 MB of code, sharp on any
   screen, and each style is a set of drawing rules rather than a set of pictures
 - In English and German, chosen in the menu

@@ -148,6 +148,18 @@ SCENES=(
   "final-anime|$BASE/?autostart=1&players=3&seed=5&snapshot=combat&round=10&style=anime|8000"
   "banner-anime|$WATCH&snapshot=cannon_place&round=2&style=anime|5000"
   "menu-anime|$BASE/?style=anime|4000"
+  # Mythos and Wild West (ARCHIVE 14x, 14y): the vase and its onagers, Sisyphus in the corner, the
+  # gods at the climax; the mesas over the canyon floor, the barrels, tumbleweeds, high noon.
+  "combat-mythology|$BASE/?autostart=1&players=2&seed=5&snapshot=combat&round=3&style=mythology|4200"
+  "eight-mythology|$BASE/?autostart=1&players=8&seed=3&snapshot=combat&round=3&style=mythology|3500"
+  "final-mythology|$BASE/?autostart=1&players=3&seed=5&snapshot=combat&round=10&style=mythology|8000"
+  "banner-mythology|$WATCH&snapshot=cannon_place&round=2&style=mythology|5000"
+  "menu-mythology|$BASE/?style=mythology|4000"
+  "combat-wildwest|$BASE/?autostart=1&players=2&seed=5&snapshot=combat&round=3&style=wildwest|4200"
+  "eight-wildwest|$BASE/?autostart=1&players=8&seed=3&snapshot=combat&round=3&style=wildwest|3500"
+  "final-wildwest|$BASE/?autostart=1&players=3&seed=5&snapshot=combat&round=10&style=wildwest|8000"
+  "banner-wildwest|$WATCH&snapshot=cannon_place&round=2&style=wildwest|5000"
+  "menu-wildwest|$BASE/?style=wildwest|4000"
   "eight-night|$BASE/?autostart=1&players=8&seed=3&snapshot=combat&round=3&style=night|3000"
   # The climaxes of the first eight styles (PLAN 11 item 5), in the final round's build phase.
   "final-pixel|$GAME&snapshot=build&round=10&style=pixel|8000"

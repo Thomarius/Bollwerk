@@ -1244,6 +1244,50 @@
         "uiValid": "#4fd06a",
         "uiInvalid": "#ff4a4a"
       }
+    },
+    "mythology": {
+      "palette": {
+        "waterDeep": "#1e1612",
+        "waterMid": "#2a201a",
+        "waterShallow": "#3a2c22",
+        "waterFoam": "#d98a52",
+        "sand": "#eab07c",
+        "grassDark": "#b86a38",
+        "grassMid": "#d98a52",
+        "grassLight": "#eab07c",
+        "rockDark": "#1e1612",
+        "rockMid": "#5a4232",
+        "rockLight": "#f2e6cc",
+        "shadow": "#1e1612",
+        "craterDark": "#1e1612",
+        "craterMid": "#6a3a22",
+        "uiInk": "#f2e6cc",
+        "uiAccent": "#d98a52",
+        "uiValid": "#8fe08a",
+        "uiInvalid": "#ff5a5a"
+      }
+    },
+    "wildwest": {
+      "palette": {
+        "waterDeep": "#9c8a74",
+        "waterMid": "#cdbfa6",
+        "waterShallow": "#dcd2bf",
+        "waterFoam": "#f4ecdc",
+        "sand": "#f2c88a",
+        "grassDark": "#b4502c",
+        "grassMid": "#e8b46c",
+        "grassLight": "#f2c88a",
+        "rockDark": "#6a4a32",
+        "rockMid": "#9a7a58",
+        "rockLight": "#d8c0a0",
+        "shadow": "#3a2416",
+        "craterDark": "#5a3a22",
+        "craterMid": "#8a6038",
+        "uiInk": "#3a2416",
+        "uiAccent": "#b4502c",
+        "uiValid": "#5aa04a",
+        "uiInvalid": "#d83a2a"
+      }
     }
   },
   "dither": {
@@ -1831,5 +1875,35 @@
     "ferryEveryMs": 26000,
     "ferryTilesPerSecond": 0.8,
     "gulls": 3
+  },
+  "mythology": {
+    "swingMs": 140,
+    "flickerMs": 260,
+    "waveShare": 0.3,
+    "sisyphusMs": 9000,
+    "sisyphusHurriedMs": 3200,
+    "godTiles": 1.6,
+    "triremeEveryMs": 24000,
+    "triremeTilesPerSecond": 0.8,
+    "dolphinEveryMs": 9000,
+    "dolphinLifeMs": 1600
+  },
+  "wildwest": {
+    "hopMs": 360,
+    "rockMs": 520,
+    "pumpTurnMs": 2400,
+    "tumbleweedsPerIsland": 2,
+    "tumbleweedTilesPerSecond": 1.8,
+    "floorTumbleweedEveryMs": 7000,
+    "stagecoachEveryMs": 26000,
+    "stagecoachTilesPerSecond": 1.4,
+    "vultures": 3,
+    "glintsPerSecond": 2,
+    "wordChance": 0.3,
+    "wordMs": 1100,
+    "barShare": 0.07,
+    "shimmerAlpha": 0.12,
+    "puffMs": 900,
+    "hurriedPuffMs": 320
   }
 }
