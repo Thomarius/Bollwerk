@@ -1722,6 +1722,15 @@ fit (ARCHIVE 12z), its remaining steps dropped (the user's decision, 2026-10-14;
    Package B (B1–B2), some styles' own tracks, played with a chance at every start of a look and
    paused per style for some rounds after — the next session's, once the user has the tracks. The
    plan is in [`STYLE_MUSIC.md`](./STYLE_MUSIC.md).
+4. **Two last styles** (the user's choice from their shortlist, 2026-10-24): **Mythology**, ancient
+   Greece as black-figure vase painting, and **the Wild West**, a showdown among the mesas.
+   Designed with the user, their elements decided — one gun design each, no people as guns:
+   onager catapults and mortar barrels — to be built next, a sketch page first:
+   [`MYTHOLOGY_STYLE.md`](./MYTHOLOGY_STYLE.md) and [`WILDWEST_STYLE.md`](./WILDWEST_STYLE.md).
+   Left out of the shortlist: Egypt (too near Mythology in age and technique, the desert the
+   Wild West's), Nordic (Christmas's snow, Medieval's castles), Beach (Pirates' and Anime's),
+   Food (Chocolate's), Supermarket (Office's tone) and Microscopic (the bold one, kept as a
+   reserve).
 
 Only open work is kept here. Finished packages move to `ARCHIVE.md` under their old
 numbers — 11.1 scoring, 11.7 team mode, 11.8 the visual pass, 11.9 the themes, 11.10 the

@@ -395,6 +395,10 @@ which a test session needs the server rebuilt and every page reloaded for):
   once the user has the tracks: some styles' own track, played with a chance (`styleTrackChance`,
   50%) at every start of a look and paused per style for `styleTrackPauseRounds` (3) after —
   both in the audio manifest — on the framework Package A built (ARCHIVE 14b).
+- **Two last styles** (item 4): Mythology as black-figure vase painting and the Wild West,
+  designed with the user in `docs/MYTHOLOGY_STYLE.md` and `docs/WILDWEST_STYLE.md`, every element
+  decided (one gun design each, no people: onager catapults, mortar barrels); next, a sketch
+  page each, as Anime had, then the themes.
 - **Special towers** (item 2): the user's decision on a test without the cap of three; later towers come by the user's own designs. Their balance is closed and they are **off by default for
   good** — a wacky addition, not the base game (ARCHIVE 13zw); a new tower is balanced at Level 5
   only, its variants against each other and against no tower (the user's).
