@@ -1,4 +1,10 @@
-import { NEIGHBOURS_4, Structure, computeEnclosure, type MatchState } from '@bollwerk/sim';
+import {
+  NEIGHBOURS_4,
+  NEIGHBOURS_8,
+  Structure,
+  computeEnclosure,
+  type MatchState,
+} from '@bollwerk/sim';
 
 /**
  * Corner gaps: the leaks a player cannot see. The escape flood is 8-connected while a wall
@@ -7,10 +13,16 @@ import { NEIGHBOURS_4, Structure, computeEnclosure, type MatchState } from '@bol
  *
  * A castle has only corner gaps left when it would be sealed by a 4-connected flood but is
  * not by the real one. Every leak of its ground is then a diagonal step through a 2×2
- * window with wall on one diagonal and open tiles on the other, one inside and one out: had
- * either side tile been open, it would join the two orthogonally and the castle would not be
- * sealed at 4. So the windows found here are all of them, and filling one open tile of each
- * seals it. Marked at the pinch point — the corner the two walls share — since either tile
+ * window with wall on one diagonal and open tiles on the other: one inside, and one the sea
+ * reaches without crossing the castle's ground. Had either side tile been open, it would
+ * join the two orthogonally and the castle would not be sealed at 4. So the windows found
+ * here are all of them, and filling one open tile of each seals it.
+ *
+ * The sea's side is not the 4-connected flood's outside: between two corner gaps there may
+ * lie ground that floods at 4 to neither — a thick wall missing both blocks of a corner
+ * leaves the inner one a pocket, reached from the sea only diagonally. Marked against the
+ * 4-connected outside, that corner was never marked, so filling the gaps that were left the
+ * castle open with nothing marked (2026-10-24, the user's play of v0.9.12). Marked at the pinch point — the corner the two walls share — since either tile
  * closes it, and a tile marked reads as the one right repair (ARCHIVE 10t, the leak marks
  * taken out after the first human play).
  */
@@ -42,7 +54,7 @@ export function cornerGaps(
       enclosure: { ...state.ruleset.enclosure, connectivity: 4 },
     },
   });
-  const outside = four.outside;
+  const fourOutside = four.outside;
 
   // The ground of each castle sealed at 4 but not at 8, flooded as the 4-connected flood
   // left it.
@@ -65,8 +77,34 @@ export function cornerGaps(
       const ny = y + dy;
       if (nx < 0 || ny < 0 || nx >= w || ny >= h) continue;
       const ni = ny * w + nx;
-      if (inside[ni] === 1 || outside[ni] === 1 || structure[ni] === Structure.Wall) continue;
+      if (inside[ni] === 1 || fourOutside[ni] === 1 || structure[ni] === Structure.Wall) continue;
       inside[ni] = 1;
+      queue.push(ni);
+    }
+  }
+
+  // Where the sea gets to, by the real 8-connected flood, without entering that ground.
+  const outside = new Uint8Array(w * h);
+  const blocked = (i: number): boolean =>
+    outside[i] === 1 || inside[i] === 1 || structure[i] === Structure.Wall;
+  for (let x = 0; x < w; x++) {
+    for (const y of [0, h - 1]) if (!blocked(y * w + x)) queue.push(y * w + x);
+  }
+  for (let y = 0; y < h; y++) {
+    for (const x of [0, w - 1]) if (!blocked(y * w + x)) queue.push(y * w + x);
+  }
+  for (const i of queue) outside[i] = 1;
+  while (queue.length > 0) {
+    const i = queue.pop() as number;
+    const x = i % w;
+    const y = (i - x) / w;
+    for (const [dx, dy] of NEIGHBOURS_8) {
+      const nx = x + dx;
+      const ny = y + dy;
+      if (nx < 0 || ny < 0 || nx >= w || ny >= h) continue;
+      const ni = ny * w + nx;
+      if (blocked(ni)) continue;
+      outside[ni] = 1;
       queue.push(ni);
     }
   }

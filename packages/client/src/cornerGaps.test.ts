@@ -1,4 +1,4 @@
-import { stateFromAscii } from '@bollwerk/sim';
+import { Structure, computeEnclosure, stateFromAscii } from '@bollwerk/sim';
 import { describe, expect, it } from 'vitest';
 
 import { cornerGaps } from './cornerGaps.js';
@@ -40,6 +40,39 @@ describe('corner gaps', () => {
     expect(cornerGaps(state, 0)).toEqual([
       { x: 8, y: 3, inside: { x: 8, y: 3 }, outside: { x: 7, y: 2 } },
     ]);
+  });
+
+  it('marks a corner whose inner block is a pocket the sea reaches only diagonally', () => {
+    // A thick wall missing both blocks of its top-left corner: (3, 4) floods at 4 to neither
+    // the sea nor the castle, so the sea's way in there was never marked, and filling the
+    // staggered gap below, the only one marked, left the castle open with nothing marked
+    // (the user's play of v0.9.12).
+    const state = stateFromAscii(`
+      ..............
+      .,,,,,,,,,,,,.
+      .,,,,,,,,,,,,.
+      .,,##########.
+      .,#,########,.
+      .,##,,,,,,##,.
+      .,##,,,,,,##,.
+      .,##,,@@,,##,.
+      .,##,,@@,,##,.
+      .,##,,,,,,##,.
+      .,##,,,,,,##,.
+      .,#######,##,.
+      .,######,###,.
+      .,,,,,,,,,,,,.
+      ..............
+    `);
+    const gaps = cornerGaps(state, 0);
+    expect(gaps).toEqual([
+      { x: 4, y: 5, inside: { x: 4, y: 5 }, outside: { x: 3, y: 4 } },
+      { x: 9, y: 12, inside: { x: 9, y: 11 }, outside: { x: 8, y: 12 } },
+    ]);
+    // One tile of each filled seals it, as the marks promise.
+    for (const gap of gaps)
+      state.structure[gap.inside.y * state.width + gap.inside.x] = Structure.Wall;
+    expect(computeEnclosure(state).castleEnclosed[0]).toBe(true);
   });
 
   it('marks nothing while a straight gap is left too', () => {

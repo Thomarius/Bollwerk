@@ -9757,3 +9757,17 @@ pinged in the build phase (14r); and Graphics and Motion in place of Effects and
 menu's Options (14s, 14t). Protocol 31, so a v0.9.11 page cannot join; recording format 4
 unchanged, the new towers' ruleset keys optional, so v0.9.11's recordings still replay. Not yet seen
 in play by the users: Pirates, the corner gaps, and Graphics with Options.
+
+## 14v. Corner gaps through a pocket (2026-10-24)
+
+**Reported by the user** after playing v0.9.12: one or two corner gaps pinged round a castle,
+both filled, and the castle still not sealed. **The fault**: the marks were the windows between
+the castle's ground and the 4-connected flood's outside, but the sea can reach a corner gap through
+ground that floods at 4 to neither — a thick wall missing both blocks of a corner leaves the inner
+one a pocket, which the sea enters only diagonally. That corner was never marked: with another gap
+marked, filling it left the castle open and nothing marked; with none, nothing was marked at all.
+**Fixed**: the sea's side is now the real 8-connected flood, kept out of the castle's ground, so
+every diagonal step into it is a mark and filling one tile of each seals it (`cornerGaps.ts`, the
+user's case as a test). A fuzz of 40,000 random dense walls round a castle, 12,712 of them with only
+corner gaps left: before, 7,974 marked nothing and 863 marked too little to seal; after, none of
+either, filling the inside or the outside tile of every mark sealing the castle each time.
