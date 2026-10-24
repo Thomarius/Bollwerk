@@ -9744,3 +9744,16 @@ menu, the panel in English and German, the choices saved, no errors.
 
 **And the Public / Private switch beside Play** the other way round, the user's: Public, the
 default, in the accent, and Private muted, where it had been the exception that was marked.
+
+## 14u. v0.9.12 (2026-10-24)
+
+Since v0.9.11: two styles, Stadium (14d) and Pirates (14q), making twenty-one; the Berthas' shots
+drawn bigger (14e) and the overtime's fanfare again (14f); a climax in every build phase's last
+seconds (14g) and one for every style but Minimal (14i), play-tested (14j), with the style's own gun
+as the cannon icon; the Allerdickste Bertha re-balanced (14h); three special towers by the user's
+designs, the Laser Tower (14k), the Frost Cannon (14l) and the Lullaby Tower (14m), played (14n),
+eight at one table (14o) and drawn alike in the lobby, the switch remembered (14p); corner gaps
+pinged in the build phase (14r); and Graphics and Motion in place of Effects and Sharpness, in the
+menu's Options (14s, 14t). Protocol 31, so a v0.9.11 page cannot join; recording format 4
+unchanged, the new towers' ruleset keys optional, so v0.9.11's recordings still replay. Not yet seen
+in play by the users: Pirates, the corner gaps, and Graphics with Options.

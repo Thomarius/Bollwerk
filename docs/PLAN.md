@@ -1645,9 +1645,8 @@ every resolution against an independent search, not only on unit pictures.
 
 ## 11. Open work
 
-**Where to start (2026-10-23).** The latest release is **v0.9.11** (2026-10-18, protocol 28; the
-tree is at 31 since the Laser Tower, the Frost Cannon and the Lullaby Tower, all three played by
-the user). Next: item 3's Package B, the styles' own music, once the user has the tracks, and item
+**Where to start (2026-10-24).** The latest release is **v0.9.12** (2026-10-24, protocol 31,
+recording format 4). Next: item 3's Package B, the styles' own music, once the user has the tracks, and item
 2's next tower, by the user's design.
 Up to **v0.8.3**: the game and online play, bots as skill levels and personalities, the styles
 with their corner pieces, random looks every round, English and German, the desktop app, UPnP,
@@ -1670,7 +1669,9 @@ found (13zp). **v0.9.8** (13zu): the Lightning Tower (13zs). **v0.9.9** (13zy): 
 cannon as the placement icon (13zv), the towers' own sounds (13zx), the tower menu's cost kept
 across towers, and the towers' balance closed, off by default for good (13zw). **v0.9.10** (14a): the Allerdickste
 Bertha (13zz). **v0.9.11** (14c): audio loaded once behind a loading screen, cached by the browser
-and played compressed (14b).
+and played compressed (14b). **v0.9.12** (14u): Stadium and Pirates (14d, 14q), a climax for every
+style but Minimal (14g, 14i), the Laser Tower, the Frost Cannon and the Lullaby Tower (14k–14o),
+corner gaps pinged (14r), and Graphics, Motion and the menu's Options (14s, 14t).
 
 Tournament mode is finished: its play-testing round, T8, closed with everything working
 (ARCHIVE 13m). The bots' planning is off the page's thread in local matches, measured and felt (ARCHIVE
