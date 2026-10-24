@@ -2354,3 +2354,89 @@ export class PiratesSeaLife extends OceanDrawn {
     }
   }
 }
+
+/**
+ * Anime: a little white ferry crossing the outer sea now and then, a wake behind it, its funnel
+ * trailing a puff; gulls wheeling, as on any summer's day of a coastal town's anime. White, grey
+ * and the sea's blue, no player's.
+ */
+export class AnimeSeaLife extends OceanDrawn {
+  private readonly ferries = new Crossings();
+  private readonly gulls = new Circling();
+
+  override layout(state: MatchState, view: ViewTransform, art: ArtConfig): void {
+    super.layout(state, view, art);
+    this.ferries.layout(this.ocean, art.anime.ferryEveryMs);
+    this.gulls.layout(this.ocean, art.anime.gulls, [1.5, 3]);
+  }
+
+  protected frame(g: Graphics, view: ViewTransform, art: ArtConfig, deltaMs: number): void {
+    const { ferryEveryMs, ferryTilesPerSecond } = art.anime;
+    const t = view.tile;
+    const ink = Math.max(1, t * 0.05);
+    const line = 0x2b1d2e;
+    this.ferries.step(this.ocean, deltaMs, ferryEveryMs, ferryTilesPerSecond, 1);
+    for (const f of this.ferries.items) {
+      if (this.behind(f.x, f.y)) continue;
+      const d = f.dir;
+      // The wake, two white lines spreading behind.
+      g.moveTo(tileX(view, f.x - d * 0.9), tileY(view, f.y + 0.2));
+      g.lineTo(tileX(view, f.x - d * 2.6), tileY(view, f.y - 0.1));
+      g.moveTo(tileX(view, f.x - d * 0.9), tileY(view, f.y + 0.3));
+      g.lineTo(tileX(view, f.x - d * 2.6), tileY(view, f.y + 0.6));
+      g.stroke({ width: Math.max(1, t * 0.08), color: 0xffffff, alpha: 0.7, cap: 'round' });
+      g.poly(
+        shape(view, f.x, f.y, d, [
+          [-0.95, 0],
+          [1.05, 0],
+          [0.8, 0.35],
+          [-0.85, 0.35],
+        ]),
+      );
+      g.fill({ color: 0xffffff });
+      g.stroke({ width: ink, color: line, join: 'round' });
+      g.poly(
+        shape(view, f.x, f.y, d, [
+          [-0.9, 0.12],
+          [0.98, 0.12],
+          [0.94, 0.2],
+          [-0.88, 0.2],
+        ]),
+      );
+      g.fill({ color: 0x2b95e6 });
+      g.poly(
+        shape(view, f.x, f.y, d, [
+          [-0.55, -0.42],
+          [0.45, -0.42],
+          [0.55, 0],
+          [-0.6, 0],
+        ]),
+      );
+      g.fill({ color: 0xf4f6fb });
+      g.stroke({ width: ink, color: line, join: 'round' });
+      for (const wx of [-0.35, -0.08, 0.19]) {
+        g.rect(tileX(view, f.x + d * wx) - t * 0.06, tileY(view, f.y - 0.3), t * 0.12, t * 0.12);
+      }
+      g.fill({ color: 0x64c4f4 });
+      g.rect(tileX(view, f.x - d * 0.25) - t * 0.09, tileY(view, f.y - 0.72), t * 0.18, t * 0.3);
+      g.fill({ color: 0xff8a40 });
+      g.stroke({ width: ink, color: line });
+      const puff = (this.clock / 900 + f.y) % 1;
+      g.circle(
+        tileX(view, f.x - d * (0.35 + puff * 0.5)),
+        tileY(view, f.y - 0.9 - puff * 0.5),
+        t * (0.12 + puff * 0.14),
+      );
+      g.fill({ color: 0xffffff, alpha: 0.8 * (1 - puff) });
+    }
+    for (const gull of this.gulls.items) {
+      gull.angle += gull.speed * (deltaMs / 1000);
+      const x = tileX(view, gull.cx + Math.cos(gull.angle) * gull.radius);
+      const y = tileY(view, gull.cy + Math.sin(gull.angle) * gull.radius * 0.6);
+      const flap = Math.sin(this.clock / 160 + gull.cx) * t * 0.08;
+      g.moveTo(x - t * 0.3, y - flap).quadraticCurveTo(x - t * 0.12, y - t * 0.18, x, y);
+      g.quadraticCurveTo(x + t * 0.12, y - t * 0.18, x + t * 0.3, y - flap);
+      g.stroke({ width: Math.max(1, t * 0.06), color: 0xffffff, cap: 'round' });
+    }
+  }
+}

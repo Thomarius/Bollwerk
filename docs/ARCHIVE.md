@@ -9771,3 +9771,68 @@ every diagonal step into it is a mark and filling one tile of each seals it (`co
 user's case as a test). A fuzz of 40,000 random dense walls round a castle, 12,712 of them with only
 corner gaps left: before, 7,974 marked nothing and 863 marked too little to seal; after, none of
 either, filling the inside or the outside tile of every mark sealing the castle each time.
+
+## 14w. Anime, a twenty-second style (2026-10-24)
+
+The user's idea: an anime style, distinct from every other — Anime / Kawaii had been turned down for
+Stadium (14d) as overlapping Sakura, Chocolate and Cartoon and fighting the player colours with its
+pastels. Designed with the user before building, in a design note since retired into this entry,
+and on a sketch page (`?anime=sketch`, removed once built) of the guns in every state at tiles of
+12 to 64 pixels and the banner portraits. **The idea: the match is an anime season** — a round an
+episode, the banners episode cards with your hero's face for the moment. Its answer to the old
+objections: modern anime Japan on a summer's day (no blossom, torii or ukiyo-e, Sakura's), a
+saturated palette rather than pastels, faces on the guns and not the castles (Cartoon's), colour
+rather than black and white (Cartoon's and Noir's).
+
+**The user's choices.** **Clans, one to a team** (the user's, so the guns are a cast and the match
+a rivalry, where Stadium deals a mix): martial artists, mages, maids, school geniuses (pushing up
+their glasses), soldiers with bazookas, swordmasters, mecha pilots with their heads bare, idols —
+eight, the user's list; a maid, not a shrine maiden (Sakura's ground); the magical girl left out
+as too near the mage. **The hair is the owner's colour** on every figure, so none hides it under a
+hat (a beret worn back, a circlet, a headset); two hairstyles a clan by the gun's id and the seed.
+The rest as first suggested: a magic circle as the sealed sign, cel-shaded stone walls,
+screentone for sealed ground, one school with a clock tower for every clan (a castle per clan left
+for later), the cel sea under drifting cloud shadows, a mascot in the corner, focus lines at the
+climax. **Cut-ins on hits**, which Noir's full-screen impact frame (13h) had warned against: small,
+and **only on neutral ground** (the user's rule) — open sea, or bare land with nothing in play
+within a tile, never the viewer's own island, never the big timer or the corner — and only at the
+big moments: a sealed castle breached in combat, a Bertha's or the Allerdickste's shell, a player
+knocked out. One at a time, 3.5 s apart at least.
+
+What carries meaning (`anime.ts`, `anime/`): **the reload is a charge** — an aura of flame in the
+owner's light colour grows round a figure while its shot flies, full and with a glint in the eye
+when ready (flight time is the reload, as Stadium's missing ball is); firing, a shout, `><` eyes
+and speed lines; silenced, white shocked eyes, a sweat drop and "…"; **lulled, anime's snot
+bubble** with the shared Zs; out, grey hair and spiral eyes. Each clan shoots its own shot — an
+energy ball, a fireball, a teacup, a paper plane, a rocket, a crescent slash, a rocket punch (the
+fist flies and is back as it lands), a heart (not notes: the Lullaby Tower's). **Sealed is the
+magic circle turning under the school**, its clan's emblem at four points, a breach shattering it
+into shards of the owner's colour. Sealed ground is manga screentone, dots in the owner's colour
+(a `FillPattern` a player). The clans are dealt by a shuffle of the eight from the seed
+(`clanOrder`, tested: every team of eight its own, the same everywhere). The figures were drawn
+first for the sketch, with the arm before the body moved to the torso's edge after the user saw
+it growing out of the chest.
+
+**The banners** (`animeBanner.ts`): the call in heavy italics on a slanted white card of speed
+lines, the episode tagged over **your hero's portrait** — your clan's, in your hair colour, inline
+SVG — determined into combat and choosing a castle, shocked rebuilding after a breach, relaxed
+placing guns, in tears choosing again after a life spent (`heroExpression`, tested); a page
+watching shows the leader's. The cut-ins are the same portraits split on a diagonal, the attacker
+shouting over focus lines and the one hit shocked, made images once a pair (`cutInSvg`), placed by
+`cutInSpot` (tested) and slid in, held 1.7 s and slid out — faded where they stand with motion
+reduced. A ferry and gulls on the outer sea; sound words ("DOKAN!") at 0.3 of wall hits; a white
+HUD with screentone and pink, a title in white and yellow over pink; the finish inked stars and a
+forked banner (`FinishLook`'s, no new ones).
+
+**Cost**, `&perf=1` in a watched eight-player combat (round 3, 1600×1000, headless Chrome with the
+GPU on, after its first seconds), two runs each alternating with Stadium: 60 fps; effects 1.4 ms
+and render 2.7–3.9 ms a frame against Stadium's 1.0–1.5 and 2.2–5.0; 2,900–4,100 vertices rebuilt a
+frame against Stadium's 2,840–4,230. Every figure, aura, school, circle and shot is a stamp.
+
+Seen in screenshots building, in the cannon phase, in combat at two, three and eight players, in
+the final round, the banner crossing, a cut-in forced for the look, and the menu. What the first
+look changed: the cloud shadows were lobes laid over each other, darker where they met, now one
+scalloped outline and fainter; the shots were specks, now half again as big; the banner's white
+letters were lost on its white card, now inked; the soldier hero had no beret in the portrait;
+the focus lines reached over the islands for a whole final round, now kept to the screen's edges.
+Not yet seen in play by the users.

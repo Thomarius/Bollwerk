@@ -415,9 +415,9 @@ sender's seat**, so a client cannot act for someone else.
 
 ## 7. `packages/client`
 
-Twenty-one visual styles — Minimal (`flat`), Medieval (`pixel`: named Pixel art until the other
+Twenty-two visual styles — Minimal (`flat`), Medieval (`pixel`: named Pixel art until the other
 styles made the name mean nothing), Night, Cyberpunk, Blueprint, Parchment, Toy bricks
-(`bricks`), Stained glass (`glass`), Chocolate (`chocolate`), Halloween (`halloween`), Sakura (`sakura`), Oktoberfest (`oktoberfest`), Opera (`opera`), Office (`office`), Under the sea (`undersea`), Electric (`electric`), Cartoon (`cartoon`), Christmas (`christmas`), Noir (`noir`), Stadium (`sports`) and Pirates (`pirates`) — behind one `Theme` interface: the scene owns the camera, the layer stacks,
+(`bricks`), Stained glass (`glass`), Chocolate (`chocolate`), Halloween (`halloween`), Sakura (`sakura`), Oktoberfest (`oktoberfest`), Opera (`opera`), Office (`office`), Under the sea (`undersea`), Electric (`electric`), Cartoon (`cartoon`), Christmas (`christmas`), Noir (`noir`), Stadium (`sports`), Pirates (`pirates`) and Anime (`anime`) — behind one `Theme` interface: the scene owns the camera, the layer stacks,
 dirty tracking and input mapping; a theme owns only what things look like. Adding a style
 is a name in `ArtStyleSchema`, the looks it is made for in `STYLE_LOOKS`, a `Theme`, a
 case in `createTheme`, a menu title in `titles.ts` and a banner class in `hud.ts`; the
@@ -573,7 +573,7 @@ top saying whether a click chooses the building or the combat look, each card ba
 the look it is chosen for. The styles are in alphabetical order by name, so a new one finds
 its place, and **Random** comes last, a die for its picture: **a new style at every
 banner that brings its look** (`LookRotation`, ARCHIVE 12q), repeating none until every
-style has been shown — both looks random share one cycle of all twenty-one, one random cycles
+style has been shown — both looks random share one cycle of all twenty-two, one random cycles
 through all but the other look's — and never the style the banner takes away, nor the one a
 look last had across a cycle's end. Each next look is made a step a frame, hidden, in the
 intermission after the build phase (`Scene.prepare`), and goes on screen once the look it
@@ -1377,6 +1377,24 @@ screen's sides, curling and swaying. Its banner a torn sail lettered in black, t
 under it ("Fire at will!", `BANNER_FLAVOUR`); its HUD a deck of planks under a rope rule; its timer
 carved driftwood; its island banners wooden signs; its title nailed-up planks; its finish
 doubloons and jewels, and the Jolly Roger on a mast.
+
+**Anime** (`anime.ts`, `anime/`, `animeBanner.ts`, `art.anime`; ARCHIVE 14w, designed with the
+user), for either look: **the match as an anime season on a summer's day**. The sea cel-painted,
+lighter along the coasts, a white line of surf, glints popping; the shadows of tall clouds drift
+over everything. **The guns are chibi heroes of eight clans** — martial artists, mages, maids,
+school geniuses, soldiers, swordmasters, mecha pilots, idols — **a clan to a team** (`clanOrder`
+from the seed), **their hair in the owner's colour**, two hairstyles a clan by the gun's id:
+charging, an aura of flame growing as the shot flies; ready, the clan's pose and a glint;
+firing, a shout and speed lines; silenced, a sweat drop and "…"; lulled, the snot bubble; out,
+grey with spiral eyes; each clan its own shot. Walls cel-shaded stone in the owner's colour;
+sealed ground manga screentone (a `FillPattern` a player); castles schools with clock towers on
+**a magic circle that turns while sealed**, the clan's emblems on it, shattering at a breach. At
+a breach, a Bertha's shell or a knockout **a small cut-in** — the attacker shouting, the one hit
+shocked, split on a diagonal — slides in over open sea, never over anything in play
+(`cutInSpot`). A mascot lounges on a water tank in the corner, startled when the clock presses;
+a ferry and gulls on the outer sea; at the climax a sunset and focus lines from the screen's
+edges. Its banners **episode cards**: the episode over your hero's portrait, its face the
+moment's (`heroExpression`); its HUD white with screentone and pink; its finish inked stars.
 
 The thirteen shape-drawn styles share `walls.ts`: the wall geometry (tops, faces, rim), and
 hatching laid on one lattice so neighbouring tiles hatch as one fill.

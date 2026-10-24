@@ -2966,7 +2966,8 @@ body.hud-cartoon,
 body.hud-christmas,
 body.hud-noir,
 body.hud-sports,
-body.hud-pirates {
+body.hud-pirates,
+body.hud-anime {
   --hud-panel: var(--hud-box);
 }
 
@@ -4775,6 +4776,152 @@ body.hud-pirates #banner.final-round::before {
 body.hud-pirates .embers i {
   background: #ffb040;
   box-shadow: 0 0 4px 1px rgb(255 160 60 / 50%);
+}
+
+/* Anime (ARCHIVE 14w): the banner an episode card cut on a slant — speed lines over
+   white, the call in heavy italics inked thick, pink and sky blue at its edges — your hero's
+   portrait beside it, the episode over the portrait. */
+.phase-call.banner-anime {
+  border: none;
+  box-shadow:
+    0 4px 0 #2b1d2e,
+    0 8px 20px #0007;
+  background:
+    repeating-linear-gradient(100deg, #0000 0 22px, #64c4f422 22px 25px),
+    linear-gradient(90deg, #ff4f7a 0 1.2%, #fff 1.2% 98.8%, #2b95e6 98.8%);
+  color: #2b1d2e;
+  font-family: 'Arial Black', Impact, 'Helvetica Neue', sans-serif;
+  font-weight: 900;
+  font-style: italic;
+  letter-spacing: 0.06em;
+  text-shadow:
+    3px 3px 0 #ff4f7a,
+    -1px -1px 0 #fff;
+  clip-path: polygon(0 12%, 100% 0, 100% 88%, 0 100%);
+}
+
+.phase-call.banner-anime small {
+  color: #2b1d2e;
+  font-family: 'Arial Black', Impact, 'Helvetica Neue', sans-serif;
+  font-style: italic;
+  letter-spacing: 0.04em;
+  text-shadow: none;
+}
+
+.phase-call.banner-anime small.flavour {
+  color: #ff4f7a;
+}
+
+.phase-call.banner-anime small.news {
+  color: #1f7fd6;
+}
+
+/* The episode card beside the call: the portrait slanted as the banner is, the episode over it
+   in a tag. */
+.phase-call.carded .hero {
+  position: relative;
+  display: inline-block;
+  height: 7.5rem;
+  margin: -0.4rem 1.5rem -0.4rem 0;
+  vertical-align: middle;
+}
+
+.phase-call.carded .hero svg {
+  height: 100%;
+  width: auto;
+  display: block;
+}
+
+.phase-call.carded .hero .episode {
+  position: absolute;
+  top: -0.2rem;
+  left: 1.6rem;
+  z-index: 1;
+  padding: 0.05rem 0.5rem;
+  background: #2b1d2e;
+  color: #fff;
+  font-size: 0.85rem;
+  font-style: italic;
+  letter-spacing: 0.12em;
+  text-shadow: none;
+  transform: skewX(-12deg);
+}
+
+body.hud-anime {
+  --hud-bar: #fbfaf4;
+  --hud-rule: 4px solid #2b1d2e;
+  --hud-pad-top: 0.35rem;
+  --hud-ink: #2b1d2e;
+  --hud-muted: #6a6e86;
+  --hud-accent: #ff4f7a;
+  --hud-box: #ffffff;
+  --hud-box-edge: 2px solid #2b1d2e;
+  --hud-box-shadow: 3px 3px 0 #ff4f7a;
+  --hud-track: #2b1d2e22;
+  --hud-font: 'Arial Black', 'Helvetica Neue', Arial, sans-serif;
+}
+
+/* The bar a manga page's top: white, screentone dots fading in from its foot. */
+body.hud-anime #hud .bar {
+  background-color: #fbfaf4;
+  background-image: radial-gradient(circle, #64c4f455 0 1.4px, transparent 1.8px);
+  background-size: 7px 7px;
+}
+
+body.hud-anime #hud .phase .timer,
+body.hud-anime #hud .roster .score {
+  color: #ff4f7a;
+  font-style: italic;
+}
+
+/* The big timer in a show's lettering: white, inked thick, a pink shadow; red and shaking in
+   the last seconds. */
+body.hud-anime .big-timer {
+  color: rgb(255 255 255 / 92%);
+  font-family: 'Arial Black', Impact, sans-serif;
+  font-style: italic;
+  -webkit-text-stroke: 2px rgb(43 29 46 / 85%);
+  text-shadow: 4px 4px 0 rgb(255 79 122 / 70%);
+}
+
+body.hud-anime .big-timer.urgent {
+  color: rgb(255 225 74 / 96%);
+  text-shadow: 4px 4px 0 rgb(232 48 74 / 85%);
+}
+
+/* Island banners speech tags; the stamps a slanted title card. */
+body.hud-anime .island-banner:not(.out),
+body.hud-anime .team-tag,
+body.hud-anime .you-are-here {
+  border: 2px solid #2b1d2e;
+  border-radius: 0.6rem;
+  background: #fff;
+  box-shadow: 3px 3px 0 #ff4f7a;
+  color: #2b1d2e;
+  font-family: 'Arial Black', 'Helvetica Neue', Arial, sans-serif;
+  font-style: italic;
+}
+
+body.hud-anime .island-banner.out,
+body.hud-anime .final-stamp {
+  border: 3px solid #2b1d2e !important;
+  border-radius: 0;
+  background: #ffe14a;
+  box-shadow: 5px 5px 0 #2b1d2e;
+  color: #2b1d2e;
+  font-family: 'Arial Black', Impact, sans-serif;
+  font-style: italic;
+  letter-spacing: 0.06em;
+}
+
+/* The final episode: a summer sunset at the edges, the embers sparkles. */
+body.hud-anime #banner.final-round::before {
+  box-shadow: inset 0 0 22vmin rgb(255 110 80 / 30%);
+}
+
+body.hud-anime .embers i {
+  background: #fff;
+  box-shadow: 0 0 5px 2px rgb(255 225 74 / 70%);
 }
 
 /* ---------- the gallery of looks (ARCHIVE 12b) ---------- */

@@ -1278,6 +1278,7 @@ const TITLES: Record<ArtStyle, (text: string, art: ArtConfig) => Title> = {
   noir: noirTitle,
   sports: sportsTitle,
   pirates: piratesTitle,
+  anime: animeTitle,
 };
 
 /**
@@ -1319,6 +1320,57 @@ export function noirTitle(text: string, _art: ArtConfig): Title {
     ctx.lineTo(x2, y2);
   }
   ctx.stroke();
+  return { src: canvas.toDataURL(), ...title };
+}
+
+/**
+ * The anime's title: the word as a show's logo — letters white over a cel shadow of yellow
+ * below, inked thick, thrown in a hard pink shadow, sparkles at its ends.
+ */
+export function animeTitle(text: string, _art: ArtConfig): Title {
+  const { canvas, ctx, cells, has, cols } = drawnCanvas(text);
+  const title = { cellPx: DRAWN_CELL, padPx: DRAWN_PAD, tailPx: 0, smooth: true, flicker: false };
+  if (ctx === null) return { src: canvas.toDataURL(), ...title };
+  const at = (v: number): number => DRAWN_PAD + v * DRAWN_CELL;
+  const drop = DRAWN_CELL * 0.45;
+  ctx.fillStyle = '#ff4f7a';
+  for (const { x, y } of cells) ctx.fillRect(at(x) + drop, at(y) + drop, DRAWN_CELL, DRAWN_CELL);
+  for (const { x, y } of cells) {
+    ctx.fillStyle = y < 4 ? '#ffffff' : '#ffe14a';
+    ctx.fillRect(at(x), at(y), DRAWN_CELL, DRAWN_CELL);
+  }
+  const edges = wordOutline(cells, has);
+  ctx.lineCap = 'square';
+  ctx.strokeStyle = '#2b1d2e';
+  ctx.lineWidth = 4;
+  ctx.beginPath();
+  for (const [x1, y1, x2, y2] of edges) {
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x2, y2);
+  }
+  ctx.stroke();
+  // Sparkles at the word's two ends, four-pointed.
+  ctx.fillStyle = '#ffffff';
+  ctx.strokeStyle = '#2b1d2e';
+  ctx.lineWidth = 1.5;
+  for (const [x, y, r] of [
+    [DRAWN_PAD * 0.55, DRAWN_PAD * 0.6, DRAWN_PAD * 0.5],
+    [at(cols) + DRAWN_PAD * 0.45, at(7) + DRAWN_PAD * 0.3, DRAWN_PAD * 0.42],
+  ] as const) {
+    const k = r * 0.28;
+    ctx.beginPath();
+    ctx.moveTo(x, y - r);
+    ctx.lineTo(x + k, y - k);
+    ctx.lineTo(x + r, y);
+    ctx.lineTo(x + k, y + k);
+    ctx.lineTo(x, y + r);
+    ctx.lineTo(x - k, y + k);
+    ctx.lineTo(x - r, y);
+    ctx.lineTo(x - k, y - k);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+  }
   return { src: canvas.toDataURL(), ...title };
 }
 

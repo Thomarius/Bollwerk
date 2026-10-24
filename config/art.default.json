@@ -1222,6 +1222,28 @@
         "uiValid": "#8fe08a",
         "uiInvalid": "#ff5a5a"
       }
+    },
+    "anime": {
+      "palette": {
+        "waterDeep": "#1f7fd6",
+        "waterMid": "#2b95e6",
+        "waterShallow": "#64c4f4",
+        "waterFoam": "#ffffff",
+        "sand": "#f6e3a8",
+        "grassDark": "#3c9a3e",
+        "grassMid": "#5cbc4c",
+        "grassLight": "#86d666",
+        "rockDark": "#6a6e86",
+        "rockMid": "#9a9eb6",
+        "rockLight": "#d2d6e8",
+        "shadow": "#1c2440",
+        "craterDark": "#6a4a2e",
+        "craterMid": "#9a7448",
+        "uiInk": "#2b1d2e",
+        "uiAccent": "#ff4f7a",
+        "uiValid": "#4fd06a",
+        "uiInvalid": "#ff4a4a"
+      }
     }
   },
   "dither": {
@@ -1787,5 +1809,27 @@
     "krakenArms": 5,
     "squallAlpha": 0.18,
     "rainCount": 110
+  },
+  "anime": {
+    "toneAlpha": 0.55,
+    "breatheMs": 1600,
+    "circleTurnMs": 14000,
+    "fireMs": 420,
+    "shatterMs": 900,
+    "cloudShadows": 3,
+    "cloudTilesPerSecond": 0.5,
+    "cloudAlpha": 0.09,
+    "glintsPerSecond": 3,
+    "wordChance": 0.3,
+    "wordMs": 1100,
+    "cutInMs": 1700,
+    "cutInCooldownMs": 3500,
+    "cutInTiles": 7,
+    "cutInClearTiles": 1,
+    "focusLines": 36,
+    "sunsetAlpha": 0.16,
+    "ferryEveryMs": 26000,
+    "ferryTilesPerSecond": 0.8,
+    "gulls": 3
   }
 }

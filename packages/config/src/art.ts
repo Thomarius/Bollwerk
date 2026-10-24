@@ -56,7 +56,8 @@ export type PlayerPalette = z.infer<typeof PlayerPaletteSchema>;
  * laboratory under a thunderstorm, `cartoon` a 1930s rubber-hose cartoon in black and white, `christmas` a snowy island on Christmas Eve,
  * `noir` a crime city at night drawn as a cel-shaded graphic novel, `sports` a stadium whose
  * guns are sportsmen of ten ball sports throwing, kicking and hitting their balls, `pirates`
- * a pirates' cove in Caribbean daylight, log stockades and ship's cannon with parrots on them.
+ * a pirates' cove in Caribbean daylight, log stockades and ship's cannon with parrots on them,
+ * `anime` a summer's day in an anime, its guns chibi heroes of eight clans, a clan to a team.
  */
 export const ArtStyleSchema = z.enum([
   'flat',
@@ -80,6 +81,7 @@ export const ArtStyleSchema = z.enum([
   'noir',
   'sports',
   'pirates',
+  'anime',
 ]);
 export type ArtStyle = z.infer<typeof ArtStyleSchema>;
 
@@ -971,6 +973,46 @@ export const PiratesStyleSchema = z.strictObject({
 });
 export type PiratesStyleConfig = z.infer<typeof PiratesStyleSchema>;
 
+/**
+ * The Anime look (ARCHIVE 14w): the match as an anime season on a summer's day. The
+ * guns are chibi heroes of eight clans, a clan to a team, their hair in the owner's colour;
+ * sealed ground is manga screentone, a castle's sign a magic circle that shatters at a breach;
+ * small cut-ins of the heroes' faces on the open sea at the big moments.
+ */
+export const AnimeStyleSchema = z.strictObject({
+  /** The screentone's dots over sealed ground, in the owner's colour. */
+  toneAlpha: z.number().min(0).max(1),
+  /** One breath of a figure, and one turn of a magic circle. */
+  breatheMs: z.number().int().positive(),
+  circleTurnMs: z.number().int().positive(),
+  /** A firing figure's shout, and the pose after it, before it stands to charge. */
+  fireMs: z.number().int().positive(),
+  /** A magic circle shattering at a breach: how long its shards fly. */
+  shatterMs: z.number().int().positive(),
+  /** The shadows of the summer's clouds drifting over the board: how many, how fast, how dark. */
+  cloudShadows: z.number().int().nonnegative(),
+  cloudTilesPerSecond: z.number().nonnegative(),
+  cloudAlpha: z.number().min(0).max(1),
+  /** Glints on the sea, each second, and the share of wall hits that letter a sound word. */
+  glintsPerSecond: z.number().nonnegative(),
+  wordChance: z.number().min(0).max(1),
+  wordMs: z.number().int().positive(),
+  /** The cut-ins: shown for, and at most one in this long; their panel's width in tiles. */
+  cutInMs: z.number().int().positive(),
+  cutInCooldownMs: z.number().int().nonnegative(),
+  cutInTiles: z.number().positive(),
+  /** Tiles kept clear round a cut-in of anything in play, so it hides nothing. */
+  cutInClearTiles: z.number().int().nonnegative(),
+  /** The climax: focus lines closing in from the edges, and the sunset's warmth. */
+  focusLines: z.number().int().nonnegative(),
+  sunsetAlpha: z.number().min(0).max(1),
+  /** A ferry crossing the outer sea now and then, and how fast; gulls wheeling over it. */
+  ferryEveryMs: z.number().int().positive(),
+  ferryTilesPerSecond: z.number().positive(),
+  gulls: z.number().int().nonnegative(),
+});
+export type AnimeStyleConfig = z.infer<typeof AnimeStyleSchema>;
+
 /** One of the two looks a match is drawn in. */
 export type ArtLook = 'build' | 'combat';
 
@@ -1024,6 +1066,7 @@ export const STYLE_LOOKS: Record<ArtStyle, readonly ArtLook[]> = {
   noir: ['build', 'combat'],
   sports: ['build', 'combat'],
   pirates: ['build', 'combat'],
+  anime: ['build', 'combat'],
 };
 
 export function styleServes(
@@ -1156,6 +1199,7 @@ export const ArtConfigSchema = z
     noir: NoirStyleSchema,
     sports: SportsStyleSchema,
     pirates: PiratesStyleSchema,
+    anime: AnimeStyleSchema,
     scenery: ScenerySchema,
     /** Effects both styles draw alike, because they carry information. */
     effects: z.strictObject({

@@ -139,6 +139,15 @@ SCENES=(
   "final-pirates|$BASE/?autostart=1&players=3&seed=5&snapshot=combat&round=10&style=pirates|8000"
   "banner-pirates|$WATCH&snapshot=cannon_place&round=2&style=pirates|5000"
   "menu-pirates|$BASE/?style=pirates|4000"
+  # Anime (ARCHIVE 14w): the clans' chibi guns, the screentone and magic circles; the focus lines
+  # in the final round; the banner an episode card with the hero's face.
+  "build-anime|$GAME&snapshot=build&round=3&style=anime|4500"
+  "cannons-anime|$GAME&snapshot=cannon_place&round=2&style=anime|2500"
+  "combat-anime|$BASE/?autostart=1&players=2&seed=5&snapshot=combat&round=3&style=anime|4200"
+  "eight-anime|$BASE/?autostart=1&players=8&seed=3&snapshot=combat&round=3&style=anime|3500"
+  "final-anime|$BASE/?autostart=1&players=3&seed=5&snapshot=combat&round=10&style=anime|8000"
+  "banner-anime|$WATCH&snapshot=cannon_place&round=2&style=anime|5000"
+  "menu-anime|$BASE/?style=anime|4000"
   "eight-night|$BASE/?autostart=1&players=8&seed=3&snapshot=combat&round=3&style=night|3000"
   # The climaxes of the first eight styles (PLAN 11 item 5), in the final round's build phase.
   "final-pixel|$GAME&snapshot=build&round=10&style=pixel|8000"

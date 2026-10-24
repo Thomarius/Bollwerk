@@ -1,3 +1,4 @@
+import { heroCard } from './animeBanner.js';
 import {
   artForStyle,
   defaultConfigBundle,
@@ -395,14 +396,19 @@ export async function runSession(
         const human = state.players[session.humanPlayer];
         const choosing =
           state.pendingPhase === 'cannon_place' && human !== undefined && owesCastleChoice(human);
+        const brought = state.pendingPhase ?? 'combat';
         hud.announce(
-          choosing ? 'castle_select' : (state.pendingPhase ?? 'combat'),
+          choosing ? 'castle_select' : brought,
           announcementLines(state),
           // Drawn in the look it brings, since it is where the look changes.
           scene.styles[after],
           choosing ? null : announcementTitle(state),
           // The standings after a resolution, counted up from the round before's.
           resolvedSinceAnnounce ? ranking(state, matchLog.scores.at(-2)?.byPlayer ?? null) : [],
+          // The Anime style's episode card: the episode, and your hero's face for the moment.
+          scene.styles[after] === 'anime'
+            ? heroCard(state, session.humanPlayer, brought, choosing)
+            : '',
         );
         resolvedSinceAnnounce = false;
       }

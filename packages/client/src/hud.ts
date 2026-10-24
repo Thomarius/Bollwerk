@@ -51,6 +51,7 @@ const BANNER_CLASS: Record<ArtStyle, string> = {
   noir: 'banner-noir',
   sports: 'banner-sports',
   pirates: 'banner-pirates',
+  anime: 'banner-anime',
 };
 
 /**
@@ -80,6 +81,7 @@ const HUD_SKIN: Record<ArtStyle, string> = {
   noir: 'hud-noir',
   sports: 'hud-sports',
   pirates: 'hud-pirates',
+  anime: 'hud-anime',
 };
 
 /**
@@ -101,6 +103,13 @@ const BANNER_FLAVOUR: Partial<Record<ArtStyle, Partial<Record<Phase | 'final', T
     build: 'pirates.call.build',
     cannon_place: 'pirates.call.cannonPlace',
     final: 'pirates.call.final',
+  },
+  anime: {
+    castle_select: 'anime.call.castleSelect',
+    combat: 'anime.call.combat',
+    build: 'anime.call.build',
+    cannon_place: 'anime.call.cannonPlace',
+    final: 'anime.call.final',
   },
 };
 
@@ -236,7 +245,8 @@ export class Hud {
    *
    * `lines` ride along underneath — the standings after a resolution, and the call
    * for the final round — so neither needs a pause of its own. It enters above the top
-   * of the screen; `placeAnnouncement` moves it from there.
+   * of the screen; `placeAnnouncement` moves it from there. `card`, markup a style sets
+   * beside the call — the Anime style's episode and hero (`animeBanner.ts`) — where given.
    */
   announce(
     phase: Phase,
@@ -244,6 +254,7 @@ export class Hud {
     style: ArtStyle = 'pixel',
     title: string | null = null,
     ranks: readonly RankEntry[] = [],
+    card = '',
   ): void {
     this.clearAnnouncement();
     const call = PHASE_CALL[phase];
@@ -252,6 +263,10 @@ export class Hud {
     const banner = document.createElement('div');
     banner.className = `phase-call ${BANNER_CLASS[style]}${title === null ? '' : ' titled'}`;
     banner.textContent = text;
+    if (card !== '') {
+      banner.classList.add('carded');
+      banner.insertAdjacentHTML('afterbegin', card);
+    }
     const flavour = BANNER_FLAVOUR[style]?.[title === null ? phase : 'final'];
     if (flavour !== undefined) {
       const small = document.createElement('small');
