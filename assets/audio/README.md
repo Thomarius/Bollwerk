@@ -6,6 +6,7 @@ directory is the client's public directory, so `sfx/cannon_fire.ogg` is served a
 
 - `sfx/` — short one-shot effects
 - `music/` — looping phase tracks
+- `music/styles/` — each style's own track, by the style's id (`styleMusic` in the manifest)
 
 ## Format
 

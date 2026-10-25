@@ -1,4 +1,10 @@
-import type { AudioManifest, MusicCue, SfxCue } from '@bollwerk/config';
+import {
+  styleTrack,
+  type ArtStyle,
+  type AudioManifest,
+  type MusicTrack,
+  type SfxCue,
+} from '@bollwerk/config';
 import { store, stored } from './storage.js';
 
 /**
@@ -19,7 +25,7 @@ import { store, stored } from './storage.js';
  * switches on is worse than having missed them.
  *
  * **Every file is downloaded once, as the page opens, and music is never decoded whole**
- * (docs/STYLE_MUSIC.md §2): decoded, today's thirteen minutes of music took some 300 MB of
+ * (ARCHIVE 14b): decoded, today's thirteen minutes of music took some 300 MB of
  * memory on every page. The sound effects are decoded, being short and needing to start at
  * once; each music track is kept as its compressed bytes, some 0.7 MB a minute, and played
  * by an `<audio>` element through the music bus. The browser keeps the files between visits,
@@ -137,7 +143,7 @@ const MIN_REPEAT_MS = 60;
 
 /** A track sounding: its element, the node feeding it into the graph, and its fade. */
 interface Playing {
-  cue: MusicCue;
+  cue: MusicTrack;
   element: HTMLAudioElement;
   source: MediaElementAudioSourceNode;
   gain: GainNode;
@@ -163,7 +169,7 @@ export class Audio {
   private readonly sources = new Map<string, string[]>();
 
   private playing: Playing | null = null;
-  private pendingMusic: MusicCue | null = null;
+  private pendingMusic: MusicTrack | null = null;
   private loading: Promise<void> | null = null;
   private muted = false;
   private readonly lastStarted = new Map<string, number>();
@@ -284,7 +290,7 @@ export class Audio {
    * so the right track is running the moment it can rather than whatever the next phase
    * change happens to ask for.
    */
-  music(cue: MusicCue | null): void {
+  music(cue: MusicTrack | null): void {
     this.pendingMusic = cue;
     const ctx = this.ctx;
     if (ctx === null || this.master === null) return;
@@ -298,7 +304,7 @@ export class Audio {
     }
     if (cue === null) return;
 
-    const entry = this.manifest.music[cue];
+    const entry = this.musicEntry(cue);
     const path = this.pick(cue);
     const url = path === null ? null : (this.tracks.get(path) ?? null);
     if (!entry || url === null) return;
@@ -338,8 +344,17 @@ export class Audio {
     playing.element.load();
   }
 
+  /** A cue's track, or a style's own, always looped since it stands in for a looped one. */
+  private musicEntry(cue: MusicTrack): { volume: number; loop: boolean } | undefined {
+    if (cue.startsWith('style:')) {
+      const entry = this.manifest.styleMusic[cue.slice('style:'.length) as ArtStyle];
+      return entry === undefined ? undefined : { volume: entry.volume, loop: true };
+    }
+    return this.manifest.music[cue as keyof AudioManifest['music']];
+  }
+
   /** One of the cue's surviving variants, or null when none of its files exist. */
-  private pick(cue: SfxCue | MusicCue): string | null {
+  private pick(cue: SfxCue | MusicTrack): string | null {
     const paths = this.sources.get(cue);
     if (paths === undefined || paths.length === 0) return null;
     // Math.random, deliberately: see the note at the top of this file.
@@ -382,6 +397,9 @@ export class Audio {
     const { basePath } = this.manifest;
     for (const [cue, entry] of Object.entries(this.manifest.music)) {
       add(cue, variantPaths(`${basePath}/${entry.file}`, entry.variants ?? 1), 'music');
+    }
+    for (const [style, entry] of Object.entries(this.manifest.styleMusic)) {
+      add(styleTrack(style as ArtStyle), [`${basePath}/${entry.file}`], 'music');
     }
     for (const [cue, entry] of Object.entries(this.manifest.sfx)) {
       add(cue, variantPaths(`${basePath}/${entry.file}`, entry.variants ?? 1), 'sfx');

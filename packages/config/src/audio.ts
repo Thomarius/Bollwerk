@@ -1,5 +1,7 @@
 import { z } from 'zod';
 
+import { ArtStyleSchema, type ArtStyle } from './art.js';
+
 /**
  * Canonical cue list. The manifest must cover exactly these — adding a cue here
  * without adding it to audio.manifest.json (or vice versa) is a startup error,
@@ -60,6 +62,18 @@ export const MUSIC_CUES = [
 ] as const;
 export type MusicCue = (typeof MUSIC_CUES)[number];
 
+/**
+ * A style's own track (ARCHIVE 14za), played at times in place of the shared
+ * building or battle music while that style is the look on screen.
+ */
+export type StyleTrack = `style:${ArtStyle}`;
+/** What the music player is asked to play: a cue's track, or a style's own. */
+export type MusicTrack = MusicCue | StyleTrack;
+
+export function styleTrack(style: ArtStyle): StyleTrack {
+  return `style:${style}`;
+}
+
 const SfxEntrySchema = z.strictObject({
   file: z.string().min(1),
   volume: z.number().min(0).max(1),
@@ -82,6 +96,12 @@ const MusicEntrySchema = z.strictObject({
    */
   variants: z.number().int().positive().optional(),
   loop: z.boolean(),
+});
+
+/** A style's own track, always looped: it stands in for the building or the battle music. */
+const StyleMusicEntrySchema = z.strictObject({
+  file: z.string().min(1),
+  volume: z.number().min(0).max(1),
 });
 
 /**
@@ -125,6 +145,21 @@ export const AudioManifestSchema = z.strictObject({
   missingFilesAreSilent: z.boolean(),
   sfx: z.record(z.enum(SFX_CUES), SfxEntrySchema),
   music: z.record(z.enum(MUSIC_CUES), MusicEntrySchema),
+  /**
+   * The styles' own tracks, by style; a style left out has none and always plays the shared
+   * music — Minimal, Medieval and Night, whose own the shared music is (the user's).
+   */
+  styleMusic: z.partialRecord(ArtStyleSchema, StyleMusicEntrySchema),
+  /**
+   * The chance, 0 to 1, that a style with a track plays it as its look starts — every build
+   * phase's look and every combat's, rolled afresh even when the style has not changed.
+   */
+  styleTrackChance: z.number().min(0).max(1),
+  /**
+   * Once a style's track has played, the rounds after that one in which it may not play
+   * again; the rest of its own round is held back too. Other styles' tracks are not.
+   */
+  styleTrackPauseRounds: z.number().int().min(0),
   /**
    * Credits by path under `basePath`: a file's own — variants each have their own, since
    * they may come from different authors — or, for a key ending in `/`, one for every file
@@ -182,5 +217,8 @@ export function audioCredits(audio: AudioManifest): {
     }
     return lines;
   };
-  return { music: list(Object.values(audio.music)), sfx: list(Object.values(audio.sfx)) };
+  return {
+    music: list([...Object.values(audio.music), ...Object.values(audio.styleMusic)]),
+    sfx: list(Object.values(audio.sfx)),
+  };
 }

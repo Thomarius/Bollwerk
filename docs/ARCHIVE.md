@@ -9206,7 +9206,7 @@ so v0.9.9's recordings replay.
 
 ## 14b. Audio loaded once: Package A (2026-10-18)
 
-The plan is `docs/STYLE_MUSIC.md` §2 (the users' choice: every file once, behind a loading
+The plan was §2 of `docs/STYLE_MUSIC.md`, retired with Package B into 14za (the users' choice: every file once, behind a loading
 screen, over fetching tracks as looks need them). Built for today's files, the game sounding as
 before, as the framework the styles' own music (Package B) will extend.
 
@@ -9957,3 +9957,62 @@ A bot's menu, titled by its seat, has **Random** above the cards, a die on it; c
 tower's card is marked dashed rather than chosen, and the line under the cards names the draw.
 In the lobby a bot's tower is a button for the host, a badge for everyone else, the draw marked
 with the die.
+
+## 14za. The styles' own music: Package B (2026-10-25)
+
+The users' idea (2026-10-18), its plan `docs/STYLE_MUSIC.md`, retired here once built; Package A,
+the framework it stands on, is 14b. **Why A came first**: decoding every track into an
+`AudioBuffer` took some 21–23 MB a minute, so the styles' tracks decoded would have taken a
+gigabyte; held compressed (14b) they are some 0.7 MB a minute.
+
+**The user's rules (2026-10-18)**:
+
+- **Some styles get a track of their own**, one each, for building and combat alike. Not all:
+  Minimal, Medieval and Night are the shared music's own and keep it.
+- **A chance, rolled at every start of a look**: as a build look's span opens (castle selection,
+  building and the cannon placement are one build look) and as combat's does, a style with a track
+  plays it in place of the shared one with a chance of **`styleTrackChance`** — rolled even when the
+  style has not changed, so one style for both looks rolls at every build phase and every combat.
+- **A pause per style**: once a style's track has played, it may not play again for
+  **`styleTrackPauseRounds`**, 3, rounds; meanwhile the style plays the shared music, and other
+  styles' tracks are not held back. As intended, a style that won as building began and is also
+  the combat look finds its pause running at combat, which plays the shared battle music.
+- Both values in `config/audio.manifest.json`, behind its strict schema, never in a menu.
+
+**Details settled with them**: a track replaces `music_admin` over the build look's span and
+`music_battle` over combat, never the menu's, the lobby's, victory's or defeat's; a round is the
+match's, as the sim counts it (up as combat begins), and the pauses start afresh each match; the
+roll is the page's own `Math.random`, music being no part of the simulation, so two players at one
+table may hear different music, as they may see different looks; a look changed from the pause
+menu rolls again as its look would have, and one changed to while its pause runs plays the shared
+music; the opening's build look rolls as any other.
+
+**The files (B1)**: 21 tracks from Pixabay (the Pixabay Content License, each credited to its
+author's page), every style but those three, in `assets/audio/music/styles/<style>.mp3` by the
+style's id (`mythos` became `mythology`, `western` `wildwest`). All came at 256 kbps (Office at
+160 kbps, 24 kHz), so all were re-encoded as in 14b: MP3, 96 kbps stereo, 44.1 kHz, two-pass
+`loudnorm` to −14 LUFS with peaks under −1.5 dBTP. They had ranged from −7.6 LUFS (Wild West,
+peaking over 0 dBFS) to −28.6 (Office, a 24-second loop, kept as it is: the user's); after, −14.2 to
+−14.6. 44 minutes of music, 81 MB → 31 MB, so all the game's music some 40 MB. The manifest's
+`styleMusic` (by style, file and volume, always looped), `styleTrackChance` and
+`styleTrackPauseRounds`; a style left out has no track. The credits' check covers them.
+
+**The choosing (B2)**: `chooseStyleTrack` in `client/src/styleMusic.ts`, pure — given the style, the
+round, the pauses and a roll, whether the track plays and the pauses after — tested without a
+browser: both outcomes of the roll, a pause holding and lifting, another style unaffected, the same
+style in both looks, thirty rounds of random looks. `MatchAudio` keeps the span under way, rolls
+only as a look's span starts, and plays a `MusicTrack`, a cue or `style:<id>`, which the player
+(`audio.ts`) loads with the rest behind the loading screen. The style is the scene's for the look
+as its intermission begins, when the music starts: a random look is prepared after the resolution
+and in place well before (`Scene.prepare`), so it is the one the wipe brings.
+
+**Played by the user** (2026-10-25) at a chance of 100% to hear every track: "works really well".
+The chance stays at 100% for now (the user's), the planned 50% to come.
+
+## 14zb. v0.9.13 (2026-10-25)
+
+Since v0.9.12: three styles, Anime (14w), Mythos (14x) and the Wild West (14y), making
+twenty-four; corner gaps through a pocket marked too (14v); the bots' towers chosen by the host, and
+No tower back (14z); and the styles' own music, 21 tracks played in place of the shared building and
+battle music (14za), at a chance of 100% for now. Protocol 32 since the bots' towers, so a v0.9.12
+page cannot join; recording format 4 unchanged, so v0.9.12's recordings still replay.

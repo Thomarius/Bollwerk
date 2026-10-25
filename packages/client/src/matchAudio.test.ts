@@ -1,21 +1,22 @@
-import type { MusicCue, SfxCue } from '@bollwerk/config';
+import type { ArtStyle, MusicTrack, SfxCue } from '@bollwerk/config';
 import type { MatchEvent, MatchState, Phase } from '@bollwerk/sim';
 import { describe, expect, it } from 'vitest';
 
 import { MatchAudio, type Cues } from './matchAudio.js';
+import type { Look } from './transition.js';
 
 /** Records what was asked for, in order. */
 class Recorder implements Cues {
   readonly sfx: SfxCue[] = [];
   readonly gains: number[] = [];
   readonly delays: number[] = [];
-  readonly tracks: (MusicCue | null)[] = [];
+  readonly tracks: (MusicTrack | null)[] = [];
   play(cue: SfxCue, gain = 1, delayMs = 0): void {
     this.sfx.push(cue);
     this.gains.push(gain);
     this.delays.push(delayMs);
   }
-  music(cue: MusicCue | null): void {
+  music(cue: MusicTrack | null): void {
     this.tracks.push(cue);
   }
 }
@@ -27,12 +28,12 @@ function setup(humanPlayer = HUMAN): { audio: Recorder; match: MatchAudio } {
   return { audio, match: new MatchAudio(audio, humanPlayer) };
 }
 
-function phase(next: Phase, pending: Phase | null = null): MatchEvent {
+function phase(next: Phase, pending: Phase | null = null, round = 1): MatchEvent {
   return {
     kind: 'phase_changed',
     tick: 0,
     phase: next,
-    round: 1,
+    round,
     phaseEndTick: 300,
     pendingPhase: pending,
   };
@@ -421,5 +422,107 @@ describe('special towers in the sound', () => {
     ]);
     expect(audio.sfx).toEqual(Array(4).fill('walls_repaired'));
     expect(audio.delays).toEqual([0, 300, 600, 900]);
+  });
+});
+
+describe('the styles’ own tracks', () => {
+  /** A match whose looks are `looks`, with the rolls given in turn (0 wins at any chance). */
+  function styled(
+    looks: Record<Look, ArtStyle>,
+    rolls: number[],
+    chance = 0.5,
+  ): { audio: Recorder; match: MatchAudio; looks: Record<Look, ArtStyle> } {
+    const audio = new Recorder();
+    const match = new MatchAudio(audio, HUMAN, {
+      rules: { chance, pauseRounds: 3, hasTrack: (style) => style !== 'pixel' },
+      styleOf: (look) => looks[look],
+      roll: () => rolls.shift() ?? 0.99,
+    });
+    return { audio, match, looks };
+  }
+
+  /** One round from its build look's start: building, the cannons, then combat. */
+  const round = (r: number): MatchEvent[] => [
+    phase('intermission', 'build', r),
+    phase('build', null, r),
+    phase('intermission', 'cannon_place', r),
+    phase('cannon_place', null, r),
+    phase('intermission', 'combat', r),
+    phase('combat', null, r + 1),
+  ];
+
+  it('plays a style’s track for the whole build look, cannons included', () => {
+    const { audio, match } = styled({ build: 'opera', combat: 'noir' }, [0, 0.99]);
+    match.handle(round(1));
+    expect(audio.tracks).toEqual([
+      'style:opera',
+      'style:opera',
+      'style:opera',
+      'style:opera',
+      'music_battle',
+      'music_battle',
+    ]);
+  });
+
+  it('rolls once a look, not at every phase within it', () => {
+    const rolls = [0.99, 0];
+    const { audio, match } = styled({ build: 'opera', combat: 'opera' }, rolls);
+    match.handle(round(1));
+    // The build look lost its roll; the cannon phase does not roll again, combat does.
+    expect(audio.tracks.slice(0, 4)).toEqual(Array(4).fill('music_admin'));
+    expect(audio.tracks.slice(4)).toEqual(['style:opera', 'style:opera']);
+  });
+
+  it('leaves combat the shared music when the same style won as building began', () => {
+    const { audio, match } = styled({ build: 'opera', combat: 'opera' }, [], 1);
+    match.handle(round(1));
+    expect(audio.tracks.at(0)).toBe('style:opera');
+    expect(audio.tracks.at(-1)).toBe('music_battle');
+  });
+
+  it('holds a style back for three rounds after it played', () => {
+    const { audio, match } = styled({ build: 'opera', combat: 'pixel' }, [], 1);
+    const builds: (MusicTrack | null)[] = [];
+    for (let r = 1; r <= 6; r++) {
+      const at = audio.tracks.length;
+      match.handle(round(r));
+      builds.push(audio.tracks[at] ?? null);
+    }
+    expect(builds).toEqual([
+      'style:opera',
+      'music_admin',
+      'music_admin',
+      'music_admin',
+      'style:opera',
+      'music_admin',
+    ]);
+  });
+
+  it('never plays one for a style without its own', () => {
+    const { audio, match } = styled({ build: 'pixel', combat: 'pixel' }, [], 1);
+    match.handle(round(1));
+    expect(audio.tracks).not.toContainEqual(expect.stringMatching(/^style:/));
+  });
+
+  it('rolls again when the pause menu changes the look under way', () => {
+    const { audio, match, looks } = styled({ build: 'opera', combat: 'noir' }, [0.99, 0], 0.5);
+    match.handle([phase('build', null, 1)]);
+    expect(audio.tracks).toEqual(['music_admin']);
+    looks.build = 'anime';
+    match.restyled();
+    expect(audio.tracks).toEqual(['music_admin', 'style:anime']);
+    // A change to the other look leaves this one's music alone.
+    looks.combat = 'sakura';
+    match.restyled();
+    expect(audio.tracks).toHaveLength(2);
+  });
+
+  it('gives way to victory’s music, and starts a look afresh after', () => {
+    const { audio, match } = styled({ build: 'opera', combat: 'noir' }, [], 1);
+    match.handle([phase('combat', null, 1)]);
+    match.handle([
+      { kind: 'game_over', tick: 9, winners: [HUMAN], draw: false, endedBy: 'elimination' },
+    ]);
+    expect(audio.tracks).toEqual(['style:noir', 'music_victory']);
   });
 });

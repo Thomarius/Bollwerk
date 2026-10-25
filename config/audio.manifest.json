@@ -118,6 +118,94 @@
       "loop": false
     }
   },
+  "styleMusic": {
+    "cyberpunk": {
+      "file": "music/styles/cyberpunk.mp3",
+      "volume": 0.5
+    },
+    "blueprint": {
+      "file": "music/styles/blueprint.mp3",
+      "volume": 0.5
+    },
+    "parchment": {
+      "file": "music/styles/parchment.mp3",
+      "volume": 0.5
+    },
+    "bricks": {
+      "file": "music/styles/bricks.mp3",
+      "volume": 0.5
+    },
+    "glass": {
+      "file": "music/styles/glass.mp3",
+      "volume": 0.5
+    },
+    "chocolate": {
+      "file": "music/styles/chocolate.mp3",
+      "volume": 0.5
+    },
+    "halloween": {
+      "file": "music/styles/halloween.mp3",
+      "volume": 0.5
+    },
+    "sakura": {
+      "file": "music/styles/sakura.mp3",
+      "volume": 0.5
+    },
+    "oktoberfest": {
+      "file": "music/styles/oktoberfest.mp3",
+      "volume": 0.5
+    },
+    "opera": {
+      "file": "music/styles/opera.mp3",
+      "volume": 0.5
+    },
+    "office": {
+      "file": "music/styles/office.mp3",
+      "volume": 0.5
+    },
+    "undersea": {
+      "file": "music/styles/undersea.mp3",
+      "volume": 0.5
+    },
+    "electric": {
+      "file": "music/styles/electric.mp3",
+      "volume": 0.5
+    },
+    "cartoon": {
+      "file": "music/styles/cartoon.mp3",
+      "volume": 0.5
+    },
+    "christmas": {
+      "file": "music/styles/christmas.mp3",
+      "volume": 0.5
+    },
+    "noir": {
+      "file": "music/styles/noir.mp3",
+      "volume": 0.5
+    },
+    "sports": {
+      "file": "music/styles/sports.mp3",
+      "volume": 0.5
+    },
+    "pirates": {
+      "file": "music/styles/pirates.mp3",
+      "volume": 0.5
+    },
+    "anime": {
+      "file": "music/styles/anime.mp3",
+      "volume": 0.5
+    },
+    "mythology": {
+      "file": "music/styles/mythology.mp3",
+      "volume": 0.5
+    },
+    "wildwest": {
+      "file": "music/styles/wildwest.mp3",
+      "volume": 0.5
+    }
+  },
+  "styleTrackChance": 1,
+  "styleTrackPauseRounds": 3,
   "credits": {
     "music/music_menu.mp3": {
       "title": "Medieval: The Old Tower Inn",
@@ -181,6 +269,132 @@
       "licence": "CC-BY 3.0",
       "source": "https://opengameart.org/content/medieval-rondo",
       "changes": "re-encoded as MP3 at 96 kbps, loudness normalised"
+    },
+    "music/styles/cyberpunk.mp3": {
+      "author": "MASSIMO PODAVITE",
+      "licence": "Pixabay Content License",
+      "source": "https://pixabay.com/users/audiotracks-14967791/?utm_source=link-attribution&utm_medium=referral&utm_campaign=music&utm_content=237109",
+      "changes": "re-encoded as MP3 at 96 kbps, 44.1 kHz, loudness normalised"
+    },
+    "music/styles/blueprint.mp3": {
+      "author": "Dmitrii Spis",
+      "licence": "Pixabay Content License",
+      "source": "https://pixabay.com/users/nastelbom-48128234/?utm_source=link-attribution&utm_medium=referral&utm_campaign=music&utm_content=481664",
+      "changes": "re-encoded as MP3 at 96 kbps, 44.1 kHz, loudness normalised"
+    },
+    "music/styles/parchment.mp3": {
+      "author": "Anastasia Chubarova",
+      "licence": "Pixabay Content License",
+      "source": "https://pixabay.com/users/music_for_videos-26992513/?utm_source=link-attribution&utm_medium=referral&utm_campaign=music&utm_content=163385",
+      "changes": "re-encoded as MP3 at 96 kbps, 44.1 kHz, loudness normalised"
+    },
+    "music/styles/bricks.mp3": {
+      "author": "Danyl Vindiuk",
+      "licence": "Pixabay Content License",
+      "source": "https://pixabay.com/users/danyvin-4982341/?utm_source=link-attribution&utm_medium=referral&utm_campaign=music&utm_content=592982",
+      "changes": "re-encoded as MP3 at 96 kbps, 44.1 kHz, loudness normalised"
+    },
+    "music/styles/glass.mp3": {
+      "author": "OpenMindAudio",
+      "licence": "Pixabay Content License",
+      "source": "https://pixabay.com/users/openmindaudio-53602733/?utm_source=link-attribution&utm_medium=referral&utm_campaign=music&utm_content=543997",
+      "changes": "re-encoded as MP3 at 96 kbps, 44.1 kHz, loudness normalised"
+    },
+    "music/styles/chocolate.mp3": {
+      "author": "Mikko Virtanen",
+      "licence": "Pixabay Content License",
+      "source": "https://pixabay.com/users/aurec-54643893/?utm_source=link-attribution&utm_medium=referral&utm_campaign=music&utm_content=595888",
+      "changes": "re-encoded as MP3 at 96 kbps, 44.1 kHz, loudness normalised"
+    },
+    "music/styles/halloween.mp3": {
+      "author": "Mikhail Smusev",
+      "licence": "Pixabay Content License",
+      "source": "https://pixabay.com/users/sigmamusicart-36860929/?utm_source=link-attribution&utm_medium=referral&utm_campaign=music&utm_content=417482",
+      "changes": "re-encoded as MP3 at 96 kbps, 44.1 kHz, loudness normalised"
+    },
+    "music/styles/sakura.mp3": {
+      "author": "FASSounds",
+      "licence": "Pixabay Content License",
+      "source": "https://pixabay.com/users/fassounds-3433550/?utm_source=link-attribution&utm_medium=referral&utm_campaign=music&utm_content=265429",
+      "changes": "re-encoded as MP3 at 96 kbps, 44.1 kHz, loudness normalised"
+    },
+    "music/styles/oktoberfest.mp3": {
+      "author": "Art Roseman",
+      "licence": "Pixabay Content License",
+      "source": "https://pixabay.com/users/art_roseman-56564497/?utm_source=link-attribution&utm_medium=referral&utm_campaign=music&utm_content=591588",
+      "changes": "re-encoded as MP3 at 96 kbps, 44.1 kHz, loudness normalised"
+    },
+    "music/styles/opera.mp3": {
+      "author": "Fritzi Kinderfeld",
+      "licence": "Pixabay Content License",
+      "source": "https://pixabay.com/users/anneliese-von-koenig-13046963/?utm_source=link-attribution&utm_medium=referral&utm_campaign=music&utm_content=127457",
+      "changes": "re-encoded as MP3 at 96 kbps, 44.1 kHz, loudness normalised"
+    },
+    "music/styles/office.mp3": {
+      "author": "freesound_community",
+      "licence": "Pixabay Content License",
+      "source": "https://pixabay.com/users/freesound_community-46691455/?utm_source=link-attribution&utm_medium=referral&utm_campaign=music&utm_content=6719",
+      "changes": "re-encoded as MP3 at 96 kbps, 44.1 kHz, loudness normalised"
+    },
+    "music/styles/undersea.mp3": {
+      "author": "Omar Faruque",
+      "licence": "Pixabay Content License",
+      "source": "https://pixabay.com/users/desifreemusic-28163210/?utm_source=link-attribution&utm_medium=referral&utm_campaign=music&utm_content=377890",
+      "changes": "re-encoded as MP3 at 96 kbps, 44.1 kHz, loudness normalised"
+    },
+    "music/styles/electric.mp3": {
+      "author": "ShimaFM",
+      "licence": "Pixabay Content License",
+      "source": "https://pixabay.com/users/shimafm-53514169/?utm_source=link-attribution&utm_medium=referral&utm_campaign=music&utm_content=477337",
+      "changes": "re-encoded as MP3 at 96 kbps, 44.1 kHz, loudness normalised"
+    },
+    "music/styles/cartoon.mp3": {
+      "author": "Alex Morgan",
+      "licence": "Pixabay Content License",
+      "source": "https://pixabay.com/users/alex-morgan-54692529/?utm_source=link-attribution&utm_medium=referral&utm_campaign=music&utm_content=578472",
+      "changes": "re-encoded as MP3 at 96 kbps, 44.1 kHz, loudness normalised"
+    },
+    "music/styles/christmas.mp3": {
+      "author": "Sergio Prosvirini",
+      "licence": "Pixabay Content License",
+      "source": "https://pixabay.com/users/top-flow-28521292/?utm_source=link-attribution&utm_medium=referral&utm_campaign=music&utm_content=427231",
+      "changes": "re-encoded as MP3 at 96 kbps, 44.1 kHz, loudness normalised"
+    },
+    "music/styles/noir.mp3": {
+      "author": "Alex Morgan",
+      "licence": "Pixabay Content License",
+      "source": "https://pixabay.com/users/alex-morgan-54692529/?utm_source=link-attribution&utm_medium=referral&utm_campaign=music&utm_content=587403",
+      "changes": "re-encoded as MP3 at 96 kbps, 44.1 kHz, loudness normalised"
+    },
+    "music/styles/sports.mp3": {
+      "author": "SOULFULJAMTRACKS",
+      "licence": "Pixabay Content License",
+      "source": "https://pixabay.com/users/soulfuljamtracks-46363515/?utm_source=link-attribution&utm_medium=referral&utm_campaign=music&utm_content=562879",
+      "changes": "re-encoded as MP3 at 96 kbps, 44.1 kHz, loudness normalised"
+    },
+    "music/styles/pirates.mp3": {
+      "author": "ALEXEY BEZRUCHKO",
+      "licence": "Pixabay Content License",
+      "source": "https://pixabay.com/users/alex_besss-49928677/?utm_source=link-attribution&utm_medium=referral&utm_campaign=music&utm_content=455262",
+      "changes": "re-encoded as MP3 at 96 kbps, 44.1 kHz, loudness normalised"
+    },
+    "music/styles/anime.mp3": {
+      "author": "Sekuora",
+      "licence": "Pixabay Content License",
+      "source": "https://pixabay.com/users/sekuora-40269569/?utm_source=link-attribution&utm_medium=referral&utm_campaign=music&utm_content=242461",
+      "changes": "re-encoded as MP3 at 96 kbps, 44.1 kHz, loudness normalised"
+    },
+    "music/styles/mythology.mp3": {
+      "author": "Chris",
+      "licence": "Pixabay Content License",
+      "source": "https://pixabay.com/users/chrisdjyogi-52620970/?utm_source=link-attribution&utm_medium=referral&utm_campaign=music&utm_content=421454",
+      "changes": "re-encoded as MP3 at 96 kbps, 44.1 kHz, loudness normalised"
+    },
+    "music/styles/wildwest.mp3": {
+      "author": "Vlad Krotov",
+      "licence": "Pixabay Content License",
+      "source": "https://pixabay.com/users/moodmode-33139253/?utm_source=link-attribution&utm_medium=referral&utm_campaign=music&utm_content=138300",
+      "changes": "re-encoded as MP3 at 96 kbps, 44.1 kHz, loudness normalised"
     },
     "sfx/": {
       "author": "various authors",

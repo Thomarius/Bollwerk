@@ -1680,9 +1680,9 @@ every resolution against an independent search, not only on unit pictures.
 
 ## 11. Open work
 
-**Where to start (2026-10-24).** The latest release is **v0.9.12** (2026-10-24, protocol 31,
-recording format 4). Next: item 3's Package B, the styles' own music, once the user has the tracks, and item
-2's next tower, by the user's design.
+**Where to start (2026-10-25).** The latest release is **v0.9.13** (2026-10-25, protocol 32,
+recording format 4). Next: item 2's next tower, by the user's design, and the styles' own music's
+chance back to the planned 50% once the user says (ARCHIVE 14za).
 Up to **v0.8.3**: the game and online play, bots as skill levels and personalities, the styles
 with their corner pieces, random looks every round, English and German, the desktop app, UPnP,
 the balance soak and the rendering work (ARCHIVE 12h–12v), the refactoring (12w) and stronger
@@ -1706,7 +1706,9 @@ across towers, and the towers' balance closed, off by default for good (13zw). *
 Bertha (13zz). **v0.9.11** (14c): audio loaded once behind a loading screen, cached by the browser
 and played compressed (14b). **v0.9.12** (14u): Stadium and Pirates (14d, 14q), a climax for every
 style but Minimal (14g, 14i), the Laser Tower, the Frost Cannon and the Lullaby Tower (14k–14o),
-corner gaps pinged (14r), and Graphics, Motion and the menu's Options (14s, 14t).
+corner gaps pinged (14r), and Graphics, Motion and the menu's Options (14s, 14t). **v0.9.13**
+(14zb): Anime, Mythos and the Wild West (14w–14y), the bots' towers chosen by the host and No tower
+back (14z), and the styles' own music (14za).
 
 Tournament mode is finished: its play-testing round, T8, closed with everything working
 (ARCHIVE 13m). The bots' planning is off the page's thread in local matches, measured and felt (ARCHIVE
@@ -1734,11 +1736,6 @@ fit (ARCHIVE 12z), its remaining steps dropped (the user's decision, 2026-10-14;
    Their own sounds are in (TS, ARCHIVE 13zx). The design
    and these packages are in
    [`SPECIAL_TOWERS.md`](./SPECIAL_TOWERS.md).
-3. **Music for the styles** (the users' idea, 2026-10-18), **next**: Package A, audio loaded once
-   behind a loading screen, cached and played compressed, is built (ARCHIVE 14b, v0.9.11). Open:
-   Package B (B1–B2), some styles' own tracks, played with a chance at every start of a look and
-   paused per style for some rounds after — the next session's, once the user has the tracks. The
-   plan is in [`STYLE_MUSIC.md`](./STYLE_MUSIC.md).
 
 Only open work is kept here. Finished packages move to `ARCHIVE.md` under their old
 numbers — 11.1 scoring, 11.7 team mode, 11.8 the visual pass, 11.9 the themes, 11.10 the
@@ -1748,7 +1745,7 @@ test-session feedback, in ARCHIVE 11w; 11.5 the small items and 11.6 the bots, i
 11.16 help for new players, the menu and the sea, and 11.17 the desktop app, in ARCHIVE
 11zt; 11.18 the fourth visual pass, in ARCHIVE 11zv; 11.19 every style to the edges, in
 ARCHIVE 11zz; 11.20 more languages, in ARCHIVE 12g; 11.21 UPnP, in ARCHIVE 12j; 11.2 points decide, 11.3 two players,
-11.4 measurements never taken and 11.13 the bots' loose ends, closed by the weekend soak, in ARCHIVE 12h; 11.22 rendering performance, in ARCHIVE 12n, its bots planning on the same ticks in ARCHIVE 12p; 11.23 random looks every round, in ARCHIVE 12q; Cyberpunk under Glowing, in ARCHIVE 12r; the slow plan late in a build phase, in ARCHIVE 12s; 11 item 3, the bots in a worker with the smaller rendering leads, in ARCHIVE 13k; the next item 3, wipes between heavy looks, in ARCHIVE 13o; 11.24 a piece in the corner for every style, in ARCHIVE 12t; Under the sea and Electric, in ARCHIVE 12u and 12v; Cartoon and Christmas, in ARCHIVE 12zb and 12zc; the refactoring of 2026-10-07, in ARCHIVE 12w; the bot learning work (the old item 3), closed in ARCHIVE 13zg; bots that hold ground as people do (the old item 1), in ARCHIVE 13zj; scoring by ground and guns (the next item 3), approved by the test sessions, in ARCHIVE 13zd and 13ze; special towers' finished packages ST1–ST6, in ARCHIVE 13zo, ST4 closed in 13zw; each style's own cannon icon (the old item 3, CI1–CI4), in ARCHIVE 13zv; the Sports style (the old item 5), its design retired, in ARCHIVE 14d; the Berthas' bigger shots (the old item 5 after it), in ARCHIVE 14e; a climax for every style but Minimal (the old item 5 after that), in ARCHIVE 14i, its play-test in 14j; the testers' choice of cannon icon (the old item 3), the style's own, in ARCHIVE 14j — so the open sections keep theirs.
+11.4 measurements never taken and 11.13 the bots' loose ends, closed by the weekend soak, in ARCHIVE 12h; 11.22 rendering performance, in ARCHIVE 12n, its bots planning on the same ticks in ARCHIVE 12p; 11.23 random looks every round, in ARCHIVE 12q; Cyberpunk under Glowing, in ARCHIVE 12r; the slow plan late in a build phase, in ARCHIVE 12s; 11 item 3, the bots in a worker with the smaller rendering leads, in ARCHIVE 13k; the next item 3, wipes between heavy looks, in ARCHIVE 13o; 11.24 a piece in the corner for every style, in ARCHIVE 12t; Under the sea and Electric, in ARCHIVE 12u and 12v; Cartoon and Christmas, in ARCHIVE 12zb and 12zc; the refactoring of 2026-10-07, in ARCHIVE 12w; the bot learning work (the old item 3), closed in ARCHIVE 13zg; bots that hold ground as people do (the old item 1), in ARCHIVE 13zj; scoring by ground and guns (the next item 3), approved by the test sessions, in ARCHIVE 13zd and 13ze; special towers' finished packages ST1–ST6, in ARCHIVE 13zo, ST4 closed in 13zw; each style's own cannon icon (the old item 3, CI1–CI4), in ARCHIVE 13zv; the Sports style (the old item 5), its design retired, in ARCHIVE 14d; the Berthas' bigger shots (the old item 5 after it), in ARCHIVE 14e; a climax for every style but Minimal (the old item 5 after that), in ARCHIVE 14i, its play-test in 14j; the testers' choice of cannon icon (the old item 3), the style's own, in ARCHIVE 14j; music for the styles (the old item 3 after it), its plan retired, in ARCHIVE 14b and 14za — so the open sections keep theirs.
 
 ## 12. Deferred (explicitly out of scope for v1)
 

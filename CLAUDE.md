@@ -15,11 +15,11 @@ original" means Rampart. Nothing of the original is used — no code, graphics o
 title where known, author, licence, source, changes), or by its folder's credit — a key
 ending in `/`, which is how the sound effects, all CC0, are one line (`sfx/`). `npm run
 credits` writes `CREDITS.md` from it, and a test fails when that file is stale or any file
-is uncredited. Every sound is from OpenGameArt.org, but three music tracks from Pixabay (Pixabay Content
-License, credited to their authors as they ask).
+is uncredited. Every sound is from OpenGameArt.org, but three music tracks and the styles' 21 from
+Pixabay (Pixabay Content License, credited to their authors as they ask).
 
 **`docs/PLAN.md` is the design and the open work** — read it before changing rules,
-terrain or bots; a design of its own (`docs/SPECIAL_TOWERS.md`, `docs/STYLE_MUSIC.md`) lives
+terrain or bots; a design of its own (`docs/SPECIAL_TOWERS.md`) lives
 beside it until built, then is retired into the ARCHIVE. **`docs/ARCHIVE.md`** records how each decision
 was reached, with the measurements and the reverted attempts; consult it before re-trying
 something. This file is the orientation.
@@ -174,8 +174,20 @@ Full detail in PLAN.md §1. The parts that surprise people:
 
 ## Status
 
-**Done** (2026-10-24; the latest release **v0.9.12**, 2026-10-24, protocol 31, recording format 4,
+**Done** (2026-10-25; the latest release **v0.9.13**, 2026-10-25, protocol 32, recording format 4,
 which a test session needs the server rebuilt and every page reloaded for):
+
+- **The styles' own music** (ARCHIVE 14za, 2026-10-25, the users' idea; its plan retired there):
+  21 tracks from Pixabay, one for every style but Minimal, Medieval and Night, in
+  `assets/audio/music/styles/<style>.mp3`, re-encoded and normalised as the rest. As a build look or
+  a combat look starts, its style's track plays in place of the shared one with a chance of
+  `styleTrackChance` — **100% for now, the user's, the planned 50% to come** — and a style's track
+  rests `styleTrackPauseRounds` (3) rounds after it played, both in the audio manifest. Chosen by
+  a pure function (`styleMusic.ts`), the page's own roll, never the match's. Played by the user,
+  working well.
+- **The bots' towers chosen by the host** (ARCHIVE 14z, 2026-10-25; protocol 32): in a single
+  match the host picks each bot's special tower or none, Random its draw from the seed; No tower
+  back for people too, the tower menu ten cards in two rows.
 
 - **Graphics and Motion** (ARCHIVE 14s, 2026-10-24, the user's wish): one Graphics setting, High
   (the dark styles' glow bloomed, `render/bloom.ts`, taken on and off live), Medium (the default)
@@ -239,7 +251,7 @@ which a test session needs the server rebuilt and every page reloaded for):
   seed, ready the moment before the strike with the ball apart from the figure, the shot's ball
   leaving from that spot; the sea the stands (`sports/stands.ts`), a wave going round as a castle
   is sealed; the cheapest of the shape-drawn styles measured.
-- **Audio loaded once** (ARCHIVE 14b, 2026-10-18, v0.9.11; Package A of `docs/STYLE_MUSIC.md`):
+- **Audio loaded once** (ARCHIVE 14b, 2026-10-18, v0.9.11; the styles' music's Package A):
   every sound and music file fetched once behind a loading screen before the first menu, its bar
   counting bytes; the server's `ETag`, `Cache-Control: no-cache` and 304s, so a reload downloads
   nothing; the music re-encoded to MP3 at 96 kbps, loudness normalised (25 MB → 9.2 MB), kept
@@ -400,10 +412,8 @@ which a test session needs the server rebuilt and every page reloaded for):
 
 **Next** — PLAN §11, towards a first feature-ready version:
 
-- **The styles' own music** (item 3, Package B of `docs/STYLE_MUSIC.md`), the next session's work,
-  once the user has the tracks: some styles' own track, played with a chance (`styleTrackChance`,
-  50%) at every start of a look and paused per style for `styleTrackPauseRounds` (3) after —
-  both in the audio manifest — on the framework Package A built (ARCHIVE 14b).
+- **The styles' own music**: `styleTrackChance` back from 100% to the planned 50%, once the user
+  says (ARCHIVE 14za).
 - **Special towers** (item 2): the user's decision on a test without the cap of three; later towers come by the user's own designs. Their balance is closed and they are **off by default for
   good** — a wacky addition, not the base game (ARCHIVE 13zw); a new tower is balanced at Level 5
   only, its variants against each other and against no tower (the user's).
@@ -557,8 +567,8 @@ its header but the simulation does not — so the server stamps each header with
   first bytes (`isAudioData`).
 - **Music is never decoded whole** (ARCHIVE 14b): every audio file is fetched once behind the
   loading screen, the sounds decoded, each track kept compressed and played by an `<audio>`
-  element through the music bus. Decoded, today's thirteen minutes of music took 277 MB of the
-  page's memory. The server's `ETag` and 304s let the browser keep every file between visits.
+  element through the music bus. Decoded, the thirteen minutes of shared music took 277 MB of the
+  page's memory; with the styles' tracks there are 57. The server's `ETag` and 304s let the browser keep every file between visits.
 - **Check nothing stale is answering.** A git worktree sharing the main checkout's
   `node_modules` resolves `@bollwerk/*` back into the working tree and measures the new
   code twice; a server left running on 8080 answers instead of the one you just built.

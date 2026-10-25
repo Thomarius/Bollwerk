@@ -146,7 +146,11 @@ function missingCues(audio: AudioManifest): string[] {
   }
   // A credit for a path no cue loads is a typo, and the file it meant is left uncredited;
   // a folder's credit must cover at least one file a cue loads.
-  const named = [...Object.values(audio.sfx), ...Object.values(audio.music)].flatMap(cuePaths);
+  const named = [
+    ...Object.values(audio.sfx),
+    ...Object.values(audio.music),
+    ...Object.values(audio.styleMusic),
+  ].flatMap(cuePaths);
   for (const path of Object.keys(audio.credits)) {
     const loads = path.endsWith('/')
       ? named.some((file) => file.startsWith(path))

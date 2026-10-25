@@ -160,7 +160,19 @@ export async function runSession(
   // What the end of the match summarises, kept from the events as they come.
   const matchLog = new MatchLog();
   hud.endScreen.useLog(matchLog);
-  const matchAudio = new MatchAudio(audio, session.humanPlayer);
+  // The styles' own tracks, by the look each style draws as it comes on screen: a random
+  // look is in place before the intermission that brings it, whose start chooses its music.
+  const { audio: sounds } = defaultConfigBundle;
+  const matchAudio = new MatchAudio(audio, session.humanPlayer, {
+    rules: {
+      chance: sounds.styleTrackChance,
+      pauseRounds: sounds.styleTrackPauseRounds,
+      hasTrack: (style) => sounds.styleMusic[style] !== undefined,
+    },
+    styleOf: (look) => scene.styles[look],
+    // The page's own roll: music is no part of the simulation (ARCHIVE 14za).
+    roll: () => Math.random(),
+  });
 
   /**
    * Middle of each player's island, for the banners that sit over them.
@@ -342,7 +354,7 @@ export async function runSession(
           lookChoices = chosen;
           rotation = new LookRotation(chosen);
           saveStyles(chosen);
-          void scene.replaceLooks(looksFor(rotation.opening()));
+          void scene.replaceLooks(looksFor(rotation.opening())).then(() => matchAudio.restyled());
         },
       }),
   });

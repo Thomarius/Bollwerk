@@ -112,7 +112,7 @@ const MIME: Record<string, string> = {
  * `Cache-Control: no-cache`, so a browser keeps every file and asks once a load whether it
  * changed; a request whose `If-None-Match` names the same tag gets 304 and no body. The sound and
  * music are some 10 MB a guest downloads from a host's home connection, which every load did
- * again before (docs/STYLE_MUSIC.md §2.2); a new release's changed files have new tags, so none is
+ * again before (ARCHIVE 14b); a new release's changed files have new tags, so none is
  * ever kept stale.
  */
 export function staticAnswer(

@@ -1,7 +1,15 @@
-import type { MusicCue, SfxCue } from '@bollwerk/config';
+import {
+  styleTrack,
+  type ArtStyle,
+  type MusicCue,
+  type MusicTrack,
+  type SfxCue,
+} from '@bollwerk/config';
 import type { MatchEvent, MatchState, Phase } from '@bollwerk/sim';
 
 import { COUNTDOWN_FROM, countdownGain, showsClock } from './clock.js';
+import { chooseStyleTrack, type StylePauses, type StyleTrackRules } from './styleMusic.js';
+import type { Look } from './transition.js';
 
 /**
  * The part of the audio player this needs.
@@ -16,7 +24,29 @@ export interface Cues {
    * later, for an Architect's double knock.
    */
   play(cue: SfxCue, gain?: number, delayMs?: number): void;
-  music(cue: MusicCue | null): void;
+  music(cue: MusicTrack | null): void;
+}
+
+/**
+ * The styles' own tracks (ARCHIVE 14za): the rules, the style each look is drawn
+ * in as it comes on screen, and the roll — the page's own, `Math.random`, since music is no
+ * part of the simulation and two players at one table may hear different tracks.
+ */
+export interface StyleMusic {
+  rules: StyleTrackRules;
+  styleOf: (look: Look) => ArtStyle;
+  roll: () => number;
+}
+
+/** The shared track a look's span plays, which a style's own may stand in for. */
+const LOOK_TRACK: Record<Look, MusicCue> = { build: 'music_admin', combat: 'music_battle' };
+
+/** A span of one look's music: its look, its round and its style, and what it chose. */
+interface Span {
+  look: Look;
+  round: number;
+  style: ArtStyle;
+  track: MusicTrack;
 }
 
 /**
@@ -60,10 +90,15 @@ export class MatchAudio {
   private readonly heavy = new Map<number, SfxCue>();
   /** The last shot whose lullaby was heard, so several guns asleep to one shot sound once. */
   private lullabied = -1;
+  /** The look whose music is playing, or null for the menu's, victory's or defeat's. */
+  private span: Span | null = null;
+  /** When each style's track last played, for its pause; afresh every match. */
+  private pauses: StylePauses = new Map();
 
   constructor(
     private readonly audio: Cues,
     private readonly humanPlayer: number,
+    private readonly styles: StyleMusic | null = null,
   ) {}
 
   /** True when there is nobody at the keyboard, so nothing is "yours". */
@@ -75,7 +110,7 @@ export class MatchAudio {
     for (const event of events) {
       switch (event.kind) {
         case 'phase_changed':
-          this.phaseChanged(event.phase, event.pendingPhase);
+          this.phaseChanged(event.phase, event.pendingPhase, event.round);
           break;
 
         case 'shot_fired':
@@ -153,6 +188,7 @@ export class MatchAudio {
         case 'game_over':
           // A draw is every survivor eliminated together, which nobody won. A shared
           // win on points is still a win for each of them.
+          this.span = null;
           this.audio.music(
             this.watching
               ? event.draw
@@ -170,21 +206,70 @@ export class MatchAudio {
     }
   }
 
-  private phaseChanged(phase: Phase, pending: Phase | null): void {
+  private phaseChanged(phase: Phase, pending: Phase | null, round: number): void {
     const previous = this.phase;
     this.phase = phase;
     this.countedAt = -1;
 
     // During an intermission the next phase's track starts early, so the music leads
     // into the announcement rather than arriving after it.
-    const track =
-      phase === 'intermission' && pending !== null ? trackFor(pending) : trackFor(phase);
-    if (track !== null) this.audio.music(track);
+    const early = phase === 'intermission' && pending !== null;
+    const track = early ? trackFor(pending) : trackFor(phase);
+    if (track !== null) this.audio.music(this.lookMusic(track, round, early));
 
     if (phase === 'combat') this.audio.play('voice_fire');
     // Combat ends by stepping into the intermission: the shots already in the air
     // still land, but no further one can be started, which is what the call means.
     if (phase === 'intermission' && previous === 'combat') this.audio.play('voice_cease_fire');
+  }
+
+  /**
+   * The track for a phase's shared one: a look's span goes on with what it chose as its
+   * phases follow one another (castle selection, building and the cannons are one build
+   * look), and a span starting rolls for its style's own track.
+   *
+   * A span is in the round as it stands once its phase has begun: combat is where the sim
+   * counts a round up, and its music is chosen `early`, in the intermission before.
+   */
+  private lookMusic(track: MusicCue, round: number, early: boolean): MusicTrack {
+    const look = (['build', 'combat'] as const).find((l) => LOOK_TRACK[l] === track);
+    if (look === undefined) {
+      this.span = null;
+      return track;
+    }
+    if (this.span?.look === look) return this.span.track;
+    return this.startSpan(look, look === 'combat' && early ? round + 1 : round).track;
+  }
+
+  private startSpan(look: Look, round: number): Span {
+    const shared = LOOK_TRACK[look];
+    if (this.styles === null) {
+      this.span = { look, round, style: 'flat', track: shared };
+      return this.span;
+    }
+    const style = this.styles.styleOf(look);
+    const chosen = chooseStyleTrack(
+      style,
+      round,
+      this.pauses,
+      this.styles.rules,
+      this.styles.roll(),
+    );
+    this.pauses = chosen.pauses;
+    this.span = { look, round, style, track: chosen.plays ? styleTrack(style) : shared };
+    return this.span;
+  }
+
+  /**
+   * The looks changed from the pause menu: the span under way rolls again as its look would
+   * have, if that look's style changed — one changed to while its pause runs plays the
+   * shared music (ARCHIVE 14za).
+   */
+  restyled(): void {
+    const span = this.span;
+    if (span === null || this.styles === null) return;
+    if (this.styles.styleOf(span.look) === span.style) return;
+    this.audio.music(this.startSpan(span.look, span.round).track);
   }
 
   /**

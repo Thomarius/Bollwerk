@@ -30,6 +30,7 @@ function filesUnder(dir: string): string[] {
 const entries = [
   ...Object.entries(defaultAudioManifest.sfx),
   ...Object.entries(defaultAudioManifest.music),
+  ...Object.entries(defaultAudioManifest.styleMusic),
 ].map(([cue, entry]) => ({ cue, paths: cuePaths(entry) }));
 
 const onDisk = filesUnder(audioDir)

@@ -49,7 +49,7 @@ if (params.get('icons') === 'sheet') {
     .then(({ showGapPreview }) => showGapPreview())
     .catch((e: unknown) => showError('gaps', e));
 } else {
-  // Every sound and music file first, behind a loading screen (docs/STYLE_MUSIC.md §2.3);
+  // Every sound and music file first, behind a loading screen (ARCHIVE 14b);
   // then the page the query asks for.
   void showLoading()
     .then(start)

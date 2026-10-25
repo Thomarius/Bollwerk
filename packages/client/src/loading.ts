@@ -3,7 +3,7 @@ import { escape } from './html.js';
 import { t } from './i18n.js';
 
 /**
- * The loading screen before the first menu (docs/STYLE_MUSIC.md §2.3): every sound and music
+ * The loading screen before the first menu (ARCHIVE 14b): every sound and music
  * file fetched once, with a bar, before anything else opens — the user's choice of waiting for
  * all of it, so the game never waits on a file later. From the player's own disk it is a moment;
  * from a host the first time, as long as the host's upload takes; after that the browser has
