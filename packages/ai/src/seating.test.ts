@@ -45,4 +45,24 @@ describe('special towers at the table', () => {
     // A person who chose none brings none, though a bot stands by to cover them.
     expect(dealt.specials[player(2)]).toBeNull();
   });
+
+  it("gives a bot the host's choice, none included, and its draw where the host left it", () => {
+    const dealt = dealSeats(
+      9,
+      [
+        { level: 5, bot: true, botTower: 'frost3' },
+        { level: 5, bot: true, botTower: null },
+        { level: 5, bot: true, botTower: 'drawn' },
+        // A person's choice is theirs; a bot's is never read for them.
+        { level: null, bot: false, special: 'laser2', botTower: null },
+      ],
+      defaultTerrainConfig,
+      specials,
+    );
+    const player = (seat: number): number => dealt.playerOfSeat[seat] as number;
+    expect(dealt.specials[player(0)]).toBe('frost3');
+    expect(dealt.specials[player(1)]).toBeNull();
+    expect(dealt.specials[player(2)]).toBe(drawnSpecial(9, 2, specials));
+    expect(dealt.specials[player(3)]).toBe('laser2');
+  });
 });

@@ -1,6 +1,7 @@
 import {
   offeredVariants,
   type BotSetup,
+  type BotTower,
   type Personality,
   type Specials,
   type TerrainConfig,
@@ -40,9 +41,14 @@ export interface TableSeat {
   team?: number;
   /**
    * The special tower a person in this seat chose, at its cost, or null for none. A bot's
-   * seat — `bot` true — ignores it and brings the tower drawn for it (`drawnSpecial`).
+   * seat — `bot` true — ignores it and brings `botTower`.
    */
   special?: TowerVariant | null;
+  /**
+   * The tower a bot in this seat brings, as the host set it: omitted or `drawn`, the one drawn
+   * for it (`drawnSpecial`) — a tournament's bots and old tables alike.
+   */
+  botTower?: BotTower;
 }
 
 export interface DealtSeats {
@@ -74,6 +80,25 @@ export function drawnSpecial(seed: number, seat: number, specials: Specials): To
   return variants[streamFor(seed, `special:${seat}`).nextInt(variants.length)] as TowerVariant;
 }
 
+/**
+ * A seat's bot's tower in a table's list, `drawn` where the list has none — never by `??`, which
+ * would take a bot set to no tower, null, for one left to its draw.
+ */
+export function botTowerOf(towers: readonly BotTower[] | undefined, seat: number): BotTower {
+  const tower = towers?.[seat];
+  return tower === undefined ? 'drawn' : tower;
+}
+
+/** The tower a bot in this seat brings: the host's choice, or its draw. */
+export function botSpecial(
+  seed: number,
+  seat: number,
+  tower: BotTower,
+  specials: Specials,
+): TowerVariant | null {
+  return tower === 'drawn' ? drawnSpecial(seed, seat, specials) : tower;
+}
+
 export function dealSeats(
   seed: number,
   seats: readonly TableSeat[],
@@ -96,7 +121,9 @@ export function dealSeats(
   const loadouts = new Array<TowerVariant | null>(seats.length).fill(null);
   seats.forEach((seat, index) => {
     const player = playerOfSeat[index] as number;
-    loadouts[player] = seat.bot ? drawnSpecial(seed, index, specials) : (seat.special ?? null);
+    loadouts[player] = seat.bot
+      ? botSpecial(seed, index, seat.botTower === undefined ? 'drawn' : seat.botTower, specials)
+      : (seat.special ?? null);
     if (seat.level !== null) {
       const personality = seat.personality ?? (personalities[player] as Personality);
       setups[player] = { level: seat.level, personality };

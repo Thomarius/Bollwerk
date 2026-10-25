@@ -1,4 +1,5 @@
 import {
+  BotTowerSchema,
   LevelSchema,
   MatchSettingsSchema,
   PersonalitySchema,
@@ -15,8 +16,9 @@ import { SnapshotSchema } from './snapshot.js';
  * the Allerdickste Bertha, the same again for v0.9.9 (2026-10-17). 29: the Laser Tower, the
  * same for v0.9.11 (2026-10-21). 30: the Frost Cannon, its variants, its ruleset key and the
  * snapshot's freezes (2026-10-21). 31: the Lullaby Tower, the same and a gun's sleep (2026-10-21).
+ * 32: the bots' towers, set by the host in the lobby (2026-10-25).
  */
-export const PROTOCOL_VERSION = 31;
+export const PROTOCOL_VERSION = 32;
 
 /**
  * A player's intent. The server overwrites `player` with the sender's own seat before
@@ -134,6 +136,8 @@ export const ClientMessageSchema = z.discriminatedUnion('type', [
   z.strictObject({
     type: z.literal('configure'),
     bots: z.array(LevelSchema).optional(),
+    /** The tower each seat's bot brings, by seat, as `bots` sets their levels. */
+    botTowers: z.array(BotTowerSchema).max(8).optional(),
     settings: MatchSettingsSchema.partial().optional(),
     /** Seats at the table; refused unless the team size allows it and everyone fits. */
     playerCount: z.number().int().min(2).max(8).optional(),
@@ -206,6 +210,11 @@ export const ServerMessageSchema = z.discriminatedUnion('type', [
     playerCount: z.number().int().min(2).max(8),
     /** Skill level of the bot in each seat, so everyone can see what they are about to face. */
     bots: z.array(LevelSchema),
+    /**
+     * The tower the bot in each seat brings, as the host set it — `drawn`, its draw from the
+     * seed, which every page works out itself (`drawnSpecial`). Read only where towers are played.
+     */
+    botTowers: z.array(BotTowerSchema),
     /** The match settings as they stand, and what the host may set them to. */
     settings: MatchSettingsSchema,
     settingBounds: SettingBoundsSchema,

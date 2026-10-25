@@ -4,9 +4,10 @@ import {
   type BotSetup,
   type Personality,
   type Ruleset,
+  type BotTower,
   type TowerVariant,
 } from '@bollwerk/config';
-import { dealSeats } from '@bollwerk/ai';
+import { botTowerOf, dealSeats } from '@bollwerk/ai';
 import { MatchRecorder, recordingId, type RecordingLine } from '@bollwerk/protocol';
 
 import {
@@ -55,6 +56,8 @@ export interface LocalMatchOptions {
    * seat brings the one drawn for it, as in a room.
    */
   specials?: readonly (TowerVariant | null)[];
+  /** The tower each seat's bot brings, by seat, as the host set it; omitted, its draw. */
+  botTowers?: readonly BotTower[];
   /** Each team's name, by team label in order, where the table names them. */
   teamNames?: readonly string[];
   /** The tournament this match is part of, for the recording's header. */
@@ -133,6 +136,7 @@ export class LocalMatch {
         personality: options.personalities?.[index] ?? null,
         team: options.teams?.[index] ?? index,
         special: options.specials?.[index] ?? null,
+        botTower: botTowerOf(options.botTowers, index),
       })),
       defaultTerrainConfig,
       ruleset.specials,

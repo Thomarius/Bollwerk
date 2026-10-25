@@ -7,18 +7,19 @@ import {
   type MatchSettings,
   type PlayerShape,
   type SettingBounds,
+  type BotTower,
   type TowerVariant,
   variantCost,
   variantKind,
 } from '@bollwerk/config';
-import { drawnSpecial } from '@bollwerk/ai';
+import { botTowerOf, drawnSpecial } from '@bollwerk/ai';
 import type { Seat, TournamentTable } from '@bollwerk/protocol';
 
 import { t } from './i18n.js';
 import { teamLetter } from './scores.js';
 import { shapeSvg } from './shapes.js';
 import { escape } from './html.js';
-import { cannonSvg, towerSvg } from './towerIcons.js';
+import { cannonSvg, dieSvg, towerSvg } from './towerIcons.js';
 import { towerName, towerWhat } from './towers.js';
 
 /**
@@ -44,6 +45,8 @@ export interface LobbyView {
   seats: readonly Seat[];
   /** Skill level of the bot in each seat, 1 to 10. */
   bots: readonly number[];
+  /** The tower the bot in each seat brings, as the host set it; omitted, every one its draw. */
+  botTowers?: readonly BotTower[];
   settings: MatchSettings;
   settingBounds: SettingBounds;
   /** Each seat's team, by seat. */
@@ -181,23 +184,38 @@ export function specialsSwitch(on: boolean): string {
 
 /**
  * A seat's special tower, where the match plays them: the person's own a button opening the
- * tower menu, showing their choice — each tower at each cost, or none; anyone else's, a person's
- * choice or a bot's draw from the seed and its seat (`drawnSpecial`), shown as the button is —
- * icon, name and a pip a cannon — but not to be pressed (the user's, 2026-10-23).
+ * tower menu, showing their choice — each tower at each cost, or none; a bot's, for the host,
+ * the same button choosing for it, Random its draw from the seed and its seat (`drawnSpecial`,
+ * the user's, 2026-10-25); anyone else's shown as the button is — icon, name and a pip a cannon
+ * — but not to be pressed (the user's, 2026-10-23).
  */
 function towerControl(
   view: LobbyView,
   index: number,
   special: TowerVariant | null | 'bot',
+  isHost: boolean,
 ): string {
   if (!view.settings.specials) return '';
-  if (special === 'bot' || index !== view.humanPlayer) {
+  const badge = (shown: TowerVariant | null, mark = ''): string => {
+    const what = shown === null ? t('towerMenu.noneWhat') : towerWhat(shown);
+    return `<span class="tower-choice">${t('lobby.theirTower')} <span class="tower-badge" title="${escape(what)}">${towerFace(shown)}${mark}</span></span>`;
+  };
+  if (special === 'bot') {
+    const choice = botTowerOf(view.botTowers, index);
     const shown =
-      special === 'bot' ? drawnSpecial(view.seed, index, defaultRuleset.specials) : special;
-    if (shown === null) return '';
-    const badge = `<span class="tower-badge" title="${escape(towerWhat(shown))}">${towerFace(shown)}</span>`;
-    return `<span class="tower-choice">${t('lobby.theirTower')} ${badge}</span>`;
+      choice === 'drawn' ? drawnSpecial(view.seed, index, defaultRuleset.specials) : choice;
+    const mark =
+      choice === 'drawn'
+        ? `<span class="drawn-mark" title="${escape(t('towerMenu.random'))}">${dieSvg('currentColor')}</span>`
+        : '';
+    if (!isHost) return badge(shown, mark);
+    const label = escape(t('towerMenu.openBot', { n: index + 1 }));
+    const button =
+      `<button type="button" class="tower-button bot-tower" data-seat="${index}" data-choice="${choice ?? 'none'}" ` +
+      `title="${label}" aria-label="${label}">${towerFace(shown)}${mark}</button>`;
+    return `<span class="tower-choice">${t('lobby.theirTower')} ${button}</span>`;
   }
+  if (index !== view.humanPlayer) return badge(special);
   // A button showing the choice, opening the tower menu (`towerMenu.ts`): the list of every
   // variant had stopped scaling (the user's, 2026-10-16).
   const button =
@@ -329,7 +347,7 @@ function seatRow(
     }
     // A host watching has a bot in their seat, which brings the seat's draw.
     const watched = isHostSeat && view.hostBot !== null;
-    const tower = towerControl(view, index, watched ? 'bot' : seat.special);
+    const tower = towerControl(view, index, watched ? 'bot' : seat.special, isHost);
     return `<li class="seat${mine}${arrived}">${seatBadge(view, index)}${occupant(view, index, seats, seat.name)}${tags}${control}${blurb}${tower}</li>`;
   }
 
@@ -340,7 +358,7 @@ function seatRow(
     t('lobby.botLevelAria', { n: index + 1 }),
   );
   const bot = view.tournament?.seats[index]?.name ?? t('lobby.bot', { n: index + 1 });
-  return `<li class="seat bot${arrived}">${seatBadge(view, index)}${occupant(view, index, seats, bot)}${control}${towerControl(view, index, 'bot')}</li>`;
+  return `<li class="seat bot${arrived}">${seatBadge(view, index)}${occupant(view, index, seats, bot)}${control}${towerControl(view, index, 'bot', isHost)}</li>`;
 }
 
 /** The map and the seed it comes from: the host may draw another or type one in. */

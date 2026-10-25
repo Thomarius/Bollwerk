@@ -904,7 +904,12 @@ describe('a rematch', () => {
     r.join(host, 'Ada');
     r.join(guest, 'Bo');
     // The host watches a bot play their seat; the guest does nothing, and is soon out.
-    r.handle(host, { type: 'configure', hostBot: 5, bots: [5, 5, 3] });
+    r.handle(host, {
+      type: 'configure',
+      hostBot: 5,
+      bots: [5, 5, 3],
+      botTowers: ['drawn', 'drawn', 'laser3'],
+    });
     const seedBefore = host.received.filter((m) => m.type === 'room').at(-1);
     r.start();
     expect(r.started).toBe(true);
@@ -929,6 +934,7 @@ describe('a rematch', () => {
       [1, 'Bo', false],
     ]);
     expect(lobby.bots).toEqual([5, 5, 3]);
+    expect(lobby.botTowers).toEqual(['drawn', 'drawn', 'laser3']);
     expect(lobby.hostBot).toBe(5);
     expect(lobby.seed).not.toBe(seedBefore.seed);
 
@@ -974,6 +980,33 @@ describe('special towers in a room', () => {
     // Locked once the match is under way.
     r.handle(host, { type: 'special', special: null });
     expect(lastRoom(host).seats.find((s) => s.name === 'Ada')!.special).toBe('bertha3');
+  });
+
+  it("takes the host's towers for the bots, none among them, and keeps them with their seats", () => {
+    const r = room(4, 4);
+    const host = new TestClient('host');
+    const guest = new TestClient('guest');
+    r.join(host, 'Ada');
+    r.join(guest, 'Bo');
+    r.handle(host, { type: 'configure', settings: { specials: true } });
+    r.handle(host, { type: 'special', special: null });
+    // Only the host sets them.
+    r.handle(guest, { type: 'configure', botTowers: [null, null, null, null] });
+    expect(lastRoom(guest).botTowers).toEqual(['drawn', 'drawn', 'drawn', 'drawn']);
+    r.handle(host, { type: 'configure', botTowers: ['drawn', 'drawn', null, 'frost3'] });
+    expect(lastRoom(guest).botTowers).toEqual(['drawn', 'drawn', null, 'frost3']);
+    // A bot moved by the host's move keeps its tower, as it keeps its level.
+    r.handle(host, { type: 'configure', move: { from: 0, to: 3 } });
+    expect(lastRoom(guest).botTowers).toEqual(['frost3', 'drawn', null, 'drawn']);
+
+    r.start();
+    run(r, 5);
+    const state = host.state!;
+    expect(state.players[host.playerId]!.special).toBeNull();
+    const bots = state.players.filter((p) => p.isBot).map((p) => p.special);
+    expect(bots).toHaveLength(2);
+    expect(bots).toContain(null);
+    expect(bots).toContain('frost3');
   });
 
   it('plays no towers unless the host switches them on, whatever was chosen', () => {

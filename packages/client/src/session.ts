@@ -7,6 +7,7 @@ import {
   type MatchSettings,
   type Personality,
   TOWER_VARIANTS,
+  type BotTower,
   type TowerVariant,
 } from '@bollwerk/config';
 import { type Action, type MatchEvent, type MatchState } from '@bollwerk/sim';
@@ -76,6 +77,8 @@ export interface Setup {
   personalities?: readonly (Personality | null)[];
   /** The person's special tower, by seat, where the match plays towers; bots draw theirs. */
   specials?: readonly (TowerVariant | null)[];
+  /** Each seat's bot's tower, by seat, as the host set it; omitted, every bot its draw. */
+  botTowers?: readonly BotTower[];
   /** The tournament the match belongs to, for its recording. */
   tournament?: { id: string; step: number };
   /** Each team's name, by team label in order, where the table names them. */
@@ -114,6 +117,7 @@ export function localMatchFor(setup: Setup, record = true, worker = true): Local
     ...(setup.names === undefined ? {} : { names: setup.names }),
     ...(setup.personalities === undefined ? {} : { personalities: setup.personalities }),
     ...(setup.specials === undefined ? {} : { specials: setup.specials }),
+    ...(setup.botTowers === undefined ? {} : { botTowers: setup.botTowers }),
     ...(setup.tournament === undefined ? {} : { tournament: setup.tournament }),
     ...(setup.teamNames === undefined ? {} : { teamNames: setup.teamNames }),
     ruleset: applySettings(defaultConfigBundle.ruleset, setup.settings),

@@ -1860,6 +1860,11 @@ body.hud-bricks #hud .roster .line .shape path {
   height: 1.2rem;
 }
 
+.seats .seat .drawn-mark {
+  display: inline-flex;
+  color: var(--muted);
+}
+
 .seats .seat .tower-button .pips,
 .seats .seat .tower-badge .pips {
   color: var(--accent);
@@ -5995,8 +6000,8 @@ body.reduced-motion .look-gallery .card img {
   display: flex;
   flex-direction: column;
   gap: 0.9rem;
-  /* Six cards to a row: the six towers, none no longer a card (2026-10-21) — and wide enough for
-     "Schnellfeuer-" on a card's first line, which 46rem was not. */
+  /* Five cards to a row, two rows for the ten choices — none and the nine towers, the last still
+     to come (2026-10-25) — and wide enough for "Schnellfeuer-" on a card's first line. */
   width: min(52rem, 94vw);
   max-height: 92vh;
   overflow-y: auto;
@@ -6021,9 +6026,44 @@ body.reduced-motion .look-gallery .card img {
 
 .tower-menu .cards {
   display: grid;
-  /* Every card in one row at the panel's width, the widest name ("Allerdickste") on one line. */
-  grid-template-columns: repeat(auto-fill, minmax(6.6rem, 1fr));
+  /* Two rows of five, the widest name ("Allerdickste") on one line; three to a row where the
+     panel is too narrow for five. */
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 0.6rem;
+}
+
+@media (max-width: 640px) {
+  .tower-menu .cards {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+/* A bot's menu: Random, its draw, above the cards, as wide as they are. */
+.tower-menu .random {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.45rem 0.8rem;
+  border: 1px solid color-mix(in srgb, var(--muted) 45%, transparent);
+  background: transparent;
+  color: var(--ink);
+  letter-spacing: 0.04em;
+}
+
+.tower-menu .random:hover {
+  border-color: var(--accent);
+}
+
+.tower-menu .random.chosen {
+  border: 2px solid var(--accent);
+  box-shadow: 0 0 10px color-mix(in srgb, var(--accent) 45%, transparent);
+  color: var(--accent);
+}
+
+.tower-menu .random svg {
+  width: 1.4rem;
+  height: 1.4rem;
 }
 
 .tower-menu .card {
@@ -6039,6 +6079,12 @@ body.reduced-motion .look-gallery .card img {
 
 .tower-menu .card:hover {
   border-color: var(--accent);
+}
+
+/* The tower Random draws: marked, not chosen. */
+.tower-menu .card.drawn {
+  border: 1px dashed var(--accent);
+  color: var(--accent);
 }
 
 .tower-menu .card.chosen {

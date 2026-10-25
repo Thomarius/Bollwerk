@@ -105,6 +105,24 @@ export function cannonSvg(colour: string): string {
   );
 }
 
+/** A die showing five, for a bot's tower left to the draw (the lobby, the tower menu). */
+export function dieSvg(colour: string): string {
+  const pips = [
+    [4.5, 4.5],
+    [11.5, 4.5],
+    [8, 8],
+    [4.5, 11.5],
+    [11.5, 11.5],
+  ]
+    .map(([x, y]) => `<circle cx="${x}" cy="${y}" r="1.4" fill="${colour}"/>`)
+    .join('');
+  return (
+    `<svg class="icon die" viewBox="0 0 16 16" aria-hidden="true">` +
+    `<rect x="1.5" y="1.5" width="13" height="13" rx="2.5" fill="none" stroke="${colour}" stroke-width="1.4"/>` +
+    `${pips}</svg>`
+  );
+}
+
 /** The icons' side in the row, `.place-icons .icon`'s 1.3rem, in CSS pixels; read once. */
 let iconPx = 0;
 

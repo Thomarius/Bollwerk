@@ -7,6 +7,7 @@ import {
   teamsBalanced,
   type AiConfig,
   type BotSetup,
+  type BotTower,
   type MatchSettings,
   type Personality,
   type Ruleset,
@@ -14,7 +15,7 @@ import {
   type TowerVariant,
   type TerrainConfig,
 } from '@bollwerk/config';
-import { Bot, dealSeats, tableSlots } from '@bollwerk/ai';
+import { Bot, botTowerOf, dealSeats, tableSlots } from '@bollwerk/ai';
 import {
   ActionSchema,
   MatchRecorder,
@@ -97,6 +98,8 @@ export class Room {
   private hostId = 0;
   /** Skill of the bot in each seat, which the host may change before the match starts. */
   private readonly botLevels: number[];
+  /** The tower of the bot in each seat, which the host may choose; drawn until they do. */
+  private readonly botTowers: BotTower[];
   /** Settings the host may change before the match starts, within the server's bounds. */
   private settings: MatchSettings;
   /** Seats at the table, which the host may change while the table is being set. */
@@ -132,6 +135,7 @@ export class Room {
     this.code = options.code;
     this.rng = new Rng(options.seed ?? Math.floor(Math.random() * 0xffffffff));
     this.botLevels = new Array<number>(options.playerCount).fill(options.server.botLevel);
+    this.botTowers = new Array<BotTower>(options.playerCount).fill('drawn');
     this.settings = defaultSettings(options.ruleset, options.server.lobbySettings);
     this.playerCount = options.playerCount;
     this.teams = defaultTeams(this.playerCount, this.settings.teamSize);
@@ -303,6 +307,8 @@ export class Room {
         for (let i = 0; i < this.botLevels.length; i++) {
           const wanted = message.bots?.[i];
           if (wanted !== undefined) this.botLevels[i] = wanted;
+          const tower = message.botTowers?.[i];
+          if (tower !== undefined) this.botTowers[i] = tower;
         }
         let settings = this.settings;
         if (message.settings !== undefined) {
@@ -372,8 +378,10 @@ export class Room {
       // Seats kept keep their bot's skill; new ones take the server's default.
       this.playerCount = table.playerCount;
       this.botLevels.length = table.playerCount;
+      this.botTowers.length = table.playerCount;
       for (let i = 0; i < table.playerCount; i++) {
         this.botLevels[i] ??= this.options.server.botLevel;
+        this.botTowers[i] = botTowerOf(this.botTowers, i);
       }
       // Anybody seated beyond a shrunken table moves to the lowest free seat; there is
       // always one, since a table never shrinks below the people at it.
@@ -424,6 +432,9 @@ export class Room {
     this.hostBot = null;
     this.botLevels.length = 0;
     for (const seat of table.seats) this.botLevels.push(seat.level ?? this.options.server.botLevel);
+    // A tournament's bots bring their draws, as they do in every match of it.
+    this.botTowers.length = 0;
+    for (let i = 0; i < table.seats.length; i++) this.botTowers.push('drawn');
     // The host first, then everyone else into the open seats, keeping theirs where it is.
     const host = this.seats.find((s) => s.playerId === this.hostId);
     const guests = this.seats.filter((s) => s !== host);
@@ -485,6 +496,9 @@ export class Room {
     const fromLevel = this.botLevels[from] as number;
     this.botLevels[from] = this.botLevels[to] as number;
     this.botLevels[to] = fromLevel;
+    const fromTower = this.botTowers[from] as BotTower;
+    this.botTowers[from] = this.botTowers[to] as BotTower;
+    this.botTowers[to] = fromTower;
     this.sendWelcome(mover);
     if (other !== undefined) this.sendWelcome(other);
   }
@@ -563,8 +577,10 @@ export class Room {
         // A tournament's bots keep theirs; a person's seat is covered by the seat's bot.
         personality: this.tournament?.seats[index]?.personality ?? null,
         team: this.teams[index] ?? index,
-        // A person's own choice; a seat a bot plays — the host's, watching — brings its draw.
+        // A person's own choice; a seat a bot plays — the host's, watching — brings the bot's,
+        // as the host set it.
         special: seat.special,
+        botTower: botTowerOf(this.botTowers, index),
       })),
       this.options.terrain,
       this.options.ruleset.specials,
@@ -720,6 +736,7 @@ export class Room {
       seats: this.wireSeats(),
       playerCount: this.playerCount,
       bots: [...this.botLevels],
+      botTowers: [...this.botTowers],
       settings: { ...this.settings },
       settingBounds: this.options.server.lobbySettings,
       teams: [...this.teams],

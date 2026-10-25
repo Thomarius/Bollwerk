@@ -4,10 +4,12 @@ import {
   defaultConfigBundle,
   defaultTeams,
   reshapeTable,
+  type BotTower,
   type MatchSettings,
   type TowerVariant,
   type Table,
 } from '@bollwerk/config';
+import { botTowerOf, drawnSpecial } from '@bollwerk/ai';
 import { type ServerMessage } from '@bollwerk/protocol';
 import { Progress, parseSave, type Save } from '@bollwerk/tournament';
 
@@ -51,6 +53,8 @@ const SERVER_WAIT_MS = 2000;
 export interface LobbyHandlers {
   table(change: { settings?: MatchSettings; playerCount?: number; teams?: number[] }): void;
   bot(seat: number, level: number): void;
+  /** The tower the bot in this seat brings: one chosen, none, or `drawn`, its draw. */
+  botTower?(seat: number, tower: BotTower): void;
   /** A new map: a seed typed in, or a fresh random one. */
   seed(seed: number): void;
   /** A bot to play the host's own seat while they watch, or null to play it. */
@@ -123,6 +127,8 @@ export function drawLobby(view: LobbyView, on: LobbyHandlers): void {
     openTowerMenu({
       chosen: current === '' || current === undefined ? null : (current as TowerVariant),
       onChoose: (special) => {
+        // A person's menu offers no Random.
+        if (special === 'drawn') return;
         saveTower(special);
         on.special?.(special);
       },
@@ -131,6 +137,23 @@ export function drawLobby(view: LobbyView, on: LobbyHandlers): void {
       alive: () => document.querySelector('#my-special') !== null,
     });
   });
+  // The host choosing a bot's tower, Random among the choices: it stays with the seat, into a
+  // rematch, as its level does (the user's, 2026-10-25).
+  for (const button of document.querySelectorAll<HTMLButtonElement>('.bot-tower')) {
+    button.addEventListener('click', () => {
+      audio.play('select');
+      const seat = Number(button.dataset['seat']);
+      const choice = button.dataset['choice'];
+      openTowerMenu({
+        chosen: choice === 'none' ? null : ((choice ?? 'drawn') as BotTower),
+        drawn: drawnSpecial(view.seed, seat, defaultConfigBundle.ruleset.specials),
+        title: t('towerMenu.botTitle', { n: seat + 1 }),
+        onChoose: (tower) => on.botTower?.(seat, tower),
+        click: () => audio.play('select'),
+        alive: () => document.querySelector(`.bot-tower[data-seat="${seat}"]`) !== null,
+      });
+    });
+  }
   for (const field of document.querySelectorAll<HTMLSelectElement>('.bot-select')) {
     field.addEventListener('change', () => {
       audio.play('select');
@@ -257,6 +280,8 @@ interface TableState extends Table {
   /** Where the host sits: they may move to any seat, and the seat decides the team. */
   hostSeat: number;
   bots: number[];
+  /** The tower each seat's bot brings, by seat, as the host set it. */
+  botTowers: BotTower[];
   /** The special tower the host brings, where the match plays them. */
   special: TowerVariant | null;
 }
@@ -279,6 +304,7 @@ function playLocally(common: Common, table: TableState): void {
     specials: Array.from({ length: table.playerCount }, (_, seat) =>
       seat === table.hostSeat ? table.special : null,
     ),
+    botTowers: table.botTowers.slice(0, table.playerCount),
   };
   // A rematch reopens this table as it was, on a new map (PLAN 11.18 Y6).
   const rematch = (): void => localLobby(common, table.playerCount, randomSeed(), table);
@@ -372,12 +398,19 @@ function localLobby(
       ? {
           ...start,
           bots: Array.from({ length: limits.max }, () => DEFAULT_BOT),
+          botTowers: Array.from({ length: limits.max }, (): BotTower => 'drawn'),
           seed,
           hostBot: null,
           hostSeat: 0,
           special: preferredTower(),
         }
-      : { ...kept, bots: [...kept.bots], teams: [...kept.teams], seed };
+      : {
+          ...kept,
+          bots: [...kept.bots],
+          botTowers: [...kept.botTowers],
+          teams: [...kept.teams],
+          seed,
+        };
 
   const redraw = (): void =>
     drawLobby(
@@ -397,6 +430,7 @@ function localLobby(
           },
         ],
         bots: table.bots.slice(0, table.playerCount),
+        botTowers: table.botTowers.slice(0, table.playerCount),
         settings: table.settings,
         settingBounds: SETTING_BOUNDS,
         teams: table.teams,
@@ -415,6 +449,10 @@ function localLobby(
           table.bots[seat] = tier;
           redraw();
         },
+        botTower: (seat, tower) => {
+          table.botTowers[seat] = tower;
+          redraw();
+        },
         seed: (seed) => {
           table.seed = seed;
           redraw();
@@ -429,6 +467,10 @@ function localLobby(
           [table.bots[from], table.bots[to]] = [
             table.bots[to] ?? DEFAULT_BOT,
             table.bots[from] ?? DEFAULT_BOT,
+          ];
+          [table.botTowers[from], table.botTowers[to]] = [
+            botTowerOf(table.botTowers, to),
+            botTowerOf(table.botTowers, from),
           ];
           table.hostSeat = to;
           redraw();
@@ -477,6 +519,7 @@ function roomLobby(
     playerCount: v.playerCount,
     teams: [...v.teams],
     bots: [...v.bots],
+    botTowers: Array.from({ length: v.playerCount }, (_, seat) => botTowerOf(v.botTowers, seat)),
     seed: v.seed,
     hostBot: v.hostBot,
     hostSeat: v.hostId,
@@ -502,6 +545,13 @@ function roomLobby(
         const bots = [...current.bots];
         bots[seat] = tier;
         connection.send({ type: 'configure', bots });
+      },
+      botTower: (seat, tower) => {
+        const botTowers = Array.from({ length: current.playerCount }, (_, i) =>
+          botTowerOf(current.botTowers, i),
+        );
+        botTowers[seat] = tower;
+        connection.send({ type: 'configure', botTowers });
       },
       seed: (seed) => connection.send({ type: 'configure', seed }),
       hostBot: (tier) => connection.send({ type: 'configure', hostBot: tier }),
@@ -551,6 +601,7 @@ function roomLobby(
           humanPlayer: match.humanPlayer,
           seats: message.seats,
           bots: [...message.bots],
+          botTowers: [...message.botTowers],
           settings: message.settings,
           settingBounds: message.settingBounds,
           teams: [...message.teams],

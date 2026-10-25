@@ -8,7 +8,7 @@ import { impactReadiness } from './controls.js';
 import { lobbyMarkup, type LobbyView } from './lobby.js';
 import { offeredTowers, towerMenuMarkup, variantForCard } from './towerChoice.js';
 import { language, setLanguage } from './i18n.js';
-import { preferredTower, towerLine, towerName, towerWhat } from './towers.js';
+import { preferredTower, saveTower, towerLine, towerName, towerWhat } from './towers.js';
 
 /** Player 0's sealed ring, in a cannon phase, bringing Big Bertha with three cannons. */
 function cannonPhase(): MatchState {
@@ -147,20 +147,57 @@ describe('the lobby with special towers', () => {
   });
 
   it('lets each person choose their own, and shows everyone else’s and the bots’ draws', () => {
-    const html = lobbyMarkup(view(true));
+    // Bo's page: Ada's choice and the bot's draw are shown, not to be pressed.
+    const html = lobbyMarkup({ ...view(true), humanPlayer: 1 });
     // The person's own a button opening the tower menu, showing what they chose.
     expect(html).toContain('id="my-special"');
-    expect(html).toContain('data-variant="architect2"');
+    expect(html).toContain('data-variant="rapid3"');
     expect(html).not.toContain('<select id="my-special"');
+    expect(html).not.toContain('bot-tower');
     // Everyone else's shown as the button is, icon, name and a pip a cannon, not to be pressed.
     const badges = [...html.matchAll(/<span class="tower-badge"[^>]*>(.*?)<\/span><\/span>/g)];
     const drawn = drawnSpecial(42, 2, defaultRuleset.specials);
     expect(badges.map((b) => b[1])).toEqual([
-      expect.stringMatching(new RegExp(`<svg.*${towerName('rapid')}.*>•••$`)),
+      expect.stringMatching(new RegExp(`<svg.*${towerName('architect')}.*>••$`)),
       expect.stringMatching(
-        new RegExp(`<svg.*${towerName(variantKind(drawn))}.*>${'•'.repeat(variantCost(drawn))}$`),
+        new RegExp(
+          `<svg.*${towerName(variantKind(drawn))}.*>${'•'.repeat(variantCost(drawn))}</span><span class="drawn-mark".*</svg>$`,
+        ),
       ),
     ]);
+  });
+
+  it("gives the host a button for each bot's tower, its draw marked with a die until chosen", () => {
+    const bots = (botTowers?: LobbyView['botTowers']): string[] => {
+      const html = lobbyMarkup({
+        ...view(true),
+        ...(botTowers === undefined ? {} : { botTowers }),
+      });
+      return [
+        ...html.matchAll(/<button[^>]*class="tower-button bot-tower"[^>]*>.*?<\/button>/g),
+      ].map((m) => m[0]);
+    };
+    const drawn = drawnSpecial(42, 2, defaultRuleset.specials);
+    const [left] = bots();
+    expect(left).toContain('data-seat="2" data-choice="drawn"');
+    expect(left).toContain(towerName(variantKind(drawn)));
+    expect(left).toContain('class="drawn-mark"');
+    // None chosen is none, not the draw: null is a choice of its own.
+    const [none] = bots(['drawn', 'drawn', null]);
+    expect(none).toContain('data-choice="none"');
+    expect(none).toContain(towerName(null));
+    expect(none).not.toContain('drawn-mark');
+    const [chosen] = bots(['drawn', 'drawn', 'laser3']);
+    expect(chosen).toContain('data-choice="laser3"');
+    expect(chosen).toContain(towerName('laser'));
+    // A guest sees the host's choice as a badge.
+    const guest = lobbyMarkup({
+      ...view(true),
+      humanPlayer: 1,
+      botTowers: ['drawn', 'drawn', null],
+    });
+    expect(guest).not.toContain('bot-tower');
+    expect(guest).toContain(towerName(null));
   });
 
   it('describes each variant by its own numbers', () => {
@@ -217,7 +254,7 @@ describe('the lobby with special towers', () => {
 });
 
 describe('the tower menu', () => {
-  it('offers every tower at the costs the rules offer, and no card for none', () => {
+  it('offers every tower at the costs the rules offer, and no tower first', () => {
     expect(offeredTowers()).toEqual([
       { kind: 'bertha', costs: [2, 3] },
       { kind: 'architect', costs: [2, 3] },
@@ -229,8 +266,29 @@ describe('the tower menu', () => {
       { kind: 'lullaby', costs: [2, 3] },
     ]);
     const html = towerMenuMarkup('bertha2');
-    expect(html).not.toContain('data-kind="none"');
+    expect(html.match(/data-kind="\w+"/)?.[0]).toBe('data-kind="none"');
     expect(html).toContain('class="card chosen" data-kind="bertha"');
+    // A person's menu has no Random.
+    expect(html).not.toContain('class="random');
+  });
+
+  it('chooses none as a card of its own, both costs off', () => {
+    const html = towerMenuMarkup(null);
+    expect(html).toContain('class="card chosen" data-kind="none"');
+    expect(html).toMatch(/data-cost="2" disabled/);
+    expect(html).toMatch(/data-cost="3" disabled/);
+  });
+
+  it("offers a bot's menu Random, its draw's card marked rather than chosen", () => {
+    const html = towerMenuMarkup('drawn', 'frost3');
+    expect(html).toContain('class="random chosen"');
+    expect(html).toContain('class="card drawn" data-kind="frost"');
+    expect(html).not.toContain('card chosen');
+    expect(html).toContain(towerWhat('frost3'));
+    // Chosen over the draw, Random is offered but no longer chosen.
+    const chosen = towerMenuMarkup('frost2', 'frost3');
+    expect(chosen).toContain('class="random"');
+    expect(chosen).toContain('class="card chosen" data-kind="frost"');
   });
 
   it('shows the cards alphabetically by their names in the language shown', () => {
@@ -240,6 +298,7 @@ describe('the tower menu', () => {
     try {
       setLanguage('en');
       expect(order()).toEqual([
+        'none',
         'biggest',
         'architect',
         'bertha',
@@ -251,6 +310,7 @@ describe('the tower menu', () => {
       ]);
       setLanguage('de');
       expect(order()).toEqual([
+        'none',
         'biggest',
         'architect',
         'lightning',
@@ -269,6 +329,26 @@ describe('the tower menu', () => {
     const drawn = preferredTower();
     expect(offeredVariants(defaultRuleset.specials)).toContain(drawn);
     expect(preferredTower()).toBe(drawn);
+  });
+
+  it('brings none back as none once chosen, and a tower chosen as that tower', () => {
+    const items = new Map<string, string>();
+    const before = globalThis.localStorage;
+    Object.defineProperty(globalThis, 'localStorage', {
+      configurable: true,
+      value: {
+        getItem: (k: string) => items.get(k) ?? null,
+        setItem: (k: string, v: string) => items.set(k, v),
+      },
+    });
+    try {
+      saveTower(null);
+      expect(preferredTower()).toBeNull();
+      saveTower('laser3');
+      expect(preferredTower()).toBe('laser3');
+    } finally {
+      Object.defineProperty(globalThis, 'localStorage', { configurable: true, value: before });
+    }
   });
 
   it('shows the chosen tower’s cost and what that variant does', () => {

@@ -52,6 +52,14 @@ export const TOWER_VARIANTS = [
 export const TowerVariantSchema = z.enum(TOWER_VARIANTS);
 export type TowerVariant = z.infer<typeof TowerVariantSchema>;
 
+/**
+ * A bot's tower as the host sets it in the lobby: `drawn` from the seed and its seat, as every
+ * bot's was, a variant chosen, or null for none — a choice only the host makes, never a draw
+ * (the user's, 2026-10-25).
+ */
+export const BotTowerSchema = z.union([z.literal('drawn'), TowerVariantSchema]).nullable();
+export type BotTower = z.infer<typeof BotTowerSchema>;
+
 export function variantOf(kind: SpecialKind, cost: TowerCost): TowerVariant {
   return `${kind}${cost}` as TowerVariant;
 }

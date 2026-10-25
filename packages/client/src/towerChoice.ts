@@ -4,6 +4,7 @@ import {
   offeredVariants,
   variantCost,
   variantKind,
+  type BotTower,
   type SpecialKind,
   type TowerVariant,
 } from '@bollwerk/config';
@@ -11,8 +12,8 @@ import {
 import { escape } from './html.js';
 import { language, t } from './i18n.js';
 import { store, stored } from './storage.js';
-import { towerSvg } from './towerIcons.js';
-import { towerCostText, towerName, towerWhat } from './towers.js';
+import { cannonSvg, dieSvg, towerSvg } from './towerIcons.js';
+import { towerCostText, towerName, towerWhat, variantName } from './towers.js';
 
 /**
  * What the special tower menu offers and how it is drawn (`towerMenu.ts`), apart from the
@@ -68,33 +69,50 @@ export function menuTowers(): { kind: SpecialKind; costs: number[] }[] {
 }
 
 /**
- * The menu's choosing part, drawn again on every choice; the preview stays beside it. Every card
- * a tower: no card for none (the user's, 2026-10-21), since a tower brought need never be bought.
+ * The menu's choosing part, drawn again on every choice; the preview stays beside it. No tower
+ * the first card, then every tower by name — ten cards with the tower still to come, two rows
+ * of five (the user's, 2026-10-25; none had been left out since 2026-10-21). A bot's menu, given
+ * `drawn` — its seat's draw — offers Random above them: the draw it brings unless the host
+ * chooses, its tower's card marked as drawn rather than chosen.
  */
-export function towerMenuMarkup(chosen: TowerVariant | null): string {
-  const kind = chosen === null ? null : variantKind(chosen);
-  const card = (k: SpecialKind): string =>
-    `<button type="button" class="card${k === kind ? ' chosen' : ''}" data-kind="${k}">` +
-    `${towerSvg(k, 'currentColor')}<span class="name">${escape(towerName(k))}</span></button>`;
+export function towerMenuMarkup(chosen: BotTower, drawn: TowerVariant | null = null): string {
+  const kind = chosen === null ? 'none' : chosen === 'drawn' ? null : variantKind(chosen);
+  const drawnKind = chosen === 'drawn' && drawn !== null ? variantKind(drawn) : null;
+  const card = (k: SpecialKind | 'none', icon: string, name: string): string =>
+    `<button type="button" class="card${k === kind ? ' chosen' : ''}${k === drawnKind ? ' drawn' : ''}" data-kind="${k}">` +
+    `${icon}<span class="name">${escape(name)}</span></button>`;
   const towers = menuTowers();
-  const cards = towers.map((o) => card(o.kind)).join('');
-  let costs = '';
-  if (kind !== null) {
-    const offered = towers.find((o) => o.kind === kind)?.costs ?? [];
-    const buttons = [2, 3]
-      .map((cost) => {
-        const on = chosen !== null && variantCost(chosen) === cost;
-        const off = !offered.includes(cost);
-        return `<button type="button" class="cost${on ? ' chosen' : ''}" data-cost="${cost}"${off ? ' disabled' : ''}>${escape(towerCostText(cost))}</button>`;
-      })
-      .join('');
-    costs = `<div class="costs"><span>${escape(t('towerMenu.cost'))}</span>${buttons}</div>`;
-  }
-  const what =
-    chosen === null
+  const cards =
+    card('none', cannonSvg('currentColor'), towerName(null)) +
+    towers.map((o) => card(o.kind, towerSvg(o.kind, 'currentColor'), towerName(o.kind))).join('');
+  const random =
+    drawn === null
       ? ''
-      : `${escape(towerWhat(chosen))} <em>${escape(t(variantCost(chosen) >= 3 ? 'tower.affordSecond' : 'tower.affordMain'))}</em>`;
-  return `<div class="cards">${cards}</div>${costs}<p class="what">${what}</p>`;
+      : `<button type="button" class="random${chosen === 'drawn' ? ' chosen' : ''}">` +
+        `${dieSvg('currentColor')}<span>${escape(t('towerMenu.random'))}</span></button>`;
+  // Shown for none and Random too, both costs off, so the menu keeps its height between choices.
+  const variant = chosen === null || chosen === 'drawn' ? null : chosen;
+  const offered = towers.find((o) => o.kind === kind)?.costs ?? [];
+  const buttons = [2, 3]
+    .map((cost) => {
+      const on = variant !== null && variantCost(variant) === cost;
+      const off = !offered.includes(cost);
+      return `<button type="button" class="cost${on ? ' chosen' : ''}" data-cost="${cost}"${off ? ' disabled' : ''}>${escape(towerCostText(cost))}</button>`;
+    })
+    .join('');
+  const costs = `<div class="costs"><span>${escape(t('towerMenu.cost'))}</span>${buttons}</div>`;
+  const shown = chosen === 'drawn' ? drawn : chosen;
+  const afford = (v: TowerVariant): string =>
+    `<em>${escape(t(variantCost(v) >= 3 ? 'tower.affordSecond' : 'tower.affordMain'))}</em>`;
+  let what = escape(t('towerMenu.noneWhat'));
+  if (shown !== null) {
+    const lead =
+      chosen === 'drawn'
+        ? `${escape(t('towerMenu.randomWhat', { tower: variantName(shown) }))} `
+        : '';
+    what = `${lead}${escape(towerWhat(shown))} ${afford(shown)}`;
+  }
+  return `${random}<div class="cards">${cards}</div>${costs}<p class="what">${what}</p>`;
 }
 
 /** Remembers the cost of a variant just chosen, for the next click on any tower's card. */

@@ -9935,3 +9935,25 @@ frame against Stadium's 0.9–1.1 and 2.5–2.7; 5,000–5,700 vertices rebuilt 
 order, the tumbleweeds, the gold glints and the floor's life among them. Seen in screenshots
 building, in combat at two, three and eight players, in the final round, the banner crossing and
 the menu. Tested in play and approved by the users the same day, with Mythos.
+
+## 14z. The bots' towers chosen, and No tower back (2026-10-25)
+
+The user's request: in a single match the host chooses each bot's special tower, and anyone may
+bring none. **No tower is back** for people, reversing the decision of 2026-10-21 (the user's);
+**a bot's tower stays its draw** from the seed and its seat, never none, until the host chooses —
+any tower at either cost, or none, Random taking the draw again. Only the host chooses; the
+choice stays with the seat, as the bot's level does, through the host's moves and into a rematch;
+a tournament's bots always bring their draws (`setTournament` resets them).
+
+Built as a `BotTower` (`config`), a variant, null for none, or `drawn`, which `dealSeats` reads
+from `TableSeat.botTower` (`botSpecial`); a table's list read by `botTowerOf`, since `?? 'drawn'`
+turned a bot set to none back into a draw — caught by the seating test. Protocol 32: `configure`'s
+and `room`'s `botTowers`. Recordings unchanged: each player's tower was already in the header.
+
+**The tower menu for ten choices** (the user's: one more tower is planned, so No tower and nine
+towers): No tower the first card, then the towers alphabetically, **two rows of five** (three to a
+row on a narrow screen); the cost switch shown greyed for none, so the menu keeps its height.
+A bot's menu, titled by its seat, has **Random** above the cards, a die on it; chosen, the drawn
+tower's card is marked dashed rather than chosen, and the line under the cards names the draw.
+In the lobby a bot's tower is a button for the host, a badge for everyone else, the draw marked
+with the die.

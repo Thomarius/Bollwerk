@@ -147,14 +147,14 @@ const TOWER_KEY = 'bollwerk.tower';
 let drawn: TowerVariant | null = null;
 
 /**
- * The tower the player chose last — or, never chosen, a tower drawn at random among every one
- * the rules offer at either cost, as a bot's is (the user's, 2026-10-21: there is no "none", since
- * a tower brought need never be bought). Drawn once a visit and not saved, so it stays a surprise
- * until the player chooses; the same for a choice of none saved before then, and for one saved
- * before towers came at two costs, a bare kind, which names no variant.
+ * The tower the player chose last, or none if they chose none (back since 2026-10-25, the user's)
+ * — or, never chosen, a tower drawn at random among every one the rules offer at either cost, as
+ * a bot's is. Drawn once a visit and not saved, so it stays a surprise until the player chooses;
+ * the same for one saved before towers came at two costs, a bare kind, which names no variant.
  */
-export function preferredTower(): TowerVariant {
+export function preferredTower(): TowerVariant | null {
   const saved = stored(TOWER_KEY);
+  if (saved === 'none') return null;
   const offered = offeredVariants(defaultRuleset.specials);
   if ((offered as readonly string[]).includes(saved ?? '')) return saved as TowerVariant;
   drawn ??= offered[Math.floor(Math.random() * offered.length)] as TowerVariant;

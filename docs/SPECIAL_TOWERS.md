@@ -29,11 +29,14 @@ keeps only what is open.
 - **An on/off switch** for special towers among the match settings, beside lives and rounds:
   classic matches stay possible, and a test session can compare both. **Off by default**, for
   good (the user's, 2026-10-17, ARCHIVE 13zw): the towers are a wacky addition, not the base game. A tournament's setup has the same switch (§3.3).
-- **Each player brings one tower for the match**, each their own — never none (the user's,
-  2026-10-21: buying is always optional, so a tower brought need never be bought, and "No tower"
-  chose nothing). A person's choice is remembered in their preferences; never chosen, theirs is
-  drawn at random for the visit, as a bot's is. **Bots draw theirs at random** from the seed, and
-  the draw is shown in the lobby, as the map is.
+- **Each player brings one tower for the match**, each their own, **or none** — "No tower" was
+  taken out on 2026-10-21 (buying is always optional, so a tower brought need never be bought) and
+  put back on 2026-10-25 (the user's). A person's choice is remembered in their preferences; never
+  chosen, theirs is drawn at random for the visit. **A bot's is drawn at random** from the seed and
+  its seat, never none, and shown in the lobby, as the map is — unless **the host chooses it**
+  (2026-10-25, the user's): any tower at either cost, or none; Random takes the draw again. Only
+  the host chooses, a bot's choice stays with its seat as its level does, into a rematch, and a
+  tournament's bots always bring their draws.
 - **Bought in the cannon phase only** — the one phase without hurry — by exchanging ordinary
   cannon placements. **At most one special tower a round**, **at most three standing on the
   island**, and **never in the opening placement** after a castle is chosen (the match's start, or
@@ -421,9 +424,11 @@ Built in ST1, the two costs in ST3b (2026-10-16); the rules are in `sim/src/spec
 - `MatchSettings` gains `specials: boolean`, opening as the ruleset's `specials.enabled` (off), and
   `applySettings` writes it into the ruleset (ST2).
 - A seat's loadout travels with the seat (as a bot's level and personality do), not in the
-  ruleset: `dealSeats` gives each player their `special` — a person's choice, a bot's draw by
+  ruleset: `dealSeats` gives each player their `special` — a person's choice, a bot's the host's
+  choice (`TableSeat.botTower`, a `BotTower`: a variant, null for none, or `drawn`) or its draw by
   seat from the seed among the offered variants (`drawnSpecial`, `ai/src/seating.ts`), which
-  every page works out itself.
+  every page works out itself. Read a table's list with `botTowerOf`, never `?? 'drawn'`, which
+  takes a bot set to none for one left to its draw.
 
 ### 3.3 Protocol, rooms and recordings
 
@@ -433,13 +438,17 @@ Built in ST2, the costs in ST3b.
   own tower (the `special` message, anyone's, before the start) and each seat's in the room's
   `seats`, each a variant; bots' draws are not sent, being derivable. The action field and the
   snapshot's new state came with ST1, guns' costs and shots in flight with ST3b. A v0.9.6 page
-  cannot join a room of this one.
+  cannot join a room of this one. **Protocol 32** (2026-10-25): the bots' towers by seat, the
+  host's to set (`configure`'s `botTowers`) and the room's to tell (`room`'s `botTowers`), `drawn`
+  for a bot left to its draw.
 - **Recording format 4**: each player's `special` in the header, a variant, absent meaning none,
   so a replay builds the same match (`matchOptionsOf`); `--replay` reads it so.
 - **Server** (`room.ts`): a seat keeps its person's choice; the start deals the towers with the
-  seats; a seat a bot plays — the host's, watching — brings its draw. Nothing else changes,
+  seats; a seat a bot plays — the host's, watching — brings the tower the host set for that seat's
+  bot, its draw until they do. The host's move swaps the bots' towers with their levels. Nothing else changes,
   actions being actions.
-- **Local matches**: `LocalMatch` and `Setup` take the person's tower by seat (`specials`); the
+- **Local matches**: `LocalMatch` and `Setup` take the person's tower by seat (`specials`) and the
+  bots' as the host set them (`botTowers`); the
   bot worker's mirror is created from the same options, so it needs nothing new.
 - **Tournaments**: `TournamentSettings.specials`, optional — a save from before plays without —
   for every match of it (`matchSettingsOf`). When on, the field's bot teams draw towers as any
@@ -455,15 +464,18 @@ Built in ST5 and ST6 together (2026-10-14), so people can play with towers; the 
   (`bollwerk.specials`, off until first set; 2026-10-23); a guest reads it in the table's statement. While on, a person's own seat has a button
   showing their choice — its emblem, name and a pip a cannon it costs — remembered for the next
   table (`towers.ts`, `bollwerk.tower`), and never chosen, drawn at random once a visit, not saved
-  (as is a choice of none saved before 2026-10-21, or one saved before the costs, a bare kind that
-  names no variant), and sent to a room as it opens; anyone
-  else's seat shows their choice, and each bot's seat the variant drawn for it, as the button is
-  drawn but not to be pressed ("Brings", the user's, 2026-10-23; it had been a line of text). The same in a
-  tournament's lobby, and a switch in the tournament's setup.
+  (as is one saved before the costs, a bare kind that names no variant), and sent to a room as it
+  opens; anyone else's seat shows their choice, as the button is drawn but not to be pressed
+  ("Brings", the user's, 2026-10-23; it had been a line of text). Each bot's seat shows its tower
+  the same way, the draw marked with a die — for the host a button opening the menu for that bot,
+  with Random above the cards (2026-10-25). The same in a tournament's lobby, its bots' towers
+  never to be chosen, and a switch in the tournament's setup.
 - **The tower menu** (`towerMenu.ts`, `towerChoice.ts`; the user's, 2026-10-16), opened by that
-  button, where one list of every variant had stopped scaling: a card for each tower, by name
-  alphabetically in the language shown (`menuTowers`; the user's, 2026-10-21, the card for none
-  gone with it) — its emblem and name (a line on its role, offence or defence, went: the user's, 2026-10-17) — a switch for the chosen tower's
+  button, where one list of every variant had stopped scaling: No tower first, then a card for
+  each tower, by name alphabetically in the language shown (`menuTowers`; the user's,
+  2026-10-21; none gone that day and back on 2026-10-25), two rows of five — ten choices with the
+  tower still to come; a bot's menu has Random above them, its draw's card marked dashed, not
+  chosen — its emblem and name (a line on its role, offence or defence, went: the user's, 2026-10-17) — a switch for the chosen tower's
   cost, a cost the rules do not offer greyed, a card's click keeping the cost chosen, tower and cost
   independent — the last cost chosen when none was (`bollwerk.towerCost`), else the cheapest; a
   cost remembered by tower had switched back as its card was clicked, which confused the users
