@@ -1,10 +1,16 @@
 import type { InternetStatus, RunningServer, StartResult } from '@bollwerk/server';
 import { describe, expect, it } from 'vitest';
 
-import { ServerControl, nextPort, type ControlState } from './control.js';
+import { ServerControl, nextPort, type ControlState, type TunnelLike } from './control.js';
+import type { TunnelStatus } from './tunnel.js';
 
 /** A start that binds every port but the ones it is told are taken; its router opens anything. */
-function fakeStart(taken: Set<number>, stopped: number[], asked: boolean[] = []) {
+function fakeStart(
+  taken: Set<number>,
+  stopped: number[],
+  asked: boolean[] = [],
+  invites: (string | null)[] = [],
+) {
   return (port: number): Promise<StartResult> => {
     if (taken.has(port)) {
       return Promise.resolve({ ok: false, reason: 'port_in_use', port, host: '0.0.0.0' });
@@ -31,6 +37,7 @@ function fakeStart(taken: Set<number>, stopped: number[], asked: boolean[] = [])
         return Promise.resolve(internet);
       },
       onInternet: (l) => void listeners.push(l),
+      setInvite: (url) => void invites.push(url),
     };
     return Promise.resolve({ ok: true, server });
   };
@@ -49,6 +56,8 @@ describe('the server as the window shows it', () => {
       urls: ['http://localhost:8080'],
       internet: { state: 'off' },
       upnp: false,
+      tunnel: false,
+      link: { state: 'off' },
     });
     await control.stop();
     expect(stopped).toEqual([8080]);
@@ -64,6 +73,8 @@ describe('the server as the window shows it', () => {
       port: 8080,
       reason: 'port_in_use',
       upnp: false,
+      tunnel: false,
+      link: { state: 'off' },
     });
     await control.startOn(nextPort(8080));
     expect(control.state.status).toBe('running');
@@ -95,6 +106,50 @@ describe('the server as the window shows it', () => {
     await control.setUpnp(false);
     expect(asked).toEqual([true, true, false]);
     expect(control.state).toMatchObject({ upnp: false, internet: { state: 'off' } });
+  });
+
+  it('shares a link while the switch is on and the server runs, and gives it to the lobby', async () => {
+    const invites: (string | null)[] = [];
+    const opened: number[] = [];
+    const listeners: ((s: TunnelStatus) => void)[] = [];
+    const fake: TunnelLike & { status: TunnelStatus } = {
+      status: { state: 'off' },
+      onChange: (l) => void listeners.push(l),
+      open(port) {
+        opened.push(port);
+        this.status = { state: 'open', url: `https://p${port}.trycloudflare.com` };
+        for (const l of listeners) l(this.status);
+        return Promise.resolve();
+      },
+      close() {
+        this.status = { state: 'off' };
+        for (const l of listeners) l(this.status);
+      },
+    };
+    const control = new ServerControl(fakeStart(new Set(), [], [], invites), 8080, {}, fake);
+    await control.startOn();
+    expect(opened).toEqual([]);
+    await control.setTunnel(true);
+    expect(control.state).toMatchObject({
+      tunnel: true,
+      link: { state: 'open', url: 'https://p8080.trycloudflare.com' },
+    });
+    await control.stop();
+    expect(control.state).toMatchObject({
+      status: 'stopped',
+      tunnel: true,
+      link: { state: 'off' },
+    });
+    await control.startOn(9000);
+    expect(opened).toEqual([8080, 9000]);
+    await control.setTunnel(false);
+    expect(control.state).toMatchObject({ tunnel: false, link: { state: 'off' } });
+    expect(invites).toEqual([
+      'https://p8080.trycloudflare.com',
+      null,
+      'https://p9000.trycloudflare.com',
+      null,
+    ]);
   });
 
   it('wraps the next port inside the range a user may bind', () => {

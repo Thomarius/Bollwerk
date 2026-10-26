@@ -12,12 +12,19 @@
       <p id="status" class="status idle" data-t="desktop.starting">Starting…</p>
       <p id="detail" class="detail"></p>
       <ul id="urls"></ul>
+      <p id="firewall" class="detail" hidden></p>
       <label class="switch">
         <input id="upnp" type="checkbox" />
         <span data-t="desktop.upnp">Open to the internet</span>
       </label>
       <p id="internet" class="detail"></p>
       <ul id="public"></ul>
+      <label class="switch">
+        <input id="tunnel" type="checkbox" />
+        <span data-t="desktop.tunnel">Share a link online</span>
+      </label>
+      <p id="link" class="detail"></p>
+      <ul id="links"></ul>
       <button id="toggle" data-t="desktop.start">Start</button>
       <button id="next" class="quiet" hidden data-t="desktop.tryAnother">Try another port</button>
       <div class="row">

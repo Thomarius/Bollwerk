@@ -10177,3 +10177,48 @@ no style over 1.0 ms of triangulation a frame (14zh); Halloween's candle flames 
 gloss sweep on every island, where only the island drawn last had them, and the enclosure counted
 once in combat rather than at every wall hit (14zi). Nothing in play changed: protocol 32 and
 recording format 4 as v0.9.14, so the two play together and its recordings replay.
+
+## 14zk. A link online by Cloudflare's tunnel, and the firewall reported (2026-10-26)
+
+Many hosts could not be reached on port 8080 even with UPnP (12j): no public address (DS-Lite,
+carrier-grade NAT), UPnP off on the router, two routers, or Windows Firewall keeping the game
+out with nothing saying so. The user chose, from the options weighed (a quick tunnel, Tailscale
+and its like, WebRTC with free signalling), the tunnel in the desktop app and a report of the
+firewall.
+
+**Share a link online** (`packages/desktop/src/tunnel.ts`, `cloudflared.ts`): a second switch
+under UPnP's, remembered as it is. On, the app runs Cloudflare's `cloudflared tunnel --url
+http://127.0.0.1:<port>` — a quick tunnel, free and without an account — which connects out, so
+no router or firewall setting matters, and shows its `https://<words>.trycloudflare.com` with a
+Copy button; the server's `setInvite` puts it in the lobby's invitation ahead of UPnP's address.
+The program is not shipped (55 MB on Windows): it is fetched the first time from GitHub, one
+release pinned (2026.10.4) with the SHA-256 GitHub published for each build, checked after the
+download and again at every start, into the app's data folder; Windows x64 and ARM (the x64
+build, emulated) and Linux x64 and ARM64. The link is called open only once a connection stands
+**and the address answers**: measured here, the name was unknown for 12 s after Cloudflare
+reported the connection, in which a guest would have been told it does not exist. Tried for
+real, a page and a WebSocket through it. Quick tunnels have no promise of uptime and a new
+address each time, which the window says.
+
+**The firewall** (`firewall.ts`): Windows only, read as the server starts and whenever the window
+comes back to the front (from Windows' question, or its settings). The cmdlets
+(`Get-NetFirewallRule`) are refused without administrator rights; the firewall's COM interface
+(`HNetCfg.FwPolicy2`) is not, and answers in 0.07 s. The rules naming the app's program, or a
+port and no program, are weighed against the networks the machine is on: off, allowed (only
+from this network's addresses, if so), blocked (a Cancel to Windows' question writes blocking
+rules, which win), allowed on other kinds of network only (Private ticked on a public network),
+or no rule. A warning names where to allow it, and that the online link works anyway.
+
+With it, the portable Windows app unpacks to a folder of a fixed name (`unpackDirName`), so a
+firewall rule, which names the program's path, carries over to the next version; it had been a
+new folder for every build.
+
+**A splash while the portable app unpacks** (the users' report of a long wait after a double
+click): measured here, the portable `.exe` spent 10–11 s unpacking 389 MB in 126 files into
+`%TEMP%` at every start, deleting the last copy first, before any of the app ran; the app itself
+took 0.5–1.3 s from there to its window. Nothing was seen in those seconds. An installer would
+unpack once, but the app stays portable (the user's decision), so the unpacker now shows
+`packages/desktop/splash.bmp` (`portable.splashImage`), drawn by `splash.ps1` in the server
+window's colours, English and German: a still picture, all NSIS can show — no progress or time
+left without a script of our own. Checked in a local build: its window, 480×220 and centred,
+stands from half a second after the launch until the unpacking ends.

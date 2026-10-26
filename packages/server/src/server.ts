@@ -82,6 +82,12 @@ export interface RunningServer {
   setInternet(on: boolean): Promise<InternetStatus>;
   /** Told whenever `internet` changes. */
   onInternet(listener: (status: InternetStatus) => void): void;
+  /**
+   * An address reaching this server from the internet by another way than the router — the
+   * desktop app's tunnel — or null. While set, the lobby's invitation uses it, ahead of the
+   * router's opened port.
+   */
+  setInvite(url: string | null): void;
 }
 
 /** A start that could not bind: told as such, so a caller can say so rather than crash. */
@@ -147,12 +153,13 @@ export async function startServer(options: ServerOptions): Promise<StartResult> 
     : null;
   // The public address while the port is open, for the lobby's invitation (PLAN 11.21).
   let internet: InternetStatus = { state: 'off' };
+  let invite: string | null = null;
   const internetListeners: ((status: InternetStatus) => void)[] = [];
   const rooms = new RoomManager(
     bundle,
     undefined,
     store === null ? undefined : () => store.writer(),
-    () => (internet.state === 'open' ? internet.url : null),
+    () => invite ?? (internet.state === 'open' ? internet.url : null),
   );
 
   /**
@@ -385,6 +392,12 @@ export async function startServer(options: ServerOptions): Promise<StartResult> 
       setInternet,
       onInternet(listener) {
         internetListeners.push(listener);
+      },
+      setInvite(url) {
+        if (url === invite) return;
+        invite = url;
+        if (url !== null) log(`reachable from the internet at ${url}`);
+        rooms.refreshLobbies();
       },
       port: actualPort,
       host,

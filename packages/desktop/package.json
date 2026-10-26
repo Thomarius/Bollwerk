@@ -48,7 +48,9 @@
       ]
     },
     "portable": {
-      "artifactName": "${productName}-${version}-windows.${ext}"
+      "artifactName": "${productName}-${version}-windows.${ext}",
+      "unpackDirName": "Bollwerk",
+      "splashImage": "splash.bmp"
     },
     "linux": {
       "target": [

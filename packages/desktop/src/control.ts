@@ -1,5 +1,7 @@
 import type { InternetStatus, RunningServer, StartResult } from '@bollwerk/server';
 
+import type { Tunnel, TunnelStatus } from './tunnel.js';
+
 /**
  * The server as the window shows it (PLAN 11.17 A2), kept apart from Electron so it can be
  * tested on its own: starting, running with the addresses to open, stopped, or failed and
@@ -15,7 +17,14 @@ export type ControlState = (
 ) & {
   /** The host's switch "Open to the internet" (PLAN 11.21), whatever the server's state. */
   upnp: boolean;
+  /** The host's switch "Share a link online", whatever the server's state. */
+  tunnel: boolean;
+  /** The tunnel's link, while the server runs and the switch is on. */
+  link: TunnelStatus;
 };
+
+/** The part of a tunnel the control needs; the real one, or a fake in tests. */
+export type TunnelLike = Pick<Tunnel, 'open' | 'close' | 'status' | 'onChange'>;
 
 /** The port to offer once one is taken: the next, wrapping inside the unprivileged range. */
 export function nextPort(port: number): number {
@@ -29,12 +38,28 @@ export class ServerControl {
   private current: ControlState;
   private readonly listeners: ((state: ControlState) => void)[] = [];
 
+  private upnp: boolean;
+  private tunnelOn: boolean;
+
   constructor(
     private readonly start: (port: number) => Promise<StartResult>,
     port: number,
-    private upnp = false,
+    switches: { upnp?: boolean; tunnel?: boolean } = {},
+    private readonly tunnel: TunnelLike | null = null,
   ) {
-    this.current = { status: 'stopped', port, upnp };
+    this.upnp = switches.upnp === true;
+    this.tunnelOn = switches.tunnel === true;
+    this.current = {
+      status: 'stopped',
+      port,
+      upnp: this.upnp,
+      tunnel: this.tunnelOn,
+      link: { state: 'off' },
+    };
+    tunnel?.onChange((link) => {
+      this.server?.setInvite(link.state === 'open' ? link.url : null);
+      this.set(this.current);
+    });
   }
 
   get state(): ControlState {
@@ -45,9 +70,14 @@ export class ServerControl {
     this.listeners.push(listener);
   }
 
-  /** Sets the state, the switch carried along. */
-  private set(state: DistributiveOmit<ControlState, 'upnp'>): void {
-    this.current = { ...state, upnp: this.upnp } as ControlState;
+  /** Sets the state, the switches and the link carried along. */
+  private set(state: DistributiveOmit<ControlState, 'upnp' | 'tunnel' | 'link'>): void {
+    this.current = {
+      ...state,
+      upnp: this.upnp,
+      tunnel: this.tunnelOn,
+      link: this.tunnel?.status ?? { state: 'off' },
+    } as ControlState;
     for (const listener of this.listeners) listener(this.current);
   }
 
@@ -79,6 +109,7 @@ export class ServerControl {
     });
     this.set(running(server.internet));
     if (this.upnp) void server.setInternet(true);
+    if (this.tunnelOn) void this.tunnel?.open(server.port);
   }
 
   /** The host's switch: remembered, and acted on at once if the server is running. */
@@ -90,11 +121,21 @@ export class ServerControl {
     }
   }
 
+  /** The host's other switch: remembered, and acted on at once if the server is running. */
+  async setTunnel(on: boolean): Promise<void> {
+    this.tunnelOn = on;
+    this.set(this.current);
+    if (this.server === null || this.current.status !== 'running') return;
+    if (on) await this.tunnel?.open(this.server.port);
+    else this.tunnel?.close();
+  }
+
   /** Stops it, resolving once the port is free; does nothing unless running. */
   async stop(): Promise<void> {
     const server = this.server;
     if (server === null || this.current.status !== 'running') return;
     this.set({ status: 'stopping', port: this.current.port });
+    this.tunnel?.close();
     await server.stop();
     this.server = null;
     this.set({ status: 'stopped', port: this.current.port });

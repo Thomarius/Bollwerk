@@ -143,7 +143,13 @@ li button {
   flex: 1;
 }
 
-/* "Open to the internet" (PLAN 11.21): a switch, and what the router said under it. */
+/* What Windows Firewall makes of the server, coloured when it keeps players out. */
+#firewall.warn {
+  color: #e0a030;
+}
+
+/* "Open to the internet" (PLAN 11.21) and "Share a link online": a switch each, and what
+   the router or the tunnel said under it. */
 .switch {
   display: flex;
   gap: 0.5rem;

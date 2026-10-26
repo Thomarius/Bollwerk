@@ -6,7 +6,10 @@ import { loadConfigBundle } from '@bollwerk/config/node';
 import { startServer } from '@bollwerk/server';
 import { BrowserWindow, app, clipboard, ipcMain, shell } from 'electron';
 
+import { cloudflaredBinary } from './cloudflared.js';
 import { ServerControl, nextPort } from './control.js';
+import { checkFirewall, type FirewallStatus } from './firewall.js';
+import { Tunnel } from './tunnel.js';
 
 /**
  * The desktop app (PLAN 11.17 A2): the server behind a minimal window, for a host with no
@@ -35,15 +38,27 @@ app.setName('Bollwerk');
 if (!app.requestSingleInstanceLock()) app.quit();
 
 /**
- * The window's one remembered choice, "Open to the internet" (PLAN 11.21): off until the
- * host switches it on, then on at every start until they switch it off.
+ * The window's remembered choices, "Open to the internet" (PLAN 11.21) and "Share a link
+ * online": each off until the host switches it on, then on at every start until they switch
+ * it off.
  */
 const settingsFile = join(app.getPath('userData'), 'settings.json');
-function savedUpnp(): boolean {
+type Switches = { upnp: boolean; tunnel: boolean };
+function savedSwitches(): Switches {
   try {
-    return (JSON.parse(readFileSync(settingsFile, 'utf8')) as { upnp?: unknown }).upnp === true;
+    const saved = JSON.parse(readFileSync(settingsFile, 'utf8')) as Record<string, unknown>;
+    return { upnp: saved.upnp === true, tunnel: saved.tunnel === true };
   } catch {
-    return false;
+    return { upnp: false, tunnel: false };
+  }
+}
+const switches = savedSwitches();
+function saveSwitch(name: keyof Switches, on: boolean): void {
+  switches[name] = on;
+  try {
+    writeFileSync(settingsFile, JSON.stringify(switches));
+  } catch {
+    // Not remembered: it still applies until the app closes.
   }
 }
 
@@ -59,7 +74,10 @@ const control = new ServerControl(
       ...(app.isPackaged ? { commit: BUILT_FROM } : {}),
     }),
   bundle.server.port,
-  savedUpnp(),
+  switches,
+  new Tunnel({
+    binary: (progress) => cloudflaredBinary(join(app.getPath('userData'), 'cloudflared'), progress),
+  }),
 );
 
 let window: BrowserWindow | null = null;
@@ -68,7 +86,7 @@ let quitting = false;
 function createWindow(): void {
   window = new BrowserWindow({
     width: 440,
-    height: 640,
+    height: 780,
     resizable: false,
     title: 'Bollwerk server',
     backgroundColor: '#12131c',
@@ -76,7 +94,12 @@ function createWindow(): void {
     webPreferences: { preload: join(here, 'preload.cjs') },
   });
   void window.loadFile(join(here, '..', 'ui', 'index.html'));
-  window.webContents.on('did-finish-load', () => window?.webContents.send('state', control.state));
+  window.webContents.on('did-finish-load', () => {
+    window?.webContents.send('state', control.state);
+    window?.webContents.send('firewall', firewall);
+  });
+  // Back from Windows' question or its settings: the rules may have changed.
+  window.on('focus', () => void readFirewall());
   // Closing the window stops the server before the app goes, so the port is free after.
   window.on('close', (event) => {
     if (quitting) return;
@@ -86,18 +109,44 @@ function createWindow(): void {
   });
 }
 
-control.onChange((state) => window?.webContents.send('state', state));
+/**
+ * What Windows Firewall makes of the server, read as it starts and whenever the window comes
+ * back to the front; one reading at a time, and an answer for an old port dropped.
+ */
+let firewall: FirewallStatus = { state: 'unchecked' };
+let reading = false;
+async function readFirewall(): Promise<void> {
+  const state = control.state;
+  if (reading || state.status !== 'running') return;
+  reading = true;
+  try {
+    const status = await checkFirewall(process.execPath, state.port);
+    if (control.state.status !== 'running' || control.state.port !== state.port) return;
+    firewall = status;
+    window?.webContents.send('firewall', firewall);
+  } finally {
+    reading = false;
+  }
+}
+
+let wasRunning = false;
+control.onChange((state) => {
+  window?.webContents.send('state', state);
+  const running = state.status === 'running';
+  if (running && !wasRunning) void readFirewall();
+  wasRunning = running;
+});
 
 ipcMain.handle('start', (_event, port?: number) => control.startOn(port));
 ipcMain.handle('stop', () => control.stop());
 ipcMain.handle('next-port', () => control.startOn(nextPort(control.state.port)));
 ipcMain.handle('set-upnp', (_event, on: boolean) => {
-  try {
-    writeFileSync(settingsFile, JSON.stringify({ upnp: on === true }));
-  } catch {
-    // Not remembered: it still applies until the app closes.
-  }
+  saveSwitch('upnp', on === true);
   return control.setUpnp(on === true);
+});
+ipcMain.handle('set-tunnel', (_event, on: boolean) => {
+  saveSwitch('tunnel', on === true);
+  return control.setTunnel(on === true);
 });
 ipcMain.handle('copy', (_event, text: string) => clipboard.writeText(text));
 ipcMain.handle('open-browser', () => {

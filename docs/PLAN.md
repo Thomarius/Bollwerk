@@ -1816,4 +1816,5 @@ euros a year) and Azure Trusted Signing (monthly) cost money.
 since an unsigned app is refused by Gatekeeper and signing needs the paid Apple Developer
 Program — Mac players can still join a hosted game in the browser; and **a hosted public
 server or relay**, which would make online play work without any router setting but costs
-money every month (11.21 is the free part of that).
+money every month (11.21 is the free part of that, and Cloudflare's free quick tunnel, the desktop
+app's Share a link online, the rest, ARCHIVE 14zk).

@@ -177,6 +177,12 @@ Full detail in PLAN.md §1. The parts that surprise people:
 **Done** (2026-10-26; the latest release **v0.9.15**, 2026-10-26, protocol 32, recording format 4,
 which a test session needs the server rebuilt and every page reloaded for):
 
+- **A link online, and the firewall reported** (ARCHIVE 14zk, 2026-10-26): the desktop app's
+  switch Share a link online runs a Cloudflare quick tunnel (free, no account, no router setting),
+  its program fetched once and checked against pinned checksums, its link in the lobby's
+  invitation; and on Windows the window says whether the firewall lets players in, and why not.
+  Not yet seen in play by the users.
+
 - **Performance, the analysis of 2026-10-26** (ARCHIVE 14zc–14zf, PLAN §11 item 3): a look out
   of sight is off the stage, since Pixi updates every render group on it, hidden or not — a look
   made in the background had been built inside the game's frame, up to 168 ms of one, now 14–22;

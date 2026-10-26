@@ -130,7 +130,8 @@ describe('opening the port to the internet', () => {
     const open = await server.setInternet(true);
     expect(open).toMatchObject({ state: 'open', url: `http://203.0.113.7:${server.port}` });
 
-    // A host's lobby, told the address; then told again, without it, once closed.
+    // A host's lobby, told the address; then the tunnel's ahead of it while there is one, the
+    // router's again once it goes; then told again, without either, once closed.
     const rooms: { internet: string | null }[] = [];
     const socket = new WebSocket(`ws://127.0.0.1:${server.port}`);
     await new Promise<void>((resolve, reject) => {
@@ -144,12 +145,19 @@ describe('opening the port to the internet', () => {
         const message = JSON.parse(String(data)) as { type: string; internet: string | null };
         if (message.type !== 'room') return;
         rooms.push(message);
-        if (rooms.length === 1) void server.setInternet(false);
+        if (rooms.length === 1) server.setInvite('https://a-b.trycloudflare.com');
+        else if (rooms.length === 2) server.setInvite(null);
+        else if (rooms.length === 3) void server.setInternet(false);
         else resolve();
       });
     });
     socket.close();
-    expect(rooms.map((r) => r.internet)).toEqual([`http://203.0.113.7:${server.port}`, null]);
+    expect(rooms.map((r) => r.internet)).toEqual([
+      `http://203.0.113.7:${server.port}`,
+      'https://a-b.trycloudflare.com',
+      `http://203.0.113.7:${server.port}`,
+      null,
+    ]);
     expect(server.internet).toEqual({ state: 'off' });
     await server.stop();
   });
