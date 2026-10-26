@@ -1758,11 +1758,12 @@ fit (ARCHIVE 12z), its remaining steps dropped (the user's decision, 2026-10-14;
      Built style by style from the probe's or `&perf=1`'s figures. Measured for all 24 styles
      (ARCHIVE 14zf): Sakura 1.57, Cyberpunk 1.39, Oktoberfest 1.17, Opera 1.14 ms a frame, then
      Night, Halloween, Undersea and Pixel at about 0.8; the four newest 0.16–0.23. Done:
-     Cyberpunk's rain, Sakura's carp, Opera's horns, windows and rising notes (14zf). Next by
-     the figures: Cyberpunk's circuit pulses (0.29–0.38 ms), Oktoberfest's terrain and effects
-     (0.44 each, not in its `draw…` routines), Sakura's walls redrawn at hits (0.38), Halloween's
-     cauldrons, lanterns and shots, Pixel's and Night's terrain (0.30–0.38) and debris. The
-     audit's list, by its likely cost: rain and snow stroked each frame (Cyberpunk,
+     Cyberpunk's rain, Sakura's carp, Opera's horns, windows and rising notes (14zf), and
+     Oktoberfest's bubbles and Ferris wheel (14zh) — no style over 1.0 ms a frame now. What is
+     left is a tenth to a quarter of a millisecond a routine: Cyberpunk's circuit pulses (0.26 ms,
+     in its bloomed glow), Oktoberfest's flying bits (0.16), Halloween's cauldrons, lanterns and
+     shots (0.12–0.15 each), Pixel's and Night's debris (0.15), Sakura's walls redrawn at hits.
+     The audit's list, by its likely cost: rain and snow stroked each frame (Cyberpunk,
      Pixel; stamp as Electric and Cartoon do); Pixel's pavement and scenery sprites in a group with
      layers emptied every frame, and its reflections scanning the board every frame; craters
      layers redrawn whole at every new crater, their key holding `craters.length` (Anime, Cartoon,

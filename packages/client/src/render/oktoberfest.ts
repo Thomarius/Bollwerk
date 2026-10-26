@@ -14,7 +14,7 @@ import { OktoberfestSeaLife } from './seaLife.js';
 import type { SceneryItem } from './scenery.js';
 import { IslandParts } from './islandParts.js';
 import { SceneryLayer } from './sceneryLayer.js';
-import { StampBook, Stamps } from './stamps.js';
+import { Discs, StampBook, Stamps, viewKey } from './stamps.js';
 import {
   FlagHoist,
   GhostMotion,
@@ -182,8 +182,21 @@ export class OktoberfestTheme extends ShapeTheme implements Theme {
 
   /** The beer and the meadow, in strips of rows (`TerrainStrips`). */
   private readonly terrainStrips = new TerrainStrips();
-  /** The bubbles, the puddles and the Ferris wheel: redrawn each frame. */
-  private readonly flowGfx = new Graphics();
+  /**
+   * The bubbles rising through the beer, discs stamped (PLAN §11 item 3, P5): up to 260 circles
+   * drawn every frame with the Ferris wheel were 0.44 ms a frame cut into triangles at eight
+   * players.
+   */
+  private readonly bubbleDiscs = new Discs();
+  /**
+   * The Ferris wheel: its foot and legs, and its hub, drawn again only as the view changes; the
+   * wheel itself, its lights and its gondolas stamped and turned over them.
+   */
+  private readonly wheelBase = new Graphics();
+  private readonly wheelStamps = new Stamps();
+  private readonly wheelHub = new Graphics();
+  /** The view and spot the wheel's foot and hub were drawn for. */
+  private wheelKey = '';
   /** The puddles, drawn again only when one comes or dries a round further. */
   private readonly puddleGfx = new Graphics();
   private puddlesDrawn = '';
@@ -255,7 +268,14 @@ export class OktoberfestTheme extends ShapeTheme implements Theme {
     // Medieval's weather, drawn from the seed: it rains at the Wiesn, of course, and now and
     // then it snows; fog is left to the morning after.
     this.weather = weatherFor(this.seed, art.pixel.weatherOdds);
-    layers.terrain.addChild(this.terrainStrips.container, this.puddleGfx, this.flowGfx);
+    layers.terrain.addChild(
+      this.terrainStrips.container,
+      this.puddleGfx,
+      this.bubbleDiscs.container,
+      this.wheelBase,
+      this.wheelStamps.container,
+      this.wheelHub,
+    );
     layers.territory.addChild(this.scenery.gfx, this.territory.container);
     layers.structures.addChild(this.structures.container);
     layers.effects.addChild(
@@ -280,9 +300,12 @@ export class OktoberfestTheme extends ShapeTheme implements Theme {
     this.structures.destroy();
     this.scenery.destroy();
     release(this.terrainStrips.container);
+    this.bubbleDiscs.destroy();
+    this.wheelStamps.destroy();
     for (const g of [
       this.puddleGfx,
-      this.flowGfx,
+      this.wheelBase,
+      this.wheelHub,
       this.effectGfx,
       this.crowns.gfx,
       this.overlayGfx,
@@ -491,8 +514,6 @@ export class OktoberfestTheme extends ShapeTheme implements Theme {
 
   /** Each frame, under everything: bubbles rising, puddles drying, the Ferris wheel turning. */
   private drawFlow(state: MatchState, view: ViewTransform, deltaMs: number): void {
-    const g = this.flowGfx;
-    clearDrawn(g);
     const t = view.tile;
     const { palette } = this.art;
     const still = motionReduced();
@@ -523,6 +544,7 @@ export class OktoberfestTheme extends ShapeTheme implements Theme {
     while (this.bubbles.length < target && this.beerCells.length > 0) {
       this.bubbles.push(this.newBubble(still ? 0.5 : Math.random()));
     }
+    this.bubbleDiscs.begin(t);
     for (let i = 0; i < this.bubbles.length; i++) {
       const b = this.bubbles[i]!;
       if (!still) b.age += deltaMs;
@@ -533,11 +555,11 @@ export class OktoberfestTheme extends ShapeTheme implements Theme {
       const k = b.age / b.life;
       const x = tileX(view, b.x + Math.sin(k * 9 + b.y) * 0.05);
       const y = tileY(view, b.y - k * 0.9);
-      g.circle(x, y, t * b.size * (0.6 + 0.4 * k));
+      this.bubbleDiscs.disc(x, y, t * b.size * (0.6 + 0.4 * k), 0xfff8e0, 0.65);
     }
-    g.fill({ color: 0xfff8e0, alpha: 0.65 });
+    this.bubbleDiscs.end();
 
-    if (this.wheel !== null) this.drawWheel(g, view, this.wheel, still);
+    this.drawWheel(view, this.wheel, still);
   }
 
   private newBubble(age: number): Bubble {
@@ -556,50 +578,74 @@ export class OktoberfestTheme extends ShapeTheme implements Theme {
    * The Ferris wheel, standing in the beer on its two legs: a lit rim on its spokes, turning
    * slowly, its gondolas hanging level whatever the turn.
    */
-  private drawWheel(g: Graphics, view: ViewTransform, spot: TimerSpot, still: boolean): void {
+  private drawWheel(view: ViewTransform, spot: TimerSpot | null, still: boolean): void {
     const t = view.tile;
-    const size = spot.size * t;
-    const cx = tileX(view, spot.x);
-    const hubY = tileY(view, spot.y) - size * 0.06;
+    this.wheelStamps.begin();
+    const key = spot === null ? '' : `${viewKey(view)}|${spot.x},${spot.y},${spot.size}`;
+    const size = (spot?.size ?? 0) * t;
+    const cx = spot === null ? 0 : tileX(view, spot.x);
+    const hubY = spot === null ? 0 : tileY(view, spot.y) - size * 0.06;
     const R = size * 0.36;
-    const foot = hubY + size * 0.44;
     const steel = 0x8c919b;
-    const turn = still ? 0 : (this.clock / this.style.wheelTurnMs) * Math.PI * 2;
-    g.ellipse(cx, foot, size * 0.34, size * 0.06);
-    g.fill({ color: FOAM, alpha: 0.7 });
-    for (const s of [-1, 1]) g.moveTo(cx, hubY).lineTo(cx + s * size * 0.26, foot);
-    g.stroke({ width: Math.max(2, t * 0.14), color: 0x5c626c, cap: 'round' });
-    const spokes = 12;
-    for (let k = 0; k < spokes; k++) {
-      const a = turn + (k / spokes) * Math.PI * 2;
-      g.moveTo(cx, hubY).lineTo(cx + Math.cos(a) * R, hubY + Math.sin(a) * R);
+    if (key !== this.wheelKey) {
+      this.wheelKey = key;
+      const base = this.wheelBase;
+      const hub = this.wheelHub;
+      base.clear();
+      hub.clear();
+      if (spot !== null) {
+        const foot = hubY + size * 0.44;
+        base.ellipse(cx, foot, size * 0.34, size * 0.06);
+        base.fill({ color: FOAM, alpha: 0.7 });
+        for (const s of [-1, 1]) base.moveTo(cx, hubY).lineTo(cx + s * size * 0.26, foot);
+        base.stroke({ width: Math.max(2, t * 0.14), color: 0x5c626c, cap: 'round' });
+        hub.circle(cx, hubY, Math.max(2, t * 0.12));
+        hub.fill({ color: BRASS });
+      }
     }
-    g.stroke({ width: 1, color: steel });
-    g.circle(cx, hubY, R);
-    g.circle(cx, hubY, R * 0.82);
-    g.stroke({ width: Math.max(1.5, t * 0.08), color: steel });
-    // Lights round the rim, chasing.
-    for (let k = 0; k < 24; k++) {
-      const a = turn + (k / 24) * Math.PI * 2;
-      const on = still || Math.floor(this.clock / 250 + k) % 3 !== 0;
-      if (!on) continue;
-      g.circle(cx + Math.cos(a) * R, hubY + Math.sin(a) * R, Math.max(1, t * 0.06));
+    if (spot !== null) {
+      const turn = still ? 0 : (this.clock / this.style.wheelTurnMs) * Math.PI * 2;
+      // The spokes and the rims, drawn once and turned.
+      const wheel = this.book.get(`wheel:${size}`, t, (w) => {
+        const spokes = 12;
+        for (let k = 0; k < spokes; k++) {
+          const a = (k / spokes) * Math.PI * 2;
+          w.moveTo(0, 0).lineTo(Math.cos(a) * R, Math.sin(a) * R);
+        }
+        w.stroke({ width: 1, color: steel });
+        w.circle(0, 0, R);
+        w.circle(0, 0, R * 0.82);
+        w.stroke({ width: Math.max(1.5, t * 0.08), color: steel });
+      });
+      this.wheelStamps.place(wheel, cx, hubY, { rotation: turn });
+      // Lights round the rim, chasing: every third out, in three steps of 250 ms, a ring of
+      // them drawn once for each step.
+      const step = still ? -1 : Math.floor(this.clock / 250) % 3;
+      const lights = this.book.get(`wheel-lights:${size}:${step}`, t, (w) => {
+        for (let k = 0; k < 24; k++) {
+          if (step >= 0 && (step + k) % 3 === 0) continue;
+          const a = (k / 24) * Math.PI * 2;
+          w.circle(Math.cos(a) * R, Math.sin(a) * R, Math.max(1, t * 0.06));
+        }
+        w.fill({ color: 0xfff2b0 });
+      });
+      this.wheelStamps.place(lights, cx, hubY, { rotation: turn });
+      // The gondolas, hanging from the rim, upright as it turns.
+      const colours = [0xfbf5e6, 0xbfe3f2, 0xf9d77e, 0xc9e8b8, 0xf3c3c3, 0xd9c9ef];
+      for (let k = 0; k < 8; k++) {
+        const a = turn + (k / 8) * Math.PI * 2;
+        const colour = colours[k % colours.length]!;
+        const gondola = this.book.get(`gondola:${colour}`, t, (w) => {
+          w.moveTo(0, 0).lineTo(0, t * 0.2);
+          w.stroke({ width: 1, color: 0x5c626c });
+          w.roundRect(-t * 0.22, t * 0.18, t * 0.44, t * 0.3, t * 0.08);
+          w.fill({ color: colour });
+          w.stroke({ width: 1, color: this.brown, alpha: 0.6 });
+        });
+        this.wheelStamps.place(gondola, cx + Math.cos(a) * R, hubY + Math.sin(a) * R);
+      }
     }
-    g.fill({ color: 0xfff2b0 });
-    // The gondolas, hanging from the rim.
-    const gondolas = [0xfbf5e6, 0xbfe3f2, 0xf9d77e, 0xc9e8b8, 0xf3c3c3, 0xd9c9ef];
-    for (let k = 0; k < 8; k++) {
-      const a = turn + (k / 8) * Math.PI * 2;
-      const gx = cx + Math.cos(a) * R;
-      const gy = hubY + Math.sin(a) * R;
-      g.moveTo(gx, gy).lineTo(gx, gy + t * 0.2);
-      g.stroke({ width: 1, color: 0x5c626c });
-      g.roundRect(gx - t * 0.22, gy + t * 0.18, t * 0.44, t * 0.3, t * 0.08);
-      g.fill({ color: gondolas[k % gondolas.length]! });
-      g.stroke({ width: 1, color: this.brown, alpha: 0.6 });
-    }
-    g.circle(cx, hubY, Math.max(2, t * 0.12));
-    g.fill({ color: BRASS });
+    this.wheelStamps.end();
   }
 
   // ------------------------------------------------------------------ territory

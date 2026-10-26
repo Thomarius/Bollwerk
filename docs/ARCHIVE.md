@@ -10132,3 +10132,18 @@ sea paused under a match, the cursor's icons and a tally's figures no longer reb
 (14zd); the board's layers as render groups (14ze); and Cyberpunk's rain, Sakura's carp and Opera's
 horns, windows and rising notes drawn once rather than every frame (14zf). Nothing in play changed:
 protocol 32 and recording format 4 as v0.9.13, so the two play together and its recordings replay.
+
+## 14zh. Oktoberfest's bubbles and Ferris wheel, and every style measured again (2026-10-26, PLAN §11 item 3, P5)
+
+Oktoberfest's cost in its terrain layer (0.44 ms a frame) was the beer's bubbles, up to 260
+circles, and the Ferris wheel, drawn into one `Graphics` every frame. **Built**: the bubbles are
+discs stamped (`Discs`); the wheel's foot, legs and hub are drawn again only as the view changes,
+and its spokes and rims, its ring of lights — drawn once for each of the chase's three steps —
+and its gondolas, one a colour, are stamps turned and moved. Looked at in close crops against the
+old code: alike. 1.17 → 0.69 ms a frame.
+
+The probe was widened to every routine of a style and the helpers it holds (sea life, scenery,
+ruins), over every layer. **All 24 styles measured again**, as in 14zf: Sakura 1.57 → 1.00,
+Cyberpunk 1.39 → 0.81, Oktoberfest 1.17 → 0.69, Opera 1.14 → 0.61 ms of triangulation a frame,
+their render 0.2–0.9 ms a frame less; the styles not touched within ±0.05 of before, the noise
+of one run. No style is over 1.0 ms now; the routines left are 0.1–0.26 ms each (PLAN §11 item 3).
