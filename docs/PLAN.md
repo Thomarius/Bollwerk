@@ -1680,7 +1680,7 @@ every resolution against an independent search, not only on unit pictures.
 
 ## 11. Open work
 
-**Where to start (2026-10-26).** The latest release is **v0.9.14** (2026-10-26, protocol 32,
+**Where to start (2026-10-26).** The latest release is **v0.9.15** (2026-10-26, protocol 32,
 recording format 4). Item 3, the performance plan, is done but for the small leftovers it lists (ARCHIVE 14zc–14zi). Next: item 2's next tower, by the user's design, and the styles' own music's
 chance back to the planned 50% once the user says (ARCHIVE 14za).
 Up to **v0.8.3**: the game and online play, bots as skill levels and personalities, the styles
@@ -1710,7 +1710,9 @@ corner gaps pinged (14r), and Graphics, Motion and the menu's Options (14s, 14t)
 (14zb): Anime, Mythos and the Wild West (14w–14y), the bots' towers chosen by the host and No tower
 back (14z), and the styles' own music (14za). **v0.9.14** (14zg): the performance plan's first
 packages — hidden looks off the stage, the HUD's cheap leads, the board's layers as render groups,
-and the three dearest styles' redrawing cut (14zc–14zf).
+and the three dearest styles' redrawing cut (14zc–14zf). **v0.9.15** (14zj): the performance
+plan finished — Oktoberfest's bubbles and wheel drawn once (14zh), and Halloween's candles and
+Chocolate's shine on every island, the enclosure counted once in combat (14zi).
 
 Tournament mode is finished: its play-testing round, T8, closed with everything working
 (ARCHIVE 13m). The bots' planning is off the page's thread in local matches, measured and felt (ARCHIVE

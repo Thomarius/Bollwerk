@@ -10169,3 +10169,11 @@ counted once as combat ends. A watched match across the Rebuild banner: the brea
 gone and their guns struck out, a sealed one's kept.
 
 The HUD's other leads were read as negligible and left (PLAN §11 item 3, P6).
+
+## 14zj. v0.9.15 (2026-10-26)
+
+Since v0.9.14: the performance plan finished — Oktoberfest's bubbles and Ferris wheel drawn once,
+no style over 1.0 ms of triangulation a frame (14zh); Halloween's candle flames and Chocolate's
+gloss sweep on every island, where only the island drawn last had them, and the enclosure counted
+once in combat rather than at every wall hit (14zi). Nothing in play changed: protocol 32 and
+recording format 4 as v0.9.14, so the two play together and its recordings replay.

@@ -174,7 +174,7 @@ Full detail in PLAN.md §1. The parts that surprise people:
 
 ## Status
 
-**Done** (2026-10-26; the latest release **v0.9.14**, 2026-10-26, protocol 32, recording format 4,
+**Done** (2026-10-26; the latest release **v0.9.15**, 2026-10-26, protocol 32, recording format 4,
 which a test session needs the server rebuilt and every page reloaded for):
 
 - **Performance, the analysis of 2026-10-26** (ARCHIVE 14zc–14zf, PLAN §11 item 3): a look out
@@ -182,7 +182,9 @@ which a test session needs the server rebuilt and every page reloaded for):
   made in the background had been built inside the game's frame, up to 168 ms of one, now 14–22;
   the menu's sea paused under a match and the HUD's tallies set as text; the board's layers render
   groups of their own; every style's triangulation measured, and Cyberpunk's rain, Sakura's carp
-  and Opera's horns, windows and notes drawn once (1.4–1.6 → 0.7–1.1 ms a frame). Approved in play.
+  and Opera's horns, windows and notes drawn once (1.4–1.6 → 0.7–1.1 ms a frame), approved in play;
+  then Oktoberfest's bubbles and wheel, no style over 1.0 ms now, and two bugs the reading found —
+  Halloween's candle flames and Chocolate's gloss on the island drawn last only (14zh, 14zi).
 
 - **The styles' own music** (ARCHIVE 14za, 2026-10-25, the users' idea; its plan retired there):
   21 tracks from Pixabay, one for every style but Minimal, Medieval and Night, in
