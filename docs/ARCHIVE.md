@@ -10222,3 +10222,11 @@ unpack once, but the app stays portable (the user's decision), so the unpacker n
 window's colours, English and German: a still picture, all NSIS can show — no progress or time
 left without a script of our own. Checked in a local build: its window, 480×220 and centred,
 stands from half a second after the launch until the unpacking ends.
+
+## 14zl. v0.9.16 (2026-10-26)
+
+Since v0.9.15: the desktop app — Share a link online, a Cloudflare quick tunnel for hosts no
+port can be opened for; Windows Firewall's verdict in the window, and a fixed unpack folder so a
+rule carries over; and a splash image while the portable app unpacks (14zk). The game itself is
+unchanged: protocol 32 and recording format 4 as v0.9.15, so the two play together and its
+recordings replay.
