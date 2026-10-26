@@ -10016,3 +10016,28 @@ twenty-four; corner gaps through a pocket marked too (14v); the bots' towers cho
 No tower back (14z); and the styles' own music, 21 tracks played in place of the shared building and
 battle music (14za), at a chance of 100% for now. Protocol 32 since the bots' towers, so a v0.9.12
 page cannot join; recording format 4 unchanged, so v0.9.12's recordings still replay.
+
+## 14zc. Hidden looks off the stage (2026-10-26, PLAN §11 item 3, P1)
+
+The first package of the performance analysis of 2026-10-26 (PLAN §11 item 3). **Found**: Pixi
+8.21 updates every render group on the stage at each render, visible or not
+(`RenderGroupSystem._updateRenderGroups` recurses into all of them), and skips only drawing a
+hidden one. A look being made in the background (`Scene.prepare`) or readied before its banner
+(`prime`) was therefore cut into triangles and its draw list built inside the game's own render,
+outside the 8 ms share, and the paced warming (`warmChain`, ARCHIVE 12zm) found the work done.
+
+**Built** (`render/scene.ts`): a look out of sight is off the stage, not only hidden —
+`applyVisibility` puts a root under the camera as it is shown, beneath the towers' marks, and
+takes it off as it goes out of sight. The warming renders the look's root alone into a small
+texture, kept rather than made for every piece, the root shown for that render only, since Pixi
+renders nothing of a container not visible; and once a look's last piece is warm its whole root
+is rendered once, so its draw list is built there and not in the wipe's first frame.
+
+**Measured** with a probe in headless Chrome (CPU only), a watched eight-player match with Random
+looks at double speed, 90 s, `scene.ts` swapped by stash, two runs each, alternated: the hidden
+look's triangulation in the warming 27–32 ms → 434–437 ms, as it was meant to be; the worst one
+frame's work on a hidden look in the game's render 95, 87 ms → 14, 22 ms (what remains is a wipe's
+two passes, each with one look hidden). The same nine looks in the same order in all four runs, so
+every random look was ready by its banner. Frame intervals cannot be told apart headless, as ever;
+the check in a visible window is `tools/wipes/measure.mjs`. A wipe screenshotted mid-way and after:
+both looks drawn on their sides of the line, the arriving one whole after.

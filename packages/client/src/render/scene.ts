@@ -374,6 +374,8 @@ export class Scene {
       if (!(await wanted())) return;
       this.warmChain(slot, chain);
     }
+    if (!(await wanted())) return;
+    this.renderOffscreen(slot.root);
     const entry = this.pending[look];
     if (entry?.slot === slot) entry.ready = true;
   }
@@ -406,19 +408,15 @@ export class Scene {
       layers.effects,
       layers.overlay,
     );
-    // Out of sight until shown: a look prepared over frames is on the stage meanwhile.
+    // Out of sight, and off the stage, until shown (`applyVisibility`).
     root.visible = false;
     const mask = new Graphics();
     // Masks live on the stage, so the shake moves them with the board, but outside the
-    // camera, whose zoom must not move the banner's line.
+    // camera, whose zoom must not move the banner's line. The root itself goes under the
+    // camera only once shown (`applyVisibility`).
     // Not into a scene taken down while a look was being made: its stage is gone. The caller
     // finds its generation over and lets the look go.
-    if (!this.destroyed) {
-      this.cameraRoot.addChild(root);
-      // The towers' marks stay over every look, the new one too.
-      this.cameraRoot.addChild(this.towers.root);
-      this.app.stage.addChild(mask);
-    }
+    if (!this.destroyed) this.app.stage.addChild(mask);
     await theme.init(layers, art, pace);
     // A new look has drawn nothing yet.
     return {
@@ -494,6 +492,17 @@ export class Scene {
     const { width, height } = this.app.screen;
     for (const slot of this.all()) {
       slot.root.visible = visible.includes(slot);
+      // A look out of sight is off the stage, not only hidden: Pixi updates every render group
+      // on the stage at each render, visible or not, and skips only drawing it. A look being
+      // made in the background was so cut into triangles and its draw list built in the game's
+      // own frame, outside its share, up to 168 ms of one, and the warming found it done
+      // (PLAN §11 item 3, P1). Off the stage it is rendered only by the warming.
+      if (slot.root.visible && slot.root.parent !== this.cameraRoot) {
+        // Under the towers' marks, which stay over every look.
+        this.cameraRoot.addChildAt(slot.root, this.cameraRoot.getChildIndex(this.towers.root));
+      } else if (!slot.root.visible && slot.root.parent !== null) {
+        slot.root.parent.removeChild(slot.root);
+      }
       clearDrawn(slot.mask);
       if (!masked || line === null || !slot.root.visible) {
         slot.root.mask = null;
@@ -557,6 +566,9 @@ export class Scene {
     }
     while (slot.warming.length > 0 && performance.now() < until) {
       this.warmChain(slot, slot.warming.shift() as Container[]);
+      // Its draw list built whole once the last piece is warm, so the wipe's first frame
+      // need not: each piece rendered alone leaves it to be built again.
+      if (slot.warming.length === 0) this.renderOffscreen(slot.root);
     }
     // Last, its effects, once: a new look's first frame of them makes its stamps and
     // pools, 16 ms of the frame the line first reveals it. Drawn with no time passing, so
@@ -575,7 +587,7 @@ export class Scene {
       choices: [],
       drain: [],
     });
-    this.warmChain(slot, [slot.layers.effects]);
+    this.renderOffscreen(slot.root);
   }
 
   /**
@@ -970,19 +982,16 @@ export class Scene {
    * Draws the hidden look once, offscreen, so its first wipe costs no more than any
    * other: a look's first render cuts all of its drawing into triangles and uploads its
    * textures, 100 to 180 ms at eight players (Cyberpunk, Medieval, Opera), which fell on
-   * the frame "Fire!" first brought it in. Into a small texture of its own rather than
-   * the canvas, which would show both looks at once for a frame; the stage rather than
-   * the look's root, since rendering a container makes it a render group for good.
+   * the frame "Fire!" first brought it in. Into a small texture rather than the canvas,
+   * which would show both looks at once for a frame; the look's root alone, a render group
+   * off the stage while hidden.
    */
   warmUp(): void {
-    const hidden = this.all().filter((slot) => !this.isVisible(slot));
-    if (hidden.length === 0) return;
-    for (const slot of hidden) {
+    for (const slot of this.all()) {
+      if (this.isVisible(slot)) continue;
       if (slot.stale.size > 0) this.refresh(slot);
-      slot.root.visible = true;
+      this.renderOffscreen(slot.root);
     }
-    this.renderOffscreen();
-    this.applyVisibility();
   }
 
   /**
@@ -1014,9 +1023,10 @@ export class Scene {
   }
 
   /**
-   * One piece of a look rendered offscreen alone, every other thing on the stage hidden for
+   * One piece of a look rendered offscreen alone, every other thing in the look hidden for
    * it, so its first render is spread over frames as its drawing is. A piece no longer where
-   * it was — drawn again since — is passed over.
+   * it was — drawn again since — is passed over. Only for a look out of sight, and so off the
+   * stage: the look's root is rendered, not the stage.
    */
   private warmChain(slot: Slot, piece: readonly Container[]): void {
     // The piece and everything above it up to the look's root, which alone stay visible.
@@ -1036,10 +1046,6 @@ export class Scene {
         child.visible = keep(child);
       }
     };
-    only(
-      this.all().map((s) => s.root),
-      (root) => root === slot.root,
-    );
     const leaves = new Set(piece);
     const open = [slot.root];
     while (open.length > 0) {
@@ -1048,16 +1054,27 @@ export class Scene {
       for (const child of node.children)
         if (kept.has(child) && !leaves.has(child)) open.push(child);
     }
-    this.renderOffscreen();
+    this.renderOffscreen(slot.root);
     for (const [child, visible] of hidden.reverse()) child.visible = visible;
-    this.applyVisibility();
   }
 
-  private renderOffscreen(): void {
-    if (this.destroyed) return;
-    const target = RenderTexture.create({ width: 64, height: 64 });
-    this.app.renderer.render({ container: this.app.stage, target });
-    target.destroy(true);
+  /** The small target the warming renders into, kept rather than made for every piece. */
+  private warmTarget: RenderTexture | null = null;
+
+  /**
+   * Renders a hidden look's root into a small texture, never the canvas. Shown for it, since
+   * Pixi renders nothing of a container not visible; off the stage, that changes no other list.
+   */
+  private renderOffscreen(root: Container): void {
+    if (this.destroyed || root.parent !== null) return;
+    this.warmTarget ??= RenderTexture.create({ width: 64, height: 64 });
+    const visible = root.visible;
+    root.visible = true;
+    try {
+      this.app.renderer.render({ container: root, target: this.warmTarget });
+    } finally {
+      root.visible = visible;
+    }
   }
 
   /**
@@ -1068,6 +1085,8 @@ export class Scene {
     this.destroyed = true;
     this.generation++;
     this.pending = {};
+    this.warmTarget?.destroy(true);
+    this.warmTarget = null;
     this.app.destroy(true);
   }
 }

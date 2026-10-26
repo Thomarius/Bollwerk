@@ -1681,7 +1681,7 @@ every resolution against an independent search, not only on unit pictures.
 ## 11. Open work
 
 **Where to start (2026-10-25).** The latest release is **v0.9.13** (2026-10-25, protocol 32,
-recording format 4). Next: item 2's next tower, by the user's design, and the styles' own music's
+recording format 4). Next: item 3's performance packages, one at a time, P2 next (P1 done, ARCHIVE 14zc); item 2's next tower, by the user's design, and the styles' own music's
 chance back to the planned 50% once the user says (ARCHIVE 14za).
 Up to **v0.8.3**: the game and online play, bots as skill levels and personalities, the styles
 with their corner pieces, random looks every round, English and German, the desktop app, UPnP,
@@ -1736,6 +1736,59 @@ fit (ARCHIVE 12z), its remaining steps dropped (the user's decision, 2026-10-14;
    Their own sounds are in (TS, ARCHIVE 13zx). The design
    and these packages are in
    [`SPECIAL_TOWERS.md`](./SPECIAL_TOWERS.md).
+
+3. **Performance, the analysis of 2026-10-26**: the client read for what is still dear,
+   especially the looks' changes, and two leads measured in Pixi 8.21 with a probe in headless
+   Chrome (CPU only), in a watched eight-player match with Random looks. To be built one package
+   at a time, in this order (the user's):
+
+   - **P1. Hidden looks off the stage**: done, ARCHIVE 14zc.
+   - **P2. The banner's first frame** (12q's 67–100 ms, never pursued on the HTML side): in the
+     frame a banner appears, `drawTransition` creates it, measures it under the old skin
+     (`placeAnnouncement`), swaps the skin class on `<body>` (a restyle of the whole page through
+     its `--hud-*` variables), and `showTeamTags` and `hud.update` force two more layouts. Build
+     the next banner in the pause, just off screen, in its final skin; `useSkin` before anything
+     is measured; heights cached at a resize.
+   - **P3. Cheap ones**: the menu's `#backdrop` drifts its `background-position` under the canvas
+     for the whole match (`style.css`, a restyle and repaint each frame) — paused in a match; the
+     cursor's icon row compared through `innerHTML` each frame (`boardLabels.ts`
+     `showPlaceIcons`: up to eight PNG data URLs read back, and SVG icons never compare equal, so
+     rebuilt each frame) — compared against the last string written; the roster's and island
+     banners' HTML, SVGs and all, rebuilt each frame of a score's count-up.
+   - **P4. Draw lists rebuilt whole.** In Pixi 8.21 any redrawn `Graphics` rebuilds its render
+     group's whole draw list (`GraphicsPipe.validateRenderable`'s `wasBatched` is always true),
+     and each look is one group: 1.3–2.6 ms of a 2.6–4.8 ms render a frame, a rebuild about 5 ms
+     in Cyberpunk, 2 in Opera, Parchment and Sakura, 1 in Undersea. The terrain, territory and
+     structures layers as render groups of their own measured 2.60 / 2.63 → 2.44 / 2.42 ms a
+     frame; effects and overlay as groups moved most of it into the effects' own group. The larger
+     gain is per style: stamp pools in render groups of their own, as Chocolate's swirls — first
+     Mythology, Wild West, Sports and Anime (300–500 figure stamps beside drawings redrawn every
+     frame), with a `Stamps` per kind of part so the slots stay stable.
+   - **P5. Per-style redraws left**, by likely cost: rain and snow stroked each frame (Cyberpunk,
+     Pixel; stamp as Electric and Cartoon do); Pixel's pavement and scenery sprites in a group with
+     layers emptied every frame, and its reflections scanning the board every frame; craters
+     layers redrawn whole at every new crater, their key holding `craters.length` (Anime, Cartoon,
+     Mythology, Noir, Pirates, Sports, Wild West); Opera's horns (about 10k vertices a frame),
+     windows and notes; shots drawn shape by shape in Parchment, Stained glass and Toy bricks;
+     Parchment's still wax seals; Oktoberfest's bubbles and wheel; corner pieces redrawn whole
+     (Undersea's wreck, Office's cooler, Electric's ladder, Cyberpunk's billboard, Wild West's
+     locomotive, Christmas's globe keyed on its rock); Cyberpunk's circuit pulses; Chocolate's
+     heat drips and its bites' key; Pirates' torches hashing the territory each frame; shared,
+     `RuinSmoke`, `Fireworks`, `TowerMarks.drawIce`, `drawSealPreview`'s string set and the
+     scenery layer redrawn whole at any change; Anime's hero figures made unpaced at first use.
+   - **P6. HUD and the loop**: `BoardEffects.refresh` runs `computeEnclosure` over the board at
+     every wall hit in combat, though the combat look shows the enclosure held (compute it once
+     for the build look, at `prime` or the Rebuild banner); the big timer's beat restarted with a
+     forced layout; "You are here" animating `margin-top`; the final round's full-screen inset
+     shadow; per-frame garbage (`sealingFor`'s `JSON.stringify`, the end screen's markup).
+   - **Two bugs found on the way**, read and not yet seen in play: `halloween.ts` `drawSealed`
+     empties `this.candles` and `chocolate.ts` `drawIsland` `this.walls` in a callback
+     `IslandParts` calls once an island, so only the island redrawn last keeps its candle flames
+     or its gloss sweep.
+
+   These help hitches and the CPU; at large windows the limit was the GPU's filling of pixels
+   (ARCHIVE 13o, 13q), which none of them changes. Each is checked in a visible window with
+   `tools/wipes/measure.mjs`, runs alternated, as ARCHIVE 13o.
 
 Only open work is kept here. Finished packages move to `ARCHIVE.md` under their old
 numbers — 11.1 scoring, 11.7 team mode, 11.8 the visual pass, 11.9 the themes, 11.10 the
