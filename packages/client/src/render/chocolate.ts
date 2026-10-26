@@ -308,8 +308,14 @@ export class ChocolateTheme extends ShapeTheme implements Theme {
   private seaCells: Cell[] = [];
   private swirls: Swirl[] = [];
   private fall: TimerSpot | null = null;
-  /** Wall blocks by tile, kept from the last structures drawn, for the shine to cross. */
-  private walls: { x: number; y: number; owner: number }[] = [];
+  /**
+   * Wall blocks by tile, kept from the structures drawn, for the shine to cross: by the island's
+   * `Graphics`, since `IslandParts` draws an island at a time. One list for them all, emptied at
+   * each island, left the shine crossing the island drawn last alone.
+   */
+  private readonly wallsBy = new Map<Graphics, { x: number; y: number; owner: number }[]>();
+  /** The walls by owner, for the shine: gathered again only after an island is drawn. */
+  private shineBlocks: Map<number, { x: number; y: number }[]> | null = null;
   private splats: Splat[] = [];
   private bites: Bite[] = [];
   private bits: Bit[] = [];
@@ -962,7 +968,9 @@ export class ChocolateTheme extends ShapeTheme implements Theme {
           : -1
         : -1;
 
-    this.walls = [];
+    const walls: { x: number; y: number; owner: number }[] = [];
+    this.wallsBy.set(g, walls);
+    this.shineBlocks = null;
     for (let owner = 0; owner <= state.players.length; owner++) {
       const cells: Cell[] = [];
       for (let i = 0; i < state.structure.length; i++) {
@@ -971,7 +979,7 @@ export class ChocolateTheme extends ShapeTheme implements Theme {
         cells.push({ x, y: (i - x) / state.width });
       }
       if (cells.length === 0) continue;
-      if (owner > 0) for (const c of cells) this.walls.push({ ...c, owner: owner - 1 });
+      if (owner > 0) for (const c of cells) walls.push({ ...c, owner: owner - 1 });
       this.drawBar(g, view, cells, (x, y) => wallAt(x, y) === owner, owner - 1);
     }
 
@@ -1377,18 +1385,28 @@ export class ChocolateTheme extends ShapeTheme implements Theme {
    * light running over tempered chocolate. Each player's on its own beat.
    */
   private drawShine(view: ViewTransform): void {
-    if (motionReduced() || this.walls.length === 0) return;
+    if (motionReduced()) return;
     const g = this.effectGfx;
     const t = view.tile;
     const face = this.faceFraction();
     const { shineEveryMs, shineMs } = this.style;
-    const byOwner = new Map<number, { x: number; y: number }[]>();
-    for (const w of this.walls) {
-      const list = byOwner.get(w.owner);
-      if (list === undefined) byOwner.set(w.owner, [w]);
-      else list.push(w);
+    if (this.shineBlocks === null) {
+      const byOwner = new Map<number, { x: number; y: number }[]>();
+      for (const [island, walls] of this.wallsBy) {
+        // An island's drawing thrown away with a new board takes its walls with it.
+        if (island.destroyed) {
+          this.wallsBy.delete(island);
+          continue;
+        }
+        for (const w of walls) {
+          const list = byOwner.get(w.owner);
+          if (list === undefined) byOwner.set(w.owner, [w]);
+          else list.push(w);
+        }
+      }
+      this.shineBlocks = byOwner;
     }
-    for (const [owner, blocks] of byOwner) {
+    for (const [owner, blocks] of this.shineBlocks) {
       const k = ((this.clock + owner * 1777) % shineEveryMs) / shineMs;
       if (k >= 1) continue;
       let lo = Number.POSITIVE_INFINITY;

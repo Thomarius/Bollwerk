@@ -205,6 +205,10 @@ export class HalloweenTheme extends ShapeTheme implements Theme {
   );
   /** Walls, houses and guns, an island to a `Graphics`, redrawn where they change. */
   private readonly structures = new IslandParts();
+  /** The sea life, the drain and the seal's glow: under the candles, as drawn before them. */
+  private readonly underGfx = new Graphics();
+  /** The candles' warm light and their flames, stamped and flickered by scale. */
+  private readonly candleStamps = new Stamps();
   private readonly effectGfx = new Graphics();
   /** The main castles' crowns, redrawn only when one changes. */
   private readonly crowns = new MainCastles();
@@ -232,8 +236,12 @@ export class HalloweenTheme extends ShapeTheme implements Theme {
   /** Where the fog drifts, in tiles: the board and its margins. */
   private fogSpan = { x0: 0, x1: 0, y0: 0, y1: 0 };
   private moon: TimerSpot | null = null;
-  /** The candles warding sealed ground, kept from the territory drawn, for their flames. */
-  private candles: { x: number; y: number }[] = [];
+  /**
+   * The candles warding sealed ground, kept from the territory drawn, for their flames: by the
+   * island's `Graphics`, since `IslandParts` draws an island at a time. One list for them all,
+   * emptied at each island, left the flames on the island drawn last alone.
+   */
+  private readonly candlesBy = new Map<Graphics, { x: number; y: number }[]>();
   private scorches: Scorch[] = [];
   private ghosts: Aged[] = [];
   private rings: Aged[] = [];
@@ -267,6 +275,8 @@ export class HalloweenTheme extends ShapeTheme implements Theme {
     layers.territory.addChild(this.scenery.gfx, this.territory.container);
     layers.structures.addChild(this.structures.container);
     layers.effects.addChild(
+      this.underGfx,
+      this.candleStamps.container,
       this.effectGfx,
       this.crowns.gfx,
       this.lanternGfx,
@@ -281,6 +291,7 @@ export class HalloweenTheme extends ShapeTheme implements Theme {
   destroy(): void {
     this.bubbleStamps.destroy();
     this.fogStamps.destroy();
+    this.candleStamps.destroy();
     this.book.destroy();
     this.gunMemo.destroy();
     this.lateGfx.destroy();
@@ -291,6 +302,7 @@ export class HalloweenTheme extends ShapeTheme implements Theme {
     for (const g of [
       this.scorchGfx,
       this.flowGfx,
+      this.underGfx,
       this.effectGfx,
       this.crowns.gfx,
       this.lanternGfx,
@@ -657,7 +669,8 @@ export class HalloweenTheme extends ShapeTheme implements Theme {
   /** One island's sealed ground, for `IslandParts`: the board holds that island's alone. */
   private drawSealed(g: Graphics, state: MatchState, view: ViewTransform): void {
     const t = view.tile;
-    this.candles = [];
+    const candles: { x: number; y: number }[] = [];
+    this.candlesBy.set(g, candles);
     for (let player = 0; player < state.players.length; player++) {
       const owned = (x: number, y: number): boolean =>
         x >= 0 &&
@@ -688,10 +701,10 @@ export class HalloweenTheme extends ShapeTheme implements Theme {
         ];
         const side = sides.find(([open]) => open);
         if (side === undefined) continue;
-        this.candles.push({ x: x + side[1], y: y + side[2] });
+        candles.push({ x: x + side[1], y: y + side[2] });
       }
     }
-    for (const c of this.candles) {
+    for (const c of candles) {
       g.roundRect(
         tileX(view, c.x) - t * 0.06,
         tileY(view, c.y) - t * 0.1,
@@ -1194,9 +1207,11 @@ export class HalloweenTheme extends ShapeTheme implements Theme {
     clearDrawn(g);
     clearDrawn(this.lanternGfx);
     clearDrawn(this.lateGfx);
-    this.seaLife.draw(g, view, this.art, frame.deltaMs);
-    drawDrain(g, view, frame.drain, this.art);
-    drawSealGlow(g, view, frame.sealGlow, this.art);
+    const under = this.underGfx;
+    clearDrawn(under);
+    this.seaLife.draw(under, view, this.art, frame.deltaMs);
+    drawDrain(under, view, frame.drain, this.art);
+    drawSealGlow(under, view, frame.sealGlow, this.art);
     this.drawCandles(view);
     this.drawMaterialising(view, frame.deltaMs);
     this.scenery.drawPuffs(g, view, frame.deltaMs);
@@ -1218,22 +1233,37 @@ export class HalloweenTheme extends ShapeTheme implements Theme {
 
   /** The ward's candle flames, flickering, each with a little warm light round it. */
   private drawCandles(view: ViewTransform): void {
-    if (this.candles.length === 0) return;
-    const g = this.effectGfx;
+    const stamps = this.candleStamps;
+    stamps.begin();
+    const candles: { x: number; y: number }[] = [];
+    for (const [g, list] of this.candlesBy) {
+      // An island's drawing thrown away with a new board takes its candles with it.
+      if (g.destroyed) this.candlesBy.delete(g);
+      else candles.push(...list);
+    }
     const t = view.tile;
     const still = motionReduced();
-    for (const [k, c] of this.candles.entries()) {
-      const flick = still ? 1 : 0.8 + 0.2 * Math.sin(this.clock / 90 + k * 1.7);
-      g.circle(tileX(view, c.x), tileY(view, c.y) - t * 0.16, t * 0.2 * flick);
+    const glow = this.book.get('candle-glow', t, (k) => {
+      k.circle(0, 0, t * 0.2);
+      k.fill({ color: hex(this.art.palette.emberMid), alpha: 0.18 });
+    });
+    const flame = this.book.get('candle-flame', t, (k) => {
+      k.poly([-t * 0.04, 0, t * 0.04, 0, 0, -t * 0.14]);
+      k.fill({ color: hex(this.art.palette.emberHot) });
+    });
+    const flicker = (k: number): number =>
+      still ? 1 : 0.8 + 0.2 * Math.sin(this.clock / 90 + k * 1.7);
+    // Every glow under every flame, as the two fills were.
+    for (const [k, c] of candles.entries()) {
+      stamps.place(glow, tileX(view, c.x), tileY(view, c.y) - t * 0.16, { scale: flicker(k) });
     }
-    g.fill({ color: hex(this.art.palette.emberMid), alpha: 0.18 });
-    for (const [k, c] of this.candles.entries()) {
-      const flick = still ? 1 : 0.8 + 0.2 * Math.sin(this.clock / 90 + k * 1.7);
-      const x = tileX(view, c.x);
-      const y = tileY(view, c.y) - t * 0.12;
-      g.poly([x - t * 0.04, y, x + t * 0.04, y, x, y - t * 0.14 * flick]);
+    for (const [k, c] of candles.entries()) {
+      stamps.place(flame, tileX(view, c.x), tileY(view, c.y) - t * 0.12, {
+        scale: 1,
+        scaleY: flicker(k),
+      });
     }
-    g.fill({ color: hex(this.art.palette.emberHot) });
+    stamps.end();
   }
 
   /** A piece set down: mist puffs round it as it turns from spectral to solid stone. */

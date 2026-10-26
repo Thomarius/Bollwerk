@@ -10147,3 +10147,25 @@ ruins), over every layer. **All 24 styles measured again**, as in 14zf: Sakura 1
 Cyberpunk 1.39 → 0.81, Oktoberfest 1.17 → 0.69, Opera 1.14 → 0.61 ms of triangulation a frame,
 their render 0.2–0.9 ms a frame less; the styles not touched within ±0.05 of before, the noise
 of one run. No style is over 1.0 ms now; the routines left are 0.1–0.26 ms each (PLAN §11 item 3).
+
+## 14zi. Two bugs found by the analysis, and the enclosure in combat (2026-10-26, PLAN §11 item 3, P6)
+
+**Two bugs**, found by reading in the analysis of 2026-10-26: `IslandParts` calls a style's drawing
+once for each island that changed, and two styles emptied a list kept for the whole style inside
+that call. **Halloween** kept its candles so, and only the island drawn last had its candle flames
+— the others' candles stood unlit, as a close crop of the old code showed; **Chocolate** its walls,
+so the gloss sweep crossed only that island's. Both lists are now kept by the island's `Graphics`
+and gathered where used, an island's thrown away with its drawing; Chocolate's shine groups the
+walls by owner only after an island is drawn, not every frame, and now holds all eight players'.
+With every island's flames, Halloween's candles are stamped — a glow and a flame drawn once,
+flickered by scale — under a `Graphics` of their own for the sea life, drain and seal glow drawn
+before them: its triangulation 0.83 ms a frame, as before the fix.
+
+**The live enclosure in combat**: `BoardEffects.refresh` counted the enclosure afresh at every
+batch of wall hits, 0.2 ms on an eight-player board with the flood comparison and the board copied
+after it. Through combat nothing reads it — every look shows the enclosure held from its start but
+the build look, out of sight, and the hints and the seal's fanfare are the build phase's — so it is
+counted once as combat ends. A watched match across the Rebuild banner: the breached castles' ground
+gone and their guns struck out, a sealed one's kept.
+
+The HUD's other leads were read as negligible and left (PLAN §11 item 3, P6).

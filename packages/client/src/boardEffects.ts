@@ -183,6 +183,11 @@ export class BoardEffects {
     if (!territoryChanged && !structuresChanged) return null;
     // Taken before this batch's shots are counted, so it is the board combat began on.
     this.held = holdsCombatEnclosure(this.state) ? (this.held ?? this.live) : null;
+    // Through combat nothing reads the live enclosure: every look shows the held one but the
+    // build look, out of sight, and the hints and the seal's fanfare are the build phase's.
+    // So it is counted once as combat ends, not at every wall hit (PLAN §11 item 3, P6); shots
+    // only take ground away, so no flood is lost in the waiting.
+    if (this.state.phase === 'combat') return null;
     const before = this.live.territory;
     const sealedBefore = this.live.castleEnclosed;
     this.live = computeEnclosure(this.state);

@@ -1681,8 +1681,7 @@ every resolution against an independent search, not only on unit pictures.
 ## 11. Open work
 
 **Where to start (2026-10-26).** The latest release is **v0.9.14** (2026-10-26, protocol 32,
-recording format 4). Next: item 3's performance packages, one at a time, P5 going on (P1–P4 done and P5's first
-three styles, ARCHIVE 14zc–14zf); item 2's next tower, by the user's design, and the styles' own music's
+recording format 4). Item 3, the performance plan, is done but for the small leftovers it lists (ARCHIVE 14zc–14zi). Next: item 2's next tower, by the user's design, and the styles' own music's
 chance back to the planned 50% once the user says (ARCHIVE 14za).
 Up to **v0.8.3**: the game and online play, bots as skill levels and personalities, the styles
 with their corner pieces, random looks every round, English and German, the desktop app, UPnP,
@@ -1775,15 +1774,13 @@ fit (ARCHIVE 12z), its remaining steps dropped (the user's decision, 2026-10-14;
      heat drips and its bites' key; Pirates' torches hashing the territory each frame; shared,
      `RuinSmoke`, `Fireworks`, `TowerMarks.drawIce`, `drawSealPreview`'s string set and the
      scenery layer redrawn whole at any change; Anime's hero figures made unpaced at first use.
-   - **P6. HUD and the loop**: `BoardEffects.refresh` runs `computeEnclosure` over the board at
-     every wall hit in combat, though the combat look shows the enclosure held (compute it once
-     for the build look, at `prime` or the Rebuild banner); the big timer's beat restarted with a
-     forced layout; "You are here" animating `margin-top`; the final round's full-screen inset
-     shadow; per-frame garbage (`sealingFor`'s `JSON.stringify`, the end screen's markup).
-   - **Two bugs found on the way**, read and not yet seen in play: `halloween.ts` `drawSealed`
-     empties `this.candles` and `chocolate.ts` `drawIsland` `this.walls` in a callback
-     `IslandParts` calls once an island, so only the island redrawn last keeps its candle flames
-     or its gloss sweep.
+   - **P6. HUD and the loop**: done (ARCHIVE 14zi) — the two bugs fixed, Halloween's candle
+     flames stamped with them, and the live enclosure no longer counted at every wall hit in
+     combat. Left, each measured or read as negligible: the big timer's beat restarted with a
+     forced layout (three times a phase), "You are here" animating `margin-top` (the opening
+     only), the final round's full-screen inset shadow, `sealingFor`'s hash and
+     `JSON.stringify` (hundredths of a millisecond a frame), the end screen's markup (game over
+     only).
 
    These help hitches and the CPU; at large windows the limit was the GPU's filling of pixels
    (ARCHIVE 13o, 13q), which none of them changes. Each is checked in a visible window with
