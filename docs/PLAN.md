@@ -1681,7 +1681,7 @@ every resolution against an independent search, not only on unit pictures.
 ## 11. Open work
 
 **Where to start (2026-10-25).** The latest release is **v0.9.13** (2026-10-25, protocol 32,
-recording format 4). Next: item 3's performance packages, one at a time, P2 next (P1 done, ARCHIVE 14zc); item 2's next tower, by the user's design, and the styles' own music's
+recording format 4). Next: item 3's performance packages, one at a time, P4 next (P1–P3 done, ARCHIVE 14zc, 14zd); item 2's next tower, by the user's design, and the styles' own music's
 chance back to the planned 50% once the user says (ARCHIVE 14za).
 Up to **v0.8.3**: the game and online play, bots as skill levels and personalities, the styles
 with their corner pieces, random looks every round, English and German, the desktop app, UPnP,
@@ -1743,18 +1743,9 @@ fit (ARCHIVE 12z), its remaining steps dropped (the user's decision, 2026-10-14;
    at a time, in this order (the user's):
 
    - **P1. Hidden looks off the stage**: done, ARCHIVE 14zc.
-   - **P2. The banner's first frame** (12q's 67–100 ms, never pursued on the HTML side): in the
-     frame a banner appears, `drawTransition` creates it, measures it under the old skin
-     (`placeAnnouncement`), swaps the skin class on `<body>` (a restyle of the whole page through
-     its `--hud-*` variables), and `showTeamTags` and `hud.update` force two more layouts. Build
-     the next banner in the pause, just off screen, in its final skin; `useSkin` before anything
-     is measured; heights cached at a resize.
-   - **P3. Cheap ones**: the menu's `#backdrop` drifts its `background-position` under the canvas
-     for the whole match (`style.css`, a restyle and repaint each frame) — paused in a match; the
-     cursor's icon row compared through `innerHTML` each frame (`boardLabels.ts`
-     `showPlaceIcons`: up to eight PNG data URLs read back, and SVG icons never compare equal, so
-     rebuilt each frame) — compared against the last string written; the roster's and island
-     banners' HTML, SVGs and all, rebuilt each frame of a score's count-up.
+   - **P2. The banner's first frame**: measured after P1 and not needed — no banner's frame
+     over 50 ms on the page's thread, headless or in a window (ARCHIVE 14zd).
+   - **P3. Cheap ones**: done, ARCHIVE 14zd.
    - **P4. Draw lists rebuilt whole.** In Pixi 8.21 any redrawn `Graphics` rebuilds its render
      group's whole draw list (`GraphicsPipe.validateRenderable`'s `wasBatched` is always true),
      and each look is one group: 1.3–2.6 ms of a 2.6–4.8 ms render a frame, a rebuild about 5 ms

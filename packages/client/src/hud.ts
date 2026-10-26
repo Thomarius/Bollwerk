@@ -407,7 +407,10 @@ export class Hud {
   } | null = null;
 
   /** Roster entries by key — `p<player>` or `t<team>` — and the markup each last had. */
-  private readonly entries = new Map<string, { node: HTMLElement; html: string }>();
+  private readonly entries = new Map<
+    string,
+    { node: HTMLElement; html: string; score: HTMLElement | null; figures: string }
+  >();
 
   /** Scores counting up, by the same keys. */
   private readonly counts = new Map<string, { from: number; to: number; since: number }>();
@@ -478,24 +481,36 @@ export class Hud {
     }
   }
 
-  /** Sets an entry's markup, touching the page only when it has changed. */
-  private entry(key: string, html: string): void {
+  /**
+   * Sets an entry's markup, touching the page only when it has changed, and its score's
+   * figures, if it has one, apart: they change every frame of a tally, and the entry, shapes'
+   * SVGs and all, was parsed and built again each frame for it.
+   */
+  private entry(key: string, html: string, score?: number): void {
     let entry = this.entries.get(key);
     if (entry === undefined) {
-      entry = { node: document.createElement('li'), html: '' };
+      entry = { node: document.createElement('li'), html: '', score: null, figures: '' };
       this.entries.set(key, entry);
     }
-    if (entry.html === html) return;
-    entry.html = html;
-    // The outer element is kept, so its slide survives; only what is inside it changes.
-    const template = document.createElement('template');
-    template.innerHTML = html;
-    const built = template.content.firstElementChild as HTMLElement | null;
-    if (built === null) return;
-    entry.node.className = built.className;
-    entry.node.title = built.title;
-    entry.node.style.cssText = built.style.cssText;
-    entry.node.replaceChildren(...built.childNodes);
+    if (entry.html !== html) {
+      entry.html = html;
+      // The outer element is kept, so its slide survives; only what is inside it changes.
+      const template = document.createElement('template');
+      template.innerHTML = html;
+      const built = template.content.firstElementChild as HTMLElement | null;
+      if (built === null) return;
+      entry.node.className = built.className;
+      entry.node.title = built.title;
+      entry.node.style.cssText = built.style.cssText;
+      entry.node.replaceChildren(...built.childNodes);
+      entry.score = entry.node.querySelector<HTMLElement>('.score');
+      entry.figures = '';
+    }
+    const figures = score === undefined ? '' : String(score);
+    if (entry.score !== null && figures !== entry.figures) {
+      entry.figures = figures;
+      entry.score.textContent = figures;
+    }
   }
 
   /**
@@ -545,8 +560,9 @@ export class Hud {
     const teamed = isTeamMatch(state);
     const now = performance.now();
     // The shape leads the figures, as large as the pips: it is what tells two greens apart.
-    const card = (key: string, score: number, lives: string, shape: string): string =>
-      `<span class="line">${shape}<em class="score">${this.shownScore(key, score, now)}</em>${lives}</span>`;
+    // The figures themselves are set by `entry`, so a tally leaves the markup alone.
+    const card = (lives: string, shape: string): string =>
+      `<span class="line">${shape}<em class="score"></em>${lives}</span>`;
     const playerItem = (p: (typeof state.players)[number]): string => {
       const classes = ['player', p.eliminated ? 'out' : '', p.id === humanPlayer ? 'you' : '']
         .filter(Boolean)
@@ -556,7 +572,7 @@ export class Hud {
       // A team's members carry only their names: the score and lives are the team's.
       return teamed
         ? `<li class="${classes}" style="--who:${colour}"><b></b>${name}</li>`
-        : `<li class="${classes}" style="--who:${colour}">${name}${card(`p${p.id}`, p.score, livesOf(p.team, p.eliminated), shapeSvg(playerShape(p.id), colour))}</li>`;
+        : `<li class="${classes}" style="--who:${colour}">${name}${card(livesOf(p.team, p.eliminated), shapeSvg(playerShape(p.id), colour))}</li>`;
     };
     const frame = this.layout();
     const { phase: phaseRoot, roster: rosterRoot, rest } = frame;
@@ -577,13 +593,16 @@ export class Hud {
         this.entry(
           `t${team}`,
           `<li class="team${out ? ' out' : ''}${mine ? ' mine' : ''}">` +
-            `<div class="team-head"><b class="letter">${teamLetter(team)}</b>${card(`t${team}`, teamScore(state, team), livesOf(team, out), shape)}</div>` +
+            `<div class="team-head"><b class="letter">${teamLetter(team)}</b>${card(livesOf(team, out), shape)}</div>` +
             `<ul>${members.map(playerItem).join('')}</ul></li>`,
+          this.shownScore(`t${team}`, teamScore(state, team), now),
         );
       }
       order = teams.map((team) => `t${team}`);
     } else {
-      for (const p of state.players) this.entry(`p${p.id}`, playerItem(p));
+      for (const p of state.players) {
+        this.entry(`p${p.id}`, playerItem(p), this.shownScore(`p${p.id}`, p.score, now));
+      }
       order = standings(state).map((s) => `p${s.player}`);
     }
     this.placeEntries(rosterRoot, order);

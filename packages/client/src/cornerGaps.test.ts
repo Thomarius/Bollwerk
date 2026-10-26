@@ -132,6 +132,8 @@ describe('corner gaps', () => {
 });
 
 describe("the preview's board", () => {
+  // The preview's module brings the scene, Pixi and every style with it: alone it imports in
+  // under five seconds, but beside the rest of the client's tests it ran past them.
   it('marks the corner of the left ring and the stagger of the middle, not the right', async () => {
     const { gapState } = await import('./gapPreview.js');
     const gaps = cornerGaps(gapState(), 0).map(({ x, y }) => [x, y]);
@@ -139,5 +141,5 @@ describe("the preview's board", () => {
       [20, 3],
       [9, 7],
     ]);
-  });
+  }, 30_000);
 });

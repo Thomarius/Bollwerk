@@ -55,6 +55,14 @@ body {
   background: radial-gradient(ellipse at center, rgb(10 10 18 / 35%), rgb(10 10 18 / 85%));
 }
 
+/*
+ * Paused under a match, which covers it: a drift of `background-position` is restyled and
+ * painted on the page's thread every frame, seen or not (PLAN §11 item 3, P3).
+ */
+body.in-match #backdrop {
+  animation-play-state: paused;
+}
+
 @keyframes backdrop-drift {
   from {
     background-position: 0 0;

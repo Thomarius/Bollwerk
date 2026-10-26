@@ -159,7 +159,13 @@ export class BoardLabels {
     this.readyCount.style.top = `${at.y}px`;
   }
 
-  private placeIcons: { node: HTMLElement; row: HTMLElement; hint: HTMLElement } | null = null;
+  /** `icons`, the row's markup as last written, compared rather than read back from the row. */
+  private placeIcons: {
+    node: HTMLElement;
+    row: HTMLElement;
+    hint: HTMLElement;
+    icons: string;
+  } | null = null;
 
   /**
    * The cannon phase beside the cursor: a row of icons, a cannon each still to place or the
@@ -181,10 +187,16 @@ export class BoardLabels {
       hintNode.className = 'hint';
       node.append(row, hintNode);
       this.bannerRoot.append(node);
-      this.placeIcons = { node, row, hint: hintNode };
+      this.placeIcons = { node, row, hint: hintNode, icons: '' };
     }
     const { node, row, hint: hintNode } = this.placeIcons;
-    if (row.innerHTML !== icons) row.innerHTML = icons;
+    // Not `row.innerHTML !== icons`: reading it serialises the row every frame, up to eight
+    // images' data URLs, and an SVG's `<polygon/>` reads back as `<polygon></polygon>`, so
+    // the tower's and the generic icons never compared equal and were parsed every frame.
+    if (this.placeIcons.icons !== icons) {
+      this.placeIcons.icons = icons;
+      row.innerHTML = icons;
+    }
     if (hintNode.dataset['html'] !== (hint ?? '')) {
       hintNode.dataset['html'] = hint ?? '';
       hintNode.innerHTML = hint ?? '';
@@ -223,14 +235,31 @@ export class BoardLabels {
       const text = `${banner.title}|${banner.detail}`;
       if (node.dataset.text !== text) {
         node.dataset.text = text;
-        const title = document.createElement('strong');
-        title.textContent = banner.title;
-        title.insertAdjacentHTML('afterbegin', shapeSvg(playerShape(banner.player), banner.colour));
-        node.replaceChildren(title);
-        if (banner.detail !== '') {
-          const detail = document.createElement('small');
-          detail.textContent = banner.detail;
-          node.append(detail);
+        // Points counting up change the title every frame of the tally: only its text is
+        // set then, where the title, its shape's SVG and all, was built again each frame.
+        const title = node.firstElementChild;
+        const words = title?.lastChild;
+        if (
+          node.dataset.colour === banner.colour &&
+          words instanceof Text &&
+          banner.title !== '' &&
+          (title?.nextElementSibling?.textContent ?? '') === banner.detail
+        ) {
+          words.data = banner.title;
+        } else {
+          node.dataset.colour = banner.colour;
+          const fresh = document.createElement('strong');
+          fresh.textContent = banner.title;
+          fresh.insertAdjacentHTML(
+            'afterbegin',
+            shapeSvg(playerShape(banner.player), banner.colour),
+          );
+          node.replaceChildren(fresh);
+          if (banner.detail !== '') {
+            const detail = document.createElement('small');
+            detail.textContent = banner.detail;
+            node.append(detail);
+          }
         }
       }
       // A new kind of news restarts the entrance, so a life lost after points were shown

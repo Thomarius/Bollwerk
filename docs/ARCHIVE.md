@@ -10041,3 +10041,37 @@ two passes, each with one look hidden). The same nine looks in the same order in
 every random look was ready by its banner. Frame intervals cannot be told apart headless, as ever;
 the check in a visible window is `tools/wipes/measure.mjs`. A wipe screenshotted mid-way and after:
 both looks drawn on their sides of the line, the arriving one whole after.
+
+## 14zd. The banner's first frame measured, and the HUD's cheap leads (2026-10-26, PLAN §11 item 3, P2–P3)
+
+**P2, measured and not built.** ARCHIVE 12q put each banner's first frame at 67–100 ms, the most
+of it guessed to be the banner's restyled HTML rastered for the first time, and the analysis
+planned to build the next banner ahead in the pause. Measured first, after P1, in a watched
+eight-player match with Random looks at double speed, by Chrome's Long Animation Frame entries
+and the frame intervals round each of twelve banners: headless, eleven of twelve first frames at
+16.7 ms and one a frame late; in a visible window no frame of the page's thread over 50 ms within
+400 ms of any banner, the odd frame late two or three frames after it in one run of two and not
+in the other. Nothing left there for building ahead to win; the layouts the banner's frame forces
+(measured under the old skin, then the skin swapped) stay as they are.
+
+**P3, built** (`style.css`, `matchScreen.ts`, `boardLabels.ts`, `hud.ts`):
+
+- The menu's sea, `#backdrop`, drifted its `background-position` for the whole match under the
+  canvas covering it: paused while the page has `in-match`, set for the match's length.
+- The cursor's row of cannon icons was compared with `row.innerHTML` every frame — the row
+  serialised, up to eight images' data URLs — and an SVG's `<polygon/>` reads back as
+  `<polygon></polygon>`, so the tower's and the generic icons never compared equal and were parsed
+  every frame. Compared now against the markup last written.
+- A tally's figures, in the roster and the island banners, changed the markup every frame of the
+  count-up, so the entries and banners, shapes' SVGs and all, were parsed and built again each
+  frame. The roster's score is set apart as text (`entry`'s `score`), and an island banner's title
+  sets only its text while its colour and detail stay.
+
+**Measured** with the DevTools protocol's page metrics over 60 s of a watched eight-player team
+match, old and new alternated, two runs each: style recalculations 116.3, 116.5 a second → 67.6,
+67.5, their time 9.2 ms a second → 4.7, 5.1; layouts unchanged, about 47 a second and 7.5 ms. Small
+— about 0.07 ms a frame — but for nothing.
+
+`cornerGaps.test.ts`'s "the preview's board" times out at 5 s importing the gap preview, and Pixi
+with it, when the whole client's tests run in parallel on this machine, before P1 as after; alone
+it passes in under five seconds. Given 30 s, as the bots' long tests are.

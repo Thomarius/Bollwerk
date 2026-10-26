@@ -157,6 +157,8 @@ export async function runSession(
   };
 
   const hud = new Hud(hudRoot, bannerRoot);
+  // The menu's sea stops drifting under the match's canvas (style.css, `#backdrop`).
+  document.body.classList.add('in-match');
   // What the end of the match summarises, kept from the events as they come.
   const matchLog = new MatchLog();
   hud.endScreen.useLog(matchLog);
@@ -372,6 +374,7 @@ export async function runSession(
     perf.detach();
     watching.destroy();
     hud.useSkin(null);
+    document.body.classList.remove('in-match');
     globalThis.removeEventListener('resize', fit);
     stopGraphics();
     scene.destroy();
