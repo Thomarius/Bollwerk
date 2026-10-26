@@ -1680,8 +1680,9 @@ every resolution against an independent search, not only on unit pictures.
 
 ## 11. Open work
 
-**Where to start (2026-10-25).** The latest release is **v0.9.13** (2026-10-25, protocol 32,
-recording format 4). Next: item 3's performance packages, one at a time, P5 next (P1–P4 done, ARCHIVE 14zc–14ze); item 2's next tower, by the user's design, and the styles' own music's
+**Where to start (2026-10-26).** The latest release is **v0.9.14** (2026-10-26, protocol 32,
+recording format 4). Next: item 3's performance packages, one at a time, P5 going on (P1–P4 done and P5's first
+three styles, ARCHIVE 14zc–14zf); item 2's next tower, by the user's design, and the styles' own music's
 chance back to the planned 50% once the user says (ARCHIVE 14za).
 Up to **v0.8.3**: the game and online play, bots as skill levels and personalities, the styles
 with their corner pieces, random looks every round, English and German, the desktop app, UPnP,
@@ -1708,7 +1709,9 @@ and played compressed (14b). **v0.9.12** (14u): Stadium and Pirates (14d, 14q), 
 style but Minimal (14g, 14i), the Laser Tower, the Frost Cannon and the Lullaby Tower (14k–14o),
 corner gaps pinged (14r), and Graphics, Motion and the menu's Options (14s, 14t). **v0.9.13**
 (14zb): Anime, Mythos and the Wild West (14w–14y), the bots' towers chosen by the host and No tower
-back (14z), and the styles' own music (14za).
+back (14z), and the styles' own music (14za). **v0.9.14** (14zg): the performance plan's first
+packages — hidden looks off the stage, the HUD's cheap leads, the board's layers as render groups,
+and the three dearest styles' redrawing cut (14zc–14zf).
 
 Tournament mode is finished: its play-testing round, T8, closed with everything working
 (ARCHIVE 13m). The bots' planning is off the page's thread in local matches, measured and felt (ARCHIVE

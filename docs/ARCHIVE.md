@@ -10123,3 +10123,12 @@ triangulated alone. Switching routines off in turn, tried first, was too noisy t
 - **Opera's horns, windows and rising notes** (0.44 and 0.45 ms): the horns' tubes and bells in
   `Memos`, drawn again only as a horn turns, kicks or sounds; the houses' lit windows in `Memos`
   by their light; the rising notes stamped, a note for each count of flags. 1.14 → 0.73 ms.
+
+## 14zg. v0.9.14 (2026-10-26)
+
+Since v0.9.13: the performance plan's first packages (PLAN §11 item 3) — a look out of sight off
+the stage, so a look made in the background no longer costs the game's frames (14zc); the menu's
+sea paused under a match, the cursor's icons and a tally's figures no longer rebuilt every frame
+(14zd); the board's layers as render groups (14ze); and Cyberpunk's rain, Sakura's carp and Opera's
+horns, windows and rising notes drawn once rather than every frame (14zf). Nothing in play changed:
+protocol 32 and recording format 4 as v0.9.13, so the two play together and its recordings replay.
