@@ -10074,7 +10074,9 @@ match, old and new alternated, two runs each: style recalculations 116.3, 116.5 
 
 `cornerGaps.test.ts`'s "the preview's board" times out at 5 s importing the gap preview, and Pixi
 with it, when the whole client's tests run in parallel on this machine, before P1 as after; alone
-it passes in under five seconds. Given 30 s, as the bots' long tests are.
+it passes in under five seconds. Given 30 s, as the bots' long tests are — and that too was
+run past once (14zf), so the preview is imported with the file, at collection, which has no
+timeout.
 
 ## 14ze. The board's layers as render groups, and what a rebuild costs (2026-10-26, PLAN §11 item 3, P4)
 
@@ -10096,3 +10098,28 @@ holds few things to gather (most seen: Cyberpunk 341, Opera 104, Sakura 55), so 
 pools style by style can win at most the half millisecond left; the redrawing itself (P5) is the
 lead. What changes every frame, by group: every style's effects; Opera's and Sakura's terrain
 layer too (a drawing in it redrawn every frame, 0.15–0.3 ms a rebuild).
+
+## 14zf. Every style's triangulation measured, and the three dearest cut (2026-10-26, PLAN §11 item 3, P5)
+
+**Measured** with a probe in headless Chrome (CPU), each style for 35 s of a watched
+eight-player match at double speed: the time a frame spent cutting drawings into triangles in the
+game's render, by `Graphics`. Sakura 1.57 ms, Cyberpunk 1.39, Oktoberfest 1.17, Opera 1.14; Night,
+Halloween, Undersea, Pixel 0.77–0.81; Parchment, Office, Electric, Toy bricks, Chocolate
+0.60–0.69; Stained glass, Blueprint, Pirates 0.39–0.50; Cartoon, Anime, Wild West, Christmas,
+Minimal, Noir, Stadium, Mythos 0.16–0.27. Then, per routine, a second probe: on every tenth frame
+the drawing instructions each `draw…` routine added were copied into a scratch context and
+triangulated alone. Switching routines off in turn, tried first, was too noisy to read.
+
+**Built**, each looked at in close crops against the old code:
+
+- **Cyberpunk's rain** (0.41 ms, one stroke of 2,700 vertices, 2.5 times as many drops at the
+  climax): six sheets drawn once and slid — three falling at three speeds, three more for the
+  climax faded in with it — each a torus the size of the area drawn, so a drop leaving the foot
+  comes in at the top. The sea life moved to a `Graphics` of its own under the rain, as it was
+  drawn before it. 1.39 → 0.79 ms a frame.
+- **Sakura's carp streamers** (0.48 ms, 5,500 vertices): stamped, a fish drawn once for each of
+  32 steps of its ripple's 1.4 s cycle and each owner's colours, placed and turned with the
+  wind. 1.57 → 1.06 ms.
+- **Opera's horns, windows and rising notes** (0.44 and 0.45 ms): the horns' tubes and bells in
+  `Memos`, drawn again only as a horn turns, kicks or sounds; the houses' lit windows in `Memos`
+  by their light; the rising notes stamped, a note for each count of flags. 1.14 → 0.73 ms.

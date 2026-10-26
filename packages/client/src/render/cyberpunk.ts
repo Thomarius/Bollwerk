@@ -213,6 +213,12 @@ interface Fade {
 /** How long a recoil takes to come home. */
 const RECOIL_MS = 160;
 
+/**
+ * The rain's three speeds, tiles a second: its drops fell at 18 to 28 each, and three sheets at
+ * the middles of three bands of that keep the rain falling at several depths.
+ */
+const RAIN_SPEEDS = [19.7, 23, 26.3] as const;
+
 /** How this style sends off the winners (PLAN 11.19 Z4). */
 const FINISH: FinishLook = { spark: 'neon', flag: 'hologram' };
 
@@ -335,8 +341,21 @@ export class CyberpunkTheme implements Theme {
    * through the climax and in every phase's last seconds, as other styles' pieces do.
    */
   private cubeTurn = 0;
-  /** Rain over the city, in tile coordinates, across the area drawn. */
-  private rain: { x: number; y: number; speed: number }[] = [];
+  /** The sea life, under the rain as when both were drawn into `effectGfx`. */
+  private readonly seaGfx = new Graphics();
+  /**
+   * Rain over the city in sheets drawn once and slid (PLAN §11 item 3, P5): stroked afresh
+   * every frame it was 1,000 to 1,400 streaks at eight players, 2,700 vertices and 0.41 ms a
+   * frame cut into triangles, two and a half times that at the climax. Every drop falls the
+   * same way, so a sheet of them moved as one is the same rain. Three sheets at three speeds,
+   * and three more for the climax's, faded in with it.
+   */
+  private readonly rainSheets = Array.from({ length: 6 }, () => new Graphics());
+  private readonly rainLayer = new Container();
+  /** The area, tile and placing the sheets were drawn for. */
+  private rainKey = '';
+  /** Seconds of rain fallen, at the rain's own pace. */
+  private rainClock = 0;
   private drawn = { x0: 0, y0: 0, x1: 0, y1: 0 };
 
   constructor(seed = 1) {
@@ -371,7 +390,10 @@ export class CyberpunkTheme implements Theme {
     layers.terrain.addChild(this.terrainStrips.container, this.ads);
     layers.territory.addChild(this.scenery.gfx, ...this.territory.containers);
     layers.structures.addChild(...this.structures.containers);
+    this.rainLayer.addChild(...this.rainSheets);
     layers.effects.addChild(
+      this.seaGfx,
+      this.rainLayer,
       this.effectGfx,
       this.gunMemo.container,
       // Over the rails, so a coil lights on them, and under the crown and the shots.
@@ -397,6 +419,8 @@ export class CyberpunkTheme implements Theme {
     this.book.destroy();
     release(this.ads);
     release(this.terrainStrips.container);
+    release(this.rainLayer);
+    this.seaGfx.destroy();
     for (const p of [...this.floors.values(), ...this.oldFloors]) p.texture.destroy(true);
     this.floors.clear();
     this.oldFloors.length = 0;
@@ -891,37 +915,55 @@ export class CyberpunkTheme implements Theme {
    * climax.
    */
   private drawRain(view: ViewTransform, deltaMs: number): void {
-    if (motionReduced()) {
-      this.rain = [];
-      return;
-    }
+    this.rainLayer.visible = !motionReduced();
+    if (!this.rainLayer.visible) return;
     const { x0, y0, x1, y1 } = this.drawn;
-    // Thicker at the climax, and thinned again after it.
-    const per =
-      this.style.rainPerThousandTiles * (1 + (this.style.climaxRainFactor - 1) * this.climax);
-    const wanted = Math.round(((x1 - x0) * (y1 - y0) * per) / 1000);
-    if (this.rain.length > wanted) this.rain.length = wanted;
-    while (this.rain.length < wanted) {
-      this.rain.push({
-        x: x0 + Math.random() * (x1 - x0),
-        y: y0 + Math.random() * (y1 - y0),
-        speed: 18 + Math.random() * 10,
-      });
+    const w = x1 - x0;
+    const h = y1 - y0;
+    const key = `${x0},${y0},${x1},${y1},${viewKey(view)}`;
+    if (key !== this.rainKey) {
+      this.rainKey = key;
+      this.drawRainSheets(view, w, h);
     }
-    const g = this.effectGfx;
-    const dt = deltaMs / 1000;
-    for (const drop of this.rain) {
-      drop.y += drop.speed * dt;
-      drop.x += drop.speed * 0.08 * dt;
-      if (drop.y > y1) {
-        drop.y = y0;
-        drop.x = x0 + Math.random() * (x1 - x0);
+    this.rainClock += deltaMs / 1000;
+    this.rainSheets.forEach((sheet, k) => {
+      // Down at the drop's speed and drifting with the wind, a twelfth of it, wrapped by the
+      // area the sheet is drawn over.
+      const fall = this.rainClock * (RAIN_SPEEDS[k % 3] as number);
+      sheet.position.set(((fall * 0.08) % w) * view.tile, (fall % h) * view.tile);
+      // Thicker at the climax, and thinned again after it.
+      if (k >= 3) {
+        sheet.visible = this.climax > 0;
+        sheet.alpha = this.climax;
       }
-      const x = tileX(view, drop.x);
-      const y = tileY(view, drop.y);
-      g.moveTo(x, y).lineTo(x - view.tile * 0.05, y - view.tile * 0.6);
-    }
-    g.stroke({ width: 1, color: hex(this.art.palette.waterFoam), alpha: 0.16 });
+    });
+  }
+
+  /**
+   * The rain's sheets: drops strewn over the area drawn, as a torus its size, each drawn four
+   * times over — where it is, a width to the left, a height up, and both — so the sheet slid
+   * by up to its size in either direction still covers the whole area.
+   */
+  private drawRainSheets(view: ViewTransform, w: number, h: number): void {
+    const { x0, y0 } = this.drawn;
+    const base = (w * h * this.style.rainPerThousandTiles) / 1000;
+    const style = { width: 1, color: hex(this.art.palette.waterFoam), alpha: 0.16 };
+    this.rainSheets.forEach((sheet, k) => {
+      sheet.clear();
+      const drops = Math.round((base * (k < 3 ? 1 : this.style.climaxRainFactor - 1)) / 3);
+      for (let n = 0; n < drops; n++) {
+        const x = Math.random() * w;
+        const y = Math.random() * h;
+        for (const dx of [0, -w]) {
+          for (const dy of [0, -h]) {
+            const px = tileX(view, x0 + x + dx);
+            const py = tileY(view, y0 + y + dy);
+            sheet.moveTo(px, py).lineTo(px - view.tile * 0.05, py - view.tile * 0.6);
+          }
+        }
+      }
+      sheet.stroke(style);
+    });
   }
 
   // ------------------------------------------------------------------ structures
@@ -1454,7 +1496,8 @@ export class CyberpunkTheme implements Theme {
     clearDrawn(glow);
     clearDrawn(this.effectCore);
     clearDrawn(this.lateGfx);
-    this.seaLife.draw(g, view, this.art, frame.deltaMs, glow);
+    clearDrawn(this.seaGfx);
+    this.seaLife.draw(this.seaGfx, view, this.art, frame.deltaMs, glow);
     this.clock += frame.deltaMs;
     const level = climaxLevel(state, this.art);
     this.climax = level;

@@ -2,6 +2,9 @@ import { Structure, computeEnclosure, stateFromAscii } from '@bollwerk/sim';
 import { describe, expect, it } from 'vitest';
 
 import { cornerGaps } from './cornerGaps.js';
+// Imported here rather than inside its test: it brings the scene, Pixi and every style with it,
+// and beside the bots' long tests that import ran past even 30 s of the test's own time.
+import { gapState } from './gapPreview.js';
 
 describe('corner gaps', () => {
   it('marks a ring missing its corner block at the corner its neighbours share', () => {
@@ -132,14 +135,11 @@ describe('corner gaps', () => {
 });
 
 describe("the preview's board", () => {
-  // The preview's module brings the scene, Pixi and every style with it: alone it imports in
-  // under five seconds, but beside the rest of the client's tests it ran past them.
-  it('marks the corner of the left ring and the stagger of the middle, not the right', async () => {
-    const { gapState } = await import('./gapPreview.js');
+  it('marks the corner of the left ring and the stagger of the middle, not the right', () => {
     const gaps = cornerGaps(gapState(), 0).map(({ x, y }) => [x, y]);
     expect(gaps).toEqual([
       [20, 3],
       [9, 7],
     ]);
-  }, 30_000);
+  });
 });

@@ -145,6 +145,12 @@ const FADE_MS = 500;
 const SMOKE_MS = 700;
 
 /**
+ * Steps a carp's ripple is drawn in over its cycle of 1.4 s: a step each 43 ms, a fish drawn
+ * once for each and only placed after (`drawCarp`).
+ */
+const CARP_STEPS = 32;
+
+/**
  * The carriage's lacquered wood, red-brown rather than black — at eight players a black
  * stand read as a box — its wheels, bronze, gold, and the bleached hemp cloth thrown over a
  * silenced gun, pale so a silenced gun is a pale mound at a glance where a live one is a
@@ -305,8 +311,13 @@ export class SakuraTheme extends ShapeTheme implements Theme {
    * few hundred vertices rebuilt for nothing.
    */
   private readonly crowns = new MainCastles();
-  /** The carp streamers, a `Graphics` of their own to stay over the crowns. */
-  private readonly carpGfx = new Graphics();
+  /**
+   * The carp streamers, stamped over the crowns: a fish drawn once for each step of its ripple
+   * and each owner's colours, then placed and turned with the wind (PLAN §11 item 3, P5). Drawn
+   * afresh every frame they were 5,500 vertices and 0.48 ms a frame cut into triangles at eight
+   * players, a third of the style's.
+   */
+  private readonly carpStamps = new Stamps();
   /** The guns' barrels, a `Graphics` a gun redrawn only as it turns or kicks (`Memos`). */
   private readonly gunMemo = new Memos();
   /** What lies over the guns: shots, splashes, the finish. */
@@ -354,7 +365,7 @@ export class SakuraTheme extends ShapeTheme implements Theme {
     layers.effects.addChild(
       this.effectGfx,
       this.crowns.gfx,
-      this.carpGfx,
+      this.carpStamps.container,
       this.gunMemo.container,
       this.lateGfx,
     );
@@ -368,7 +379,7 @@ export class SakuraTheme extends ShapeTheme implements Theme {
     this.gunMemo.destroy();
     this.lateGfx.destroy();
     this.crowns.gfx.destroy();
-    this.carpGfx.destroy();
+    this.carpStamps.destroy();
     this.territory.destroy();
     this.structures.destroy();
     this.scenery.destroy();
@@ -1389,7 +1400,6 @@ export class SakuraTheme extends ShapeTheme implements Theme {
     perf.end('flow');
     const g = this.effectGfx;
     clearDrawn(g);
-    clearDrawn(this.carpGfx);
     clearDrawn(this.lateGfx);
     this.seaLife.draw(g, view, this.art, frame.deltaMs);
     drawDrain(g, view, frame.drain, this.art);
@@ -1459,10 +1469,12 @@ export class SakuraTheme extends ShapeTheme implements Theme {
    * it down hanging limp, so "sealed" is the carp flying.
    */
   private drawCarp(state: MatchState, view: ViewTransform, frame: EffectFrame): void {
-    const g = this.carpGfx;
     const t = view.tile;
     const still = motionReduced();
     this.carp.update(frame.castleSealed, this.clock, this.art);
+    this.carpStamps.begin();
+    // The ripple's step: a whole cycle of it is 2π × 220 ms.
+    const step = Math.floor(((this.clock / (2 * Math.PI * 220)) % 1) * CARP_STEPS);
     for (const castle of state.castles) {
       const up = this.carp.raised(castle.id, this.clock, this.art);
       if (up === null) continue;
@@ -1472,18 +1484,25 @@ export class SakuraTheme extends ShapeTheme implements Theme {
       const limp = this.carp.lowering(castle.id);
       const sway = still ? 0 : Math.sin(this.clock / 700 + castle.id) * 0.12;
       const angle = limp ? Math.PI / 2 - 0.15 : sway;
-      drawCarpStreamer(
-        g,
-        k.poleX,
-        mouthY,
-        k.W * 0.78,
-        angle,
-        this.colour(owner, 'base'),
-        this.colour(owner, 'light'),
-        this.sumi,
-        still || limp ? 0 : this.clock,
+      const length = k.W * 0.78;
+      // Hanging still, or the ripple at the middle of its step: a clock of 0 holds it still.
+      const ripple = still || limp ? -1 : step;
+      const fish = this.book.get(`carp:${owner}:${ripple}:${length}`, t, (g) =>
+        drawCarpStreamer(
+          g,
+          0,
+          0,
+          length,
+          0,
+          this.colour(owner, 'base'),
+          this.colour(owner, 'light'),
+          this.sumi,
+          ripple < 0 ? 0 : ((ripple + 0.5) / CARP_STEPS) * 2 * Math.PI * 220,
+        ),
       );
+      this.carpStamps.place(fish, k.poleX, mouthY, { rotation: angle });
     }
+    this.carpStamps.end();
   }
 
   /**

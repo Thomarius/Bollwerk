@@ -14,7 +14,7 @@ import { release } from './release.js';
 import { OperaSeaLife } from './seaLife.js';
 import type { SceneryItem } from './scenery.js';
 import { SceneryLayer } from './sceneryLayer.js';
-import { StampBook, Stamps } from './stamps.js';
+import { Memos, StampBook, Stamps, viewKey } from './stamps.js';
 import {
   FlagHoist,
   GhostMotion,
@@ -117,6 +117,8 @@ interface House {
 }
 
 const RECOIL_MS = 200;
+/** How long a horn sounds its notes after firing, the tube drawn afresh meanwhile. */
+const HORN_SOUNDS_MS = 650;
 const RING_MS = 1000;
 const SOUR_MS = 1100;
 const CHORD_MS = 700;
@@ -236,8 +238,23 @@ export class OperaTheme extends ShapeTheme implements Theme {
   /** The main castles' crowns: the shared mark, drawn again only as one changes. */
   private readonly crowns = new MainCastles();
   /**
-   * What the effects drew after the crowns — the houses playing, the horns, the shots' glows
-   * and targets — kept over them now the crowns are a `Graphics` of their own.
+   * The houses' lit windows, a `Graphics` a house drawn again only as its light changes
+   * (`Memos`), and over them the rests and rising notes. Drawn every frame with the rest,
+   * the windows were 4,500 vertices and 0.45 ms a frame cut into triangles at eight players
+   * (PLAN §11 item 3, P5).
+   */
+  private readonly windowMemo = new Memos();
+  private readonly playingGfx = new Graphics();
+  /** The notes rising from the houses, stamped: a note drawn once for each count of flags. */
+  private readonly risingStamps = new Stamps();
+  /**
+   * The horns' tubes and bells, a `Graphics` a gun drawn again only as it turns, kicks or
+   * sounds: every frame they were 5,000 vertices and 0.44 ms (P5).
+   */
+  private readonly hornMemo = new Memos();
+  /**
+   * What the effects drew after the crowns and the horns — the shots' glows and targets —
+   * kept over them now the crowns are a `Graphics` of their own.
    */
   private readonly aboveCrownsGfx = new Graphics();
   /** The notes in flight, stamps drawn once a colour and rocked. */
@@ -293,6 +310,10 @@ export class OperaTheme extends ShapeTheme implements Theme {
       this.coilStamps.container,
       this.effectGfx,
       this.crowns.gfx,
+      this.windowMemo.container,
+      this.playingGfx,
+      this.risingStamps.container,
+      this.hornMemo.container,
       this.aboveCrownsGfx,
       this.noteStamps.container,
       this.lateGfx,
@@ -317,11 +338,15 @@ export class OperaTheme extends ShapeTheme implements Theme {
       this.flowGfx,
       this.effectGfx,
       this.crowns.gfx,
+      this.playingGfx,
       this.aboveCrownsGfx,
       this.overlayGfx,
     ]) {
       g.destroy();
     }
+    this.windowMemo.destroy();
+    this.risingStamps.destroy();
+    this.hornMemo.destroy();
   }
 
   private get dark(): number {
@@ -1202,6 +1227,7 @@ export class OperaTheme extends ShapeTheme implements Theme {
     perf.end('flow');
     const g = this.effectGfx;
     clearDrawn(g);
+    clearDrawn(this.playingGfx);
     clearDrawn(this.aboveCrownsGfx);
     clearDrawn(this.lateGfx);
     this.seaLife.draw(g, view, this.art, frame.deltaMs);
@@ -1230,18 +1256,21 @@ export class OperaTheme extends ShapeTheme implements Theme {
    * as the light goes down — so "sealed" is the house playing.
    */
   private drawPlaying(state: MatchState, view: ViewTransform, frame: EffectFrame): void {
-    const g = this.aboveCrownsGfx;
+    const g = this.playingGfx;
     const still = motionReduced();
     this.playing.update(frame.castleSealed, this.clock, this.art);
+    this.windowMemo.begin();
     for (const castle of state.castles) {
       const lit = this.playing.raised(castle.id, this.clock, this.art);
       if (lit === null) continue;
       const k = this.house(view, castle);
-      for (const w of k.windows) {
-        g.rect(w.x, w.y + w.w / 2, w.w, w.h - w.w / 2);
-        g.circle(w.x + w.w / 2, w.y + w.w / 2, w.w / 2);
-      }
-      g.fill({ color: hex(this.art.palette.emberHot), alpha: lit });
+      this.windowMemo.draw(castle.id, `${viewKey(view)}|${castle.x},${castle.y}|${lit}`, (m) => {
+        for (const w of k.windows) {
+          m.rect(w.x, w.y + w.w / 2, w.w, w.h - w.w / 2);
+          m.circle(w.x + w.w / 2, w.y + w.w / 2, w.w / 2);
+        }
+        m.fill({ color: hex(this.art.palette.emberHot), alpha: lit });
+      });
       if (this.playing.lowering(castle.id)) {
         drawRest(
           g,
@@ -1267,6 +1296,8 @@ export class OperaTheme extends ShapeTheme implements Theme {
         this.sinceNote.set(castle.id, since);
       }
     }
+    this.windowMemo.end();
+    this.risingStamps.begin();
     for (const r of this.rising) {
       r.age += frame.deltaMs;
       const castle = state.castles.find((c) => c.id === r.castle);
@@ -1278,17 +1309,18 @@ export class OperaTheme extends ShapeTheme implements Theme {
       if (p >= 1) continue;
       const k = this.house(view, castle);
       const alpha = Math.min(1, p / 0.1) * Math.min(1, (1 - p) / 0.4);
-      drawQuaver(
-        g,
+      const size = k.W * 0.32;
+      const note = this.book.get(`rising:${r.flags}:${size}`, view.tile, (n) =>
+        drawQuaver(n, 0, 0, size, GOLD, 1, r.flags),
+      );
+      this.risingStamps.place(
+        note,
         k.cx + k.W * (r.dx + 0.25 * Math.sin(p * Math.PI * 2 + r.castle)),
         k.domeTop - k.W * (0.2 + 1.1 * p),
-        k.W * 0.32,
-        GOLD,
-        alpha,
-        r.flags,
-        Math.sin(p * 6) * 0.25,
+        { rotation: Math.sin(p * 6) * 0.25, alpha },
       );
     }
+    this.risingStamps.end();
     this.rising = this.rising.filter((r) => r.age < RISE_MS);
   }
 
@@ -1298,22 +1330,25 @@ export class OperaTheme extends ShapeTheme implements Theme {
    * its bell, the bell turned down.
    */
   private drawHorns(state: MatchState, view: ViewTransform, deltaMs: number): void {
-    const g = this.aboveCrownsGfx;
     const t = view.tile;
     const coilOf = (key: string, metal: number, dark: number) =>
       this.book.get(key, t, (k) => drawCoil(k, 0, 0, t, metal, dark));
     const coil = coilOf('coil', BRASS, BRASS_DARK);
     const dullCoil = coilOf('coil|muted', TARNISH, TARNISH_DARK);
     this.coilStamps.begin();
+    this.hornMemo.begin();
     for (const cannon of state.cannons) {
       const aim = this.aims.of(state, cannon.id);
       if (aim === null) continue;
       aim.firedAgo += deltaMs;
       const [cx, cy] = hornCentre(view, cannon);
-      // The coil, and the tube out to the bell.
+      // The coil, and the tube out to the bell, drawn again only as it turns, kicks or sounds:
+      // the key names everything `drawHorn` reads.
       this.coilStamps.place(cannon.active ? coil : dullCoil, cx, cy);
-      this.drawHorn(g, view, cannon, aim);
+      const key = `${viewKey(view)}|${cannon.x},${cannon.y},${cannon.w},${cannon.h},${cannon.active}|${aim.angle}|${aim.firedAgo < HORN_SOUNDS_MS ? aim.firedAgo : '-'}`;
+      this.hornMemo.draw(cannon.id, key, (m) => this.drawHorn(m, view, cannon, aim));
     }
+    this.hornMemo.end();
     this.coilStamps.end();
     this.aims.prune(state);
   }
@@ -1387,8 +1422,8 @@ export class OperaTheme extends ShapeTheme implements Theme {
       g.fill({ color: 0x4a3a2c });
       return;
     }
-    if (aim.firedAgo < 650) {
-      const k = aim.firedAgo / 650;
+    if (aim.firedAgo < HORN_SOUNDS_MS) {
+      const k = aim.firedAgo / HORN_SOUNDS_MS;
       for (let n = 0; n < 2; n++) {
         const d = t * (0.3 + 0.9 * k);
         drawQuaver(
