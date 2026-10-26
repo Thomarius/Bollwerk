@@ -173,9 +173,14 @@ type BoardLayer = (typeof BOARD_LAYERS)[number];
 function newLayers(): ThemeLayers {
   return {
     // Named for the frame-time readout, which says which layer's drawing is rebuilt.
-    terrain: new Container({ label: 'terrain' }),
-    territory: new Container({ label: 'territory' }),
-    structures: new Container({ label: 'structures' }),
+    // The board's layers are render groups of their own: in Pixi 8.21 any drawing redrawn
+    // rebuilds its group's whole draw list, and the effects redraw something nearly every
+    // frame, which rebuilt the terrain's strips and every island's walls with them (PLAN §11
+    // item 3, P4). The effects and overlay stay in the look's own group, whose list is then
+    // theirs and three references.
+    terrain: new Container({ label: 'terrain', isRenderGroup: true }),
+    territory: new Container({ label: 'territory', isRenderGroup: true }),
+    structures: new Container({ label: 'structures', isRenderGroup: true }),
     effects: new Container({ label: 'effects' }),
     overlay: new Container({ label: 'overlay' }),
   };

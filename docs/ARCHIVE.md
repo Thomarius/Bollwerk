@@ -10075,3 +10075,24 @@ match, old and new alternated, two runs each: style recalculations 116.3, 116.5 
 `cornerGaps.test.ts`'s "the preview's board" times out at 5 s importing the gap preview, and Pixi
 with it, when the whole client's tests run in parallel on this machine, before P1 as after; alone
 it passes in under five seconds. Given 30 s, as the bots' long tests are.
+
+## 14ze. The board's layers as render groups, and what a rebuild costs (2026-10-26, PLAN §11 item 3, P4)
+
+In Pixi 8.21 any drawing redrawn rebuilds its render group's whole draw list
+(`GraphicsPipe.validateRenderable`'s `wasBatched` is always true), and each look was one group,
+so the effects' drawings redrawn nearly every frame rebuilt the terrain's strips and every
+island's walls with them. **Built** (`render/scene.ts`): the terrain, territory and structures
+layers are render groups of their own; the effects and overlay stay in the look's. 12n had found
+"making the scene's layers render groups did nothing", before the terrain was in strips and the
+walls in island parts. Pixel and Cyberpunk, sprites and bloom, looked at in combat after: as
+before.
+
+**Measured** with the probe of P1, a watched eight-player match with Random looks at double
+speed, 90 s: building draw lists, triangulation taken out of it, 0.65 and 0.62 ms a frame on the
+old code against 0.49 and 0.56 — about 0.1 ms. The analysis had counted the triangulation done
+inside a rebuild as the rebuild's own cost, 1.3–2.6 ms a frame; taken apart, cutting the drawings
+redrawn every frame into triangles is the larger part, 1.6–2.0 ms a frame. A look's own group
+holds few things to gather (most seen: Cyberpunk 341, Opera 104, Sakura 55), so isolating stamp
+pools style by style can win at most the half millisecond left; the redrawing itself (P5) is the
+lead. What changes every frame, by group: every style's effects; Opera's and Sakura's terrain
+layer too (a drawing in it redrawn every frame, 0.15–0.3 ms a rebuild).

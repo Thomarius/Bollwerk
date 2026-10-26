@@ -1681,7 +1681,7 @@ every resolution against an independent search, not only on unit pictures.
 ## 11. Open work
 
 **Where to start (2026-10-25).** The latest release is **v0.9.13** (2026-10-25, protocol 32,
-recording format 4). Next: item 3's performance packages, one at a time, P4 next (P1–P3 done, ARCHIVE 14zc, 14zd); item 2's next tower, by the user's design, and the styles' own music's
+recording format 4). Next: item 3's performance packages, one at a time, P5 next (P1–P4 done, ARCHIVE 14zc–14ze); item 2's next tower, by the user's design, and the styles' own music's
 chance back to the planned 50% once the user says (ARCHIVE 14za).
 Up to **v0.8.3**: the game and online play, bots as skill levels and personalities, the styles
 with their corner pieces, random looks every round, English and German, the desktop app, UPnP,
@@ -1746,16 +1746,13 @@ fit (ARCHIVE 12z), its remaining steps dropped (the user's decision, 2026-10-14;
    - **P2. The banner's first frame**: measured after P1 and not needed — no banner's frame
      over 50 ms on the page's thread, headless or in a window (ARCHIVE 14zd).
    - **P3. Cheap ones**: done, ARCHIVE 14zd.
-   - **P4. Draw lists rebuilt whole.** In Pixi 8.21 any redrawn `Graphics` rebuilds its render
-     group's whole draw list (`GraphicsPipe.validateRenderable`'s `wasBatched` is always true),
-     and each look is one group: 1.3–2.6 ms of a 2.6–4.8 ms render a frame, a rebuild about 5 ms
-     in Cyberpunk, 2 in Opera, Parchment and Sakura, 1 in Undersea. The terrain, territory and
-     structures layers as render groups of their own measured 2.60 / 2.63 → 2.44 / 2.42 ms a
-     frame; effects and overlay as groups moved most of it into the effects' own group. The larger
-     gain is per style: stamp pools in render groups of their own, as Chocolate's swirls — first
-     Mythology, Wild West, Sports and Anime (300–500 figure stamps beside drawings redrawn every
-     frame), with a `Stamps` per kind of part so the slots stay stable.
-   - **P5. Per-style redraws left**, by likely cost: rain and snow stroked each frame (Cyberpunk,
+   - **P4. Draw lists rebuilt whole**: the board's layers as render groups, done (ARCHIVE 14ze).
+     The rest — stamp pools as groups of their own, style by style — measured to be worth at
+     most the 0.5 ms a frame of list building left, and is taken up within P5 only where a
+     style's own figures show it.
+   - **P5. Per-style redraws left** — now the larger cost: cutting drawings redrawn every frame
+     into triangles, 1.6–2.0 ms a frame against the 0.5 ms of building lists (ARCHIVE 14ze).
+     Built style by style from the probe's or `&perf=1`'s figures, by likely cost: rain and snow stroked each frame (Cyberpunk,
      Pixel; stamp as Electric and Cartoon do); Pixel's pavement and scenery sprites in a group with
      layers emptied every frame, and its reflections scanning the board every frame; craters
      layers redrawn whole at every new crater, their key holding `craters.length` (Anime, Cartoon,
