@@ -10292,3 +10292,12 @@ twenty classes of their own to draw as pieces for a few hundredths, tried on Pir
 reverted; Electric's coils 0.06, Halloween's shots 0.05, Sakura's shots 0.07, its drifts and mist
 0.05 each; Night's torchlight and Oktoberfest's flying bits nothing. The craters layers redrawn at
 each new crater measured nothing over a match. The performance plan is closed.
+
+## 14zp. v0.9.17 (2026-10-27)
+
+Since v0.9.16: how often the styles' own music plays, the player's choice in Options and the
+pause menu — Always, Half the time or Never (14zn); and the performance plan's leftovers, nine
+styles drawn cheaper, Sakura's walls apart from its keeps and guns (14zo). With them the users'
+decisions: the cap of three towers kept, and every feature up to v0.9.16 approved (14zm). The game
+itself is unchanged: protocol 32 and recording format 4 as v0.9.16, so the two play together and
+its recordings replay.

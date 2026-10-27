@@ -1680,7 +1680,7 @@ every resolution against an independent search, not only on unit pictures.
 
 ## 11. Open work
 
-**Where to start (2026-10-27).** The latest release is **v0.9.16** (2026-10-26, protocol 32,
+**Where to start (2026-10-27).** The latest release is **v0.9.17** (2026-10-27, protocol 32,
 recording format 4). Item 3, the performance plan, is finished, its leftovers measured and the worthwhile ones built
 (ARCHIVE 14zc–14zi, 14zo). Next: item 2's last tower, once the users have decided which (ARCHIVE
 14zm). The styles' own music's chance is the player's choice in Options (ARCHIVE 14zn). Every feature up to v0.9.16 has been tested and approved by the users (2026-10-27).
@@ -1715,7 +1715,8 @@ and the three dearest styles' redrawing cut (14zc–14zf). **v0.9.15** (14zj): t
 plan finished — Oktoberfest's bubbles and wheel drawn once (14zh), and Halloween's candles and
 Chocolate's shine on every island, the enclosure counted once in combat (14zi). **v0.9.16**
 (14zl): the desktop app's link online by Cloudflare's tunnel, the firewall reported, and a splash
-while the portable app unpacks (14zk).
+while the portable app unpacks (14zk). **v0.9.17** (14zp): the styles' own music the player's
+choice (14zn), and the performance plan's leftovers (14zo).
 
 Tournament mode is finished: its play-testing round, T8, closed with everything working
 (ARCHIVE 13m). The bots' planning is off the page's thread in local matches, measured and felt (ARCHIVE
