@@ -10,8 +10,9 @@ first feedback, the tower menu and its preview (ARCHIVE 13zm, 13zn); ST4's first
 measured (13zk, the Architect's circle 13zl). The users' play-testing, ST8, closed with no
 issues found (2026-10-17, ARCHIVE 13zp), and ST7 put the towers into How to play and the
 screenshot scenes (13zr). ST4 is closed, its remaining soaks dropped, the towers off by default
-for good and the bots' buying rule kept (the user's, ARCHIVE 13zw). Open: two decisions left after
-ST8 — the next tower and a test without the cap of three (§5); the towers' own sounds, TS, are
+for good and the bots' buying rule kept (the user's, ARCHIVE 13zw). Open: one tower left to build, the
+last, which one the users are still deciding (§5; the test without the cap of three dropped, ARCHIVE
+14zm); the towers' own sounds, TS, are
 in (ARCHIVE 13zx). The sixth tower, the Laser Tower (§2.6, 2026-10-21), is built, balanced and
 played by the user; the seventh and eighth, the Frost Cannon (§2.7) and the Lullaby Tower (§2.8),
 built, balanced and played by the user (2026-10-23). Like PLAN.md it says what is configurable and why and leaves the
@@ -715,14 +716,15 @@ Lightning 2 48 / 52 / 52 — on par, as meant; Lullaby 3 against Bertha 3, Laser
 43 / 51 / 43, and the Allerdickste Bertha, immune, 48 — on par or a little behind, short of the
 lead meant against cost 3.
 
-### After ST8 — two decisions
+### After ST8 — the decisions
 
 ST8, the testers' matches with towers on, closed with no issues found (2026-10-17, ARCHIVE 13zp).
 Left from it, each the user's to decide: the next tower, and a test without the cap of three
 towers on an island (`maxOwned`, null for none). The next tower was the user's own, the Laser
 Tower (§2.6, 2026-10-21), played by the user with two fixes (ARCHIVE 14k). Later towers come by
-the user's own designs, the list of candidates removed (2026-10-21). Open: the test without the
-cap.
+the user's own designs, the list of candidates removed (2026-10-21). The test without the cap is
+dropped (the user's, 2026-10-27, ARCHIVE 14zm): three on an island stays. Open: one tower left to
+build, the last — which one the users are still deciding, and its design will come from them.
 
 ---
 

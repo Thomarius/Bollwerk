@@ -11,6 +11,12 @@ import {
 import { escape } from './html.js';
 import { graphicsOptions, parseGraphics, saveGraphics, storedGraphics } from './graphics.js';
 import { motionOptions, parseMotion, saveMotion, storedMotion } from './motion.js';
+import {
+  parseStyleMusic,
+  saveStyleMusic,
+  storedStyleMusic,
+  styleMusicOptions,
+} from './styleMusicSetting.js';
 import { refreshVolumeSliders, volumeSliders, type VolumeTarget } from './volume.js';
 
 /**
@@ -20,7 +26,8 @@ import { refreshVolumeSliders, volumeSliders, type VolumeTarget } from './volume
  * controls, being what games use for this; everything it does also has something on
  * screen to click.
  *
- * The overlay is the match's menu (PLAN 11.18 Y2): Resume, the Graphics, Motion and Sound settings
+ * The overlay is the match's menu (PLAN 11.18 Y2): Resume, the Graphics, Motion, Style music and
+ * Sound settings
  * as the main menu has them, and Leave match, which asks once more before it goes — one
  * stray click should not end somebody's match.
  */
@@ -106,6 +113,7 @@ export class PauseControls {
       `<div class="settings">` +
       `<label title="${escape(t('settings.graphicsTitle'))}">${t('settings.graphics')} <select class="graphics">${graphicsOptions()}</select></label>` +
       `<label>${t('settings.motion')} <select class="motion">${motionOptions()}</select></label>` +
+      `<label title="${escape(t('settings.styleMusicTitle'))}">${t('settings.styleMusic')} <select class="style-music">${styleMusicOptions()}</select></label>` +
       `<label>${t('settings.language')} <select class="language">${languageOptions()}</select></label>` +
       `<button class="sound quiet"></button>` +
       (actions.looks === undefined
@@ -132,6 +140,13 @@ export class PauseControls {
     motion.addEventListener('change', () => {
       actions.click();
       saveMotion(parseMotion(motion.value) ?? 'full');
+    });
+    // Taken at the next look's start, the track playing left to finish (`matchScreen.ts`).
+    const styleMusic = this.overlay.querySelector<HTMLSelectElement>('.style-music')!;
+    styleMusic.value = storedStyleMusic();
+    styleMusic.addEventListener('change', () => {
+      actions.click();
+      saveStyleMusic(parseStyleMusic(styleMusic.value) ?? 'always');
     });
     this.showSound();
 
@@ -190,6 +205,7 @@ export class PauseControls {
       // As the menu opens: the settings as they stand, and the leave asked for afresh.
       this.overlay.querySelector<HTMLSelectElement>('.graphics')!.value = storedGraphics();
       this.overlay.querySelector<HTMLSelectElement>('.motion')!.value = storedMotion();
+      this.overlay.querySelector<HTMLSelectElement>('.style-music')!.value = storedStyleMusic();
       this.showSound();
       refreshVolumeSliders(this.sliders, this.actions.volumes);
       this.leaving.classList.remove('confirm');

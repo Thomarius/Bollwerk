@@ -7,9 +7,9 @@ import type { ArtStyle } from '@bollwerk/config';
  * browser: the roll is handed in, and the pauses are given and returned rather than kept.
  */
 
-/** The manifest's two values, and which styles have a track at all. */
+/** The player's chance, the manifest's pause, and which styles have a track at all. */
 export interface StyleTrackRules {
-  /** `styleTrackChance`: 0 to 1. */
+  /** 0 to 1, from the player's choice in Options (`styleMusicSetting.ts`). */
   chance: number;
   /** `styleTrackPauseRounds`: the rounds after the one it played in that a track is held back. */
   pauseRounds: number;

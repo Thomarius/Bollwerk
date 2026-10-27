@@ -517,6 +517,28 @@ describe('the styles’ own tracks', () => {
     expect(audio.tracks).toHaveLength(2);
   });
 
+  it('takes a chance changed mid-match at the next look, the track playing left alone', () => {
+    const audio = new Recorder();
+    let chance = 1;
+    const match = new MatchAudio(audio, HUMAN, {
+      rules: {
+        get chance() {
+          return chance;
+        },
+        pauseRounds: 3,
+        hasTrack: (style) => style !== 'pixel',
+      },
+      styleOf: (look) => (look === 'build' ? 'opera' : 'noir'),
+      roll: () => 0,
+    });
+    match.handle([phase('build', null, 1)]);
+    // Never, chosen in the pause menu: building's track plays on, combat's is the shared one.
+    chance = 0;
+    match.handle([phase('cannon_place', null, 1)]);
+    match.handle([phase('combat', null, 2)]);
+    expect(audio.tracks).toEqual(['style:opera', 'style:opera', 'music_battle']);
+  });
+
   it('gives way to victory’s music, and starts a look afresh after', () => {
     const { audio, match } = styled({ build: 'opera', combat: 'noir' }, [], 1);
     match.handle([phase('combat', null, 1)]);

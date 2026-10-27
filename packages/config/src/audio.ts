@@ -151,13 +151,9 @@ export const AudioManifestSchema = z.strictObject({
    */
   styleMusic: z.partialRecord(ArtStyleSchema, StyleMusicEntrySchema),
   /**
-   * The chance, 0 to 1, that a style with a track plays it as its look starts — every build
-   * phase's look and every combat's, rolled afresh even when the style has not changed.
-   */
-  styleTrackChance: z.number().min(0).max(1),
-  /**
    * Once a style's track has played, the rounds after that one in which it may not play
-   * again; the rest of its own round is held back too. Other styles' tracks are not.
+   * again; the rest of its own round is held back too. Other styles' tracks are not. How often a
+   * track plays otherwise is the player's choice in Options, not the manifest's.
    */
   styleTrackPauseRounds: z.number().int().min(0),
   /**

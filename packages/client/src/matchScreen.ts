@@ -36,6 +36,7 @@ import { buildHints, type BuildHints } from './hints.js';
 import { timerSpot } from './timerSpot.js';
 import { MatchLog } from './summary.js';
 import { motionReduced, storedMotion } from './motion.js';
+import { styleTrackChance } from './styleMusicSetting.js';
 import { PauseControls } from './pause.js';
 import { openingShot, winnerShot } from './camera.js';
 import { perf } from './perf.js';
@@ -167,7 +168,11 @@ export async function runSession(
   const { audio: sounds } = defaultConfigBundle;
   const matchAudio = new MatchAudio(audio, session.humanPlayer, {
     rules: {
-      chance: sounds.styleTrackChance,
+      // The player's choice in Options or the pause menu, read at every look's start, so a
+      // change mid-match decides the next track and leaves the one playing alone (2026-10-27).
+      get chance() {
+        return styleTrackChance();
+      },
       pauseRounds: sounds.styleTrackPauseRounds,
       hasTrack: (style) => sounds.styleMusic[style] !== undefined,
     },

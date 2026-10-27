@@ -2,11 +2,18 @@ import { graphicsOptions, parseGraphics, saveGraphics, storedGraphics } from './
 import { escape } from './html.js';
 import { isLanguage, languageOptions, saveLanguage, setLanguage, t } from './i18n.js';
 import { motionOptions, parseMotion, saveMotion, storedMotion } from './motion.js';
+import {
+  parseStyleMusic,
+  saveStyleMusic,
+  storedStyleMusic,
+  styleMusicOptions,
+} from './styleMusicSetting.js';
 import { volumeSliders, type VolumeTarget } from './volume.js';
 
 /**
  * The menu's Options (2026-10-24, the user's): the settings that are not about a match —
- * the language, the Graphics, the Motion and the two volumes — in a panel over the menu, so
+ * the language, the Graphics, the Motion, the two volumes and how often the styles' own music
+ * plays — in a panel over the menu, so
  * the menu itself keeps the looks, one of the game's highlights, and the ways into a match.
  * The overlay and panel of How to play and the Credits, so the three read as one family.
  */
@@ -33,6 +40,7 @@ export function openOptions(actions: OptionsActions): void {
         <label>${t('settings.language')} <select class="language">${languageOptions()}</select></label>
         <label title="${escape(t('settings.graphicsTitle'))}">${t('settings.graphics')} <select class="graphics">${graphicsOptions()}</select></label>
         <label>${t('settings.motion')} <select class="motion">${motionOptions()}</select></label>
+        <label title="${escape(t('settings.styleMusicTitle'))}">${t('settings.styleMusic')} <select class="style-music">${styleMusicOptions()}</select></label>
         <button class="close quiet">${t('credits.close')}</button>
       </div>`;
     root.querySelector('.motion')?.closest('label')?.after(volumeSliders(actions.audio));
@@ -58,6 +66,12 @@ export function openOptions(actions: OptionsActions): void {
     motion.addEventListener('change', () => {
       click();
       saveMotion(parseMotion(motion.value) ?? 'full');
+    });
+    const styleMusic = root.querySelector<HTMLSelectElement>('.style-music')!;
+    styleMusic.value = storedStyleMusic();
+    styleMusic.addEventListener('change', () => {
+      click();
+      saveStyleMusic(parseStyleMusic(styleMusic.value) ?? 'always');
     });
     root.querySelector('.close')?.addEventListener('click', close);
   };

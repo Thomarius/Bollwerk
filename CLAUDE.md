@@ -181,7 +181,7 @@ which a test session needs the server rebuilt and every page reloaded for):
   switch Share a link online runs a Cloudflare quick tunnel (free, no account, no router setting),
   its program fetched once and checked against pinned checksums, its link in the lobby's
   invitation; and on Windows the window says whether the firewall lets players in, and why not.
-  Not yet seen in play by the users.
+  Tested and approved by the users (ARCHIVE 14zm).
 
 - **Performance, the analysis of 2026-10-26** (ARCHIVE 14zc–14zf, PLAN §11 item 3): a look out
   of sight is off the stage, since Pixi updates every render group on it, hidden or not — a look
@@ -195,9 +195,10 @@ which a test session needs the server rebuilt and every page reloaded for):
 - **The styles' own music** (ARCHIVE 14za, 2026-10-25, the users' idea; its plan retired there):
   21 tracks from Pixabay, one for every style but Minimal, Medieval and Night, in
   `assets/audio/music/styles/<style>.mp3`, re-encoded and normalised as the rest. As a build look or
-  a combat look starts, its style's track plays in place of the shared one with a chance of
-  `styleTrackChance` — **100% for now, the user's, the planned 50% to come** — and a style's track
-  rests `styleTrackPauseRounds` (3) rounds after it played, both in the audio manifest. Chosen by
+  a combat look starts, its style's track plays in place of the shared one with the chance the
+  player sets in **Style music**, in Options and the pause menu — Always (the default), Half the
+  time or Never, taken at the next look (`styleMusicSetting.ts`, ARCHIVE 14zn) — and a style's track rests `styleTrackPauseRounds` (3)
+  rounds after it played, in the audio manifest. Chosen by
   a pure function (`styleMusic.ts`), the page's own roll, never the match's. Played by the user,
   working well.
 - **The bots' towers chosen by the host** (ARCHIVE 14z, 2026-10-25; protocol 32): in a single
@@ -208,12 +209,12 @@ which a test session needs the server rebuilt and every page reloaded for):
   (the dark styles' glow bloomed, `render/bloom.ts`, taken on and off live), Medium (the default)
   and Low (one pixel a pixel), in place of Effects' Glowing and Sharpness; Motion, Full or Reduced,
   a switch of its own; old choices carried over. With them in the menu's **Options** (ARCHIVE
-  14t), a panel beside How to play holding the language, Graphics, Motion and the volumes, so
-  the menu keeps the looks. Not yet seen in play by the users.
+  14t), a panel beside How to play holding the language, Graphics, Motion, the volumes and the Style music (14zn), so
+  the menu keeps the looks. Tested and approved by the users (ARCHIVE 14zm).
 - **Corner gaps pinged** (ARCHIVE 14r, 2026-10-24, the user's idea): in the build phase a castle
   of your own with only corner gaps left — sealed by a 4-connected flood, not by the real one —
   has each leak pinged at the corner its two walls share, never on a tile (`cornerGaps.ts`,
-  `drawCornerGaps`); chosen from four marks on `?gaps=preview`. Not yet seen in play by the users.
+  `drawCornerGaps`); chosen from four marks on `?gaps=preview`. Tested and approved by the users.
 - **Mythos and Wild West** (ARCHIVE 14x, 14y, 2026-10-24, the two last styles, designed with the
   user and sketched first): **Mythos** the board as a black-figure vase — the wine-dark sea, the
   meander for walls, a mosaic for sealed ground, temples whose altar fire burns while sealed,
@@ -228,14 +229,14 @@ which a test session needs the server rebuilt and every page reloaded for):
   (the reload as a charge), the clan's own shot; screentone for sealed ground, a magic circle
   under each school while sealed, shattering at a breach; the banners episode cards with your
   hero's face for the moment (`animeBanner.ts`), and **small cut-ins of two heroes' faces on open
-  sea at the big moments**, never over anything in play (`cutInSpot`). Not yet seen in play by
+  sea at the big moments**, never over anything in play (`cutInSpot`). Tested and approved by
   the users.
 - **Pirates** (ARCHIVE 14q, 2026-10-23, the user's idea, its elements their choices): the
   twenty-first look, a pirates' cove in Caribbean daylight — log stockades stained and roped in
   the owner's colour, forts flying the Jolly Roger while sealed, ship's cannon with **a parrot in a
   pirate hat on every gun ready to fire**, scared up by its shot and landing again as the gun is
   loaded (`parrotFlight`), a plug in a silenced gun's muzzle; chain shot, tiki torches, ghost
-  crabs, a galleon in the corner and the Kraken at the climax. Not yet checked in play by the users.
+  crabs, a galleon in the corner and the Kraken at the climax. Tested and approved by the users.
 - **The Lullaby Tower** (ARCHIVE 14m, 2026-10-23, the user's design, reworked; protocol 31,
   v0.9.12): an eighth special tower, a cannon's shot that lulls the 2 (cost 2) or 3 (cost 3)
   enemy guns nearest the tile hit within 8 tiles — a cannon asleep at once, a special tower after 2
@@ -427,9 +428,9 @@ which a test session needs the server rebuilt and every page reloaded for):
 
 **Next** — PLAN §11, towards a first feature-ready version:
 
-- **The styles' own music**: `styleTrackChance` back from 100% to the planned 50%, once the user
-  says (ARCHIVE 14za).
-- **Special towers** (item 2): the user's decision on a test without the cap of three; later towers come by the user's own designs. Their balance is closed and they are **off by default for
+- **Special towers** (item 2): **one tower left to build**, the ninth and last, which one still
+  being decided by the users — wait for their design (the test without the cap of three was
+  dropped, ARCHIVE 14zm). Their balance is closed and they are **off by default for
   good** — a wacky addition, not the base game (ARCHIVE 13zw); a new tower is balanced at Level 5
   only, its variants against each other and against no tower (the user's).
 

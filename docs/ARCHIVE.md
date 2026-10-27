@@ -10230,3 +10230,24 @@ port can be opened for; Windows Firewall's verdict in the window, and a fixed un
 rule carries over; and a splash image while the portable app unpacks (14zk). The game itself is
 unchanged: protocol 32 and recording format 4 as v0.9.15, so the two play together and its
 recordings replay.
+
+## 14zm. The cap of three kept, and the new features approved (2026-10-27)
+
+The users' decisions, after a short round of testing. **The test without the cap of three towers
+on an island is dropped**: `maxOwned` stays at three, and of special towers only one tower is
+left to build, the last, which the users are still choosing among themselves; its design will
+come from them. **Every feature up to v0.9.16 was tested and approved**, so the open play-tests
+are closed: the desktop app's Share a link online and the firewall's report (14zk), Graphics,
+Motion and the menu's Options (14s, 14t), the corner gaps' pings (14r), Anime (14w) and Pirates
+(14q).
+
+## 14zn. How often the styles' own music plays, the player's choice (2026-10-27)
+
+In place of the planned move of `styleTrackChance` from 100% to 50% (14za), the user's: a setting
+in the menu's Options and the pause menu, **Style music**, with three choices — Always (100%, the default, as it
+was), Half the time (50%) and Never (0%, the shared music only). The pause of
+`styleTrackPauseRounds`, three rounds after a style's track has played, holds as before at the
+first two. Saved in the browser as the Motion is (`styleMusicSetting.ts`), and read as each look
+starts, so a change in the pause menu decides the next track and leaves the one playing to finish
+(the rules' `chance` a getter in `matchScreen.ts`); the manifest's `styleTrackChance` is gone, since the chance is no longer the game's to
+set. `chooseStyleTrack` is unchanged.
