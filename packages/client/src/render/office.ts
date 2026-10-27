@@ -14,7 +14,7 @@ import { weatherFor, type Weather } from './pixel/atmosphere.js';
 import type { SceneryItem } from './scenery.js';
 import { SceneryLayer } from './sceneryLayer.js';
 import { OfficeSeaLife, drawPlane } from './seaLife.js';
-import { Discs, StampBook, Stamps } from './stamps.js';
+import { Discs, Memos, StampBook, Stamps, viewKey } from './stamps.js';
 import {
   FlagHoist,
   GhostMotion,
@@ -184,8 +184,8 @@ export class OfficeTheme extends ShapeTheme implements Theme {
   /** Coffee where shots came down: redrawn when one is added or fades a round. */
   private readonly stainGfx = new Graphics();
   private stainsDrawn = '';
-  /** The water cooler and its gossips: redrawn each frame. */
-  private readonly flowGfx = new Graphics();
+  /** The water cooler and its gossips, in parts drawn again only as each changes. */
+  private readonly coolerMemos = new Memos();
   /** Sealed ground, an island to a `Graphics`, redrawn where it changes. */
   private readonly territory = new IslandParts(1, 'territory');
   private readonly ghostMotion = new GhostMotion();
@@ -198,6 +198,13 @@ export class OfficeTheme extends ShapeTheme implements Theme {
   private readonly structures = new IslandParts();
   /** The copiers, a stamp each of an owner's copier, turned to its target (PLAN 11.22). */
   private readonly copierStamps = new Stamps();
+  /**
+   * The desks of sealed castles, a `Graphics` a castle drawn again only as its chart climbs or
+   * it lights or darkens, and the coffee's steam stamped over them: redrawn each frame, they
+   * were 0.13 ms of cutting into triangles.
+   */
+  private readonly deskMemos = new Memos();
+  private readonly steamStamps = new Stamps();
   private readonly book = new StampBook();
   private readonly effectGfx = new Graphics();
   /**
@@ -244,12 +251,18 @@ export class OfficeTheme extends ShapeTheme implements Theme {
     this.style = art.office;
     this.weather = weatherFor(this.seed, art.pixel.weatherOdds);
     this.fabricWeave ??= weave();
-    layers.terrain.addChild(this.terrainStrips.container, this.stainGfx, this.flowGfx);
+    layers.terrain.addChild(
+      this.terrainStrips.container,
+      this.stainGfx,
+      this.coolerMemos.container,
+    );
     layers.territory.addChild(this.scenery.gfx, this.territory.container);
     layers.structures.addChild(this.structures.container);
     layers.effects.addChild(
       this.copierStamps.container,
       this.effectGfx,
+      this.deskMemos.container,
+      this.steamStamps.container,
       this.crowns.gfx,
       this.shotGfx,
       this.planeStamps.container,
@@ -266,6 +279,8 @@ export class OfficeTheme extends ShapeTheme implements Theme {
     this.structures.destroy();
     this.scenery.destroy();
     this.copierStamps.destroy();
+    this.deskMemos.destroy();
+    this.steamStamps.destroy();
     this.planeStamps.destroy();
     this.shredStamps.destroy();
     this.haze.destroy();
@@ -273,9 +288,9 @@ export class OfficeTheme extends ShapeTheme implements Theme {
     this.fabricWeave?.texture.destroy(true);
     this.fabricWeave = null;
     release(this.terrainStrips.container);
+    this.coolerMemos.destroy();
     for (const g of [
       this.stainGfx,
-      this.flowGfx,
       this.effectGfx,
       this.crowns.gfx,
       this.shotGfx,
@@ -517,12 +532,45 @@ export class OfficeTheme extends ShapeTheme implements Theme {
    * glugging up it now and then; a stack of cups; and two colleagues beside it, one talking
    * and then the other, a balloon of "…" over whoever has the floor.
    */
-  private drawCooler(g: Graphics, view: ViewTransform, spot: TimerSpot): void {
-    const t = view.tile;
-    const s = spot.size * t;
-    const cx = tileX(view, spot.x) - s * 0.12;
-    const base = tileY(view, spot.y) + s * 0.38;
-    const still = motionReduced();
+  /**
+   * The cooler in the corner, in parts drawn again only as each changes: the cooler and its
+   * cups still, the glug rising, the gossips as one nods or the other takes over. All of it
+   * redrawn each frame was 0.14 ms of cutting into triangles.
+   */
+  private drawCooler(view: ViewTransform, spot: TimerSpot | null): void {
+    const memos = this.coolerMemos;
+    memos.begin();
+    if (spot !== null) {
+      const still = motionReduced();
+      const where = `${viewKey(view)}|${spot.x},${spot.y},${spot.size}`;
+      memos.draw('cooler', where, (g) => this.drawCoolerStand(g, view, spot));
+      const every = this.style.glugEveryMs;
+      const p = still ? 1 : (this.clock % every) / 700;
+      memos.draw('glug', `${where}|${p < 1 ? p : '-'}`, (g) => {
+        if (p < 1) this.drawGlug(g, view, spot, p);
+      });
+      memos.draw('cups', where, (g) => this.drawCups(g, view, spot));
+      const talker = still ? 0 : Math.floor(this.clock / 2600) % 2;
+      // The nod a fraction of a pixel or so: drawn again only as it moves a quarter of one.
+      const nod = still
+        ? 0
+        : Math.round(Math.sin(this.clock / 140) * spot.size * view.tile * 0.008 * 4) / 4;
+      const dots = still ? 3 : 1 + (Math.floor(this.clock / 400) % 3);
+      memos.draw('gossips', `${where}|${talker}|${nod}|${dots}`, (g) =>
+        this.drawGossips(g, view, spot, talker, nod, dots),
+      );
+    }
+    memos.end();
+  }
+
+  /** Where the cooler stands: its size, its middle and its foot. */
+  private coolerFrame(view: ViewTransform, spot: TimerSpot) {
+    const s = spot.size * view.tile;
+    return { s, cx: tileX(view, spot.x) - s * 0.12, base: tileY(view, spot.y) + s * 0.38 };
+  }
+
+  private drawCoolerStand(g: Graphics, view: ViewTransform, spot: TimerSpot): void {
+    const { s, cx, base } = this.coolerFrame(view, spot);
     g.ellipse(cx + s * 0.05, base, s * 0.42, s * 0.07);
     g.fill({ color: 0x000000, alpha: 0.3 });
     // The stand, its tap and drip tray.
@@ -542,15 +590,19 @@ export class OfficeTheme extends ShapeTheme implements Theme {
     g.fill({ color: 0x3a6aa0 });
     g.rect(cx - s * 0.09, bottom - s * 0.31, s * 0.04, s * 0.22);
     g.fill({ color: 0xffffff, alpha: 0.45 });
-    if (!still) {
-      const every = this.style.glugEveryMs;
-      const p = (this.clock % every) / 700;
-      if (p < 1) {
-        g.circle(cx + s * 0.02, bottom - s * (0.04 + 0.26 * p), s * (0.025 + 0.03 * p));
-        g.fill({ color: 0xffffff, alpha: 0.85 * (1 - p * 0.5) });
-      }
-    }
-    // The cups, stacked beside it.
+  }
+
+  /** The glug: a bubble rising in the bottle, `p` of the way up. */
+  private drawGlug(g: Graphics, view: ViewTransform, spot: TimerSpot, p: number): void {
+    const { s, cx, base } = this.coolerFrame(view, spot);
+    const bottom = base - s * 0.42;
+    g.circle(cx + s * 0.02, bottom - s * (0.04 + 0.26 * p), s * (0.025 + 0.03 * p));
+    g.fill({ color: 0xffffff, alpha: 0.85 * (1 - p * 0.5) });
+  }
+
+  /** The cups, stacked beside it. */
+  private drawCups(g: Graphics, view: ViewTransform, spot: TimerSpot): void {
+    const { s, cx, base } = this.coolerFrame(view, spot);
     g.poly([
       cx + s * 0.13,
       base - s * 0.36,
@@ -562,14 +614,24 @@ export class OfficeTheme extends ShapeTheme implements Theme {
       base - s * 0.2,
     ]);
     g.fill({ color: PAPER });
-    // The two gossips, a shirt and tie each, and the balloon over whoever is talking.
-    const talker = still ? 0 : Math.floor(this.clock / 2600) % 2;
+  }
+
+  /** The two gossips, a shirt and tie each, and the balloon over whoever is talking. */
+  private drawGossips(
+    g: Graphics,
+    view: ViewTransform,
+    spot: TimerSpot,
+    talker: number,
+    nodding: number,
+    dots: number,
+  ): void {
+    const { s, cx, base } = this.coolerFrame(view, spot);
     for (const [k, dx, shirt, tie, skin, hair] of [
       [0, 0.34, 0xf4f5f7, 0x3a6aa0, 0xf2d0b0, 0x5a3a24],
       [1, 0.56, 0xc9d7e6, 0x6a6e76, 0x8a5a3a, 0x16181c],
     ] as const) {
       const x = cx + s * dx;
-      const nod = !still && talker === k ? Math.sin(this.clock / 140) * s * 0.008 : 0;
+      const nod = talker === k ? nodding : 0;
       g.rect(x - s * 0.035, base - s * 0.16, s * 0.025, s * 0.16);
       g.rect(x + s * 0.01, base - s * 0.16, s * 0.025, s * 0.16);
       g.fill({ color: 0x2a2c31 });
@@ -588,7 +650,6 @@ export class OfficeTheme extends ShapeTheme implements Theme {
       g.roundRect(bx - s * 0.1, by - s * 0.06, s * 0.2, s * 0.11, s * 0.04);
       g.poly([bx - s * 0.02, by + s * 0.05, bx + s * 0.02, by + s * 0.05, bx, by + s * 0.1]);
       g.fill({ color: 0xffffff, alpha: 0.95 });
-      const dots = still ? 3 : 1 + (Math.floor(this.clock / 400) % 3);
       for (let d = 0; d < dots; d++) g.circle(bx - s * 0.05 + d * s * 0.05, by, s * 0.012);
       g.fill({ color: this.dark });
     }
@@ -1019,8 +1080,7 @@ export class OfficeTheme extends ShapeTheme implements Theme {
     this.clock += frame.deltaMs;
     perf.begin('flow');
     this.drawStains(state, view);
-    clearDrawn(this.flowGfx);
-    if (this.cooler !== null) this.drawCooler(this.flowGfx, view, this.cooler);
+    this.drawCooler(view, this.cooler);
     perf.end('flow');
     const g = this.effectGfx;
     clearDrawn(g);
@@ -1056,6 +1116,14 @@ export class OfficeTheme extends ShapeTheme implements Theme {
     const g = this.effectGfx;
     const still = motionReduced();
     const ringing = this.deadline(state);
+    const memos = this.deskMemos;
+    const steam = this.steamStamps;
+    memos.begin();
+    steam.begin();
+    const puff = this.book.get('steam', view.tile, (p) => {
+      p.circle(0, 0, 1);
+      p.fill({ color: 0xffffff, alpha: 0.45 });
+    });
     this.working.update(frame.castleSealed, this.clock, this.art);
     for (const castle of state.castles) {
       const k = this.desk(view, castle);
@@ -1063,58 +1131,81 @@ export class OfficeTheme extends ShapeTheme implements Theme {
       if (ringing && owner !== undefined && !owner.eliminated) this.drawRinging(g, k, still);
       const lit = this.working.raised(castle.id, this.clock, this.art);
       if (lit === null) continue;
-      const sc = k.screen;
-      if (this.working.lowering(castle.id)) {
-        // The screen gone grey, a sad face on it, fading as it goes dark.
-        g.rect(sc.x, sc.y, sc.w, sc.h);
-        g.fill({ color: 0x8a8e96, alpha: lit });
-        const fx = sc.x + sc.w / 2;
-        const fy = sc.y + sc.h / 2;
-        g.circle(fx - sc.w * 0.15, fy - sc.h * 0.12, Math.max(0.8, sc.h * 0.07));
-        g.circle(fx + sc.w * 0.15, fy - sc.h * 0.12, Math.max(0.8, sc.h * 0.07));
-        g.fill({ color: SCREEN_OFF, alpha: lit });
-        const mouth = sc.w * 0.18;
-        g.moveTo(
-          fx + Math.cos(Math.PI * 1.15) * mouth,
-          fy + sc.h * 0.32 + Math.sin(Math.PI * 1.15) * mouth,
-        );
-        g.arc(fx, fy + sc.h * 0.32, mouth, Math.PI * 1.15, Math.PI * 1.85);
-        g.stroke({ width: Math.max(1, sc.h * 0.08), color: SCREEN_OFF, alpha: lit });
-        continue;
-      }
-      // The lamp's light falling on the desk.
-      g.poly([
-        k.lamp.x - k.W * 0.05,
-        k.lamp.y + k.W * 0.07,
-        k.lamp.x + k.W * 0.04,
-        k.lamp.y + k.W * 0.05,
-        k.lamp.x + k.W * 0.12,
-        k.top + k.W * 0.02,
-        k.lamp.x - k.W * 0.2,
-        k.top + k.W * 0.02,
-      ]);
-      g.fill({ color: 0xfff4c0, alpha: 0.35 * lit });
-      // The screen on, a bar chart climbing on it and an arrow going up.
-      g.rect(sc.x, sc.y, sc.w, sc.h);
-      g.fill({ color: SCREEN_ON, alpha: lit });
+      const lowering = this.working.lowering(castle.id);
       const run = still ? 0.6 : (this.clock / 1600 + castle.id * 0.37) % 1;
-      for (let b = 0; b < 4; b++) {
-        const h = sc.h * (0.2 + 0.15 * b) * (0.6 + 0.4 * Math.min(1, run * 4 - b * 0.6));
-        g.rect(sc.x + sc.w * (0.12 + b * 0.2), sc.y + sc.h * 0.9 - h, sc.w * 0.13, h);
-      }
-      g.fill({ color: 0x3aa860, alpha: lit });
-      g.moveTo(sc.x + sc.w * 0.12, sc.y + sc.h * 0.7).lineTo(sc.x + sc.w * 0.85, sc.y + sc.h * 0.2);
-      g.stroke({ width: Math.max(1, sc.h * 0.07), color: RED_INK, alpha: lit, cap: 'round' });
+      // The chart's bars to half a pixel, so a desk is drawn again only as one shows a change.
+      const bars = lowering
+        ? []
+        : [0, 1, 2, 3].map(
+            (b) =>
+              Math.round(
+                k.screen.h * (0.2 + 0.15 * b) * (0.6 + 0.4 * Math.min(1, run * 4 - b * 0.6)) * 2,
+              ) / 2,
+          );
+      const key = `${viewKey(view)}|${castle.x},${castle.y},${castle.w},${castle.h}|${lit}|${lowering}|${bars.join(',')}`;
+      memos.draw(castle.id, key, (d) => this.drawDesk(d, k, lit, lowering, bars));
       // The coffee steaming.
-      if (still || lit < 0.9) continue;
+      if (lowering || still || lit < 0.9) continue;
       for (let n = 0; n < 2; n++) {
         const p = (this.clock / 1400 + n * 0.5 + castle.id * 0.21) % 1;
         const sx = k.mug.x + (n - 0.5) * k.W * 0.03 + Math.sin(p * 6 + n) * k.W * 0.02;
         const sy = k.mug.y - k.W * (0.08 + 0.18 * p);
-        g.circle(sx, sy, k.W * (0.012 + 0.02 * p));
+        steam.place(puff, sx, sy, { scale: k.W * (0.012 + 0.02 * p) });
       }
-      g.fill({ color: 0xffffff, alpha: 0.45 });
     }
+    memos.end();
+    steam.end();
+  }
+
+  /** A sealed castle's desk lit, or its screen gone dark: `bars` the chart's heights. */
+  private drawDesk(
+    g: Graphics,
+    k: Desk,
+    lit: number,
+    lowering: boolean,
+    bars: readonly number[],
+  ): void {
+    const sc = k.screen;
+    if (lowering) {
+      // The screen gone grey, a sad face on it, fading as it goes dark.
+      g.rect(sc.x, sc.y, sc.w, sc.h);
+      g.fill({ color: 0x8a8e96, alpha: lit });
+      const fx = sc.x + sc.w / 2;
+      const fy = sc.y + sc.h / 2;
+      g.circle(fx - sc.w * 0.15, fy - sc.h * 0.12, Math.max(0.8, sc.h * 0.07));
+      g.circle(fx + sc.w * 0.15, fy - sc.h * 0.12, Math.max(0.8, sc.h * 0.07));
+      g.fill({ color: SCREEN_OFF, alpha: lit });
+      const mouth = sc.w * 0.18;
+      g.moveTo(
+        fx + Math.cos(Math.PI * 1.15) * mouth,
+        fy + sc.h * 0.32 + Math.sin(Math.PI * 1.15) * mouth,
+      );
+      g.arc(fx, fy + sc.h * 0.32, mouth, Math.PI * 1.15, Math.PI * 1.85);
+      g.stroke({ width: Math.max(1, sc.h * 0.08), color: SCREEN_OFF, alpha: lit });
+      return;
+    }
+    // The lamp's light falling on the desk.
+    g.poly([
+      k.lamp.x - k.W * 0.05,
+      k.lamp.y + k.W * 0.07,
+      k.lamp.x + k.W * 0.04,
+      k.lamp.y + k.W * 0.05,
+      k.lamp.x + k.W * 0.12,
+      k.top + k.W * 0.02,
+      k.lamp.x - k.W * 0.2,
+      k.top + k.W * 0.02,
+    ]);
+    g.fill({ color: 0xfff4c0, alpha: 0.35 * lit });
+    // The screen on, a bar chart climbing on it and an arrow going up.
+    g.rect(sc.x, sc.y, sc.w, sc.h);
+    g.fill({ color: SCREEN_ON, alpha: lit });
+    for (let b = 0; b < 4; b++) {
+      const h = bars[b] ?? 0;
+      g.rect(sc.x + sc.w * (0.12 + b * 0.2), sc.y + sc.h * 0.9 - h, sc.w * 0.13, h);
+    }
+    g.fill({ color: 0x3aa860, alpha: lit });
+    g.moveTo(sc.x + sc.w * 0.12, sc.y + sc.h * 0.7).lineTo(sc.x + sc.w * 0.85, sc.y + sc.h * 0.2);
+    g.stroke({ width: Math.max(1, sc.h * 0.07), color: RED_INK, alpha: lit, cap: 'round' });
   }
 
   /** The phone on a desk, ringing: the receiver jumping, and a "!" over it. */

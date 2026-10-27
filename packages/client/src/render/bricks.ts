@@ -136,8 +136,17 @@ export class BricksTheme implements Theme {
 
   /** The baseplates and the land, in strips of rows (`TerrainStrips`). */
   private readonly terrainStrips = new TerrainStrips();
-  /** The crane on its barge in the corner (PLAN 11.24), redrawn each frame as it works. */
+  /**
+   * The crane on its barge in the corner (PLAN 11.24). What swings — the jib, the hook, the
+   * hazard light — redrawn each frame as it works; the barge and the cab, which only bob, and
+   * the foam, which stays, drawn again only as the view changes, the bob a move: all of it
+   * redrawn each frame was 0.18 ms of cutting into triangles.
+   */
   private readonly craneGfx = new Graphics();
+  private readonly bargeGfx = new Graphics();
+  private readonly foamGfx = new Graphics();
+  private readonly cabGfx = new Graphics();
+  private craneDrawn = '';
   private crane: TimerSpot | null = null;
   /** Sealed ground, an island to a `Graphics`, redrawn where it changes. */
   private readonly territory = new IslandParts(1, 'territory');
@@ -196,7 +205,13 @@ export class BricksTheme implements Theme {
   init(layers: ThemeLayers, art: ArtConfig): Promise<void> {
     this.art = art;
     this.style = art.bricks;
-    layers.terrain.addChild(this.terrainStrips.container, this.craneGfx);
+    layers.terrain.addChild(
+      this.terrainStrips.container,
+      this.bargeGfx,
+      this.foamGfx,
+      this.cabGfx,
+      this.craneGfx,
+    );
     layers.territory.addChild(this.territory.container, this.scenery.gfx);
     layers.structures.addChild(this.structures.container);
     layers.effects.addChild(
@@ -226,7 +241,16 @@ export class BricksTheme implements Theme {
     this.structures.destroy();
     this.scenery.destroy();
     release(this.terrainStrips.container);
-    for (const g of [this.craneGfx, this.effectGfx, this.overlayGfx]) g.destroy();
+    for (const g of [
+      this.bargeGfx,
+      this.foamGfx,
+      this.cabGfx,
+      this.craneGfx,
+      this.effectGfx,
+      this.overlayGfx,
+    ]) {
+      g.destroy();
+    }
   }
 
   private colour(player: number, shade: 'base' | 'light' | 'dark'): number {
@@ -837,33 +861,55 @@ export class BricksTheme implements Theme {
     const cx = tileX(view, spot.x);
     const water = tileY(view, spot.y) + s * 0.28;
     const deck = water - s * 0.1 + bob;
-    const studs = (x0: number, y: number, n: number, pitch: number, colour: number): void => {
-      for (let k = 0; k < n; k++) this.stud(g, x0 + (k + 0.5) * pitch, y, pitch * 1.6, colour);
+    const studs = (
+      on: Graphics,
+      x0: number,
+      y: number,
+      n: number,
+      pitch: number,
+      colour: number,
+    ): void => {
+      for (let k = 0; k < n; k++) this.stud(on, x0 + (k + 0.5) * pitch, y, pitch * 1.6, colour);
     };
-
-    // The barge: a long flat brick with its studs, foam along its waterline.
     const bargeW = s * 0.9;
     const bx = cx - bargeW / 2;
-    g.rect(bx, deck, bargeW, s * 0.12);
-    g.fill({ color: hex(palette.rockMid) });
-    g.stroke(edge);
-    studs(bx, deck - s * 0.012, 8, bargeW / 8, hex(palette.rockMid));
-    for (let k = 0; k < 6; k++)
-      g.circle(bx + (k + 0.5) * (bargeW / 6), water + s * 0.02, s * 0.025);
-    g.fill({ color: hex(palette.waterFoam), alpha: 0.7 });
-
-    // The cab on its turntable, toward the barge's stern, a window in it.
     const cabX = bx + bargeW * 0.12;
     const cabW = s * 0.24;
     const cabTop = deck - s * 0.22;
-    g.rect(cabX - s * 0.01, deck - s * 0.035, cabW + s * 0.02, s * 0.035);
-    g.fill({ color: hex(palette.rockDark) });
-    g.rect(cabX, cabTop, cabW, s * 0.19);
-    g.fill({ color: hex(palette.uiInk) });
-    g.stroke(edge);
-    g.rect(cabX + cabW * 0.55, cabTop + s * 0.035, cabW * 0.32, s * 0.07);
-    g.fill({ color: hex(palette.waterShallow) });
-    studs(cabX, cabTop - s * 0.01, 3, cabW / 3, hex(palette.uiInk));
+
+    const key = `${viewKey(view)}|${spot.x},${spot.y},${spot.size}`;
+    if (key !== this.craneDrawn) {
+      this.craneDrawn = key;
+      // Drawn level, as at no bob, and moved with it below.
+      const level0 = water - s * 0.1;
+      const top0 = level0 - s * 0.22;
+      // The barge: a long flat brick with its studs, foam along its waterline.
+      const barge = this.bargeGfx;
+      clearDrawn(barge);
+      barge.rect(bx, level0, bargeW, s * 0.12);
+      barge.fill({ color: hex(palette.rockMid) });
+      barge.stroke(edge);
+      studs(barge, bx, level0 - s * 0.012, 8, bargeW / 8, hex(palette.rockMid));
+      const foam = this.foamGfx;
+      clearDrawn(foam);
+      for (let k = 0; k < 6; k++)
+        foam.circle(bx + (k + 0.5) * (bargeW / 6), water + s * 0.02, s * 0.025);
+      foam.fill({ color: hex(palette.waterFoam), alpha: 0.7 });
+
+      // The cab on its turntable, toward the barge's stern, a window in it.
+      const cab = this.cabGfx;
+      clearDrawn(cab);
+      cab.rect(cabX - s * 0.01, level0 - s * 0.035, cabW + s * 0.02, s * 0.035);
+      cab.fill({ color: hex(palette.rockDark) });
+      cab.rect(cabX, top0, cabW, s * 0.19);
+      cab.fill({ color: hex(palette.uiInk) });
+      cab.stroke(edge);
+      cab.rect(cabX + cabW * 0.55, top0 + s * 0.035, cabW * 0.32, s * 0.07);
+      cab.fill({ color: hex(palette.waterShallow) });
+      studs(cab, cabX, top0 - s * 0.01, 3, cabW / 3, hex(palette.uiInk));
+    }
+    this.bargeGfx.y = bob;
+    this.cabGfx.y = bob;
 
     // The jib: from the cab's top, luffed up, swinging about the upright — so its reach
     // across the picture is the cosine of the swing.
@@ -903,7 +949,7 @@ export class BricksTheme implements Theme {
     g.rect(tip.x - s * 0.07, hookY, s * 0.14, s * 0.07);
     g.fill({ color: hex(palette.rockLight) });
     g.stroke(edge);
-    studs(tip.x - s * 0.07, hookY - s * 0.006, 2, s * 0.07, hex(palette.rockLight));
+    studs(g, tip.x - s * 0.07, hookY - s * 0.006, 2, s * 0.07, hex(palette.rockLight));
 
     // The hazard light on the cab, strobing white at the climax, its glow by the level.
     const strobe = level > 0 && (still || Math.floor(this.clock / 180) % 3 === 0);
@@ -927,6 +973,9 @@ export class BricksTheme implements Theme {
     clearDrawn(this.craneGfx);
     if (this.crane !== null) {
       this.drawCrane(view, this.crane, level, hurry(state, this.art), frame.deltaMs);
+    } else if (this.craneDrawn !== '') {
+      this.craneDrawn = '';
+      for (const g of [this.bargeGfx, this.foamGfx, this.cabGfx]) clearDrawn(g);
     }
     drawDrain(g, view, frame.drain, this.art);
     drawSealGlow(g, view, frame.sealGlow, this.art);

@@ -1,5 +1,13 @@
 import type { ArtConfig, ParchmentStyleConfig } from '@bollwerk/config';
-import { Rng, Structure, Terrain, type Cannon, type MatchState, type Shot } from '@bollwerk/sim';
+import {
+  Rng,
+  Structure,
+  Terrain,
+  type Cannon,
+  type Castle,
+  type MatchState,
+  type Shot,
+} from '@bollwerk/sim';
 import { Container, Graphics, Sprite, Text, Texture } from 'pixi.js';
 
 import { motionReduced } from '../motion.js';
@@ -179,8 +187,12 @@ export class ParchmentTheme implements Theme {
   private readonly effectGfx = new Graphics();
   /** The guns' barrels, a `Graphics` a gun redrawn only as it turns or kicks (`Memos`). */
   private readonly gunMemo = new Memos();
-  /** What lies over the guns: the wax seals, under the crowns. */
-  private readonly lateGfx = new Graphics();
+  /**
+   * What lies over the guns: the wax seals, under the crowns, a `Graphics` a castle drawn
+   * again only as its seal is pressed or breaks — each frame they were 0.21 ms of cutting
+   * into triangles, though still nearly all the time.
+   */
+  private readonly sealMemos = new Memos();
   /** The main castles' crowns: the shared mark, drawn again only as one changes. */
   private readonly crowns = new MainCastles();
   /**
@@ -230,7 +242,7 @@ export class ParchmentTheme implements Theme {
     layers.effects.addChild(
       this.effectGfx,
       this.gunMemo.container,
-      this.lateGfx,
+      this.sealMemos.container,
       this.crowns.gfx,
       this.aboveCrownsGfx,
     );
@@ -240,7 +252,7 @@ export class ParchmentTheme implements Theme {
 
   destroy(): void {
     this.gunMemo.destroy();
-    this.lateGfx.destroy();
+    this.sealMemos.destroy();
     this.territory.destroy();
     this.structures.destroy();
     this.scenery.destroy();
@@ -1269,7 +1281,6 @@ export class ParchmentTheme implements Theme {
   drawEffects(state: MatchState, view: ViewTransform, frame: EffectFrame): void {
     const g = this.effectGfx;
     clearDrawn(g);
-    clearDrawn(this.lateGfx);
     clearDrawn(this.aboveCrownsGfx);
     const foul = climaxLevel(state, this.art);
     this.seaLife.stir = foul;
@@ -1503,55 +1514,69 @@ export class ParchmentTheme implements Theme {
    * a breach unseals it. Timed by the flag hoist the other styles fly their flags by.
    */
   private drawSeals(state: MatchState, view: ViewTransform, frame: EffectFrame): void {
-    const g = this.lateGfx;
-    const t = view.tile;
+    const memos = this.sealMemos;
+    memos.begin();
     this.flags.update(frame.castleSealed, this.clock, this.art);
     for (const castle of state.castles) {
       const raised = this.flags.raised(castle.id, this.clock, this.art);
       if (raised === null) continue;
-      const owner = castle.islandId - 1;
-      // Pressed on the vignette's lower right, over a tower's foot, where it hides
-      // neither the gate nor a main castle's keep.
-      const cx = tileX(view, castle.x + castle.w * 0.78);
-      const cy = tileY(view, castle.y + castle.h * 0.66);
       const breaking = this.flags.lowering(castle.id);
-      const base = t * 0.38;
-      const r = breaking ? base : base * (1 + 1.2 * (1 - raised) * (1 - raised));
-      const alpha = breaking ? raised : Math.min(1, raised * 2);
-      const apart = breaking ? (1 - raised) * t * 0.3 : 0;
-      const wax = this.colour(owner, 'base');
-      const rim = this.colour(owner, 'dark');
-      for (const side of breaking ? [-1, 1] : [0]) {
-        const ox = cx + side * apart;
-        const oy = cy + (breaking ? (1 - raised) * t * 0.2 : 0);
-        const from = side === 1 ? -Math.PI / 2 : side === -1 ? Math.PI / 2 : 0;
-        const to = side === 0 ? Math.PI * 2 : from + Math.PI;
-        // The blob of wax, lumpy at its edge where it spread under the stamp.
-        g.moveTo(ox, oy);
-        g.arc(ox, oy, r, from, to);
-        g.closePath();
-        g.fill({ color: wax, alpha });
-        for (let k = 0; k < 6; k++) {
-          const a = (k / 6) * Math.PI * 2 + castle.id;
-          if (side !== 0 && Math.sign(Math.sin(a)) !== side) continue;
-          g.circle(ox + Math.sin(a) * r * 0.8, oy - Math.cos(a) * r * 0.8, r * 0.32);
-        }
-        g.fill({ color: wax, alpha });
-        // From the arc's own start: a move to the centre drew a spoke to the rim.
-        g.moveTo(ox + Math.cos(from) * r * 0.62, oy + Math.sin(from) * r * 0.62);
-        g.arc(ox, oy, r * 0.62, from, to);
-        g.stroke({ width: 1.2, color: rim, alpha: alpha * 0.9 });
+      const key = `${viewKey(view)}|${castle.x},${castle.y},${castle.w},${castle.h},${castle.islandId}|${raised}|${breaking}`;
+      memos.draw(castle.id, key, (g) => this.drawSeal(g, view, castle, raised, breaking));
+    }
+    memos.end();
+  }
+
+  /** One castle's seal, `raised` of the way pressed, or breaking apart. */
+  private drawSeal(
+    g: Graphics,
+    view: ViewTransform,
+    castle: Castle,
+    raised: number,
+    breaking: boolean,
+  ): void {
+    const t = view.tile;
+    const owner = castle.islandId - 1;
+    // Pressed on the vignette's lower right, over a tower's foot, where it hides
+    // neither the gate nor a main castle's keep.
+    const cx = tileX(view, castle.x + castle.w * 0.78);
+    const cy = tileY(view, castle.y + castle.h * 0.66);
+    const base = t * 0.38;
+    const r = breaking ? base : base * (1 + 1.2 * (1 - raised) * (1 - raised));
+    const alpha = breaking ? raised : Math.min(1, raised * 2);
+    const apart = breaking ? (1 - raised) * t * 0.3 : 0;
+    const wax = this.colour(owner, 'base');
+    const rim = this.colour(owner, 'dark');
+    for (const side of breaking ? [-1, 1] : [0]) {
+      const ox = cx + side * apart;
+      const oy = cy + (breaking ? (1 - raised) * t * 0.2 : 0);
+      const from = side === 1 ? -Math.PI / 2 : side === -1 ? Math.PI / 2 : 0;
+      const to = side === 0 ? Math.PI * 2 : from + Math.PI;
+      // The blob of wax, lumpy at its edge where it spread under the stamp.
+      g.moveTo(ox, oy);
+      g.arc(ox, oy, r, from, to);
+      g.closePath();
+      g.fill({ color: wax, alpha });
+      for (let k = 0; k < 6; k++) {
+        const a = (k / 6) * Math.PI * 2 + castle.id;
+        if (side !== 0 && Math.sign(Math.sin(a)) !== side) continue;
+        g.circle(ox + Math.sin(a) * r * 0.8, oy - Math.cos(a) * r * 0.8, r * 0.32);
       }
-      if (!breaking) {
-        // The impression in the wax: a small star.
-        const s = r * 0.32;
-        for (let k = 0; k < 4; k++) {
-          const a = (k / 4) * Math.PI;
-          g.moveTo(cx - Math.cos(a) * s, cy - Math.sin(a) * s);
-          g.lineTo(cx + Math.cos(a) * s, cy + Math.sin(a) * s);
-        }
-        g.stroke({ width: 1.2, color: rim, alpha });
+      g.fill({ color: wax, alpha });
+      // From the arc's own start: a move to the centre drew a spoke to the rim.
+      g.moveTo(ox + Math.cos(from) * r * 0.62, oy + Math.sin(from) * r * 0.62);
+      g.arc(ox, oy, r * 0.62, from, to);
+      g.stroke({ width: 1.2, color: rim, alpha: alpha * 0.9 });
+    }
+    if (!breaking) {
+      // The impression in the wax: a small star.
+      const s = r * 0.32;
+      for (let k = 0; k < 4; k++) {
+        const a = (k / 4) * Math.PI;
+        g.moveTo(cx - Math.cos(a) * s, cy - Math.sin(a) * s);
+        g.lineTo(cx + Math.cos(a) * s, cy + Math.sin(a) * s);
       }
+      g.stroke({ width: 1.2, color: rim, alpha });
     }
   }
 

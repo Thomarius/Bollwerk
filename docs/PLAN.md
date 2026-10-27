@@ -1681,7 +1681,8 @@ every resolution against an independent search, not only on unit pictures.
 ## 11. Open work
 
 **Where to start (2026-10-27).** The latest release is **v0.9.16** (2026-10-26, protocol 32,
-recording format 4). Item 3, the performance plan, is done but for the small leftovers it lists (ARCHIVE 14zc–14zi). Next: item 2's last tower, once the users have decided which (ARCHIVE
+recording format 4). Item 3, the performance plan, is finished, its leftovers measured and the worthwhile ones built
+(ARCHIVE 14zc–14zi, 14zo). Next: item 2's last tower, once the users have decided which (ARCHIVE
 14zm). The styles' own music's chance is the player's choice in Options (ARCHIVE 14zn). Every feature up to v0.9.16 has been tested and approved by the users (2026-10-27).
 Up to **v0.8.3**: the game and online play, bots as skill levels and personalities, the styles
 with their corner pieces, random looks every round, English and German, the desktop app, UPnP,
@@ -1744,53 +1745,6 @@ fit (ARCHIVE 12z), its remaining steps dropped (the user's decision, 2026-10-14;
    and these packages are in
    [`SPECIAL_TOWERS.md`](./SPECIAL_TOWERS.md).
 
-3. **Performance, the analysis of 2026-10-26**: the client read for what is still dear,
-   especially the looks' changes, and two leads measured in Pixi 8.21 with a probe in headless
-   Chrome (CPU only), in a watched eight-player match with Random looks. To be built one package
-   at a time, in this order (the user's):
-
-   - **P1. Hidden looks off the stage**: done, ARCHIVE 14zc.
-   - **P2. The banner's first frame**: measured after P1 and not needed — no banner's frame
-     over 50 ms on the page's thread, headless or in a window (ARCHIVE 14zd).
-   - **P3. Cheap ones**: done, ARCHIVE 14zd.
-   - **P4. Draw lists rebuilt whole**: the board's layers as render groups, done (ARCHIVE 14ze).
-     The rest — stamp pools as groups of their own, style by style — measured to be worth at
-     most the 0.5 ms a frame of list building left, and is taken up within P5 only where a
-     style's own figures show it.
-   - **P5. Per-style redraws left** — now the larger cost: cutting drawings redrawn every frame
-     into triangles, 1.6–2.0 ms a frame against the 0.5 ms of building lists (ARCHIVE 14ze).
-     Built style by style from the probe's or `&perf=1`'s figures. Measured for all 24 styles
-     (ARCHIVE 14zf): Sakura 1.57, Cyberpunk 1.39, Oktoberfest 1.17, Opera 1.14 ms a frame, then
-     Night, Halloween, Undersea and Pixel at about 0.8; the four newest 0.16–0.23. Done:
-     Cyberpunk's rain, Sakura's carp, Opera's horns, windows and rising notes (14zf), and
-     Oktoberfest's bubbles and Ferris wheel (14zh) — no style over 1.0 ms a frame now. What is
-     left is a tenth to a quarter of a millisecond a routine: Cyberpunk's circuit pulses (0.26 ms,
-     in its bloomed glow), Oktoberfest's flying bits (0.16), Halloween's cauldrons, lanterns and
-     shots (0.12–0.15 each), Pixel's and Night's debris (0.15), Sakura's walls redrawn at hits.
-     The audit's list, by its likely cost: rain and snow stroked each frame (Cyberpunk,
-     Pixel; stamp as Electric and Cartoon do); Pixel's pavement and scenery sprites in a group with
-     layers emptied every frame, and its reflections scanning the board every frame; craters
-     layers redrawn whole at every new crater, their key holding `craters.length` (Anime, Cartoon,
-     Mythology, Noir, Pirates, Sports, Wild West); Opera's horns (about 10k vertices a frame),
-     windows and notes; shots drawn shape by shape in Parchment, Stained glass and Toy bricks;
-     Parchment's still wax seals; Oktoberfest's bubbles and wheel; corner pieces redrawn whole
-     (Undersea's wreck, Office's cooler, Electric's ladder, Cyberpunk's billboard, Wild West's
-     locomotive, Christmas's globe keyed on its rock); Cyberpunk's circuit pulses; Chocolate's
-     heat drips and its bites' key; Pirates' torches hashing the territory each frame; shared,
-     `RuinSmoke`, `Fireworks`, `TowerMarks.drawIce`, `drawSealPreview`'s string set and the
-     scenery layer redrawn whole at any change; Anime's hero figures made unpaced at first use.
-   - **P6. HUD and the loop**: done (ARCHIVE 14zi) — the two bugs fixed, Halloween's candle
-     flames stamped with them, and the live enclosure no longer counted at every wall hit in
-     combat. Left, each measured or read as negligible: the big timer's beat restarted with a
-     forced layout (three times a phase), "You are here" animating `margin-top` (the opening
-     only), the final round's full-screen inset shadow, `sealingFor`'s hash and
-     `JSON.stringify` (hundredths of a millisecond a frame), the end screen's markup (game over
-     only).
-
-   These help hitches and the CPU; at large windows the limit was the GPU's filling of pixels
-   (ARCHIVE 13o, 13q), which none of them changes. Each is checked in a visible window with
-   `tools/wipes/measure.mjs`, runs alternated, as ARCHIVE 13o.
-
 Only open work is kept here. Finished packages move to `ARCHIVE.md` under their old
 numbers — 11.1 scoring, 11.7 team mode, 11.8 the visual pass, 11.9 the themes, 11.10 the
 UI polish, all in ARCHIVE 11h; 11.11 the second visual pass and 11.12 the first
@@ -1799,7 +1753,7 @@ test-session feedback, in ARCHIVE 11w; 11.5 the small items and 11.6 the bots, i
 11.16 help for new players, the menu and the sea, and 11.17 the desktop app, in ARCHIVE
 11zt; 11.18 the fourth visual pass, in ARCHIVE 11zv; 11.19 every style to the edges, in
 ARCHIVE 11zz; 11.20 more languages, in ARCHIVE 12g; 11.21 UPnP, in ARCHIVE 12j; 11.2 points decide, 11.3 two players,
-11.4 measurements never taken and 11.13 the bots' loose ends, closed by the weekend soak, in ARCHIVE 12h; 11.22 rendering performance, in ARCHIVE 12n, its bots planning on the same ticks in ARCHIVE 12p; 11.23 random looks every round, in ARCHIVE 12q; Cyberpunk under Glowing, in ARCHIVE 12r; the slow plan late in a build phase, in ARCHIVE 12s; 11 item 3, the bots in a worker with the smaller rendering leads, in ARCHIVE 13k; the next item 3, wipes between heavy looks, in ARCHIVE 13o; 11.24 a piece in the corner for every style, in ARCHIVE 12t; Under the sea and Electric, in ARCHIVE 12u and 12v; Cartoon and Christmas, in ARCHIVE 12zb and 12zc; the refactoring of 2026-10-07, in ARCHIVE 12w; the bot learning work (the old item 3), closed in ARCHIVE 13zg; bots that hold ground as people do (the old item 1), in ARCHIVE 13zj; scoring by ground and guns (the next item 3), approved by the test sessions, in ARCHIVE 13zd and 13ze; special towers' finished packages ST1–ST6, in ARCHIVE 13zo, ST4 closed in 13zw; each style's own cannon icon (the old item 3, CI1–CI4), in ARCHIVE 13zv; the Sports style (the old item 5), its design retired, in ARCHIVE 14d; the Berthas' bigger shots (the old item 5 after it), in ARCHIVE 14e; a climax for every style but Minimal (the old item 5 after that), in ARCHIVE 14i, its play-test in 14j; the testers' choice of cannon icon (the old item 3), the style's own, in ARCHIVE 14j; music for the styles (the old item 3 after it), its plan retired, in ARCHIVE 14b and 14za — so the open sections keep theirs.
+11.4 measurements never taken and 11.13 the bots' loose ends, closed by the weekend soak, in ARCHIVE 12h; 11.22 rendering performance, in ARCHIVE 12n, its bots planning on the same ticks in ARCHIVE 12p; 11.23 random looks every round, in ARCHIVE 12q; Cyberpunk under Glowing, in ARCHIVE 12r; the slow plan late in a build phase, in ARCHIVE 12s; 11 item 3, the bots in a worker with the smaller rendering leads, in ARCHIVE 13k; the next item 3, wipes between heavy looks, in ARCHIVE 13o; 11.24 a piece in the corner for every style, in ARCHIVE 12t; Under the sea and Electric, in ARCHIVE 12u and 12v; Cartoon and Christmas, in ARCHIVE 12zb and 12zc; the refactoring of 2026-10-07, in ARCHIVE 12w; the bot learning work (the old item 3), closed in ARCHIVE 13zg; bots that hold ground as people do (the old item 1), in ARCHIVE 13zj; scoring by ground and guns (the next item 3), approved by the test sessions, in ARCHIVE 13zd and 13ze; special towers' finished packages ST1–ST6, in ARCHIVE 13zo, ST4 closed in 13zw; each style's own cannon icon (the old item 3, CI1–CI4), in ARCHIVE 13zv; the Sports style (the old item 5), its design retired, in ARCHIVE 14d; the Berthas' bigger shots (the old item 5 after it), in ARCHIVE 14e; a climax for every style but Minimal (the old item 5 after that), in ARCHIVE 14i, its play-test in 14j; the testers' choice of cannon icon (the old item 3), the style's own, in ARCHIVE 14j; music for the styles (the old item 3 after it), its plan retired, in ARCHIVE 14b and 14za; the performance analysis of 2026-10-26 (the last item 3, P1–P6), in ARCHIVE 14zc–14zi and 14zo — so the open sections keep theirs.
 
 ## 12. Deferred (explicitly out of scope for v1)
 

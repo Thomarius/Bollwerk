@@ -10251,3 +10251,44 @@ first two. Saved in the browser as the Motion is (`styleMusicSetting.ts`), and r
 starts, so a change in the pause menu decides the next track and leaves the one playing to finish
 (the rules' `chance` a getter in `matchScreen.ts`); the manifest's `styleTrackChance` is gone, since the chance is no longer the game's to
 set. `chooseStyleTrack` is unchanged.
+
+## 14zo. The performance plan's leftovers (2026-10-27, PLAN §11 item 3, P5)
+
+The routines left after 14zh, measured again and built where it paid. **Measured** first per
+routine, each `draw…` triangulated alone on a sampled frame (the probe of 14zf), then by the
+real triangulation in the game's render, every style for 35 s of a watched eight-player match at
+double speed in headless Chrome (CPU only). The first overstates small shapes: a routine it put
+at 0.1 ms often cost a few hundredths in the render, and a stamp switching shapes reads to it as
+drawing. So what was left was decided by switching it off and measuring the render.
+
+**Built**, each looked at in close crops against the old code:
+
+- **Medieval's and Night's sea**: the glints and crests stamped under the sea's `Graphics`.
+- **Cyberpunk's circuit pulses**: a trail stamped in the glow, a head in the cores — both added,
+  so the order in them changes no sum; the glow and its pulses bloomed together in a container.
+- **Undersea's wreck**: the hull drawn as the view changes, the weed and the octopus as their
+  sway moves on a step of 64 a cycle, the bubble every frame.
+- **Parchment's wax seals**: a `Graphics` a castle (`Memos`), drawn as a seal is pressed or breaks.
+- **Toy bricks' crane**: the barge and cab drawn once and moved by their bob, the foam still; the
+  jib, hook and light every frame.
+- **Office's cooler and desks**: in parts drawn as each changes, the chart's bars to half a pixel,
+  the steam stamped.
+- **Halloween's lanterns and brew**: a house's windows drawn as its light changes, its pumpkin's
+  glow and face drawn once and flickered by scale and alpha (`Memos.draw` now hands back its
+  `Graphics`); the chimney smoke and the cauldrons' bubbles stamped, a ring to each of 16 sizes.
+- **Sakura**: its walls apart from its keeps and guns (`IslandParts` of `'walls'` and
+  `'pieces'`), so a shot taking a block no longer draws its island's keeps and carriages again;
+  its ink blots a `Graphics` each, drawn as one comes rather than all of them at every new one;
+  its splashes' rings, flying bits and cloud curls stamped, a size to a step where a line's width
+  follows the size.
+
+Triangulation a frame, before and after: Cyberpunk 0.81 → 0.48 ms, Halloween 0.85 → 0.53,
+Undersea 0.79 → 0.62, Parchment 0.68 → 0.48, Medieval 0.70 → 0.52, Night 0.68 → 0.50, Office 0.63
+→ 0.51, Toy bricks 0.64 → 0.51, Sakura 0.98 → 0.80; the other styles within the noise of a run.
+
+**Measured and left**, each the most it could give, switched off whole: the sea life, 0 to 0.08
+ms a frame (Undersea 0.08, Christmas 0.07, Office 0.03, Oktoberfest and Sakura nothing) —
+twenty classes of their own to draw as pieces for a few hundredths, tried on Pirates for 0.01 and
+reverted; Electric's coils 0.06, Halloween's shots 0.05, Sakura's shots 0.07, its drifts and mist
+0.05 each; Night's torchlight and Oktoberfest's flying bits nothing. The craters layers redrawn at
+each new crater measured nothing over a match. The performance plan is closed.

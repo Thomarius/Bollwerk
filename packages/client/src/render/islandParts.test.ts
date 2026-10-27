@@ -37,6 +37,34 @@ function drawing(): { drawn: number[]; draw: (g: unknown, part: MatchState) => v
   };
 }
 
+describe('walls apart from castles and guns', () => {
+  /** How many parts a draw drew again. */
+  const redrawn = (parts: IslandParts, state: MatchState): number => {
+    let count = 0;
+    parts.draw(state, view, () => count++);
+    return count;
+  };
+
+  it('draws walls again for a block taken, not for a gun set down', () => {
+    const walls = new IslandParts(1, 'walls');
+    const pieces = new IslandParts(1, 'pieces');
+    const state = board();
+    redrawn(walls, state);
+    redrawn(pieces, state);
+    // A gun on the second island: its pieces again, its walls not.
+    const gun = { id: 1, x: 5, y: 1, w: 1, h: 1, owner: 1, active: true };
+    const armed = { ...state, cannons: [gun] } as unknown as MatchState;
+    expect(redrawn(walls, armed)).toBe(0);
+    expect(redrawn(pieces, armed)).toBe(1);
+    // A block taken on the first island: its walls again, the pieces not.
+    const structure = Uint8Array.from(armed.structure);
+    structure[1] = 0;
+    const hit = { ...armed, structure };
+    expect(redrawn(walls, hit)).toBe(1);
+    expect(redrawn(pieces, hit)).toBe(0);
+  });
+});
+
 describe('islands drawn under a budget', () => {
   it('draws one island when the budget is spent, and the rest at the next calls', () => {
     const parts = new IslandParts();

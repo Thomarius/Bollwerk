@@ -276,6 +276,12 @@ export class PixelTheme implements Theme {
   private seaCells: Cell[] = [];
   private readonly seaGfx = new Graphics();
   /**
+   * The sea's glints and crests, stamped under `seaGfx`, where they were drawn first: Night's
+   * were 0.27 ms of cutting into triangles a frame, drawn shape by shape.
+   */
+  private readonly seaStamps = new Stamps();
+  private readonly seaBook = new StampBook();
+  /**
    * The piece in the corner (PLAN 11.24): Medieval's windmill, Night's fishing boat. In the
    * terrain layer, so the day's light and the clouds pass over it as over the ground.
    */
@@ -499,6 +505,8 @@ export class PixelTheme implements Theme {
     this.groundDiscs.destroy();
     this.airDiscs.destroy();
     this.seaGfx.destroy();
+    this.seaStamps.destroy();
+    this.seaBook.destroy();
     this.cornerGfx.destroy();
     this.ghostShadow.destroy();
     this.cloudStamps.destroy();
@@ -677,7 +685,12 @@ export class PixelTheme implements Theme {
       }
     };
 
-    this.terrainLayer.addChild(this.terrainStrips.container, this.seaGfx, this.cornerGfx);
+    this.terrainLayer.addChild(
+      this.terrainStrips.container,
+      this.seaStamps.container,
+      this.seaGfx,
+      this.cornerGfx,
+    );
     this.islandId = state.islandId;
     this.corner = cornerSpot(state, view);
     this.ocean.corner = this.corner;
@@ -1525,9 +1538,12 @@ export class PixelTheme implements Theme {
   private drawSea(view: ViewTransform, deltaMs: number, still: boolean): void {
     const g = this.seaGfx;
     clearDrawn(g);
+    const stamps = this.seaStamps;
+    stamps.begin();
     if (still) {
       this.glints = [];
       this.crests = [];
+      stamps.end();
       return;
     }
     const style = this.art.pixel;
@@ -1546,16 +1562,20 @@ export class PixelTheme implements Theme {
     // One sprite pixel at the size the board is drawn, so the sea's life is pixel art too.
     const px = Math.max(1, Math.round(view.tile / this.art.tileSizePx));
     const light = hex(this.art.palette.uiInk);
+    // A glint's cross and its brighter middle in white, tinted and faded where placed.
+    const glintShape = this.seaBook.get(`glint|${px}`, view.tile, (s) => {
+      s.rect(-px, 0, px * 3, px);
+      s.rect(0, -px, px, px * 3);
+      s.fill({ color: 0xffffff, alpha: 0.35 });
+      s.rect(0, 0, px, px);
+      s.fill({ color: 0xffffff, alpha: 0.8 });
+    });
     for (const glint of this.glints) {
       glint.age += deltaMs;
       const bright = Math.sin(Math.PI * Math.min(1, glint.age / glint.life));
       const x = Math.round(tileX(view, glint.x));
       const y = Math.round(tileY(view, glint.y));
-      g.rect(x - px, y, px * 3, px);
-      g.rect(x, y - px, px, px * 3);
-      g.fill({ color: light, alpha: 0.35 * bright });
-      g.rect(x, y, px, px);
-      g.fill({ color: light, alpha: 0.8 * bright });
+      stamps.place(glintShape, x, y, { tint: light, alpha: bright });
     }
     this.glints = this.glints.filter((glint) => glint.age < glint.life);
 
@@ -1575,6 +1595,10 @@ export class PixelTheme implements Theme {
     const wind = this.art.pixel.windTilesPerSecond * (deltaMs / 1000);
     const foam = hex(this.art.palette.waterFoam);
     const deep = hex(this.art.palette.waterDeep);
+    const bar = this.seaBook.get(`bar|${px}`, view.tile, (s) => {
+      s.rect(0, 0, 1, px);
+      s.fill({ color: 0xffffff });
+    });
     for (const crest of this.crests) {
       crest.age += deltaMs;
       crest.x += wind * WIND_X;
@@ -1586,12 +1610,22 @@ export class PixelTheme implements Theme {
       const half = Math.round(view.tile * (0.3 + 0.35 * strength));
       const cx = Math.round(tileX(view, crest.x));
       const cy = Math.round(tileY(view, crest.y));
-      g.rect(cx - half, cy, half * 2, px);
-      g.fill({ color: foam, alpha: 0.45 * strength });
-      g.rect(cx - Math.round(half * 0.6), cy + px, Math.round(half * 1.2), px);
-      g.fill({ color: deep, alpha: 0.5 * strength });
+      // A bar a pixel wide stretched along, which keeps its height.
+      stamps.place(bar, cx - half, cy, {
+        scale: half * 2,
+        scaleY: 1,
+        tint: foam,
+        alpha: 0.45 * strength,
+      });
+      stamps.place(bar, cx - Math.round(half * 0.6), cy + px, {
+        scale: Math.round(half * 1.2),
+        scaleY: 1,
+        tint: deep,
+        alpha: 0.5 * strength,
+      });
     }
     this.crests = this.crests.filter((crest) => crest.age < crest.life);
+    stamps.end();
     this.ocean.draw(g, view, this.art, deltaMs);
   }
 

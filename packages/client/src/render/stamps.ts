@@ -116,7 +116,8 @@ export class StampBook {
  * stands still between. The drawing code is the style's own, unchanged; the key must name
  * everything it reads.
  *
- * `begin`, a `draw` per thing, `end`: what was not drawn this frame is thrown away.
+ * `begin`, a `draw` per thing, `end`: what was not drawn this frame is thrown away. `draw`
+ * hands back the thing's `Graphics`, for what changes only by a move, a scale or a fade.
  */
 export class Memos {
   readonly container = new Container();
@@ -127,7 +128,7 @@ export class Memos {
     this.frame++;
   }
 
-  draw(id: number | string, key: string, draw: (g: Graphics) => void): void {
+  draw(id: number | string, key: string, draw: (g: Graphics) => void): Graphics {
     let entry = this.entries.get(id);
     if (entry === undefined) {
       entry = { g: new Graphics(), key: '', seen: 0 };
@@ -135,10 +136,11 @@ export class Memos {
       this.container.addChild(entry.g);
     }
     entry.seen = this.frame;
-    if (entry.key === key) return;
+    if (entry.key === key) return entry.g;
     entry.key = key;
     entry.g.clear();
     draw(entry.g);
+    return entry.g;
   }
 
   end(): void {

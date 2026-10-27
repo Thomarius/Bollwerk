@@ -292,6 +292,15 @@ export class CyberpunkTheme implements Theme {
    */
   private readonly lights = new Stamps();
   private readonly book = new StampBook();
+  /**
+   * The circuit's pulses, stamped: a trail in the glow and a head in the cores. Stroked and
+   * filled afresh each frame they were 0.27 ms of cutting into triangles a frame. Both layers
+   * are added, so the stamps lying under the rest of each sum the same.
+   */
+  private readonly pulseGlow = new Stamps();
+  private readonly pulseCore = new Stamps();
+  /** The glow and its pulses, bloomed together as `effectGlow` alone was. */
+  private readonly glowLayer = new Container();
   /** Each tower's light, and when it last changed, for the sputter as a breach puts it out. */
   private readonly lit = new Map<number, { sealed: boolean; since: number }>();
   /** The lit hex floor of sealed ground, by tile size and colour (`hexFloor`). */
@@ -367,7 +376,7 @@ export class CyberpunkTheme implements Theme {
     this.style = art.cyberpunk;
     for (const glow of [
       this.structures.containers[0] as Container,
-      this.effectGlow,
+      this.glowLayer,
       this.gunGlow.container,
       this.overlayGlow,
     ]) {
@@ -382,6 +391,7 @@ export class CyberpunkTheme implements Theme {
     for (const lit of [
       this.territory.containers[1] as Container,
       this.effectCore,
+      this.pulseCore.container,
       this.lights.container,
       this.ads,
     ]) {
@@ -400,10 +410,12 @@ export class CyberpunkTheme implements Theme {
       this.lights.container,
       this.crowns.gfx,
       this.lateGfx,
-      this.effectGlow,
+      this.glowLayer,
       this.gunGlow.container,
+      this.pulseCore.container,
       this.effectCore,
     );
+    this.glowLayer.addChild(this.pulseGlow.container, this.effectGlow);
     layers.overlay.addChild(this.overlayGlow, this.overlayGfx);
     return Promise.resolve();
   }
@@ -416,6 +428,8 @@ export class CyberpunkTheme implements Theme {
     this.structures.destroy();
     this.territory.destroy();
     this.lights.destroy();
+    this.pulseGlow.destroy();
+    this.pulseCore.destroy();
     this.book.destroy();
     release(this.ads);
     release(this.terrainStrips.container);
@@ -434,6 +448,8 @@ export class CyberpunkTheme implements Theme {
     ]) {
       g.destroy();
     }
+    // Emptied by now; destroyed so its bloom lets its blur go.
+    this.glowLayer.destroy();
   }
 
   private colour(player: number, shade: 'base' | 'light' | 'dark'): number {
@@ -1622,7 +1638,10 @@ export class CyberpunkTheme implements Theme {
    * magenta: the circuit overloading.
    */
   private drawPulses(view: ViewTransform): void {
-    const glow = this.effectGlow;
+    const glow = this.pulseGlow;
+    const core = this.pulseCore;
+    glow.begin();
+    core.begin();
     const colour = mixed(
       hex(this.art.palette.waterFoam),
       hex(this.art.palette.emberMid),
@@ -1630,22 +1649,44 @@ export class CyberpunkTheme implements Theme {
     );
     const speed = this.style.pulseTilesPerSecond;
     const size = Math.max(1.5, view.tile * 0.14);
+    // The trail a stroke with flat ends, so a bar a pixel long stretched along it; the head a disc.
+    const trail = this.book.get(`pulseTrail|${size}`, view.tile, (g) => {
+      g.rect(0, -size / 2, 1, size);
+      g.fill({ color: 0xffffff });
+    });
+    const head = this.book.get(`pulseHead|${size}`, view.tile, (g) => {
+      g.circle(0, 0, size);
+      g.fill({ color: 0xffffff });
+    });
     for (const trace of this.traces) {
       // Half the time on the trace, half off it, so the sea is not lit all at once.
       const cycle = trace.length * 2;
       const at = ((this.pulseClock / 1000) * speed + trace.phase * cycle) % cycle;
       if (at > trace.length) continue;
-      const head = along(trace, at);
+      const front = along(trace, at);
       const tail = along(trace, Math.max(0, at - 1.2));
       const alpha = this.traceAlpha(
         trace.depth[Math.floor((at / trace.length) * (trace.depth.length - 1))]!,
       );
-      glow.moveTo(tileX(view, tail.x + 0.5), tileY(view, tail.y + 0.5));
-      glow.lineTo(tileX(view, head.x + 0.5), tileY(view, head.y + 0.5));
-      glow.stroke({ width: size, color: colour, alpha: 0.5 * alpha });
-      this.effectCore.circle(tileX(view, head.x + 0.5), tileY(view, head.y + 0.5), size);
-      this.effectCore.fill({ color: colour, alpha });
+      const x0 = tileX(view, tail.x + 0.5);
+      const y0 = tileY(view, tail.y + 0.5);
+      const x1 = tileX(view, front.x + 0.5);
+      const y1 = tileY(view, front.y + 0.5);
+      const length = Math.hypot(x1 - x0, y1 - y0);
+      // A stroke of no length draws nothing, as the pulse just setting out did.
+      if (length > 0) {
+        glow.place(trail, x0, y0, {
+          rotation: Math.atan2(y1 - y0, x1 - x0),
+          scale: length,
+          scaleY: 1,
+          tint: colour,
+          alpha: 0.5 * alpha,
+        });
+      }
+      core.place(head, x1, y1, { tint: colour, alpha });
     }
+    glow.end();
+    core.end();
   }
 
   /**

@@ -21,6 +21,10 @@ import { clearDrawn } from './clearDrawn.js';
  * territory, and its `islandId` only that island's cells, so a knocked-out player's island
  * is dimmed once, by its own part (`dimEliminated`).
  *
+ * A style whose walls are dear to draw may split them from its castles and guns: `of: 'walls'`
+ * draws again only as an island's walls change, `of: 'pieces'` only as its castles or guns do,
+ * so a shot taking a block does not draw the keeps and carriages beside it again.
+ *
  * A style drawing its structures in several layers — Cyberpunk's additive glow under its
  * walls — asks for that many: each layer is a container of its own, holding that layer
  * of every island, so all the glow stays under all the walls as before.
@@ -60,6 +64,9 @@ export function outOfBudget(drawn: number): boolean {
   return true;
 }
 
+/** What a part holds, and so what draws it again (`IslandParts`). */
+export type IslandPartsOf = 'structures' | 'walls' | 'pieces' | 'territory';
+
 export class IslandParts {
   readonly containers: Container[];
   private parts: { layers: Graphics[]; key: string }[] = [];
@@ -67,9 +74,9 @@ export class IslandParts {
   private islandsOf: Uint8Array | null = null;
   private viewKey = '';
 
-  private readonly of: 'structures' | 'territory';
+  private readonly of: IslandPartsOf;
 
-  constructor(layers = 1, of: 'structures' | 'territory' = 'structures') {
+  constructor(layers = 1, of: IslandPartsOf = 'structures') {
     this.of = of;
     this.containers = Array.from({ length: layers }, () => new Container());
   }
@@ -100,13 +107,16 @@ export class IslandParts {
       let hash = 0x811c9dc5;
       if (this.of === 'territory') {
         for (const i of cells) hash = Math.imul(hash ^ (state.territory[i] as number), 0x01000193);
-      } else {
+      } else if (this.of !== 'pieces') {
         for (const i of cells) {
           hash = Math.imul(hash ^ (state.structure[i] as number), 0x01000193);
           hash = Math.imul(hash ^ (state.owner[i] as number), 0x01000193);
         }
       }
-      const key = `${hash >>> 0}|${JSON.stringify(castles)}|${JSON.stringify(cannons)}`;
+      const key =
+        this.of === 'walls'
+          ? `${hash >>> 0}`
+          : `${hash >>> 0}|${JSON.stringify(castles)}|${JSON.stringify(cannons)}`;
       const entry = this.parts[part] as { layers: Graphics[]; key: string };
       if (!viewChanged && key === entry.key) continue;
       if (outOfBudget(drawn)) {

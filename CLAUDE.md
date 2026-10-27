@@ -190,7 +190,9 @@ which a test session needs the server rebuilt and every page reloaded for):
   groups of their own; every style's triangulation measured, and Cyberpunk's rain, Sakura's carp
   and Opera's horns, windows and notes drawn once (1.4–1.6 → 0.7–1.1 ms a frame), approved in play;
   then Oktoberfest's bubbles and wheel, no style over 1.0 ms now, and two bugs the reading found —
-  Halloween's candle flames and Chocolate's gloss on the island drawn last only (14zh, 14zi).
+  Halloween's candle flames and Chocolate's gloss on the island drawn last only (14zh, 14zi);
+  and its leftovers (14zo, 2026-10-27): eight styles' routines drawn once, stamped or split, a
+  third to two-fifths off their triangulation, Sakura's walls apart from its keeps and guns.
 
 - **The styles' own music** (ARCHIVE 14za, 2026-10-25, the users' idea; its plan retired there):
   21 tracks from Pixabay, one for every style but Minimal, Medieval and Night, in
@@ -671,7 +673,9 @@ Pixi cuts every changed `Graphics` into triangles on the CPU inside `render`; a 
 card does not help with that (ARCHIVE 12n). So a style **never redraws what has not changed**:
 
 - **Walls and sealed ground by island**: `IslandParts` (`render/islandParts.ts`) gives the
-  style's drawing one island's board and redraws only the island that changed.
+  style's drawing one island's board and redraws only the island that changed. Walls dear to
+  draw go in parts of their own, `'walls'`, the keeps and guns in `'pieces'`, so a hit does not
+  draw the island's keeps again (Sakura, ARCHIVE 14zo).
 - **The terrain in strips of rows**: `TerrainStrips` (`render/terrainStrips.ts`), a pass for
   each fill or stroke, each drawn over eight strips of rows, every strip of a pass before the
   next pass, so the order is as when whole; a hidden look draws and first renders it a strip
@@ -705,7 +709,10 @@ style's terrain is drawn in strips of rows (`TerrainStrips`, ARCHIVE 13n), a few
 
 Check with `&perf=1` at eight players: the readout names the `Graphics` rebuilt most, every
 frame and at worst. Keep the draw order where it shows; what came after a stamped thing goes
-in a second `Graphics` above it.
+in a second `Graphics` above it. Before building, measure what a routine costs by switching it
+off and timing the render's real triangulation: a routine triangulated alone overstates small
+shapes several times over, and the sea life it put at 0.1 ms a frame gave 0.08 at most (ARCHIVE
+14zo).
 
 ## Conventions
 

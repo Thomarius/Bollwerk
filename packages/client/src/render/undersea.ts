@@ -134,6 +134,9 @@ interface Whale {
 }
 
 const PUFF_MS = 420;
+const TAU = Math.PI * 2;
+/** The steps a cycle of the wreck's swaying is drawn in (`drawWreck`). */
+const SWAY_STEPS = 64;
 /** The fish is smaller than its footprint, which it swims in: larger, it fills the icon. */
 const FISH_ICON_FILL = 1.5;
 const SPIT_MS = 600;
@@ -198,8 +201,8 @@ export class UnderseaTheme extends ShapeTheme implements Theme {
   /** Dimples in the sand where shots came down: redrawn when one is added or fades. */
   private readonly dimpleGfx = new Graphics();
   private dimplesDrawn = '';
-  /** The wreck and its octopus: redrawn each frame. */
-  private readonly flowGfx = new Graphics();
+  /** The wreck and its octopus, in parts drawn again only as each moves (`drawWreck`). */
+  private readonly wreckMemos = new Memos();
   /** Sealed ground, an island to a `Graphics`, redrawn where it changes. */
   private readonly territory = new IslandParts(1, 'territory');
   private readonly ghostMotion = new GhostMotion();
@@ -271,7 +274,7 @@ export class UnderseaTheme extends ShapeTheme implements Theme {
       this.terrainStrips.container,
       this.caustics,
       this.dimpleGfx,
-      this.flowGfx,
+      this.wreckMemos.container,
     );
     layers.territory.addChild(this.scenery.gfx, this.territory.container);
     layers.structures.addChild(this.structures.container);
@@ -298,6 +301,7 @@ export class UnderseaTheme extends ShapeTheme implements Theme {
     this.scenery.destroy();
     this.pufferStamps.destroy();
     this.clamMemos.destroy();
+    this.wreckMemos.destroy();
     this.bubbleStamps.destroy();
     this.urchinStamps.destroy();
     this.snowStamps.destroy();
@@ -307,7 +311,6 @@ export class UnderseaTheme extends ShapeTheme implements Theme {
     release(this.terrainStrips.container);
     for (const g of [
       this.dimpleGfx,
-      this.flowGfx,
       this.effectGfx,
       this.crowns.gfx,
       this.shotGfx,
@@ -600,14 +603,50 @@ export class UnderseaTheme extends ShapeTheme implements Theme {
    * and then from a porthole; and an octopus draped over the bow, its arms swaying, blinking.
    * As the clock presses it blanches, pale and dark by turns, and its arms curl quicker.
    */
-  private drawWreck(g: Graphics, view: ViewTransform, spot: TimerSpot, hurry: boolean): void {
-    const t = view.tile;
-    const s = spot.size * t;
+  private drawWreck(view: ViewTransform, spot: TimerSpot, hurry: boolean): void {
+    const memos = this.wreckMemos;
+    memos.begin();
+    const still = motionReduced();
+    const where = `${viewKey(view)}|${spot.x},${spot.y},${spot.size}`;
+    // The swaying drawn again only as it moves on a step of 64 a cycle, its clock taken
+    // to the step: redrawn every frame, the wreck was 0.24 ms of cutting into triangles.
+    const step = (period: number): number =>
+      still ? 0 : Math.floor(((this.clock / period) % TAU) / (TAU / SWAY_STEPS));
+    const at = (k: number, period: number): number => (k + 0.5) * (TAU / SWAY_STEPS) * period;
+    memos.draw('hull', where, (g) => this.drawHull(g, view, spot));
+    const weed = step(700);
+    memos.draw('weed', `${where}|${weed}`, (g) => this.drawWeed(g, view, spot, at(weed, 700)));
+    // The bubble, a moving circle, drawn every frame; nothing while none is rising.
+    const rising = still ? 1 : (this.clock % 3200) / 1600;
+    memos.draw('bubble', `${where}|${rising < 1 ? rising : '-'}`, (g) => {
+      if (rising < 1) this.drawRising(g, view, spot, rising);
+    });
+    const pace = hurry ? 220 : 700;
+    const pose = step(pace);
+    const blanch =
+      hurry && !still ? Math.round(8 * (0.5 + 0.5 * Math.sin(this.clock / 150))) / 8 : 0;
+    const blink = !still && this.clock % 4200 < 160;
+    memos.draw('octopus', `${where}|${hurry}|${pose}|${blanch}|${blink}`, (g) =>
+      this.drawOctopus(g, view, spot, at(pose, pace), pace, blanch, blink),
+    );
+    memos.end();
+  }
+
+  /** Where the wreck's points lie: `at` in the spot's size from its centre, and the deck's line. */
+  private wreckFrame(view: ViewTransform, spot: TimerSpot) {
+    const s = spot.size * view.tile;
     const ox = tileX(view, spot.x);
     const oy = tileY(view, spot.y);
-    const at = (u: number, v: number): [number, number] => [ox + u * s, oy + v * s];
-    const still = motionReduced();
-    const deck = (u: number): number => 0.02 + (u + 0.38) * (-0.36 / 0.76);
+    return {
+      s,
+      at: (u: number, v: number): [number, number] => [ox + u * s, oy + v * s],
+      deck: (u: number): number => 0.02 + (u + 0.38) * (-0.36 / 0.76),
+    };
+  }
+
+  /** The mound, the mast, the hull and its portholes: still, drawn again only as the view changes. */
+  private drawHull(g: Graphics, view: ViewTransform, spot: TimerSpot): void {
+    const { s, at, deck } = this.wreckFrame(view, spot);
     // The mound it lies in.
     g.ellipse(...at(-0.02, 0.33), s * 0.5, s * 0.1);
     g.fill({ color: hex(this.art.palette.grassMid) });
@@ -649,9 +688,14 @@ export class UnderseaTheme extends ShapeTheme implements Theme {
       g.circle(...at(u, deck(u) + 0.1), s * 0.035);
       g.stroke({ width: Math.max(1, s * 0.01), color: BRASS });
     }
-    // Weed hanging from the rail, swaying.
+  }
+
+  /** Weed hanging from the rail, swaying, as at `clock`. */
+  private drawWeed(g: Graphics, view: ViewTransform, spot: TimerSpot, clock: number): void {
+    const { s, at, deck } = this.wreckFrame(view, spot);
+    const still = motionReduced();
     for (const u of [-0.2, -0.02]) {
-      const sway = still ? 0 : Math.sin(this.clock / 700 + u * 9) * s * 0.02;
+      const sway = still ? 0 : Math.sin(clock / 700 + u * 9) * s * 0.02;
       g.moveTo(...at(u, deck(u)));
       g.quadraticCurveTo(
         at(u, 0)[0] + sway,
@@ -661,24 +705,37 @@ export class UnderseaTheme extends ShapeTheme implements Theme {
       );
     }
     g.stroke({ width: Math.max(1, s * 0.015), color: KELP, alpha: 0.9 });
-    // A bubble rising now and then from a porthole.
-    if (!still) {
-      const p = (this.clock % 3200) / 1600;
-      if (p < 1) {
-        const [bx, by] = at(0.06, deck(0.06) + 0.1);
-        drawBubble(
-          g,
-          bx + Math.sin(p * 9) * s * 0.02,
-          by - p * s * 0.45,
-          s * (0.015 + 0.02 * p),
-          1 - p * 0.6,
-        );
-      }
-    }
-    // The octopus on the bow: its arms over the hull, then its head and eyes.
-    const blanch = hurry && !still ? 0.5 + 0.5 * Math.sin(this.clock / 150) : 0;
+  }
+
+  /** A bubble rising from a porthole, `p` of the way up. */
+  private drawRising(g: Graphics, view: ViewTransform, spot: TimerSpot, p: number): void {
+    const { s, at, deck } = this.wreckFrame(view, spot);
+    const [bx, by] = at(0.06, deck(0.06) + 0.1);
+    drawBubble(
+      g,
+      bx + Math.sin(p * 9) * s * 0.02,
+      by - p * s * 0.45,
+      s * (0.015 + 0.02 * p),
+      1 - p * 0.6,
+    );
+  }
+
+  /**
+   * The octopus on the bow, as at `clock`: its arms over the hull, then its head and eyes;
+   * `blanch` how pale it has gone as the clock presses.
+   */
+  private drawOctopus(
+    g: Graphics,
+    view: ViewTransform,
+    spot: TimerSpot,
+    clock: number,
+    pace: number,
+    blanch: number,
+    blink: boolean,
+  ): void {
+    const { s, at } = this.wreckFrame(view, spot);
+    const still = motionReduced();
     const body = mixed(OCTOPUS, OCTOPUS_PALE, blanch * 0.7);
-    const pace = hurry ? 220 : 700;
     const arms: [number, number][] = [
       [0.02, 0.0],
       [0.1, 0.12],
@@ -689,7 +746,7 @@ export class UnderseaTheme extends ShapeTheme implements Theme {
     ];
     const head = { u: 0.24, v: -0.3 };
     arms.forEach(([u, v], k) => {
-      const sway = still ? 0 : Math.sin(this.clock / pace + k * 1.3) * 0.035;
+      const sway = still ? 0 : Math.sin(clock / pace + k * 1.3) * 0.035;
       const end = at(u + sway, v + sway * 0.5);
       const ctrl = at((head.u + u) / 2 + sway, (head.v + v) / 2 - 0.08);
       g.moveTo(...at(head.u, head.v + 0.05));
@@ -717,7 +774,6 @@ export class UnderseaTheme extends ShapeTheme implements Theme {
       g.circle(...at(head.u + u, head.v + v), s * 0.012);
     }
     g.fill({ color: mixed(body, 0x3a2a24, 0.4) });
-    const blink = !still && this.clock % 4200 < 160;
     for (const side of [-1, 1]) {
       const [ex, ey] = at(head.u + side * 0.045, head.v + 0.06);
       if (blink) {
@@ -1113,8 +1169,12 @@ export class UnderseaTheme extends ShapeTheme implements Theme {
     perf.begin('flow');
     this.slideCaustics(view);
     this.drawDimples(state, view);
-    clearDrawn(this.flowGfx);
-    if (this.wreck !== null) this.drawWreck(this.flowGfx, view, this.wreck, pressing(state));
+    if (this.wreck !== null) this.drawWreck(view, this.wreck, pressing(state));
+    else {
+      // No corner: what was drawn there goes.
+      this.wreckMemos.begin();
+      this.wreckMemos.end();
+    }
     perf.end('flow');
     const g = this.effectGfx;
     clearDrawn(g);

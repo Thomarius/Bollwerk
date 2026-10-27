@@ -212,8 +212,16 @@ export class HalloweenTheme extends ShapeTheme implements Theme {
   private readonly effectGfx = new Graphics();
   /** The main castles' crowns, redrawn only when one changes. */
   private readonly crowns = new MainCastles();
-  /** The houses' light, drawn over the crowns as it always was (`drawLanterns`). */
-  private readonly lanternGfx = new Graphics();
+  /**
+   * The houses' light, drawn over the crowns as it always was (`drawLanterns`): a house's
+   * windows drawn again only as its light comes or goes, its pumpkin's glow and face drawn
+   * once and flickered by scale and alpha, the chimney's smoke stamped over them. Redrawn
+   * each frame they were 0.13 ms of cutting into triangles.
+   */
+  private readonly lanternMemos = new Memos();
+  private readonly smokeStamps = new Stamps();
+  /** The brew's bubbles in the cauldrons, stamped rings over the fog: 0.13 ms a frame stroked. */
+  private readonly brewStamps = new Stamps();
   /** The guns' barrels, a `Graphics` a gun redrawn only as it turns or kicks (`Memos`). */
   private readonly gunMemo = new Memos();
   /** What lies over the guns: shots, splashes, the finish. */
@@ -279,9 +287,11 @@ export class HalloweenTheme extends ShapeTheme implements Theme {
       this.candleStamps.container,
       this.effectGfx,
       this.crowns.gfx,
-      this.lanternGfx,
+      this.lanternMemos.container,
+      this.smokeStamps.container,
       this.gunMemo.container,
       this.fogStamps.container,
+      this.brewStamps.container,
       this.lateGfx,
     );
     layers.overlay.addChild(this.overlayGfx);
@@ -291,6 +301,9 @@ export class HalloweenTheme extends ShapeTheme implements Theme {
   destroy(): void {
     this.bubbleStamps.destroy();
     this.fogStamps.destroy();
+    this.lanternMemos.destroy();
+    this.smokeStamps.destroy();
+    this.brewStamps.destroy();
     this.candleStamps.destroy();
     this.book.destroy();
     this.gunMemo.destroy();
@@ -305,7 +318,6 @@ export class HalloweenTheme extends ShapeTheme implements Theme {
       this.underGfx,
       this.effectGfx,
       this.crowns.gfx,
-      this.lanternGfx,
       this.overlayGfx,
     ]) {
       g.destroy();
@@ -1205,7 +1217,6 @@ export class HalloweenTheme extends ShapeTheme implements Theme {
     perf.end('flow');
     const g = this.effectGfx;
     clearDrawn(g);
-    clearDrawn(this.lanternGfx);
     clearDrawn(this.lateGfx);
     const under = this.underGfx;
     clearDrawn(under);
@@ -1322,9 +1333,16 @@ export class HalloweenTheme extends ShapeTheme implements Theme {
    * breach, as a flag is hoisted and lowered, so "sealed" is the house lit up.
    */
   private drawLanterns(state: MatchState, view: ViewTransform, frame: EffectFrame): void {
-    const g = this.lanternGfx;
     const t = view.tile;
     const still = motionReduced();
+    const memos = this.lanternMemos;
+    const smoke = this.smokeStamps;
+    memos.begin();
+    smoke.begin();
+    const puff = this.book.get('chimneySmoke', t, (g) => {
+      g.circle(0, 0, 1);
+      g.fill({ color: 0x9a88b8, alpha: 0.4 });
+    });
     this.crowns.draw(view, state, this.art, frame.castleSealed);
     this.lanterns.update(frame.castleSealed, this.clock, this.art);
     for (const castle of state.castles) {
@@ -1334,29 +1352,41 @@ export class HalloweenTheme extends ShapeTheme implements Theme {
       const h = this.house(view, castle);
       const flick = still ? 1 : 0.85 + 0.15 * Math.sin(this.clock / 110 + castle.id);
       const lean = t * 0.08;
-      for (const s of [-1, 1]) {
-        g.rect(
-          h.cx + s * h.windowDx - h.window / 2 + lean * 0.5,
-          h.windowY - h.window / 2,
-          h.window,
-          h.window,
-        );
-      }
-      g.fill({ color: this.colour(owner, 'light'), alpha: lit });
-      g.circle(h.pumpkinX, h.pumpkinY, h.pumpkin * 2.2 * flick);
-      g.fill({ color: hex(this.art.palette.emberMid), alpha: 0.25 * lit });
-      this.pumpkinFace(g, h, hex(this.art.palette.emberHot), lit * flick);
+      const where = `${viewKey(view)}|${castle.x},${castle.y},${castle.w},${castle.h}`;
+      memos.draw(`windows${castle.id}`, `${where}|${owner}|${lit}`, (g) => {
+        for (const s of [-1, 1]) {
+          g.rect(
+            h.cx + s * h.windowDx - h.window / 2 + lean * 0.5,
+            h.windowY - h.window / 2,
+            h.window,
+            h.window,
+          );
+        }
+        g.fill({ color: this.colour(owner, 'light'), alpha: lit });
+      });
+      // Drawn at full strength round its middle; scaled and faded by the flicker and the light.
+      const glow = memos.draw(`glow${castle.id}`, where, (g) => {
+        g.circle(0, 0, h.pumpkin * 2.2);
+        g.fill({ color: hex(this.art.palette.emberMid), alpha: 0.25 });
+      });
+      glow.position.set(h.pumpkinX, h.pumpkinY);
+      glow.scale.set(flick);
+      glow.alpha = lit;
+      const face = memos.draw(`face${castle.id}`, where, (g) =>
+        this.pumpkinFace(g, h, hex(this.art.palette.emberHot), 1),
+      );
+      face.alpha = lit * flick;
       if (still) continue;
       for (let k = 0; k < 3; k++) {
         const p = (((this.clock / 1600 + k / 3 + castle.id * 0.13) % 1) + 1) % 1;
-        g.circle(
-          h.chimneyX + Math.sin(p * 4 + k) * t * 0.12,
-          h.chimneyTop - p * t * 0.9,
-          t * (0.08 + 0.12 * p),
-        );
-        g.fill({ color: 0x9a88b8, alpha: 0.4 * (1 - p) * lit });
+        smoke.place(puff, h.chimneyX + Math.sin(p * 4 + k) * t * 0.12, h.chimneyTop - p * t * 0.9, {
+          scale: t * (0.08 + 0.12 * p),
+          alpha: (1 - p) * lit,
+        });
       }
     }
+    memos.end();
+    smoke.end();
   }
 
   /**
@@ -1369,6 +1399,8 @@ export class HalloweenTheme extends ShapeTheme implements Theme {
     const still = motionReduced();
     const memo = this.gunMemo;
     memo.begin();
+    const brew = this.brewStamps;
+    brew.begin();
     for (const cannon of state.cannons) {
       const aim = this.aims.of(state, cannon.id);
       if (aim === null) continue;
@@ -1381,14 +1413,21 @@ export class HalloweenTheme extends ShapeTheme implements Theme {
       const r = Math.min(cannon.w, cannon.h) * t * 0.38;
       const cx = tileX(view, cannon.x + cannon.w / 2);
       const cy = tileY(view, cannon.y + cannon.h / 2) - r * 0.25;
-      const g = this.lateGfx;
       for (let k = 0; k < 2; k++) {
         const p = (((this.clock / 700 + k * 0.5 + cannon.id * 0.21) % 1) + 1) % 1;
-        g.circle(cx + (k - 0.5) * r * 0.6, cy - p * t * 0.35, t * 0.06 * (1 + p));
+        // A ring for each of 16 sizes, so its line stays a pixel wide as it grows.
+        const size = Math.round(p * 16);
+        const ring = this.book.get(`brew|${size}`, t, (g) => {
+          g.circle(0, 0, t * 0.06 * (1 + size / 16));
+          g.stroke({ width: 1, color: 0xffffff, alpha: 0.8 });
+        });
+        brew.place(ring, cx + (k - 0.5) * r * 0.6, cy - p * t * 0.35, {
+          tint: this.colour(cannon.owner, 'light'),
+        });
       }
-      g.stroke({ width: 1, color: this.colour(cannon.owner, 'light'), alpha: 0.8 });
     }
     memo.end();
+    brew.end();
     this.aims.prune(state);
   }
 
