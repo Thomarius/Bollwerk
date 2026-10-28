@@ -10405,3 +10405,16 @@ here, was dropped by the user.
   six rounds, one life and a bot at Level 8, left and opened again as it was on a new map; a
   remembered host seat landing the host in seat 3 with every bot's level where it was, in a
   room and locally alike. No recording was written.
+
+## 14zu. v0.9.18 (2026-10-28)
+
+Since v0.9.17: How to play in four sections with three new pages and opened from the pause
+menu (14zq); and the UI polish from a review of the screens with the user — in the match,
+"You are here" clear of the castles, "opening" for round 0, the pause menu as a column,
+readable corner buttons and round label, the viewer's row marked at the end and a local
+match paused as its window loses focus (14zr); in the menu, Single match first and
+largest, the Public / Private switch showing both states and a Full screen button (14zs);
+in the lobby, the last table remembered and the settings explained on hover, with Leave
+working again in a local lobby after a change (14zt). The game itself is unchanged:
+protocol 32 and recording format 4 as v0.9.17, so the two play together and its recordings
+replay.
