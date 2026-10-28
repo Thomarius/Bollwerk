@@ -16,6 +16,7 @@ import { botTowerOf, drawnSpecial } from '@bollwerk/ai';
 import type { Seat, TournamentTable } from '@bollwerk/protocol';
 
 import { t } from './i18n.js';
+import { withIcon } from './icons.js';
 import { teamLetter } from './scores.js';
 import { shapeSvg } from './shapes.js';
 import { escape } from './html.js';
@@ -160,16 +161,16 @@ function tableControls(view: LobbyView, isHost: boolean): string {
   const { min, max } = view.settingBounds.maxRounds;
   return `
     <div class="settings">
-      <label title="${escape(t('lobby.teamsTitle'))}">${t('lobby.teams')}
+      <label data-tip="${escape(t('lobby.teamsTitle'))}">${t('lobby.teams')}
         <select id="team-size" aria-label="${t('lobby.teamSize')}">${options(teamSizesFor(view), teamSize, teamName)}</select>
       </label>
       <label>${t('lobby.players')}
         <select id="player-count" aria-label="${t('lobby.players')}">${options(counts, view.playerCount)}</select>
       </label>
-      <label title="${escape(t('lobby.roundsTitle'))}">${t('lobby.rounds')}
+      <label data-tip="${escape(t('lobby.roundsTitle'))}">${t('lobby.rounds')}
         <select id="max-rounds" aria-label="${t('lobby.rounds')}">${rangeOptions(min, max, maxRounds)}</select>
       </label>
-      <label title="${escape(t('lobby.livesTitle'))}">${t('lobby.lives')}
+      <label data-tip="${escape(t('lobby.livesTitle'))}">${t('lobby.lives')}
         <select id="lives" aria-label="${t('lobby.lives')}">${rangeOptions(view.settingBounds.continues.min + 1, view.settingBounds.continues.max + 1, continues + 1)}</select>
       </label>
       ${specialsSwitch(view.settings.specials)}
@@ -180,7 +181,7 @@ function tableControls(view: LobbyView, isHost: boolean): string {
 export function specialsSwitch(on: boolean): string {
   const option = (value: boolean, label: string): string =>
     `<option value="${value ? 'on' : 'off'}"${value === on ? ' selected' : ''}>${label}</option>`;
-  return `<label title="${escape(t('lobby.specialsTitle'))}">${t('lobby.specials')}
+  return `<label data-tip="${escape(t('lobby.specialsTitle'))}">${t('lobby.specials')}
         <select id="specials" aria-label="${t('lobby.specials')}">${option(false, t('lobby.specialsOff'))}${option(true, t('lobby.specialsOn'))}</select>
       </label>`;
 }
@@ -201,7 +202,7 @@ function towerControl(
   if (!view.settings.specials) return '';
   const badge = (shown: TowerVariant | null, mark = ''): string => {
     const what = shown === null ? t('towerMenu.noneWhat') : towerWhat(shown);
-    return `<span class="tower-choice">${t('lobby.theirTower')} <span class="tower-badge" title="${escape(what)}">${towerFace(shown)}${mark}</span></span>`;
+    return `<span class="tower-choice">${t('lobby.theirTower')} <span class="tower-badge" data-tip="${escape(what)}">${towerFace(shown)}${mark}</span></span>`;
   };
   if (special === 'bot') {
     const choice = botTowerOf(view.botTowers, index);
@@ -209,13 +210,13 @@ function towerControl(
       choice === 'drawn' ? drawnSpecial(view.seed, index, defaultRuleset.specials) : choice;
     const mark =
       choice === 'drawn'
-        ? `<span class="drawn-mark" title="${escape(t('towerMenu.random'))}">${dieSvg('currentColor')}</span>`
+        ? `<span class="drawn-mark" data-tip="${escape(t('towerMenu.random'))}">${dieSvg('currentColor')}</span>`
         : '';
     if (!isHost) return badge(shown, mark);
     const label = escape(t('towerMenu.openBot', { n: index + 1 }));
     const button =
       `<button type="button" class="tower-button bot-tower" data-seat="${index}" data-choice="${choice ?? 'none'}" ` +
-      `title="${label}" aria-label="${label}">${towerFace(shown)}${mark}</button>`;
+      `data-tip="${label}" aria-label="${label}">${towerFace(shown)}${mark}</button>`;
     return `<span class="tower-choice">${t('lobby.theirTower')} ${button}</span>`;
   }
   if (index !== view.humanPlayer) return badge(special);
@@ -223,7 +224,7 @@ function towerControl(
   // variant had stopped scaling (the user's, 2026-10-16).
   const button =
     `<button type="button" id="my-special" class="tower-button" data-variant="${special ?? ''}" ` +
-    `title="${escape(t('towerMenu.open'))}" aria-label="${escape(t('towerMenu.open'))}">` +
+    `data-tip="${escape(t('towerMenu.open'))}" aria-label="${escape(t('towerMenu.open'))}">` +
     `${towerFace(special)}</button>`;
   // What it does is told in the menu, not under the button (the user's, 2026-10-16).
   return `<span class="tower-choice">${t('lobby.yourTower')} ${button}</span>`;
@@ -286,7 +287,7 @@ function seatBadge(view: LobbyView, index: number): string {
  */
 export function levelPips(level: number): string {
   const pips = LEVELS.map((n) => `<i${n <= level ? ' class="on"' : ''}></i>`).join('');
-  return `<span class="pips" title="${t('lobby.level', { n: level })}" aria-hidden="true">${pips}</span>`;
+  return `<span class="pips" data-tip="${t('lobby.level', { n: level })}" aria-hidden="true">${pips}</span>`;
 }
 
 function levelControl(
@@ -442,7 +443,7 @@ export function lobbyMarkup(view: LobbyView): string {
   const blocked = startBlocked(view);
   const start = !hosts
     ? readyControl(view)
-    : `<button id="begin"${blocked === null ? '' : ' disabled'}>${t(view.tournament ? 'tournament.play' : 'lobby.start')}</button>` +
+    : `<button id="begin" class="primary"${blocked === null ? '' : ' disabled'}>${withIcon('play', t(view.tournament ? 'tournament.play' : 'lobby.start'))}</button>` +
       (blocked === null ? '' : `<p class="note warn">${escape(blocked)}</p>`);
   const roomNote =
     view.tournament && hosts && view.code !== null
@@ -492,7 +493,7 @@ export function lobbyMarkup(view: LobbyView): string {
       ${code}
       ${panels}
       ${start}
-      <button id="leave" class="quiet">${leave}</button>
+      <button id="leave" class="quiet">${withIcon('back', leave)}</button>
     </div>
   `;
 }

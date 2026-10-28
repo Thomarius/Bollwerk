@@ -81,7 +81,7 @@ describe('lobby', () => {
       const pips = (row: string): number => row.split('<i class="on"></i>').length - 1;
       expect(pips(rows(html)[1] ?? '')).toBe(3);
       expect(pips(rows(html)[2] ?? '')).toBe(8);
-      expect(rows(html)[3]).toContain('title="Level 10"');
+      expect(rows(html)[3]).toContain('data-tip="Level 10"');
     }
   });
 
@@ -158,12 +158,12 @@ describe('lobby', () => {
     expect(rows(html)[0]).not.toContain('ready');
     expect(rows(html)[1]).toContain('<em class="tag ready">ready</em>');
     expect(rows(html)[2]).toContain('<em class="tag unready">not ready</em>');
-    expect(html).toContain('id="begin" disabled');
+    expect(html).toContain('id="begin" class="primary" disabled');
     expect(html).toContain('Waiting for 2 players to be ready.');
     const one = lobbyMarkup(view({ seats: seats.slice(0, 3) }));
     expect(one).toContain('Waiting for 1 player to be ready.');
     const all = lobbyMarkup(view({ seats: seats.map((s) => ({ ...s, ready: true })) }));
-    expect(all).toContain('id="begin">');
+    expect(all).toContain('id="begin" class="primary">');
   });
 
   it('marks your own seat, the host, and anyone who has dropped', () => {
@@ -266,7 +266,7 @@ describe('lobby', () => {
         teams: [0, 0, 0, 1],
       }),
     );
-    expect(html).toContain('id="begin" disabled');
+    expect(html).toContain('id="begin" class="primary" disabled');
     expect(html).toContain('Teams must be the same size');
   });
 

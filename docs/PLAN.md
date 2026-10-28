@@ -1781,7 +1781,7 @@ fit (ARCHIVE 12z), its remaining steps dropped (the user's decision, 2026-10-14;
    window's look; in a match the pause menu, How to play from it and the end screen take the
    new base at Medium in the match's look on screen, in place of the HUD skin's full dress.
    Packages, in order:
-   - **MS1 — Foundations**: the fonts, their licence named in the Credits and the README; the
+   - **MS1 — Foundations — done** (ARCHIVE 14zv): the fonts, their licence named in the Credits and the README; the
      panel, the button tiers, icons and our own hover texts in `style.css`; applied to the
      menu, Options, How to play and the Credits.
    - **MS2 — Controls**: button rows, steppers and switches in place of every `<select>` with

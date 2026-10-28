@@ -10418,3 +10418,36 @@ in the lobby, the last table remembered and the settings explained on hover, wit
 working again in a local lobby after a change (14zt). The game itself is unchanged:
 protocol 32 and recording format 4 as v0.9.17, so the two play together and its recordings
 replay.
+
+## 14zv. The menus' new look, MS1: foundations (2026-10-28, PLAN §11 item 4)
+
+The first of four packages after the mockup the user approved (`packages/client/mockup/`, a
+reference until MS4): a neutral, modern base, everything outside a match sharing it, since
+every screen there is a `.menu` (the menu, the lobby, the tournament screens) or a
+`.how-to-play` (Options, the Credits, How to play), and the look gallery beside them.
+
+- **Typefaces**: Inter for text, Rubik for headings and the main buttons, bundled from
+  `@fontsource-variable` (the desktop app needs no network) under the SIL Open Font License,
+  whose texts are served from `assets/fonts/` and named in the Credits (a section of their
+  own) and the README. In a match the HUD keeps its lettering; only the corner's switches
+  take the new one.
+- **Tokens in `:root`** — three surfaces and a solid one, a hairline, two radii, a deep
+  shadow, the on-accent ink — and the panels from them: rounded, see-through over the sea, and
+  solid where one stands over another, since Options showed the gold Single match through it.
+- **Three button tiers**: secondary by default (a raised surface, the accent on hover), the
+  window's main button filled in the accent in the headings' lettering (`primary`: Single
+  match, Start match, Play match, Start tournament, the gallery's Done) and quiet, no box until
+  hovered (How to play, Options, Leave, Back). A disabled button stays readable.
+- **Icons** (`icons.ts`, line drawings in the text's colour) beside the words of the menu's
+  buttons, Leave and Back, and the corner's Sound, Full screen and Pause, each showing its
+  state (sound or muted, expand or shrink, pause or play); the words in a span of their own,
+  so a state change rewrites only them.
+- **Our own hover texts** (`data-tip`), at once and in the panels' dress, in place of the
+  browser's `title` across the menu, the lobby, Options, the pause menu's settings, the
+  gallery and the tournament tables; opening rightwards or leftwards near an edge. The HUD's
+  own few in a match are left as they were.
+- **Found on the way**: `.split span` greyed the words of every button in a row of them once
+  the words were in a span; it now reaches a row's own separators only.
+- Seen in a browser in English and German: the menu, Options, the Credits, How to play, the
+  lobby, the tournament's setup and its screen between matches, the gallery, the corner in a
+  match. Three tests updated for the attribute and the class.

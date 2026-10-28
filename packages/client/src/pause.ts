@@ -9,6 +9,7 @@ import {
   t,
 } from './i18n.js';
 import { escape } from './html.js';
+import { withIcon } from './icons.js';
 import { graphicsOptions, parseGraphics, saveGraphics, storedGraphics } from './graphics.js';
 import { motionOptions, parseMotion, saveMotion, storedMotion } from './motion.js';
 import {
@@ -127,15 +128,16 @@ export class PauseControls {
   /** The overlay's contents, in the language in use, its controls wired. */
   private fill(): void {
     const actions = this.actions;
-    this.button.textContent = this.paused ? t('pause.resume') : t('pause.button');
-    this.button.title = t('pause.buttonTitle');
+    this.showButton(true);
+    this.button.dataset.tip = t('pause.buttonTitle');
+    this.button.dataset.tipSide = 'right';
     this.overlay.innerHTML =
       `<div class="panel"><strong>${t('pause.title')}</strong><p class="who"></p>` +
       `<button class="resume">${t('pause.resume')}</button>` +
       `<div class="settings">` +
-      `<label title="${escape(t('settings.graphicsTitle'))}">${t('settings.graphics')} <select class="graphics">${graphicsOptions()}</select></label>` +
+      `<label data-tip="${escape(t('settings.graphicsTitle'))}">${t('settings.graphics')} <select class="graphics">${graphicsOptions()}</select></label>` +
       `<label>${t('settings.motion')} <select class="motion">${motionOptions()}</select></label>` +
-      `<label title="${escape(t('settings.styleMusicTitle'))}">${t('settings.styleMusic')} <select class="style-music">${styleMusicOptions()}</select></label>` +
+      `<label data-tip="${escape(t('settings.styleMusicTitle'))}">${t('settings.styleMusic')} <select class="style-music">${styleMusicOptions()}</select></label>` +
       `<label>${t('settings.language')} <select class="language">${languageOptions()}</select></label>` +
       `</div>` +
       // The buttons in a row of their own under the settings and volumes, which are a column
@@ -216,6 +218,15 @@ export class PauseControls {
     });
   }
 
+  /** The corner's button, its icon and words for the state: written only on a change, every frame. */
+  private buttonLabel = '';
+  private showButton(force = false): void {
+    const label = this.paused ? t('pause.resume') : t('pause.button');
+    if (!force && label === this.buttonLabel) return;
+    this.buttonLabel = label;
+    this.button.innerHTML = withIcon(this.paused ? 'play' : 'pause', label);
+  }
+
   private showSound(): void {
     this.sound.textContent = this.actions.isMuted() ? t('sound.off') : t('sound.on');
     this.sound.classList.toggle('off', this.actions.isMuted());
@@ -227,8 +238,7 @@ export class PauseControls {
     this.paused = pausedBy !== null;
     // Written only on a change: this runs every frame.
     if (this.button.hidden !== over) this.button.hidden = over;
-    const label = this.paused ? t('pause.resume') : t('pause.button');
-    if (this.button.textContent !== label) this.button.textContent = label;
+    this.showButton();
     const text = pausedBy === null || over ? null : pauseText(pausedBy, humanPlayer, names);
     if (text === this.shown) return;
     const opening = this.shown === null && text !== null;

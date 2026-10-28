@@ -5,6 +5,32 @@
   --panel: #1a1a24;
   --accent: #d8b84a;
   --edge: #2a2a38;
+  /* The menus' base (PLAN §11 item 4, MS1): two typefaces, three surfaces, one hairline,
+     rounded corners and a deep shadow, the same for every panel outside a match. */
+  --ui-font: 'Inter Variable', system-ui, sans-serif;
+  --ui-display: 'Rubik Variable', 'Inter Variable', system-ui, sans-serif;
+  --on-accent: #0a0a12;
+  --faint: #5d6478;
+  --surface: rgb(18 21 31 / 94%);
+  /* Solid, for a panel over another, which would show through the see-through one. */
+  --surface-solid: #12151f;
+  --surface-2: #1d2231;
+  --surface-3: #262c3d;
+  --field: #0e111a;
+  --line: rgb(255 255 255 / 9%);
+  --radius: 16px;
+  --radius-s: 10px;
+  --shadow: 0 24px 64px rgb(0 0 0 / 50%), 0 2px 8px rgb(0 0 0 / 35%);
+}
+
+/* Outside a match, and the corner's switches always, in the menus' typeface. */
+.menu,
+.how-to-play,
+.loading-screen,
+#corner {
+  font-family: var(--ui-font);
+  font-size: 14px;
+  -webkit-font-smoothing: antialiased;
 }
 
 * {
@@ -247,9 +273,11 @@ body.reduced-motion .embers {
   width: min(30rem, 90vw);
   height: fit-content;
   padding: 2rem;
-  border: 1px solid var(--edge);
-  background: rgb(26 26 36 / 94%);
-  box-shadow: 0 1rem 3rem rgb(0 0 0 / 50%);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(6px);
 }
 
 /* The loading screen before the first menu (loading.ts): the menu's panel, a bar in gold. */
@@ -260,17 +288,19 @@ body.reduced-motion .embers {
   width: min(24rem, 90vw);
   height: fit-content;
   padding: 2rem;
-  border: 1px solid var(--edge);
-  background: rgb(26 26 36 / 94%);
-  box-shadow: 0 1rem 3rem rgb(0 0 0 / 50%);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  box-shadow: var(--shadow);
   text-align: center;
 }
 
 .loading-screen h1 {
   margin: 0 0 0.6rem;
   color: var(--accent);
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
+  font-family: var(--ui-display);
+  font-weight: 600;
+  letter-spacing: 0.04em;
 }
 
 .loading-screen p {
@@ -280,13 +310,16 @@ body.reduced-motion .embers {
 
 .loading-screen .bar {
   height: 0.5rem;
-  border: 1px solid var(--edge);
-  background: #0a0a12;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--field);
+  overflow: hidden;
 }
 
 .loading-screen .fill {
   width: 0;
   height: 100%;
+  border-radius: 999px;
   background: var(--accent);
   transition: width 120ms linear;
 }
@@ -382,9 +415,10 @@ body.reduced-motion .embers {
 
 .menu h1 {
   margin: 0 0 0.75rem;
+  font-family: var(--ui-display);
   font-size: 1.5rem;
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
+  font-weight: 600;
+  letter-spacing: 0.02em;
   color: var(--accent);
 }
 
@@ -405,30 +439,76 @@ body.reduced-motion .embers {
 .menu select,
 .menu input,
 .how-to-play.options select {
-  padding: 0.35rem 0.5rem;
-  border: 1px solid var(--edge);
-  background: #0f0f18;
+  min-height: 2.4rem;
+  padding: 0 0.7rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-s);
+  background: var(--field);
   color: var(--ink);
-  font: inherit;
+  font: 500 14px var(--ui-font);
   width: 8rem;
 }
 
+.menu select:focus,
+.menu input:focus,
+.how-to-play.options select:focus {
+  border-color: var(--accent);
+  outline: none;
+}
+
+/* The secondary tier, every button's dress unless it is the window's main one or quiet. */
 .menu button {
+  display: inline-flex;
+  gap: 0.55rem;
+  align-items: center;
+  justify-content: center;
   width: 100%;
+  min-height: 2.6rem;
   margin-top: 0.75rem;
-  padding: 0.6rem;
-  border: 1px solid var(--accent);
-  background: transparent;
-  color: var(--accent);
-  font: inherit;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
+  padding: 0.55rem 1rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-s);
+  background: var(--surface-2);
+  color: var(--ink);
+  font: 600 14px/1.1 var(--ui-font);
+  letter-spacing: 0.01em;
   cursor: pointer;
+  transition:
+    background 120ms,
+    border-color 120ms,
+    transform 80ms;
 }
 
 .menu button:hover {
+  border-color: var(--accent);
+  background: var(--surface-3);
+  color: var(--ink);
+}
+
+.menu button:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+/* The window's main way on: filled in the accent, in the headings' lettering. */
+.menu button.primary,
+.menu button.primary:hover {
+  border-color: transparent;
   background: var(--accent);
-  color: #0a0a12;
+  color: var(--on-accent);
+  font-family: var(--ui-display);
+  font-size: 1.1rem;
+  letter-spacing: 0.03em;
+}
+
+.menu button.primary:hover {
+  filter: brightness(1.1);
+}
+
+/* A button's icon (icons.ts), in its text's colour. */
+button svg.icon {
+  width: 18px;
+  height: 18px;
+  flex: none;
 }
 
 .menu .note {
@@ -444,15 +524,18 @@ body.reduced-motion .embers {
 }
 
 .menu button.link {
+  display: inline;
   width: auto;
+  min-height: 0;
   margin: 0;
   padding: 0;
   border: none;
+  background: none;
   color: var(--accent);
-  font-size: inherit;
+  font: inherit;
   letter-spacing: inherit;
   text-transform: none;
-  text-decoration: underline;
+  text-decoration: none;
 }
 
 .menu button.link:hover {
@@ -471,9 +554,10 @@ body.reduced-motion .embers {
 .how-to-play.options h2 {
   margin: 0;
   color: var(--accent);
-  font-size: 1.1rem;
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
+  font-family: var(--ui-display);
+  font-size: 1.35rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
 }
 
 .how-to-play.credits .disclaimer {
@@ -485,23 +569,24 @@ body.reduced-motion .embers {
 
 .how-to-play.credits .list {
   overflow-y: auto;
-  border-top: 1px solid var(--edge);
+  border-top: 1px solid var(--line);
 }
 
 .how-to-play.credits h3 {
-  margin: 0.8rem 0 0.3rem;
-  color: var(--ink);
+  margin: 0.9rem 0 0.3rem;
+  color: var(--muted);
   font-size: 12px;
-  letter-spacing: 0.1em;
+  font-weight: 600;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
 }
 
 .how-to-play.credits ul {
   margin: 0;
   padding-left: 1.1rem;
-  color: var(--muted);
-  font-size: 12px;
-  line-height: 1.5;
+  color: var(--ink);
+  font-size: 13px;
+  line-height: 1.55;
 }
 
 .how-to-play.credits a {
@@ -541,17 +626,10 @@ body.reduced-motion .embers {
   align-items: stretch;
 }
 
+/* The primary tier's dress, taller. */
 .menu .play-row #play {
   flex: 2;
-  padding: 0.95rem 0.6rem;
-  background: var(--accent);
-  color: #0a0a12;
-  font-size: 1.05rem;
-  font-weight: 700;
-}
-
-.menu .play-row #play:hover {
-  filter: brightness(1.12);
+  min-height: 3.4rem;
 }
 
 /* Both states shown, the chosen one lit: Public in the accent, as the open table it is,
@@ -560,25 +638,29 @@ body.reduced-motion .embers {
   display: flex;
   flex: 1.2;
   flex-direction: column;
-  border: 1px solid var(--edge);
+  gap: 2px;
+  padding: 3px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-s);
+  background: var(--field);
 }
 
 .menu .visibility button {
   flex: 1;
+  min-height: 0;
   margin: 0;
   padding: 0.2rem 0.4rem;
   border: none;
+  border-radius: 7px;
+  background: transparent;
   color: var(--muted);
-  font-size: 11px;
-}
-
-.menu .visibility button + button {
-  border-top: 1px solid var(--edge);
+  font-size: 13px;
 }
 
 .menu .visibility button.on {
-  background: rgb(255 255 255 / 6%);
+  background: var(--surface-3);
   color: var(--ink);
+  box-shadow: 0 1px 3px rgb(0 0 0 / 40%);
   cursor: default;
 }
 
@@ -1291,7 +1373,7 @@ table.final tr.you td {
   margin-top: 0.75rem;
 }
 
-.split span {
+.split > span {
   color: var(--muted);
 }
 
@@ -1301,10 +1383,18 @@ table.final tr.you td {
   flex: 1;
 }
 
+/* The quiet tier: no box until the pointer is on it. */
 .menu button.quiet {
   margin-top: 0.5rem;
-  border-color: var(--edge);
+  border-color: transparent;
+  background: transparent;
   color: var(--muted);
+}
+
+.menu button.quiet:hover {
+  border-color: transparent;
+  background: var(--surface-2);
+  color: var(--ink);
 }
 
 .seats {
@@ -2108,14 +2198,16 @@ body.hud-bricks #hud .roster .line .shape path {
 
 #sound,
 #fullscreen {
-  padding: 0.3rem 0.7rem;
-  border: 1px solid rgb(255 255 255 / 22%);
-  background: rgb(10 10 18 / 85%);
-  color: #c9c9d6;
-  font: inherit;
-  font-size: 12px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  display: inline-flex;
+  gap: 0.45rem;
+  align-items: center;
+  min-height: 2.2rem;
+  padding: 0.3rem 0.75rem;
+  border: 1px solid rgb(255 255 255 / 16%);
+  border-radius: var(--radius-s);
+  background: rgb(14 17 26 / 88%);
+  color: #d4d7e2;
+  font: 600 13px var(--ui-font);
   cursor: pointer;
 }
 
@@ -2126,14 +2218,16 @@ body.hud-bricks #hud .roster .line .shape path {
 
 /* Pause, beside the sound switch, during a match only (pause.ts). */
 #pause {
-  padding: 0.3rem 0.7rem;
-  border: 1px solid rgb(255 255 255 / 22%);
-  background: rgb(10 10 18 / 85%);
-  color: #c9c9d6;
-  font: inherit;
-  font-size: 12px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  display: inline-flex;
+  gap: 0.45rem;
+  align-items: center;
+  min-height: 2.2rem;
+  padding: 0.3rem 0.75rem;
+  border: 1px solid rgb(255 255 255 / 16%);
+  border-radius: var(--radius-s);
+  background: rgb(14 17 26 / 88%);
+  color: #d4d7e2;
+  font: 600 13px var(--ui-font);
   cursor: pointer;
 }
 
@@ -2324,14 +2418,17 @@ body.reduced-motion .menu button.quiet.fresh {
   flex-direction: column;
   gap: 0.6rem;
   align-items: center;
-  padding: 1.2rem 1.4rem 1rem;
-  border: 1px solid var(--accent);
-  background: var(--panel);
+  padding: 1.4rem 1.6rem 1.2rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface-solid);
+  box-shadow: var(--shadow);
 }
 
 .how-to-play canvas {
   display: block;
-  border: 1px solid var(--edge);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-s);
 }
 
 .how-to-play .caption {
@@ -2339,7 +2436,7 @@ body.reduced-motion .menu button.quiet.fresh {
   margin: 0.3rem 0 0;
   color: var(--ink);
   font-size: 1.05rem;
-  letter-spacing: 0.04em;
+  font-weight: 500;
   text-align: center;
 }
 
@@ -2353,32 +2450,46 @@ body.reduced-motion .menu button.quiet.fresh {
 }
 
 .how-to-play button {
+  display: inline-flex;
+  gap: 0.5rem;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.4rem;
   padding: 0.35rem 1rem;
-  border: 1px solid var(--accent);
-  background: transparent;
-  color: var(--accent);
-  font: inherit;
-  font-size: 1.1rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-s);
+  background: var(--surface-2);
+  color: var(--ink);
+  font: 600 1.1rem var(--ui-font);
   cursor: pointer;
+  transition:
+    background 120ms,
+    border-color 120ms;
 }
 
 .how-to-play button:hover:not(:disabled) {
-  background: var(--accent);
-  color: #0a0a12;
+  border-color: var(--accent);
+  background: var(--surface-3);
 }
 
 .how-to-play button:disabled {
-  border-color: var(--edge);
-  color: var(--edge);
+  border-color: var(--line);
+  background: transparent;
+  color: var(--faint);
   cursor: default;
 }
 
 .how-to-play button.close {
-  border-color: var(--edge);
+  border-color: transparent;
+  background: transparent;
   color: var(--muted);
-  font-size: 11px;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
+  font-size: 14px;
+}
+
+.how-to-play button.close:hover:not(:disabled) {
+  border-color: transparent;
+  background: var(--surface-2);
+  color: var(--ink);
 }
 
 /* How to play's panel as wide as its longest caption, so nothing moves from page to page. */
@@ -2390,26 +2501,32 @@ body.reduced-motion .menu button.quiet.fresh {
 .how-to-play .tabs {
   display: flex;
   width: 482px;
+  padding: 3px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-s);
+  background: var(--field);
 }
 
 .how-to-play .tabs .tab {
   flex: 1;
-  padding: 0.4rem 0.5rem;
-  border-color: var(--edge);
+  min-height: 2rem;
+  padding: 0.3rem 0.5rem;
+  border: none;
+  border-radius: 7px;
+  background: transparent;
   color: var(--muted);
-  font-size: 11px;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
+  font-size: 13px;
 }
 
-.how-to-play .tabs .tab + .tab {
-  border-left: none;
+.how-to-play .tabs .tab:hover:not(.on) {
+  background: transparent;
+  color: var(--ink);
 }
 
 .how-to-play .tabs .tab.on {
-  border-color: var(--accent);
-  background: var(--accent);
-  color: #0a0a12;
+  background: var(--surface-3);
+  color: var(--accent);
+  box-shadow: 0 1px 3px rgb(0 0 0 / 40%);
 }
 
 /* A dot a page of the section shown, the page's own lit. */
@@ -2422,9 +2539,11 @@ body.reduced-motion .menu button.quiet.fresh {
 .how-to-play .dots .dot {
   width: 10px;
   height: 10px;
+  min-height: 0;
   padding: 0;
   border-color: var(--muted);
   border-radius: 50%;
+  background: transparent;
 }
 
 .how-to-play .dots .dot.on {
@@ -5304,18 +5423,21 @@ body.hud-wildwest .embers i {
   background: rgb(5 5 10 / 70%);
 }
 
+/* In the menus' base, mid-match too, with only the look's accent (PLAN §11 item 4, MS1). */
 .look-gallery .panel {
   display: flex;
   flex-direction: column;
   gap: 0.9rem;
   width: min(56rem, 94vw);
   max-height: 90vh;
-  padding: 1.2rem 1.4rem;
-  border: var(--hud-box-edge, 1px solid var(--accent));
-  background: var(--hud-panel, #0a0a12);
-  box-shadow: var(--hud-box-shadow, none);
-  color: var(--hud-ink, var(--ink));
-  font-family: var(--hud-font, inherit);
+  padding: 1.4rem 1.6rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface-solid);
+  box-shadow: var(--shadow);
+  color: var(--ink);
+  font: 14px var(--ui-font);
+  -webkit-font-smoothing: antialiased;
 }
 
 .look-gallery .head {
@@ -5334,18 +5456,19 @@ body.hud-wildwest .embers i {
 .look-gallery .hearts button {
   display: flex;
   align-items: center;
-  gap: 0.3rem;
-  padding: 0.25rem 0.6rem;
-  border: 1px solid color-mix(in srgb, var(--hud-muted, var(--muted)) 50%, transparent);
-  background: transparent;
-  color: var(--hud-muted, var(--muted));
-  font-size: 12px;
-  letter-spacing: 0.05em;
+  gap: 0.35rem;
+  padding: 0.35rem 0.75rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-s);
+  background: var(--surface-2);
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 600;
 }
 
 .look-gallery .hearts button:hover {
   border-color: var(--hud-accent, var(--accent));
-  color: var(--hud-ink, var(--ink));
+  color: var(--ink);
 }
 
 .look-gallery .hearts svg {
@@ -5356,9 +5479,10 @@ body.hud-wildwest .embers i {
 
 .look-gallery h2 {
   margin: 0;
-  font-size: 1.2rem;
-  letter-spacing: 0.15em;
-  text-transform: uppercase;
+  font-family: var(--ui-display);
+  font-size: 1.35rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
   color: var(--hud-accent, var(--accent));
 }
 
@@ -5367,30 +5491,35 @@ body.hud-wildwest .embers i {
   cursor: pointer;
 }
 
+/* Building and Combat as one strip, the look being chosen raised, as How to play's tabs. */
 .look-gallery .tabs {
   display: flex;
-  gap: 0.5rem;
+  gap: 3px;
+  padding: 3px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-s);
+  background: var(--field);
 }
 
 .look-gallery .tab {
   flex: 1;
-  padding: 0.55rem 0.8rem;
-  border: 1px solid color-mix(in srgb, var(--hud-muted, var(--muted)) 50%, transparent);
+  padding: 0.5rem 0.8rem;
+  border: none;
+  border-radius: 7px;
   background: transparent;
-  color: var(--hud-muted, var(--muted));
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  color: var(--muted);
+  font-weight: 600;
 }
 
 .look-gallery .tab b {
   margin-left: 0.4rem;
-  color: var(--hud-ink, var(--ink));
-  text-transform: none;
+  color: var(--ink);
 }
 
 .look-gallery .tab.active {
-  border-color: var(--hud-accent, var(--accent));
+  background: var(--surface-3);
   color: var(--hud-accent, var(--accent));
+  box-shadow: 0 1px 3px rgb(0 0 0 / 40%);
 }
 
 .look-gallery .cards {
@@ -5408,9 +5537,11 @@ body.hud-wildwest .embers i {
   gap: 0.35rem;
   align-items: center;
   padding: 0.45rem;
-  border: 1px solid color-mix(in srgb, var(--hud-muted, var(--muted)) 40%, transparent);
-  background: transparent;
-  color: var(--hud-ink, var(--ink));
+  border: 1px solid var(--line);
+  border-radius: var(--radius-s);
+  background: var(--surface-2);
+  color: var(--ink);
+  transition: border-color 120ms;
 }
 
 .look-gallery .card:hover {
@@ -5425,6 +5556,7 @@ body.hud-wildwest .embers i {
 .look-gallery .card img {
   width: 100%;
   aspect-ratio: 224 / 160;
+  border-radius: 6px;
   background: #1c1d2b;
   opacity: 0;
   transition: opacity 240ms ease;
@@ -5441,8 +5573,8 @@ body.hud-wildwest .embers i {
 }
 
 .look-gallery .card .name {
-  font-size: 12px;
-  letter-spacing: 0.05em;
+  font-size: 13px;
+  font-weight: 600;
 }
 
 /* A favourite's heart, in the corner opposite the badges; clicking it does not choose. */
@@ -5478,7 +5610,8 @@ body.hud-wildwest .embers i {
 .look-gallery .badge {
   position: absolute;
   right: 0.35rem;
-  padding: 0.05rem 0.35rem;
+  padding: 0.05rem 0.4rem;
+  border-radius: 999px;
   font-size: 10px;
   font-style: normal;
   font-weight: 700;
@@ -5497,19 +5630,22 @@ body.hud-wildwest .embers i {
   background: #ff6a70;
 }
 
+/* The panel's one way on, so the primary tier. */
 .look-gallery .done {
   align-self: center;
-  padding: 0.55rem 2.4rem;
-  border: 1px solid var(--hud-accent, var(--accent));
-  background: transparent;
-  color: var(--hud-accent, var(--accent));
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
+  min-height: 2.6rem;
+  padding: 0.55rem 2.6rem;
+  border: none;
+  border-radius: var(--radius-s);
+  background: var(--hud-accent, var(--accent));
+  color: var(--hud-on-accent, var(--on-accent));
+  font-family: var(--ui-display);
+  font-size: 1.05rem;
+  font-weight: 600;
 }
 
 .look-gallery .done:hover {
-  background: var(--hud-accent, var(--accent));
-  color: var(--hud-on-accent, #0a0a12);
+  filter: brightness(1.1);
 }
 
 body.reduced-motion .look-gallery .card img {
@@ -5519,12 +5655,13 @@ body.reduced-motion .look-gallery .card img {
 /* --- Tournaments (docs/TOURNAMENT.md) ----------------------------------------- */
 
 /* New and Resume side by side above Single match; Resume greyed with nothing saved. */
+/* Still readable: what cannot be used now is said, not hidden. */
 .menu button:disabled,
 .menu button:disabled:hover {
-  border-color: var(--edge);
+  border-color: var(--line);
   background: transparent;
-  color: var(--muted);
-  opacity: 0.5;
+  color: var(--faint);
+  filter: none;
   cursor: default;
 }
 
@@ -6331,4 +6468,46 @@ body.reduced-motion .look-gallery .card img {
   color: var(--accent);
   letter-spacing: 0.08em;
   text-transform: uppercase;
+}
+
+/* Hover texts (PLAN §11 item 4, MS1): `data-tip` on anything, shown at once above it, in
+   the panels' dress — the browser's own `title` came late, small and in the system's look. */
+[data-tip] {
+  position: relative;
+}
+
+[data-tip]:hover::after {
+  content: attr(data-tip);
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 8px);
+  z-index: 40;
+  width: max-content;
+  max-width: 17rem;
+  padding: 0.5rem 0.7rem;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #0b0e16;
+  box-shadow: 0 8px 24px rgb(0 0 0 / 50%);
+  color: var(--ink);
+  font: 500 12px/1.4 var(--ui-font);
+  letter-spacing: normal;
+  text-align: left;
+  text-transform: none;
+  white-space: normal;
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+/* Near the left edge, opening rightwards, so it stays on screen. */
+[data-tip][data-tip-side='right']:hover::after {
+  left: 0;
+  transform: none;
+}
+
+/* Near the right edge, opening leftwards so it stays on screen. */
+[data-tip][data-tip-side='left']:hover::after {
+  left: auto;
+  right: 0;
+  transform: none;
 }

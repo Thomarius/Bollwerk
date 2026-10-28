@@ -9,8 +9,8 @@ import { t } from './i18n.js';
 import { escape } from './html.js';
 
 /**
- * The menu's Credits: what the game owes Rampart, and who made each sound, on what
- * licence — made from the audio manifest, as `CREDITS.md` is, so the two always agree.
+ * The menu's Credits: what the game owes Rampart, who made each sound and each typeface, on
+ * what licence — made from the audio manifest, as `CREDITS.md` is, so the two always agree.
  */
 
 function item({ path, credit }: CreditedFile): string {
@@ -32,6 +32,36 @@ function item({ path, credit }: CreditedFile): string {
   return `<li>${what}${body}${changes}</li>`;
 }
 
+/**
+ * The menus' typefaces (PLAN §11 item 4, MS1), bundled with the game under the SIL Open Font
+ * License, whose text is served beside them from `assets/fonts/`, as it asks.
+ */
+const FONTS = [
+  {
+    title: 'Inter',
+    author: 'The Inter Project Authors',
+    source: 'https://github.com/rsms/inter',
+    licence: '/fonts/Inter-OFL.txt',
+  },
+  {
+    title: 'Rubik',
+    author: 'The Rubik Project Authors',
+    source: 'https://github.com/googlefonts/rubik',
+    licence: '/fonts/Rubik-OFL.txt',
+  },
+] as const;
+
+function fontItem(font: (typeof FONTS)[number]): string {
+  const link = (href: string, text: string): string =>
+    `<a href="${escape(href)}" target="_blank" rel="noopener noreferrer">${escape(text)}</a>`;
+  return `<li>${t('credits.item', {
+    title: `“${font.title}” `,
+    author: font.author,
+    licence: link(font.licence, 'SIL Open Font License 1.1'),
+    source: link(font.source, t('credits.source')),
+  })}</li>`;
+}
+
 /** The panel's markup, apart so a test can read it without a page. */
 export function creditsHtml(audio: AudioManifest): string {
   const { music, sfx } = audioCredits(audio);
@@ -45,6 +75,8 @@ export function creditsHtml(audio: AudioManifest): string {
         <ul>${music.map(item).join('')}</ul>
         <h3>${t('credits.sfx')}</h3>
         <ul>${sfx.map(item).join('')}</ul>
+        <h3>${t('credits.fonts')}</h3>
+        <ul>${FONTS.map(fontItem).join('')}</ul>
       </div>
       <button class="close quiet">${t('credits.close')}</button>
     </div>`;

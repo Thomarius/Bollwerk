@@ -177,6 +177,12 @@ Full detail in PLAN.md §1. The parts that surprise people:
 **Done** (2026-10-28; the latest release **v0.9.18**, 2026-10-28, protocol 32, recording format 4,
 which a test session needs the server rebuilt and every page reloaded for):
 
+- **The menus' new look, MS1: foundations** (ARCHIVE 14zv, 2026-10-28, PLAN §11 item 4, from a
+  mockup the user approved, `packages/client/mockup/menus.html`): Inter and Rubik bundled, the
+  panels rounded and solid where stacked, three button tiers, icons (`icons.ts`), our own hover
+  texts (`data-tip`) for the browser's `title`, the font licences in the Credits and `assets/fonts/`.
+  MS2 (controls), MS3 (layouts) and MS4 (each window in the next look, at Medium) are next.
+
 - **UI polish, UP1: in the match** (ARCHIVE 14zr, 2026-10-28, PLAN §11 item 4): "You are
   here" clear of the castles, "opening" for round 0, the pause menu as a column, the corner's
   buttons and the round label readable, your row marked in the end screen, and a local match

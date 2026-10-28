@@ -99,7 +99,7 @@ export function leagueTableMarkup(save: Save, lines: readonly TableLine[]): stri
       ].filter((c) => c !== '');
       const tie =
         row.tie !== null && MARKED_TIES.has(row.tie)
-          ? `<td class="tie" title="${escape(t(`tournament.tie.${row.tie as 'draw'}`))}">${rank}<sup>*</sup></td>`
+          ? `<td class="tie" data-tip="${escape(t(`tournament.tie.${row.tie as 'draw'}`))}">${rank}<sup>*</sup></td>`
           : `<td>${rank}</td>`;
       return (
         `<tr${classes.length > 0 ? ` class="${classes.join(' ')}"` : ''}>${tie}<td>${teamLabel(save, row.team)}</td>` +
@@ -108,7 +108,7 @@ export function leagueTableMarkup(save: Save, lines: readonly TableLine[]): stri
     })
     .join('');
   const head = (key: 'points' | 'wins' | 'buchholz'): string =>
-    `<th title="${escape(t(`tournament.${key}Title`))}">${t(`tournament.${key}Short`)}</th>`;
+    `<th data-tip="${escape(t(`tournament.${key}Title`))}">${t(`tournament.${key}Short`)}</th>`;
   return (
     `<table class="league-table"><thead><tr><th>#</th><th>${t('tournament.team')}</th>` +
     `${head('points')}${full ? head('wins') : ''}${head('buchholz')}</tr></thead>` +
@@ -171,7 +171,7 @@ function knockoutView(save: Save, progress: Progress): string {
 function leagueButton(): string {
   const label = escape(t('tournament.leagueButton'));
   return (
-    `<button id="league" class="icon-button" title="${label}" aria-label="${label}">` +
+    `<button id="league" class="icon-button" data-tip="${label}" aria-label="${label}">` +
     `<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square">` +
     `<path d="M3 4h18v16H3zM3 9h18M3 14h18M9 4v16"/></svg></button>`
   );
@@ -181,7 +181,7 @@ function leagueButton(): string {
 function bracketButton(): string {
   const label = escape(t('tournament.bracket'));
   return (
-    `<button id="bracket" class="icon-button" title="${label}" aria-label="${label}">` +
+    `<button id="bracket" class="icon-button" data-tip="${label}" aria-label="${label}">` +
     `<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square">` +
     `<path d="M3 4h5v6H3M3 14h5v6H3M8 7h4v10H8M12 12h4M16 12h5"/></svg></button>`
   );

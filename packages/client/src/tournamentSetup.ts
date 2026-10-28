@@ -14,6 +14,7 @@ import {
 } from '@bollwerk/tournament';
 
 import { escape } from './html.js';
+import { withIcon } from './icons.js';
 import { t } from './i18n.js';
 import { levelPips, rangeOptions, specialsSwitch } from './lobby.js';
 import { preferredSpecials } from './towers.js';
@@ -269,7 +270,7 @@ export function setupMarkup(form: TournamentForm, hostName: string): string {
           </div>
         </section>
       </div>
-      <button id="create">${t('tournament.start')}</button>
-      <button id="back" class="quiet">${t('tournament.back')}</button>
+      <button id="create" class="primary">${withIcon('trophy', t('tournament.start'))}</button>
+      <button id="back" class="quiet">${withIcon('back', t('tournament.back'))}</button>
     </div>`;
 }

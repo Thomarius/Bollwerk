@@ -1,6 +1,7 @@
 import { Progress } from '@bollwerk/tournament';
 
 import { escape } from './html.js';
+import { withIcon } from './icons.js';
 import { t } from './i18n.js';
 import type { SavedTournament } from './tournamentSaves.js';
 import { playedWhen, settingsLine, stageName } from './tournamentText.js';
@@ -49,6 +50,6 @@ export function resumeMarkup(
       <h1>${t('tournament.resumeTitle')}</h1>
       ${notice === null ? '' : `<p class="note warn">${escape(notice)}</p>`}
       ${list}
-      <button id="back" class="quiet">${t('tournament.back')}</button>
+      <button id="back" class="quiet">${withIcon('back', t('tournament.back'))}</button>
     </div>`;
 }

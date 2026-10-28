@@ -1,3 +1,7 @@
+// The menus' typefaces, bundled rather than fetched, so the desktop app needs no network:
+// Inter for text, Rubik for headings, both under the SIL Open Font License (PLAN §11 item 4, MS1).
+import '@fontsource-variable/inter';
+import '@fontsource-variable/rubik';
 import { defaultConfigBundle, defaultTeams, MAX_LEVEL, MIN_LEVEL } from '@bollwerk/config';
 import { PHASES, type Phase } from '@bollwerk/sim';
 

@@ -38,9 +38,9 @@ export function openOptions(actions: OptionsActions): void {
       <div class="panel">
         <h2>${t('menu.options')}</h2>
         <label>${t('settings.language')} <select class="language">${languageOptions()}</select></label>
-        <label title="${escape(t('settings.graphicsTitle'))}">${t('settings.graphics')} <select class="graphics">${graphicsOptions()}</select></label>
+        <label data-tip="${escape(t('settings.graphicsTitle'))}">${t('settings.graphics')} <select class="graphics">${graphicsOptions()}</select></label>
         <label>${t('settings.motion')} <select class="motion">${motionOptions()}</select></label>
-        <label title="${escape(t('settings.styleMusicTitle'))}">${t('settings.styleMusic')} <select class="style-music">${styleMusicOptions()}</select></label>
+        <label data-tip="${escape(t('settings.styleMusicTitle'))}">${t('settings.styleMusic')} <select class="style-music">${styleMusicOptions()}</select></label>
         <button class="close quiet">${t('credits.close')}</button>
       </div>`;
     root.querySelector('.motion')?.closest('label')?.after(volumeSliders(actions.audio));

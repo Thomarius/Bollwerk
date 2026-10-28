@@ -2,6 +2,7 @@ import { defaultConfigBundle, validateConfigBundle } from '@bollwerk/config';
 
 import { Audio } from './audio.js';
 import { onLanguageChange, setLanguage, startingLanguage, t } from './i18n.js';
+import { withIcon } from './icons.js';
 import { installBackdrop } from './decor.js';
 import { applyMotion } from './motion.js';
 import { perf } from './perf.js';
@@ -81,7 +82,9 @@ function installSoundButton(): void {
   const button = document.createElement('button');
   button.id = 'sound';
   const show = (): void => {
-    button.textContent = audio.isMuted ? t('sound.off') : t('sound.on');
+    button.innerHTML = audio.isMuted
+      ? withIcon('mute', t('sound.off'))
+      : withIcon('sound', t('sound.on'));
     button.classList.toggle('off', audio.isMuted);
     button.setAttribute('aria-pressed', String(!audio.isMuted));
   };
@@ -115,8 +118,10 @@ function installFullscreenButton(): void {
   const button = document.createElement('button');
   button.id = 'fullscreen';
   const show = (): void => {
-    button.textContent =
-      document.fullscreenElement === null ? t('fullscreen.enter') : t('fullscreen.leave');
+    button.innerHTML =
+      document.fullscreenElement === null
+        ? withIcon('expand', t('fullscreen.enter'))
+        : withIcon('shrink', t('fullscreen.leave'));
   };
   button.addEventListener('click', () => {
     if (document.fullscreenElement === null) {

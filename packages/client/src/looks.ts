@@ -271,13 +271,13 @@ export function galleryMarkup(
         .join('');
       const chosen = choices[active] === choice ? ' chosen' : '';
       // What random means is not obvious from a die: a new style at every round.
-      const hint = choice === RANDOM ? ` title="${escape(t('looks.randomHint'))}"` : '';
+      const hint = choice === RANDOM ? ` data-tip="${escape(t('looks.randomHint'))}"` : '';
       // Random draws from the hearted, so it has no heart of its own.
       const on = choice !== RANDOM && favourites.includes(choice);
       const mark =
         choice === RANDOM
           ? ''
-          : `<span class="heart${on ? ' on' : ''}" role="checkbox" aria-checked="${on}" title="${escape(t('looks.favourite'))}">${heart(on)}</span>`;
+          : `<span class="heart${on ? ' on' : ''}" role="checkbox" aria-checked="${on}" data-tip="${escape(t('looks.favourite'))}">${heart(on)}</span>`;
       return (
         `<button class="card${chosen}" data-choice="${choice}"${hint}>` +
         `<img alt="" data-preview="${choice}" />` +
@@ -287,7 +287,7 @@ export function galleryMarkup(
     .join('');
   return (
     `<div class="panel"><div class="head"><h2>${t('looks.title')}</h2>` +
-    `<div class="hearts" title="${escape(t('looks.favouritesHint'))}">` +
+    `<div class="hearts" data-tip="${escape(t('looks.favouritesHint'))}">` +
     `<button class="hearts-all">${heart(true)} ${t('looks.heartAll')}</button>` +
     `<button class="hearts-none">${heart(false)} ${t('looks.heartNone')}</button></div></div>` +
     `<div class="tabs">${tab('build', t('looks.build'))}${tab('combat', t('looks.combat'))}</div>` +

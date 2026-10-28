@@ -227,9 +227,13 @@ committed.
 | `packages/desktop`    | The desktop app for releases: the server behind a window    |
 | `tools/headless`      | Bot-vs-bot harness for balance tuning and soak tests        |
 | `assets/audio`        | Audio cues                                                  |
+| `assets/fonts`        | The typefaces' licences, served with the game               |
 
 ## License
 
 The code is MIT. The audio is under its authors' own open licences, listed in
 [`CREDITS.md`](CREDITS.md), which is made from `config/audio.manifest.json` by
-`npm run credits` — a release cannot be built while any sound is uncredited.
+`npm run credits` — a release cannot be built while any sound is uncredited. The menus' typefaces,
+[Inter](https://github.com/rsms/inter) and [Rubik](https://github.com/googlefonts/rubik), are
+under the SIL Open Font License 1.1, its text beside them in `assets/fonts/` and named in the
+game's Credits.

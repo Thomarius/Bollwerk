@@ -2,6 +2,7 @@ import { defaultConfigBundle, type ArtLook } from '@bollwerk/config';
 import { type RoomListing } from '@bollwerk/protocol';
 
 import { howToPlaySeen, openHowToPlay } from './howToPlay.js';
+import { withIcon } from './icons.js';
 import { openCredits } from './credits.js';
 import { openOptions } from './options.js';
 import {
@@ -58,10 +59,10 @@ function lookPicker(look: ArtLook): string {
   const build = look === 'build';
   return (
     `<span class="look-picker">` +
-    `<button class="step prev" title="${t(build ? 'menu.prevBuild' : 'menu.prevCombat')}" aria-label="${t('menu.previous')}">&#9664;</button>` +
-    `<button class="look-picture" title="${t(build ? 'menu.pickBuild' : 'menu.pickCombat')}">` +
+    `<button class="step prev" data-tip="${t(build ? 'menu.prevBuild' : 'menu.prevCombat')}" aria-label="${t('menu.previous')}">&#9664;</button>` +
+    `<button class="look-picture" data-tip="${t(build ? 'menu.pickBuild' : 'menu.pickCombat')}">` +
     `<img class="style-preview" alt="" /><span class="look-name"></span></button>` +
-    `<button class="step next" title="${t(build ? 'menu.nextBuild' : 'menu.nextCombat')}" aria-label="${t('menu.next')}">&#9654;</button>` +
+    `<button class="step next" data-tip="${t(build ? 'menu.nextBuild' : 'menu.nextCombat')}" aria-label="${t('menu.next')}">&#9654;</button>` +
     `</span>`
   );
 }
@@ -142,23 +143,23 @@ export function showMenu(notice: string | null = null): void {
       <div class="look" data-look="build">${t('menu.buildLook')} ${lookPicker('build')}</div>
       <div class="look" data-look="combat">${t('menu.combatLook')} ${lookPicker('combat')}</div>
       <div class="split play-row">
-        <button id="play">${t('menu.singleMatch')}</button>
-        <div id="visibility" class="visibility" data-public="true" title="${t('menu.visibilityTitle')}">
+        <button id="play" class="primary">${withIcon('play', t('menu.singleMatch'))}</button>
+        <div id="visibility" class="visibility" data-public="true" data-tip="${escape(t('menu.visibilityTitle'))}" data-tip-side="left">
           <button data-public="true" class="on">${t('menu.public')}</button>
           <button data-public="false">${t('menu.private')}</button>
         </div>
       </div>
       <div class="split tournament-row">
-        <button id="new-tournament">${t('menu.newTournament')}</button>
-        <button id="resume-tournament"${savedTournaments().length === 0 ? ' disabled' : ''}>${t('menu.resumeTournament')}</button>
+        <button id="new-tournament">${withIcon('trophy', t('menu.newTournament'))}</button>
+        <button id="resume-tournament"${savedTournaments().length === 0 ? ' disabled' : ''}>${withIcon('resume', t('menu.resumeTournament'))}</button>
       </div>
       <div class="split">
-        <button id="how-to-play" class="quiet${howToPlaySeen() ? '' : ' fresh'}">${t('menu.howToPlay')}</button>
-        <button id="options" class="quiet">${t('menu.options')}</button>
+        <button id="how-to-play" class="quiet${howToPlaySeen() ? '' : ' fresh'}">${withIcon('help', t('menu.howToPlay'))}</button>
+        <button id="options" class="quiet">${withIcon('gear', t('menu.options'))}</button>
       </div>
       <div class="split">
         <input id="code" type="text" maxlength="8" placeholder="${t('menu.codePlaceholder')}" />
-        <button id="join">${t('menu.join')}</button>
+        <button id="join">${withIcon('join', t('menu.join'))}</button>
       </div>
       <section id="open-games-section" class="open-games-section"${notice === null ? ' hidden' : ''}>
         <h2>${t('menu.openGames')}</h2>
@@ -229,7 +230,8 @@ export function showMenu(notice: string | null = null): void {
     if (choice === undefined || row === null) return;
     const name = row.querySelector<HTMLElement>('.look-name');
     if (name) name.textContent = lookName(choice);
-    row.title = choice === 'random' ? t('looks.randomHint') : '';
+    if (choice === 'random') row.dataset.tip = t('looks.randomHint');
+    else delete row.dataset.tip;
     const image = row.querySelector<HTMLImageElement>('img');
     if (image === null || !picturesShown) return;
     image.classList.remove('ready');

@@ -376,7 +376,7 @@ describe('the tournament between matches', () => {
     expect(after).toContain('class="league-table"');
     expect(after).toContain('A notice');
     // Wins beside the points, and the tie-breaks named in order under the table.
-    expect(after).toContain('title="Matches won outright">W</th>');
+    expect(after).toContain('data-tip="Matches won outright">W</th>');
     expect(after).toContain('Level on points, teams are ranked by wins (W)');
   });
 
