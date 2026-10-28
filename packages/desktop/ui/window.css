@@ -162,3 +162,70 @@ li button {
   accent-color: var(--accent);
   cursor: pointer;
 }
+
+/* Opening the tunnel takes half a minute and more: a bar that fills while the program
+   downloads and slides while a step of unknown length runs, so the wait never looks stuck. */
+.bar {
+  position: relative;
+  height: 4px;
+  overflow: hidden;
+  background: var(--edge);
+}
+
+.bar[hidden] {
+  display: none;
+}
+
+.bar > div {
+  width: 0;
+  height: 100%;
+  background: #e0a030;
+  transition: width 0.2s;
+}
+
+.bar.busy > div {
+  position: absolute;
+  width: 30%;
+  animation: bar-slide 1.4s ease-in-out infinite;
+}
+
+@keyframes bar-slide {
+  from {
+    left: -30%;
+  }
+
+  to {
+    left: 100%;
+  }
+}
+
+@keyframes bar-pulse {
+  from {
+    opacity: 0.35;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bar.busy > div {
+    width: 100%;
+    animation: bar-pulse 2s ease-in-out infinite alternate;
+  }
+}
+
+/* The link on its way, not yet answering: greyed, and nothing to copy. */
+li.pending {
+  border-style: dashed;
+  color: var(--muted);
+}
+
+li.pending code {
+  user-select: none;
+}
+
+li.pending span {
+  font-size: 11px;
+}

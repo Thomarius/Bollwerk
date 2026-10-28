@@ -174,8 +174,13 @@ Full detail in PLAN.md §1. The parts that surprise people:
 
 ## Status
 
-**Done** (2026-10-28; the latest release **v0.9.21**, 2026-10-28, protocol 33, recording format 4,
+**Done** (2026-10-28; the latest release **v0.9.22**, 2026-10-28, protocol 33, recording format 4,
 which a test session needs the server rebuilt and every page reloaded for):
+
+- **The online link's steps shown** (ARCHIVE 15h, 2026-10-28, v0.9.22, the user's report): the
+  desktop app's Share a link online names its three steps, counts the seconds, shows a bar and
+  the address greyed until it answers; the check asks Cloudflare's resolver (1.1.1.1), not the
+  system's, which had remembered the name as missing — open after 8 s rather than 36.
 
 - **Windows that keep their size** (ARCHIVE 15f, 2026-10-28, v0.9.21, the user's feedback): the
   lobby, the tower menu and the new tournament one height whatever is chosen — the map in a box

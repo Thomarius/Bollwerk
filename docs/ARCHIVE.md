@@ -10693,3 +10693,32 @@ Since v0.9.20: the lobby, the tower menu and the new tournament keep one size wh
 chosen; rounds and lives left to the config, no longer offered; the archnemesis on by default
 (15f). Protocol 33 and recording format 4 as before, so v0.9.20 and v0.9.21 play together and
 recordings replay.
+
+## 15h. The online link's steps shown, and found 30 s sooner (2026-10-28)
+
+The user's report: switching on Share a link online (14zk) took a long time with no reaction
+until it worked. The window had said only "Connecting to Cloudflare…" for all of it. Now the
+tunnel reports its steps (`TunnelStatus`): starting the program, asking Cloudflare for a link
+(running until an address and a connection stand), and Cloudflare announcing the link (until the
+address answers). Each step carries when the opening began, so the window's line counts the
+seconds waited, and a bar under the switch fills while the program downloads and slides while a
+step runs (pulses with reduced motion). The address is shown greyed and "not ready yet" as soon
+as Cloudflare gives it, without a Copy button and not selectable, so it is not passed on before
+it works.
+
+Timing the steps against Cloudflare found why the wait was long: the third step always ran
+out its 30 s cap (`reachableWaitMs`), so the link was given without ever confirming it. Checking
+the address through the system's resolver before the name existed made Windows and the router
+remember that it does not exist, and they kept answering ENOTFOUND for a minute after
+Cloudflare's own resolver (1.1.1.1) knew it — 60 s here, four runs. The check now asks
+Cloudflare's resolver and connects to that IP itself, falling back to the system's where 1.1.1.1
+cannot be reached. Measured over four runs: open after 7.4–8.1 s rather than 35–37 s; the third
+step about 2 s; and the host's own machine, whose resolver is no longer asked early, reaches the
+link at once.
+
+## 15i. v0.9.22 (2026-10-28)
+
+Since v0.9.21: the desktop app's Share a link online shows its steps, the seconds waited, a bar
+and the address on its way, and opens in about 8 s rather than 36, its check asking Cloudflare's
+resolver rather than the system's (15h). The game itself is unchanged: protocol 33 and recording
+format 4 as before, so v0.9.21 and v0.9.22 play together.

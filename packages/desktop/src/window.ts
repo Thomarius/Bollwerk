@@ -58,6 +58,8 @@ const publicList = $<HTMLUListElement>('public');
 const tunnel = $<HTMLInputElement>('tunnel');
 const link = $('link');
 const links = $<HTMLUListElement>('links');
+const linkBar = $('link-bar');
+const linkFill = $('link-fill');
 const firewallLine = $('firewall');
 
 upnp.addEventListener('change', () => void api.setUpnp(upnp.checked));
@@ -86,17 +88,44 @@ export function describeInternet(state: ControlState): string {
   }
 }
 
-/** What became of the tunnel, in words for the host. */
-export function describeTunnel(state: ControlState): string {
+/**
+ * How far opening the tunnel is, for its bar: a share while the program downloads, `busy`
+ * for a step whose length nobody knows, null once it is open, off or failed.
+ */
+export function tunnelProgress(state: ControlState): number | 'busy' | null {
+  if (!state.tunnel || state.status !== 'running') return null;
+  switch (state.link.state) {
+    case 'downloading':
+      return state.link.percent / 100;
+    case 'off':
+    case 'starting':
+    case 'registering':
+    case 'publishing':
+      return 'busy';
+    default:
+      return null;
+  }
+}
+
+/** What became of the tunnel, in words for the host; `now` counts the seconds waited. */
+export function describeTunnel(state: ControlState, now: number): string {
   if (!state.tunnel) return say('desktop.tunnelOff');
   if (state.status !== 'running') return '';
   const s = state.link;
+  const waited = (text: string, since: number) =>
+    say('desktop.tunnelWaited', { text, seconds: Math.max(0, Math.floor((now - since) / 1000)) });
   switch (s.state) {
     case 'off':
-    case 'connecting':
-      return say('desktop.tunnelConnecting');
+      // The moment between the server starting and the tunnel being asked to open.
+      return say('desktop.tunnelStarting');
     case 'downloading':
       return say('desktop.tunnelDownloading', { percent: s.percent });
+    case 'starting':
+      return waited(say('desktop.tunnelStarting'), s.since);
+    case 'registering':
+      return waited(say('desktop.tunnelRegistering'), s.since);
+    case 'publishing':
+      return waited(say('desktop.tunnelPublishing'), s.since);
     case 'open':
       return say('desktop.tunnelOpen');
     case 'failed':
@@ -140,6 +169,21 @@ export function describeFirewall(status: FirewallStatus): { text: string; warn: 
     case 'unknown':
       return { text: say('desktop.firewallUnknown'), warn: false };
   }
+}
+
+/**
+ * An address coming, not yet answering: shown so the host sees it on its way, but greyed and
+ * neither copyable nor selectable, so it is not passed on before it leads anywhere.
+ */
+function pendingItem(url: string): HTMLLIElement {
+  const item = document.createElement('li');
+  item.className = 'pending';
+  const text = document.createElement('code');
+  text.textContent = url;
+  const note = document.createElement('span');
+  note.textContent = say('desktop.tunnelNotReady');
+  item.append(text, note);
+  return item;
 }
 
 /** An address with a button that copies it. */
@@ -210,14 +254,29 @@ function show(state: ControlState): void {
       : []),
   );
   tunnel.checked = state.tunnel;
-  link.textContent = describeTunnel(state);
+  showTunnel(state);
+  const shared = state.status === 'running' && state.tunnel ? state.link : null;
   links.replaceChildren(
-    ...(state.status === 'running' && state.tunnel && state.link.state === 'open'
-      ? [copyItem(state.link.url)]
-      : []),
+    ...(shared?.state === 'open'
+      ? [copyItem(shared.url)]
+      : shared?.state === 'publishing'
+        ? [pendingItem(shared.url)]
+        : []),
   );
   showFirewall();
 }
+
+/** The tunnel's line and bar; again every second while it opens, for the seconds waited. */
+function showTunnel(state: ControlState): void {
+  link.textContent = describeTunnel(state, Date.now());
+  const progress = tunnelProgress(state);
+  linkBar.hidden = progress === null;
+  linkBar.classList.toggle('busy', progress === 'busy');
+  linkFill.style.width = typeof progress === 'number' ? `${progress * 100}%` : '';
+}
+setInterval(() => {
+  if (current !== null && tunnelProgress(current) !== null) showTunnel(current);
+}, 1000);
 
 let firewall: FirewallStatus = { state: 'unchecked' };
 

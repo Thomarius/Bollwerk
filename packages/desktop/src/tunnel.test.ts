@@ -62,8 +62,13 @@ describe('the tunnel', () => {
       // Not known by name at the first asking, as a new address often is not.
       reachable: () => Promise.resolve(++asked > 1),
       pollMs: 1,
+      now: () => 1000,
     });
-    tunnel.onChange((s) => seen.push(s.state));
+    const steps: TunnelStatus[] = [];
+    tunnel.onChange((s) => {
+      seen.push(s.state);
+      steps.push(s);
+    });
     await tunnel.open(8080);
     expect(program.args).toEqual(['tunnel', '--no-autoupdate', '--url', 'http://127.0.0.1:8080']);
     expect(tunnel.status).toEqual({
@@ -73,7 +78,27 @@ describe('the tunnel', () => {
     expect(asked).toBe(2);
     tunnel.close();
     expect(program.killed).toBe(true);
-    expect(seen).toEqual(['connecting', 'downloading', 'connecting', 'open', 'off']);
+    expect(seen).toEqual([
+      'starting',
+      'downloading',
+      'starting',
+      'registering',
+      'publishing',
+      'open',
+      'off',
+    ]);
+    // Every step timed from the switch, and the address shown once a connection stands.
+    expect(steps.slice(0, 5)).toEqual([
+      { state: 'starting', since: 1000 },
+      { state: 'downloading', percent: 50, since: 1000 },
+      { state: 'starting', since: 1000 },
+      { state: 'registering', since: 1000 },
+      {
+        state: 'publishing',
+        url: 'https://consists-gentleman-bite-arc.trycloudflare.com',
+        since: 1000,
+      },
+    ]);
   });
 
   it('says when the program stops, gives no answer, or cannot be had', async () => {

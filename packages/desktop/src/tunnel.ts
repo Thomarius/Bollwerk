@@ -1,4 +1,8 @@
 import { spawn } from 'node:child_process';
+import type { LookupAddress } from 'node:dns';
+import { Resolver } from 'node:dns/promises';
+import { get } from 'node:https';
+import type { LookupFunction } from 'node:net';
 import { createInterface } from 'node:readline';
 
 import { UnsupportedSystem } from './cloudflared.js';
@@ -12,12 +16,21 @@ import { UnsupportedSystem } from './cloudflared.js';
  *
  * Free and without an account, but without a promise of uptime either, and the address is new
  * every time; the host switches it on, never a default.
+ *
+ * Opening goes through steps, each carrying `since`, when it began (ms since the epoch), so the
+ * window can count the wait: half a minute and more, which one line that never changed made
+ * look stuck (the user's report, 2026-10-28).
  */
 export type TunnelStatus =
   | { state: 'off' }
   /** Fetching the tunnel program, the first time only. */
-  | { state: 'downloading'; percent: number }
-  | { state: 'connecting' }
+  | { state: 'downloading'; percent: number; since: number }
+  /** Checking the program and starting it. */
+  | { state: 'starting'; since: number }
+  /** Running, until Cloudflare has handed out an address and a connection stands. */
+  | { state: 'registering'; since: number }
+  /** Connected, until the address answers: its name takes some seconds to be known. */
+  | { state: 'publishing'; url: string; since: number }
   | { state: 'open'; url: string }
   | {
       state: 'failed';
@@ -41,6 +54,8 @@ export interface TunnelOptions {
   run?: (file: string, args: string[]) => TunnelProcess;
   /** How long Cloudflare may take to hand out an address and connect. */
   timeoutMs?: number;
+  /** The clock the steps are timed by; `Date.now` by default. */
+  now?: () => number;
   /** Whether the address answers yet; asked of the address itself by default. */
   reachable?: (url: string) => Promise<boolean>;
   /** How often to ask, and how long before giving the address anyway. */
@@ -48,11 +63,48 @@ export interface TunnelOptions {
   reachableWaitMs?: number;
 }
 
-const answers = (url: string): Promise<boolean> =>
-  fetch(url, { signal: AbortSignal.timeout(4000) }).then(
-    (response) => response.ok,
-    () => false,
+/**
+ * Cloudflare's own resolver, asked for the new name rather than the system's. Asking the
+ * system before the name exists has the machine and its router remember that it does not, and
+ * they went on saying so for a minute after Cloudflare's resolver knew it from the start: the
+ * check never passed and every link waited out `reachableWaitMs` — measured 2026-10-28, four
+ * runs, the name known 60 s late here — while guests elsewhere, whose resolvers had not been
+ * asked, could have come in.
+ */
+const cloudflareDns = new Resolver({ timeout: 2000, tries: 1 });
+cloudflareDns.setServers(['1.1.1.1', '1.0.0.1']);
+
+/** The address's IPv4 by Cloudflare's resolver; null while unknown, undefined if unreachable. */
+const resolveAtCloudflare = (host: string): Promise<string | null | undefined> =>
+  cloudflareDns.resolve4(host).then(
+    (addresses) => addresses[0] ?? null,
+    (e: NodeJS.ErrnoException) =>
+      e.code === 'ENOTFOUND' || e.code === 'ENODATA' ? null : undefined,
   );
+
+/**
+ * Whether the address answers, reached at the IP Cloudflare's resolver gives — or by the
+ * system's, where that resolver cannot be reached, as on a network allowing only its own.
+ */
+async function answers(url: string): Promise<boolean> {
+  const address = await resolveAtCloudflare(new URL(url).hostname);
+  if (address === null) return false;
+  const lookup: LookupFunction | undefined =
+    address === undefined
+      ? undefined
+      : (_host, options, callback) =>
+          options.all
+            ? (callback as (e: null, all: LookupAddress[]) => void)(null, [{ address, family: 4 }])
+            : callback(null, address, 4);
+  return new Promise((resolve) => {
+    const request = get(url, { lookup, timeout: 4000 }, (response) => {
+      response.resume();
+      resolve(response.statusCode === 200);
+    });
+    request.on('timeout', () => request.destroy());
+    request.on('error', () => resolve(false));
+  });
+}
 
 const ADDRESS = /https:\/\/[a-z0-9-]+\.trycloudflare\.com/;
 
@@ -112,11 +164,12 @@ export class Tunnel {
   async open(port: number): Promise<void> {
     const mine = ++this.generation;
     this.end();
-    this.set({ state: 'connecting' });
+    const since = (this.options.now ?? Date.now)();
+    this.set({ state: 'starting', since });
     let file: string;
     try {
       file = await this.options.binary((percent) => {
-        if (mine === this.generation) this.set({ state: 'downloading', percent });
+        if (mine === this.generation) this.set({ state: 'downloading', percent, since });
       });
     } catch (e) {
       if (mine !== this.generation) return;
@@ -132,12 +185,13 @@ export class Tunnel {
       return;
     }
     if (mine !== this.generation) return;
-    this.set({ state: 'connecting' });
+    if (this.current.state !== 'starting') this.set({ state: 'starting', since });
 
     // 127.0.0.1 rather than localhost: the server listens on IPv4, and the program may try ::1.
     const args = ['tunnel', '--no-autoupdate', '--url', `http://127.0.0.1:${port}`];
     const child = (this.options.run ?? runProgram)(file, args);
     this.process = child;
+    this.set({ state: 'registering', since });
     await new Promise<void>((resolve) => {
       let url: string | null = null;
       let connected = false;
@@ -158,12 +212,13 @@ export class Tunnel {
         if ('url' in said) url = said.url;
         else if ('error' in said) lastError = said.error;
         // Open only once a connection stands, and the address answers: the address alone leads
-        // nowhere yet, and its name takes some seconds more to be known — measured at 12 s,
-        // 2026-10-26 — in which a guest opening it would be told it does not exist.
+        // nowhere yet, and its name takes some seconds more to be known — about 2 s at
+        // Cloudflare's resolver, 2026-10-28 — in which a guest would be told it does not exist.
         else if (url !== null && !connected) {
           connected = true;
           clearTimeout(timer);
           const found = url;
+          if (mine === this.generation) this.set({ state: 'publishing', url: found, since });
           const live = () => mine === this.generation && this.process === child;
           void (async () => {
             const until = Date.now() + (this.options.reachableWaitMs ?? 30_000);
