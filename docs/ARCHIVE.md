@@ -10360,3 +10360,21 @@ The first of three packages from a review of the screens with the user, display 
   view played on. Now `blur` pauses it and the player returns to the pause menu. Never
   online, where a pause stops everyone, nor a match only watched. Checked in a browser: the
   pause menu opens on `blur` in a local match, not in a watched one.
+
+## 14zs. UI polish, UP2: the menu (2026-10-28, PLAN §11 item 4)
+
+- **Single match first and largest**: the menu's four rows of equal buttons gave no way in
+  more weight than another, and the tournaments came first. Single match now leads, filled
+  in the accent and a size up, the tournaments' two buttons under it.
+- **The Public / Private switch shows both states**, stacked beside Single match, the chosen
+  one lit (Public in the accent, Private in the ink, the colours the user chose on
+  2026-10-24); one button reading "Public" had looked like an action. It still sets a
+  tournament's visibility as well as a match's (`readCommon`).
+- **Full screen beside Sound**, in the browser and the desktop app's window (Electron allows
+  the page's full screen by default): F11 is a key, and the game is played with the mouse.
+  It reads "Full screen" and "Window" as the state changes, whether by the button or the
+  browser's own Esc, and is left out where a page may not go full screen. Sound, Full screen
+  and Pause stand in one row in the corner (`#corner`), spaced by their own widths, which
+  change with the language, in place of fixed offsets.
+- Seen in a browser in English and German: the switch, full screen on and off with its
+  label following, and Pause working from the row.

@@ -118,7 +118,9 @@ export class PauseControls {
       this.shown = null;
     });
 
-    document.body.append(this.button, this.overlay);
+    // In the corner's row beside Sound and Full screen (`app.ts`), where there is one.
+    (document.querySelector('#corner') ?? document.body).append(this.button);
+    document.body.append(this.overlay);
     globalThis.addEventListener('keydown', this.key);
   }
 

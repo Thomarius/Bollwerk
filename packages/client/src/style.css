@@ -535,21 +535,60 @@ body.reduced-motion .embers {
   margin-top: 0.4rem;
 }
 
-/* Play, and beside it the table's visibility, chosen as the table is made. */
-.menu .play-row #play {
-  flex: 3;
+/* Play, the menu's main way in, first and largest, filled (PLAN §11 item 4, UP2); beside it
+   the table's visibility, chosen as the table is made. */
+.menu .play-row {
+  align-items: stretch;
 }
 
-/* Public in the accent, as the open table it is; Private muted (2026-10-24, the user's). */
-.menu .play-row #visibility {
+.menu .play-row #play {
+  flex: 2;
+  padding: 0.95rem 0.6rem;
+  background: var(--accent);
+  color: #0a0a12;
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+
+.menu .play-row #play:hover {
+  filter: brightness(1.12);
+}
+
+/* Both states shown, the chosen one lit: Public in the accent, as the open table it is,
+   Private in the ink (2026-10-24, the user's colours). */
+.menu .visibility {
+  display: flex;
+  flex: 1.2;
+  flex-direction: column;
+  border: 1px solid var(--edge);
+}
+
+.menu .visibility button {
   flex: 1;
-  border-color: var(--accent);
+  margin: 0;
+  padding: 0.2rem 0.4rem;
+  border: none;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.menu .visibility button + button {
+  border-top: 1px solid var(--edge);
+}
+
+.menu .visibility button.on {
+  background: rgb(255 255 255 / 6%);
+  color: var(--ink);
+  cursor: default;
+}
+
+.menu .visibility button[data-public='true'].on {
   color: var(--accent);
 }
 
-.menu .play-row #visibility[data-public='false'] {
-  border-color: var(--edge);
-  color: var(--muted);
+.menu .visibility button:not(.on):hover {
+  background: transparent;
+  color: var(--ink);
 }
 
 /* The open games browser (browser.ts). */
@@ -2056,12 +2095,19 @@ body.hud-bricks #hud .roster .line .shape path {
   margin-right: auto;
 }
 
-/* The sound switch, on every screen (main.ts). Bottom left, which nothing else uses. */
-#sound {
+/* The corner's switches, on every screen (app.ts): Sound, Full screen, and Pause during a
+   match. Bottom left, which nothing else uses; a row, spaced by their own widths. */
+#corner {
   position: fixed;
   left: 0.75rem;
   bottom: 0.6rem;
   z-index: 5;
+  display: flex;
+  gap: 0.5rem;
+}
+
+#sound,
+#fullscreen {
   padding: 0.3rem 0.7rem;
   border: 1px solid rgb(255 255 255 / 22%);
   background: rgb(10 10 18 / 85%);
@@ -2073,16 +2119,13 @@ body.hud-bricks #hud .roster .line .shape path {
   cursor: pointer;
 }
 
-#sound:hover {
+#sound:hover,
+#fullscreen:hover {
   color: var(--ink);
 }
 
 /* Pause, beside the sound switch, during a match only (pause.ts). */
 #pause {
-  position: fixed;
-  left: 7rem;
-  bottom: 0.6rem;
-  z-index: 5;
   padding: 0.3rem 0.7rem;
   border: 1px solid rgb(255 255 255 / 22%);
   background: rgb(10 10 18 / 85%);

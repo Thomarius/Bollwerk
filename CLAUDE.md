@@ -180,7 +180,8 @@ which a test session needs the server rebuilt and every page reloaded for):
 - **UI polish, UP1: in the match** (ARCHIVE 14zr, 2026-10-28, PLAN §11 item 4): "You are
   here" clear of the castles, "opening" for round 0, the pause menu as a column, the corner's
   buttons and the round label readable, your row marked in the end screen, and a local match
-  paused as its window loses focus. UP2 (the menu) and UP3 (the lobby) are next.
+  paused as its window loses focus; UP2 (ARCHIVE 14zs): Single match first and largest, the
+  Public / Private switch showing both, a Full screen button beside Sound. UP3, the lobby, is next.
 
 - **How to play in sections** (ARCHIVE 14zq, 2026-10-28): four tabs — Basics, Building,
   Combat, Extras — thirteen pages, three new (choosing a castle, a gun for every sealed

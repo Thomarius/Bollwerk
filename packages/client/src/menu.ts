@@ -73,8 +73,7 @@ function readCommon(): Common {
   // it stayed English after a change to German. Saved empty, the next visit shows the
   // default in whichever language it is read.
   saveName(name === t('menu.defaultName') ? '' : name);
-  const isPublic =
-    document.querySelector<HTMLButtonElement>('#visibility')?.dataset.public !== 'false';
+  const isPublic = document.querySelector<HTMLElement>('#visibility')?.dataset.public !== 'false';
   return { styles: readStyles(), name, isPublic };
 }
 
@@ -142,13 +141,16 @@ export function showMenu(notice: string | null = null): void {
       <label>${t('menu.name')} <input id="name" type="text" maxlength="16" value="${escape(t('menu.defaultName'))}" /></label>
       <div class="look" data-look="build">${t('menu.buildLook')} ${lookPicker('build')}</div>
       <div class="look" data-look="combat">${t('menu.combatLook')} ${lookPicker('combat')}</div>
+      <div class="split play-row">
+        <button id="play">${t('menu.singleMatch')}</button>
+        <div id="visibility" class="visibility" data-public="true" title="${t('menu.visibilityTitle')}">
+          <button data-public="true" class="on">${t('menu.public')}</button>
+          <button data-public="false">${t('menu.private')}</button>
+        </div>
+      </div>
       <div class="split tournament-row">
         <button id="new-tournament">${t('menu.newTournament')}</button>
         <button id="resume-tournament"${savedTournaments().length === 0 ? ' disabled' : ''}>${t('menu.resumeTournament')}</button>
-      </div>
-      <div class="split play-row">
-        <button id="play">${t('menu.singleMatch')}</button>
-        <button id="visibility" data-public="true" title="${t('menu.visibilityTitle')}">${t('menu.public')}</button>
       </div>
       <div class="split">
         <button id="how-to-play" class="quiet${howToPlaySeen() ? '' : ' fresh'}">${t('menu.howToPlay')}</button>
@@ -165,14 +167,20 @@ export function showMenu(notice: string | null = null): void {
       </section>
     </div>
   `;
-  // Public or private, chosen as the table is made: a switch beside Play.
-  const visibility = document.querySelector<HTMLButtonElement>('#visibility');
-  visibility?.addEventListener('click', () => {
-    audio.play('select');
-    const isPublic = visibility.dataset.public === 'false';
-    visibility.dataset.public = String(isPublic);
-    visibility.textContent = isPublic ? t('menu.public') : t('menu.private');
-  });
+  // Public or private, chosen as the table is made, a match's or a tournament's: a switch
+  // beside Play showing both, the chosen one lit (PLAN §11 item 4, UP2) — one button naming
+  // the state read as an action.
+  const visibility = document.querySelector<HTMLElement>('#visibility');
+  for (const side of visibility?.querySelectorAll<HTMLButtonElement>('button') ?? []) {
+    side.addEventListener('click', () => {
+      if (visibility === null || side.classList.contains('on')) return;
+      audio.play('select');
+      visibility.dataset.public = side.dataset.public ?? 'true';
+      for (const other of visibility.querySelectorAll('button')) {
+        other.classList.toggle('on', other === side);
+      }
+    });
+  }
   watchOpenGames();
   // The banners either side of combat swap one look for the other as they cross the
   // board, as the original did; the same style for both switches nothing.

@@ -92,10 +92,48 @@ function installSoundButton(): void {
   show();
   showSoundButton = show;
   onLanguageChange(show);
-  document.body.append(button);
+  corner.append(button);
 }
 
+/**
+ * The bottom left's row of switches on every screen — Sound, Full screen, and Pause during a
+ * match (`pause.ts`) — laid out by their widths, which change with the language.
+ */
+const corner = document.createElement('div');
+corner.id = 'corner';
+document.body.append(corner);
+
 installSoundButton();
+
+/**
+ * Full screen, beside Sound (PLAN §11 item 4, UP2): F11 is a key, and the game is played with
+ * the mouse. The page's own, so the browser's Esc takes it back as well; left out where the
+ * page may not go full screen.
+ */
+function installFullscreenButton(): void {
+  if (!document.fullscreenEnabled) return;
+  const button = document.createElement('button');
+  button.id = 'fullscreen';
+  const show = (): void => {
+    button.textContent =
+      document.fullscreenElement === null ? t('fullscreen.enter') : t('fullscreen.leave');
+  };
+  button.addEventListener('click', () => {
+    if (document.fullscreenElement === null) {
+      void document.documentElement.requestFullscreen().catch(() => undefined);
+    } else {
+      void document.exitFullscreen().catch(() => undefined);
+    }
+    // Off the button, so Space or Enter later cannot press it again unseen.
+    button.blur();
+  });
+  document.addEventListener('fullscreenchange', show);
+  onLanguageChange(show);
+  show();
+  corner.append(button);
+}
+
+installFullscreenButton();
 
 export const params = new URLSearchParams(globalThis.location.search);
 

@@ -1760,7 +1760,7 @@ fit (ARCHIVE 12z), its remaining steps dropped (the user's decision, 2026-10-14;
      placed; the corner's Sound and Pause buttons, the round label and "Watching" readable;
      the viewer's own row marked in the end screen's table; and a local match paused as its
      window loses focus — after measuring what a hidden page does to a local match now. Never online, where a pause stops everyone.
-   - **UP2 — The menu**: Single match the first and largest button, the tournaments below;
+   - **UP2 — The menu — done** (ARCHIVE 14zs): Single match the first and largest button, the tournaments below;
      the Public / Private switch showing both states, the chosen one lit; a fullscreen button
      beside Sound, in the browser and the desktop app.
    - **UP3 — The lobby**: the last table remembered, local and a hosted room alike — seats,
