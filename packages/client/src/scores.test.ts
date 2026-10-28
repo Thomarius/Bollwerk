@@ -66,6 +66,11 @@ describe('the round counter', () => {
     expect(roundLabel(state({ round: 3, maxRounds: null }))).toBe('round 3');
   });
 
+  it('names the opening rather than counting a round 0', () => {
+    expect(roundLabel(state({ phase: 'castle_select', round: 0 }))).toBe('opening');
+    expect(roundLabel(state({ phase: 'cannon_place', round: 0, maxRounds: null }))).toBe('opening');
+  });
+
   it('calls the final round in the intermission before it, not after', () => {
     const before = { phase: 'intermission', pendingPhase: 'combat' };
     expect(finalRoundNext(state({ ...before, round: 9 }))).toBe(true);

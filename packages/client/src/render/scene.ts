@@ -675,6 +675,11 @@ export class Scene {
     this.cameraRoot.position.set(this.camera.x, this.camera.y);
   }
 
+  /** A tile's size in screen pixels as the whole map shows it, before any zoom of the camera. */
+  tilePx(): number {
+    return this.view.tile;
+  }
+
   /** Centre of a tile in screen pixels, for anything drawn over the board in HTML. */
   screenAt(x: number, y: number): { x: number; y: number } {
     const { zoom, x: cx, y: cy } = this.camera;

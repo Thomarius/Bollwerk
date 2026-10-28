@@ -146,6 +146,7 @@
   "plan.keep": "KEEP {tag}",
   "plan.final": "FINAL",
   "plan.rush": "RUSH",
+  "round.opening": "opening",
   "round.label": "round {round}",
   "round.labelOf": "round {round} / {cap}",
   "round.finalOf": "final round {round} / {cap}",

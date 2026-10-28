@@ -177,6 +177,11 @@ Full detail in PLAN.md §1. The parts that surprise people:
 **Done** (2026-10-27; the latest release **v0.9.17**, 2026-10-27, protocol 32, recording format 4,
 which a test session needs the server rebuilt and every page reloaded for):
 
+- **UI polish, UP1: in the match** (ARCHIVE 14zr, 2026-10-28, PLAN §11 item 4): "You are
+  here" clear of the castles, "opening" for round 0, the pause menu as a column, the corner's
+  buttons and the round label readable, your row marked in the end screen, and a local match
+  paused as its window loses focus. UP2 (the menu) and UP3 (the lobby) are next.
+
 - **How to play in sections** (ARCHIVE 14zq, 2026-10-28): four tabs — Basics, Building,
   Combat, Extras — thirteen pages, three new (choosing a castle, a gun for every sealed
   castle, teams); opened from the pause menu too, at the section of the phase being played.

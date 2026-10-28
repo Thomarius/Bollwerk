@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { pauseText } from './pause.js';
+import { pausesOnBlur, pauseText } from './pause.js';
 
 describe('the pause overlay', () => {
   const names = ['Ada', 'Bo', 'Cy'];
@@ -17,5 +17,20 @@ describe('the pause overlay', () => {
 
   it('still says something for a player it has no name for', () => {
     expect(pauseText(7, 0, names)).toBe('The match is paused');
+  });
+});
+
+describe('pausing as the window loses focus', () => {
+  const local = { online: false, humanPlayer: 0, pausedBy: null, over: false };
+
+  it('pauses a local match a person plays', () => {
+    expect(pausesOnBlur(local)).toBe(true);
+  });
+
+  it('never online, nor a match only watched, paused already or over', () => {
+    expect(pausesOnBlur({ ...local, online: true })).toBe(false);
+    expect(pausesOnBlur({ ...local, humanPlayer: -1 })).toBe(false);
+    expect(pausesOnBlur({ ...local, pausedBy: 0 })).toBe(false);
+    expect(pausesOnBlur({ ...local, over: true })).toBe(false);
   });
 });

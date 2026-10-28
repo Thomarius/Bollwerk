@@ -146,6 +146,7 @@
   "plan.keep": "BURG {tag}",
   "plan.final": "ENDFASSUNG",
   "plan.rush": "EILT",
+  "round.opening": "Auftakt",
   "round.label": "Runde {round}",
   "round.labelOf": "Runde {round} / {cap}",
   "round.finalOf": "letzte Runde {round} / {cap}",

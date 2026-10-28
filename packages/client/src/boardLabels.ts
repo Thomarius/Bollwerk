@@ -32,10 +32,22 @@ export class BoardLabels {
   ) {}
 
   private youAreHere: HTMLElement | null = null;
+  /** Its size in pixels, arrow and bob included, measured once as it is made. */
+  private hereSize = { w: 0, h: 0 };
+  private rem = 16;
 
-  /** The "You are here" marker over the viewer's island, or null to take it down. */
+  /**
+   * The "You are here" marker over the viewer's island, or null to take it down. `place`
+   * gives where its arrow points, in screen pixels, from its size — so it can be put where it
+   * covers nothing (`hereSpot`).
+   */
   showYouAreHere(
-    at: { x: number; y: number; colour: string; shape: PlayerShape; opacity: number } | null,
+    at: {
+      place: (size: { w: number; h: number }) => { x: number; y: number };
+      colour: string;
+      shape: PlayerShape;
+      opacity: number;
+    } | null,
   ): void {
     if (at === null) {
       this.youAreHere?.remove();
@@ -48,12 +60,20 @@ export class BoardLabels {
       // With the player's shape, so the opening is where they learn it.
       this.youAreHere.innerHTML = `${shapeSvg(at.shape, at.colour)}${t('hud.youAreHere')}`;
       this.bannerRoot.append(this.youAreHere);
+      // The box bobs 0.5rem up and its arrow's tip is 0.15rem below it: both are its room.
+      this.rem = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
+      this.hereSize = {
+        w: this.youAreHere.offsetWidth,
+        h: this.youAreHere.offsetHeight + this.rem * 0.65,
+      };
     }
+    const spot = at.place(this.hereSize);
     // Light text in a border of the player's colour: crimson text on the dark box did
     // not read.
     this.youAreHere.style.setProperty('--who', at.colour);
-    this.youAreHere.style.left = `${at.x.toFixed(1)}px`;
-    this.youAreHere.style.top = `${at.y.toFixed(1)}px`;
+    this.youAreHere.style.left = `${spot.x.toFixed(1)}px`;
+    // The box's foot, which the stylesheet hangs it from, just above the arrow's tip.
+    this.youAreHere.style.top = `${(spot.y - this.rem * 0.15).toFixed(1)}px`;
     this.youAreHere.style.opacity = at.opacity.toFixed(2);
   }
 

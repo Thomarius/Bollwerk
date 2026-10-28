@@ -39,6 +39,22 @@ export function pauseText(pausedBy: number, humanPlayer: number, names: readonly
   return name === undefined ? t('pause.anyone') : t('pause.by', { name });
 }
 
+/**
+ * Whether a match pauses as its window loses focus (PLAN §11 item 4, UP1): a local one a
+ * person plays, still running — never online, where a pause stops everyone, nor a bot match
+ * only watched. A hidden page already stood still, its frames stopped and the time on return
+ * capped (`LocalMatch.advance`), but came back straight into play; a window left for another
+ * in view played on.
+ */
+export function pausesOnBlur(match: {
+  online: boolean;
+  humanPlayer: number;
+  pausedBy: number | null;
+  over: boolean;
+}): boolean {
+  return !match.online && match.humanPlayer >= 0 && match.pausedBy === null && !match.over;
+}
+
 /** What the pause menu does, given by the match it belongs to. */
 export interface PauseActions {
   /** Pauses or resumes, for everyone once a server agrees. */
@@ -119,6 +135,10 @@ export class PauseControls {
       `<label>${t('settings.motion')} <select class="motion">${motionOptions()}</select></label>` +
       `<label title="${escape(t('settings.styleMusicTitle'))}">${t('settings.styleMusic')} <select class="style-music">${styleMusicOptions()}</select></label>` +
       `<label>${t('settings.language')} <select class="language">${languageOptions()}</select></label>` +
+      `</div>` +
+      // The buttons in a row of their own under the settings and volumes, which are a column
+      // as the menu's Options lays them out: in one long row they nearly filled the screen.
+      `<div class="actions">` +
       `<button class="sound quiet"></button>` +
       (actions.looks === undefined
         ? ''

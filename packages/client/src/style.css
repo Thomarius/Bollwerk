@@ -695,9 +695,13 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
+/* In the skin's ink, a little faded, and larger than the bar's small print: dim grey beside
+   the clock it went unread (PLAN §11 item 4, UP1). */
 .round {
   margin-left: 0.75rem;
-  color: var(--hud-muted);
+  color: var(--hud-ink);
+  opacity: 0.8;
+  font-size: 0.9rem;
 }
 
 /* Points and lives only (PLAN 11.15), made large: a card per player, their colour down
@@ -1191,6 +1195,12 @@ table.final tr.you td:nth-child(2) {
   text-underline-offset: 3px;
 }
 
+/* The viewer's row as a band in the skin's accent, found at a glance among eight: the
+   underline alone was missed (PLAN §11 item 4, UP1). */
+table.final tr.you td {
+  background: color-mix(in srgb, var(--hud-accent) 16%, transparent);
+}
+
 .phase-call small {
   display: block;
   margin-top: 0.5rem;
@@ -1279,13 +1289,16 @@ table.final tr.you td:nth-child(2) {
   font-size: 11px;
 }
 
+/* "Watching", and the connection's state online: in the skin's ink, as the round label. */
 .net {
   position: absolute;
   right: 1rem;
   bottom: 0.75rem;
-  color: var(--muted);
-  font-size: 11px;
-  letter-spacing: 0.05em;
+  color: var(--hud-ink);
+  opacity: 0.8;
+  font-size: 13px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
 /* ---------- seat configuration ---------- */
@@ -2049,12 +2062,12 @@ body.hud-bricks #hud .roster .line .shape path {
   left: 0.75rem;
   bottom: 0.6rem;
   z-index: 5;
-  padding: 0.25rem 0.6rem;
-  border: 1px solid var(--edge);
-  background: rgb(10 10 18 / 70%);
-  color: var(--muted);
+  padding: 0.3rem 0.7rem;
+  border: 1px solid rgb(255 255 255 / 22%);
+  background: rgb(10 10 18 / 85%);
+  color: #c9c9d6;
   font: inherit;
-  font-size: 11px;
+  font-size: 12px;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   cursor: pointer;
@@ -2067,15 +2080,15 @@ body.hud-bricks #hud .roster .line .shape path {
 /* Pause, beside the sound switch, during a match only (pause.ts). */
 #pause {
   position: fixed;
-  left: 6.3rem;
+  left: 7rem;
   bottom: 0.6rem;
   z-index: 5;
-  padding: 0.25rem 0.6rem;
-  border: 1px solid var(--edge);
-  background: rgb(10 10 18 / 70%);
-  color: var(--muted);
+  padding: 0.3rem 0.7rem;
+  border: 1px solid rgb(255 255 255 / 22%);
+  background: rgb(10 10 18 / 85%);
+  color: #c9c9d6;
   font: inherit;
-  font-size: 11px;
+  font-size: 12px;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   cursor: pointer;
@@ -2620,15 +2633,35 @@ body.reduced-motion .preparing .blocks i {
   margin: 0.2rem 0 0.4rem;
 }
 
+/* A column of settings, a label and its choice to a row, as the menu's Options has them. */
 .pause-overlay .settings {
   display: flex;
-  gap: 0.8rem;
-  align-items: center;
+  flex-direction: column;
+  gap: 0.5rem;
+  align-self: stretch;
   margin-top: 0.4rem;
   padding-top: 0.9rem;
   border-top: 1px solid var(--edge);
   color: var(--muted);
   font-size: 12px;
+}
+
+.pause-overlay .settings label {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.pause-overlay .settings select {
+  width: 9rem;
+}
+
+.pause-overlay .actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  justify-content: center;
 }
 
 .pause-overlay .settings select {
@@ -2739,10 +2772,17 @@ body.reduced-motion .preparing .blocks i {
   cursor: pointer;
 }
 
+/* As wide as the settings above, so the volumes line up with them. */
 .pause-overlay .volumes {
+  align-self: stretch;
   min-width: 16rem;
   color: var(--muted);
   font-size: 12px;
+}
+
+.pause-overlay .volumes input[type='range'] {
+  width: 9rem;
+  margin: 0;
 }
 
 /* A bot's level as ten pips beside its choice (lobby.ts). */

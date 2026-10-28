@@ -10331,3 +10331,32 @@ and How to play in the pause menu; no mark for new pages, the game being feature
   key was added.
 - Seen in a browser page by page in English and German, and from the pause menu in a build
   phase, with no errors in the console. The loops themselves need a person.
+
+## 14zr. UI polish, UP1: in the match (2026-10-28, PLAN §11 item 4)
+
+The first of three packages from a review of the screens with the user, display only.
+
+- **"You are here" clear of the castles**: over the island's middle it stood on the middle
+  castle, just when the castles are what to choose. It points now at the island's land
+  nearest its middle from where the label, hung above its arrow, covers no castle of the
+  island and stays on the board (`hereSpot`, pure, tested on an ASCII board). The label's size
+  is measured once as it is made and taken in tiles at the whole map's scale
+  (`Scene.tilePx`): the opening's camera only zooms in from there, which makes the label
+  smaller against the board, so the spot found stays clear and does not jump. Seen at two,
+  three, four and eight players on several maps.
+- **"opening" in place of "round 0 / 10"** while castles are chosen and the first cannons
+  placed (`roundLabel`; German "Auftakt") — the user's choice over counting it round 1.
+- **The pause menu as a column**: its four choices a label and a select to a row, as the
+  menu's Options has them, the volumes lined up under them, and Sound, Looks and How to play
+  in a row of their own; in one long row they had nearly filled a 1400-pixel window.
+- **Readable**: the corner's Sound and Pause buttons a size up, brighter, with a visible
+  edge; the round label in the skin's ink, a little faded, at 0.9rem rather than the muted
+  small print; "Watching" likewise, in capitals as the bar's other words.
+- **The viewer's row in the end screen's table** a band in the skin's accent, beside the
+  underline it had, which was missed among eight.
+- **A local match pauses as its window loses focus** (`pausesOnBlur`): measured first, a
+  hidden page already stood still — its frames stop and `LocalMatch.advance` caps the time on
+  return at 250 ms — but came back straight into play, and a window left for another one in
+  view played on. Now `blur` pauses it and the player returns to the pause menu. Never
+  online, where a pause stops everyone, nor a match only watched. Checked in a browser: the
+  pause menu opens on `blur` in a local match, not in a watched one.

@@ -83,6 +83,9 @@ export function teamStandings(state: MatchState): TeamStanding[] {
 }
 
 export function roundLabel(state: MatchState): string {
+  // Round 0 is the opening, castles chosen and the first cannons placed: no round has been
+  // played, and "round 0 / 10" read as a fault (PLAN §11 item 4, UP1).
+  if (state.round === 0) return t('round.opening');
   const cap = state.ruleset.scoring.maxRounds;
   if (cap === null) return t('round.label', { round: state.round });
   return t(inFinalRound(state) ? 'round.finalOf' : 'round.labelOf', { round: state.round, cap });

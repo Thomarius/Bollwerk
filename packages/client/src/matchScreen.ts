@@ -34,10 +34,11 @@ import { MatchAudio } from './matchAudio.js';
 import { announcementLines, announcementTitle, isTeamMatch, ranking, teamName } from './scores.js';
 import { buildHints, type BuildHints } from './hints.js';
 import { timerSpot } from './timerSpot.js';
+import { hereSpot } from './hereSpot.js';
 import { MatchLog } from './summary.js';
 import { motionReduced, storedMotion } from './motion.js';
 import { styleTrackChance } from './styleMusicSetting.js';
-import { PauseControls } from './pause.js';
+import { PauseControls, pausesOnBlur } from './pause.js';
 import { howToSectionFor, openHowToPlay } from './howToPlay.js';
 import { openingShot, winnerShot } from './camera.js';
 import { perf } from './perf.js';
@@ -369,6 +370,18 @@ export async function runSession(
         },
       }),
   });
+  // A local match pauses as its window loses focus, so a player called away comes back to
+  // the pause menu rather than into play (`pausesOnBlur`).
+  const onBlur = (): void => {
+    const paused = pausesOnBlur({
+      online: session.network() !== null,
+      humanPlayer: session.humanPlayer,
+      pausedBy: session.pausedBy,
+      over: session.state.phase === 'game_over',
+    });
+    if (paused) session.setPaused(true);
+  };
+  globalThis.addEventListener('blur', onBlur);
   // Beside Pause, online only: the connection, where a player will see it.
   const badge = session.network() === null ? null : new NetworkBadge();
   // Out, and watching, with the way back to the menu (PLAN 11.18 Y3).
@@ -379,6 +392,7 @@ export async function runSession(
     cancelAnimationFrame(frame);
     controls.detach();
     pause.destroy();
+    globalThis.removeEventListener('blur', onBlur);
     badge?.destroy();
     perf.detach();
     watching.destroy();
@@ -726,7 +740,15 @@ export async function runSession(
         me.startingCastleId === null &&
         hereOpacity > 0
         ? {
-            ...scene.screenAt(centre.x, centre.y),
+            // Clear of every castle, by the label's size at the whole map's scale.
+            place: (size) => {
+              const tile = scene.tilePx();
+              const spot = hereSpot(state, me.islandId, centre, {
+                w: size.w / tile,
+                h: size.h / tile,
+              });
+              return scene.screenAt(spot.x - 0.5, spot.y - 0.5);
+            },
             colour: playerCssColour(me.id),
             shape: playerShape(me.id),
             opacity: hereOpacity,
