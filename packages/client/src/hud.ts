@@ -12,6 +12,7 @@ import {
   countUp,
   inFinalRound,
   isTeamMatch,
+  lifePips,
   roundLabel,
   standings,
   teamLetter,
@@ -521,8 +522,7 @@ export class Hud {
       const pool = state.teams[team];
       const total = (pool?.continuesAtStart ?? 0) + 1;
       const left = (pool?.continuesRemaining ?? 0) + 1;
-      const pips =
-        total > 5 ? `●<small>${left}</small>` : '●'.repeat(left) + '○'.repeat(total - left);
+      const pips = lifePips(total, left);
       const title = t('hud.livesTitle', { left, total });
       return `<span class="lives${left === 1 ? ' last' : ''}" title="${title}">${pips}</span>`;
     };

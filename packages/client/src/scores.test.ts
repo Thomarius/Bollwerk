@@ -9,8 +9,10 @@ import {
   inFinalRound,
   endOfMatchText,
   finalRoundNext,
+  lifePips,
   roundLabel,
   standings,
+  yourPlace,
 } from './scores.js';
 
 interface Fields {
@@ -150,6 +152,38 @@ describe('in a team match', () => {
     const over = state({ players, winners: [0, 2], endedBy: 'round_cap' });
     expect(endOfMatchText(over, 2)).toBe('Your team wins on points');
     expect(endOfMatchText(over, 1)).toBe('Team A wins on points');
+  });
+
+  it('gives a member of the losing team their team’s place, and the winners none', () => {
+    const over = state({ players, winners: [0, 2], endedBy: 'round_cap' });
+    expect(yourPlace(over, 3)).toBe('Your team’s place: 2 of 2');
+    expect(yourPlace(over, 2)).toBeNull();
+  });
+});
+
+describe('the viewer’s own place at the end', () => {
+  const players = [player(0, 'Ada', 40), player(1, 'Bo', 90), player(2, 'Cy', 10, true)];
+  const over = state({ players, winners: [1], endedBy: 'round_cap' });
+
+  it('says where a viewer who did not win finished, out or not', () => {
+    expect(yourPlace(over, 0)).toBe('Your place: 2 of 3');
+    expect(yourPlace(over, 2)).toBe('Your place: 3 of 3');
+  });
+
+  it('says nothing to the winner, whom the headline names, nor to a watcher', () => {
+    expect(yourPlace(over, 1)).toBeNull();
+    expect(yourPlace(over, -1)).toBeNull();
+  });
+});
+
+describe('lives as pips', () => {
+  it('fills one pip a life left and leaves the spent ones hollow', () => {
+    expect(lifePips(3, 2)).toBe('●●○');
+    expect(lifePips(3, 3)).toBe('●●●');
+  });
+
+  it('counts a pool too big for pips beside one', () => {
+    expect(lifePips(8, 6)).toBe('●<small>6</small>');
   });
 });
 

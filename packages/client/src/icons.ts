@@ -35,9 +35,44 @@ export const ICONS = {
   dice: stroke(
     '<rect x="3" y="3" width="18" height="18" rx="4"/><circle cx="8.5" cy="8.5" r="1.3" fill="currentColor"/><circle cx="15.5" cy="15.5" r="1.3" fill="currentColor"/><circle cx="12" cy="12" r="1.3" fill="currentColor"/>',
   ),
+  crown: stroke('<path d="M3 8l4.5 4L12 5l4.5 7L21 8l-2 11H5z" fill="currentColor"/>'),
+  eye: stroke(
+    '<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>',
+  ),
 } as const;
 
 export type IconName = keyof typeof ICONS;
+
+/**
+ * Each award's icon on its card in the summary (`awards.ts` names them), so a card reads at a
+ * glance (2026-10-28); an award without one shows none.
+ */
+export const AWARD_ICONS: Readonly<Record<string, string>> = {
+  wrecker: stroke(
+    '<path d="M12 2v4M12 18v4M2 12h4M18 12h4M5 5l3 3M16 16l3 3M19 5l-3 3M8 16l-3 3"/>',
+  ),
+  landlord: stroke('<path d="M5 21V4M5 4h12l-2.5 4L17 12H5M3 21h8"/>'),
+  collector: stroke('<path d="M4 21V9h3V6h2v3h6V6h2v3h3v12zM10 21v-4h4v4"/>'),
+  'iron-wall': stroke('<path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/>'),
+  comeback: stroke('<path d="M3 17l6-6 4 4 8-8M15 7h6v6"/>'),
+  'front-runner': stroke('<path d="M5 6l6 6-6 6M13 6l6 6-6 6"/>'),
+  'photo-finish': stroke(
+    '<rect x="3" y="7" width="18" height="13" rx="2"/><circle cx="12" cy="13.5" r="3.5"/><path d="M8 7l2-3h4l2 3"/>',
+  ),
+  'last-stand': stroke(
+    '<path d="M12 20s-7-4.5-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.5-7 10-7 10z"/>',
+  ),
+  phoenix: stroke(
+    '<path d="M12 21c-4 0-6-3-6-6 0-4 4-6 4-10 3 2 4 4 4 6 1-1 2-2 2-4 2 2 2 5 2 8 0 3-2 6-6 6z"/>',
+  ),
+  'late-bloomer': stroke(
+    '<path d="M12 21V11M12 11c0-4 3-7 7-7 0 4-3 7-7 7zM12 14c0-3-2.5-5-6-5 0 3 2.5 5 6 5z"/>',
+  ),
+  artillerist: stroke('<circle cx="8" cy="16" r="4"/><path d="M10.5 13 20 6l1.5 2.5-9 7.5"/>'),
+  steady: stroke('<path d="M3 12h4l2-4 3 8 2-4h7"/>'),
+  nemesis: stroke('<circle cx="12" cy="12" r="7"/><path d="M12 2v5M12 17v5M2 12h5M17 12h5"/>'),
+  mason: stroke('<path d="M3 6h18v12H3zM3 12h18M9 6v6M15 12v6"/>'),
+};
 
 /** A button's inside: its icon, then its words in a span of their own, so they can change alone. */
 export function withIcon(name: IconName, words: string): string {

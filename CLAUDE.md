@@ -174,10 +174,16 @@ Full detail in PLAN.md §1. The parts that surprise people:
 
 ## Status
 
-**Done** (2026-10-28; the latest release **v0.9.22**, 2026-10-28, protocol 33, recording format 4,
+**Done** (2026-10-28; the latest release **v0.9.23**, 2026-10-28, protocol 33, recording format 4,
 which a test session needs the server rebuilt and every page reloaded for):
 
-- **The menus reviewed** (ARCHIVE 15j, 2026-10-28, not yet released): every room public, the
+- **The end screen in the menus' look** (ARCHIVE 15k, 2026-10-28, v0.9.23, approved by the
+  user from screenshots): the headline in the look's lettering and your own place under it, the winner
+  crowned, headings explained on hover, lives as pips, award icons (`AWARD_ICONS`), a chart with
+  a scale and each round's scores on hover, the menus' button tiers, Show the board, the points
+  counting up; it fits between the HUD's bar and the corner, and Pause is gone from it.
+
+- **The menus reviewed** (ARCHIVE 15j, 2026-10-28, v0.9.23): every room public, the
   Public / Private switch gone; the looks as cards to click, no arrows; Options and the pause
   menu one settings column (`settingsRows.ts`), a speaker on each volume; Sit here in the lobby,
   no seed or level pips shown, the map's numbers clear of castles (`labelSpots`); the Credits

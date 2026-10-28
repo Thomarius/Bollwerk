@@ -10771,3 +10771,57 @@ changed, so v0.9.22's recordings replay.
 
 Kept as they were (the user's): a new look at every window. The end screen is to be reviewed in
 a session of its own. Tested by the user in play and approved, 2026-10-28.
+
+## 15k. The end screen in the menus' look (2026-10-28)
+
+Reviewed from five-round matches played to the summary — three players, teams of two and eight
+players in Minimal, Night, Parchment and Cyberpunk, a person's seat knocked out on the way, and
+1024×640 — against the menus' new look (15j and before). Every suggestion was approved by the
+user and built; screenshots before and after were shown for comparison.
+
+- **Fixed**: Pause stood on the end screen, its hidden attribute overruled by `#pause`'s own
+  display (the corner's buttons now hide as their switches say); and at 1024×640 the summary ran
+  under the HUD's bar and the corner's buttons. It now sits between them, scrolling inside if it
+  must, and a low window (under 760px) tightens it so it fits whole at 640.
+- **The headline** in the look's lettering and accent, as the menus' headings; under it, for a
+  viewer who did not win, their place ("Your place: 3 of 3", their team's in a team match;
+  `yourPlace`).
+- **The standings**: headings right-aligned over their figures and explained on hover; the
+  winner crowned and edged in the accent (none at a draw); your row without the underline that
+  read as a link; out as a tag; a team's members on a line under its name; lives as the roster's
+  pips (`lifePips`, now shared with the HUD).
+- **Award cards** with an icon each (`AWARD_ICONS`, fourteen line drawings), in one row.
+- **The chart** with a scale — nought, half and the top score, every round numbered — a plain
+  caption, and a line down the round under the pointer with everyone's score there.
+- **The buttons** in the menus' tiers: Rematch (or a tournament's way on) filled with its icon,
+  Back to menu quiet beside it, or a plain button alone; and **Show the board**, quiet, folding
+  the summary to a bar with the headline and Show the summary, to look at the final map. It
+  first stood beside the headline, which it crowded, and moved into the row of buttons.
+- **The score bar** faded back while the summary is up, in full view again with the board.
+- **Arriving**: the points counting up from nought (`countUp`, as the island banners count), the
+  award cards turning in one after another and the chart's lines drawn left to right, once the
+  fireworks have had the screen; none of it under reduced motion.
+
+The user's question after the first screenshots: the buttons were out of sight in matches with
+many players. Measured over four tables at four window sizes, the summary had run past its
+space wherever its content was taller — at six players and more below 1280×720, at eight even at
+1400×900 (830px of content in 762) — and scrolled with its buttons below the fold. The buttons
+are now pinned to the panel's foot, what does not fit scrolling above them and fading out under
+them; and a table of more than five rows is set tighter (rows, the chart 27rem), so eight
+players fit 1400×900 whole (756px). Measured again: the buttons in view at every table and
+size; the summary whole from 1400×900 up at every table, and at 1280×720 up to four rows and for
+teams of two; below that the middle scrolls.
+
+Not reached by a scripted match, and so not looked at: a tournament match's end with its way
+on, and a person's Rematch in a match opened from the lobby.
+
+## 15l. v0.9.23 (2026-10-28)
+
+Since v0.9.22: the menus reviewed (15j) — every room public, the looks as cards to click, one
+settings column for Options and the pause menu with a speaker on each volume, Sit here in the
+lobby, no seed or level pips, the map's numbers clear of castles, the Credits folded, small
+motions — and the end screen in the menus' look (15k): your own place, the winner crowned, award
+icons, a chart with a scale and each round's scores on hover, the menus' button tiers pinned in
+view, Show the board, the points counting up, and Pause gone from it. Display and menus only:
+protocol 33 and recording format 4 as before, so v0.9.22 and v0.9.23 play together and
+recordings replay.

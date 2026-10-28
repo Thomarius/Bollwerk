@@ -240,6 +240,33 @@ export function endOfMatchText(state: MatchState, humanPlayer: number): string {
 }
 
 /**
+ * The viewer's own place under the end's headline (2026-10-28), when the headline does not
+ * already say it: "Your place: 3 of 4", their team's in a team match. Null for a viewer who
+ * won or shares the win, since the headline says so, and for one only watching.
+ */
+export function yourPlace(state: MatchState, humanPlayer: number): string | null {
+  const you = state.players[humanPlayer];
+  if (you === undefined || state.winners.includes(humanPlayer)) return null;
+  if (isTeamMatch(state)) {
+    const teams = teamStandings(state);
+    const place = teams.findIndex((s) => s.team === you.team) + 1;
+    return t('end.yourTeamPlace', { place, of: teams.length });
+  }
+  const all = standings(state);
+  const place = all.findIndex((s) => s.player === humanPlayer) + 1;
+  return t('end.yourPlace', { place, of: all.length });
+}
+
+/**
+ * Lives as pips, one per life including the one being played, spent ones hollow, as the
+ * roster shows them and the summary since 2026-10-28: a pool too big for pips — a team of
+ * three or four — is one pip and the count.
+ */
+export function lifePips(total: number, left: number): string {
+  return total > 5 ? `●<small>${left}</small>` : '●'.repeat(left) + '○'.repeat(total - left);
+}
+
+/**
  * A score on its way from `from` to `to`, `elapsedMs` into a count lasting `spanMs`:
  * quick at first and settling as it arrives, in whole points, as the island banners
  * count the points they bank.

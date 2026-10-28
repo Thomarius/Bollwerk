@@ -1351,11 +1351,6 @@ table.final tr.out {
   opacity: 0.7;
 }
 
-table.final tr.you td:nth-child(2) {
-  text-decoration: underline;
-  text-underline-offset: 3px;
-}
-
 /* The viewer's row as a band in the skin's accent, found at a glance among eight: the
    underline alone was missed (PLAN §11 item 4, UP1). */
 table.final tr.you td {
@@ -7334,4 +7329,548 @@ body.reduced-motion #menu-corner {
 
 .menu .seats .ui-choice.step output {
   min-width: 2rem;
+}
+
+/* ---------- the end of a match, in the menus' look (2026-10-28) ---------- */
+
+/* The corner's buttons hidden as their switches say: an id's display had shown Pause on the
+   end screen, its hidden attribute overruled. */
+#pause[hidden],
+#sound[hidden],
+#fullscreen[hidden] {
+  display: none;
+}
+
+/* The summary between the HUD's bar and the corner's buttons, scrolling inside rather than
+   running under either on a small screen (it overran both at 1024×640). It takes the
+   pointer, for its buttons, its hover texts and the chart. */
+.end-screen .banner.summary {
+  inset: calc(64px + 0.75rem) 0 3.6rem;
+  max-height: calc(100vh - 64px - 4.35rem);
+  overflow-y: auto;
+  --pad-x: 2rem;
+  --pad-bottom: 1.2rem;
+  padding: 1.4rem var(--pad-x) var(--pad-bottom);
+  font-size: 1rem;
+  letter-spacing: normal;
+  text-transform: none;
+  pointer-events: auto;
+}
+
+/* The headline in the look's lettering and accent, as the menus' headings are; under it, for a
+   viewer who did not win, their own place. */
+.end-screen .summary .headline {
+  margin: 0;
+  color: var(--accent);
+  font-family: var(--heading-font);
+  font-size: 1.9rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-wrap: balance;
+}
+
+.end-screen .summary .your-place {
+  margin: 0.25rem 0 0;
+  color: var(--ink);
+  font-size: 1.05rem;
+  font-weight: 600;
+}
+
+/* Show the board, quiet, first in the summary's row of buttons; and the way back on its bar. */
+.end-screen .summary .peek {
+  min-height: 2.8rem;
+  margin: 1rem 0 0;
+  padding: 0.6rem 1rem;
+  border-color: transparent;
+  border-radius: var(--radius-s);
+  font-size: 14px;
+}
+
+.end-screen .summary .peek:hover {
+  border-color: var(--line);
+  background: var(--surface-2);
+}
+
+.end-screen .peek {
+  display: inline-flex;
+  gap: 0.4rem;
+  align-items: center;
+  min-height: 2rem;
+  padding: 0.3rem 0.7rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--muted);
+  font: 600 12px var(--ui-font);
+  cursor: pointer;
+  pointer-events: auto;
+}
+
+.end-screen .peek:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.end-screen .peek svg.icon {
+  width: 15px;
+  height: 15px;
+}
+
+/* Folded: the summary gone, a bar at the bottom with the headline and the way back, the
+   board and its score bar in full view. */
+.end-screen .peek-bar {
+  position: absolute;
+  left: 50%;
+  bottom: 0.7rem;
+  display: none;
+  gap: 1rem;
+  align-items: center;
+  padding: 0.45rem 0.6rem 0.45rem 1.1rem;
+  border: var(--hud-box-edge);
+  border-radius: var(--radius);
+  background: var(--surface-solid);
+  box-shadow: var(--shadow);
+  color: var(--panel-accent);
+  font: 600 1rem var(--hud-font, var(--ui-display));
+  transform: translateX(-50%);
+  pointer-events: auto;
+}
+
+.end-screen.peeking .banner.summary {
+  display: none;
+}
+
+.end-screen.peeking:not(.held) .peek-bar {
+  display: flex;
+}
+
+/* The HUD's bar says again what the table says: faded back while the summary is up. */
+.bar {
+  transition: opacity 400ms;
+}
+
+body:has(.end-screen:not(.held, .peeking) .banner.summary) .bar {
+  opacity: 0.3;
+}
+
+/* The standings: the figures right-aligned under right-aligned headings, each heading
+   explained on hover. */
+.end-screen table.final {
+  margin: 1rem auto 0.3rem;
+  font-size: 17px;
+  letter-spacing: 0.01em;
+}
+
+.end-screen table.final th {
+  padding: 0 0.9rem 0.35rem;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-align: right;
+  text-transform: uppercase;
+}
+
+.end-screen table.final th span[data-tip] {
+  border-bottom: 1px dotted color-mix(in srgb, var(--muted) 60%, transparent);
+  cursor: help;
+}
+
+.end-screen table.final td {
+  padding: 0.35rem 0.9rem;
+  vertical-align: middle;
+}
+
+.end-screen table.final td:nth-child(n + 3) {
+  color: var(--muted);
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.end-screen table.final td:nth-child(3) {
+  color: var(--ink);
+  font-weight: 700;
+}
+
+.end-screen table.final td.rank {
+  width: 2.2rem;
+  color: var(--muted);
+  text-align: center;
+}
+
+.end-screen table.final td.who {
+  text-align: left;
+}
+
+.end-screen table.final td.who .shape {
+  margin-right: 0.5rem;
+  vertical-align: -2px;
+}
+
+/* The winner crowned, the row edged in the accent. */
+.end-screen table.final tr.winner td {
+  background: color-mix(in srgb, var(--accent) 9%, transparent);
+}
+
+.end-screen table.final tr.winner td:first-child {
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+
+.end-screen table.final .crown {
+  display: inline-flex;
+  color: var(--accent);
+}
+
+.end-screen table.final .crown svg.icon {
+  width: 20px;
+  height: 20px;
+}
+
+.end-screen table.final tr.winner .name {
+  color: var(--accent);
+  font-weight: 700;
+}
+
+/* A team's members on a smaller line under its name. */
+.end-screen table.final .members {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.1rem 0.8rem;
+  margin: 0.15rem 0 0 1.6rem;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.end-screen table.final .member b {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  margin-right: 0.35rem;
+  border-radius: 2px;
+}
+
+/* Lives as the roster's pips; out as a tag, as the lobby's are. */
+.end-screen table.final .lives {
+  color: var(--accent);
+  letter-spacing: 0.12em;
+}
+
+.end-screen table.final .lives small {
+  margin-left: 0.2rem;
+  color: var(--ink);
+}
+
+.end-screen table.final .tag.out {
+  padding: 0.1rem 0.5rem;
+  border: 1px solid rgb(255 90 98 / 40%);
+  border-radius: 999px;
+  color: #ff9da2;
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+/* Award cards: the icon before the title, as the menus' buttons carry theirs; one row of
+   them, as wide as it takes — wrapping, the third had stood alone under the first two. */
+.end-screen .summary .awards {
+  flex-wrap: nowrap;
+}
+
+.end-screen .summary .award {
+  flex: 1 1 0;
+  min-width: 10.5rem;
+  border-radius: var(--radius-s);
+  background: var(--surface-2);
+}
+
+.end-screen .summary .award strong {
+  display: flex;
+  gap: 0.45rem;
+  align-items: center;
+  font-family: var(--heading-font);
+  font-size: 1rem;
+  letter-spacing: 0.04em;
+}
+
+.end-screen .summary .award strong svg.icon {
+  flex: none;
+  width: 20px;
+  height: 20px;
+}
+
+.end-screen .summary .award .who {
+  font-size: 15px;
+}
+
+.end-screen .summary .award small {
+  font-size: 13px;
+}
+
+/* The chart: as wide as the panel lets it be, its scale light, its caption plain. */
+.end-screen .score-chart {
+  position: relative;
+  width: min(36rem, 100%);
+  margin: 0.9rem auto 0.2rem;
+}
+
+.end-screen .score-chart figcaption {
+  display: block;
+  margin: 0 0 0.2rem;
+  color: var(--muted);
+  font-size: 13px;
+  letter-spacing: normal;
+  text-align: left;
+}
+
+.end-screen .score-chart svg {
+  width: 100%;
+  height: auto;
+}
+
+.end-screen .score-chart .grid {
+  stroke: rgb(255 255 255 / 8%);
+  stroke-dasharray: 3 4;
+}
+
+.end-screen .score-chart .scale {
+  fill: var(--muted);
+  font: 11px var(--ui-font);
+}
+
+.end-screen .score-chart .hit {
+  fill: transparent;
+  cursor: crosshair;
+}
+
+.end-screen .score-chart .guide {
+  stroke: color-mix(in srgb, var(--accent) 70%, transparent);
+  stroke-width: 1;
+}
+
+/* A round's scores beside the line down it. */
+.end-screen .chart-tip {
+  position: absolute;
+  top: 1.4rem;
+  min-width: 9rem;
+  padding: 0.45rem 0.6rem;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #0b0e16;
+  box-shadow: 0 8px 24px rgb(0 0 0 / 50%);
+  font-size: 12px;
+  text-align: left;
+  pointer-events: none;
+}
+
+.end-screen .chart-tip[hidden] {
+  display: none;
+}
+
+.end-screen .chart-tip strong {
+  display: block;
+  margin-bottom: 0.25rem;
+  color: var(--accent);
+}
+
+.end-screen .chart-tip ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.end-screen .chart-tip li {
+  display: flex;
+  gap: 0.4rem;
+  align-items: center;
+  color: var(--ink);
+}
+
+.end-screen .chart-tip li.you {
+  font-weight: 700;
+}
+
+.end-screen .chart-tip li b {
+  margin-left: auto;
+  padding-left: 0.8rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.end-screen .chart-tip .shape {
+  width: 11px;
+  height: 11px;
+}
+
+/* The buttons in the menus' tiers: Back to menu quiet beside Rematch, a plain button alone.
+   Pinned to the panel's foot, the rest scrolling above them where it does not fit: at six
+   players and more they had fallen out of sight below 1280×720, and at eight below
+   1920×1080 (measured 2026-10-28). */
+.end-screen .summary .end-buttons {
+  position: sticky;
+  bottom: calc(-1 * var(--pad-bottom));
+  z-index: 1;
+  gap: 0.8rem;
+  align-items: center;
+  margin: 0 calc(-1 * var(--pad-x)) calc(-1 * var(--pad-bottom));
+  padding: 0 var(--pad-x) var(--pad-bottom);
+  /* Clear over the space above the buttons, so what scrolls under it fades out there. */
+  background: linear-gradient(transparent, var(--surface-solid) 0.9rem);
+}
+
+/* More than five rows, tighter, so eight players' summary fits a 1400×900 window whole. */
+.end-screen .summary.many table.final td {
+  padding-top: 0.2rem;
+  padding-bottom: 0.2rem;
+}
+
+.end-screen .summary.many .score-chart {
+  width: min(27rem, 100%);
+}
+
+.end-screen .summary.many .awards {
+  margin: 0.6rem 0 0.2rem;
+}
+
+.end-screen .summary .rematch,
+.end-screen .summary .leave {
+  display: inline-flex;
+  gap: 0.5rem;
+  align-items: center;
+  justify-content: center;
+  margin: 1rem 0 0;
+}
+
+.end-screen .summary .rematch {
+  min-width: 12rem;
+}
+
+.end-screen .summary .leave.quiet {
+  border-color: transparent;
+  background: transparent;
+  color: var(--muted);
+}
+
+.end-screen .summary .leave.quiet:hover {
+  border-color: var(--line);
+  background: var(--surface-2);
+  color: var(--ink);
+}
+
+.end-screen .summary .rematch:active:not(:disabled),
+.end-screen .summary .leave:active {
+  transform: scale(0.97);
+}
+
+/* Arriving, once the fireworks have had the screen: the award cards turning in one after
+   another and the chart's lines drawn left to right (the points count up, endScreen.ts);
+   none of it under reduced motion. */
+@keyframes award-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px) rotateX(35deg);
+  }
+}
+
+@keyframes line-draw {
+  from {
+    stroke-dashoffset: 1;
+  }
+
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+.end-screen:not(.held) .summary .award {
+  animation: award-in 420ms ease-out both;
+  animation-delay: calc(500ms + var(--i, 0) * 160ms);
+}
+
+.end-screen .score-chart .line {
+  stroke-dasharray: 1;
+}
+
+.end-screen:not(.held) .score-chart .line {
+  animation: line-draw 1300ms ease-out both;
+  animation-delay: 300ms;
+}
+
+.end-screen .score-chart .end {
+  transition: opacity 300ms 1500ms;
+}
+
+.end-screen.held .score-chart .end {
+  opacity: 0;
+}
+
+body.reduced-motion .end-screen .summary .award,
+body.reduced-motion .end-screen .score-chart .line {
+  animation: none;
+}
+
+body.reduced-motion .end-screen .score-chart .end {
+  transition: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .end-screen .summary .award,
+  .end-screen .score-chart .line {
+    animation: none;
+  }
+}
+
+/* A low window: the summary tighter, so the chart and the buttons stay in it. */
+@media (max-height: 760px) {
+  .end-screen .banner.summary {
+    --pad-x: 1.5rem;
+    --pad-bottom: 0.9rem;
+    padding: 1rem var(--pad-x) var(--pad-bottom);
+  }
+
+  .end-screen .summary .headline {
+    font-size: 1.5rem;
+  }
+
+  .end-screen table.final {
+    font-size: 15px;
+  }
+
+  .end-screen table.final td {
+    padding: 0.2rem 0.7rem;
+  }
+
+  .end-screen table.final .members {
+    margin-top: 0;
+  }
+
+  .end-screen .summary .awards {
+    margin: 0.6rem 0 0.2rem;
+  }
+
+  .end-screen .summary .award {
+    gap: 0.1rem;
+    padding: 0.4rem 0.7rem;
+  }
+
+  .end-screen .summary .award .who {
+    font-size: 14px;
+  }
+
+  .end-screen .summary .award small {
+    font-size: 12px;
+  }
+
+  .end-screen .score-chart,
+  .end-screen .summary.many .score-chart {
+    width: min(20rem, 100%);
+    margin-top: 0.5rem;
+  }
+
+  .end-screen .summary .rematch,
+  .end-screen .summary .leave,
+  .end-screen .summary .peek {
+    min-height: 2.4rem;
+    margin-top: 0.6rem;
+  }
 }
