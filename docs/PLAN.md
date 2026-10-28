@@ -1767,6 +1767,31 @@ fit (ARCHIVE 12z), its remaining steps dropped (the user's decision, 2026-10-14;
      teams, bot levels, rounds, lives — never the map, which stays new; and a short hover text
      for Teams, Rounds, Lives and Special towers, as the level pips have.
 
+4. **The menus' new look** (agreed 2026-10-28, from a mockup the user approved,
+   `packages/client/mockup/menus.html` on the dev server): a neutral, modern base with
+   elements of the game's looks. The user's decisions: the layout as the mockup has it, "a
+   vast improvement"; Inter for text and Rubik for headings, bundled (SIL Open Font License);
+   the style elements at **Medium** — a style's accent, its panels' edge and shadow and its
+   lettering for headings and the main button, from its HUD skin — since Full, the skin's
+   panels, ink and lettering throughout, had readability issues in many styles and changed
+   too much from window to window; and **every new window in the next look**, the build look
+   and the combat look in turn, Random drawn from the favourites as the game draws them, none
+   again until all have been shown (`LookRotation`) — to be tested for distraction in play.
+   A panel opened over a window (Options, How to play, the Credits, the look gallery) keeps that
+   window's look; in a match the pause menu, How to play from it and the end screen take the
+   new base at Medium in the match's look on screen, in place of the HUD skin's full dress.
+   Packages, in order:
+   - **MS1 — Foundations**: the fonts, their licence named in the Credits and the README; the
+     panel, the button tiers, icons and our own hover texts in `style.css`; applied to the
+     menu, Options, How to play and the Credits.
+   - **MS2 — Controls**: button rows, steppers and switches in place of every `<select>` with
+     a few choices — the lobby, Options, the pause menu, the tournament's setup.
+   - **MS3 — Layouts and motion**: the menu in two columns with the looks as cards, the lobby's
+     seat cards, the tournament screens in the same panels, windows fading between each other
+     (off under Reduced motion).
+   - **MS4 — The look in the menus**: Medium per window by the rotation, and the style's
+     corner piece in the menu's corner.
+
 Only open work is kept here. Finished packages move to `ARCHIVE.md` under their old
 numbers — 11.1 scoring, 11.7 team mode, 11.8 the visual pass, 11.9 the themes, 11.10 the
 UI polish, all in ARCHIVE 11h; 11.11 the second visual pass and 11.12 the first

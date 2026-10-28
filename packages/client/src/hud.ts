@@ -61,7 +61,7 @@ const BANNER_CLASS: Record<ArtStyle, string> = {
  * dressed as the banners are. A record over every style, so a new style must bring one.
  * Medieval and Night share the dark bar with gold that every style once had.
  */
-const HUD_SKIN: Record<ArtStyle, string> = {
+export const HUD_SKIN: Record<ArtStyle, string> = {
   flat: 'hud-flat',
   pixel: 'hud-classic',
   night: 'hud-classic',
