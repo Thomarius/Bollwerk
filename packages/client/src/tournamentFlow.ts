@@ -13,6 +13,7 @@ import {
 } from '@bollwerk/tournament';
 
 import { app, audio, params, showError } from './app.js';
+import { seatTowers } from './tournamentTowers.js';
 import { t } from './i18n.js';
 import type { LobbyTab, LobbyView } from './lobby.js';
 import { drawLobby, showEnding, wireBracket } from './lobbyFlow.js';
@@ -127,6 +128,8 @@ function showTournament(open: Open, notice: string | null): void {
       humanPlayer: hostSeat,
       seats: people,
       bots: table.seats.map((seat) => seat.level ?? DEFAULT_BOT),
+      // The towers the tournament fixed for its bots, shown on their seats.
+      botTowers: table.seats.map((seat) => (seat.tower === undefined ? 'drawn' : seat.tower)),
       settings: table.settings,
       settingBounds: SETTING_BOUNDS,
       teams: table.seats.map((seat) => seat.team),
@@ -207,8 +210,9 @@ function matchFor(
     teams: table.seats.map((s) => s.team),
     names: table.seats.map((s) => s.name),
     personalities: table.seats.map((s) => s.personality),
-    // The host's tower in their seat, bots drawing theirs, where the tournament plays them.
+    // The host's tower in their seat, each bot the one the tournament fixed for it.
     specials: table.seats.map((s) => (s.level === null ? preferredTower() : null)),
+    botTowers: seatTowers(save, table),
     tournament: { id: save.id, step },
     teamNames: teams.map((id) => save.teams[id]?.name ?? ''),
   };

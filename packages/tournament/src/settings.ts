@@ -1,4 +1,4 @@
-import { LevelSchema, MAX_LEVEL, TOURNAMENT_LENGTHS } from '@bollwerk/config';
+import { BotTowerSchema, LevelSchema, MAX_LEVEL, TOURNAMENT_LENGTHS } from '@bollwerk/config';
 import { z } from 'zod';
 
 /**
@@ -19,7 +19,17 @@ export const TournamentSettingsSchema = z.strictObject({
   /** The host's team; at team size 1 the team goes by the host's name instead. */
   teamName: NameSchema,
   /** One for each seat of the host's team beyond the host's, in seat order. */
-  teamBots: z.array(z.strictObject({ name: NameSchema, level: LevelSchema })),
+  teamBots: z.array(
+    z.strictObject({
+      name: NameSchema,
+      level: LevelSchema,
+      /**
+       * The special tower the bot brings to every match, where towers are played: its draw from
+       * the seed (`drawn`, the default) or the host's choice. Optional: saves from before.
+       */
+      tower: BotTowerSchema.optional(),
+    }),
+  ),
   /** The levels opponents' bots are dealt, each uniformly in the range. */
   levels: z.strictObject({ min: LevelSchema, max: LevelSchema }),
   /** The archnemesis's name, or null for none: one bot a level above the range's top. */

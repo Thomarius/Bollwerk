@@ -10,6 +10,7 @@ import {
 } from '@bollwerk/tournament';
 
 import { ServerConnection } from './net/connection.js';
+import { seatTowers, sentTower } from './tournamentTowers.js';
 import { NetworkMatch } from './net/networkMatch.js';
 import { stageLabel } from './tournamentText.js';
 import { preferredTower } from './towers.js';
@@ -34,10 +35,16 @@ export function roomTable(save: Save, progress: Progress): TournamentTable | nul
   if (teams === undefined) return null;
   const table = matchTable(save, teams);
   const hostTeam = teams.indexOf(HOST_TEAM);
+  const towers = seatTowers(save, table);
   return {
-    seats: table.seats.map((seat) => ({
-      ...seat,
+    // Field by field: the table's seat carries more than the room is sent.
+    seats: table.seats.map((seat, i) => ({
+      name: seat.name,
+      level: seat.level,
+      personality: seat.personality,
+      team: seat.team,
       open: seat.team === hostTeam && seat.level !== null,
+      ...sentTower(towers[i] ?? 'drawn'),
     })),
     teamNames: teams.map((id) => save.teams[id]?.name ?? ''),
     settings: matchSettingsOf(save, defaultConfigBundle.ruleset.elimination.continues),

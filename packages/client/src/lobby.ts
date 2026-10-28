@@ -110,9 +110,13 @@ function options(
   values: readonly number[],
   selected: number,
   name: (n: number) => string = String,
+  short?: (n: number) => string,
 ): string {
   return values
-    .map((n) => `<option value="${n}"${n === selected ? ' selected' : ''}>${name(n)}</option>`)
+    .map(
+      (n) =>
+        `<option value="${n}"${short === undefined ? '' : ` data-short="${escape(short(n))}"`}${n === selected ? ' selected' : ''}>${name(n)}</option>`,
+    )
     .join('');
 }
 
@@ -162,10 +166,10 @@ function tableControls(view: LobbyView, isHost: boolean): string {
   return `
     <div class="settings">
       <label data-tip="${escape(t('lobby.teamsTitle'))}">${t('lobby.teams')}
-        <select id="team-size" data-ui="step" aria-label="${t('lobby.teamSize')}">${options(teamSizesFor(view), teamSize, teamName)}</select>
+        <select id="team-size" data-ui="seg" aria-label="${t('lobby.teamSize')}">${options(teamSizesFor(view), teamSize, teamName, (n) => (n === 1 ? t('tournament.alone') : String(n)))}</select>
       </label>
       <label>${t('lobby.players')}
-        <select id="player-count" data-ui="step" aria-label="${t('lobby.players')}">${options(counts, view.playerCount)}</select>
+        <select id="player-count" data-ui="seg" aria-label="${t('lobby.players')}">${options(counts, view.playerCount)}</select>
       </label>
       <label data-tip="${escape(t('lobby.roundsTitle'))}">${t('lobby.rounds')}
         <select id="max-rounds" data-ui="step" aria-label="${t('lobby.rounds')}">${rangeOptions(min, max, maxRounds)}</select>
@@ -200,9 +204,13 @@ function towerControl(
   isHost: boolean,
 ): string {
   if (!view.settings.specials) return '';
+  // Small, after the seat's number and before its name, so a seat keeps to one line at eight
+  // players (the user's, 2026-10-28); its name and what it does on hover.
+  const named = (shown: TowerVariant | null): string =>
+    shown === null ? towerName(null) : towerName(variantKind(shown));
   const badge = (shown: TowerVariant | null, mark = ''): string => {
     const what = shown === null ? t('towerMenu.noneWhat') : towerWhat(shown);
-    return `<span class="tower-choice">${t('lobby.theirTower')} <span class="tower-badge" data-tip="${escape(what)}">${towerFace(shown)}${mark}</span></span>`;
+    return `<span class="tower-mini tower-badge" data-tip="${escape(`${named(shown)}: ${what}`)}">${towerFace(shown)}${mark}</span>`;
   };
   if (special === 'bot') {
     const choice = botTowerOf(view.botTowers, index);
@@ -213,30 +221,27 @@ function towerControl(
         ? `<span class="drawn-mark" data-tip="${escape(t('towerMenu.random'))}">${dieSvg('currentColor')}</span>`
         : '';
     if (!isHost) return badge(shown, mark);
-    const label = escape(t('towerMenu.openBot', { n: index + 1 }));
-    const button =
-      `<button type="button" class="tower-button bot-tower" data-seat="${index}" data-choice="${choice ?? 'none'}" ` +
-      `data-tip="${label}" aria-label="${label}">${towerFace(shown)}${mark}</button>`;
-    return `<span class="tower-choice">${t('lobby.theirTower')} ${button}</span>`;
+    const label = escape(`${named(shown)} · ${t('towerMenu.openBot', { n: index + 1 })}`);
+    return (
+      `<button type="button" class="tower-mini tower-button bot-tower" data-seat="${index}" data-choice="${choice ?? 'none'}" ` +
+      `data-tip="${label}" aria-label="${label}">${towerFace(shown)}${mark}</button>`
+    );
   }
   if (index !== view.humanPlayer) return badge(special);
   // A button showing the choice, opening the tower menu (`towerMenu.ts`): the list of every
-  // variant had stopped scaling (the user's, 2026-10-16).
-  const button =
-    `<button type="button" id="my-special" class="tower-button" data-variant="${special ?? ''}" ` +
-    `data-tip="${escape(t('towerMenu.open'))}" aria-label="${escape(t('towerMenu.open'))}">` +
-    `${towerFace(special)}</button>`;
-  // What it does is told in the menu, not under the button (the user's, 2026-10-16).
-  return `<span class="tower-choice">${t('lobby.yourTower')} ${button}</span>`;
+  // variant had stopped scaling (the user's, 2026-10-16). What it does is told in the menu.
+  const label = escape(`${named(special)} · ${t('towerMenu.open')}`);
+  return (
+    `<button type="button" id="my-special" class="tower-mini tower-button" data-variant="${special ?? ''}" ` +
+    `data-tip="${label}" aria-label="${label}">${towerFace(special)}</button>`
+  );
 }
 
-/** A tower as a seat shows it: its icon, its name, and a pip for each cannon it costs. */
-function towerFace(special: TowerVariant | null): string {
-  if (special === null)
-    return `${cannonSvg('currentColor')}<span>${escape(towerName(null))}</span>`;
-  const kind = variantKind(special);
+/** A tower as a seat shows it: its icon, and under it a dot for each cannon it costs. */
+export function towerFace(special: TowerVariant | null): string {
+  if (special === null) return `${cannonSvg('currentColor')}<span class="pips"></span>`;
   const pips = `<span class="pips">${'•'.repeat(variantCost(special))}</span>`;
-  return `${towerSvg(kind, 'currentColor')}<span>${escape(towerName(kind))}</span>${pips}`;
+  return `${towerSvg(variantKind(special), 'currentColor')}${pips}`;
 }
 
 /**
@@ -290,24 +295,31 @@ export function levelPips(level: number): string {
   return `<span class="pips" data-tip="${t('lobby.level', { n: level })}" aria-hidden="true">${pips}</span>`;
 }
 
-function levelControl(
-  level: number,
-  isHost: boolean,
-  attributes: string,
-  label_: string,
-  withPerson = false,
-): string {
+function levelControl(level: number, isHost: boolean, attributes: string, label_: string): string {
   if (!isHost) {
     return `<em class="tag level">${t('lobby.level', { n: level })}</em>${levelPips(level)}`;
   }
-  const person = withPerson ? `<option value="">${t('lobby.youPlay')}</option>` : '';
-  // A bot's level a stepper showing its number beside the pips (`choices.ts`); the host's own
-  // seat, a person or a level, stays a list.
-  const ui = withPerson ? '' : ' data-ui="step"';
-  return `${levelPips(level)}<select ${attributes}${ui} aria-label="${label_}">${person}${LEVELS.map(
+  // A stepper showing the level's number beside the pips (`choices.ts`).
+  return `${levelPips(level)}<select ${attributes} data-ui="step" aria-label="${label_}">${LEVELS.map(
     (n) =>
-      `<option value="${n}"${withPerson ? '' : ` data-short="${n}"`}${n === level ? ' selected' : ''}>${t('lobby.level', { n })}</option>`,
+      `<option value="${n}" data-short="${n}"${n === level ? ' selected' : ''}>${t('lobby.level', { n })}</option>`,
   ).join('')}</select>`;
+}
+
+/**
+ * The host's own seat: a switch between playing it and a bot playing it, and for a bot its
+ * level as every other bot's is set — where one list had held both, unlike the rest (the
+ * user's, 2026-10-28).
+ */
+function hostSeatControl(view: LobbyView): string {
+  const playing = view.hostBot === null;
+  const option = (value: string, label: string, on: boolean): string =>
+    `<option value="${value}"${on ? ' selected' : ''}>${label}</option>`;
+  const who =
+    `<select id="host-play" data-ui="seg" aria-label="${t('lobby.whoPlays')}">` +
+    `${option('person', t('lobby.seatYou'), playing)}${option('bot', t('lobby.seatBot'), !playing)}</select>`;
+  if (playing) return who;
+  return who + levelControl(view.hostBot ?? 5, true, 'id="host-bot"', t('lobby.whoPlays'));
 }
 
 /** `isHost` sets the table — never a tournament's; `seats` moves people between seats. */
@@ -327,7 +339,11 @@ function seatRow(
   if (seat) {
     const isHostSeat = seat.playerId === view.hostId;
     const tags = [
-      seat.playerId === view.humanPlayer ? `<em class="tag you">${t('lobby.tagYou')}</em>` : '',
+      // Not on the host's own seat for the host, whose You | Bot switch and tinted card say so,
+      // and whose seat as a bot otherwise ran onto a second line (2026-10-28).
+      seat.playerId === view.humanPlayer && !(isHost && isHostSeat)
+        ? `<em class="tag you">${t('lobby.tagYou')}</em>`
+        : '',
       isHostSeat ? `<em class="tag">${t('lobby.tagHost')}</em>` : '',
       seat.connected ? '' : `<em class="tag away">${t('lobby.tagAway')}</em>`,
       // Every guest says when they are ready; the host's Start is theirs.
@@ -342,13 +358,12 @@ function seatRow(
     // table that is a match of bots alone, which is how watching is offered now.
     let control = '';
     let blurb = '';
+    if (isHostSeat && isHost) control = hostSeatControl(view);
+    else if (isHostSeat && view.hostBot !== null) {
+      control = levelControl(view.hostBot, false, '', '');
+    }
     if (isHostSeat && view.hostBot !== null) {
-      control = levelControl(view.hostBot, isHost, 'id="host-bot"', t('lobby.whoPlays'), true);
       blurb = `<small class="blurb">${t('lobby.watches', { name: escape(seat.name) })}</small>`;
-    } else if (isHostSeat && isHost) {
-      control = `<select id="host-bot" aria-label="${t('lobby.whoPlays')}"><option value="" selected>${t('lobby.youPlay')}</option>${LEVELS.map(
-        (n) => `<option value="${n}">${t('lobby.level', { n })}</option>`,
-      ).join('')}</select>`;
     }
     // A teammate at a tournament's table plays in place of one of the team's bots.
     const stands = view.tournament?.seats[index];
@@ -358,7 +373,7 @@ function seatRow(
     // A host watching has a bot in their seat, which brings the seat's draw.
     const watched = isHostSeat && view.hostBot !== null;
     const tower = towerControl(view, index, watched ? 'bot' : seat.special, isHost);
-    return `<li class="seat${mine}${arrived}"${who}>${seatBadge(view, index)}${occupant(view, index, seats, seat.name)}${tags}${control}${blurb}${tower}</li>`;
+    return `<li class="seat${mine}${arrived}"${who}>${seatBadge(view, index)}${tower}${occupant(view, index, seats, seat.name)}${tags}${control}${blurb}</li>`;
   }
 
   const control = levelControl(
@@ -368,7 +383,7 @@ function seatRow(
     t('lobby.botLevelAria', { n: index + 1 }),
   );
   const bot = view.tournament?.seats[index]?.name ?? t('lobby.bot', { n: index + 1 });
-  return `<li class="seat bot${arrived}"${who}>${seatBadge(view, index)}${occupant(view, index, seats, bot)}${control}${towerControl(view, index, 'bot', isHost)}</li>`;
+  return `<li class="seat bot${arrived}"${who}>${seatBadge(view, index)}${towerControl(view, index, 'bot', isHost)}${occupant(view, index, seats, bot)}${control}</li>`;
 }
 
 /** The map and the seed it comes from: the host may draw another or type one in. */
@@ -456,21 +471,23 @@ export function lobbyMarkup(view: LobbyView): string {
       ? `<p class="note">${escape(t('tournament.roomNote'))}</p>`
       : '';
 
+  const chip =
+    view.code === null
+      ? ''
+      : `<div class="code-chip">
+        <code id="room-code" class="room-code">${escape(view.code)}</code>
+        <button id="copy-code" class="quiet">${t('lobby.copy')}</button>
+      </div>`;
   const code =
     view.code === null
       ? ''
-      : `<div class="code-row">
-        <code id="room-code" class="room-code">${escape(view.code)}</code>
-        <button id="copy-code" class="quiet">${t('lobby.copy')}</button>
-      </div>` +
-        (view.invite
+      : (view.invite
           ? `<div class="code-row invite-row">
         <span class="invite-label">${t('lobby.invite')}</span>
         <code id="invite-link" class="invite-link">${escape(view.invite)}</code>
         <button id="copy-invite" class="quiet">${t('lobby.copy')}</button>
       </div>`
-          : '') +
-        roomNote;
+          : '') + roomNote;
 
   const body = `
       <div class="lobby-body">
@@ -494,7 +511,10 @@ export function lobbyMarkup(view: LobbyView): string {
 
   return `
     <div class="menu lobby${view.tournament ? ' tournament-lobby' : ''}">
-      <h1>${view.tournament ? escape(t('lobby.tournament', { team: view.tournament.teamNames[view.tournament.seats.find((s) => s.level === null)?.team ?? 0] ?? '' })) : view.code === null ? t('lobby.table') : t('lobby.room')}</h1>
+      <div class="lobby-head">
+        <h1>${view.tournament ? escape(t('lobby.tournament', { team: view.tournament.teamNames[view.tournament.seats.find((s) => s.level === null)?.team ?? 0] ?? '' })) : view.code === null ? t('lobby.table') : t('lobby.room')}</h1>
+        ${chip}
+      </div>
       ${view.notice ? `<p class="note warn">${escape(view.notice)}</p>` : ''}
       ${code}
       ${panels}

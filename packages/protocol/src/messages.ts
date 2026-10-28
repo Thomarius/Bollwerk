@@ -16,9 +16,10 @@ import { SnapshotSchema } from './snapshot.js';
  * the Allerdickste Bertha, the same again for v0.9.9 (2026-10-17). 29: the Laser Tower, the
  * same for v0.9.11 (2026-10-21). 30: the Frost Cannon, its variants, its ruleset key and the
  * snapshot's freezes (2026-10-21). 31: the Lullaby Tower, the same and a gun's sleep (2026-10-21).
- * 32: the bots' towers, set by the host in the lobby (2026-10-25).
+ * 32: the bots' towers, set by the host in the lobby (2026-10-25). 33: a tournament's bots'
+ * towers, fixed for its whole length and sent with its table (2026-10-28).
  */
-export const PROTOCOL_VERSION = 32;
+export const PROTOCOL_VERSION = 33;
 
 /**
  * A player's intent. The server overwrites `player` with the sender's own seat before
@@ -85,6 +86,11 @@ export const TournamentTableSchema = z.strictObject({
         team: z.number().int().nonnegative(),
         /** A person may take this seat in place of its bot. */
         open: z.boolean(),
+        /**
+         * The tower the seat's bot brings, fixed for the whole tournament (protocol 33, the
+         * user's, 2026-10-28), or null for none; absent for the host's seat.
+         */
+        tower: TowerVariantSchema.nullable().optional(),
       }),
     )
     .min(2)

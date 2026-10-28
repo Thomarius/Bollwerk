@@ -26,6 +26,11 @@ export interface TowerMenuOptions {
   chosen: BotTower;
   /** A bot's draw from the seed and its seat, which offers Random; absent for a person's. */
   drawn?: TowerVariant;
+  /**
+   * Random offered with no draw to show yet: a tournament's teammate, whose tower is drawn as
+   * the tournament is made (2026-10-28).
+   */
+  random?: boolean;
   /** The window's title where it is not the person's own tower: "Bot 3's tower". */
   title?: string;
   /** A choice made, at once: to be saved and sent to the table. */
@@ -52,7 +57,7 @@ export function openTowerMenu(options: TowerMenuOptions): void {
   const preview = new TowerPreview();
   root.querySelector('.preview')!.append(preview.canvas);
   const render = (): void => {
-    choice.innerHTML = towerMenuMarkup(chosen, drawn);
+    choice.innerHTML = towerMenuMarkup(chosen, drawn, options.random === true);
   };
   const choose = (next: BotTower): void => {
     click();

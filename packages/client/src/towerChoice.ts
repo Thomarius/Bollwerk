@@ -75,7 +75,12 @@ export function menuTowers(): { kind: SpecialKind; costs: number[] }[] {
  * `drawn` — its seat's draw — offers Random above them: the draw it brings unless the host
  * chooses, its tower's card marked as drawn rather than chosen.
  */
-export function towerMenuMarkup(chosen: BotTower, drawn: TowerVariant | null = null): string {
+export function towerMenuMarkup(
+  chosen: BotTower,
+  drawn: TowerVariant | null = null,
+  /** Random offered with no draw yet to show (a tournament's teammate, drawn as it is made). */
+  later = false,
+): string {
   const kind = chosen === null ? 'none' : chosen === 'drawn' ? null : variantKind(chosen);
   const drawnKind = chosen === 'drawn' && drawn !== null ? variantKind(drawn) : null;
   const card = (k: SpecialKind | 'none', icon: string, name: string): string =>
@@ -86,7 +91,7 @@ export function towerMenuMarkup(chosen: BotTower, drawn: TowerVariant | null = n
     card('none', cannonSvg('currentColor'), towerName(null)) +
     towers.map((o) => card(o.kind, towerSvg(o.kind, 'currentColor'), towerName(o.kind))).join('');
   const random =
-    drawn === null
+    drawn === null && !later
       ? ''
       : `<button type="button" class="random${chosen === 'drawn' ? ' chosen' : ''}">` +
         `${dieSvg('currentColor')}<span>${escape(t('towerMenu.random'))}</span></button>`;
@@ -104,7 +109,7 @@ export function towerMenuMarkup(chosen: BotTower, drawn: TowerVariant | null = n
   const shown = chosen === 'drawn' ? drawn : chosen;
   const afford = (v: TowerVariant): string =>
     `<em>${escape(t(variantCost(v) >= 3 ? 'tower.affordSecond' : 'tower.affordMain'))}</em>`;
-  let what = escape(t('towerMenu.noneWhat'));
+  let what = escape(t(chosen === 'drawn' ? 'towerMenu.randomLater' : 'towerMenu.noneWhat'));
   if (shown !== null) {
     const lead =
       chosen === 'drawn'

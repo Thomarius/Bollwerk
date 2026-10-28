@@ -1,4 +1,10 @@
-import { TRAIT_VALUES, type Personality, type TournamentConfig } from '@bollwerk/config';
+import {
+  TRAIT_VALUES,
+  variantKind,
+  type Personality,
+  type TournamentConfig,
+  type TowerVariant,
+} from '@bollwerk/config';
 import { streamFor, type Rng } from '@bollwerk/sim';
 
 import type { Member, Team } from './save.js';
@@ -7,15 +13,26 @@ import type { TournamentSettings } from './settings.js';
 /**
  * The field: the host's team as the host set it up, then every other team drawn from the
  * seed — names, levels and personalities, fixed for the whole tournament (TOURNAMENT §1.1).
+ *
+ * Where towers are played (`towers`, the variants on offer), every bot's tower is fixed too,
+ * so a team met again brings the same (the user's, 2026-10-28): the host's teammates the ones
+ * the host chose, or a draw; of the other teams, about half bring one tower between all their
+ * members and go by a name of that tower's (`names.towerTeams`), and the rest a tower each,
+ * named as ever. Teams of one are each their bot's, so every bot simply draws its own. Drawn
+ * from streams of their own, so a tournament without towers is the one it always was.
  */
 export function createTeams(
   settings: TournamentSettings,
   config: TournamentConfig,
   field: number,
+  towers: readonly TowerVariant[] = [],
 ): Team[] {
   const { seed, teamSize, levels } = settings;
   const deal = personalityDealer(streamFor(seed, 'personalities'));
   const levelRng = streamFor(seed, 'levels');
+  const playsTowers = settings.specials === true && towers.length > 0;
+  const towerRng = streamFor(seed, 'towers');
+  const drawTower = (): TowerVariant => towers[towerRng.nextInt(towers.length)] as TowerVariant;
 
   const host: Team = {
     name: teamSize > 1 ? settings.teamName : settings.hostName,
@@ -25,16 +42,44 @@ export function createTeams(
         name: bot.name,
         level: bot.level,
         personality: deal(),
+        ...(playsTowers
+          ? { tower: bot.tower === undefined || bot.tower === 'drawn' ? drawTower() : bot.tower }
+          : {}),
       })),
     ],
     archnemesis: false,
   };
+
+  // The other teams that bring one tower between them: half, rounded up, where teams have
+  // more than one member.
+  const others = Array.from({ length: field - 1 }, (_, i) => i + 1);
+  const themed = new Set(
+    playsTowers && teamSize > 1
+      ? streamFor(seed, 'tower-teams')
+          .shuffle(others)
+          .slice(0, Math.ceil(others.length / 2))
+      : [],
+  );
 
   // Names already the host's are not dealt again, the archnemesis's included.
   const taken = host.members.map((m) => m.name);
   if (settings.archnemesis !== null) taken.push(settings.archnemesis);
   const players = new NameDrawer(config.names.players, streamFor(seed, 'names'), taken);
   const teamNames = new NameDrawer(config.names.teams, streamFor(seed, 'team-names'), [host.name]);
+  const towerNames = new Map<string, NameDrawer>();
+  const towerName = (tower: TowerVariant): string => {
+    const kind = variantKind(tower);
+    let drawer = towerNames.get(kind);
+    if (drawer === undefined) {
+      drawer = new NameDrawer(
+        config.names.towerTeams[kind],
+        streamFor(seed, `tower-names:${kind}`),
+        [host.name],
+      );
+      towerNames.set(kind, drawer);
+    }
+    return drawer.next();
+  };
 
   const archTeam =
     settings.archnemesis === null ? -1 : 1 + streamFor(seed, 'archnemesis').nextInt(field - 1);
@@ -55,8 +100,14 @@ export function createTeams(
       leader.level = levels.max + 1;
     }
     for (const member of members) if (member.name === '') member.name = players.next();
+    let name = teamSize > 1 ? '' : leader.name;
+    if (playsTowers) {
+      const shared = themed.has(id) ? drawTower() : null;
+      for (const member of members) member.tower = shared ?? drawTower();
+      if (shared !== null) name = towerName(shared);
+    }
     teams.push({
-      name: teamSize > 1 ? teamNames.next() : leader.name,
+      name: name === '' ? teamNames.next() : name,
       members,
       archnemesis: id === archTeam,
     });

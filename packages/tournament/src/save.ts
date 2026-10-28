@@ -1,4 +1,4 @@
-import { LevelSchema, PersonalitySchema } from '@bollwerk/config';
+import { LevelSchema, PersonalitySchema, TowerVariantSchema } from '@bollwerk/config';
 import { z } from 'zod';
 
 import { TournamentSettingsSchema } from './settings.js';
@@ -20,6 +20,12 @@ export const MemberSchema = z.strictObject({
   /** Null for the host, the one person whose seat every match has. */
   level: LevelSchema.nullable(),
   personality: PersonalitySchema.nullable(),
+  /**
+   * The special tower a bot brings to every match of the tournament, or null for none, fixed
+   * as the tournament is made (the user's, 2026-10-28). Absent for the host, for a tournament
+   * without towers, and in a save from before: those bots draw one from the tournament's seed.
+   */
+  tower: TowerVariantSchema.nullable().optional(),
 });
 export type Member = z.infer<typeof MemberSchema>;
 

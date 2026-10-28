@@ -1,7 +1,8 @@
-import { defaultConfigBundle } from '@bollwerk/config';
+import { defaultConfigBundle, offeredVariants } from '@bollwerk/config';
 import { createTournament } from '@bollwerk/tournament';
 
 import { app, audio, showError } from './app.js';
+import { openTowerMenu } from './towerMenu.js';
 import { enhanceChoices } from './choices.js';
 import { t } from './i18n.js';
 import type { Common } from './menu.js';
@@ -61,7 +62,9 @@ export function openNewTournament(common: Common, exits: TournamentExits): void 
     if (!root.contains(target)) return;
     audio.play('select');
     const mate = Number(target.dataset.mate);
-    switch (target.id || target.className) {
+    // The element's own class, first: a select behind its buttons wears `replaced` too, which
+    // matched by its whole class name left a teammate's level untaken (`choices.ts`).
+    switch (target.id || target.classList[0]) {
       case 'team-size':
         return change({ teamSize: number(target) });
       case 'length':
@@ -113,7 +116,24 @@ export function openNewTournament(common: Common, exits: TournamentExits): void 
   const onClick = (event: Event): void => {
     const target = (event.target as HTMLElement).closest('button');
     if (target === null || !root.contains(target)) return;
-    if (target.id === 'back') {
+    if (target.classList.contains('mate-tower')) {
+      // A teammate's tower, fixed for the tournament: Random until chosen, drawn as it is made.
+      audio.play('select');
+      const mate = Number(target.dataset.mate);
+      const bot = form.teamBots[mate];
+      if (bot === undefined) return;
+      openTowerMenu({
+        chosen: bot.tower,
+        random: true,
+        title: t('tournament.mateTower', { name: bot.name }),
+        onChoose: (tower) =>
+          change({
+            teamBots: form.teamBots.map((b, i) => (i === mate ? { ...b, tower } : b)),
+          }),
+        click: () => audio.play('select'),
+        alive: () => document.querySelector(`.mate-tower[data-mate="${mate}"]`) !== null,
+      });
+    } else if (target.id === 'back') {
       audio.play('select');
       leave();
       exits.menu();
@@ -127,6 +147,8 @@ export function openNewTournament(common: Common, exits: TournamentExits): void 
           defaultConfigBundle.tournament,
           TOURNAMENT_LIMITS,
           { id: newTournamentId(now), now: now.toISOString() },
+          // The towers on offer, for the bots' towers fixed as the tournament is made.
+          offeredVariants(defaultConfigBundle.ruleset.specials),
         );
         leave();
         if (!writeTournament(save)) {

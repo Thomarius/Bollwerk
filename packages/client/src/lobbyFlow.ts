@@ -173,10 +173,16 @@ export function drawLobby(view: LobbyView, on: LobbyHandlers): void {
     audio.play('select');
     on.seed(randomSeed());
   });
+  // The host's own seat: played by them, or by a bot at the level a bot's seat has by default.
+  const hostPlay = document.querySelector<HTMLSelectElement>('#host-play');
+  hostPlay?.addEventListener('change', () => {
+    audio.play('select');
+    on.hostBot(hostPlay.value === 'bot' ? DEFAULT_BOT : null);
+  });
   const hostBot = document.querySelector<HTMLSelectElement>('#host-bot');
   hostBot?.addEventListener('change', () => {
     audio.play('select');
-    on.hostBot(hostBot.value === '' ? null : Number(hostBot.value));
+    on.hostBot(Number(hostBot.value));
   });
   // Who sits where. Teams belong to seats, so this is how people choose sides.
   for (const field of document.querySelectorAll<HTMLSelectElement>('.occupant')) {

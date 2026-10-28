@@ -2,7 +2,13 @@
 // Inter for text, Rubik for headings, both under the SIL Open Font License (PLAN §11 item 4, MS1).
 import '@fontsource-variable/inter';
 import '@fontsource-variable/rubik';
-import { defaultConfigBundle, defaultTeams, MAX_LEVEL, MIN_LEVEL } from '@bollwerk/config';
+import {
+  defaultConfigBundle,
+  defaultTeams,
+  MAX_LEVEL,
+  MIN_LEVEL,
+  offeredVariants,
+} from '@bollwerk/config';
 import { PHASES, type Phase } from '@bollwerk/sim';
 
 import { t } from './i18n.js';
@@ -149,10 +155,13 @@ function start(): void {
         knockout: 'double',
         matchTeams: { min: 2, max: 4 },
         maxRounds: 10,
+        // With &specials=1, its bots' towers fixed, half the teams one tower's (2026-10-28).
+        specials: params.get('specials') === '1',
       },
       defaultConfigBundle.tournament,
       TOURNAMENT_LIMITS,
       { id: 't-demo', now: now.toISOString() },
+      offeredVariants(defaultConfigBundle.ruleset.specials),
     );
     writeTournament(save);
     tournamentExits(params.get('private') !== '1').play(save.id);

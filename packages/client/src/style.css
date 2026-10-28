@@ -7001,3 +7001,126 @@ body.reduced-motion #menu-corner {
     display: none;
   }
 }
+
+/* The lobby's heading with the room's code beside it on the right (the user's, 2026-10-28):
+   the code and its copy button one small chip, not a line of their own. */
+.lobby-head {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.75rem;
+}
+
+.lobby-head h1 {
+  margin: 0;
+}
+
+.code-chip {
+  display: inline-flex;
+  flex: none;
+  gap: 0.25rem;
+  align-items: center;
+  padding: 0.25rem 0.25rem 0.25rem 0.4rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-s);
+  background: var(--field);
+}
+
+.code-chip .room-code {
+  flex: none;
+  padding: 0.2rem 0.5rem;
+  border: none;
+  background: none;
+  font-size: 1.35rem;
+}
+
+.menu .code-chip button {
+  width: auto;
+  min-height: 2rem;
+  margin: 0;
+  padding: 0.3rem 0.75rem;
+  font-size: 13px;
+}
+
+/* A seat's tower: a small icon after its number and shape, a dot a cannon under it, its name
+   and what it does on hover (the user's, 2026-10-28) — the line of its own it had took a
+   second line a seat, and scrolling at eight. */
+.menu .seats .seat .tower-mini {
+  display: inline-flex;
+  flex: none;
+  flex-direction: column;
+  gap: 1px;
+  align-items: center;
+  justify-content: center;
+  width: 2.1rem;
+  min-height: 2.1rem;
+  margin: 0;
+  padding: 0.15rem 0;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--field);
+  color: var(--ink);
+}
+
+.menu .seats .seat button.tower-mini {
+  cursor: pointer;
+}
+
+.menu .seats .seat button.tower-mini:hover {
+  border-color: var(--accent);
+  background: var(--surface-3);
+}
+
+.menu .seats .seat .tower-mini svg {
+  width: 1.15rem;
+  height: 1.15rem;
+}
+
+.menu .seats .seat .tower-mini .pips {
+  min-height: 0.45rem;
+  color: var(--accent);
+  font-size: 9px;
+  line-height: 0.45rem;
+  letter-spacing: 0.05em;
+}
+
+/* Random's die, small in the icon's corner. */
+.menu .seats .seat .tower-mini {
+  position: relative;
+}
+
+.menu .seats .seat .tower-mini .drawn-mark {
+  position: absolute;
+  top: -5px;
+  right: -6px;
+  color: var(--muted);
+}
+
+.menu .seats .seat .tower-mini .drawn-mark svg {
+  width: 0.75rem;
+  height: 0.75rem;
+}
+
+/* A seat's line a little tighter, so the host's own seat as a bot — switch, pips and stepper —
+   keeps to one line; and the lobby's rows of buttons narrower, for seven player counts. */
+.menu .seats .seat {
+  gap: 0.45rem;
+}
+
+.lobby .ui-choice.seg button,
+.menu.lobby .ui-choice.seg button {
+  min-width: 1.9rem;
+  padding: 0.45rem 0.5rem;
+}
+
+/* The steppers in the seats a little more compact than the settings', so a seat with a switch,
+   pips and a stepper keeps to one line. */
+.menu .seats .ui-choice.step button {
+  width: 1.9rem;
+  min-height: 2.1rem;
+}
+
+.menu .seats .ui-choice.step output {
+  min-width: 2rem;
+}

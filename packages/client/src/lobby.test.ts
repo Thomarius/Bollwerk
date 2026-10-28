@@ -284,11 +284,17 @@ describe('lobby', () => {
   });
 
   it('lets the host give their own seat to a bot, and then says they will watch', () => {
+    // A switch between playing it and a bot, and only for a bot the level, as every bot's is set.
     const playing = lobbyMarkup(view());
-    expect(rows(playing)[0]).toContain('id="host-bot"');
-    expect(rows(playing)[0]).toContain('<option value="" selected>You play</option>');
+    expect(rows(playing)[0]).toContain('id="host-play"');
+    expect(rows(playing)[0]).toContain('<option value="person" selected>You</option>');
+    expect(rows(playing)[0]).not.toContain('id="host-bot"');
     const watching = lobbyMarkup(view({ hostBot: 8 }));
-    expect(rows(watching)[0]).toContain('<option value="8" selected>Level 8</option>');
+    expect(rows(watching)[0]).toContain('<option value="bot" selected>Bot</option>');
+    expect(rows(watching)[0]).toContain('id="host-bot" data-ui="step"');
+    expect(rows(watching)[0]).toContain(
+      '<option value="8" data-short="8" selected>Level 8</option>',
+    );
     expect(rows(watching)[0]).toContain('Ada watches');
     // A guest sees who is playing the host's seat, and cannot change it.
     const guest = lobbyMarkup(

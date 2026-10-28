@@ -950,6 +950,70 @@
       "Zephyr",
       "Zeppelin",
       "Zodiac"
-    ]
+    ],
+    "towerTeams": {
+      "bertha": [
+        "Howitzer",
+        "Mortar",
+        "Hammer",
+        "Bombard",
+        "Cannonade",
+        "Boom",
+        "Rumble",
+        "Kaboom"
+      ],
+      "architect": [
+        "Masons",
+        "Builders",
+        "Keystone",
+        "Cornerstone",
+        "Trowel",
+        "Scaffold",
+        "Bricklayers",
+        "Plumbline"
+      ],
+      "rapid": [
+        "Gatling",
+        "Rattle",
+        "Hornets",
+        "Staccato",
+        "Hailfire",
+        "Rapidfire",
+        "Drumroll",
+        "Volley"
+      ],
+      "lightning": ["Thunderbolt", "Volt", "Tesla", "Sparks", "Zeus", "Stormcall", "Arc", "Static"],
+      "biggest": [
+        "Goliath",
+        "Colossus",
+        "Behemoth",
+        "Monolith",
+        "Juggernaut",
+        "Leviathan",
+        "Gargantua",
+        "Megaton"
+      ],
+      "laser": ["Photon", "Beam", "Refraction", "Lumen", "Ray", "Laserline", "Spectrum", "Optic"],
+      "frost": [
+        "Frostline",
+        "Blizzard",
+        "Snowdrift",
+        "Permafrost",
+        "Icebreakers",
+        "Frostbite",
+        "Snowcap",
+        "Hailstone"
+      ],
+      "lullaby": [
+        "Sandman",
+        "Dreamers",
+        "Nightcap",
+        "Moonlight",
+        "Sleepwalkers",
+        "Hush",
+        "Slumber",
+        "Cradle"
+      ]
+    }
   }
 }

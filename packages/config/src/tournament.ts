@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 import { MAX_LEVEL } from './ai.js';
+import { SPECIAL_KINDS } from './ruleset.js';
 
 /**
  * Tournament mode (ARCHIVE 13w): how long each length runs, how large a field may
@@ -58,6 +59,17 @@ export const TournamentConfigSchema = z.strictObject({
     players: NamePoolSchema,
     /** Teams of two or more; a team of one goes by its player's name. */
     teams: NamePoolSchema,
+    /**
+     * Teams whose every member brings the same special tower, named for it: half the field's
+     * teams where towers are played (the user's, 2026-10-28), the rest mixed and named from
+     * `teams`. None of these is in `teams`, so the two never meet.
+     */
+    towerTeams: z.strictObject(
+      Object.fromEntries(SPECIAL_KINDS.map((kind) => [kind, NamePoolSchema])) as Record<
+        (typeof SPECIAL_KINDS)[number],
+        typeof NamePoolSchema
+      >,
+    ),
   }),
 });
 export type TournamentConfig = z.infer<typeof TournamentConfigSchema>;

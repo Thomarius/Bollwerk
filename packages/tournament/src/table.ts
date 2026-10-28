@@ -1,4 +1,4 @@
-import type { MatchSettings, Personality } from '@bollwerk/config';
+import type { MatchSettings, Personality, TowerVariant } from '@bollwerk/config';
 import type { MatchState } from '@bollwerk/sim';
 
 import { placings } from './placement.js';
@@ -20,6 +20,13 @@ export interface TableSeat {
   personality: Personality | null;
   /** The seat's team, as its place in the match. */
   team: number;
+  /**
+   * The tower the seat's bot brings, fixed for the tournament, or null for none; undefined for
+   * the host's seat and for a bot the save has none for (`Member.tower`).
+   */
+  tower?: TowerVariant | null;
+  /** The seat's place in its team, by which a bot without a saved tower draws one. */
+  member: number;
 }
 
 export interface MatchTable {
@@ -30,11 +37,13 @@ export interface MatchTable {
 
 export function matchTable(save: Save, teams: readonly number[]): MatchTable {
   const seats = teams.flatMap((id, team) =>
-    (save.teams[id] as Team).members.map((member) => ({
+    (save.teams[id] as Team).members.map((member, index) => ({
       name: member.name,
       level: member.level,
       personality: member.personality,
       team,
+      member: index,
+      ...(member.tower === undefined ? {} : { tower: member.tower }),
     })),
   );
   return { seats, teams: [...teams] };

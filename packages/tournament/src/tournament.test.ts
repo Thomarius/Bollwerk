@@ -1,4 +1,9 @@
-import { defaultConfigBundle, TOURNAMENT_LENGTHS } from '@bollwerk/config';
+import {
+  defaultConfigBundle,
+  TOURNAMENT_LENGTHS,
+  TOWER_VARIANTS,
+  variantKind,
+} from '@bollwerk/config';
 import { Rng, type MatchState } from '@bollwerk/sim';
 import { describe, expect, it } from 'vitest';
 
@@ -622,7 +627,13 @@ describe('a table', () => {
     const teams = [3, HOST_TEAM, 5];
     const table = matchTable(save, teams);
     expect(table.seats.map((s) => s.team)).toEqual([0, 0, 1, 1, 2, 2]);
-    expect(table.seats[2]).toEqual({ name: 'Thomas', level: null, personality: null, team: 1 });
+    expect(table.seats[2]).toEqual({
+      name: 'Thomas',
+      level: null,
+      personality: null,
+      team: 1,
+      member: 0,
+    });
     expect(table.seats[3]?.name).toBe('Helper 1');
     expect(table.seats[0]?.name).toBe(save.teams[3]?.members[0]?.name);
     // The match's team 1 is the host's, 2 the tournament's team 5, 0 its team 3.
@@ -683,5 +694,78 @@ describe('names', () => {
     // "Bo" is taken, so the first lap gives only "Ada"; the second gives both.
     expect(drawn[0]).toBe('Ada');
     expect(drawn.slice(1).sort()).toEqual(['Ada II', 'Bo II']);
+  });
+});
+
+describe('the bots’ towers in a tournament', () => {
+  const towered = (over: Partial<TournamentSettings> = {}): Save =>
+    createTournament(
+      settingsFor({ teamSize: 2, specials: true, ...over }),
+      config,
+      limits,
+      { id: 't1', now: '2026-10-28' },
+      TOWER_VARIANTS,
+    );
+
+  it('fixes every bot’s tower as the tournament is made, and none without towers', () => {
+    const save = towered();
+    for (const team of save.teams.slice(1)) {
+      for (const member of team.members) expect(member.tower).toBeDefined();
+    }
+    expect(save.teams[0]?.members[0]?.tower).toBeUndefined();
+    const plain = make({ teamSize: 2 });
+    for (const team of plain.teams) for (const m of team.members) expect(m.tower).toBeUndefined();
+  });
+
+  it('gives half the other teams one tower and its name, the rest a tower each', () => {
+    const save = towered();
+    const others = save.teams.slice(1);
+    const themed = others.filter((team) => {
+      const first = team.members[0]?.tower ?? null;
+      if (first === null || !team.members.every((m) => m.tower === first)) return false;
+      return (config.names.towerTeams[variantKind(first)] as readonly string[]).some((name) =>
+        team.name.startsWith(name),
+      );
+    });
+    expect(themed).toHaveLength(Math.ceil(others.length / 2));
+    // The rest go by the ordinary names.
+    for (const team of others.filter((t) => !themed.includes(t))) {
+      expect(config.names.teams.some((name) => team.name.startsWith(name))).toBe(true);
+    }
+    // Every team name is still unique.
+    expect(new Set(save.teams.map((t) => t.name)).size).toBe(save.teams.length);
+  });
+
+  it('keeps the host’s choice for a teammate, and draws one for Random', () => {
+    const save = towered({
+      teamSize: 3,
+      teamBots: [
+        { name: 'Helper 1', level: 5, tower: 'laser3' },
+        { name: 'Helper 2', level: 5, tower: null },
+      ],
+    });
+    expect(save.teams[0]?.members.map((m) => m.tower)).toEqual([undefined, 'laser3', null]);
+    const drawn = towered({ teamSize: 2, teamBots: [{ name: 'Helper 1', level: 5 }] });
+    expect(TOWER_VARIANTS).toContain(drawn.teams[0]?.members[1]?.tower);
+  });
+
+  it('leaves the field as it was without towers, names, levels and all', () => {
+    const before = make({ teamSize: 2 });
+    const off = createTournament(
+      settingsFor({ teamSize: 2, specials: false }),
+      config,
+      limits,
+      { id: 't1', now: '2026-10-08' },
+      TOWER_VARIANTS,
+    );
+    expect(off.teams).toEqual(before.teams);
+  });
+
+  it('carries each bot’s tower to its seat at a match’s table', () => {
+    const save = towered();
+    const table = matchTable(save, [HOST_TEAM, 1]);
+    expect(table.seats[0]?.tower).toBeUndefined();
+    expect(table.seats[2]?.tower).toBe(save.teams[1]?.members[0]?.tower);
+    expect(table.seats[3]?.member).toBe(1);
   });
 });

@@ -10594,3 +10594,61 @@ window distracts is for the users to try. And a crash fixed: the window resized 
 banner's wipe, full screen left among other ways, stopped the match (15a). The game itself
 is unchanged: protocol 32 and recording format 4 as v0.9.18, so the two play together and
 its recordings replay.
+
+## 15c. The lobby after the user's look at v0.9.19 (2026-10-28)
+
+Four points of the user's, each as they asked:
+
+- **The host's own seat** had a list of "You play" and the ten levels where every bot has the
+  pips and a − / + stepper. Now a switch, You | Bot, and for a bot the level as every bot's is
+  set (`hostSeatControl`); a bot taken at the default level. On the host's own seat the "you"
+  tag gives way to the switch and the tinted card, and the seats' steppers are a little more
+  compact, so the seat as a bot keeps to one line.
+- **The room's code** a chip at the right of the heading, its Copy button in it, rather than a
+  line of its own; the invitation's long link keeps one.
+- **A seat's tower** a small icon after its number and shape and before its name, a dot a
+  cannon under it, its name and what it does on hover, Random's die in its corner — where it
+  had a line of its own under every seat, and eight seats needed scrolling. Pressed, it opens
+  the tower menu as before.
+- **Teams and Players** rows of buttons again: Solo, 2, 3, 4, and the counts the team size
+  allows, up to seven of them, which fit beside their label.
+- **The tournament's setup** the same, at the user's word: its team size a row of buttons,
+  Solo, 2, 3, 4, as the lobby's.
+- Seen against the built server in English and German at eight seats with towers on: the
+  switch, a level stepped up, teams of two leaving 4, 6 and 8 players, a tower opening its
+  menu. The lobby's and the towers' tests updated for the new markup; the three texts no
+  longer used ("You play", "Your tower", "Brings") taken out of both languages.
+
+## 15d. A tournament's bots keep their towers (2026-10-28; protocol 33)
+
+The user's question and design. A tournament's bots had drawn their towers afresh at every
+match, from its map's seed and their seat, so a team met again brought others. Now every
+bot's tower is fixed as the tournament is made and kept in its save (`Member.tower`):
+
+- **Half the other teams one tower's**: of the teams beyond the host's, half, rounded up,
+  bring one variant between all their members and go by a name of that tower's, from eight
+  a tower in the tournament config (`names.towerTeams` — Howitzer, Masons, Gatling, Tesla,
+  Behemoth, Photon, Snowcap, Sandman and the rest, none in the ordinary pool); the rest bring a
+  tower each and are named as ever — the user's mix, since a whole field of one-tower teams
+  read oddly. Teams of one are their bot's name, so there every bot simply draws its own.
+  From streams of their own (`towers`, `tower-teams`, `tower-names:<kind>`): a tournament
+  without towers is the one it always was, names and levels and all, which a test holds.
+- **The host's teammates** have a tower button in the setup, before their name as in the
+  lobby: Random, a die, by default — the menu offering Random with no draw yet to show,
+  "drawn as the tournament begins" — or the host's choice; drawn or chosen, fixed as the
+  tournament is made. The host still chooses their own before every match.
+- **At a match**: `matchTable` carries each bot's tower; the client resolves a seat's
+  (`seatTowers`) — a save from before drawing one from the tournament's seed, the bot's team and
+  its place in it, the same at every match, as the user agreed for tournaments under way — into
+  a local match's bots and the lobby's seats, and the room's table sends it, so a teammate's
+  page and the server's bots bring the same (`TournamentTable` seats' `tower`, protocol 33).
+  The room's table is built field by field now: spread whole, the table's seat would have sent
+  the server a key its schema refuses.
+- **Found on the way**: since MS2 a teammate's level in the setup did nothing — the setup
+  matched a select by its whole class, and a select behind its buttons wears `replaced` too.
+  Matched by its own class now.
+- Seen in a browser: a tournament of teams of two made with towers, a teammate set to the Laser
+  Tower, the saved field's one-tower teams (Gatling, Snowcap, Behemoth, Sandman, Zeus…) and
+  mixed ones, and the first match's seats each with its fixed tower. Tests: the field's
+  towers and names, the host's choices kept and Random drawn, an old save's draws the same at
+  every match, the room's table taken by its schema.

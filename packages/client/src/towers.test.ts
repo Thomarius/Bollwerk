@@ -154,17 +154,20 @@ describe('the lobby with special towers', () => {
     expect(html).toContain('data-variant="rapid3"');
     expect(html).not.toContain('<select id="my-special"');
     expect(html).not.toContain('bot-tower');
-    // Everyone else's shown as the button is, icon, name and a pip a cannon, not to be pressed.
-    const badges = [...html.matchAll(/<span class="tower-badge"[^>]*>(.*?)<\/span><\/span>/g)];
+    // Everyone else's a small icon before the name, a dot a cannon under it, its name and what
+    // it does on hover; not to be pressed.
+    const badges = html
+      .split('class="tower-mini tower-badge"')
+      .slice(1)
+      .map((part) => part.slice(0, part.indexOf('class="who"')));
     const drawn = drawnSpecial(42, 2, defaultRuleset.specials);
-    expect(badges.map((b) => b[1])).toEqual([
-      expect.stringMatching(new RegExp(`<svg.*${towerName('architect')}.*>••$`)),
-      expect.stringMatching(
-        new RegExp(
-          `<svg.*${towerName(variantKind(drawn))}.*>${'•'.repeat(variantCost(drawn))}</span><span class="drawn-mark".*</svg>$`,
-        ),
-      ),
-    ]);
+    expect(badges).toHaveLength(2);
+    expect(badges[0]).toContain(`data-tip="${towerName('architect')}: `);
+    expect(badges[0]).toContain('<span class="pips">••</span>');
+    expect(badges[0]).not.toContain('drawn-mark');
+    expect(badges[1]).toContain(`data-tip="${towerName(variantKind(drawn))}: `);
+    expect(badges[1]).toContain(`<span class="pips">${'•'.repeat(variantCost(drawn))}</span>`);
+    expect(badges[1]).toContain('class="drawn-mark"');
   });
 
   it("gives the host a button for each bot's tower, its draw marked with a die until chosen", () => {
@@ -174,7 +177,9 @@ describe('the lobby with special towers', () => {
         ...(botTowers === undefined ? {} : { botTowers }),
       });
       return [
-        ...html.matchAll(/<button[^>]*class="tower-button bot-tower"[^>]*>.*?<\/button>/g),
+        ...html.matchAll(
+          /<button[^>]*class="tower-mini tower-button bot-tower"[^>]*>.*?<\/button>/g,
+        ),
       ].map((m) => m[0]);
     };
     const drawn = drawnSpecial(42, 2, defaultRuleset.specials);

@@ -1,4 +1,4 @@
-import type { TournamentConfig } from '@bollwerk/config';
+import type { TournamentConfig, TowerVariant } from '@bollwerk/config';
 import { streamFor } from '@bollwerk/sim';
 
 import { drawLeague, knockoutSizes, loserRounds, product } from './plan.js';
@@ -17,6 +17,8 @@ export function createTournament(
   config: TournamentConfig,
   limits: SettingLimits,
   meta: { id: string; now: string },
+  /** The tower variants on offer, for the bots' towers where the tournament plays them. */
+  towers: readonly TowerVariant[] = [],
 ): Save {
   const problems = settingsProblems(settings, limits);
   if (problems.length > 0) throw new Error(`cannot make this tournament: ${problems.join('; ')}`);
@@ -40,7 +42,7 @@ export function createTournament(
     createdAt: meta.now,
     playedAt: meta.now,
     settings,
-    teams: createTeams(settings, config, field),
+    teams: createTeams(settings, config, field, towers),
     plan: {
       matchdays: settings.league
         ? drawLeague(

@@ -432,9 +432,10 @@ export class Room {
     this.hostBot = null;
     this.botLevels.length = 0;
     for (const seat of table.seats) this.botLevels.push(seat.level ?? this.options.server.botLevel);
-    // A tournament's bots bring their draws, as they do in every match of it.
+    // A tournament's bots bring the towers it fixed for them, the same in every match of it.
     this.botTowers.length = 0;
-    for (let i = 0; i < table.seats.length; i++) this.botTowers.push('drawn');
+    for (const seat of table.seats)
+      this.botTowers.push(seat.tower === undefined ? 'drawn' : seat.tower);
     // The host first, then everyone else into the open seats, keeping theirs where it is.
     const host = this.seats.find((s) => s.playerId === this.hostId);
     const guests = this.seats.filter((s) => s !== host);

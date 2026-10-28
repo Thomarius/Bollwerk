@@ -3,6 +3,7 @@ import {
   MIN_LEVEL,
   TOURNAMENT_LENGTHS,
   defaultConfigBundle,
+  type BotTower,
   type TournamentLength,
 } from '@bollwerk/config';
 import {
@@ -16,7 +17,8 @@ import {
 import { escape } from './html.js';
 import { withIcon } from './icons.js';
 import { t } from './i18n.js';
-import { levelPips, rangeOptions, specialsSwitch } from './lobby.js';
+import { levelPips, rangeOptions, specialsSwitch, towerFace } from './lobby.js';
+import { dieSvg } from './towerIcons.js';
 import { preferredSpecials } from './towers.js';
 
 /**
@@ -28,8 +30,11 @@ import { preferredSpecials } from './towers.js';
 export interface TournamentForm {
   teamSize: number;
   teamName: string;
-  /** The host's teammates, one per seat beyond the host's. */
-  teamBots: { name: string; level: number }[];
+  /**
+   * The host's teammates, one per seat beyond the host's: each bot's tower, fixed for the
+   * tournament where it plays them, drawn as it is made unless the host chooses one.
+   */
+  teamBots: { name: string; level: number; tower: BotTower }[];
   levels: { min: number; max: number };
   archnemesis: boolean;
   archName: string;
@@ -118,7 +123,7 @@ export function reshapeForm(
     const taken = new Set(next.teamBots.map((b) => b.name));
     let name = names.player();
     for (let tries = 0; taken.has(name) && tries < 20; tries++) name = names.player();
-    next.teamBots.push({ name, level: MATE_LEVEL });
+    next.teamBots.push({ name, level: MATE_LEVEL, tower: 'drawn' });
   }
 
   const limits = matchTeamLimits(next.teamSize);
@@ -154,7 +159,11 @@ export function settingsOf(
     teamSize: form.teamSize,
     hostName,
     teamName: form.teamName.trim() || hostName,
-    teamBots: form.teamBots.map((b) => ({ name: b.name.trim() || '?', level: b.level })),
+    teamBots: form.teamBots.map((b) => ({
+      name: b.name.trim() || '?',
+      level: b.level,
+      tower: b.tower,
+    })),
     levels: { ...form.levels },
     archnemesis: form.archnemesis ? form.archName.trim() || t('tournament.archDefault') : null,
     length: form.length,
@@ -179,10 +188,12 @@ function choice<T extends string | number>(
   selected: T,
   name: (value: T) => string,
   ui: 'seg' | 'step' | 'switch',
+  short?: (value: T) => string,
 ): string {
   const items = values
     .map(
-      (v) => `<option value="${v}"${v === selected ? ' selected' : ''}>${escape(name(v))}</option>`,
+      (v) =>
+        `<option value="${v}"${short === undefined ? '' : ` data-short="${escape(short(v))}"`}${v === selected ? ' selected' : ''}>${escape(name(v))}</option>`,
     )
     .join('');
   return `<select id="${id}" data-ui="${ui}" aria-label="${escape(label)}">${items}</select>`;
@@ -203,13 +214,34 @@ function rangeRow(
   return `<label>${label}<span class="range">${choice(`${id}-min`, `${label}: ${t('tournament.from')}`, all, range.min, String, 'step')}<span class="dash">–</span>${choice(`${id}-max`, `${label}: ${t('tournament.to')}`, all, range.max, String, 'step')}</span></label>`;
 }
 
+/**
+ * A teammate's tower where the tournament plays them: a small icon before their name, as a
+ * seat's in the lobby, opening the tower menu — Random, a die, until the host chooses.
+ */
+function mateTower(
+  form: TournamentForm,
+  bot: TournamentForm['teamBots'][number],
+  i: number,
+): string {
+  if (!form.specials) return '';
+  const face =
+    bot.tower === 'drawn'
+      ? `${dieSvg('currentColor')}<span class="pips"></span>`
+      : towerFace(bot.tower);
+  const label = escape(t('tournament.mateTower', { name: bot.name }));
+  return (
+    `<button type="button" class="tower-mini tower-button mate-tower" data-mate="${i}" ` +
+    `data-tip="${label}" aria-label="${label}">${face}</button>`
+  );
+}
+
 /** The team's seats: the host first, then each teammate with a name and a level. */
 function teamRows(form: TournamentForm, hostName: string): string {
   const host = `<li class="seat you"><span class="who">${escape(t('tournament.you', { name: hostName }))}</span></li>`;
   const mates = form.teamBots
     .map(
       (bot, i) =>
-        `<li class="seat bot"><input class="mate-name who" data-mate="${i}" type="text" maxlength="16" value="${escape(bot.name)}" aria-label="${escape(t('tournament.mateAria', { n: i + 2 }))}" />` +
+        `<li class="seat bot">${mateTower(form, bot, i)}<input class="mate-name who" data-mate="${i}" type="text" maxlength="16" value="${escape(bot.name)}" aria-label="${escape(t('tournament.mateAria', { n: i + 2 }))}" />` +
         `${levelPips(bot.level)}<select class="mate-level" data-mate="${i}" data-ui="step" aria-label="${escape(t('tournament.mateLevelAria', { n: i + 2 }))}">${rangeOptions(MIN_LEVEL, MAX_LEVEL, bot.level)}</select></li>`,
     )
     .join('');
@@ -248,7 +280,15 @@ export function setupMarkup(form: TournamentForm, hostName: string): string {
         <section class="setup-team">
           <h2>${t('tournament.yourTeam')}</h2>
           <div class="settings">
-            <label>${t('tournament.teamSize')}${choice('team-size', t('tournament.teamSize'), numbers(sizes.min, sizes.max), form.teamSize, (n) => (n === 1 ? t('tournament.alone') : t('lobby.teamsOf', { n })), 'step')}</label>
+            <label>${t('tournament.teamSize')}${choice(
+              'team-size',
+              t('tournament.teamSize'),
+              numbers(sizes.min, sizes.max),
+              form.teamSize,
+              (n) => (n === 1 ? t('tournament.alone') : t('lobby.teamsOf', { n })),
+              'seg',
+              (n) => (n === 1 ? t('tournament.alone') : String(n)),
+            )}</label>
             ${teamName}
           </div>
           ${teamRows(form, hostName)}
