@@ -1685,8 +1685,7 @@ every resolution against an independent search, not only on unit pictures.
 
 **Where to start (2026-10-27).** The latest release is **v0.9.17** (2026-10-27, protocol 32,
 recording format 4). Item 3, the performance plan, is finished, its leftovers measured and the worthwhile ones built
-(ARCHIVE 14zc–14zi, 14zo). Next: item 4, the UI polish's three packages (agreed 2026-10-28), and
-item 2's last tower, once the users have decided which (ARCHIVE 14zm). The styles' own music's chance is the player's choice in Options (ARCHIVE 14zn). Every feature up to v0.9.16 has been tested and approved by the users (2026-10-27).
+(ARCHIVE 14zc–14zi, 14zo). Item 4, the UI polish, is done (ARCHIVE 14zr–14zt). Next: item 2's last tower, once the users have decided which (ARCHIVE 14zm). The styles' own music's chance is the player's choice in Options (ARCHIVE 14zn). Every feature up to v0.9.16 has been tested and approved by the users (2026-10-27).
 Up to **v0.8.3**: the game and online play, bots as skill levels and personalities, the styles
 with their corner pieces, random looks every round, English and German, the desktop app, UPnP,
 the balance soak and the rendering work (ARCHIVE 12h–12v), the refactoring (12w) and stronger
@@ -1763,7 +1762,7 @@ fit (ARCHIVE 12z), its remaining steps dropped (the user's decision, 2026-10-14;
    - **UP2 — The menu — done** (ARCHIVE 14zs): Single match the first and largest button, the tournaments below;
      the Public / Private switch showing both states, the chosen one lit; a fullscreen button
      beside Sound, in the browser and the desktop app.
-   - **UP3 — The lobby**: the last table remembered, local and a hosted room alike — seats,
+   - **UP3 — The lobby — done** (ARCHIVE 14zt): the last table remembered, local and a hosted room alike — seats,
      teams, bot levels, rounds, lives — never the map, which stays new; and a short hover text
      for Teams, Rounds, Lives and Special towers, as the level pips have.
 

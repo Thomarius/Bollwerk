@@ -41,6 +41,7 @@ import { openLeague } from './tournamentLeagueView.js';
 import { endingMarkup, tournamentTab } from './tournamentView.js';
 import { openTowerMenu } from './towerMenu.js';
 import { preferredSpecials, preferredTower, saveSpecials, saveTower } from './towers.js';
+import { saveTable, storedTable, type RememberedTable } from './tableMemory.js';
 
 /** The lobby, one screen whether a server holds the table or the browser does. */
 
@@ -325,9 +326,21 @@ function playLocally(common: Common, table: TableState): void {
 export async function openLobby(
   common: Common,
   code: string | null,
-  playerCount = DEFAULT_PLAYERS,
+  asked?: number,
 ): Promise<void> {
   const seed = chosenSeed();
+  // The table this person last set as host, for a table of their own — unless the address
+  // asks for a count, which is how a scene for screenshots or a test sets one exactly.
+  const remembered =
+    code === null && asked === undefined
+      ? storedTable(
+          { ...DEFAULT_SETTINGS, specials: preferredSpecials() },
+          SETTING_BOUNDS,
+          defaultConfigBundle.ruleset.players,
+          DEFAULT_BOT,
+        )
+      : null;
+  const playerCount = asked ?? remembered?.playerCount ?? DEFAULT_PLAYERS;
   app!.innerHTML = `<div class="menu"><h1>${t('menu.settingTable')}</h1><p class="note">${t('menu.lookingForServer')}</p></div>`;
   const connection = new ServerConnection(ServerConnection.defaultUrl());
   const answered = new Promise<ServerMessage | null>((resolve) => {
@@ -352,6 +365,28 @@ export async function openLobby(
     // Special towers as this host last set them; the room opens on the rules' default, off.
     if (code === null && preferredSpecials())
       connection.send({ type: 'configure', settings: { specials: preferredSpecials() } });
+    // The remembered table, in the room's order: its shape, then the host to their seat
+    // (which swaps the bots), then each seat's bot.
+    if (remembered !== null) {
+      const { maxRounds, teamSize, continues } = remembered.settings;
+      connection.send({
+        type: 'configure',
+        settings: { maxRounds, teamSize, continues },
+        playerCount: remembered.playerCount,
+        teams: remembered.teams,
+      });
+      if (remembered.hostSeat !== first.hostId) {
+        connection.send({
+          type: 'configure',
+          move: { from: first.hostId, to: remembered.hostSeat },
+        });
+      }
+      connection.send({
+        type: 'configure',
+        bots: remembered.bots,
+        botTowers: remembered.botTowers,
+      });
+    }
     roomLobby(common, connection, code, first);
     return;
   }
@@ -371,16 +406,20 @@ export async function openLobby(
     showError(t('error.couldNotJoin'), t('error.noServer', { url: ServerConnection.defaultUrl() }));
     return;
   }
-  localLobby(common, playerCount, seed);
+  localLobby(common, playerCount, seed, null, remembered);
 }
 
 /** The lobby with no server: the table lives here, under the same rules as a room's. */
-/** `kept` is a table to open as it was, for a rematch; otherwise a fresh one. */
+/**
+ * `kept` is a table to open as it was, for a rematch; otherwise the one last set here, or
+ * a fresh one.
+ */
 function localLobby(
   common: Common,
   playerCount: number,
   seed: number,
   kept: TableState | null = null,
+  remembered: RememberedTable | null = null,
 ): void {
   const limits = defaultConfigBundle.ruleset.players;
   const start = reshapeTable(
@@ -394,25 +433,36 @@ function localLobby(
     1,
   );
   let table: TableState =
-    kept === null
+    kept === null && remembered !== null
       ? {
-          ...start,
-          bots: Array.from({ length: limits.max }, () => DEFAULT_BOT),
-          botTowers: Array.from({ length: limits.max }, (): BotTower => 'drawn'),
+          ...remembered,
+          bots: [...remembered.bots],
+          botTowers: [...remembered.botTowers],
           seed,
           hostBot: null,
-          hostSeat: 0,
           special: preferredTower(),
         }
-      : {
-          ...kept,
-          bots: [...kept.bots],
-          botTowers: [...kept.botTowers],
-          teams: [...kept.teams],
-          seed,
-        };
+      : kept === null
+        ? {
+            ...start,
+            bots: Array.from({ length: limits.max }, () => DEFAULT_BOT),
+            botTowers: Array.from({ length: limits.max }, (): BotTower => 'drawn'),
+            seed,
+            hostBot: null,
+            hostSeat: 0,
+            special: preferredTower(),
+          }
+        : {
+            ...kept,
+            bots: [...kept.bots],
+            botTowers: [...kept.botTowers],
+            teams: [...kept.teams],
+            seed,
+          };
 
-  const redraw = (): void =>
+  const redraw = (): void => {
+    // Every change kept for the next table, as it is made.
+    saveTable(table);
     drawLobby(
       {
         code: null,
@@ -482,8 +532,11 @@ function localLobby(
         },
       },
     );
+    // Wired at every drawing, as the room's lobby does: the drawing replaces the button, and
+    // wired once, Leave did nothing after the first change to the table.
+    document.querySelector('#leave')?.addEventListener('click', () => showMenu());
+  };
   redraw();
-  document.querySelector('#leave')?.addEventListener('click', () => showMenu());
 }
 
 /**
@@ -612,6 +665,11 @@ function roomLobby(
           invite: message.internet === null ? null : `${message.internet}/?join=${roomCode}`,
           tournament: message.tournament,
         };
+        // The host's own table kept for the next one, as the room reports it — not a
+        // tournament's, which is the tournament's.
+        if (!message.started && message.tournament === null && match.humanPlayer === hostId) {
+          saveTable(tableOf(view));
+        }
         if (!message.started) {
           // Unstarted again after a match: the host called a rematch, and the room is its
           // lobby once more, everyone in their old seats (PLAN 11.18 Y6).

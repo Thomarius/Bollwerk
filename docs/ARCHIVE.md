@@ -10378,3 +10378,30 @@ The first of three packages from a review of the screens with the user, display 
   change with the language, in place of fixed offsets.
 - Seen in a browser in English and German: the switch, full screen on and off with its
   label following, and Pause working from the row.
+
+## 14zt. UI polish, UP3: the lobby (2026-10-28, PLAN §11 item 4)
+
+The last of the three packages; the lobby's empty half beside few seats, first proposed
+here, was dropped by the user.
+
+- **The last table remembered** (`tableMemory.ts`), local and a hosted room alike, the
+  user's choice: the seat count, the teams, each seat's bot level and tower, the rounds, the
+  lives and where the host sat — never the map, which is new each time, and never a
+  tournament's table. Special towers keep their own memory (`towers.ts`). Saved at every
+  change of a local table and at every report of a room its host holds; read back part by
+  part, so a value out of today's bounds, from an older version or edited by hand, falls back
+  to its default, and the seats and teams are shaped by the lobby's own rule
+  (`reshapeTable`) — tested. A room is given the table in its own order: its shape, then the
+  host to their seat (which swaps the bots), then the bots. An address asking for a count
+  (`?host=N`, as the screenshot scenes do) opens a fresh table, so a scene is the same on
+  every machine.
+- **The settings explained on hover**: Teams, Rounds, Lives and Special towers each have a
+  short text, as the level pips have theirs; the switch for towers in the tournament's setup
+  has it too.
+- **Found on the way**: Leave did nothing in a local lobby once the table had been changed —
+  the lobby is drawn afresh at each change and its Leave was wired only after the first
+  drawing. It is wired at every drawing now, as the room's always was.
+- Seen in a browser, local and against the built server: a table of teams of two, six seats,
+  six rounds, one life and a bot at Level 8, left and opened again as it was on a new map; a
+  remembered host seat landing the host in seat 3 with every bot's level where it was, in a
+  room and locally alike. No recording was written.

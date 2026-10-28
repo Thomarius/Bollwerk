@@ -126,7 +126,10 @@ export function teamSizesFor(view: LobbyView): number[] {
   return out;
 }
 
-/** The table's settings: controls for the host, a statement for everyone else. */
+/**
+ * The table's settings: controls for the host, a statement for everyone else. Each control's
+ * meaning in a hover text, as the level pips have theirs (PLAN §11 item 4, UP3).
+ */
 function tableControls(view: LobbyView, isHost: boolean): string {
   const { maxRounds, teamSize, continues } = view.settings;
   const teamName = (size: number): string =>
@@ -157,16 +160,16 @@ function tableControls(view: LobbyView, isHost: boolean): string {
   const { min, max } = view.settingBounds.maxRounds;
   return `
     <div class="settings">
-      <label>${t('lobby.teams')}
+      <label title="${escape(t('lobby.teamsTitle'))}">${t('lobby.teams')}
         <select id="team-size" aria-label="${t('lobby.teamSize')}">${options(teamSizesFor(view), teamSize, teamName)}</select>
       </label>
       <label>${t('lobby.players')}
         <select id="player-count" aria-label="${t('lobby.players')}">${options(counts, view.playerCount)}</select>
       </label>
-      <label>${t('lobby.rounds')}
+      <label title="${escape(t('lobby.roundsTitle'))}">${t('lobby.rounds')}
         <select id="max-rounds" aria-label="${t('lobby.rounds')}">${rangeOptions(min, max, maxRounds)}</select>
       </label>
-      <label>${t('lobby.lives')}
+      <label title="${escape(t('lobby.livesTitle'))}">${t('lobby.lives')}
         <select id="lives" aria-label="${t('lobby.lives')}">${rangeOptions(view.settingBounds.continues.min + 1, view.settingBounds.continues.max + 1, continues + 1)}</select>
       </label>
       ${specialsSwitch(view.settings.specials)}
@@ -177,7 +180,7 @@ function tableControls(view: LobbyView, isHost: boolean): string {
 export function specialsSwitch(on: boolean): string {
   const option = (value: boolean, label: string): string =>
     `<option value="${value ? 'on' : 'off'}"${value === on ? ' selected' : ''}>${label}</option>`;
-  return `<label>${t('lobby.specials')}
+  return `<label title="${escape(t('lobby.specialsTitle'))}">${t('lobby.specials')}
         <select id="specials" aria-label="${t('lobby.specials')}">${option(false, t('lobby.specialsOff'))}${option(true, t('lobby.specialsOn'))}</select>
       </label>`;
 }

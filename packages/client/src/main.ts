@@ -8,7 +8,6 @@ import type { Setup } from './session.js';
 import {
   localMatchFor,
   DEFAULT_BOT,
-  DEFAULT_PLAYERS,
   localSession,
   settingsFromParams,
   towerFromParams,
@@ -105,7 +104,8 @@ function start(): void {
       name: params.get('name') ?? storedName(),
       isPublic: params.get('private') !== '1',
     };
-    void openLobby(common, joining, Number(params.get('host') ?? DEFAULT_PLAYERS)).catch(
+    const host = params.get('host');
+    void openLobby(common, joining, host === null ? undefined : Number(host)).catch(
       (error: unknown) =>
         showError(t(joining !== null ? 'error.couldNotJoin' : 'error.couldNotHost'), error),
     );
