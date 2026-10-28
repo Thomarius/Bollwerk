@@ -10301,3 +10301,33 @@ styles drawn cheaper, Sakura's walls apart from its keeps and guns (14zo). With 
 decisions: the cap of three towers kept, and every feature up to v0.9.16 approved (14zm). The game
 itself is unchanged: protocol 32 and recording format 4 as v0.9.16, so the two play together and
 its recordings replay.
+
+## 14zq. How to play in sections (2026-10-28)
+
+The pages had grown from seven to ten one at a time (towers, the tower switch, tournaments),
+and their order no longer told the game in the order it is played: the controls came before
+the goal, the two tower pages split the guns from firing, and what is at stake, a life lost,
+came ninth. Analysed with the user, who chose tabs by section, the three new pages proposed
+and How to play in the pause menu; no mark for new pages, the game being feature-complete.
+
+- **Four sections, a tab each**: Basics (the round, the mouse, scoring against losing a life),
+  Building (choosing a castle, sealing, corners), Combat (guns on sealed ground, castles
+  earning guns, firing) and Extras (teams, special towers, the tower switch, tournaments).
+  Back and Next still walk every page, across the sections; the page count became a dot a
+  page of the section shown, each clickable, its caption its label. The panel is one width
+  whatever the caption, so the tabs and buttons do not move from page to page.
+- **Three new pages, their boards real and tested as the others**: _choosing a castle_ (the
+  pointer weighs two of three castles, clicks the third; its ring goes up block by block, it
+  is crowned, its ground floods); _a gun for every sealed castle_ (two sealed rings, "+2"
+  over the crowned castle and "+1" over the other, then the guns stand, the crown's two
+  first) — the crown left the guns page for it, one idea a page; and _teams_ (red lays the
+  block that seals blue's castle, which lands blue, the block belonging to the island; one
+  score and one pool of lives joined over both islands). Castles are drawn in their island's
+  colour now.
+- **From the pause menu**: a How to play button beside Looks, opening at the section of the
+  phase being played — Building for choosing and building, Combat for the cannons and
+  combat, an intermission by the phase it announces, Basics otherwise
+  (`howToSectionFor`). It closes with the pause menu, so Esc resumes the match as ever and no
+  key was added.
+- Seen in a browser page by page in English and German, and from the pause menu in a build
+  phase, with no errors in the console. The loops themselves need a person.

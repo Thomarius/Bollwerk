@@ -2325,6 +2325,61 @@ body.reduced-motion .menu button.quiet.fresh {
   text-transform: uppercase;
 }
 
+/* How to play's panel as wide as its longest caption, so nothing moves from page to page. */
+.how-to-play.pages .panel {
+  width: min(42rem, 94vw);
+}
+
+/* Its sections, a tab each across the picture's width (ARCHIVE 14zq). */
+.how-to-play .tabs {
+  display: flex;
+  width: 482px;
+}
+
+.how-to-play .tabs .tab {
+  flex: 1;
+  padding: 0.4rem 0.5rem;
+  border-color: var(--edge);
+  color: var(--muted);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.how-to-play .tabs .tab + .tab {
+  border-left: none;
+}
+
+.how-to-play .tabs .tab.on {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: #0a0a12;
+}
+
+/* A dot a page of the section shown, the page's own lit. */
+.how-to-play .dots {
+  display: flex;
+  gap: 0.55rem;
+  align-items: center;
+}
+
+.how-to-play .dots .dot {
+  width: 10px;
+  height: 10px;
+  padding: 0;
+  border-color: var(--muted);
+  border-radius: 50%;
+}
+
+.how-to-play .dots .dot.on {
+  border-color: var(--accent);
+  background: var(--accent);
+}
+
+.how-to-play .dots .dot[hidden] {
+  display: none;
+}
+
 /* The menu's look choices, each with a picture of the look drawn by its own theme
    (stylePreview.ts). Hidden until its picture is ready, so nothing blank shows. */
 /* A look's row (ARCHIVE 12b): its name on the left, and on the right its picture and the

@@ -28,7 +28,7 @@ import { refreshVolumeSliders, volumeSliders, type VolumeTarget } from './volume
  *
  * The overlay is the match's menu (PLAN 11.18 Y2): Resume, the Graphics, Motion, Style music and
  * Sound settings
- * as the main menu has them, and Leave match, which asks once more before it goes — one
+ * as the main menu has them, How to play, and Leave match, which asks once more before it goes — one
  * stray click should not end somebody's match.
  */
 
@@ -56,6 +56,8 @@ export interface PauseActions {
   volumes: VolumeTarget;
   /** Opens the gallery of looks, to change them mid-match (ARCHIVE 12b). */
   looks?(): void;
+  /** Opens How to play at the phase being played, returning its closing (ARCHIVE 14zq). */
+  howToPlay?(): () => void;
 }
 
 export class PauseControls {
@@ -65,6 +67,8 @@ export class PauseControls {
   private sound!: HTMLButtonElement;
   private leaving!: HTMLButtonElement;
   private sliders!: HTMLElement;
+  /** How to play, while it is open over this menu: it goes as the match resumes. */
+  private closeHowTo: (() => void) | null = null;
   /** What the line says, so the DOM is touched only when it changes. */
   private shown: string | null = null;
   private paused = false;
@@ -119,6 +123,9 @@ export class PauseControls {
       (actions.looks === undefined
         ? ''
         : `<button class="looks quiet">${t('pause.looks')}</button>`) +
+      (actions.howToPlay === undefined
+        ? ''
+        : `<button class="how-to quiet">${t('menu.howToPlay')}</button>`) +
       `</div>` +
       `<button class="leave-match quiet">${t('pause.leave')}</button>` +
       `<small>${t('pause.escHint')}</small></div>`;
@@ -166,6 +173,11 @@ export class PauseControls {
       actions.click();
       actions.looks?.();
     });
+    this.overlay.querySelector('.how-to')?.addEventListener('click', () => {
+      actions.click();
+      this.closeHowTo?.();
+      this.closeHowTo = actions.howToPlay?.() ?? null;
+    });
     this.sound.addEventListener('click', () => {
       actions.setMuted(!actions.isMuted());
       actions.click();
@@ -200,6 +212,7 @@ export class PauseControls {
     const opening = this.shown === null && text !== null;
     this.shown = text;
     this.overlay.hidden = text === null;
+    if (text === null) this.hideHowTo();
     this.line.textContent = text ?? '';
     if (opening) {
       // As the menu opens: the settings as they stand, and the leave asked for afresh.
@@ -213,7 +226,13 @@ export class PauseControls {
     }
   }
 
+  private hideHowTo(): void {
+    this.closeHowTo?.();
+    this.closeHowTo = null;
+  }
+
   destroy(): void {
+    this.hideHowTo();
     globalThis.removeEventListener('keydown', this.key);
     this.stopListening();
     this.button.remove();

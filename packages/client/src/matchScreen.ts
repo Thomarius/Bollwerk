@@ -38,6 +38,7 @@ import { MatchLog } from './summary.js';
 import { motionReduced, storedMotion } from './motion.js';
 import { styleTrackChance } from './styleMusicSetting.js';
 import { PauseControls } from './pause.js';
+import { howToSectionFor, openHowToPlay } from './howToPlay.js';
 import { openingShot, winnerShot } from './camera.js';
 import { perf } from './perf.js';
 import { bannerProgress, looksAround, type Look } from './transition.js';
@@ -347,6 +348,9 @@ export async function runSession(
     },
     volumes: audio,
     click: () => audio.play('select'),
+    // How to play over the pause menu, at the section of the phase being played.
+    howToPlay: () =>
+      openHowToPlay(undefined, () => audio.play('select'), howToSectionFor(session.state)),
     // The gallery over the pause menu, the looks as chosen; a change is drawn at once and
     // saved as the menu's choice. Random starts a rotation of its own, from the next
     // resolution on.

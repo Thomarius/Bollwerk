@@ -177,6 +177,11 @@ Full detail in PLAN.md §1. The parts that surprise people:
 **Done** (2026-10-27; the latest release **v0.9.17**, 2026-10-27, protocol 32, recording format 4,
 which a test session needs the server rebuilt and every page reloaded for):
 
+- **How to play in sections** (ARCHIVE 14zq, 2026-10-28): four tabs — Basics, Building,
+  Combat, Extras — thirteen pages, three new (choosing a castle, a gun for every sealed
+  castle, teams); opened from the pause menu too, at the section of the phase being played.
+  Approved by the user.
+
 - **A link online, and the firewall reported** (ARCHIVE 14zk, 2026-10-26): the desktop app's
   switch Share a link online runs a Cloudflare quick tunnel (free, no account, no router setting),
   its program fetched once and checked against pinned checksums, its link in the lobby's

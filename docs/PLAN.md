@@ -609,13 +609,16 @@ every screen shows the same, each to a different player while one is left withou
 lobby in their old seats with the table as it was and a new map; locally it reopens the
 table.
 
-**How to play** (`howToPlay.ts`), from a button under Play, marked until first opened:
-seven pages, each a looping picture and a caption of ten words or fewer — the mouse, the
-round, sealing a castle, turning corners, guns on sealed ground and the crown's two,
-firing, and scoring against losing a life. Drawn in Minimal's colours; the boards of the
-sealing pages are real ones judged by `computeEnclosure`, and a test holds every picture
-to the rule it shows. Back, Next and Close; still at each page's key moment under
-reduced motion.
+**How to play** (`howToPlay.ts`), from a button under Play, marked until first opened,
+and from the pause menu: thirteen pages in four sections, a tab each (ARCHIVE 14zq), each
+page a looping picture and a caption of ten words or fewer. **Basics**: the round, the mouse,
+scoring against losing a life; **Building**: choosing a castle, sealing it, turning corners;
+**Combat**: guns only on sealed ground, a gun for every sealed castle and the crown's two,
+firing; **Extras**: teams, special towers, the tower switch, tournaments. Drawn in Minimal's
+colours; the boards are real ones judged by `computeEnclosure`, and a test holds every
+picture to the rule it shows. The tabs, Back and Next through every page, a dot a page of the
+section shown, and Close; the pause menu opens it at the section of the phase being played,
+and it closes as the match resumes. Still at each page's key moment under reduced motion.
 
 **The menu and lobby** are dressed in the game's own art (`titles.ts`, `decor.ts`): **every style has
 a title of its own**, the same 5x7 letters in its look — stone threaded with gold for

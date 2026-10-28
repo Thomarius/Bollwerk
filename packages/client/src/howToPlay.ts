@@ -4,22 +4,30 @@ import {
   Terrain,
   computeEnclosure,
   stateFromAscii,
+  type Castle,
   type EnclosureResult,
   type MatchState,
 } from '@bollwerk/sim';
 
+import { escape } from './html.js';
 import { t } from './i18n.js';
 import { motionReduced } from './motion.js';
 import { store, stored } from './storage.js';
 import { EMBLEMS } from './towerIcons.js';
 
 /**
- * How to play (PLAN 11.16 H1): a few pages opened from the menu, each a small looping
- * picture and a caption of a few words — nobody reads a manual, the user's rule. Drawn on
+ * How to play (PLAN 11.16 H1): a few pages opened from the menu and the pause menu, each a
+ * small looping picture and a caption of a few words — nobody reads a manual, the user's
+ * rule. Drawn on
  * a canvas in the Minimal look's colours. The boards of the sealing pages are real boards,
  * judged by the sim's own `computeEnclosure`, so the flood and the leak are exactly what
  * the game does; a test holds them to it. Under reduced motion each page stands still at
  * its key moment.
+ *
+ * The pages are in four sections, each a tab (ARCHIVE 14zq): the basics — the round, the
+ * mouse, what is won and lost — then building, combat and the extras. The goal comes before
+ * the controls, and the extras, special towers and tournaments among them, after the game
+ * itself. The pause menu opens them at the section of the phase being played.
  */
 
 /** One page: a caption, the length of its loop, where it stands still, and its picture. */
@@ -151,6 +159,100 @@ export const GUNS = board(`
   ..............
 `);
 
+/** An island of three castles, before one is chosen, and the ring the chosen one is given. */
+export const CHOOSE_BARE = board(`
+  ....................
+  .,,,,,,,,,,,,,,,,,,.
+  .,,,,,,,,,,,,,,,,,,.
+  .,,@@,,,,,,,,,,@@,,.
+  .,,@@,,,,,,,,,,@@,,.
+  .,,,,,,,,,,,,,,,,,,.
+  .,,,,,,,,@@,,,,,,,,.
+  .,,,,,,,,@@,,,,,,,,.
+  .,,,,,,,,,,,,,,,,,,.
+  .,,,,,,,,,,,,,,,,,,.
+  ....................
+`);
+export const CHOOSE_RING = board(`
+  ....................
+  .,,,,,,,,,,,,,,,,,,.
+  .,,,,,,,,,,,,,,,,,,.
+  .,,@@,,,,,,,,,,@@,,.
+  .,,@@,,######,,@@,,.
+  .,,,,,,#,,,,#,,,,,,.
+  .,,,,,,#,@@,#,,,,,,.
+  .,,,,,,#,@@,#,,,,,,.
+  .,,,,,,#,,,,#,,,,,,.
+  .,,,,,,######,,,,,,.
+  ....................
+`);
+/** The castle chosen, by index in `state.castles`: the lower one, in the middle. */
+export const CHOOSE_PICK = 2;
+
+/** Two sealed castles, the crowned one with two guns and the other with one. */
+export const CASTLES = board(`
+  ......................
+  .,,,,,,,,,,,,,,,,,,,,.
+  .,########,,########,.
+  .,#,,,,,,#,,#,,,,,,#,.
+  .,#,@@,**#,,#,,@@,,#,.
+  .,#,@@,**#,,#,,@@,,#,.
+  .,#,**,,,#,,#,,,**,#,.
+  .,#,**,,,#,,#,,,**,#,.
+  .,#,,,,,,#,,#,,,,,,#,.
+  .,########,,########,.
+  .,,,,,,,,,,,,,,,,,,,,.
+  ......................
+`);
+
+/**
+ * Two islands of one team, red's ring sealed and blue's open by a block; then the block laid
+ * by red seals blue's castle, as teammates may.
+ */
+const TEAM_ISLANDS = `
+  ....................
+  .11111111..22222222.
+  .11111111..22222222.
+  .11111111..22222222.
+  .11111111..22222222.
+  .11111111..22222222.
+  .11111111..22222222.
+  .11111111..22222222.
+  .11111111..22222222.
+  ....................
+`;
+export const TEAM_OPEN = board(
+  `
+  ....................
+  .,,,,,,,,..,,,,,,,,.
+  .,######,..,######,.
+  .,#,,,,#,..,#,,,,#,.
+  .,#,@@,#,..,#,@@,#,.
+  .,#,@@,#,..,#,@@,,,.
+  .,#,,,,#,..,#,,,,#,.
+  .,######,..,######,.
+  .,,,,,,,,..,,,,,,,,.
+  ....................
+`,
+  TEAM_ISLANDS,
+);
+export const TEAM_GAP = { x: 17, y: 5 };
+export const TEAM_CLOSED = board(
+  `
+  ....................
+  .,,,,,,,,..,,,,,,,,.
+  .,######,..,######,.
+  .,#,,,,#,..,#,,,,#,.
+  .,#,@@,#,..,#,@@,#,.
+  .,#,@@,#,..,#,@@,#,.
+  .,#,,,,#,..,#,,,,#,.
+  .,######,..,######,.
+  .,,,,,,,,..,,,,,,,,.
+  ....................
+`,
+  TEAM_ISLANDS,
+);
+
 /** Order in which the sea pours into a leaking ring, from the border, by tile. */
 function seaOrder(b: Board): Int32Array {
   const { state } = b;
@@ -203,6 +305,8 @@ const CORNER_SEA = ((): Int32Array => {
 interface BoardLook {
   /** Tiles of sealed ground to show, by flood step; Infinity for all. */
   floodTo?: number;
+  /** The one island `floodTo` holds back, every other's sealed ground shown whole. */
+  floodIsland?: number;
   /** Tiles to leave out of the wall, by index. */
   missing?: ReadonlySet<number>;
   /** Water pouring in, by sea step, up to this one. */
@@ -210,6 +314,8 @@ interface BoardLook {
   sea?: Int32Array;
   /** Guns to grey out, by index in `state.cannons`. */
   silent?: ReadonlySet<number>;
+  /** How many of `state.cannons` to draw, in order; all by default. */
+  guns?: number;
 }
 
 /** Fits a board into a box, returning the tile size and its top left. */
@@ -250,7 +356,8 @@ function drawBoard(
     ctx.globalAlpha = 1;
     if (!land) continue;
     const step = b.flood[i] as number;
-    if (step >= 0 && step <= (look.floodTo ?? Infinity)) {
+    const held = look.floodIsland === undefined || state.islandId[i] === look.floodIsland;
+    if (step >= 0 && step <= (held ? (look.floodTo ?? Infinity) : Infinity)) {
       ctx.fillStyle = colour.light;
       ctx.globalAlpha = 0.45;
       ctx.fillRect(px, py, t, t);
@@ -271,12 +378,14 @@ function drawBoard(
   for (const castle of state.castles) {
     const px = ox + castle.x * t;
     const py = oy + castle.y * t;
-    ctx.fillStyle = RED.base;
+    const colour = castle.islandId === 2 ? BLUE : RED;
+    ctx.fillStyle = colour.base;
     ctx.fillRect(px + 1, py + 1, castle.w * t - 2, castle.h * t - 2);
-    ctx.fillStyle = RED.dark;
+    ctx.fillStyle = colour.dark;
     ctx.fillRect(px + t * 0.6, py + t * 0.6, castle.w * t - t * 1.2, castle.h * t - t * 1.2);
   }
   state.cannons.forEach((cannon, k) => {
+    if (k >= (look.guns ?? Infinity)) return;
     const cx = ox + (cannon.x + 1) * t;
     const cy = oy + (cannon.y + 1) * t;
     const silent = look.silent?.has(k) === true;
@@ -363,9 +472,49 @@ function text(
   ctx.fillText(s, x, y);
 }
 
+/** The main castle's crown, over a castle of a board, and its top's centre for what goes above. */
+function drawCrown(
+  ctx: CanvasRenderingContext2D,
+  castle: Castle,
+  at: { t: number; ox: number; oy: number },
+): { x: number; y: number } {
+  const t = at.t;
+  const cx = at.ox + (castle.x + castle.w / 2) * t;
+  const cy = at.oy + castle.y * t - t * 0.4;
+  ctx.fillStyle = ACCENT;
+  ctx.beginPath();
+  ctx.moveTo(cx - t * 0.7, cy + t * 0.3);
+  ctx.lineTo(cx - t * 0.7, cy - t * 0.3);
+  ctx.lineTo(cx - t * 0.35, cy);
+  ctx.lineTo(cx, cy - t * 0.45);
+  ctx.lineTo(cx + t * 0.35, cy);
+  ctx.lineTo(cx + t * 0.7, cy - t * 0.3);
+  ctx.lineTo(cx + t * 0.7, cy + t * 0.3);
+  ctx.fill();
+  return { x: cx, y: cy - t * 0.45 };
+}
+
+/** The mouse pointer, its tip at a point. */
+function drawPointer(ctx: CanvasRenderingContext2D, x: number, y: number, size: number): void {
+  const shape = [0, 0, 0, 1, 0.27, 0.76, 0.44, 1.1, 0.58, 1.04, 0.42, 0.7, 0.74, 0.7];
+  ctx.beginPath();
+  for (let i = 0; i < shape.length; i += 2) {
+    const px = x + (shape[i] as number) * size;
+    const py = y + (shape[i + 1] as number) * size;
+    if (i === 0) ctx.moveTo(px, py);
+    else ctx.lineTo(px, py);
+  }
+  ctx.closePath();
+  ctx.fillStyle = INK;
+  ctx.strokeStyle = pal.waterDeep;
+  ctx.lineWidth = 2;
+  ctx.fill();
+  ctx.stroke();
+}
+
 // ------------------------------------------------------------------------- pages
 
-/** 1. The mouse: left places and fires, right or the wheel turns, Esc pauses. */
+/** The mouse: left places and fires, right or the wheel turns, Esc pauses. */
 const mousePage: HowToPage = {
   caption: 'howTo.mouse',
   loopMs: 4000,
@@ -439,7 +588,7 @@ const mousePage: HowToPage = {
   },
 };
 
-/** 2. The round: choose a castle, place cannons, fire, rebuild — ten times. */
+/** The round: choose a castle, place cannons, fire, rebuild — ten times. */
 const roundPage: HowToPage = {
   caption: 'howTo.round',
   loopMs: 4800,
@@ -527,9 +676,91 @@ const roundPage: HowToPage = {
   },
 };
 
+/** The blocks of the chosen castle's ring in the order they go up: round from the top. */
+const CHOOSE_WALL = ((): readonly number[] => {
+  const { state } = CHOOSE_RING;
+  const castle = state.castles[CHOOSE_PICK]!;
+  const cx = castle.x + castle.w / 2;
+  const cy = castle.y + castle.h / 2;
+  const angle = (i: number): number => {
+    const x = (i % state.width) + 0.5 - cx;
+    const y = Math.floor(i / state.width) + 0.5 - cy;
+    return (Math.atan2(x, -y) + Math.PI * 2) % (Math.PI * 2);
+  };
+  const walls = [...state.structure.keys()].filter((i) => state.structure[i] === Structure.Wall);
+  return walls.sort((a, b) => angle(a) - angle(b));
+})();
+
+/** Where the pointer is, by the castle it rests on: two looked at, then the one chosen. */
+const CHOOSE_PATH: readonly (readonly [ms: number, castle: number])[] = [
+  [0, 0],
+  [700, 0],
+  [1200, 1],
+  [1700, 1],
+  [2200, CHOOSE_PICK],
+];
+
+/**
+ * Choosing a castle at the start, and again after a continue: the pointer weighs two, settles on
+ * the third and clicks; its ring goes up block by block, it is crowned, and its ground floods.
+ */
+const choosePage: HowToPage = {
+  caption: 'howTo.choose',
+  loopMs: 5600,
+  stillMs: 4600,
+  draw(ctx, w, h, ms) {
+    const at = fit(CHOOSE_RING, w * 0.04, h * 0.04, w * 0.92, h * 0.92);
+    const castles = CHOOSE_RING.state.castles;
+    const centre = (k: number): { x: number; y: number } => {
+      const c = castles[k]!;
+      return { x: at.ox + (c.x + c.w / 2) * at.t, y: at.oy + (c.y + c.h / 2) * at.t };
+    };
+    const picked = ms >= 2500;
+    const built = Math.floor(span(ms, 2500, 3500) * CHOOSE_WALL.length);
+    drawBoard(ctx, picked ? CHOOSE_RING : CHOOSE_BARE, at, {
+      missing: new Set(CHOOSE_WALL.slice(built)),
+      floodTo: ms < 3600 ? -1 : span(ms, 3600, 4400) * CHOOSE_RING.floodSteps,
+    });
+    // The pointer, resting on a castle or on its way to the next.
+    let stop = 0;
+    while (stop + 1 < CHOOSE_PATH.length && ms >= CHOOSE_PATH[stop + 1]![0]) stop++;
+    const [from, castle] = CHOOSE_PATH[stop]!;
+    const ahead = CHOOSE_PATH[stop + 1];
+    let { x, y } = centre(castle);
+    const moving = ahead !== undefined && ahead[1] !== castle;
+    if (moving) {
+      const to = centre(ahead[1]);
+      const f = ease(span(ms, from, ahead[0]));
+      x += (to.x - x) * f;
+      y += (to.y - y) * f;
+    }
+    if (!moving && built < CHOOSE_WALL.length) {
+      // The castle under the pointer outlined, pressed in as it is clicked.
+      const c = castles[castle]!;
+      const click = ms > 2300 && ms < 2500;
+      const inset = click ? at.t * 0.25 : -at.t * 0.2;
+      ctx.strokeStyle = ACCENT;
+      ctx.lineWidth = 2;
+      ctx.strokeRect(
+        at.ox + c.x * at.t + inset,
+        at.oy + c.y * at.t + inset,
+        c.w * at.t - inset * 2,
+        c.h * at.t - inset * 2,
+      );
+    }
+    const crown = ease(span(ms, 3500, 3900));
+    if (crown > 0) {
+      ctx.globalAlpha = crown;
+      drawCrown(ctx, castles[CHOOSE_PICK]!, at);
+      ctx.globalAlpha = 1;
+    }
+    drawPointer(ctx, x + at.t * 0.3, y + at.t * 0.3, at.t * 1.1);
+  },
+};
+
 const gapIndex = SEAL_GAP.y * SEAL_OPEN.state.width + SEAL_GAP.x;
 
-/** 3. Close the wall round a castle: the last piece drops in, the ground floods. */
+/** Close the wall round a castle: the last piece drops in, the ground floods. */
 const sealPage: HowToPage = {
   caption: 'howTo.seal',
   loopMs: 4500,
@@ -563,7 +794,7 @@ const sealPage: HowToPage = {
   },
 };
 
-/** 4. Walls must turn their corners: a join at a point lets the sea in. */
+/** Walls must turn their corners: a join at a point lets the sea in. */
 const cornerPage: HowToPage = {
   caption: 'howTo.corners',
   loopMs: 4000,
@@ -598,7 +829,7 @@ const cornerPage: HowToPage = {
   },
 };
 
-/** 5. Guns fire only from sealed ground; the crowned castle earns two. */
+/** Guns fire only from sealed ground: the one outside it greyed and struck through. */
 const gunsPage: HowToPage = {
   caption: 'howTo.guns',
   loopMs: 2400,
@@ -629,21 +860,110 @@ const gunsPage: HowToPage = {
         ctx.globalAlpha = 1;
       }
     });
-    // The main castle's crown, and the guns it earns.
-    const castle = GUNS.state.castles[0]!;
-    const cx = at.ox + (castle.x + castle.w / 2) * at.t;
-    const cy = at.oy + castle.y * at.t - at.t * 0.4;
-    ctx.fillStyle = ACCENT;
+  },
+};
+
+/**
+ * Every sealed castle earns guns for the next round, the crowned one two (`firstCastleReward`)
+ * and every other one (`perAdditionalCastleReward`): the counts rise over the castles, then
+ * the guns stand on the sealed ground, the crowned castle's two first.
+ */
+const castlesPage: HowToPage = {
+  caption: 'howTo.castles',
+  loopMs: 4400,
+  stillMs: 3200,
+  draw(ctx, w, h, ms) {
+    const at = fit(CASTLES, w * 0.04, h * 0.1, w * 0.92, h * 0.88);
+    const appear = [1700, 2000, 2500];
+    const shown = appear.filter((from) => ms >= from).length;
+    drawBoard(ctx, CASTLES, at, { guns: shown });
+    // A flash round each gun as it is placed.
+    CASTLES.state.cannons.forEach((cannon, k) => {
+      const flash = span(ms, appear[k] as number, (appear[k] as number) + 400);
+      if (flash <= 0 || flash >= 1) return;
+      ctx.strokeStyle = ACCENT;
+      ctx.globalAlpha = 1 - flash;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(
+        at.ox + (cannon.x + 1) * at.t,
+        at.oy + (cannon.y + 1) * at.t,
+        at.t * (0.9 + flash),
+        0,
+        Math.PI * 2,
+      );
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+    });
+    const [crowned, other] = CASTLES.state.castles as [Castle, Castle];
+    const top = drawCrown(ctx, crowned, at);
+    ctx.globalAlpha = ease(span(ms, 300, 800));
+    text(ctx, '+2', top.x, top.y - at.t * 0.8, at.t * 1.1, ACCENT);
+    ctx.globalAlpha = ease(span(ms, 1000, 1500));
+    const ox = at.ox + (other.x + other.w / 2) * at.t;
+    text(ctx, '+1', ox, at.oy + other.y * at.t - at.t * 1.2, at.t * 1.1, ACCENT);
+    ctx.globalAlpha = 1;
+  },
+};
+
+/**
+ * Teams: red lays the block that seals blue's castle — it lands in blue, a block belonging to
+ * the island it is laid on — and the ground it seals counts for one score, joined over the two
+ * islands beside one pool of lives.
+ */
+const teamsPage: HowToPage = {
+  caption: 'howTo.teams',
+  loopMs: 4600,
+  stillMs: 3400,
+  draw(ctx, w, h, ms) {
+    const at = fit(TEAM_CLOSED, w * 0.03, h * 0.24, w * 0.94, h * 0.74);
+    const landed = ms >= 1500;
+    drawBoard(ctx, landed ? TEAM_CLOSED : TEAM_OPEN, at, {
+      floodIsland: 2,
+      floodTo: landed ? span(ms, 1600, 2600) * TEAM_CLOSED.floodSteps : -1,
+    });
+    if (!landed) {
+      // Red's block, from over red's island across to the gap in blue's ring.
+      const f = ease(span(ms, 300, 1500));
+      const x = at.ox + (4 + (TEAM_GAP.x - 4) * f) * at.t;
+      const y = at.oy + (TEAM_GAP.y * f - Math.sin(Math.PI * f) * 2.5) * at.t;
+      ctx.strokeStyle = ACCENT;
+      ctx.lineWidth = 2;
+      ctx.strokeRect(
+        at.ox + TEAM_GAP.x * at.t + 1,
+        at.oy + TEAM_GAP.y * at.t + 1,
+        at.t - 2,
+        at.t - 2,
+      );
+      ctx.fillStyle = RED.base;
+      ctx.fillRect(x + 1, y + 1, at.t - 2, at.t - 2);
+    }
+    // One score and one pool of lives, joined over both islands.
+    const redX = at.ox + 5 * at.t;
+    const blueX = at.ox + 15 * at.t;
+    const top = h * 0.17;
+    ctx.strokeStyle = pal.rockMid;
+    ctx.lineWidth = 2;
     ctx.beginPath();
-    ctx.moveTo(cx - at.t * 0.7, cy + at.t * 0.3);
-    ctx.lineTo(cx - at.t * 0.7, cy - at.t * 0.3);
-    ctx.lineTo(cx - at.t * 0.35, cy);
-    ctx.lineTo(cx, cy - at.t * 0.45);
-    ctx.lineTo(cx + at.t * 0.35, cy);
-    ctx.lineTo(cx + at.t * 0.7, cy - at.t * 0.3);
-    ctx.lineTo(cx + at.t * 0.7, cy + at.t * 0.3);
-    ctx.fill();
-    text(ctx, '+2', cx, cy - at.t * 1.1, at.t * 0.9, ACCENT);
+    ctx.moveTo(redX, at.oy - 4);
+    ctx.lineTo(redX, top);
+    ctx.lineTo(blueX, top);
+    ctx.lineTo(blueX, at.oy - 4);
+    ctx.stroke();
+    const score = Math.round(80 + 36 * ease(span(ms, 2000, 2800)));
+    text(ctx, String(score), w * 0.42, h * 0.08, h * 0.09, INK);
+    ctx.fillStyle = INK;
+    for (let k = 0; k < 3; k++) {
+      ctx.beginPath();
+      ctx.arc(w * 0.55 + k * h * 0.07, h * 0.08, h * 0.025, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    const rise = span(ms, 1700, 2700);
+    if (rise > 0 && rise < 1) {
+      ctx.globalAlpha = 1 - rise;
+      text(ctx, '+36', blueX, at.oy + 4.5 * at.t - rise * at.t * 4, h * 0.08, ACCENT);
+      ctx.globalAlpha = 1;
+    }
   },
 };
 
@@ -711,7 +1031,7 @@ const TOWER_ROUND: readonly { kind: SpecialKind; cost: number }[] = [
 const TOWER_MS = 3000;
 
 /**
- * 6. Special towers, where the table plays them: two or three cannons draw together and become
+ * Special towers, where the table plays them: two or three cannons draw together and become
  * one tower, each in turn. What each does is told in the tower menu, where it is
  * chosen, so not here.
  */
@@ -771,7 +1091,7 @@ function drawMouse(
 }
 
 /**
- * 7. In the cannon phase the right button switches what the next click places, a cannon or the
+ * In the cannon phase the right button switches what the next click places, a cannon or the
  * player's tower, as the hint beside the cursor says: the ghost's square holds a gun, then the
  * tower, then a gun again.
  */
@@ -812,7 +1132,7 @@ const switchPage: HowToPage = {
   },
 };
 
-/** 8. Click to fire: a ball arcs onto an opponent's wall and one block breaks out. */
+/** Click to fire: a ball arcs onto an opponent's wall and one block breaks out. */
 export const COMBAT = board(
   `
   ..............
@@ -894,7 +1214,7 @@ const combatPage: HowToPage = {
   },
 };
 
-/** 9. Score and lives: sealed ground and its guns score; a ring left open costs a life. */
+/** Score and lives: sealed ground and its guns score; a ring left open costs a life. */
 const scorePage: HowToPage = {
   caption: 'howTo.score',
   loopMs: 4400,
@@ -946,7 +1266,7 @@ const scorePage: HowToPage = {
 };
 
 /**
- * 10. Tournaments (ARCHIVE 13w): a bracket of eight, the player's team in blue winning
+ * Tournaments (ARCHIVE 13w): a bracket of eight, the player's team in blue winning
  * its way along to the final, each other match's winner going on in grey, the cup lit last.
  */
 const tournamentPage: HowToPage = {
@@ -1009,18 +1329,47 @@ const tournamentPage: HowToPage = {
   },
 };
 
-export const HOW_TO_PLAY: readonly HowToPage[] = [
-  mousePage,
-  roundPage,
-  sealPage,
-  cornerPage,
-  gunsPage,
-  towersPage,
-  switchPage,
-  combatPage,
-  scorePage,
-  tournamentPage,
+/** A section of the pages, a tab of its own. */
+export type HowToSection = 'basics' | 'building' | 'combat' | 'extras';
+
+export interface HowToChapter {
+  id: HowToSection;
+  title: TextKey;
+  pages: readonly HowToPage[];
+}
+
+/**
+ * The goal and what is at stake first, then the round's phases in their order, then what only
+ * some tables play: teams, special towers, tournaments.
+ */
+export const HOW_TO_PLAY: readonly HowToChapter[] = [
+  { id: 'basics', title: 'howTo.section.basics', pages: [roundPage, mousePage, scorePage] },
+  { id: 'building', title: 'howTo.section.building', pages: [choosePage, sealPage, cornerPage] },
+  { id: 'combat', title: 'howTo.section.combat', pages: [gunsPage, castlesPage, combatPage] },
+  {
+    id: 'extras',
+    title: 'howTo.section.extras',
+    pages: [teamsPage, towersPage, switchPage, tournamentPage],
+  },
 ];
+
+/**
+ * The section about the phase a match is in, for the pause menu to open at; an intermission by
+ * the phase it leads to, since its banner announces that one.
+ */
+export function howToSectionFor(state: Pick<MatchState, 'phase' | 'pendingPhase'>): HowToSection {
+  const phase = state.phase === 'intermission' ? state.pendingPhase : state.phase;
+  switch (phase) {
+    case 'castle_select':
+    case 'build':
+      return 'building';
+    case 'cannon_place':
+    case 'combat':
+      return 'combat';
+    default:
+      return 'basics';
+  }
+}
 
 // ----------------------------------------------------------------------- overlay
 
@@ -1032,20 +1381,36 @@ export function howToPlaySeen(): boolean {
 }
 
 /**
- * Opens the pages over whatever is on screen. Mouse only: Back and Next, a page count,
- * Close, and a click outside the panel closes it too.
+ * Opens the pages over whatever is on screen, at a section's first page. Mouse only: the
+ * sections' tabs, Back and Next through every page, a dot a page of the section shown, Close,
+ * and a click outside the panel closes it too. Returns its closing, for the pause menu to close
+ * it as the match resumes; a second call does nothing.
  */
-export function openHowToPlay(onClose: () => void = () => {}, click: () => void = () => {}): void {
+export function openHowToPlay(
+  onClose: () => void = () => {},
+  click: () => void = () => {},
+  section: HowToSection = 'basics',
+): () => void {
   store(SEEN_KEY, '1');
+  const pages = HOW_TO_PLAY.flatMap((chapter) => chapter.pages.map((page) => ({ chapter, page })));
   const root = document.createElement('div');
-  root.className = 'how-to-play';
+  root.className = 'how-to-play pages';
   root.innerHTML = `
     <div class="panel">
+      <div class="tabs">${HOW_TO_PLAY.map(
+        (chapter) =>
+          `<button class="tab" data-section="${chapter.id}">${t(chapter.title)}</button>`,
+      ).join('')}</div>
       <canvas width="480" height="300"></canvas>
       <p class="caption"></p>
       <div class="nav">
         <button class="back" aria-label="${t('howTo.back')}">‹</button>
-        <span class="count"></span>
+        <span class="dots">${pages
+          .map(
+            ({ page }, i) =>
+              `<button class="dot" data-page="${i}" aria-label="${escape(t(page.caption))}"></button>`,
+          )
+          .join('')}</span>
         <button class="next" aria-label="${t('howTo.next')}">›</button>
       </div>
       <button class="close quiet">${t('howTo.close')}</button>
@@ -1053,7 +1418,8 @@ export function openHowToPlay(onClose: () => void = () => {}, click: () => void 
   document.body.append(root);
   const canvas = root.querySelector('canvas')!;
   const caption = root.querySelector<HTMLElement>('.caption')!;
-  const count = root.querySelector<HTMLElement>('.count')!;
+  const tabs = [...root.querySelectorAll<HTMLButtonElement>('.tab')];
+  const dots = [...root.querySelectorAll<HTMLButtonElement>('.dot')];
   const back = root.querySelector<HTMLButtonElement>('.back')!;
   const next = root.querySelector<HTMLButtonElement>('.next')!;
   const ratio = Math.max(1, Math.round(globalThis.devicePixelRatio ?? 1));
@@ -1064,40 +1430,61 @@ export function openHowToPlay(onClose: () => void = () => {}, click: () => void 
   canvas.style.width = `${cssW}px`;
   canvas.style.height = `${cssH}px`;
   const ctx = canvas.getContext('2d')!;
-  let page = 0;
+  let at = 0;
   let since = performance.now();
   let frame = 0;
+  let closed = false;
 
   const show = (to: number): void => {
-    page = Math.max(0, Math.min(HOW_TO_PLAY.length - 1, to));
+    at = Math.max(0, Math.min(pages.length - 1, to));
     since = performance.now();
-    const current = HOW_TO_PLAY[page]!;
-    caption.textContent = t(current.caption);
-    count.textContent = `${page + 1} / ${HOW_TO_PLAY.length}`;
-    back.disabled = page === 0;
-    next.disabled = page === HOW_TO_PLAY.length - 1;
+    const { chapter, page } = pages[at]!;
+    caption.textContent = t(page.caption);
+    for (const tab of tabs) tab.classList.toggle('on', tab.dataset.section === chapter.id);
+    // The dots of the section shown only, its page's lit.
+    dots.forEach((dot, i) => {
+      dot.hidden = pages[i]!.chapter !== chapter;
+      dot.classList.toggle('on', i === at);
+    });
+    back.disabled = at === 0;
+    next.disabled = at === pages.length - 1;
   };
   const draw = (now: number): void => {
-    const current = HOW_TO_PLAY[page]!;
-    const ms = motionReduced() ? current.stillMs : (now - since) % current.loopMs;
+    const { page } = pages[at]!;
+    const ms = motionReduced() ? page.stillMs : (now - since) % page.loopMs;
     ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
     ctx.fillStyle = pal.waterDeep;
     ctx.fillRect(0, 0, cssW, cssH);
-    current.draw(ctx, cssW, cssH, ms);
+    page.draw(ctx, cssW, cssH, ms);
     frame = requestAnimationFrame(draw);
   };
   const close = (): void => {
+    if (closed) return;
+    closed = true;
     cancelAnimationFrame(frame);
     root.remove();
     onClose();
   };
+  const first = (id: HowToSection): number => pages.findIndex(({ chapter }) => chapter.id === id);
+  for (const tab of tabs) {
+    tab.addEventListener('click', () => {
+      click();
+      show(first(tab.dataset.section as HowToSection));
+    });
+  }
+  for (const dot of dots) {
+    dot.addEventListener('click', () => {
+      click();
+      show(Number(dot.dataset.page));
+    });
+  }
   back.addEventListener('click', () => {
     click();
-    show(page - 1);
+    show(at - 1);
   });
   next.addEventListener('click', () => {
     click();
-    show(page + 1);
+    show(at + 1);
   });
   root.querySelector('.close')?.addEventListener('click', () => {
     click();
@@ -1106,6 +1493,7 @@ export function openHowToPlay(onClose: () => void = () => {}, click: () => void 
   root.addEventListener('click', (event) => {
     if (event.target === root) close();
   });
-  show(0);
+  show(first(section));
   frame = requestAnimationFrame(draw);
+  return close;
 }
