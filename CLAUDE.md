@@ -174,11 +174,11 @@ Full detail in PLAN.md §1. The parts that surprise people:
 
 ## Status
 
-**Done** (2026-10-28; the latest release **v0.9.19**, 2026-10-28, protocol 32, recording format 4,
+**Done** (2026-10-28; the latest release **v0.9.20**, 2026-10-28, protocol 33, recording format 4,
 which a test session needs the server rebuilt and every page reloaded for):
 
 - **A tournament's bots keep their towers** (ARCHIVE 15d, 2026-10-28, the user's design; protocol
-  33, not yet released): fixed as the tournament is made, half the other teams one tower's and
+  33, v0.9.20): fixed as the tournament is made, half the other teams one tower's and
   named for it (`names.towerTeams`), the rest a tower each; the host's teammates' chosen in the
   setup, Random by default. With it the lobby's feedback (15c): You | Bot for the host's seat, the
   room's code beside the heading, a seat's tower a small icon, teams and players as buttons.

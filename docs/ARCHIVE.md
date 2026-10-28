@@ -10652,3 +10652,13 @@ bot's tower is fixed as the tournament is made and kept in its save (`Member.tow
   mixed ones, and the first match's seats each with its fixed tower. Tests: the field's
   towers and names, the host's choices kept and Random drawn, an old save's draws the same at
   every match, the room's table taken by its schema.
+
+## 15e. v0.9.20 (2026-10-28)
+
+Since v0.9.19: a tournament's bots keep their towers for its whole length, half the other
+teams one tower's and named for it, the host's teammates' chosen in the setup (15d); and the
+lobby after the user's look — You | Bot for the host's seat, the room's code beside the
+heading, a seat's tower a small icon before its name, teams and players as rows of buttons, the
+tournament's team size too (15c). Protocol 33, since a tournament's table now carries its bots'
+towers: a v0.9.19 page and a v0.9.20 server, or the other way round, do not play together.
+Recording format 4 as before, so recordings replay.
