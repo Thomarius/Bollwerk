@@ -1786,7 +1786,7 @@ fit (ARCHIVE 12z), its remaining steps dropped (the user's decision, 2026-10-14;
      menu, Options, How to play and the Credits.
    - **MS2 — Controls — done** (ARCHIVE 14zw): button rows, steppers and switches in place of every `<select>` with
      a few choices — the lobby, Options, the pause menu, the tournament's setup.
-   - **MS3 — Layouts and motion**: the menu in two columns with the looks as cards, the lobby's
+   - **MS3 — Layouts and motion — done** (ARCHIVE 14zx): the menu in two columns with the looks as cards, the lobby's
      seat cards, the tournament screens in the same panels, windows fading between each other
      (off under Reduced motion).
    - **MS4 — The look in the menus**: Medium per window by the rotation, and the style's

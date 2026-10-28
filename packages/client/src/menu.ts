@@ -129,19 +129,19 @@ export function tournamentExits(isPublic: boolean): TournamentExits {
 }
 
 /**
- * The menu: only who you are and how the game looks. Everything about the table —
+ * The menu: only who you are and how the game looks — the ways into a game on the left, the
+ * two looks as cards on the right (PLAN §11 item 4, MS3). Everything about the table —
  * players, teams, bots, rounds — is set in the lobby, which is one screen whether or
  * not a server is there.
  */
 export function showMenu(notice: string | null = null): void {
   audio.music('music_menu');
   app!.innerHTML = `
-    <div class="menu">
+    <div class="menu home">
+      <section class="home-main">
       <h1 class="title"><span class="title-split" id="title"></span></h1>
       <p class="inspired">${escape(t('credits.inspiredBy'))} · <button id="credits" class="link">${t('menu.credits')}</button></p>
       <label>${t('menu.name')} <input id="name" type="text" maxlength="16" value="${escape(t('menu.defaultName'))}" /></label>
-      <div class="look" data-look="build">${t('menu.buildLook')} ${lookPicker('build')}</div>
-      <div class="look" data-look="combat">${t('menu.combatLook')} ${lookPicker('combat')}</div>
       <div class="split play-row">
         <button id="play" class="primary">${withIcon('play', t('menu.singleMatch'))}</button>
         <div id="visibility" class="visibility" data-public="true" data-tip="${escape(t('menu.visibilityTitle'))}" data-tip-side="left">
@@ -157,7 +157,7 @@ export function showMenu(notice: string | null = null): void {
         <button id="how-to-play" class="quiet${howToPlaySeen() ? '' : ' fresh'}">${withIcon('help', t('menu.howToPlay'))}</button>
         <button id="options" class="quiet">${withIcon('gear', t('menu.options'))}</button>
       </div>
-      <div class="split">
+      <div class="split join-row">
         <input id="code" type="text" maxlength="8" placeholder="${t('menu.codePlaceholder')}" />
         <button id="join">${withIcon('join', t('menu.join'))}</button>
       </div>
@@ -165,6 +165,12 @@ export function showMenu(notice: string | null = null): void {
         <h2>${t('menu.openGames')}</h2>
         ${notice === null ? '' : `<p class="notice">${escape(notice)}</p>`}
         <div id="open-games"></div>
+      </section>
+      </section>
+      <section class="home-looks">
+        <h2>${t('looks.title')}</h2>
+        <div class="look" data-look="build"><span class="look-label">${t('menu.buildLook')}</span>${lookPicker('build')}</div>
+        <div class="look" data-look="combat"><span class="look-label">${t('menu.combatLook')}</span>${lookPicker('combat')}</div>
       </section>
     </div>
   `;

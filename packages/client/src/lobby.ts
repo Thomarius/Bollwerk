@@ -320,6 +320,9 @@ function seatRow(
 ): string {
   const seat = view.seats.find((s) => s.playerId === index);
   const arrived = view.arrived?.includes(index) ? ' arrived' : '';
+  // The seat's colour, edging its card (PLAN §11 item 4, MS3).
+  const colour = view.seatColours?.[index];
+  const who = colour === undefined ? '' : ` style="--who:${colour}"`;
 
   if (seat) {
     const isHostSeat = seat.playerId === view.hostId;
@@ -355,7 +358,7 @@ function seatRow(
     // A host watching has a bot in their seat, which brings the seat's draw.
     const watched = isHostSeat && view.hostBot !== null;
     const tower = towerControl(view, index, watched ? 'bot' : seat.special, isHost);
-    return `<li class="seat${mine}${arrived}">${seatBadge(view, index)}${occupant(view, index, seats, seat.name)}${tags}${control}${blurb}${tower}</li>`;
+    return `<li class="seat${mine}${arrived}"${who}>${seatBadge(view, index)}${occupant(view, index, seats, seat.name)}${tags}${control}${blurb}${tower}</li>`;
   }
 
   const control = levelControl(
@@ -365,7 +368,7 @@ function seatRow(
     t('lobby.botLevelAria', { n: index + 1 }),
   );
   const bot = view.tournament?.seats[index]?.name ?? t('lobby.bot', { n: index + 1 });
-  return `<li class="seat bot${arrived}">${seatBadge(view, index)}${occupant(view, index, seats, bot)}${control}${towerControl(view, index, 'bot', isHost)}</li>`;
+  return `<li class="seat bot${arrived}"${who}>${seatBadge(view, index)}${occupant(view, index, seats, bot)}${control}${towerControl(view, index, 'bot', isHost)}</li>`;
 }
 
 /** The map and the seed it comes from: the host may draw another or type one in. */

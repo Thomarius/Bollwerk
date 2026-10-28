@@ -10472,3 +10472,24 @@ showing its number by `data-short`, a tournament's ranges and teammates' levels)
 - Seen in a browser in English and German, and clicked: the rounds, the lives, the towers' switch,
   a bot's level and the player count each changed the table as their lists did, and Graphics
   in Options was stored. Two lobby tests updated for `data-short`.
+
+## 14zx. The menus' new look, MS3: layouts and motion (2026-10-28, PLAN §11 item 4)
+
+- **The menu in two columns**, as the mockup had it: the ways into a game on the left, the two
+  looks on the right as cards — which look, its picture at its full 224 by 160, the style's
+  name in the headings' lettering, the arrows either side — each column a panel of its own;
+  one column on a narrow window, the looks under the rest. The room code and Join one
+  control. The left column 30rem, so "Resume tournament" stays on one line.
+- **The seats as cards**, in the lobby, a tournament's screen and its setup alike: each edged in
+  the colour it will play in (`--who` on its row), the viewer's own tinted with it; tags as
+  pills, the selects and the tower buttons in the fields' dress.
+- **Windows fading in** (`windowEntry.ts`): every window outside a match is one `.menu`
+  element written into `#app`, some again at every change, so an observer marks a window only
+  when its kind — its classes — is new, and the stylesheet fades it in and lifts it a little
+  over 220 ms. The lobby redrawn at a choice is the same window and does not flicker. A panel
+  opened over a window (How to play, Options, the Credits, the gallery) grows in over 160 ms.
+  Neither under reduced motion. Only in, never out: the old window is gone as the new one is
+  written, which keeps every screen's code as it was.
+- Seen in a browser in English and German and on an 800-pixel window: the lobby marked as it
+  arrived and not again when a choice redrew it, the menu marked again on leaving. A test for
+  the window's kind; the lobby tests' pattern for a seat's row widened for its colour.

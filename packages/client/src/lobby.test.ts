@@ -32,7 +32,7 @@ function view(over: Partial<LobbyView> = {}): LobbyView {
 
 /** Seat rows, in table order. */
 function rows(html: string): string[] {
-  return [...html.matchAll(/<li class="seat[^"]*">([\s\S]*?)<\/li>/g)].map((m) => m[1] ?? '');
+  return [...html.matchAll(/<li class="seat[^"]*"[^>]*>([\s\S]*?)<\/li>/g)].map((m) => m[1] ?? '');
 }
 
 describe('lobby', () => {
