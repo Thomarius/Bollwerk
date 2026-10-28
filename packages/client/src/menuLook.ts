@@ -80,6 +80,7 @@ function readDress(style: ArtStyle): LookDress {
 export function wearMenuLook(style: ArtStyle | null): void {
   const body = document.body;
   const vars = ['--look-accent', '--look-on-accent', '--look-edge', '--look-shadow', '--look-font'];
+  showCorner(style);
   if (style === null) {
     body.classList.remove('looked');
     for (const name of vars) body.style.removeProperty(name);
@@ -96,4 +97,37 @@ export function wearMenuLook(style: ArtStyle | null): void {
   // Named on the page, for a test or a look at the page to say which look it wears.
   body.dataset.menuLook = style;
   body.classList.add('looked');
+}
+
+/**
+ * The look's corner piece in the screen's corner, as it stands in the sea's corner in a match —
+ * the buoy, the compass rose, the Ferris wheel… (`cornerPicture`), framed in the look's edge;
+ * taken away with the dress. Loaded only when asked for, so this module needs no renderer.
+ */
+function showCorner(style: ArtStyle | null): void {
+  let image = document.querySelector<HTMLImageElement>('#menu-corner');
+  if (style === null) {
+    image?.remove();
+    return;
+  }
+  if (image === null) {
+    image = document.createElement('img');
+    image.id = 'menu-corner';
+    image.alt = '';
+    document.body.append(image);
+  }
+  const shown = image;
+  shown.dataset.style = style;
+  shown.classList.remove('ready');
+  void import('./stylePreview.js')
+    .then(({ cornerPicture }) => cornerPicture(style))
+    .then(
+      (url) => {
+        // Only if the look still stands: a slow picture must not replace a newer one.
+        if (!shown.isConnected || shown.dataset.style !== style || url === null) return;
+        shown.src = url;
+        shown.classList.add('ready');
+      },
+      () => undefined,
+    );
 }

@@ -10535,3 +10535,25 @@ the banners bring them in a match, Random drawn from the favourites by the game'
 - Seen in a browser: under Random four windows in four looks, the lobby keeping its look at a
   choice and Options its menu's, Parchment and Wild West as menu looks, and the pause menu
   and the summary in Cyberpunk, Parchment, Cartoon and Wild West.
+
+## 14zz. The menus' new look, the corner piece (2026-10-28, PLAN §11 item 4, MS4)
+
+The last of MS4, the user's: the look's corner piece in the screen's corner while the menus
+wear it — Minimal's buoy, Medieval's windmill, Parchment's compass rose, Oktoberfest's Ferris
+wheel, the Pirates' galleon, the Wild West's locomotive and the rest.
+
+- **Drawn by the style itself**: the pieces stand in an open square of sea by the board's
+  bottom-right corner (`roseSpot`, clear of the big timer) and are drawn among a theme's
+  effects, so `cornerPicture` (`stylePreview.ts`) renders each style once on a board of open
+  sea with a small island in the far corner (`CORNER_BOARD`, at 24 pixels a tile), works out
+  the spot as the themes do, and cuts out the piece and three quarters of a tile round it. In
+  the look pictures' queue, one renderer at a time, each thrown away once drawn; all 24 in
+  about five seconds the first time, each only when first asked for. A test holds the board to
+  having room for the largest piece, clear of the timer.
+- **Shown** framed in the look's edge in the bottom-right corner, faded in once drawn, over the
+  sea and under the panels, not on a narrow window; the window's look, so the lobby after an
+  Oktoberfest menu shows the next look's piece; taken away as a match begins, which draws its
+  own. Loaded only when asked for, so the look's module needs no renderer.
+- **The mockup removed**, as agreed, with MS4 done.
+- Seen in a browser: every style's piece on one sheet, whole and recognisable, and the menu and
+  the lobby each with their look's.

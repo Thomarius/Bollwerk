@@ -178,13 +178,14 @@ Full detail in PLAN.md §1. The parts that surprise people:
 which a test session needs the server rebuilt and every page reloaded for):
 
 - **The menus' new look, MS1: foundations** (ARCHIVE 14zv, 2026-10-28, PLAN §11 item 4, from a
-  mockup the user approved, `packages/client/mockup/menus.html`): Inter and Rubik bundled, the
+  mockup the user approved, removed once built): Inter and Rubik bundled, the
   panels rounded and solid where stacked, three button tiers, icons (`icons.ts`), our own hover
   texts (`data-tip`) for the browser's `title`, the font licences in the Credits and `assets/fonts/`.
   MS2 (ARCHIVE 14zw): every few-option `<select>` shown as buttons, a stepper or a switch
   (`choices.ts`, `data-ui`), the select kept hidden as the choice. MS4 (ARCHIVE 14zy): each
   window in the next look at Medium (`menuLook.ts`), the pause menu and the summary at Medium in
-  the match's look — the corner piece in the menu still open; MS3 (ARCHIVE 14zx): the menu in two columns, its
+  the match's look, and the look's corner piece in the screen's corner (ARCHIVE 14zz) — whether a
+  new look at every window distracts is for the users to try in play; MS3 (ARCHIVE 14zx): the menu in two columns, its
   looks as cards, the seats as cards in their colours, windows fading in (`windowEntry.ts`).
 
 - **UI polish, UP1: in the match** (ARCHIVE 14zr, 2026-10-28, PLAN §11 item 4): "You are

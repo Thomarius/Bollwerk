@@ -1767,8 +1767,8 @@ fit (ARCHIVE 12z), its remaining steps dropped (the user's decision, 2026-10-14;
      teams, bot levels, rounds, lives — never the map, which stays new; and a short hover text
      for Teams, Rounds, Lives and Special towers, as the level pips have.
 
-4. **The menus' new look** (agreed 2026-10-28, from a mockup the user approved,
-   `packages/client/mockup/menus.html` on the dev server): a neutral, modern base with
+4. **The menus' new look — done** (agreed and built 2026-10-28, ARCHIVE 14zv–14zz, from a mockup
+   the user approved, served by the dev server until the work was done and then removed): a neutral, modern base with
    elements of the game's looks. The user's decisions: the layout as the mockup has it, "a
    vast improvement"; Inter for text and Rubik for headings, bundled (SIL Open Font License);
    the style elements at **Medium** — a style's accent, its panels' edge and shadow and its
@@ -1789,10 +1789,9 @@ fit (ARCHIVE 12z), its remaining steps dropped (the user's decision, 2026-10-14;
    - **MS3 — Layouts and motion — done** (ARCHIVE 14zx): the menu in two columns with the looks as cards, the lobby's
      seat cards, the tournament screens in the same panels, windows fading between each other
      (off under Reduced motion).
-   - **MS4 — The look in the menus — built but the corner piece** (ARCHIVE 14zy): Medium per
-     window by the rotation, the in-match panels at Medium. Open: the style's corner piece in
-     the menu's corner, drawn by the match's scene beside the board and so needing a scene of
-     its own per style; the mockup removed once it is settled.
+   - **MS4 — The look in the menus — done** (ARCHIVE 14zy, 14zz): Medium per window by the
+     rotation, the in-match panels at Medium, and the look's corner piece in the screen's
+     corner. Still to be tried in play: whether a new look at every window distracts.
 
 Only open work is kept here. Finished packages move to `ARCHIVE.md` under their old
 numbers — 11.1 scoring, 11.7 team mode, 11.8 the visual pass, 11.9 the themes, 11.10 the
