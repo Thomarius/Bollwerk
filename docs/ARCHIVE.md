@@ -10722,3 +10722,52 @@ Since v0.9.21: the desktop app's Share a link online shows its steps, the second
 and the address on its way, and opens in about 8 s rather than 36, its check asking Cloudflare's
 resolver rather than the system's (15h). The game itself is unchanged: protocol 33 and recording
 format 4 as before, so v0.9.21 and v0.9.22 play together.
+
+## 15j. The menus reviewed, and the user's answers built (2026-10-28)
+
+A review of every menu window from screenshots of the dev client (the menu, Options, How to
+play, the looks' gallery, the Credits, the lobby at three and eight seats, the new tournament, a
+tournament's match tab, the pause menu, the menu at 1024×640) proposed eighteen changes; the
+user approved most and answered the rest. Display and menus only — no rule, ruleset or protocol
+changed, so v0.9.22's recordings replay.
+
+- **Every room public** (the user's question, then their decision): the Public / Private switch
+  beside Single match is gone. Private kept a room out of the open games only; a room leaves
+  that list anyway once its match starts or it is full, so nobody joins a match under way, and
+  playing alone works as before. `&private=1` keeps one unlisted for tests.
+- **The looks as cards to click**, the arrows stepping in place taken out (the user's: everybody
+  clicked the picture, and the menu had too many controls): each card one button, its picture,
+  its name and a Change chip in the accent, lifted on hover.
+- **The name a placeholder**, so the default no longer reads as a name somebody typed.
+- **Without a server** the open games' section stays in its place and says so, the room code
+  and Join disabled rather than hidden; the menu's left panel no longer ends in empty space.
+- **Small windows**: the menus centred above the corner's buttons (they ran into Sound and Full
+  screen at 1024×640), the lobby's minimum height to match, and the look's corner piece only
+  above 1240px wide, where it no longer lies over the looks' panel.
+- **One settings column for Options and the pause menu** (`settingsRows.ts`): the pause menu's
+  had been smaller, dimmer and in another order. Its own Sound button is gone (the corner's is
+  beside it); each volume has a speaker silencing it and bringing its level back (full where it
+  was dragged to nothing, `speakerToggle`) and its percentage while the pointer is on the row or
+  the slider is dragged. Leave match is in the warning colour from the start.
+- **The lobby**: "Sit here" / "Swap with Bo" buttons in place of the list of names that looked
+  like a choice of bot, with several who could move a small list behind "Seat…" or "Swap…"; the
+  map's seed never shown (the user's), a die for a new map in its corner; the level pips gone,
+  the stepper alone (the user's), in the new tournament's teammates too; the numbers on the map
+  where they cover no castle (`labelSpots`: of an island's tiles, the fewest castles covered, then
+  the nearest its middle — none covered at every table tested); the host's tag readable, and at a
+  tournament's table "you" only on the team's heading.
+- **The new tournament's ranges** read "2 to 4": the dash between two steppers had read as a
+  third minus. Its left column stays as it is (the user's: one panel format, not information
+  shown under some conditions).
+- **The gallery**: a picture still being made shows its place with a light passing over it, and
+  the last row fades while there are more below.
+- **The Credits** in four folded groups — the music, the styles' music, the sound effects, the
+  typefaces — each style's track named for its style, the panel one height whatever is open.
+- **Motion**, none under reduced motion: the main button pressed in, seats the table gains
+  sliding in (`addedSeats`), and a setting another changed glowing a moment (`nudgedSettings`:
+  a team size of two took the odd player counts away unseen).
+- **`tools/screenshots.sh`** waits for the loading screen to end (`#app > *`) before each
+  scene's wait: shot side by side, its menu and lobby scenes had caught only the loading screen.
+
+Kept as they were (the user's): a new look at every window. The end screen is to be reviewed in
+a session of its own. Tested by the user in play and approved, 2026-10-28.

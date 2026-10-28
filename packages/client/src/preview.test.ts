@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 
 import { matchPalette } from './colours.js';
 import { LocalMatch } from './localMatch.js';
-import { castleBreath, islandCentres, surfAt, tablePreview } from './preview.js';
+import { castleBreath, islandCentres, labelSpots, surfAt, tablePreview } from './preview.js';
 import { matchShapes } from './shapes.js';
 
 describe('the table preview', () => {
@@ -69,6 +69,41 @@ describe('the table preview', () => {
     for (const { x, y } of centres.values()) {
       expect(x).toBeGreaterThan(0);
       expect(y).toBeGreaterThan(0);
+    }
+  });
+
+  it('labels each island on its own land, clear of every castle', () => {
+    for (const [seed, players] of [
+      [5, 4],
+      [11, 8],
+      [7, 3],
+      [3, 2],
+    ] as const) {
+      const seats = Array.from({ length: players }, (_, i) => i);
+      const { terrain } = tablePreview(
+        seed,
+        players,
+        seats,
+        defaultArtConfig,
+        defaultTerrainConfig,
+      );
+      // The label's reach as the lobby draws it, its map 320 pixels wide (`drawPreview`).
+      const scale = Math.max(2, Math.floor(320 / terrain.width));
+      const figure = Math.max(11, scale * 5) / scale;
+      const reach = { side: 0.5 * figure, up: 0.5 * figure, down: 1.55 * figure };
+      const spots = labelSpots(terrain, islandCentres(terrain), reach);
+      expect(spots.size).toBe(players);
+      for (const [island, { x, y }] of spots) {
+        expect(terrain.islandId[y * terrain.width + x]).toBe(island);
+        for (const c of terrain.castles) {
+          const apart =
+            x + 0.5 + reach.side <= c.x ||
+            x + 0.5 - reach.side >= c.x + c.w ||
+            y + 0.5 + reach.down <= c.y ||
+            y + 0.5 - reach.up >= c.y + c.h;
+          expect(apart).toBe(true);
+        }
+      }
     }
   });
 });

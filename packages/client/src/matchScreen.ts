@@ -45,7 +45,7 @@ import { perf } from './perf.js';
 import { bannerProgress, looksAround, type Look } from './transition.js';
 import { Scene, createTheme, type Ghost, type SceneLook } from './render/scene.js';
 import { hasBlast } from './render/towerMarks.js';
-import { app, audio, showSoundButton } from './app.js';
+import { app, audio } from './app.js';
 import { saveStyles } from './prefs.js';
 import type { Session, Setup } from './session.js';
 import { showMenu } from './menu.js';
@@ -342,11 +342,6 @@ export async function runSession(
     toggle: (paused) => session.setPaused(paused),
     leave: leaveMatch,
     ...(exits.leaveConfirm === undefined ? {} : { leaveConfirm: exits.leaveConfirm }),
-    isMuted: () => audio.isMuted,
-    setMuted: (muted) => {
-      audio.setMuted(muted);
-      showSoundButton();
-    },
     volumes: audio,
     click: () => audio.play('select'),
     // How to play over the pause menu, at the section of the phase being played.

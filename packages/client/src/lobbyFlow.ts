@@ -13,7 +13,7 @@ import { botTowerOf, drawnSpecial } from '@bollwerk/ai';
 import { type ServerMessage } from '@bollwerk/protocol';
 import { Progress, parseSave, type Save } from '@bollwerk/tournament';
 
-import { lobbyMarkup, type LobbyTab, type LobbyView } from './lobby.js';
+import { addedSeats, lobbyMarkup, nudgedSettings, type LobbyTab, type LobbyView } from './lobby.js';
 import { enhanceChoices } from './choices.js';
 import { joinRefusedNotice, refusalText } from './browser.js';
 import { t } from './i18n.js';
@@ -72,8 +72,22 @@ export interface LobbyHandlers {
   special?(special: TowerVariant | null): void;
 }
 
+/** The table as last drawn, to see what a drawing changes; and the setting the host last changed. */
+let drawn: LobbyView | null = null;
+let touched: string | null = null;
+
 /** Draws the lobby and wires its controls to whichever backend holds the table. */
 export function drawLobby(view: LobbyView, on: LobbyHandlers): void {
+  // What changed since the lobby on screen was drawn — never against one left before, which
+  // only a lobby still on screen can be: seats gained slide in, and a setting changed by
+  // another is marked a moment (2026-10-28).
+  const before =
+    drawn !== null && drawn.code === view.code && document.querySelector('.menu.lobby') !== null
+      ? drawn
+      : null;
+  const nudged = before === null ? [] : nudgedSettings(before, view, touched);
+  drawn = view;
+  touched = null;
   // A guest is brought back here by the room after a match, never through the menu, and
   // heard the match's victory music on in the lobby until this (test session, 2026-10-12).
   // The track already up, this does nothing, so every redraw may ask.
@@ -86,9 +100,13 @@ export function drawLobby(view: LobbyView, on: LobbyHandlers): void {
     ...view,
     seatColours: preview.colourOfSeat.map((c) => c.base),
     seatShapes: preview.shapeOfSeat,
+    entering: addedSeats(before, view),
   });
   // The table's few-option choices as buttons, steppers and switches (`choices.ts`).
   enhanceChoices(app!);
+  for (const id of nudged) {
+    document.querySelector(`#${id}`)?.closest('label')?.classList.add('nudged');
+  }
   // The map in the colours of the build look chosen in the menu, which is how the match
   // will open — the default's, when it is drawn at random as the match starts;
   // the seat cards keep the shared colours, which read on the lobby's panel.
@@ -111,6 +129,7 @@ export function drawLobby(view: LobbyView, on: LobbyHandlers): void {
     const field = document.querySelector<HTMLSelectElement>(id);
     field?.addEventListener('change', () => {
       audio.play('select');
+      touched = field.id;
       apply(Number(field.value));
     });
   };
@@ -162,11 +181,6 @@ export function drawLobby(view: LobbyView, on: LobbyHandlers): void {
       on.bot(Number(field.dataset.seat), Number(field.value));
     });
   }
-  const seedField = document.querySelector<HTMLInputElement>('#seed');
-  seedField?.addEventListener('change', () => {
-    const n = Number(seedField.value);
-    if (Number.isInteger(n) && n >= 0) on.seed(n >>> 0);
-  });
   document.querySelector('#reroll')?.addEventListener('click', () => {
     audio.play('select');
     on.seed(randomSeed());
@@ -183,11 +197,10 @@ export function drawLobby(view: LobbyView, on: LobbyHandlers): void {
     on.hostBot(Number(hostBot.value));
   });
   // Who sits where. Teams belong to seats, so this is how people choose sides.
-  for (const field of document.querySelectorAll<HTMLSelectElement>('.occupant')) {
-    field.addEventListener('change', () => {
-      if (field.value === '') return;
+  for (const button of document.querySelectorAll<HTMLButtonElement>('.sit')) {
+    button.addEventListener('click', () => {
       audio.play('select');
-      on.move(Number(field.value), Number(field.dataset.seat));
+      on.move(Number(button.dataset.player), Number(button.dataset.seat));
     });
   }
 

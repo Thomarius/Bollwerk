@@ -345,9 +345,9 @@ describe('the tournament between matches', () => {
       ],
     });
     const host = lobbyOf(three, new Progress(three), false, null, true);
-    expect(host.match(/class="occupant/g)).toHaveLength(1);
+    expect(host.match(/class="sit"/g)).toHaveLength(1);
     expect(host).toMatch(
-      /class="occupant who"[^>]*><option value="" selected>Di<\/option><option value="\d">Bo</,
+      /<span class="who">Di<\/span><button type="button" class="sit"[^>]*>Seat Bo here</,
     );
     expect(host).not.toContain('id="seed"');
     expect(host).not.toContain('class="bot-select"');

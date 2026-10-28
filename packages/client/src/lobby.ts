@@ -65,6 +65,8 @@ export interface LobbyView {
   seatShapes?: readonly PlayerShape[];
   /** Seats somebody has just taken, to be marked as they arrive. */
   arrived?: readonly number[];
+  /** Seats the table has just gained, sliding in (`addedSeats`). */
+  entering?: readonly number[];
   /** A link to this room from the internet, while the host's port is open there (PLAN 11.21). */
   invite?: string | null;
   /**
@@ -132,6 +134,42 @@ export function teamSizesFor(view: LobbyView): number[] {
   return out;
 }
 
+/** The player counts the host is offered: those the team size allows, seating everyone joined. */
+export function playerCountsFor(view: LobbyView): number[] {
+  return validPlayerCounts(view.settings.teamSize, view.playerLimits).filter(
+    (n) => n >= view.seats.length,
+  );
+}
+
+/**
+ * The host's settings that changed of themselves between two drawings of one table — their
+ * choices or their value, through a change to another — so they can be marked for a moment
+ * (2026-10-28): a team size of two took the odd player counts away unseen. `touched` is the
+ * setting the host changed, which needs no marking.
+ */
+export function nudgedSettings(
+  before: LobbyView,
+  after: LobbyView,
+  touched: string | null,
+): string[] {
+  const shown = (view: LobbyView): Record<string, string> => ({
+    'team-size': `${teamSizesFor(view).join()}|${view.settings.teamSize}`,
+    'player-count': `${playerCountsFor(view).join()}|${view.playerCount}`,
+  });
+  const was = shown(before);
+  const now = shown(after);
+  return Object.keys(now).filter((id) => id !== touched && was[id] !== now[id]);
+}
+
+/** The seats a table has gained since it was last drawn, to slide in: none at its first drawing. */
+export function addedSeats(before: LobbyView | null, after: LobbyView): number[] {
+  if (before === null || after.playerCount <= before.playerCount) return [];
+  return Array.from(
+    { length: after.playerCount - before.playerCount },
+    (_, i) => before.playerCount + i,
+  );
+}
+
 /**
  * The table's settings: controls for the host, a statement for everyone else. Each control's
  * meaning in a hover text, as the level pips have theirs (PLAN §11 item 4, UP3).
@@ -160,9 +198,7 @@ function tableControls(view: LobbyView, isHost: boolean): string {
     const towers = view.settings.specials ? ` ${t('lobby.specialsStatement')}` : '';
     return `<p class="note settings">${statement}${towers}</p>`;
   }
-  const counts = validPlayerCounts(teamSize, view.playerLimits).filter(
-    (n) => n >= view.seats.length,
-  );
+  const counts = playerCountsFor(view);
   // No rounds or lives: the defaults, 10 and 3, were never changed in play, so they stay in
   // the config and off the screen (the user's, 2026-10-28).
   return `
@@ -241,29 +277,41 @@ export function towerFace(special: TowerVariant | null): string {
 }
 
 /**
- * Who sits in a seat: for the host, a choice of every person at the table or the seat's
- * bot; for everyone else, just the name. Choosing somebody moves them here, swapping with
+ * Who sits in a seat: the name, and for the host a way to move somebody here, swapping with
  * whoever sat here — which, since teams belong to seats, is how people are put on the same
- * team or on opposing ones. A choice of one is no choice, so it is shown as a name.
+ * team or on opposing ones. With one person who could move, a button saying what it does
+ * ("Sit here", "Swap with Bo"); with several, a small list of them behind "Seat…" or "Swap…".
+ * A list of names had looked like a choice of bot, and offered at a local table only the
+ * host's own move (2026-10-28).
  */
 function occupant(view: LobbyView, index: number, isHost: boolean, name: string): string {
+  const plain = `<span class="who">${escape(name)}</span>`;
   // At a tournament's table the host seats their teammates, in their team's open seats only.
   const table = view.tournament;
-  if (table && table.seats[index]?.open !== true) return `<span class="who">${escape(name)}</span>`;
+  if (!isHost || (table && table.seats[index]?.open !== true)) return plain;
   const people = view.seats
     .filter((seat) => !table || seat.playerId !== view.hostId)
     .sort((a, b) => a.playerId - b.playerId);
-  const here = people.find((seat) => seat.playerId === index);
-  const choices = here === undefined ? people.length : people.length - 1;
-  if (!isHost || choices === 0) return `<span class="who">${escape(name)}</span>`;
-  const bot = here === undefined ? `<option value="" selected>${escape(name)}</option>` : '';
-  const names = people
-    .map(
-      (seat) =>
-        `<option value="${seat.playerId}"${seat.playerId === index ? ' selected' : ''}>${escape(seat.name)}</option>`,
-    )
-    .join('');
-  return `<select class="occupant who" data-seat="${index}" aria-label="${t('lobby.seatAria', { n: index + 1 })}">${bot}${names}</select>`;
+  const here = people.some((seat) => seat.playerId === index);
+  const others = people.filter((seat) => seat.playerId !== index);
+  if (others.length === 0) return plain;
+  const move = (person: Seat, text: string, extra = ''): string =>
+    `<button type="button" class="sit${extra}" data-seat="${index}" data-player="${person.playerId}">${escape(text)}</button>`;
+  if (others.length === 1) {
+    const person = others[0]!;
+    const text = here
+      ? t('lobby.swapWith', { name: person.name })
+      : person.playerId === view.humanPlayer
+        ? t('lobby.sitHere')
+        : t('lobby.seatHere', { name: person.name });
+    return plain + move(person, text);
+  }
+  const list = others.map((person) => move(person, person.name, ' in-list')).join('');
+  return (
+    plain +
+    `<details class="sit-pick"><summary>${t(here ? 'lobby.swapPick' : 'lobby.seatPick')}</summary>` +
+    `<div class="sit-list">${list}</div></details>`
+  );
 }
 
 /**
@@ -279,24 +327,14 @@ function seatBadge(view: LobbyView, index: number): string {
 }
 
 /**
- * A bot's level: a choice of Level 1 to 10 for the host — as arcade games number them,
- * where the military ranks before were hard to read — and a tag for everyone else.
+ * A bot's level: a stepper of Level 1 to 10 for the host — as arcade games number them,
+ * where the military ranks before were hard to read — and a tag for everyone else. The pips
+ * beside it said the level a second time, and are gone (the user's, 2026-10-28).
  */
-/**
- * A bot's level as pips beside its choice (PLAN 11.18 Y4): ten, filled up to the level, so a
- * glance down the seats tells how hard a table is without reading a number in each.
- */
-export function levelPips(level: number): string {
-  const pips = LEVELS.map((n) => `<i${n <= level ? ' class="on"' : ''}></i>`).join('');
-  return `<span class="pips" data-tip="${t('lobby.level', { n: level })}" aria-hidden="true">${pips}</span>`;
-}
-
 function levelControl(level: number, isHost: boolean, attributes: string, label_: string): string {
-  if (!isHost) {
-    return `<em class="tag level">${t('lobby.level', { n: level })}</em>${levelPips(level)}`;
-  }
-  // A stepper showing the level's number beside the pips (`choices.ts`).
-  return `${levelPips(level)}<select ${attributes} data-ui="step" aria-label="${label_}">${LEVELS.map(
+  if (!isHost) return `<em class="tag level">${t('lobby.level', { n: level })}</em>`;
+  // A stepper showing the level's number (`choices.ts`).
+  return `<select ${attributes} data-ui="step" aria-label="${label_}">${LEVELS.map(
     (n) =>
       `<option value="${n}" data-short="${n}"${n === level ? ' selected' : ''}>${t('lobby.level', { n })}</option>`,
   ).join('')}</select>`;
@@ -327,7 +365,9 @@ function seatRow(
   defaultLevel: number,
 ): string {
   const seat = view.seats.find((s) => s.playerId === index);
-  const arrived = view.arrived?.includes(index) ? ' arrived' : '';
+  const arrived =
+    (view.arrived?.includes(index) ? ' arrived' : '') +
+    (view.entering?.includes(index) ? ' entering' : '');
   // The seat's colour, edging its card (PLAN §11 item 4, MS3).
   const colour = view.seatColours?.[index];
   const who = colour === undefined ? '' : ` style="--who:${colour}"`;
@@ -336,11 +376,12 @@ function seatRow(
     const isHostSeat = seat.playerId === view.hostId;
     const tags = [
       // Not on the host's own seat for the host, whose You | Bot switch and tinted card say so,
-      // and whose seat as a bot otherwise ran onto a second line (2026-10-28).
-      seat.playerId === view.humanPlayer && !(isHost && isHostSeat)
+      // and whose seat as a bot otherwise ran onto a second line (2026-10-28); nor at a
+      // tournament's table, whose team heading says it already.
+      seat.playerId === view.humanPlayer && !(isHost && isHostSeat) && !view.tournamentTab
         ? `<em class="tag you">${t('lobby.tagYou')}</em>`
         : '',
-      isHostSeat ? `<em class="tag">${t('lobby.tagHost')}</em>` : '',
+      isHostSeat ? `<em class="tag host">${t('lobby.tagHost')}</em>` : '',
       seat.connected ? '' : `<em class="tag away">${t('lobby.tagAway')}</em>`,
       // Every guest says when they are ready; the host's Start is theirs.
       isHostSeat
@@ -379,18 +420,17 @@ function seatRow(
   return `<li class="seat bot${arrived}"${who}>${seatBadge(view, index)}${towerControl(view, index, 'bot', isHost)}${occupant(view, index, seats, bot)}${control}</li>`;
 }
 
-/** The map and the seed it comes from: the host may draw another or type one in. */
-function mapControls(view: LobbyView, isHost: boolean): string {
+/**
+ * The map, and for the host a die to draw another. Its seed is never shown: a number nobody
+ * reads (the user's, 2026-10-28); `&seed=` still sets one.
+ */
+function mapControls(isHost: boolean): string {
   // Shaped by `PREVIEW_ASPECT`, never by the map, so the lobby keeps its size.
   const canvas = `<canvas id="map-preview" class="map-preview" style="aspect-ratio:1/${PREVIEW_ASPECT}" aria-label="${t('lobby.mapAria')}"></canvas>`;
-  if (!isHost) {
-    return `${canvas}<p class="note map-note">${t('lobby.mapSeed', { seed: String(view.seed) })}</p>`;
-  }
-  return `${canvas}
-    <div class="map-row">
-      <label>${t('lobby.map')} <input id="seed" type="number" min="0" max="4294967295" step="1" value="${view.seed}" aria-label="${t('lobby.seedAria')}" /></label>
-      <button id="reroll" class="quiet">${t('lobby.newMap')}</button>
-    </div>`;
+  const reroll = isHost
+    ? `<button id="reroll" class="map-reroll" data-tip="${escape(t('lobby.newMapTitle'))}" data-tip-side="right">${withIcon('dice', t('lobby.newMap'))}</button>`
+    : '';
+  return `<div class="map-box">${canvas}${reroll}</div>`;
 }
 
 /** Seats in a list, or in one column per team when there are teams. */
@@ -486,7 +526,7 @@ export function lobbyMarkup(view: LobbyView): string {
   const body = `
       <div class="lobby-body">
         <div class="lobby-side">
-          ${mapControls(view, isHost)}
+          ${mapControls(isHost)}
           ${tableControls(view, isHost)}
         </div>
         <div class="lobby-seats">${seatLists(view, rows)}</div>

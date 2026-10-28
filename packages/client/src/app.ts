@@ -75,9 +75,6 @@ unlock();
  * "m" was typed in the lobby — silenced every later visit with nothing on screen to say
  * so, and nothing outside a match to undo it.
  */
-/** Brings the corner switch up to date, for when the pause menu changes the sound. */
-export let showSoundButton: () => void = () => undefined;
-
 function installSoundButton(): void {
   const button = document.createElement('button');
   button.id = 'sound';
@@ -93,7 +90,6 @@ function installSoundButton(): void {
     show();
   });
   show();
-  showSoundButton = show;
   onLanguageChange(show);
   corner.append(button);
 }

@@ -1,17 +1,27 @@
 import {
+  ArtStyleSchema,
   AUDIO_LICENCES,
   audioCredits,
+  type ArtStyle,
   type AudioManifest,
   type CreditedFile,
 } from '@bollwerk/config';
 
 import { t } from './i18n.js';
 import { escape } from './html.js';
+import { lookName } from './looks.js';
 
 /**
  * The menu's Credits: what the game owes Rampart, who made each sound and each typeface, on
  * what licence — made from the audio manifest, as `CREDITS.md` is, so the two always agree.
  */
+
+/** The style a track is the own music of, from its path (`music/styles/<style>.mp3`), or null. */
+export function trackStyle(path: string): ArtStyle | null {
+  const named = /^music\/styles\/([^/.]+)\.[^/]+$/.exec(path)?.[1];
+  const style = ArtStyleSchema.safeParse(named);
+  return style.success ? style.data : null;
+}
 
 function item({ path, credit }: CreditedFile): string {
   if (credit === null) {
@@ -20,7 +30,14 @@ function item({ path, credit }: CreditedFile): string {
   const link = (href: string, text: string): string =>
     `<a href="${escape(href)}" target="_blank" rel="noopener noreferrer">${escape(text)}</a>`;
   const changes = credit.changes === undefined ? '' : ` ${escape(credit.changes)}`;
-  const what = path.endsWith('/') ? `${t('credits.everySound')} ` : '';
+  // A style's own track named for its style: by its author alone, many had said nothing of
+  // what they were (2026-10-28).
+  const style = trackStyle(path);
+  const what = path.endsWith('/')
+    ? `${t('credits.everySound')} `
+    : style === null
+      ? ''
+      : `<b class="style">${escape(lookName(style))}:</b> `;
   // The credit's title, author and licence are the work's own and never translated.
   const title = credit.title === undefined ? '' : `“${escape(credit.title)}” `;
   const body = t('credits.item', {
@@ -62,21 +79,35 @@ function fontItem(font: (typeof FONTS)[number]): string {
   })}</li>`;
 }
 
-/** The panel's markup, apart so a test can read it without a page. */
+/** A group of credits, folded: its heading and how many it holds, opened with a click. */
+function group(heading: string, items: readonly string[]): string {
+  return (
+    `<details class="credit-group"><summary><span>${heading}</span><span class="count">${items.length}</span></summary>` +
+    `<ul>${items.join('')}</ul></details>`
+  );
+}
+
+/**
+ * The panel's markup, apart so a test can read it without a page: the disclaimer, then the
+ * credits in folded groups — the shared music, the styles' music by style, the sound effects,
+ * the typefaces — where one long list had been a wall of text (2026-10-28).
+ */
 export function creditsHtml(audio: AudioManifest): string {
   const { music, sfx } = audioCredits(audio);
+  const styled = music
+    .filter((file) => trackStyle(file.path) !== null)
+    .sort((a, b) => lookName(trackStyle(a.path)!).localeCompare(lookName(trackStyle(b.path)!)));
+  const shared = music.filter((file) => trackStyle(file.path) === null);
   return `
     <div class="panel">
       <h2>${t('credits.title')}</h2>
       <p class="disclaimer">${escape(t('credits.disclaimer'))}</p>
       <p class="disclaimer">${t('credits.mit')}</p>
       <div class="list">
-        <h3>${t('credits.music')}</h3>
-        <ul>${music.map(item).join('')}</ul>
-        <h3>${t('credits.sfx')}</h3>
-        <ul>${sfx.map(item).join('')}</ul>
-        <h3>${t('credits.fonts')}</h3>
-        <ul>${FONTS.map(fontItem).join('')}</ul>
+        ${group(t('credits.music'), shared.map(item))}
+        ${group(t('credits.styleMusic'), styled.map(item))}
+        ${group(t('credits.sfx'), sfx.map(item))}
+        ${group(t('credits.fonts'), FONTS.map(fontItem))}
       </div>
       <button class="close quiet">${t('credits.close')}</button>
     </div>`;

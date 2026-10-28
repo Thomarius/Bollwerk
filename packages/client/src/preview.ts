@@ -92,6 +92,54 @@ export function islandCentres(terrain: GeneratedTerrain): Map<number, { x: numbe
   return centres;
 }
 
+/** How far a label reaches around its spot, in tiles: left and right, up and down. */
+export interface LabelReach {
+  side: number;
+  up: number;
+  down: number;
+}
+
+/**
+ * Where each island's label goes: the land tile of the island whose label, `reach` around it,
+ * covers the fewest castles — none where it can — and of those the nearest its middle. At the
+ * middle itself the number had hidden a castle (2026-10-28).
+ */
+export function labelSpots(
+  terrain: GeneratedTerrain,
+  centres: ReadonlyMap<number, { x: number; y: number }>,
+  reach: LabelReach,
+): Map<number, { x: number; y: number }> {
+  const spots = new Map<number, { x: number; y: number; covered: number; d: number }>();
+  const covered = (x: number, y: number): number =>
+    terrain.castles.filter(
+      (c) =>
+        x + 0.5 + reach.side > c.x &&
+        x + 0.5 - reach.side < c.x + c.w &&
+        y + 0.5 + reach.down > c.y &&
+        y + 0.5 - reach.up < c.y + c.h,
+    ).length;
+  for (let i = 0; i < terrain.islandId.length; i++) {
+    const island = terrain.islandId[i] as number;
+    const centre = centres.get(island);
+    if (centre === undefined || terrain.terrain[i] !== Terrain.Land) continue;
+    const x = i % terrain.width;
+    const y = (i - x) / terrain.width;
+    const d = (x - centre.x) ** 2 + (y - centre.y) ** 2;
+    const best = spots.get(island);
+    if (best !== undefined && best.covered === 0 && d >= best.d) continue;
+    const hidden = covered(x, y);
+    if (best === undefined || hidden < best.covered || (hidden === best.covered && d < best.d)) {
+      spots.set(island, { x, y, covered: hidden, d });
+    }
+  }
+  const out = new Map<number, { x: number; y: number }>();
+  for (const [island, centre] of centres) {
+    const spot = spots.get(island);
+    out.set(island, spot === undefined ? centre : { x: spot.x, y: spot.y });
+  }
+  return out;
+}
+
 /**
  * Paints the preview: sea, each island in its seat's colour with its castles, and the
  * seat's number over it — the same number the seat's card carries — with the viewer's
@@ -192,12 +240,11 @@ export function drawPreview(
     ctx.fillRect(castle.x * scale, castle.y * scale, castle.w * scale, castle.h * scale);
   }
 
-  const centres = still.centres;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  const figure = Math.max(11, scale * 5);
+  const figure = labelFigure(scale);
   ctx.font = `700 ${figure}px ui-monospace, Menlo, Consolas, monospace`;
-  for (const [island, centre] of centres) {
+  for (const [island, centre] of still.spots) {
     const seat = seatOfIsland.get(island);
     if (seat === undefined) continue;
     const cx = (centre.x + 0.5) * scale;
@@ -239,13 +286,21 @@ export function drawPreview(
   }
 }
 
-/** What `drawPreview` paints once a table: the sea and the land, and where surf breaks. */
+/** A label's number, in pixels, at a scale; its shape under it is as large. */
+function labelFigure(scale: number): number {
+  return Math.max(11, scale * 5);
+}
+
+/**
+ * What `drawPreview` paints once a table: the sea and the land, where surf breaks, and where
+ * each island's label stands.
+ */
 interface StillLayer {
   key: string;
   canvas: HTMLCanvasElement;
   /** Sea tiles beside land. */
   surf: number[];
-  centres: ReturnType<typeof islandCentres>;
+  spots: ReturnType<typeof labelSpots>;
 }
 
 const stillLayers = new WeakMap<TablePreview['terrain'], StillLayer>();
@@ -296,7 +351,15 @@ function stillLayer(
       const y = (i - x) / terrain.width;
       return land(x - 1, y) || land(x + 1, y) || land(x, y - 1) || land(x, y + 1) ? [i] : [];
     });
-  const layer = { key, canvas, surf, centres: kept?.centres ?? islandCentres(terrain) };
+  // The number, half a figure either side of the spot, and its shape under it, centred
+  // 1.05 figures down and a figure tall (`drawPreview`), in tiles.
+  const figure = labelFigure(scale) / scale;
+  const spots = labelSpots(terrain, islandCentres(terrain), {
+    side: 0.5 * figure,
+    up: 0.5 * figure,
+    down: 1.55 * figure,
+  });
+  const layer = { key, canvas, surf, spots };
   stillLayers.set(terrain, layer);
   return layer;
 }

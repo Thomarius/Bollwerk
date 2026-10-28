@@ -1,7 +1,7 @@
 import { defaultAudioManifest, type AudioManifest } from '@bollwerk/config';
 import { describe, expect, it } from 'vitest';
 
-import { creditsHtml } from './credits.js';
+import { creditsHtml, trackStyle } from './credits.js';
 
 describe('the Credits', () => {
   it('names the original and its owner, and credits every sound', () => {
@@ -11,6 +11,17 @@ describe('the Credits', () => {
     expect(html).not.toContain('not yet credited');
     // The sound effects are one folder's credit, not a line each.
     expect(html.match(/Every sound here/g)).toHaveLength(1);
+  });
+
+  it('folds the credits into groups, each style’s track named for its style', () => {
+    const html = creditsHtml(defaultAudioManifest);
+    expect(html.match(/<details class="credit-group">/g)).toHaveLength(4);
+    expect(html).toContain('<b class="style">Cyberpunk:</b> ');
+    expect(html).toContain('<b class="style">Wild West:</b> ');
+    // The shared music is not a style's.
+    expect(trackStyle('music/music_menu.mp3')).toBeNull();
+    expect(trackStyle('music/styles/noir.mp3')).toBe('noir');
+    expect(trackStyle('music/styles/nothing.mp3')).toBeNull();
   });
 
   it('leaves out a title that is not known', () => {

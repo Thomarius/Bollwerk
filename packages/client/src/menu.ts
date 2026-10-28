@@ -5,14 +5,7 @@ import { howToPlaySeen, openHowToPlay } from './howToPlay.js';
 import { withIcon } from './icons.js';
 import { openCredits } from './credits.js';
 import { openOptions } from './options.js';
-import {
-  lookName,
-  lookPicture,
-  LookRotation,
-  openLookGallery,
-  stepLook,
-  type LookChoices,
-} from './looks.js';
+import { lookName, lookPicture, LookRotation, openLookGallery, type LookChoices } from './looks.js';
 import { escape } from './html.js';
 import { REFRESH_MS, gamesMarkup, parseRoomList } from './browser.js';
 import { t } from './i18n.js';
@@ -52,18 +45,20 @@ function readStyles(): LookChoices {
 }
 
 /**
- * A look's picker in the menu: its picture and name, which open the gallery, between
- * arrows that step to the previous and next style in place.
+ * A look's card in the menu, one button opening the gallery: which look, its picture, the
+ * style's name and a Change chip, so it reads as something to click before the pointer is
+ * on it. No arrows stepping in place: every player chose from the gallery anyway, and the
+ * menu had too many controls (the user's, 2026-10-28).
  */
-function lookPicker(look: ArtLook): string {
+function lookCard(look: ArtLook): string {
   const build = look === 'build';
   return (
-    `<span class="look-picker">` +
-    `<button class="step prev" data-tip="${t(build ? 'menu.prevBuild' : 'menu.prevCombat')}" aria-label="${t('menu.previous')}">&#9664;</button>` +
-    `<button class="look-picture" data-tip="${t(build ? 'menu.pickBuild' : 'menu.pickCombat')}">` +
-    `<img class="style-preview" alt="" /><span class="look-name"></span></button>` +
-    `<button class="step next" data-tip="${t(build ? 'menu.nextBuild' : 'menu.nextCombat')}" aria-label="${t('menu.next')}">&#9654;</button>` +
-    `</span>`
+    `<button class="look" data-look="${look}" data-tip="${t(build ? 'menu.pickBuild' : 'menu.pickCombat')}">` +
+    `<span class="look-label">${t(build ? 'menu.buildLook' : 'menu.combatLook')}</span>` +
+    `<img class="style-preview" alt="" />` +
+    `<span class="look-foot"><span class="look-name"></span>` +
+    `<span class="look-change">${withIcon('gallery', t('menu.changeLook'))}</span></span>` +
+    `</button>`
   );
 }
 
@@ -74,19 +69,26 @@ function readCommon(): Common {
   // it stayed English after a change to German. Saved empty, the next visit shows the
   // default in whichever language it is read.
   saveName(name === t('menu.defaultName') ? '' : name);
-  const isPublic = document.querySelector<HTMLElement>('#visibility')?.dataset.public !== 'false';
+  // Every table is listed in the open games (the user's, 2026-10-28): the game is only ever
+  // served among friends, and a room leaves the list once its match starts or it is full,
+  // so a switch for it was one control too many. `&private=1` keeps one unlisted for tests.
+  const isPublic = new URLSearchParams(location.search).get('private') !== '1';
   return { styles: readStyles(), name, isPublic };
 }
 
 /**
  * Keeps the menu's list of open games current while the menu is up: asks at once and
  * every few seconds, and stops by itself once the menu has gone. Without a server, or with
- * one this page cannot join, the section stays hidden.
+ * one this page cannot join, the section stays in its place and says so, and the room code's
+ * field and Join are disabled — the window keeps its shape, as the lobby's rows do (ARCHIVE 15f).
  */
 function watchOpenGames(): void {
   const section = document.querySelector<HTMLElement>('#open-games-section');
   const list = document.querySelector<HTMLElement>('#open-games');
   if (!section || !list) return;
+  const joining = document.querySelectorAll<HTMLInputElement | HTMLButtonElement>(
+    '.join-row input, .join-row button',
+  );
   list.addEventListener('click', (event) => {
     const button = (event.target as HTMLElement).closest<HTMLButtonElement>('.join-open');
     const code = button?.dataset.code;
@@ -104,8 +106,8 @@ function watchOpenGames(): void {
       rooms = null;
     }
     if (!section.isConnected) return;
-    section.hidden = rooms === null;
-    const html = rooms === null ? '' : gamesMarkup(rooms);
+    for (const control of joining) control.disabled = rooms === null;
+    const html = rooms === null ? `<p class="note">${t('menu.noServer')}</p>` : gamesMarkup(rooms);
     // Only when it changed, so a Join button is not replaced under a pressed mouse.
     if (html !== shown) list.innerHTML = shown = html;
   };
@@ -141,13 +143,9 @@ export function showMenu(notice: string | null = null): void {
       <section class="home-main">
       <h1 class="title"><span class="title-split" id="title"></span></h1>
       <p class="inspired">${escape(t('credits.inspiredBy'))} · <button id="credits" class="link">${t('menu.credits')}</button></p>
-      <label>${t('menu.name')} <input id="name" type="text" maxlength="16" value="${escape(t('menu.defaultName'))}" /></label>
+      <label>${t('menu.name')} <input id="name" type="text" maxlength="16" placeholder="${escape(t('menu.defaultName'))}" /></label>
       <div class="split play-row">
         <button id="play" class="primary">${withIcon('play', t('menu.singleMatch'))}</button>
-        <div id="visibility" class="visibility" data-public="true" data-tip="${escape(t('menu.visibilityTitle'))}" data-tip-side="left">
-          <button data-public="true" class="on">${t('menu.public')}</button>
-          <button data-public="false">${t('menu.private')}</button>
-        </div>
       </div>
       <div class="split tournament-row">
         <button id="new-tournament">${withIcon('trophy', t('menu.newTournament'))}</button>
@@ -161,40 +159,28 @@ export function showMenu(notice: string | null = null): void {
         <input id="code" type="text" maxlength="8" placeholder="${t('menu.codePlaceholder')}" />
         <button id="join">${withIcon('join', t('menu.join'))}</button>
       </div>
-      <section id="open-games-section" class="open-games-section"${notice === null ? ' hidden' : ''}>
+      <section id="open-games-section" class="open-games-section">
         <h2>${t('menu.openGames')}</h2>
         ${notice === null ? '' : `<p class="notice">${escape(notice)}</p>`}
-        <div id="open-games"></div>
+        <div id="open-games"><p class="note">${t('menu.lookingForServer')}</p></div>
       </section>
       </section>
       <section class="home-looks">
         <h2>${t('looks.title')}</h2>
-        <div class="look" data-look="build"><span class="look-label">${t('menu.buildLook')}</span>${lookPicker('build')}</div>
-        <div class="look" data-look="combat"><span class="look-label">${t('menu.combatLook')}</span>${lookPicker('combat')}</div>
+        ${lookCard('build')}
+        ${lookCard('combat')}
       </section>
     </div>
   `;
-  // Public or private, chosen as the table is made, a match's or a tournament's: a switch
-  // beside Play showing both, the chosen one lit (PLAN §11 item 4, UP2) — one button naming
-  // the state read as an action.
-  const visibility = document.querySelector<HTMLElement>('#visibility');
-  for (const side of visibility?.querySelectorAll<HTMLButtonElement>('button') ?? []) {
-    side.addEventListener('click', () => {
-      if (visibility === null || side.classList.contains('on')) return;
-      audio.play('select');
-      visibility.dataset.public = side.dataset.public ?? 'true';
-      for (const other of visibility.querySelectorAll('button')) {
-        other.classList.toggle('on', other === side);
-      }
-    });
-  }
   watchOpenGames();
   // The banners either side of combat swap one look for the other as they cross the
   // board, as the original did; the same style for both switches nothing.
   const styles = preferredStyles();
-  // Set as a property rather than written into the markup, so a saved name needs no escaping.
+  // Set as a property rather than written into the markup, so a saved name needs no escaping;
+  // the default only as the field's placeholder, so it does not read as a name somebody typed.
   const nameField = document.querySelector<HTMLInputElement>('#name');
-  if (nameField) nameField.value = storedName();
+  const saved = storedName();
+  if (nameField) nameField.value = saved === t('menu.defaultName') ? '' : saved;
   menuChoices = { ...styles };
   // Options (2026-10-24): the language, the Graphics, the Motion and the volumes, in a panel
   // over the menu. A name typed is read as it opens, while the default name is still the old
@@ -226,9 +212,9 @@ export function showMenu(notice: string | null = null): void {
     title.glide();
   }
 
-  // A picture of each chosen look with its name, arrows either side to step through the
-  // styles in place, and the gallery of them all behind a click on the picture (ARCHIVE
-  // 12b). The pictures wait a moment, so the menu is on screen before building them holds it.
+  // A picture of each chosen look with its name, the gallery of them all behind a click on its
+  // card (ARCHIVE 12b). The pictures wait a moment, so the menu is on screen before building
+  // them holds it.
   let picturesShown = false;
   const showPicture = (look: ArtLook): void => {
     const choice = menuChoices?.[look];
@@ -236,8 +222,10 @@ export function showMenu(notice: string | null = null): void {
     if (choice === undefined || row === null) return;
     const name = row.querySelector<HTMLElement>('.look-name');
     if (name) name.textContent = lookName(choice);
-    if (choice === 'random') row.dataset.tip = t('looks.randomHint');
-    else delete row.dataset.tip;
+    row.dataset.tip =
+      choice === 'random'
+        ? t('looks.randomHint')
+        : t(look === 'build' ? 'menu.pickBuild' : 'menu.pickCombat');
     const image = row.querySelector<HTMLImageElement>('img');
     if (image === null || !picturesShown) return;
     image.classList.remove('ready');
@@ -261,17 +249,9 @@ export function showMenu(notice: string | null = null): void {
     if (changed.length > 0) title?.use(new LookRotation(next));
   };
   for (const look of ['build', 'combat'] as const) {
-    const row = document.querySelector<HTMLElement>(`.look[data-look="${look}"]`);
+    const card = document.querySelector<HTMLElement>(`.look[data-look="${look}"]`);
     showPicture(look);
-    row?.querySelector('.prev')?.addEventListener('click', () => {
-      audio.play('select');
-      if (menuChoices) choose({ ...menuChoices, [look]: stepLook(look, menuChoices[look], -1) });
-    });
-    row?.querySelector('.next')?.addEventListener('click', () => {
-      audio.play('select');
-      if (menuChoices) choose({ ...menuChoices, [look]: stepLook(look, menuChoices[look], 1) });
-    });
-    row?.querySelector('.look-picture')?.addEventListener('click', () => {
+    card?.addEventListener('click', () => {
       audio.play('select');
       if (!menuChoices) return;
       openLookGallery({

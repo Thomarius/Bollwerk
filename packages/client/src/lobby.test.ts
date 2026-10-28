@@ -1,7 +1,7 @@
 import type { Seat } from '@bollwerk/protocol';
 import { describe, expect, it } from 'vitest';
 
-import { lobbyMarkup, type LobbyView } from './lobby.js';
+import { addedSeats, lobbyMarkup, nudgedSettings, type LobbyView } from './lobby.js';
 import { SHAPE_PATHS } from './shapes.js';
 
 function seat(playerId: number, name: string, connected = true): Seat {
@@ -75,25 +75,23 @@ describe('lobby', () => {
     expect(rows(html)[2]).toContain(`d="${SHAPE_PATHS.plus}" fill="#d8a020"`);
   });
 
-  it('shows each bot seat’s level as pips, filled up to it, to the host and guests alike', () => {
+  it('shows each bot seat’s level once, as a number, with no pips beside it', () => {
     const table = view({ bots: [5, 3, 8, 10] });
     for (const html of [lobbyMarkup(table), lobbyMarkup({ ...table, humanPlayer: 1 })]) {
-      const pips = (row: string): number => row.split('<i class="on"></i>').length - 1;
-      expect(pips(rows(html)[1] ?? '')).toBe(3);
-      expect(pips(rows(html)[2] ?? '')).toBe(8);
-      expect(rows(html)[3]).toContain('data-tip="Level 10"');
+      expect(html).not.toContain('class="pips"');
     }
+    expect(rows(lobbyMarkup({ ...table, humanPlayer: 1 }))[3]).toContain('Level 10');
   });
 
-  it('shows the map, and lets only the host draw another', () => {
+  it('shows the map, and lets only the host draw another, never showing its seed', () => {
     const asHost = lobbyMarkup(view());
     expect(asHost).toContain('id="map-preview"');
-    expect(asHost).toContain('id="seed"');
-    expect(asHost).toContain('value="42"');
     expect(asHost).toContain('id="reroll"');
+    expect(asHost).not.toContain('id="seed"');
+    expect(asHost).not.toContain('42');
     const asGuest = lobbyMarkup(view({ humanPlayer: 1, seats: [seat(0, 'Ada'), seat(1, 'Bo')] }));
     expect(asGuest).toContain('id="map-preview"');
-    expect(asGuest).toContain('Map 42');
+    expect(asGuest).not.toContain('42');
     expect(asGuest).not.toContain('id="reroll"');
   });
 
@@ -240,26 +238,27 @@ describe('lobby', () => {
     const host = lobbyMarkup(view(teamed));
     // No team dropdowns any more: a seat's team is the column it sits in.
     expect(host).not.toContain('team-select');
-    const pickers = [
-      ...host.matchAll(/<select class="occupant who" data-seat="(\d)"[^>]*>([\s\S]*?)<\/select>/g),
-    ];
-    expect(pickers.map((m) => m[1])).toEqual(['0', '1', '2', '3']);
-    // A bot's seat offers the bot and every person; a person's, the people to swap with.
-    expect(pickers[2]?.[2]).toContain('<option value="" selected>Bot 3</option>');
-    expect(pickers[2]?.[2]).toContain('<option value="0">Ada</option>');
-    expect(pickers[2]?.[2]).toContain('<option value="1">Bo</option>');
-    expect(pickers[1]?.[2]).toContain('<option value="1" selected>Bo</option>');
+    // A person's seat offers a swap with the one other person; a bot's, a list of both.
+    expect(rows(host)[0]).toContain(
+      '<button type="button" class="sit" data-seat="0" data-player="1">Swap with Bo</button>',
+    );
+    expect(rows(host)[1]).toContain('>Swap with Ada</button>');
+    const list = rows(host)[2] ?? '';
+    expect(list).toContain('<span class="who">Bot 3</span>');
+    expect(list).toContain('<summary>Seat…</summary>');
+    expect(list).toContain('data-seat="2" data-player="0">Ada</button>');
+    expect(list).toContain('data-seat="2" data-player="1">Bo</button>');
 
     const guest = lobbyMarkup(view({ ...teamed, humanPlayer: 1 }));
-    expect(guest).not.toContain('class="occupant');
+    expect(guest).not.toContain('class="sit');
     expect(guest).toContain('<span class="who">Bo</span>');
   });
 
-  it('shows a name, not a choice of one, when the host is alone at their seat', () => {
+  it('offers the host alone a place at every bot seat, and nothing at their own', () => {
     const html = lobbyMarkup(view());
     expect(rows(html)[0]).toContain('<span class="who">Ada</span>');
-    // But every bot seat still offers the host a place.
-    expect(rows(html)[1]).toContain('<option value="0">Ada</option>');
+    expect(rows(html)[0]).not.toContain('class="sit');
+    expect(rows(html)[1]).toContain('data-seat="1" data-player="0">Sit here</button>');
   });
 
   it('will not start unequal teams, and says why', () => {
@@ -304,6 +303,29 @@ describe('lobby', () => {
     );
     expect(rows(guest)[0]).not.toContain('id="host-bot"');
     expect(rows(guest)[0]).toContain('Level 8');
+  });
+});
+
+describe('the lobby drawn again', () => {
+  const free = { maxRounds: 10, teamSize: 1, continues: 2, specials: false };
+  const pairs = { ...free, teamSize: 2 };
+
+  it('slides in the seats a table gains, and none at its first drawing or as it shrinks', () => {
+    expect(addedSeats(null, view())).toEqual([]);
+    expect(addedSeats(view({ playerCount: 4 }), view({ playerCount: 6 }))).toEqual([4, 5]);
+    expect(addedSeats(view({ playerCount: 6 }), view({ playerCount: 4 }))).toEqual([]);
+    const html = lobbyMarkup(view({ entering: [3] }));
+    expect(html).toContain('<li class="seat bot entering"');
+  });
+
+  it('marks the player counts when a team size takes some away, but not the size itself', () => {
+    const before = view({ settings: free, playerCount: 4 });
+    const after = view({ settings: pairs, playerCount: 4, teams: [0, 0, 1, 1] });
+    expect(nudgedSettings(before, after, 'team-size')).toEqual(['player-count']);
+    // A change of the count alone changes nothing else.
+    expect(
+      nudgedSettings(before, view({ settings: free, playerCount: 5 }), 'player-count'),
+    ).toEqual([]);
   });
 });
 

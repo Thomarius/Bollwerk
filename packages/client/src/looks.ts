@@ -213,19 +213,12 @@ export class LookRotation {
 }
 
 /**
- * Every choice the gallery and the arrows offer for a look: the styles by name, in
+ * Every choice the gallery offers for a look: the styles by name, in
  * alphabetical order, so a new one finds its place as the list grows, and "random" last.
  */
 export function lookOptions(look: ArtLook): LookChoice[] {
   const styles = [...stylesFor(look)].sort((a, b) => lookName(a).localeCompare(lookName(b)));
   return [...styles, RANDOM];
-}
-
-/** The choice `step` places along from `current`, round from the last to the first. */
-export function stepLook(look: ArtLook, current: LookChoice, step: number): LookChoice {
-  const options = lookOptions(look);
-  const at = Math.max(0, options.indexOf(current));
-  return options[(((at + step) % options.length) + options.length) % options.length]!;
 }
 
 /**
@@ -355,6 +348,19 @@ export function openLookGallery(options: GalleryOptions): void {
     live.hide();
     hovered = null;
     root.innerHTML = galleryMarkup(choices, active, favourites);
+    // The cards' last row faded while there are more below, so a cut-off row says the grid
+    // scrolls (2026-10-28); not once the end is reached.
+    const cards = root.querySelector<HTMLElement>('.cards');
+    if (cards !== null) {
+      const more = (): void => {
+        cards.classList.toggle(
+          'more',
+          cards.scrollTop + cards.clientHeight < cards.scrollHeight - 4,
+        );
+      };
+      cards.addEventListener('scroll', more, { passive: true });
+      requestAnimationFrame(more);
+    }
     for (const image of root.querySelectorAll<HTMLImageElement>('img[data-preview]')) {
       const choice = image.dataset.preview as LookChoice;
       void lookPicture(choice).then(

@@ -1,25 +1,9 @@
 import type { TextKey } from '@bollwerk/config';
 
-import {
-  isLanguage,
-  languageOptions,
-  onLanguageChange,
-  saveLanguage,
-  setLanguage,
-  t,
-} from './i18n.js';
-import { escape } from './html.js';
-import { enhanceChoices, syncChoices } from './choices.js';
+import { onLanguageChange, t } from './i18n.js';
 import { withIcon } from './icons.js';
-import { graphicsOptions, parseGraphics, saveGraphics, storedGraphics } from './graphics.js';
-import { motionOptions, parseMotion, saveMotion, storedMotion } from './motion.js';
-import {
-  parseStyleMusic,
-  saveStyleMusic,
-  storedStyleMusic,
-  styleMusicOptions,
-} from './styleMusicSetting.js';
-import { refreshVolumeSliders, volumeSliders, type VolumeTarget } from './volume.js';
+import { refreshSettingsRows, settingsRows } from './settingsRows.js';
+import type { VolumeTarget } from './volume.js';
 
 /**
  * Pausing a match: a button beside the Sound switch, Esc, and an overlay saying who
@@ -28,10 +12,10 @@ import { refreshVolumeSliders, volumeSliders, type VolumeTarget } from './volume
  * controls, being what games use for this; everything it does also has something on
  * screen to click.
  *
- * The overlay is the match's menu (PLAN 11.18 Y2): Resume, the Graphics, Motion, Style music and
- * Sound settings
- * as the main menu has them, How to play, and Leave match, which asks once more before it goes — one
- * stray click should not end somebody's match.
+ * The overlay is the match's menu (PLAN 11.18 Y2): Resume, the settings as the menu's Options has
+ * them (`settingsRows.ts`), the looks, How to play, and Leave match, in the warning colour, which
+ * asks once more before it goes — one stray click should not end somebody's match. No Sound
+ * button of its own: the corner's is beside it, and the volumes' speakers silence each.
  */
 
 /** The overlay's line: who paused, from the viewer's side. */
@@ -65,9 +49,6 @@ export interface PauseActions {
   leave(): void;
   /** What Leave match asks before it goes, where leaving means more than leaving. */
   leaveConfirm?: TextKey;
-  /** The sound's state, shared with the corner switch. */
-  isMuted(): boolean;
-  setMuted(muted: boolean): void;
   /** The menu's click. */
   click(): void;
   /** The music and sounds volumes, for the sliders. */
@@ -82,9 +63,8 @@ export class PauseControls {
   private readonly button: HTMLButtonElement;
   private readonly overlay: HTMLDivElement;
   private line!: HTMLParagraphElement;
-  private sound!: HTMLButtonElement;
   private leaving!: HTMLButtonElement;
-  private sliders!: HTMLElement;
+  private settings!: HTMLElement;
   /** How to play, while it is open over this menu: it goes as the match resumes. */
   private closeHowTo: (() => void) | null = null;
   /** What the line says, so the DOM is touched only when it changes. */
@@ -135,16 +115,9 @@ export class PauseControls {
     this.overlay.innerHTML =
       `<div class="panel"><strong>${t('pause.title')}</strong><p class="who"></p>` +
       `<button class="resume">${t('pause.resume')}</button>` +
-      `<div class="settings">` +
-      `<label data-tip="${escape(t('settings.graphicsTitle'))}">${t('settings.graphics')} <select class="graphics" data-ui="seg">${graphicsOptions()}</select></label>` +
-      `<label>${t('settings.motion')} <select class="motion" data-ui="seg">${motionOptions()}</select></label>` +
-      `<label data-tip="${escape(t('settings.styleMusicTitle'))}">${t('settings.styleMusic')} <select class="style-music" data-ui="seg">${styleMusicOptions()}</select></label>` +
-      `<label>${t('settings.language')} <select class="language" data-ui="seg">${languageOptions()}</select></label>` +
-      `</div>` +
       // The buttons in a row of their own under the settings and volumes, which are a column
       // as the menu's Options lays them out: in one long row they nearly filled the screen.
       `<div class="actions">` +
-      `<button class="sound quiet"></button>` +
       (actions.looks === undefined
         ? ''
         : `<button class="looks quiet">${t('pause.looks')}</button>`) +
@@ -155,45 +128,19 @@ export class PauseControls {
       `<button class="leave-match quiet">${t('pause.leave')}</button>` +
       `<small>${t('pause.escHint')}</small></div>`;
     this.line = this.overlay.querySelector<HTMLParagraphElement>('.who')!;
-    this.sound = this.overlay.querySelector<HTMLButtonElement>('.sound')!;
     this.leaving = this.overlay.querySelector<HTMLButtonElement>('.leave-match')!;
-    this.sliders = volumeSliders(actions.volumes);
-    this.overlay.querySelector('.settings')?.after(this.sliders);
-    // Both taken at once: the match redraws at the level's resolution (`onGraphics`), its
-    // bloom put on or taken off (`render/bloom.ts`), and the motion read every frame.
-    const graphics = this.overlay.querySelector<HTMLSelectElement>('.graphics')!;
-    graphics.value = storedGraphics();
-    graphics.addEventListener('change', () => {
-      actions.click();
-      saveGraphics(parseGraphics(graphics.value) ?? 'medium');
+    // The language, mid-match, is written into this menu by `onLanguageChange`, the HUD's at
+    // the next frame.
+    this.settings = settingsRows({
+      click: () => actions.click(),
+      volumes: actions.volumes,
+      languageChanged: () => undefined,
     });
-    const motion = this.overlay.querySelector<HTMLSelectElement>('.motion')!;
-    motion.value = storedMotion();
-    motion.addEventListener('change', () => {
-      actions.click();
-      saveMotion(parseMotion(motion.value) ?? 'full');
-    });
-    // Taken at the next look's start, the track playing left to finish (`matchScreen.ts`).
-    const styleMusic = this.overlay.querySelector<HTMLSelectElement>('.style-music')!;
-    styleMusic.value = storedStyleMusic();
-    styleMusic.addEventListener('change', () => {
-      actions.click();
-      saveStyleMusic(parseStyleMusic(styleMusic.value) ?? 'always');
-    });
-    this.showSound();
-    enhanceChoices(this.overlay);
+    this.overlay.querySelector('.resume')?.after(this.settings);
 
     this.overlay.querySelector('.resume')?.addEventListener('click', () => {
       actions.click();
       actions.toggle(false);
-    });
-    // The language, mid-match: the HUD takes it at the next frame, this menu at once.
-    const language = this.overlay.querySelector<HTMLSelectElement>('.language')!;
-    language.addEventListener('change', () => {
-      actions.click();
-      if (!isLanguage(language.value)) return;
-      saveLanguage(language.value);
-      setLanguage(language.value);
     });
     this.overlay.querySelector('.looks')?.addEventListener('click', () => {
       actions.click();
@@ -203,11 +150,6 @@ export class PauseControls {
       actions.click();
       this.closeHowTo?.();
       this.closeHowTo = actions.howToPlay?.() ?? null;
-    });
-    this.sound.addEventListener('click', () => {
-      actions.setMuted(!actions.isMuted());
-      actions.click();
-      this.showSound();
     });
     this.leaving.addEventListener('click', () => {
       actions.click();
@@ -229,11 +171,6 @@ export class PauseControls {
     this.button.innerHTML = withIcon(this.paused ? 'play' : 'pause', label);
   }
 
-  private showSound(): void {
-    this.sound.textContent = this.actions.isMuted() ? t('sound.off') : t('sound.on');
-    this.sound.classList.toggle('off', this.actions.isMuted());
-  }
-
   /** Called every frame with the match as it stands. */
   update(pausedBy: number | null, humanPlayer: number, names: readonly string[], over: boolean) {
     this.over = over;
@@ -250,13 +187,7 @@ export class PauseControls {
     this.line.textContent = text ?? '';
     if (opening) {
       // As the menu opens: the settings as they stand, and the leave asked for afresh.
-      this.overlay.querySelector<HTMLSelectElement>('.graphics')!.value = storedGraphics();
-      this.overlay.querySelector<HTMLSelectElement>('.motion')!.value = storedMotion();
-      this.overlay.querySelector<HTMLSelectElement>('.style-music')!.value = storedStyleMusic();
-      // Set by script, so shown afresh.
-      syncChoices(this.overlay);
-      this.showSound();
-      refreshVolumeSliders(this.sliders, this.actions.volumes);
+      refreshSettingsRows(this.settings, this.actions.volumes);
       this.leaving.classList.remove('confirm');
       this.leaving.textContent = t('pause.leave');
     }

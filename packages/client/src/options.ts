@@ -1,22 +1,14 @@
-import { graphicsOptions, parseGraphics, saveGraphics, storedGraphics } from './graphics.js';
-import { escape } from './html.js';
-import { enhanceChoices } from './choices.js';
-import { isLanguage, languageOptions, saveLanguage, setLanguage, t } from './i18n.js';
-import { motionOptions, parseMotion, saveMotion, storedMotion } from './motion.js';
-import {
-  parseStyleMusic,
-  saveStyleMusic,
-  storedStyleMusic,
-  styleMusicOptions,
-} from './styleMusicSetting.js';
-import { volumeSliders, type VolumeTarget } from './volume.js';
+import { t } from './i18n.js';
+import { settingsRows } from './settingsRows.js';
+import type { VolumeTarget } from './volume.js';
 
 /**
  * The menu's Options (2026-10-24, the user's): the settings that are not about a match —
  * the language, the Graphics, the Motion, the two volumes and how often the styles' own music
  * plays — in a panel over the menu, so
  * the menu itself keeps the looks, one of the game's highlights, and the ways into a match.
- * The overlay and panel of How to play and the Credits, so the three read as one family.
+ * The overlay and panel of How to play and the Credits, so the three read as one family; the
+ * rows the pause menu's too (`settingsRows.ts`).
  */
 export interface OptionsActions {
   /** The menu's click, and the volumes for the sliders. */
@@ -38,44 +30,19 @@ export function openOptions(actions: OptionsActions): void {
     root.innerHTML = `
       <div class="panel">
         <h2>${t('menu.options')}</h2>
-        <label>${t('settings.language')} <select class="language" data-ui="seg">${languageOptions()}</select></label>
-        <label data-tip="${escape(t('settings.graphicsTitle'))}">${t('settings.graphics')} <select class="graphics" data-ui="seg">${graphicsOptions()}</select></label>
-        <label>${t('settings.motion')} <select class="motion" data-ui="seg">${motionOptions()}</select></label>
-        <label data-tip="${escape(t('settings.styleMusicTitle'))}">${t('settings.styleMusic')} <select class="style-music" data-ui="seg">${styleMusicOptions()}</select></label>
         <button class="close quiet">${t('credits.close')}</button>
       </div>`;
-    root.querySelector('.motion')?.closest('label')?.after(volumeSliders(actions.audio));
-
-    const language = root.querySelector<HTMLSelectElement>('.language')!;
-    language.addEventListener('change', () => {
-      click();
-      if (!isLanguage(language.value)) return;
-      saveLanguage(language.value);
-      setLanguage(language.value);
-      actions.languageChanged();
-      // This panel too, in the new language.
-      fill();
-    });
-    const graphics = root.querySelector<HTMLSelectElement>('.graphics')!;
-    graphics.value = storedGraphics();
-    graphics.addEventListener('change', () => {
-      click();
-      saveGraphics(parseGraphics(graphics.value) ?? 'medium');
-    });
-    const motion = root.querySelector<HTMLSelectElement>('.motion')!;
-    motion.value = storedMotion();
-    motion.addEventListener('change', () => {
-      click();
-      saveMotion(parseMotion(motion.value) ?? 'full');
-    });
-    const styleMusic = root.querySelector<HTMLSelectElement>('.style-music')!;
-    styleMusic.value = storedStyleMusic();
-    styleMusic.addEventListener('change', () => {
-      click();
-      saveStyleMusic(parseStyleMusic(styleMusic.value) ?? 'always');
-    });
-    // Each choice a row of buttons in front of its select, now the selects stand as stored.
-    enhanceChoices(root);
+    root.querySelector('h2')?.after(
+      settingsRows({
+        click,
+        volumes: actions.audio,
+        languageChanged: () => {
+          actions.languageChanged();
+          // This panel too, in the new language.
+          fill();
+        },
+      }),
+    );
     root.querySelector('.close')?.addEventListener('click', close);
   };
 

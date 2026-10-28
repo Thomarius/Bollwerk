@@ -69,8 +69,8 @@ language (not saved). `?tournament=new` and `?tournament=resume` open the tourna
 `?tournament=demo&seed=N` a tournament of teams of two between matches (saved as `t-demo`), and
 `&snapshot=game_over` plays a tournament's match out at once, its result counted. `?host=8` opens
 the lobby at eight seats — a room if a server answers, a local table if not —
-`?join=CODE` joins one, `&name=Bo` sets the name, `&seed=N` the map, `&private=1` makes
-the room private. The menu's Play (with its Public / Private switch), its list of open
+`?join=CODE` joins one, `&name=Bo` sets the name, `&seed=N` the map, `&private=1` keeps
+the room unlisted (every room is public otherwise). The menu's Play, its list of open
 games and Join reach the same lobby, which sets the map, players, teams and bot levels; the
 rounds and lives are the config's, no longer offered in a lobby or a new tournament (2026-10-28).
 
@@ -176,6 +176,13 @@ Full detail in PLAN.md §1. The parts that surprise people:
 
 **Done** (2026-10-28; the latest release **v0.9.22**, 2026-10-28, protocol 33, recording format 4,
 which a test session needs the server rebuilt and every page reloaded for):
+
+- **The menus reviewed** (ARCHIVE 15j, 2026-10-28, not yet released): every room public, the
+  Public / Private switch gone; the looks as cards to click, no arrows; Options and the pause
+  menu one settings column (`settingsRows.ts`), a speaker on each volume; Sit here in the lobby,
+  no seed or level pips shown, the map's numbers clear of castles (`labelSpots`); the Credits
+  folded; small motions. Tested and approved by the user. The end screen's review is for a
+  session of its own.
 
 - **The online link's steps shown** (ARCHIVE 15h, 2026-10-28, v0.9.22, the user's report): the
   desktop app's Share a link online names its three steps, counts the seconds, shows a bar and

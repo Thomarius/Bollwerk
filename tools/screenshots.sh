@@ -217,8 +217,12 @@ mkdir -p "$OUT"
 for scene in "${SCENES[@]}"; do
   IFS='|' read -r name url wait <<<"$scene"
   if [[ $# -gt 0 && ! " $* " =~ " $name " ]]; then continue; fi
+  # Each scene's wait counts from the end of the loading screen, which fetches every sound
+  # first (ARCHIVE 14b) — the first thing put in #app comes after it. Counted from the page's
+  # start, with scenes shot side by side, the menu and lobby scenes caught only the loading
+  # screen (2026-10-28).
   (cd /tmp && npx -y "playwright@${PLAYWRIGHT:-1.63.0}" screenshot --viewport-size "1400,900" \
-    --wait-for-timeout "$wait" "$url" "$OUT/$name.png" >/dev/null 2>&1 &&
+    --wait-for-selector '#app > *' --wait-for-timeout "$wait" "$url" "$OUT/$name.png" >/dev/null 2>&1 &&
     echo "$OUT/$name.png") &
 done
 wait

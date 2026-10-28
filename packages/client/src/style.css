@@ -295,9 +295,12 @@ body.reduced-motion .embers {
 
 /* ---------- menu ---------- */
 
+/* Centred in the screen above the corner's buttons (#corner), so a tall window on a small
+   screen ends above them rather than under them: at 1024×640 the menu's panels ran into
+   Sound and Full screen (2026-10-28). */
 .menu {
   position: absolute;
-  inset: 0;
+  inset: 0 0 3.2rem;
   margin: auto;
   width: min(30rem, 90vw);
   height: fit-content;
@@ -573,10 +576,17 @@ button svg.icon {
 }
 
 /* The Credits, in How to play's overlay and panel (credits.ts). */
+/* One height whatever is folded open, the list scrolling inside, as the windows keep their size
+   (ARCHIVE 15f). */
 .how-to-play.credits .panel {
   width: min(34rem, 90vw);
-  max-height: 85vh;
+  height: min(40rem, 85vh);
   align-items: stretch;
+}
+
+.how-to-play.credits .list {
+  flex: 1;
+  min-height: 0;
 }
 
 .how-to-play.credits h2,
@@ -601,13 +611,60 @@ button svg.icon {
   border-top: 1px solid var(--line);
 }
 
-.how-to-play.credits h3 {
-  margin: 0.9rem 0 0.3rem;
-  color: var(--muted);
+/* A folded group of credits (credits.ts): its heading and count a row to click, an arrow
+   turning as it opens. */
+.how-to-play.credits .credit-group {
+  border-bottom: 1px solid var(--line);
+}
+
+.how-to-play.credits .credit-group summary {
+  display: flex;
+  gap: 0.6rem;
+  align-items: center;
+  padding: 0.7rem 0.2rem;
+  color: var(--ink);
   font-size: 12px;
   font-weight: 600;
   letter-spacing: 0.12em;
   text-transform: uppercase;
+  list-style: none;
+  cursor: pointer;
+}
+
+.how-to-play.credits .credit-group summary::-webkit-details-marker {
+  display: none;
+}
+
+.how-to-play.credits .credit-group summary::before {
+  content: '▸';
+  color: var(--accent);
+  transition: transform 120ms;
+}
+
+.how-to-play.credits .credit-group[open] summary::before {
+  transform: rotate(90deg);
+}
+
+.how-to-play.credits .credit-group summary:hover {
+  color: var(--accent);
+}
+
+.how-to-play.credits .credit-group .count {
+  margin-left: auto;
+  padding: 0.05rem 0.5rem;
+  border-radius: 999px;
+  background: var(--surface-3);
+  color: var(--muted);
+  letter-spacing: 0;
+}
+
+.how-to-play.credits .credit-group ul {
+  padding-bottom: 0.8rem;
+}
+
+.how-to-play.credits b.style {
+  color: var(--accent);
+  font-weight: 600;
 }
 
 .how-to-play.credits ul {
@@ -641,66 +698,15 @@ button svg.icon {
   margin-bottom: 0;
 }
 
-.how-to-play.options .volumes {
-  margin: 0.3rem 0 0.4rem;
-}
-
 .how-to-play.options button.close {
   align-self: center;
   margin-top: 0.4rem;
 }
 
-/* Play, the menu's main way in, first and largest, filled (PLAN §11 item 4, UP2); beside it
-   the table's visibility, chosen as the table is made. */
-.menu .play-row {
-  align-items: stretch;
-}
-
-/* The primary tier's dress, taller. */
+/* Play, the menu's main way in, first and largest, filled (PLAN §11 item 4, UP2); every table
+   is public, so it stands alone (the user's, 2026-10-28). */
 .menu .play-row #play {
-  flex: 2;
   min-height: 3.4rem;
-}
-
-/* Both states shown, the chosen one lit: Public in the accent, as the open table it is,
-   Private in the ink (2026-10-24, the user's colours). */
-.menu .visibility {
-  display: flex;
-  flex: 1.2;
-  flex-direction: column;
-  gap: 2px;
-  padding: 3px;
-  border: 1px solid var(--line);
-  border-radius: var(--radius-s);
-  background: var(--field);
-}
-
-.menu .visibility button {
-  flex: 1;
-  min-height: 0;
-  margin: 0;
-  padding: 0.2rem 0.4rem;
-  border: none;
-  border-radius: 7px;
-  background: transparent;
-  color: var(--muted);
-  font-size: 13px;
-}
-
-.menu .visibility button.on {
-  background: var(--surface-3);
-  color: var(--ink);
-  box-shadow: 0 1px 3px rgb(0 0 0 / 40%);
-  cursor: default;
-}
-
-.menu .visibility button[data-public='true'].on {
-  color: var(--accent);
-}
-
-.menu .visibility button:not(.on):hover {
-  background: transparent;
-  color: var(--ink);
 }
 
 /* The open games browser (browser.ts). */
@@ -2116,7 +2122,7 @@ body.hud-bricks #hud .roster .line .shape path {
    host's seat a bot's, towers on, the seats then the longer column. This holds every table, a
    guest's with its shorter settings too, at that. */
 .menu.lobby:not(.tournament-setup, .tournament-ending) {
-  min-height: min(48rem, 94vh);
+  min-height: min(48rem, calc(100vh - 4rem));
 }
 
 .lobby-body {
@@ -2141,26 +2147,29 @@ body.hud-bricks #hud .roster .line .shape path {
   image-rendering: pixelated;
 }
 
-.map-row {
-  display: flex;
-  gap: 0.5rem;
-  align-items: center;
-  margin: 0.6rem 0 1rem;
+/* The map, and for the host a die in its corner to draw another (lobby.ts); no seed shown. */
+.map-box {
+  position: relative;
+  margin-bottom: 1rem;
 }
 
-.map-row label {
-  flex: 1;
-  margin: 0;
-}
-
-.menu .map-row button {
+.menu .map-box .map-reroll {
+  position: absolute;
+  right: 0.5rem;
+  bottom: 0.5rem;
   width: auto;
+  min-height: 2.1rem;
   margin: 0;
-  padding: 0.35rem 0.7rem;
+  padding: 0.3rem 0.7rem;
+  border-color: var(--line);
+  background: rgb(14 17 26 / 85%);
+  font-size: 13px;
 }
 
-.menu .map-note {
-  margin: 0.4rem 0 1rem;
+.menu .map-box .map-reroll:hover {
+  border-color: var(--accent);
+  background: var(--surface-3);
+  color: var(--accent);
 }
 
 /* The seat's number in the colour it will play, matching its island on the map. */
@@ -2222,10 +2231,76 @@ body.hud-bricks #hud .roster .line .shape path {
 }
 
 /* Who sits in the seat: the host's picker, as wide as the names it offers. */
-.seats select.occupant {
-  flex: 0 1 auto;
-  min-width: 9ch;
-  margin-right: auto;
+/* The host moving somebody into a seat (lobby.ts): a small button saying what it does, or with
+   several who could move, "Seat…" opening a list of them under it. */
+.menu .seats .sit,
+.menu .seats .sit-pick summary {
+  flex: none;
+  width: auto;
+  min-height: 2rem;
+  margin: 0;
+  padding: 0.25rem 0.7rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--muted);
+  font: 600 12px var(--ui-font);
+  cursor: pointer;
+}
+
+.menu .seats .sit:hover,
+.menu .seats .sit-pick summary:hover,
+.menu .seats .sit-pick[open] summary {
+  border-color: var(--accent);
+  background: var(--surface-3);
+  color: var(--accent);
+}
+
+.menu .seats .sit-pick {
+  position: relative;
+  flex: none;
+}
+
+.menu .seats .sit-pick summary {
+  display: inline-flex;
+  align-items: center;
+  list-style: none;
+}
+
+.menu .seats .sit-pick summary::-webkit-details-marker {
+  display: none;
+}
+
+.menu .seats .sit-list {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 9rem;
+  padding: 4px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-s);
+  background: var(--surface-solid);
+  box-shadow: var(--shadow);
+}
+
+.menu .seats .sit-list .sit {
+  justify-content: flex-start;
+  border: none;
+  border-radius: 7px;
+  color: var(--ink);
+  font-size: 13px;
+}
+
+/* The host's seat, readable (2026-10-28): grey on grey it went unseen. */
+.menu .seats .tag.host {
+  border: 1px solid color-mix(in srgb, var(--accent) 50%, transparent);
+  background: transparent;
+  color: var(--accent);
+  opacity: 1;
 }
 
 /* The corner's switches, on every screen (app.ts): Sound, Full screen, and Pause during a
@@ -2599,21 +2674,38 @@ body.reduced-motion .menu button.quiet.fresh {
 
 /* The menu's look choices, each with a picture of the look drawn by its own theme
    (stylePreview.ts). Hidden until its picture is ready, so nothing blank shows. */
-/* A look's card (ARCHIVE 12b, the cards PLAN §11 item 4, MS3): which look, then its picture
-   and the style's name between arrows — the picture opens the gallery, the arrows step in place. */
-.menu .look {
-  display: flex;
+/* A look's card (ARCHIVE 12b, the cards PLAN §11 item 4, MS3), one button opening the gallery:
+   which look, its picture, then the style's name and a Change chip in the accent — so it reads
+   as clickable before the pointer is on it — and lifted on hover (the user's, 2026-10-28). */
+.menu button.look {
   flex-direction: column;
-  gap: 0.4rem;
-  padding: 0.7rem 0.6rem 0.6rem;
+  gap: 0.5rem;
+  align-items: stretch;
+  margin: 0;
+  padding: 0.7rem 0.8rem 0.75rem;
   border: 1px solid var(--line);
-  border-radius: var(--radius-s);
   background: var(--surface-2);
-  transition: border-color 150ms;
+  transition:
+    border-color 150ms,
+    background 150ms,
+    box-shadow 150ms,
+    transform 150ms;
 }
 
-.menu .look:hover {
+.menu button.look:hover {
   border-color: var(--accent);
+  background: var(--surface-3);
+  box-shadow: 0 6px 18px rgb(0 0 0 / 35%);
+  transform: translateY(-2px);
+}
+
+.menu button.look:active {
+  transform: translateY(0);
+}
+
+body.reduced-motion .menu button.look,
+body.reduced-motion .menu button.look:hover {
+  transform: none;
 }
 
 .menu .look-label {
@@ -2625,58 +2717,43 @@ body.reduced-motion .menu button.quiet.fresh {
   text-transform: uppercase;
 }
 
-.menu .look-picker {
-  display: grid;
-  grid-template-columns: auto 1fr auto;
-  gap: 0.35rem;
-  align-items: center;
-}
-
-.menu .look-picker button {
-  width: auto;
+.menu .look .style-preview {
+  align-self: center;
   margin: 0;
 }
 
-.menu .look-picker .step,
-.menu .look-picker .step:hover {
-  align-self: stretch;
-  min-height: 0;
-  padding: 0 0.45rem;
-  border-color: transparent;
-  background: transparent;
-  color: var(--muted);
-  font-size: 12px;
-}
-
-.menu .look-picker .step:hover {
-  background: var(--surface-3);
-  color: var(--accent);
-}
-
-.menu .look-picture,
-.menu .look-picture:hover {
+.menu .look-foot {
   display: flex;
-  flex-direction: column;
-  gap: 0.45rem;
+  gap: 0.6rem;
   align-items: center;
-  padding: 0.2rem;
-  border-color: transparent;
-  background: transparent;
-  color: var(--ink);
-}
-
-.menu .look-picture:hover {
-  color: var(--accent);
-}
-
-.menu .look-picture .style-preview {
-  margin: 0;
+  justify-content: space-between;
 }
 
 .menu .look-name {
   font-family: var(--heading-font);
   font-size: 1rem;
   font-weight: 600;
+}
+
+.menu .look-change {
+  display: inline-flex;
+  gap: 0.35rem;
+  align-items: center;
+  padding: 0.3rem 0.65rem;
+  border: 1px solid color-mix(in srgb, var(--accent) 55%, transparent);
+  border-radius: 999px;
+  color: var(--accent);
+  font-size: 12px;
+}
+
+.menu .look-change svg.icon {
+  width: 14px;
+  height: 14px;
+}
+
+.menu button.look:hover .look-change {
+  background: var(--accent);
+  color: var(--on-accent);
 }
 
 .menu .style-preview {
@@ -2851,35 +2928,19 @@ body.reduced-motion .preparing .blocks i {
   flex-direction: column;
   gap: 0.7rem;
   align-items: center;
-  min-width: 20rem;
+  /* As wide as the menu's Options, whose rows these are (settingsRows.ts). */
+  width: min(31rem, 94vw);
 }
 
 .pause-overlay p {
   margin: 0.2rem 0 0.4rem;
 }
 
-/* A column of settings, a label and its choice to a row, as the menu's Options has them. */
-.pause-overlay .settings {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  align-self: stretch;
+/* The settings under Resume, ruled off from it. */
+.pause-overlay .settings-rows {
   margin-top: 0.4rem;
   padding-top: 0.9rem;
   border-top: 1px solid var(--edge);
-  color: var(--muted);
-  font-size: 12px;
-}
-
-.pause-overlay .settings label {
-  display: flex;
-  gap: 1rem;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.pause-overlay .settings select {
-  width: 9rem;
 }
 
 .pause-overlay .actions {
@@ -2887,15 +2948,6 @@ body.reduced-motion .preparing .blocks i {
   flex-wrap: wrap;
   gap: 0.6rem;
   justify-content: center;
-}
-
-.pause-overlay .settings select {
-  margin-left: 0.4rem;
-  padding: 0.25rem 0.4rem;
-  border: 1px solid var(--edge);
-  background: #12131c;
-  color: var(--ink);
-  font: inherit;
 }
 
 .pause-overlay button.quiet {
@@ -2914,15 +2966,24 @@ body.reduced-motion .preparing .blocks i {
   background: var(--surface-3);
 }
 
-.pause-overlay .leave-match {
+/* In the warning colour from the start, faintly, so it does not read as one of the menu's
+   ordinary ways on (2026-10-28); asking once more in full before the match is left. */
+.pause-overlay button.leave-match {
   margin-top: 0.3rem;
+  border-color: rgb(255 90 98 / 35%);
+  color: #ff9da2;
 }
 
-/* Asking once more, in the warning colour, before the match is left — under the mouse too. */
-.pause-overlay .leave-match.confirm,
-.pause-overlay .leave-match.confirm:hover {
+.pause-overlay button.leave-match:hover {
   border-color: #ff5a62;
-  color: #ff8a90;
+  background: rgb(255 90 98 / 10%);
+}
+
+.pause-overlay button.leave-match.confirm,
+.pause-overlay button.leave-match.confirm:hover {
+  border-color: #ff5a62;
+  background: rgb(255 90 98 / 18%);
+  color: #ffc2c5;
 }
 
 .pause-overlay small {
@@ -2975,56 +3036,89 @@ body.reduced-motion .preparing .blocks i {
   color: #0a0a12;
 }
 
-/* The volume sliders (volume.ts), in the menu's Options and in the pause menu. */
+/* The settings (settingsRows.ts), one column in the menu's Options and the pause menu alike: a
+   label and its choice to a row, in the ink, the choice on the right. */
+.settings-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  align-self: stretch;
+  color: var(--ink);
+  font: 500 14px var(--ui-font);
+  text-align: left;
+}
+
+.settings-rows > label {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  justify-content: space-between;
+  margin: 0;
+}
+
+/* The volume sliders (volume.ts): the name, a speaker silencing it and bringing it back, the
+   slider, and its percentage while the pointer is on the row or it is dragged. */
 .volumes {
   display: flex;
   flex-direction: column;
   gap: 0.35rem;
 }
 
-.volumes label.volume {
-  display: flex;
-  gap: 0.8rem;
+.volumes .volume {
+  display: grid;
+  grid-template-columns: 1fr auto 10rem 2.6rem;
+  gap: 0.5rem;
   align-items: center;
-  justify-content: space-between;
+}
+
+.volumes .speaker {
+  display: grid;
+  width: 2rem;
+  height: 2rem;
   margin: 0;
+  padding: 0;
+  place-items: center;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.volumes .speaker:hover {
+  border-color: var(--line);
+  background: var(--surface-3);
+  color: var(--accent);
+}
+
+.volumes .speaker.off {
+  color: var(--accent);
+}
+
+.volumes .speaker svg.icon {
+  width: 17px;
+  height: 17px;
 }
 
 .volumes input[type='range'] {
-  width: 10rem;
+  width: 100%;
+  margin: 0;
   accent-color: var(--accent);
   cursor: pointer;
 }
 
-/* As wide as the settings above, so the volumes line up with them. */
-.pause-overlay .volumes {
-  align-self: stretch;
-  min-width: 16rem;
+.volumes .percent {
   color: var(--muted);
-  font-size: 12px;
+  font: 600 12px var(--ui-font);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  opacity: 0;
+  transition: opacity 120ms;
 }
 
-.pause-overlay .volumes input[type='range'] {
-  width: 9rem;
-  margin: 0;
-}
-
-/* A bot's level as ten pips beside its choice (lobby.ts). */
-.seats .pips {
-  display: inline-flex;
-  gap: 2px;
-  margin-left: auto;
-  margin-right: 0.5rem;
-}
-
-.seats .pips i {
-  width: 4px;
-  height: 10px;
-  background: var(--edge);
-}
-
-.seats .pips i.on {
-  background: var(--accent);
+.volumes .volume:hover .percent,
+.volumes .volume.dragging .percent {
+  opacity: 1;
 }
 
 /* The awards in the summary (awards.ts): up to three cards in a row, each in its player's
@@ -5656,6 +5750,38 @@ body.hud-wildwest .embers i {
   opacity: 1;
 }
 
+/* A picture still being made shows its place, a light passing over it, rather than an empty
+   card (2026-10-28); still under reduced motion. */
+.look-gallery .card img:not(.ready) {
+  opacity: 1;
+  background: linear-gradient(
+      100deg,
+      var(--surface-3) 35%,
+      color-mix(in srgb, var(--accent) 16%, var(--surface-3)) 50%,
+      var(--surface-3) 65%
+    )
+    0 0 / 300% 100%;
+  animation: picture-wait 1.6s linear infinite;
+}
+
+@keyframes picture-wait {
+  from {
+    background-position: 100% 0;
+  }
+  to {
+    background-position: 0 0;
+  }
+}
+
+body.reduced-motion .look-gallery .card img:not(.ready) {
+  animation: none;
+}
+
+/* More cards below: the last row fades out (looks.ts). */
+.look-gallery .cards.more {
+  mask-image: linear-gradient(to bottom, #000 calc(100% - 3rem), transparent);
+}
+
 /* The hovered card's picture, playing over its still (galleryLive.ts), placed by script. */
 .look-gallery .card canvas.live {
   position: absolute;
@@ -5810,7 +5936,9 @@ body.reduced-motion .look-gallery .card img {
 }
 
 .tournament-setup .range .dash {
+  padding: 0 0.15rem;
   color: var(--muted);
+  font-size: 12px;
 }
 
 .tournament-setup .note {
@@ -6906,6 +7034,12 @@ body.reduced-motion .ui-choice.switch button::after {
   border-radius: 0 var(--radius-s) var(--radius-s) 0;
 }
 
+/* Disabled, not hidden, where no server answers (menu.ts): the window keeps its shape. */
+.menu .join-row input:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
 /* The seats as cards (PLAN §11 item 4, MS3), edged in the colour each will play in. */
 .menu .seats {
   display: grid;
@@ -6983,6 +7117,50 @@ body.reduced-motion .ui-choice.switch button::after {
   animation: window-in 220ms ease-out;
 }
 
+/* Small motions in the menus (2026-10-28), none under reduced motion: the main button pressed
+   in, a seat the table has just gained sliding in (`addedSeats`), and a setting another one
+   changed glowing a moment (`nudgedSettings`). */
+.menu button.primary:active:not(:disabled) {
+  transform: scale(0.97);
+  filter: brightness(0.95);
+}
+
+@keyframes seat-in {
+  from {
+    opacity: 0;
+    transform: translateX(14px);
+  }
+}
+
+.menu .seats li.entering {
+  animation: seat-in 240ms ease-out both;
+}
+
+@keyframes setting-nudged {
+  0%,
+  100% {
+    background: transparent;
+  }
+
+  25% {
+    background: color-mix(in srgb, var(--accent) 22%, transparent);
+  }
+}
+
+.menu .settings label.nudged {
+  border-radius: var(--radius-s);
+  animation: setting-nudged 1.1s ease-out;
+}
+
+body.reduced-motion .menu button.primary:active:not(:disabled) {
+  transform: none;
+}
+
+body.reduced-motion .menu .seats li.entering,
+body.reduced-motion .menu .settings label.nudged {
+  animation: none;
+}
+
 .how-to-play .panel,
 .look-gallery .panel {
   animation: panel-in 160ms ease-out;
@@ -7027,7 +7205,9 @@ body.reduced-motion #menu-corner {
   transition: none;
 }
 
-@media (max-width: 860px) {
+/* Only where there is room beside the widest window, the lobby's 58rem: below that it lay over
+   the looks' panel at 1024×640 (2026-10-28). */
+@media (max-width: 1240px) {
   #menu-corner {
     display: none;
   }

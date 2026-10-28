@@ -8,7 +8,6 @@ import {
   lookName,
   lookOptions,
   LookRotation,
-  stepLook,
 } from './looks.js';
 
 /** A source that walks through the given values, again and again. */
@@ -24,15 +23,12 @@ describe('choosing a look', () => {
     expect(chooseLook('build', ['nonsense'], 'flat')).toBe('flat');
   });
 
-  it('offers the styles by name, alphabetically, then random, and steps round both ends', () => {
+  it('offers the styles by name, alphabetically, then random', () => {
     const options = lookOptions('combat');
     expect(options.at(-1)).toBe('random');
     const names = options.slice(0, -1).map((o) => lookName(o));
     expect(names).toEqual([...names].sort((a, b) => a.localeCompare(b)));
     expect(new Set(options.slice(0, -1))).toEqual(new Set(stylesFor('combat')));
-    expect(stepLook('combat', 'random', 1)).toBe(options[0]);
-    expect(stepLook('combat', options[0]!, -1)).toBe('random');
-    expect(stepLook('combat', options[0]!, 1)).toBe(options[1]);
   });
 });
 

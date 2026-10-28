@@ -377,11 +377,12 @@ sender's seat**, so a client cannot act for someone else.
   by somebody who then drops holds until anyone resumes. Offline, the local match is not
   advanced.
 - Rooms are found by a short code from an alphabet chosen to avoid ambiguous characters,
-  or from **the open games browser** in the menu: rooms are **public by default**, listed
-  while being set with a seat free, and a **Public / Private switch beside Play** decides as
-  the table is made — a private room is joined by its code alone, which is how to play
-  alone undisturbed. The menu polls `/api/rooms` over plain HTTP every few seconds (it has
-  no socket open), and hides the list without a server or on another protocol. A room
+  or from **the open games browser** in the menu: every room is **public**, listed while
+  being set with a seat free — the switch for a private one was taken out (the user's,
+  2026-10-28: the game is served only among friends, and a room leaves the list once its
+  match starts or it is full); `&private=1` keeps one unlisted for tests. The menu polls
+  `/api/rooms` over plain HTTP every few seconds (it has no socket open); without a server or
+  on another protocol the list says so and the room code's Join is disabled, not hidden. A room
   that filled or started before a Join from the list lands says so, back in the menu,
   whose list is fresh as it opens.
 - **One lobby for online and offline.** The lobby is one screen (`lobbyMarkup`) fed by a
@@ -567,8 +568,8 @@ the round's gain beside it, and a green or red arrow for a place won or lost; in
 banner's own ink, inside its crossing, adding no time.
 
 **Choosing the looks** (`looks.ts`, ARCHIVE 12b) scales to many styles: in the menu each
-look is its picture and name between two arrows, which step through the styles in place,
-and the picture opens **the gallery** — every style's picture as a card, a switch at the
+look is a card — its picture, its name and a Change chip — and a click on it opens **the
+gallery** (the arrows stepping in place are gone, 2026-10-28) — every style's picture as a card, a switch at the
 top saying whether a click chooses the building or the combat look, each card badged with
 the look it is chosen for. The styles are in alphabetical order by name, so a new one finds
 its place, and **Random** comes last, a die for its picture: **a new style at every
@@ -1685,7 +1686,7 @@ every resolution against an independent search, not only on unit pictures.
 
 **Where to start (2026-10-28).** The latest release is **v0.9.22** (2026-10-28, protocol 33,
 recording format 4). Item 3, the performance plan, is finished, its leftovers measured and the worthwhile ones built
-(ARCHIVE 14zc–14zi, 14zo). Item 4, the UI polish, is done (ARCHIVE 14zr–14zt). Next: item 2's last tower, once the users have decided which (ARCHIVE 14zm). The styles' own music's chance is the player's choice in Options (ARCHIVE 14zn). Every feature up to v0.9.16 has been tested and approved by the users (2026-10-27).
+(ARCHIVE 14zc–14zi, 14zo). Item 4, the UI polish, is done (ARCHIVE 14zr–14zt), and item 5, the menus reviewed (ARCHIVE 15j), but for the end screen's review, a session of its own. Next: item 2's last tower, once the users have decided which (ARCHIVE 14zm). The styles' own music's chance is the player's choice in Options (ARCHIVE 14zn). Every feature up to v0.9.16 has been tested and approved by the users (2026-10-27).
 Up to **v0.8.3**: the game and online play, bots as skill levels and personalities, the styles
 with their corner pieces, random looks every round, English and German, the desktop app, UPnP,
 the balance soak and the rendering work (ARCHIVE 12h–12v), the refactoring (12w) and stronger
@@ -1795,7 +1796,14 @@ fit (ARCHIVE 12z), its remaining steps dropped (the user's decision, 2026-10-14;
      (off under Reduced motion).
    - **MS4 — The look in the menus — done** (ARCHIVE 14zy, 14zz): Medium per window by the
      rotation, the in-match panels at Medium, and the look's corner piece in the screen's
-     corner. Still to be tried in play: whether a new look at every window distracts.
+     corner. A new look at every window is fine, as it is (the user's, 2026-10-28).
+
+5. **The menus reviewed — done** (2026-10-28, ARCHIVE 15j): a review of every menu window from
+   screenshots, its changes approved or answered by the user and built — every room public,
+   the looks as cards to click, one settings column for Options and the pause menu with a
+   speaker on each volume, Sit here in the lobby, no seed and no level pips, the Credits folded,
+   and small motions; tested and approved by the user. Open: **the end screen**, to be reviewed in a session of its own (the
+   user's); the online-only states (the open games listed, a room's code) with the real server.
 
 Only open work is kept here. Finished packages move to `ARCHIVE.md` under their old
 numbers — 11.1 scoring, 11.7 team mode, 11.8 the visual pass, 11.9 the themes, 11.10 the

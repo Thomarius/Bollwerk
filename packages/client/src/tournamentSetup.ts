@@ -17,7 +17,7 @@ import {
 import { escape } from './html.js';
 import { withIcon } from './icons.js';
 import { t } from './i18n.js';
-import { levelPips, rangeOptions, specialsSwitch, towerFace } from './lobby.js';
+import { rangeOptions, specialsSwitch, towerFace } from './lobby.js';
 import { dieSvg } from './towerIcons.js';
 import { preferredSpecials } from './towers.js';
 
@@ -205,7 +205,10 @@ function numbers(min: number, max: number): number[] {
   return Array.from({ length: max - min + 1 }, (_, i) => min + i);
 }
 
-/** A range as two choices, "from – to"; `off`, kept in place but disabled. */
+/**
+ * A range as two choices joined by the word "to": a dash between two steppers read as a third
+ * minus (2026-10-28). `off`, kept in place but disabled.
+ */
 function rangeRow(
   id: string,
   label: string,
@@ -218,7 +221,7 @@ function rangeRow(
     const select = choice(`${id}-${which}`, `${label}: ${word}`, all, range[which], String, 'step');
     return off ? select.replace('<select ', '<select disabled ') : select;
   };
-  return `<label${off ? ' class="off"' : ''}>${label}<span class="range">${end('min', t('tournament.from'))}<span class="dash">–</span>${end('max', t('tournament.to'))}</span></label>`;
+  return `<label${off ? ' class="off"' : ''}>${label}<span class="range">${end('min', t('tournament.from'))}<span class="dash">${t('tournament.to')}</span>${end('max', t('tournament.to'))}</span></label>`;
 }
 
 /**
@@ -249,7 +252,7 @@ function teamRows(form: TournamentForm, hostName: string): string {
     .map(
       (bot, i) =>
         `<li class="seat bot">${mateTower(form, bot, i)}<input class="mate-name who" data-mate="${i}" type="text" maxlength="16" value="${escape(bot.name)}" aria-label="${escape(t('tournament.mateAria', { n: i + 2 }))}" />` +
-        `${levelPips(bot.level)}<select class="mate-level" data-mate="${i}" data-ui="step" aria-label="${escape(t('tournament.mateLevelAria', { n: i + 2 }))}">${rangeOptions(MIN_LEVEL, MAX_LEVEL, bot.level)}</select></li>`,
+        `<select class="mate-level" data-mate="${i}" data-ui="step" aria-label="${escape(t('tournament.mateLevelAria', { n: i + 2 }))}">${rangeOptions(MIN_LEVEL, MAX_LEVEL, bot.level)}</select></li>`,
     )
     .join('');
   // Above the teammates, what they are: bots, set here, whose seats friends may take.
