@@ -10581,3 +10581,16 @@ hundred milliseconds, which crashed it within 3 to 15 resizes.
   one book and only one drawn again at the new size; both tests fail on the old code.
 - Checked: three runs of a minute's resizing, about 600 resizes through many wipes, no error;
   the board whole once settled.
+
+## 15b. v0.9.19 (2026-10-28)
+
+Since v0.9.18: the menus' new look from the mockup the user approved — Inter and Rubik,
+rounded panels, button tiers, icons and our own hover texts (14zv); every few-option choice
+as buttons, a stepper or a switch (14zw); the menu in two columns with its looks as cards,
+the seats as cards and windows fading in (14zx); every window in the next of the game's
+looks at Medium, the pause menu and the summary at Medium in the match's look, and the
+look's corner piece in the screen's corner (14zy, 14zz) — whether a new look at every
+window distracts is for the users to try. And a crash fixed: the window resized during a
+banner's wipe, full screen left among other ways, stopped the match (15a). The game itself
+is unchanged: protocol 32 and recording format 4 as v0.9.18, so the two play together and
+its recordings replay.

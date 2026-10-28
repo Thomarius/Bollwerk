@@ -174,7 +174,7 @@ Full detail in PLAN.md §1. The parts that surprise people:
 
 ## Status
 
-**Done** (2026-10-28; the latest release **v0.9.18**, 2026-10-28, protocol 32, recording format 4,
+**Done** (2026-10-28; the latest release **v0.9.19**, 2026-10-28, protocol 32, recording format 4,
 which a test session needs the server rebuilt and every page reloaded for):
 
 - **The menus' new look, MS1: foundations** (ARCHIVE 14zv, 2026-10-28, PLAN §11 item 4, from a

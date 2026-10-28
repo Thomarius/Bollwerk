@@ -1683,7 +1683,7 @@ every resolution against an independent search, not only on unit pictures.
 
 ## 11. Open work
 
-**Where to start (2026-10-28).** The latest release is **v0.9.18** (2026-10-28, protocol 32,
+**Where to start (2026-10-28).** The latest release is **v0.9.19** (2026-10-28, protocol 32,
 recording format 4). Item 3, the performance plan, is finished, its leftovers measured and the worthwhile ones built
 (ARCHIVE 14zc–14zi, 14zo). Item 4, the UI polish, is done (ARCHIVE 14zr–14zt). Next: item 2's last tower, once the users have decided which (ARCHIVE 14zm). The styles' own music's chance is the player's choice in Options (ARCHIVE 14zn). Every feature up to v0.9.16 has been tested and approved by the users (2026-10-27).
 Up to **v0.8.3**: the game and online play, bots as skill levels and personalities, the styles
@@ -1719,7 +1719,8 @@ Chocolate's shine on every island, the enclosure counted once in combat (14zi). 
 (14zl): the desktop app's link online by Cloudflare's tunnel, the firewall reported, and a splash
 while the portable app unpacks (14zk). **v0.9.17** (14zp): the styles' own music the player's
 choice (14zn), and the performance plan's leftovers (14zo). **v0.9.18** (14zu): How to play in sections
-(14zq) and the UI polish, in the match, the menu and the lobby (14zr–14zt).
+(14zq) and the UI polish, in the match, the menu and the lobby (14zr–14zt). **v0.9.19** (15b): the
+menus' new look (14zv–14zz) and a crash on a resize during a wipe fixed (15a).
 
 Tournament mode is finished: its play-testing round, T8, closed with everything working
 (ARCHIVE 13m). The bots' planning is off the page's thread in local matches, measured and felt (ARCHIVE
