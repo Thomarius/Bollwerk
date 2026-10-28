@@ -598,8 +598,9 @@ button svg.icon {
 }
 
 /* The menu's Options (options.ts): its rows as the menu's own were, in Credits' panel. */
+/* Wide enough for every choice in a row of buttons, German's longest among them. */
 .how-to-play.options .panel {
-  width: min(24rem, 90vw);
+  width: min(31rem, 94vw);
   align-items: stretch;
 }
 
@@ -5692,9 +5693,18 @@ body.reduced-motion .look-gallery .card img {
 /* A range as two choices with a dash between. */
 .tournament-setup .range {
   display: flex;
-  gap: 0.4rem;
+  flex: none;
+  gap: 0.3rem;
   align-items: center;
-  width: 12rem;
+}
+
+/* Two steppers side by side, each compact, so the pair fits beside its label. */
+.tournament-setup .range .choice.step button {
+  width: 1.9rem;
+}
+
+.tournament-setup .range .choice.step output {
+  min-width: 1.6rem;
 }
 
 .tournament-setup .range select {
@@ -6510,4 +6520,161 @@ body.reduced-motion .look-gallery .card img {
   left: auto;
   right: 0;
   transform: none;
+}
+
+/* Choices in sight (choices.ts, PLAN §11 item 4, MS2): the select hidden behind a row of
+   buttons, a stepper or a switch, in the panels' dress, the accent marking what is chosen. */
+select.replaced {
+  display: none;
+}
+
+.choice {
+  display: inline-flex;
+  flex: none;
+  align-items: stretch;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-s);
+  background: var(--field);
+  font-family: var(--ui-font);
+}
+
+.choice button,
+.menu .choice button,
+.how-to-play .choice button {
+  display: inline-flex;
+  width: auto;
+  min-height: 0;
+  margin: 0;
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  font: 600 13px/1 var(--ui-font);
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    background 120ms,
+    color 120ms;
+}
+
+.choice button:disabled,
+.menu .choice button:disabled {
+  color: var(--faint);
+  cursor: default;
+}
+
+/* A row of a few: every option in sight, the chosen one raised. */
+.choice.seg {
+  gap: 2px;
+  padding: 3px;
+}
+
+.choice.seg button,
+.menu .choice.seg button,
+.how-to-play .choice.seg button {
+  align-items: center;
+  justify-content: center;
+  min-width: 2.2rem;
+  padding: 0.45rem 0.7rem;
+  border-radius: 7px;
+}
+
+.choice.seg button:hover:not(.on, :disabled),
+.menu .choice.seg button:hover:not(.on, :disabled) {
+  border-color: transparent;
+  background: transparent;
+  color: var(--ink);
+}
+
+.choice.seg button.on,
+.menu .choice.seg button.on,
+.how-to-play .choice.seg button.on {
+  background: var(--surface-3);
+  color: var(--accent);
+  box-shadow: 0 1px 3px rgb(0 0 0 / 40%);
+  cursor: default;
+}
+
+/* A number, a step at a time either way. */
+.choice.step {
+  overflow: hidden;
+}
+
+.choice.step button,
+.menu .choice.step button {
+  align-items: center;
+  justify-content: center;
+  width: 2.3rem;
+  min-height: 2.3rem;
+  padding: 0;
+  font-size: 17px;
+}
+
+.choice.step button:hover:not(:disabled),
+.menu .choice.step button:hover:not(:disabled) {
+  border-color: transparent;
+  background: var(--surface-3);
+  color: var(--accent);
+}
+
+.choice.step output {
+  display: grid;
+  min-width: 2.6rem;
+  padding: 0 0.3rem;
+  place-items: center;
+  color: var(--ink);
+  font: 600 14px var(--ui-font);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* On or off. */
+.choice.switch {
+  border: none;
+  background: none;
+}
+
+.choice.switch button,
+.menu .choice.switch button {
+  position: relative;
+  width: 3rem;
+  height: 1.7rem;
+  min-height: 0;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--field);
+}
+
+.choice.switch button::after {
+  content: '';
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: calc(1.7rem - 8px);
+  height: calc(1.7rem - 8px);
+  border-radius: 50%;
+  background: var(--muted);
+  transition: transform 150ms;
+}
+
+.choice.switch button:hover:not(:disabled),
+.menu .choice.switch button:hover:not(:disabled) {
+  border-color: var(--accent);
+  background: var(--field);
+}
+
+.choice.switch button.on,
+.menu .choice.switch button.on,
+.menu .choice.switch button.on:hover {
+  border-color: transparent;
+  background: var(--accent);
+}
+
+.choice.switch button.on::after {
+  background: var(--on-accent);
+  transform: translateX(1.3rem);
+}
+
+body.reduced-motion .choice.switch button::after {
+  transition: none;
 }

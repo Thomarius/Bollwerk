@@ -162,16 +162,16 @@ function tableControls(view: LobbyView, isHost: boolean): string {
   return `
     <div class="settings">
       <label data-tip="${escape(t('lobby.teamsTitle'))}">${t('lobby.teams')}
-        <select id="team-size" aria-label="${t('lobby.teamSize')}">${options(teamSizesFor(view), teamSize, teamName)}</select>
+        <select id="team-size" data-ui="step" aria-label="${t('lobby.teamSize')}">${options(teamSizesFor(view), teamSize, teamName)}</select>
       </label>
       <label>${t('lobby.players')}
-        <select id="player-count" aria-label="${t('lobby.players')}">${options(counts, view.playerCount)}</select>
+        <select id="player-count" data-ui="step" aria-label="${t('lobby.players')}">${options(counts, view.playerCount)}</select>
       </label>
       <label data-tip="${escape(t('lobby.roundsTitle'))}">${t('lobby.rounds')}
-        <select id="max-rounds" aria-label="${t('lobby.rounds')}">${rangeOptions(min, max, maxRounds)}</select>
+        <select id="max-rounds" data-ui="step" aria-label="${t('lobby.rounds')}">${rangeOptions(min, max, maxRounds)}</select>
       </label>
       <label data-tip="${escape(t('lobby.livesTitle'))}">${t('lobby.lives')}
-        <select id="lives" aria-label="${t('lobby.lives')}">${rangeOptions(view.settingBounds.continues.min + 1, view.settingBounds.continues.max + 1, continues + 1)}</select>
+        <select id="lives" data-ui="seg" aria-label="${t('lobby.lives')}">${rangeOptions(view.settingBounds.continues.min + 1, view.settingBounds.continues.max + 1, continues + 1)}</select>
       </label>
       ${specialsSwitch(view.settings.specials)}
     </div>`;
@@ -182,7 +182,7 @@ export function specialsSwitch(on: boolean): string {
   const option = (value: boolean, label: string): string =>
     `<option value="${value ? 'on' : 'off'}"${value === on ? ' selected' : ''}>${label}</option>`;
   return `<label data-tip="${escape(t('lobby.specialsTitle'))}">${t('lobby.specials')}
-        <select id="specials" aria-label="${t('lobby.specials')}">${option(false, t('lobby.specialsOff'))}${option(true, t('lobby.specialsOn'))}</select>
+        <select id="specials" data-ui="switch" aria-label="${t('lobby.specials')}">${option(false, t('lobby.specialsOff'))}${option(true, t('lobby.specialsOn'))}</select>
       </label>`;
 }
 
@@ -301,9 +301,12 @@ function levelControl(
     return `<em class="tag level">${t('lobby.level', { n: level })}</em>${levelPips(level)}`;
   }
   const person = withPerson ? `<option value="">${t('lobby.youPlay')}</option>` : '';
-  return `${levelPips(level)}<select ${attributes} aria-label="${label_}">${person}${LEVELS.map(
+  // A bot's level a stepper showing its number beside the pips (`choices.ts`); the host's own
+  // seat, a person or a level, stays a list.
+  const ui = withPerson ? '' : ' data-ui="step"';
+  return `${levelPips(level)}<select ${attributes}${ui} aria-label="${label_}">${person}${LEVELS.map(
     (n) =>
-      `<option value="${n}"${n === level ? ' selected' : ''}>${t('lobby.level', { n })}</option>`,
+      `<option value="${n}"${withPerson ? '' : ` data-short="${n}"`}${n === level ? ' selected' : ''}>${t('lobby.level', { n })}</option>`,
   ).join('')}</select>`;
 }
 

@@ -181,7 +181,9 @@ which a test session needs the server rebuilt and every page reloaded for):
   mockup the user approved, `packages/client/mockup/menus.html`): Inter and Rubik bundled, the
   panels rounded and solid where stacked, three button tiers, icons (`icons.ts`), our own hover
   texts (`data-tip`) for the browser's `title`, the font licences in the Credits and `assets/fonts/`.
-  MS2 (controls), MS3 (layouts) and MS4 (each window in the next look, at Medium) are next.
+  MS2 (ARCHIVE 14zw): every few-option `<select>` shown as buttons, a stepper or a switch
+  (`choices.ts`, `data-ui`), the select kept hidden as the choice. MS3 (layouts) and MS4 (each
+  window in the next look, at Medium) are next.
 
 - **UI polish, UP1: in the match** (ARCHIVE 14zr, 2026-10-28, PLAN §11 item 4): "You are
   here" clear of the castles, "opening" for round 0, the pause menu as a column, the corner's

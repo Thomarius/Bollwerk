@@ -99,8 +99,10 @@ describe('lobby', () => {
 
   it('offers each bot seat Level 1 to Level 10, set to its level', () => {
     const html = lobbyMarkup(view({ bots: [5, 2, 8, 10] }));
-    expect(rows(html)[1]).toContain('<option value="2" selected>Level 2</option>');
-    expect(rows(html)[3]).toContain('<option value="10" selected>Level 10</option>');
+    expect(rows(html)[1]).toContain('<option value="2" data-short="2" selected>Level 2</option>');
+    expect(rows(html)[3]).toContain(
+      '<option value="10" data-short="10" selected>Level 10</option>',
+    );
     const picker = (rows(html)[1] as string).match(/<select class="bot-select"[\s\S]*?<\/select>/);
     expect(picker?.[0].match(/<option /g)).toHaveLength(10);
     // A guest sees the level, not a choice.

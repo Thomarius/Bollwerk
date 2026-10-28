@@ -178,13 +178,14 @@ function choice<T extends string | number>(
   values: readonly T[],
   selected: T,
   name: (value: T) => string,
+  ui: 'seg' | 'step' | 'switch',
 ): string {
   const items = values
     .map(
       (v) => `<option value="${v}"${v === selected ? ' selected' : ''}>${escape(name(v))}</option>`,
     )
     .join('');
-  return `<select id="${id}" aria-label="${escape(label)}">${items}</select>`;
+  return `<select id="${id}" data-ui="${ui}" aria-label="${escape(label)}">${items}</select>`;
 }
 
 function numbers(min: number, max: number): number[] {
@@ -199,7 +200,7 @@ function rangeRow(
   values: { min: number; max: number },
 ): string {
   const all = numbers(values.min, values.max);
-  return `<label>${label}<span class="range">${choice(`${id}-min`, `${label}: ${t('tournament.from')}`, all, range.min, String)}<span class="dash">–</span>${choice(`${id}-max`, `${label}: ${t('tournament.to')}`, all, range.max, String)}</span></label>`;
+  return `<label>${label}<span class="range">${choice(`${id}-min`, `${label}: ${t('tournament.from')}`, all, range.min, String, 'step')}<span class="dash">–</span>${choice(`${id}-max`, `${label}: ${t('tournament.to')}`, all, range.max, String, 'step')}</span></label>`;
 }
 
 /** The team's seats: the host first, then each teammate with a name and a level. */
@@ -209,7 +210,7 @@ function teamRows(form: TournamentForm, hostName: string): string {
     .map(
       (bot, i) =>
         `<li class="seat bot"><input class="mate-name who" data-mate="${i}" type="text" maxlength="16" value="${escape(bot.name)}" aria-label="${escape(t('tournament.mateAria', { n: i + 2 }))}" />` +
-        `${levelPips(bot.level)}<select class="mate-level" data-mate="${i}" aria-label="${escape(t('tournament.mateLevelAria', { n: i + 2 }))}">${rangeOptions(MIN_LEVEL, MAX_LEVEL, bot.level)}</select></li>`,
+        `${levelPips(bot.level)}<select class="mate-level" data-mate="${i}" data-ui="step" aria-label="${escape(t('tournament.mateLevelAria', { n: i + 2 }))}">${rangeOptions(MIN_LEVEL, MAX_LEVEL, bot.level)}</select></li>`,
     )
     .join('');
   // Above the teammates, what they are: bots, set here, whose seats friends may take.
@@ -247,7 +248,7 @@ export function setupMarkup(form: TournamentForm, hostName: string): string {
         <section class="setup-team">
           <h2>${t('tournament.yourTeam')}</h2>
           <div class="settings">
-            <label>${t('tournament.teamSize')}${choice('team-size', t('tournament.teamSize'), numbers(sizes.min, sizes.max), form.teamSize, (n) => (n === 1 ? t('tournament.alone') : t('lobby.teamsOf', { n })))}</label>
+            <label>${t('tournament.teamSize')}${choice('team-size', t('tournament.teamSize'), numbers(sizes.min, sizes.max), form.teamSize, (n) => (n === 1 ? t('tournament.alone') : t('lobby.teamsOf', { n })), 'step')}</label>
             ${teamName}
           </div>
           ${teamRows(form, hostName)}
@@ -255,17 +256,17 @@ export function setupMarkup(form: TournamentForm, hostName: string): string {
         <section class="setup-shape">
           <h2>${t('tournament.shape')}</h2>
           <div class="settings">
-            <label>${t('tournament.length')}${choice('length', t('tournament.length'), TOURNAMENT_LENGTHS, form.length, (l) => t(`tournament.length.${l}`))}</label>
+            <label>${t('tournament.length')}${choice('length', t('tournament.length'), TOURNAMENT_LENGTHS, form.length, (l) => t(`tournament.length.${l}`), 'seg')}</label>
             <p class="note road">${escape(t('tournament.road', { n: road }))}</p>
-            <label>${t('tournament.league')}${choice('league', t('tournament.league'), ['yes', 'no'] as const, form.league ? 'yes' : 'no', (v) => (v === 'yes' ? t('tournament.withLeague') : t('tournament.noLeague')))}</label>
-            <label>${t('tournament.knockout')}${choice('knockout', t('tournament.knockout'), ['single', 'double'] as const, form.knockout, (v) => (v === 'single' ? t('tournament.single') : t('tournament.double')))}</label>
+            <label>${t('tournament.league')}${choice('league', t('tournament.league'), ['yes', 'no'] as const, form.league ? 'yes' : 'no', (v) => (v === 'yes' ? t('tournament.withLeague') : t('tournament.noLeague')), 'seg')}</label>
+            <label>${t('tournament.knockout')}${choice('knockout', t('tournament.knockout'), ['single', 'double'] as const, form.knockout, (v) => (v === 'single' ? t('tournament.single') : t('tournament.double')), 'seg')}</label>
             ${finalNote}
             ${matchTeams}
             ${rangeRow('levels', t('tournament.opponents'), form.levels, { min: MIN_LEVEL, max: levelTop })}
-            <label>${t('tournament.archnemesis')}${choice('archnemesis', t('tournament.archnemesis'), ['no', 'yes'] as const, form.archnemesis ? 'yes' : 'no', (v) => (v === 'yes' ? t('tournament.archOn') : t('tournament.archOff')))}</label>
+            <label>${t('tournament.archnemesis')}${choice('archnemesis', t('tournament.archnemesis'), ['no', 'yes'] as const, form.archnemesis ? 'yes' : 'no', (v) => (v === 'yes' ? t('tournament.archOn') : t('tournament.archOff')), 'switch')}</label>
             ${archName}
-            <label>${t('tournament.rounds')}<select id="max-rounds" aria-label="${t('tournament.rounds')}">${rangeOptions(rounds.min, rounds.max, form.maxRounds)}</select></label>
-            <label>${t('lobby.lives')}<select id="lives" aria-label="${t('lobby.lives')}">${rangeOptions(continues.min + 1, continues.max + 1, form.continues + 1)}</select></label>
+            <label>${t('tournament.rounds')}<select id="max-rounds" data-ui="step" aria-label="${t('tournament.rounds')}">${rangeOptions(rounds.min, rounds.max, form.maxRounds)}</select></label>
+            <label>${t('lobby.lives')}<select id="lives" data-ui="seg" aria-label="${t('lobby.lives')}">${rangeOptions(continues.min + 1, continues.max + 1, form.continues + 1)}</select></label>
             ${specialsSwitch(form.specials)}
           </div>
         </section>

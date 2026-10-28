@@ -2,6 +2,7 @@ import { defaultConfigBundle } from '@bollwerk/config';
 import { createTournament } from '@bollwerk/tournament';
 
 import { app, audio, showError } from './app.js';
+import { enhanceChoices } from './choices.js';
 import { t } from './i18n.js';
 import type { Common } from './menu.js';
 import {
@@ -43,6 +44,7 @@ export function openNewTournament(common: Common, exits: TournamentExits): void 
   let form = lastForm ?? defaultForm(names);
   const draw = (): void => {
     app!.innerHTML = setupMarkup(form, common.name);
+    enhanceChoices(app!);
   };
   const change = (next: Partial<TournamentForm>): void => {
     form = reshapeForm(form, next, names);

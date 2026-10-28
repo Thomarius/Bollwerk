@@ -9,6 +9,7 @@ import {
   t,
 } from './i18n.js';
 import { escape } from './html.js';
+import { enhanceChoices, syncChoices } from './choices.js';
 import { withIcon } from './icons.js';
 import { graphicsOptions, parseGraphics, saveGraphics, storedGraphics } from './graphics.js';
 import { motionOptions, parseMotion, saveMotion, storedMotion } from './motion.js';
@@ -135,10 +136,10 @@ export class PauseControls {
       `<div class="panel"><strong>${t('pause.title')}</strong><p class="who"></p>` +
       `<button class="resume">${t('pause.resume')}</button>` +
       `<div class="settings">` +
-      `<label data-tip="${escape(t('settings.graphicsTitle'))}">${t('settings.graphics')} <select class="graphics">${graphicsOptions()}</select></label>` +
-      `<label>${t('settings.motion')} <select class="motion">${motionOptions()}</select></label>` +
-      `<label data-tip="${escape(t('settings.styleMusicTitle'))}">${t('settings.styleMusic')} <select class="style-music">${styleMusicOptions()}</select></label>` +
-      `<label>${t('settings.language')} <select class="language">${languageOptions()}</select></label>` +
+      `<label data-tip="${escape(t('settings.graphicsTitle'))}">${t('settings.graphics')} <select class="graphics" data-ui="seg">${graphicsOptions()}</select></label>` +
+      `<label>${t('settings.motion')} <select class="motion" data-ui="seg">${motionOptions()}</select></label>` +
+      `<label data-tip="${escape(t('settings.styleMusicTitle'))}">${t('settings.styleMusic')} <select class="style-music" data-ui="seg">${styleMusicOptions()}</select></label>` +
+      `<label>${t('settings.language')} <select class="language" data-ui="seg">${languageOptions()}</select></label>` +
       `</div>` +
       // The buttons in a row of their own under the settings and volumes, which are a column
       // as the menu's Options lays them out: in one long row they nearly filled the screen.
@@ -180,6 +181,7 @@ export class PauseControls {
       saveStyleMusic(parseStyleMusic(styleMusic.value) ?? 'always');
     });
     this.showSound();
+    enhanceChoices(this.overlay);
 
     this.overlay.querySelector('.resume')?.addEventListener('click', () => {
       actions.click();
@@ -251,6 +253,8 @@ export class PauseControls {
       this.overlay.querySelector<HTMLSelectElement>('.graphics')!.value = storedGraphics();
       this.overlay.querySelector<HTMLSelectElement>('.motion')!.value = storedMotion();
       this.overlay.querySelector<HTMLSelectElement>('.style-music')!.value = storedStyleMusic();
+      // Set by script, so shown afresh.
+      syncChoices(this.overlay);
       this.showSound();
       refreshVolumeSliders(this.sliders, this.actions.volumes);
       this.leaving.classList.remove('confirm');

@@ -14,6 +14,7 @@ import { type ServerMessage } from '@bollwerk/protocol';
 import { Progress, parseSave, type Save } from '@bollwerk/tournament';
 
 import { lobbyMarkup, type LobbyTab, type LobbyView } from './lobby.js';
+import { enhanceChoices } from './choices.js';
 import { joinRefusedNotice, refusalText } from './browser.js';
 import { t } from './i18n.js';
 import { motionReduced } from './motion.js';
@@ -86,6 +87,8 @@ export function drawLobby(view: LobbyView, on: LobbyHandlers): void {
     seatColours: preview.colourOfSeat.map((c) => c.base),
     seatShapes: preview.shapeOfSeat,
   });
+  // The table's few-option choices as buttons, steppers and switches (`choices.ts`).
+  enhanceChoices(app!);
   // The map in the colours of the build look chosen in the menu, which is how the match
   // will open — the default's, when it is drawn at random as the match starts;
   // the seat cards keep the shared colours, which read on the lobby's panel.

@@ -1784,7 +1784,7 @@ fit (ARCHIVE 12z), its remaining steps dropped (the user's decision, 2026-10-14;
    - **MS1 — Foundations — done** (ARCHIVE 14zv): the fonts, their licence named in the Credits and the README; the
      panel, the button tiers, icons and our own hover texts in `style.css`; applied to the
      menu, Options, How to play and the Credits.
-   - **MS2 — Controls**: button rows, steppers and switches in place of every `<select>` with
+   - **MS2 — Controls — done** (ARCHIVE 14zw): button rows, steppers and switches in place of every `<select>` with
      a few choices — the lobby, Options, the pause menu, the tournament's setup.
    - **MS3 — Layouts and motion**: the menu in two columns with the looks as cards, the lobby's
      seat cards, the tournament screens in the same panels, windows fading between each other

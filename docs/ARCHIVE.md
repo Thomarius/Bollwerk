@@ -10451,3 +10451,24 @@ every screen there is a `.menu` (the menu, the lobby, the tournament screens) or
 - Seen in a browser in English and German: the menu, Options, the Credits, How to play, the
   lobby, the tournament's setup and its screen between matches, the gallery, the corner in a
   match. Three tests updated for the attribute and the class.
+
+## 14zw. The menus' new look, MS2: choices in sight (2026-10-28, PLAN §11 item 4)
+
+Every `<select>` of a few options in the lobby, Options, the pause menu and the tournament's
+setup is shown as what it is (`choices.ts`): a row of buttons (`data-ui="seg"`: Lives, the
+language, Graphics, Motion, Style music, a tournament's length, league and knockout), a
+stepper (`"step"`: the team size, the players, the rounds, each bot's level beside its pips
+showing its number by `data-short`, a tournament's ranges and teammates' levels) or a switch
+(`"switch"`, off then on: Special towers, the archnemesis). One click where a list took two.
+
+- **The select stays, hidden, and is still the choice**: a click sets it and fires its
+  `change`, so every handler, the room's messages and the tests are as they were; a select set
+  by a script, as the pause menu's are as it opens, is shown afresh by `syncChoices`. Each
+  screen builds its controls after drawing (`enhanceChoices`), the lobby at every redraw.
+- **Left as lists**: who sits in a seat, and who plays the host's own seat — a person or a
+  level — whose options are of two kinds.
+- **Fitted**: a tournament's ranges, two steppers beside their label, made compact; Options
+  widened for German's longest choice, "Etwa jedes zweite Mal".
+- Seen in a browser in English and German, and clicked: the rounds, the lives, the towers' switch,
+  a bot's level and the player count each changed the table as their lists did, and Graphics
+  in Options was stored. Two lobby tests updated for `data-short`.

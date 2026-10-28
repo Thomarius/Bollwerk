@@ -1,5 +1,6 @@
 import { graphicsOptions, parseGraphics, saveGraphics, storedGraphics } from './graphics.js';
 import { escape } from './html.js';
+import { enhanceChoices } from './choices.js';
 import { isLanguage, languageOptions, saveLanguage, setLanguage, t } from './i18n.js';
 import { motionOptions, parseMotion, saveMotion, storedMotion } from './motion.js';
 import {
@@ -37,10 +38,10 @@ export function openOptions(actions: OptionsActions): void {
     root.innerHTML = `
       <div class="panel">
         <h2>${t('menu.options')}</h2>
-        <label>${t('settings.language')} <select class="language">${languageOptions()}</select></label>
-        <label data-tip="${escape(t('settings.graphicsTitle'))}">${t('settings.graphics')} <select class="graphics">${graphicsOptions()}</select></label>
-        <label>${t('settings.motion')} <select class="motion">${motionOptions()}</select></label>
-        <label data-tip="${escape(t('settings.styleMusicTitle'))}">${t('settings.styleMusic')} <select class="style-music">${styleMusicOptions()}</select></label>
+        <label>${t('settings.language')} <select class="language" data-ui="seg">${languageOptions()}</select></label>
+        <label data-tip="${escape(t('settings.graphicsTitle'))}">${t('settings.graphics')} <select class="graphics" data-ui="seg">${graphicsOptions()}</select></label>
+        <label>${t('settings.motion')} <select class="motion" data-ui="seg">${motionOptions()}</select></label>
+        <label data-tip="${escape(t('settings.styleMusicTitle'))}">${t('settings.styleMusic')} <select class="style-music" data-ui="seg">${styleMusicOptions()}</select></label>
         <button class="close quiet">${t('credits.close')}</button>
       </div>`;
     root.querySelector('.motion')?.closest('label')?.after(volumeSliders(actions.audio));
@@ -73,6 +74,8 @@ export function openOptions(actions: OptionsActions): void {
       click();
       saveStyleMusic(parseStyleMusic(styleMusic.value) ?? 'always');
     });
+    // Each choice a row of buttons in front of its select, now the selects stand as stored.
+    enhanceChoices(root);
     root.querySelector('.close')?.addEventListener('click', close);
   };
 
