@@ -10557,3 +10557,27 @@ wheel, the Pirates' galleon, the Wild West's locomotive and the rest.
 - **The mockup removed**, as agreed, with MS4 done.
 - Seen in a browser: every style's piece on one sheet, whole and recognisable, and the menu and
   the lobby each with their look's.
+
+## 15a. A resize during a wipe crashed the match (2026-10-28)
+
+Found by the user: full screen left by its button during a phase's banner, and the match
+stopped on "Cannot read properties of null (reading 'length')" in Pixi's
+`buildContextBatches`. Not the full screen's own: any resize of the window during a wipe,
+in v0.9.17 as now — reproduced by resizing a watched match with Random looks every few
+hundred milliseconds, which crashed it within 3 to 15 resizes.
+
+- **The cause**: a `StampBook` draws its shapes for the tile size and, when it changes,
+  destroyed the old ones a microtask later (`clear`), on the belief that every stamp is placed
+  again in the same frame. A look coming in is readied out of sight a layer at a time under a
+  budget (`prepare`, `prime`), so its effects could be drawn at the new size — retiring the
+  old shapes — while its terrain and territory still showed stamps of them; on screen at the
+  wipe, Pixi rendered a `Graphics` whose context was destroyed. Found by a probe walking the
+  stage for such drawings as the render threw: in the build look's terrain, territory and
+  effects, in Medieval, Wild West and Opera alike.
+- **The fix** (`stamps.ts`): every `Stamps` is known to the module, and a book retiring shapes
+  first gives any stamp still showing one an empty shape and hides it, until its layer places
+  it again — which a layer made stale by the resize does before it is next seen — and only
+  then destroys them; so too as a book is thrown away. Tested as it happens, two layers from
+  one book and only one drawn again at the new size; both tests fail on the old code.
+- Checked: three runs of a minute's resizing, about 600 resizes through many wipes, no error;
+  the board whole once settled.

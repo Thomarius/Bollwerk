@@ -17,6 +17,10 @@ export class Stamps {
   readonly container = new Container();
   private used = 0;
 
+  constructor() {
+    live.add(this);
+  }
+
   begin(): void {
     this.used = 0;
   }
@@ -64,9 +68,37 @@ export class Stamps {
   }
 
   destroy(): void {
+    live.delete(this);
     // The contexts belong to their `StampBook`, which a `Graphics` given one never destroys.
     release(this.container);
   }
+}
+
+/** Every `Stamps` in use, so a book retiring its shapes can find the stamps still showing them. */
+const live = new Set<Stamps>();
+
+/** What a stamp shows once its shape is retired and until it is placed again: nothing. */
+const EMPTY = new GraphicsContext();
+
+/**
+ * Takes retired shapes off every stamp still showing one, hidden and given nothing to show
+ * until it is placed again, and only then destroys them. A shape destroyed under a stamp
+ * still on the stage threw in Pixi's render (`buildContextBatches`, reading a destroyed
+ * context's instructions): the window resized during a banner's wipe, a look coming in had
+ * its effects drawn at the new tile size, which retired the old shapes, while its terrain and
+ * territory still showed stamps of them, and it came on screen so (found by the user leaving
+ * full screen mid-wipe; ARCHIVE 15a).
+ */
+function retire(old: ReadonlySet<GraphicsContext>): void {
+  for (const stamps of live) {
+    for (const child of stamps.container.children) {
+      const g = child as Graphics;
+      if (!old.has(g.context)) continue;
+      g.context = EMPTY;
+      g.visible = false;
+    }
+  }
+  for (const c of old) c.destroy();
 }
 
 /**
@@ -94,17 +126,16 @@ export class StampBook {
   }
 
   private clear(tile: number): void {
-    // Not destroyed at once: a stamp may still show the old context until it is next placed.
-    const old = [...this.contexts.values()];
+    // Not at once: the stamps drawn again in this frame take the new shapes as they are placed,
+    // and only those left showing an old one — a layer not drawn again yet — are emptied.
+    const old = new Set(this.contexts.values());
     this.contexts.clear();
     this.tile = tile;
-    queueMicrotask(() => {
-      for (const c of old) c.destroy();
-    });
+    queueMicrotask(() => retire(old));
   }
 
   destroy(): void {
-    for (const c of this.contexts.values()) c.destroy();
+    retire(new Set(this.contexts.values()));
     this.contexts.clear();
   }
 }

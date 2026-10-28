@@ -639,6 +639,10 @@ its header but the simulation does not — so the server stamps each header with
 - **A bloomed layer blurs everything in it**, and each `BlurFilter` costs a screen-sized
   texture and its passes whatever it holds. Sharp cores go in an added layer never bloomed
   (Cyberpunk's `effectCore`), and blurs run at half resolution (ARCHIVE 12r).
+- **A `StampBook` retires its shapes when the tile size changes**, and a stamp not placed again
+  in that frame — a layer of a look readied out of sight, not yet drawn at the new size — would
+  show a destroyed context, which Pixi throws on (ARCHIVE 15a). `retire` empties and hides such
+  stamps first; a book's shape is only ever shown through `Stamps.place`, which is what lets it.
 - **`motionReduced()` is called per particle and per point**: it once read storage and built
   a media query at every call, 48 ms a frame in Opera. It is cached in `motion.ts`; anything
   else read that often must be too.
