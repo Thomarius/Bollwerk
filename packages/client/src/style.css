@@ -21,6 +21,35 @@
   --radius: 16px;
   --radius-s: 10px;
   --shadow: 0 24px 64px rgb(0 0 0 / 50%), 0 2px 8px rgb(0 0 0 / 35%);
+  /* What a look changes about a panel (PLAN §11 item 4, MS4): its edge, its glow over the
+     shadow, its headings' lettering — the base's own until a look is worn. */
+  --panel-edge: 1px solid var(--line);
+  --panel-shadow: var(--shadow);
+  --heading-font: var(--ui-display);
+}
+
+/* The menus in a look at Medium (menuLook.ts): its accent, its panels' edge and glow, its
+   lettering for headings and the main buttons, read from its HUD skin as the window opens. */
+body.looked .menu,
+body.looked .how-to-play,
+body.looked .look-gallery,
+body.looked .tower-menu,
+body.looked #corner {
+  --accent: var(--look-accent);
+  --on-accent: var(--look-on-accent);
+  --panel-edge: var(--look-edge);
+  --panel-shadow: var(--look-shadow);
+  --heading-font: var(--look-font, var(--ui-display));
+}
+
+/* In a match, the panels over it in the look on screen at Medium, as the menus are: the HUD's
+   skin is on the page then, so they take it straight from there. */
+body.in-match .how-to-play,
+body.in-match .look-gallery {
+  --accent: var(--panel-accent);
+  --on-accent: var(--panel-on-accent);
+  --panel-edge: var(--hud-box-edge);
+  --heading-font: var(--hud-font, var(--ui-display));
 }
 
 /* Outside a match, and the corner's switches always, in the menus' typeface. */
@@ -273,10 +302,10 @@ body.reduced-motion .embers {
   width: min(30rem, 90vw);
   height: fit-content;
   padding: 2rem;
-  border: 1px solid var(--line);
+  border: var(--panel-edge);
   border-radius: var(--radius);
   background: var(--surface);
-  box-shadow: var(--shadow);
+  box-shadow: var(--panel-shadow);
   backdrop-filter: blur(6px);
 }
 
@@ -288,17 +317,17 @@ body.reduced-motion .embers {
   width: min(24rem, 90vw);
   height: fit-content;
   padding: 2rem;
-  border: 1px solid var(--line);
+  border: var(--panel-edge);
   border-radius: var(--radius);
   background: var(--surface);
-  box-shadow: var(--shadow);
+  box-shadow: var(--panel-shadow);
   text-align: center;
 }
 
 .loading-screen h1 {
   margin: 0 0 0.6rem;
   color: var(--accent);
-  font-family: var(--ui-display);
+  font-family: var(--heading-font);
   font-weight: 600;
   letter-spacing: 0.04em;
 }
@@ -415,7 +444,7 @@ body.reduced-motion .embers {
 
 .menu h1 {
   margin: 0 0 0.75rem;
-  font-family: var(--ui-display);
+  font-family: var(--heading-font);
   font-size: 1.5rem;
   font-weight: 600;
   letter-spacing: 0.02em;
@@ -495,7 +524,7 @@ body.reduced-motion .embers {
   border-color: transparent;
   background: var(--accent);
   color: var(--on-accent);
-  font-family: var(--ui-display);
+  font-family: var(--heading-font);
   font-size: 1.1rem;
   letter-spacing: 0.03em;
 }
@@ -554,7 +583,7 @@ button svg.icon {
 .how-to-play.options h2 {
   margin: 0;
   color: var(--accent);
-  font-family: var(--ui-display);
+  font-family: var(--heading-font);
   font-size: 1.35rem;
   font-weight: 600;
   letter-spacing: 0.02em;
@@ -766,6 +795,10 @@ body {
   --hud-box-shadow: none;
   --hud-track: rgb(255 255 255 / 8%);
   --hud-on-accent: #0a0a12;
+  /* The accent on the menus' dark panels (PLAN §11 item 4, MS4): the skin's own, but where it
+     is dark, for its paper, a brighter one of the same hue with dark lettering on it. */
+  --panel-accent: var(--hud-accent);
+  --panel-on-accent: var(--hud-on-accent);
 }
 
 .bar {
@@ -1032,24 +1065,24 @@ body.reduced-motion .banner.summary {
 }
 
 /* The HUD lets clicks through to the board; the end screen's button has to take them. */
+/* The panels' secondary button (PLAN §11 item 4, MS4), beside Rematch where there is one. */
 .banner .leave {
   display: block;
+  min-height: 2.8rem;
   margin: 1rem auto 0;
   padding: 0.6rem 1.5rem;
-  border: 1px solid var(--accent);
-  background: transparent;
-  color: var(--accent);
-  font: inherit;
-  font-size: 13px;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-s);
+  background: var(--surface-2);
+  color: var(--ink);
+  font: 600 14px var(--ui-font);
   cursor: pointer;
   pointer-events: auto;
 }
 
 .banner .leave:hover {
-  background: var(--accent);
-  color: #0a0a12;
+  border-color: var(--accent);
+  background: var(--surface-3);
 }
 
 .crash {
@@ -2251,17 +2284,16 @@ body.hud-bricks #hud .roster .line .shape path {
 }
 
 .pause-overlay .panel {
-  padding: 1.5rem 3rem;
-  border: 1px solid var(--accent);
-  background: #0a0a12ee;
+  padding: 1.6rem 2.6rem;
   text-align: center;
 }
 
 .pause-overlay strong {
   display: block;
-  font-size: 1.5rem;
-  letter-spacing: 0.15em;
-  text-transform: uppercase;
+  font-family: var(--heading-font);
+  font-size: 1.6rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
   color: var(--accent);
 }
 
@@ -2271,20 +2303,20 @@ body.hud-bricks #hud .roster .line .shape path {
 }
 
 .pause-overlay .resume {
+  min-width: 12rem;
+  min-height: 2.8rem;
   padding: 0.6rem 1.5rem;
-  border: 1px solid var(--accent);
-  background: transparent;
-  color: var(--accent);
-  font: inherit;
-  font-size: 13px;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
+  border: none;
+  border-radius: var(--radius-s);
+  background: var(--accent);
+  color: var(--on-accent);
+  font: 600 1.05rem var(--heading-font);
+  letter-spacing: 0.03em;
   cursor: pointer;
 }
 
 .pause-overlay .resume:hover {
-  background: var(--accent);
-  color: #0a0a12;
+  filter: brightness(1.1);
 }
 
 .pause-overlay small {
@@ -2420,10 +2452,10 @@ body.reduced-motion .menu button.quiet.fresh {
   gap: 0.6rem;
   align-items: center;
   padding: 1.4rem 1.6rem 1.2rem;
-  border: 1px solid var(--line);
+  border: var(--panel-edge);
   border-radius: var(--radius);
   background: var(--surface-solid);
-  box-shadow: var(--shadow);
+  box-shadow: var(--panel-shadow);
 }
 
 .how-to-play canvas {
@@ -2633,7 +2665,7 @@ body.reduced-motion .menu button.quiet.fresh {
 }
 
 .menu .look-name {
-  font-family: var(--ui-display);
+  font-family: var(--heading-font);
   font-size: 1rem;
   font-weight: 600;
 }
@@ -2858,20 +2890,19 @@ body.reduced-motion .preparing .blocks i {
 }
 
 .pause-overlay button.quiet {
+  min-height: 2.3rem;
   padding: 0.35rem 0.9rem;
-  border: 1px solid var(--edge);
-  background: transparent;
-  color: var(--muted);
-  font: inherit;
-  font-size: 12px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-s);
+  background: var(--surface-2);
+  color: var(--ink);
+  font: 600 13px var(--ui-font);
   cursor: pointer;
 }
 
 .pause-overlay button.quiet:hover {
   border-color: var(--accent);
-  color: var(--accent);
+  background: var(--surface-3);
 }
 
 .pause-overlay .leave-match {
@@ -3053,21 +3084,24 @@ body.reduced-motion .preparing .blocks i {
 /* The HUD lets clicks through to the board; its buttons take them back, as Back to menu does. */
 .banner .rematch {
   pointer-events: auto;
-  padding: 0.6rem 1.4rem;
-  border: 1px solid var(--accent);
+  min-height: 2.8rem;
+  padding: 0.6rem 1.6rem;
+  border: none;
+  border-radius: var(--radius-s);
   background: var(--accent);
-  color: #0a0a12;
-  font: inherit;
-  font-size: 16px;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
+  color: var(--on-accent);
+  font: 600 1.05rem var(--heading-font);
+  letter-spacing: 0.03em;
   cursor: pointer;
 }
 
+.banner .rematch:hover:not(:disabled) {
+  filter: brightness(1.1);
+}
+
 .banner .rematch:disabled {
-  border-color: var(--edge);
-  background: transparent;
-  color: var(--muted);
+  background: var(--surface-2);
+  color: var(--faint);
   cursor: default;
 }
 
@@ -3218,8 +3252,22 @@ body.hud-chocolate #hud .counter {
    ink and accent, its lettering. Each redefines the page's own colours for what is inside
    it, so the rules written for them carry on unchanged. The summary's grey stays lifted
    toward the ink: on the board, the plain grey figures could not be read. */
+/* The pause menu and the summary at Medium (PLAN §11 item 4, MS4): the skin's accent, edge,
+   glow and heading lettering over the menus' base, not its box and ink throughout. */
 .banner.summary,
-.pause-overlay .panel,
+.pause-overlay .panel {
+  --accent: var(--panel-accent);
+  --on-accent: var(--panel-on-accent);
+  --heading-font: var(--hud-font, var(--ui-display));
+  border: var(--hud-box-edge);
+  border-radius: var(--radius);
+  background: var(--surface-solid);
+  box-shadow: var(--hud-glow-shadow, var(--shadow));
+  color: var(--ink);
+  font-family: var(--ui-font);
+  -webkit-font-smoothing: antialiased;
+}
+
 .watching,
 .ready-count,
 .place-icons {
@@ -3232,6 +3280,16 @@ body.hud-chocolate #hud .counter {
   box-shadow: var(--hud-box-shadow);
   color: var(--hud-ink);
   font-family: var(--hud-font);
+}
+
+/* The panels' shadow with the skin's glow over it, for the skins that glow; the rest keep the
+   base's (`--hud-glow-shadow` unset). */
+body.hud-neon,
+body.hud-electric,
+body.hud-halloween,
+body.hud-undersea,
+body.hud-cartoon {
+  --hud-glow-shadow: var(--hud-box-shadow), 0 24px 64px rgb(0 0 0 / 50%);
 }
 
 /* Medieval's and Night's box is see-through over the board, which the panels must not be. */
@@ -3273,25 +3331,26 @@ body.hud-wildwest {
   color: #ff6a70;
 }
 
-.pause-overlay .settings select {
-  background: var(--hud-box);
-  color: var(--hud-ink);
-}
-
 .score-chart .axis {
   stroke: color-mix(in srgb, var(--hud-ink) 30%, transparent);
 }
 
 /* Lettering on the accent: dark on every skin's bright accent, light on Parchment's ink. */
-.banner .leave:hover,
-.banner .rematch,
-.pause-overlay .resume:hover,
 .watching button:hover {
   color: var(--hud-on-accent);
 }
 
 body.hud-ink {
   --hud-on-accent: #efe3c2;
+  /* 1.9:1 on the dark panels as the ink it is; 6.7:1 as this rust. */
+  --panel-accent: #d98a5c;
+  --panel-on-accent: #0a0a12;
+}
+
+/* Wild West's brick red, 2.9:1 on the dark panels; 6.3:1 as this. */
+body.hud-wildwest {
+  --panel-accent: #e8775c;
+  --panel-on-accent: #0a0a12;
 }
 
 /* ---------- the big timer in each look (PLAN 11.19 Z2) ---------- */
@@ -5453,10 +5512,10 @@ body.hud-wildwest .embers i {
   width: min(56rem, 94vw);
   max-height: 90vh;
   padding: 1.4rem 1.6rem;
-  border: 1px solid var(--line);
+  border: var(--panel-edge);
   border-radius: var(--radius);
   background: var(--surface-solid);
-  box-shadow: var(--shadow);
+  box-shadow: var(--panel-shadow);
   color: var(--ink);
   font: 14px var(--ui-font);
   -webkit-font-smoothing: antialiased;
@@ -5501,7 +5560,7 @@ body.hud-wildwest .embers i {
 
 .look-gallery h2 {
   margin: 0;
-  font-family: var(--ui-display);
+  font-family: var(--heading-font);
   font-size: 1.35rem;
   font-weight: 600;
   letter-spacing: 0.02em;
@@ -5661,7 +5720,7 @@ body.hud-wildwest .embers i {
   border-radius: var(--radius-s);
   background: var(--hud-accent, var(--accent));
   color: var(--hud-on-accent, var(--on-accent));
-  font-family: var(--ui-display);
+  font-family: var(--heading-font);
   font-size: 1.05rem;
   font-weight: 600;
 }
@@ -5720,11 +5779,11 @@ body.reduced-motion .look-gallery .card img {
 }
 
 /* Two steppers side by side, each compact, so the pair fits beside its label. */
-.tournament-setup .range .choice.step button {
+.tournament-setup .range .ui-choice.step button {
   width: 1.9rem;
 }
 
-.tournament-setup .range .choice.step output {
+.tournament-setup .range .ui-choice.step output {
   min-width: 1.6rem;
 }
 
@@ -6060,7 +6119,7 @@ body.reduced-motion .look-gallery .card img {
 }
 
 .banner.summary .leave {
-  font-size: 16px;
+  font-size: 15px;
 }
 
 /* The knockout's tree, in a window over the tournament (tournamentBracketView.ts). */
@@ -6319,17 +6378,27 @@ body.reduced-motion .look-gallery .card img {
   width: min(52rem, 94vw);
   max-height: 92vh;
   overflow-y: auto;
-  padding: 1.2rem 1.4rem;
-  border: 1px solid var(--accent);
-  background: #0a0a12;
+  padding: 1.4rem 1.6rem;
+  border: var(--panel-edge);
+  border-radius: var(--radius);
+  background: var(--surface-solid);
+  box-shadow: var(--panel-shadow);
   color: var(--ink);
+  font: 14px var(--ui-font);
+  -webkit-font-smoothing: antialiased;
+  animation: panel-in 160ms ease-out;
+}
+
+body.reduced-motion .tower-menu .panel {
+  animation: none;
 }
 
 .tower-menu h2 {
   margin: 0;
-  font-size: 1.2rem;
-  letter-spacing: 0.15em;
-  text-transform: uppercase;
+  font-family: var(--heading-font);
+  font-size: 1.35rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
   color: var(--accent);
 }
 
@@ -6359,10 +6428,11 @@ body.reduced-motion .look-gallery .card img {
   justify-content: center;
   gap: 0.5rem;
   padding: 0.45rem 0.8rem;
-  border: 1px solid color-mix(in srgb, var(--muted) 45%, transparent);
-  background: transparent;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-s);
+  background: var(--surface-2);
   color: var(--ink);
-  letter-spacing: 0.04em;
+  font-weight: 600;
 }
 
 .tower-menu .random:hover {
@@ -6386,9 +6456,11 @@ body.reduced-motion .look-gallery .card img {
   align-items: center;
   gap: 0.3rem;
   padding: 0.7rem 0.4rem 0.55rem;
-  border: 1px solid color-mix(in srgb, var(--muted) 45%, transparent);
-  background: transparent;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-s);
+  background: var(--surface-2);
   color: var(--ink);
+  transition: border-color 120ms;
 }
 
 .tower-menu .card:hover {
@@ -6415,7 +6487,7 @@ body.reduced-motion .look-gallery .card img {
 .tower-menu .card .name {
   max-width: 100%;
   font-size: 13px;
-  letter-spacing: 0.04em;
+  font-weight: 600;
   /* A long German word broken at its soft hyphen — "Schnellfeuer-kanone" ran past its card, and
      the browser's own hyphenation broke it as "Schnellfeu-erkanone" — and anywhere at all where
      a name has none. */
@@ -6433,20 +6505,30 @@ body.reduced-motion .look-gallery .card img {
   margin-right: 0.3rem;
   color: var(--muted);
   text-transform: uppercase;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.12em;
   font-size: 12px;
+  font-weight: 600;
 }
 
+/* The two costs as one strip, the chosen one raised, as the menus' rows of buttons. */
 .tower-menu .cost {
   flex: 1;
+  min-height: 2.3rem;
   padding: 0.45rem 0.8rem;
-  border: 1px solid color-mix(in srgb, var(--muted) 50%, transparent);
-  background: transparent;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-s);
+  background: var(--field);
   color: var(--muted);
+  font-weight: 600;
+}
+
+.tower-menu .cost:hover:not(:disabled, .chosen) {
+  color: var(--ink);
 }
 
 .tower-menu .cost.chosen {
   border-color: var(--accent);
+  background: var(--surface-3);
   color: var(--accent);
 }
 
@@ -6475,8 +6557,9 @@ body.reduced-motion .look-gallery .card img {
 .tower-menu .preview .label {
   color: var(--muted);
   font-size: 12px;
+  font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.12em;
 }
 
 /* Pixi sizes its canvas in pixels; the panel's width, at the show's shape, wins over that. */
@@ -6484,6 +6567,7 @@ body.reduced-motion .look-gallery .card img {
   width: 100% !important;
   height: auto !important;
   aspect-ratio: 448 / 160;
+  border-radius: var(--radius-s);
   background: #1c1d2b;
 }
 
@@ -6492,13 +6576,21 @@ body.reduced-motion .look-gallery .card img {
   justify-content: flex-end;
 }
 
+/* The panel's one way on, so the primary tier. */
 .tower-menu .done {
-  padding: 0.45rem 1.4rem;
-  border: 1px solid var(--accent);
-  background: transparent;
-  color: var(--accent);
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  min-height: 2.6rem;
+  padding: 0.5rem 2.2rem;
+  border: none;
+  border-radius: var(--radius-s);
+  background: var(--accent);
+  color: var(--on-accent);
+  font-family: var(--heading-font);
+  font-size: 1.05rem;
+  font-weight: 600;
+}
+
+.tower-menu .done:hover {
+  filter: brightness(1.1);
 }
 
 /* Hover texts (PLAN §11 item 4, MS1): `data-tip` on anything, shown at once above it, in
@@ -6549,7 +6641,7 @@ select.replaced {
   display: none;
 }
 
-.choice {
+.ui-choice {
   display: inline-flex;
   flex: none;
   align-items: stretch;
@@ -6559,9 +6651,9 @@ select.replaced {
   font-family: var(--ui-font);
 }
 
-.choice button,
-.menu .choice button,
-.how-to-play .choice button {
+.ui-choice button,
+.menu .ui-choice button,
+.how-to-play .ui-choice button {
   display: inline-flex;
   width: auto;
   min-height: 0;
@@ -6577,21 +6669,21 @@ select.replaced {
     color 120ms;
 }
 
-.choice button:disabled,
-.menu .choice button:disabled {
+.ui-choice button:disabled,
+.menu .ui-choice button:disabled {
   color: var(--faint);
   cursor: default;
 }
 
 /* A row of a few: every option in sight, the chosen one raised. */
-.choice.seg {
+.ui-choice.seg {
   gap: 2px;
   padding: 3px;
 }
 
-.choice.seg button,
-.menu .choice.seg button,
-.how-to-play .choice.seg button {
+.ui-choice.seg button,
+.menu .ui-choice.seg button,
+.how-to-play .ui-choice.seg button {
   align-items: center;
   justify-content: center;
   min-width: 2.2rem;
@@ -6599,16 +6691,16 @@ select.replaced {
   border-radius: 7px;
 }
 
-.choice.seg button:hover:not(.on, :disabled),
-.menu .choice.seg button:hover:not(.on, :disabled) {
+.ui-choice.seg button:hover:not(.on, :disabled),
+.menu .ui-choice.seg button:hover:not(.on, :disabled) {
   border-color: transparent;
   background: transparent;
   color: var(--ink);
 }
 
-.choice.seg button.on,
-.menu .choice.seg button.on,
-.how-to-play .choice.seg button.on {
+.ui-choice.seg button.on,
+.menu .ui-choice.seg button.on,
+.how-to-play .ui-choice.seg button.on {
   background: var(--surface-3);
   color: var(--accent);
   box-shadow: 0 1px 3px rgb(0 0 0 / 40%);
@@ -6616,12 +6708,12 @@ select.replaced {
 }
 
 /* A number, a step at a time either way. */
-.choice.step {
+.ui-choice.step {
   overflow: hidden;
 }
 
-.choice.step button,
-.menu .choice.step button {
+.ui-choice.step button,
+.menu .ui-choice.step button {
   align-items: center;
   justify-content: center;
   width: 2.3rem;
@@ -6630,14 +6722,14 @@ select.replaced {
   font-size: 17px;
 }
 
-.choice.step button:hover:not(:disabled),
-.menu .choice.step button:hover:not(:disabled) {
+.ui-choice.step button:hover:not(:disabled),
+.menu .ui-choice.step button:hover:not(:disabled) {
   border-color: transparent;
   background: var(--surface-3);
   color: var(--accent);
 }
 
-.choice.step output {
+.ui-choice.step output {
   display: grid;
   min-width: 2.6rem;
   padding: 0 0.3rem;
@@ -6649,13 +6741,13 @@ select.replaced {
 }
 
 /* On or off. */
-.choice.switch {
+.ui-choice.switch {
   border: none;
   background: none;
 }
 
-.choice.switch button,
-.menu .choice.switch button {
+.ui-choice.switch button,
+.menu .ui-choice.switch button {
   position: relative;
   width: 3rem;
   height: 1.7rem;
@@ -6666,7 +6758,7 @@ select.replaced {
   background: var(--field);
 }
 
-.choice.switch button::after {
+.ui-choice.switch button::after {
   content: '';
   position: absolute;
   top: 3px;
@@ -6678,25 +6770,25 @@ select.replaced {
   transition: transform 150ms;
 }
 
-.choice.switch button:hover:not(:disabled),
-.menu .choice.switch button:hover:not(:disabled) {
+.ui-choice.switch button:hover:not(:disabled),
+.menu .ui-choice.switch button:hover:not(:disabled) {
   border-color: var(--accent);
   background: var(--field);
 }
 
-.choice.switch button.on,
-.menu .choice.switch button.on,
-.menu .choice.switch button.on:hover {
+.ui-choice.switch button.on,
+.menu .ui-choice.switch button.on,
+.menu .ui-choice.switch button.on:hover {
   border-color: transparent;
   background: var(--accent);
 }
 
-.choice.switch button.on::after {
+.ui-choice.switch button.on::after {
   background: var(--on-accent);
   transform: translateX(1.3rem);
 }
 
-body.reduced-motion .choice.switch button::after {
+body.reduced-motion .ui-choice.switch button::after {
   transition: none;
 }
 
@@ -6719,10 +6811,10 @@ body.reduced-motion .choice.switch button::after {
 
 .menu.home > section {
   padding: 2rem;
-  border: 1px solid var(--line);
+  border: var(--panel-edge);
   border-radius: var(--radius);
   background: var(--surface);
-  box-shadow: var(--shadow);
+  box-shadow: var(--panel-shadow);
   backdrop-filter: blur(6px);
 }
 

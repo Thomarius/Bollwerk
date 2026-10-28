@@ -13,13 +13,26 @@ export function windowKind(element: Element | null): string | null {
   return classes.filter((c) => c !== 'entering').join(' ');
 }
 
-/** Marks each window of a new kind written into `root`, which the stylesheet fades in. */
-export function watchWindows(root: HTMLElement): void {
+/**
+ * Marks each window of a new kind written into `root`, which the stylesheet fades in, and
+ * says so to `arrived` — with null as something other than a window takes its place, a
+ * match. Called before the page is drawn again, so a window never shows in the last one's look.
+ */
+export function watchWindows(
+  root: HTMLElement,
+  arrived: (kind: string | null) => void = () => {},
+): void {
   let shown: string | null = null;
   new MutationObserver(() => {
     const element = root.firstElementChild;
+    // A passing screen — "Setting the table…" while a server is sought — is no window: the
+    // window it leads to is the next one, and takes the next look.
+    if (element?.classList.contains('interim') === true) return;
     const kind = windowKind(element);
-    if (kind !== null && kind !== shown) element?.classList.add('entering');
+    if (kind !== shown) {
+      if (kind !== null) element?.classList.add('entering');
+      arrived(kind);
+    }
     shown = kind;
   }).observe(root, { childList: true });
 }

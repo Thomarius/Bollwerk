@@ -1,7 +1,6 @@
 import { defaultConfigBundle, validateConfigBundle } from '@bollwerk/config';
 
 import { Audio } from './audio.js';
-import { watchWindows } from './windowEntry.js';
 import { onLanguageChange, setLanguage, startingLanguage, t } from './i18n.js';
 import { withIcon } from './icons.js';
 import { installBackdrop } from './decor.js';
@@ -22,8 +21,6 @@ if (problems.length > 0) {
 export const app = document.querySelector<HTMLElement>('#app');
 
 if (!app) throw new Error('missing #app');
-
-watchWindows(app);
 
 // The language before anything is written: `&lang=` for screenshots, else the saved
 // choice, else the browser's own if the game speaks it (PLAN 11.20).

@@ -1789,8 +1789,10 @@ fit (ARCHIVE 12z), its remaining steps dropped (the user's decision, 2026-10-14;
    - **MS3 — Layouts and motion — done** (ARCHIVE 14zx): the menu in two columns with the looks as cards, the lobby's
      seat cards, the tournament screens in the same panels, windows fading between each other
      (off under Reduced motion).
-   - **MS4 — The look in the menus**: Medium per window by the rotation, and the style's
-     corner piece in the menu's corner.
+   - **MS4 — The look in the menus — built but the corner piece** (ARCHIVE 14zy): Medium per
+     window by the rotation, the in-match panels at Medium. Open: the style's corner piece in
+     the menu's corner, drawn by the match's scene beside the board and so needing a scene of
+     its own per style; the mockup removed once it is settled.
 
 Only open work is kept here. Finished packages move to `ARCHIVE.md` under their old
 numbers — 11.1 scoring, 11.7 team mode, 11.8 the visual pass, 11.9 the themes, 11.10 the

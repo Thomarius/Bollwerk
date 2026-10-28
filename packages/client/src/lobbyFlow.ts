@@ -344,7 +344,7 @@ export async function openLobby(
         )
       : null;
   const playerCount = asked ?? remembered?.playerCount ?? DEFAULT_PLAYERS;
-  app!.innerHTML = `<div class="menu"><h1>${t('menu.settingTable')}</h1><p class="note">${t('menu.lookingForServer')}</p></div>`;
+  app!.innerHTML = `<div class="menu interim"><h1>${t('menu.settingTable')}</h1><p class="note">${t('menu.lookingForServer')}</p></div>`;
   const connection = new ServerConnection(ServerConnection.defaultUrl());
   const answered = new Promise<ServerMessage | null>((resolve) => {
     connection.onMessage((message) => {

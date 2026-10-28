@@ -17,7 +17,7 @@ export function enhanceChoices(root: ParentNode): void {
     select.dataset.enhanced = '1';
     const kind = select.dataset.ui as 'seg' | 'step' | 'switch';
     const control = document.createElement('span');
-    control.className = `choice ${kind}`;
+    control.className = `ui-choice ${kind}`;
     control.setAttribute('role', 'group');
     const label = select.getAttribute('aria-label');
     if (label !== null) control.setAttribute('aria-label', label);
@@ -33,7 +33,7 @@ export function enhanceChoices(root: ParentNode): void {
 export function syncChoices(root: ParentNode): void {
   for (const select of root.querySelectorAll<HTMLSelectElement>('select[data-enhanced="1"]')) {
     const control = select.nextElementSibling;
-    if (control instanceof HTMLElement && control.classList.contains('choice')) {
+    if (control instanceof HTMLElement && control.classList.contains('ui-choice')) {
       show(select, control, select.dataset.ui as 'seg' | 'step' | 'switch');
     }
   }

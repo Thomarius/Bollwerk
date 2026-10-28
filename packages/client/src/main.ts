@@ -6,7 +6,9 @@ import { defaultConfigBundle, defaultTeams, MAX_LEVEL, MIN_LEVEL } from '@bollwe
 import { PHASES, type Phase } from '@bollwerk/sim';
 
 import { t } from './i18n.js';
-import { showError, params } from './app.js';
+import { app, showError, params } from './app.js';
+import { nextMenuStyle, wearMenuLook } from './menuLook.js';
+import { watchWindows } from './windowEntry.js';
 import { preferredStyles, chosenSeed, storedName } from './prefs.js';
 import type { Setup } from './session.js';
 import {
@@ -36,6 +38,10 @@ import { showLoading } from './loading.js';
  * This file only starts the page: `app.ts` sets it up, and the query decides whether the
  * menu, a lobby or a match comes first.
  */
+
+// Every window outside a match in the next of the game's looks, the dress taken off as a match
+// begins, which dresses itself (PLAN §11 item 4, MS4).
+watchWindows(app!, (kind) => wearMenuLook(kind === null ? null : nextMenuStyle(preferredStyles())));
 
 if (params.get('icons') === 'sheet') {
   // Every style's cannon icon side by side, for judging them (`iconSheet.ts`).

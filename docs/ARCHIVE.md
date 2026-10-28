@@ -10493,3 +10493,45 @@ showing its number by `data-short`, a tournament's ranges and teammates' levels)
 - Seen in a browser in English and German and on an 800-pixel window: the lobby marked as it
   arrived and not again when a choice redrew it, the menu marked again on leaving. A test for
   the window's kind; the lobby tests' pattern for a seat's row widened for its colour.
+
+## 14zy. The menus' new look, MS4: each window in a look (2026-10-28, PLAN §11 item 4)
+
+The user's design, to be tried in play for distraction: every new window outside a match in
+the next of the game's looks (`menuLook.ts`), the build look and the combat look in turn as
+the banners bring them in a match, Random drawn from the favourites by the game's own
+`LookRotation`, none again until all have been shown.
+
+- **Medium**, the user's choice from the mockup: a look brings its skin's accent, its panels'
+  edge and glow over the base's shadow, and its lettering for headings and the main buttons —
+  read from the HUD skin by wearing its class on the page for one synchronous instant, so no
+  skin class lingers outside a match to meet the HUD's own, and set as `--look-*` on the page
+  with `body.looked`. The panels' edge, shadow and headings became variables a look sets
+  (`--panel-edge`, `--panel-shadow`, `--heading-font`). Tested: the turn of the two looks,
+  a skin's dress and a skin with no edge, glow or lettering of its own.
+- **Which windows**: the window watcher (`windowEntry.ts`) says when one of a new kind
+  arrives — the menu, a table, a tournament's setup, its screens; a lobby redrawn at a choice
+  is the same window, and a panel over a window (Options, How to play, the Credits, the
+  gallery) keeps its look. A passing screen ("Setting the table…" while a server is sought) is
+  `interim` and no window: counted as one, it took the look its lobby should have had. As a
+  match begins the dress comes off; the match dresses itself.
+- **In a match at Medium too**: the pause menu and the end-of-match summary had worn the
+  skin's whole dress, its box and ink and lettering; now they are the menus' base with the
+  skin's accent, edge, glow and headings, as are How to play and the gallery opened from the
+  pause menu. Resume and Rematch the main buttons; Back to menu beside them. The HUD's own
+  pieces — the ready count, the cannons beside the cursor, "Watching" — keep the skin whole.
+- **Readable accents**: on the dark panels two skins' accents, made for paper, failed —
+  Parchment's ink at 1.9:1, Wild West's brick at 2.9:1, where every other is 5.8:1 or more.
+  Each has a brighter one of the same hue for the panels (`--panel-accent`, 6.7 and 6.3:1)
+  with dark lettering on it; the HUD keeps its own.
+- **The tower menu, found broken by the user**: MS2's controls had taken the class `choice`,
+  which the tower menu already gave the box holding its cards, cost and text, so their rule
+  laid all of it out as one squeezed row and no name fitted its card. The controls' class is
+  `ui-choice` now. With it the tower menu in the menus' base, as the gallery is — its cards and
+  costs in the panels' dress, Done the main button, the window's look — and every tower's name,
+  in either language, on one line in the new typeface.
+- **Not done**: the style's corner piece in the menu's corner. The pieces are drawn by the
+  match's scene in the sea beside the board, so the menu would need a scene of its own per
+  style; left for the user to weigh.
+- Seen in a browser: under Random four windows in four looks, the lobby keeping its look at a
+  choice and Options its menu's, Parchment and Wild West as menu looks, and the pause menu
+  and the summary in Cyberpunk, Parchment, Cartoon and Wild West.

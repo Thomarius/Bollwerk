@@ -69,7 +69,7 @@ export async function playTournament(id: string, exits: TournamentExits): Promis
 async function ensureRoom(open: Open): Promise<void> {
   if (!open.online || open.room?.open === true) return;
   if (new Progress(open.save).status.kind !== 'playing') return;
-  app!.innerHTML = `<div class="menu"><h1>${t('tournament.openingRoom')}</h1><p class="note">${t('menu.lookingForServer')}</p></div>`;
+  app!.innerHTML = `<div class="menu interim"><h1>${t('tournament.openingRoom')}</h1><p class="note">${t('menu.lookingForServer')}</p></div>`;
   open.room = await TournamentRoom.open(open.save.settings.hostName, open.exits.isPublic);
   // No server: none will answer later either, so the tournament plays on here alone.
   if (open.room === null) open.online = false;
@@ -277,6 +277,6 @@ function playOnline(open: Open, room: TournamentRoom, progress: Progress): void 
       },
     ).catch((error: unknown) => showError(t('error.matchFailed'), error));
   };
-  app!.innerHTML = `<div class="menu"><h1>${t('tournament.starting')}</h1></div>`;
+  app!.innerHTML = `<div class="menu interim"><h1>${t('tournament.starting')}</h1></div>`;
   room.start();
 }

@@ -14,7 +14,7 @@ import './menus.css';
 import { defaultConfigBundle, type ArtLook, type ArtStyle } from '@bollwerk/config';
 
 import { installBackdrop } from '../src/decor.js';
-import { HUD_SKIN } from '../src/hud.js';
+import { HUD_SKIN } from '../src/skins.js';
 import { setLanguage, startingLanguage } from '../src/i18n.js';
 import {
   LookRotation,
