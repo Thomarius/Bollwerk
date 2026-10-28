@@ -2110,6 +2110,15 @@ body.hud-bricks #hud .roster .line .shape path {
   overflow-y: auto;
 }
 
+/* One size whatever the table (the user's, 2026-10-28): with the map's box fixed
+   (`PREVIEW_ASPECT`) the host's single table measured 735px at most team sizes, player counts
+   and settings, in both languages, and 768px at its tallest — six players in teams of two, the
+   host's seat a bot's, towers on, the seats then the longer column. This holds every table, a
+   guest's with its shorter settings too, at that. */
+.menu.lobby:not(.tournament-setup, .tournament-ending) {
+  min-height: min(48rem, 94vh);
+}
+
 .lobby-body {
   display: grid;
   grid-template-columns: minmax(0, 20rem) minmax(0, 1fr);
@@ -5751,6 +5760,13 @@ body.reduced-motion .look-gallery .card img {
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
 }
 
+/* One size whatever is chosen, as the lobby (the user's, 2026-10-28): measured over every team
+   size, length, league, knockout, teams a match, archnemesis and towers, in both languages, at
+   651 to 674px, the tallest a double elimination's note on its final. */
+.menu.lobby.tournament-setup {
+  min-height: min(42.125rem, 94vh);
+}
+
 @media (max-width: 760px) {
   .tournament-setup .lobby-body {
     grid-template-columns: minmax(0, 1fr);
@@ -5799,6 +5815,11 @@ body.reduced-motion .look-gallery .card img {
 
 .tournament-setup .note {
   margin: -0.35rem 0 0.75rem;
+}
+
+/* The archnemesis's name while there is none: kept in place, faded. */
+.tournament-setup .settings label.off {
+  opacity: 0.45;
 }
 
 .tournament-setup .seats {
@@ -6537,10 +6558,20 @@ body.reduced-motion .tower-menu .panel {
   cursor: default;
 }
 
+/* Every choice's text in one cell, only the chosen one seen: the cell is the longest's height. */
+.tower-menu .whats {
+  display: grid;
+}
+
 .tower-menu .what {
+  grid-area: 1 / 1;
   margin: 0;
-  min-height: 2.6em;
   line-height: 1.4;
+  visibility: hidden;
+}
+
+.tower-menu .what.on {
+  visibility: visible;
 }
 
 .tower-menu .what em {

@@ -71,8 +71,8 @@ language (not saved). `?tournament=new` and `?tournament=resume` open the tourna
 the lobby at eight seats — a room if a server answers, a local table if not —
 `?join=CODE` joins one, `&name=Bo` sets the name, `&seed=N` the map, `&private=1` makes
 the room private. The menu's Play (with its Public / Private switch), its list of open
-games and Join reach the same lobby, which sets the map, players, teams, bot levels and
-rounds.
+games and Join reach the same lobby, which sets the map, players, teams and bot levels; the
+rounds and lives are the config's, no longer offered in a lobby or a new tournament (2026-10-28).
 
 ## Layout
 
@@ -174,8 +174,14 @@ Full detail in PLAN.md §1. The parts that surprise people:
 
 ## Status
 
-**Done** (2026-10-28; the latest release **v0.9.20**, 2026-10-28, protocol 33, recording format 4,
+**Done** (2026-10-28; the latest release **v0.9.21**, 2026-10-28, protocol 33, recording format 4,
 which a test session needs the server rebuilt and every page reloaded for):
+
+- **Windows that keep their size** (ARCHIVE 15f, 2026-10-28, v0.9.21, the user's feedback): the
+  lobby, the tower menu and the new tournament one height whatever is chosen — the map in a box
+  of one shape (`PREVIEW_ASPECT`), every tower text stacked in one cell, rows disabled rather
+  than hidden; rounds and lives no longer offered, the config's 10 and 3; the archnemesis on by
+  default.
 
 - **A tournament's bots keep their towers** (ARCHIVE 15d, 2026-10-28, the user's design; protocol
   33, v0.9.20): fixed as the tournament is made, half the other teams one tower's and

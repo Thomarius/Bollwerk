@@ -83,13 +83,15 @@ export function defaultForm(names: NameSource): TournamentForm {
     teamName: names.team(),
     teamBots: [],
     levels: { min: 4, max: 6 },
-    archnemesis: false,
+    // On unless the host turns him away (the user's, 2026-10-28).
+    archnemesis: true,
     archName: t('tournament.archDefault'),
     length: 'medium',
     league: true,
     knockout: 'single',
     // Two to four teams a match: larger free-for-alls are offered, not the first thing met.
     matchTeams: { min: 2, max: 4 },
+    // The rules' rounds and lives, no longer offered here (the user's, 2026-10-28).
     maxRounds: bundle.ruleset.scoring.maxRounds ?? TOURNAMENT_LIMITS.maxRounds.max,
     continues: bundle.ruleset.elimination.continues,
     // As the host last set it, here or in a lobby.
@@ -203,15 +205,20 @@ function numbers(min: number, max: number): number[] {
   return Array.from({ length: max - min + 1 }, (_, i) => min + i);
 }
 
-/** A range as two choices, "from – to". */
+/** A range as two choices, "from – to"; `off`, kept in place but disabled. */
 function rangeRow(
   id: string,
   label: string,
   range: { min: number; max: number },
   values: { min: number; max: number },
+  off = false,
 ): string {
   const all = numbers(values.min, values.max);
-  return `<label>${label}<span class="range">${choice(`${id}-min`, `${label}: ${t('tournament.from')}`, all, range.min, String, 'step')}<span class="dash">–</span>${choice(`${id}-max`, `${label}: ${t('tournament.to')}`, all, range.max, String, 'step')}</span></label>`;
+  const end = (which: 'min' | 'max', word: string): string => {
+    const select = choice(`${id}-${which}`, `${label}: ${word}`, all, range[which], String, 'step');
+    return off ? select.replace('<select ', '<select disabled ') : select;
+  };
+  return `<label${off ? ' class="off"' : ''}>${label}<span class="range">${end('min', t('tournament.from'))}<span class="dash">–</span>${end('max', t('tournament.to'))}</span></label>`;
 }
 
 /**
@@ -254,20 +261,24 @@ function teamRows(form: TournamentForm, hostName: string): string {
 }
 
 export function setupMarkup(form: TournamentForm, hostName: string): string {
-  const { teamSize: sizes, maxRounds: rounds, continues } = TOURNAMENT_LIMITS;
+  const { teamSize: sizes } = TOURNAMENT_LIMITS;
   const teamName =
     form.teamSize > 1
       ? `<label>${t('tournament.teamName')}<input id="team-name" type="text" maxlength="16" value="${escape(form.teamName)}" /></label>`
       : '';
   const teamLimitsNow = matchTeamLimits(form.teamSize);
-  const matchTeams =
-    teamLimitsNow.max > teamLimitsNow.min
-      ? rangeRow('match-teams', t('tournament.matchTeams'), form.matchTeams, teamLimitsNow)
-      : `<p class="note">${escape(t('tournament.twoTeams', { n: form.teamSize }))}</p>`;
+  // Always there, disabled at 2 – 2 where the team size allows only two teams a match (teams
+  // of 3 and 4), so the column keeps its layout (the user's, 2026-10-28).
+  const matchTeams = rangeRow(
+    'match-teams',
+    t('tournament.matchTeams'),
+    form.matchTeams,
+    teamLimitsNow,
+    teamLimitsNow.max <= teamLimitsNow.min,
+  );
   const levelTop = form.archnemesis ? MAX_LEVEL - 1 : MAX_LEVEL;
-  const archName = form.archnemesis
-    ? `<label>${t('tournament.archName')}<input id="arch-name" type="text" maxlength="16" value="${escape(form.archName)}" /></label>`
-    : '';
+  // Always there, only disabled without him, so the panel keeps its size (the user's, 2026-10-28).
+  const archName = `<label${form.archnemesis ? '' : ' class="off"'}>${t('tournament.archName')}<input id="arch-name" type="text" maxlength="16" value="${escape(form.archName)}"${form.archnemesis ? '' : ' disabled'} /></label>`;
   const road = unbeatenRoad(form, bundle.tournament);
   const finalNote =
     form.knockout === 'double' && form.matchTeams.min > 2
@@ -305,8 +316,6 @@ export function setupMarkup(form: TournamentForm, hostName: string): string {
             ${rangeRow('levels', t('tournament.opponents'), form.levels, { min: MIN_LEVEL, max: levelTop })}
             <label>${t('tournament.archnemesis')}${choice('archnemesis', t('tournament.archnemesis'), ['no', 'yes'] as const, form.archnemesis ? 'yes' : 'no', (v) => (v === 'yes' ? t('tournament.archOn') : t('tournament.archOff')), 'switch')}</label>
             ${archName}
-            <label>${t('tournament.rounds')}<select id="max-rounds" data-ui="step" aria-label="${t('tournament.rounds')}">${rangeOptions(rounds.min, rounds.max, form.maxRounds)}</select></label>
-            <label>${t('lobby.lives')}<select id="lives" data-ui="seg" aria-label="${t('lobby.lives')}">${rangeOptions(continues.min + 1, continues.max + 1, form.continues + 1)}</select></label>
             ${specialsSwitch(form.specials)}
           </div>
         </section>

@@ -10662,3 +10662,34 @@ heading, a seat's tower a small icon before its name, teams and players as rows 
 tournament's team size too (15c). Protocol 33, since a tournament's table now carries its bots'
 towers: a v0.9.19 page and a v0.9.20 server, or the other way round, do not play together.
 Recording format 4 as before, so recordings replay.
+
+## 15f. Windows that keep their size, rounds and lives left to the config (2026-10-28)
+
+The user's feedback after v0.9.20, each point as they asked:
+
+- **"Ada watches a bot play their seat"** taken out of the lobby: the You | Bot switch says it.
+- **The lobby keeps one size.** It had grown and shrunk with every choice, mostly through the
+  map, drawn at the column's width and its own height — 141 to 275px. The map is now drawn in a
+  box of one shape (`PREVIEW_ASPECT`, 0.97, the tallest map being four players' 52x50 tiles at
+  0.962 over every table and seeds 0–39), centred on open sea at the same whole-number scale as
+  before; and the panel holds a minimum height. Measured in a browser over all 288 tables
+  (team size, players, towers, You | Bot) in both languages at three window sizes: 768px each.
+- **The tower menu keeps one size.** Every choice's text is in the page, stacked in one grid
+  cell with only the chosen one visible, so the cell is the longest's height in either
+  language — 751px for the person's menu, 790px for a bot's with Random, whatever is chosen.
+- **Rounds and lives no longer offered**, in the lobby or a new tournament: 10 and 3, the
+  config's (`scoring.maxRounds`, `elimination.continues`), were never changed in play. The
+  remembered table no longer keeps them, so an older save's values are dropped rather than
+  played unseen; `&rounds=` stays for testing.
+- **The new tournament keeps one size**: the archnemesis on by default, his name always shown
+  and disabled without him, and Teams a match always shown, disabled at 2 – 2 for teams of
+  three and four, in place of a note saying so. A minimum height of 674px holds the one line
+  left that comes and goes, the double elimination's note on its final; measured over 576
+  combinations of its choices in both languages, 674px each.
+
+## 15g. v0.9.21 (2026-10-28)
+
+Since v0.9.20: the lobby, the tower menu and the new tournament keep one size whatever is
+chosen; rounds and lives left to the config, no longer offered; the archnemesis on by default
+(15f). Protocol 33 and recording format 4 as before, so v0.9.20 and v0.9.21 play together and
+recordings replay.

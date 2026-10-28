@@ -198,8 +198,9 @@ describe('lobby', () => {
     const host = lobbyMarkup(
       view({ settings: { maxRounds: 12, teamSize: 1, continues: 2, specials: false } }),
     );
-    expect(host).toContain('id="max-rounds"');
-    expect(host).toContain('<option value="12" selected>');
+    // Rounds and lives stay the config's, not offered (the user's, 2026-10-28).
+    expect(host).not.toContain('id="max-rounds"');
+    expect(host).not.toContain('id="lives"');
     expect(host).toContain('id="team-size"');
     expect(host).toContain('id="player-count"');
 
@@ -283,7 +284,7 @@ describe('lobby', () => {
     expect(html).not.toContain('id="watch"');
   });
 
-  it('lets the host give their own seat to a bot, and then says they will watch', () => {
+  it('lets the host give their own seat to a bot', () => {
     // A switch between playing it and a bot, and only for a bot the level, as every bot's is set.
     const playing = lobbyMarkup(view());
     expect(rows(playing)[0]).toContain('id="host-play"');
@@ -295,7 +296,8 @@ describe('lobby', () => {
     expect(rows(watching)[0]).toContain(
       '<option value="8" data-short="8" selected>Level 8</option>',
     );
-    expect(rows(watching)[0]).toContain('Ada watches');
+    // The switch says it; a line saying so too was removed (the user's, 2026-10-28).
+    expect(rows(watching)[0]).not.toContain('class="blurb"');
     // A guest sees who is playing the host's seat, and cannot change it.
     const guest = lobbyMarkup(
       view({ hostBot: 8, humanPlayer: 1, seats: [seat(0, 'Ada'), seat(1, 'Bo')] }),

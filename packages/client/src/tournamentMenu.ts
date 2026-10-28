@@ -85,10 +85,6 @@ export function openNewTournament(common: Common, exits: TournamentExits): void 
         return change({ levels: { ...form.levels, min: number(target) } });
       case 'levels-max':
         return change({ levels: { ...form.levels, max: number(target) } });
-      case 'max-rounds':
-        return change({ maxRounds: number(target) });
-      case 'lives':
-        return change({ continues: number(target) - 1 });
       case 'specials':
         saveSpecials((target as HTMLSelectElement).value === 'on');
         return change({ specials: (target as HTMLSelectElement).value === 'on' });

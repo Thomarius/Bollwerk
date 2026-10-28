@@ -14,9 +14,10 @@ import { store, stored } from './storage.js';
 
 /**
  * The last table this person set as its host, local or a room (PLAN §11 item 4, UP3): the
- * seats, the teams, the bots' levels and towers, the rounds and the lives, so a regular does
- * not set them all again at every visit. Never the map, which is new each time; the special
- * towers are remembered on their own (`towers.ts`), and a tournament's tables are its own.
+ * seats, the teams and the bots' levels and towers, so a regular does not set them all again
+ * at every visit. Never the map, which is new each time; the special towers are remembered on
+ * their own (`towers.ts`), and a tournament's tables are its own. Nor the rounds and lives,
+ * no longer offered (2026-10-28): always the config's, so a value saved before is dropped.
  */
 export interface RememberedTable extends Table {
   /** Each seat's bot level, by seat, every seat the table may have. */
@@ -32,9 +33,7 @@ export function saveTable(table: RememberedTable): void {
   store(
     KEY,
     JSON.stringify({
-      maxRounds: table.settings.maxRounds,
       teamSize: table.settings.teamSize,
-      continues: table.settings.continues,
       playerCount: table.playerCount,
       teams: table.teams,
       bots: table.bots,
@@ -62,7 +61,7 @@ export function storedTable(
  * A saved table read back, every part checked: a value out of today's bounds — a save from
  * an older version, or one edited by hand — falls back to the default for that part, and
  * the seats and teams are shaped by the rule the lobby itself follows (`reshapeTable`).
- * `base` holds what is not remembered here, the special towers among it.
+ * `base` holds what is not remembered here: the special towers, the rounds and the lives.
  */
 export function readTable(
   raw: unknown,
@@ -79,9 +78,7 @@ export function readTable(
       : fallback;
   const settings: MatchSettings = {
     ...base,
-    maxRounds: within(saved.maxRounds, bounds.maxRounds, base.maxRounds),
     teamSize: within(saved.teamSize, bounds.teamSize, base.teamSize),
-    continues: within(saved.continues, bounds.continues, base.continues),
   };
   const teams = Array.isArray(saved.teams) ? (saved.teams as unknown[]) : [];
   const table = reshapeTable(

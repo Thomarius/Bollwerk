@@ -14,16 +14,14 @@ const read = (raw: unknown) => readTable(raw, base, bounds, limits, 5);
 describe('the remembered table', () => {
   it('opens as it was left', () => {
     const table = read({
-      maxRounds: 6,
       teamSize: 2,
-      continues: 0,
       playerCount: 4,
       teams: [0, 1, 0, 1],
       bots: [3, 7, 9, 2],
       botTowers: ['drawn', null, 'bertha3', 'drawn'],
       hostSeat: 2,
     });
-    expect(table?.settings).toEqual({ maxRounds: 6, teamSize: 2, continues: 0, specials: true });
+    expect(table?.settings).toEqual({ maxRounds: 10, teamSize: 2, continues: 2, specials: true });
     expect(table?.playerCount).toBe(4);
     expect(table?.teams).toEqual([0, 1, 0, 1]);
     expect(table?.bots).toEqual([3, 7, 9, 2, 5, 5, 5, 5]);
@@ -33,6 +31,12 @@ describe('the remembered table', () => {
 
   it('takes the special towers from today’s settings, never from the save', () => {
     expect(read({ specials: false })?.settings.specials).toBe(true);
+  });
+
+  it('takes the rounds and lives from the config, never from an older save', () => {
+    const settings = read({ maxRounds: 6, continues: 0 })?.settings;
+    expect(settings?.maxRounds).toBe(10);
+    expect(settings?.continues).toBe(2);
   });
 
   it('falls back part by part on anything out of bounds or malformed', () => {

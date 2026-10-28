@@ -169,14 +169,29 @@ describe('the new tournament form', () => {
     expect(settingsOf(form, 'Ada', 1).archnemesis).toBe(form.archName);
   });
 
-  it('shows a team name and the teams a match only where they apply', () => {
+  it('opens with an archnemesis, his name always shown and disabled without him', () => {
+    const source = names();
+    const form = defaultForm(source);
+    expect(form.archnemesis).toBe(true);
+    expect(setupMarkup(form, 'Ada')).toMatch(/id="arch-name"[^>]*value="[^"]*" \/>/);
+    const without = setupMarkup(reshapeForm(form, { archnemesis: false }, source), 'Ada');
+    expect(without).toMatch(/id="arch-name"[^>]* disabled \/>/);
+    // The rounds and lives are the config's, not offered.
+    expect(without).not.toContain('id="max-rounds"');
+    expect(without).not.toContain('id="lives"');
+  });
+
+  it('shows a team name where it applies, and the teams a match always, disabled where fixed', () => {
     const source = names();
     const alone = setupMarkup(defaultForm(source), 'Ada');
     expect(alone).not.toContain('id="team-name"');
     expect(alone).toContain('id="match-teams-min"');
+    expect(alone).not.toContain('<select disabled id="match-teams-min"');
     const three = setupMarkup(reshapeForm(defaultForm(source), { teamSize: 3 }, source), 'Ada');
     expect(three).toContain('id="team-name"');
-    expect(three).not.toContain('id="match-teams-min"');
+    // Two teams a match at teams of three: shown, 2 – 2, not to be changed.
+    expect(three).toContain('<select disabled id="match-teams-min"');
+    expect(three).toContain('<select disabled id="match-teams-max"');
     expect(three.match(/class="mate-name/g)).toHaveLength(2);
   });
 

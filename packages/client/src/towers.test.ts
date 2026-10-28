@@ -363,6 +363,20 @@ describe('the tower menu', () => {
     expect(html).toContain(towerWhat('architect3'));
   });
 
+  it('holds every choice’s text, showing only the chosen one, so the menu keeps its size', () => {
+    const shown = (html: string): string[] =>
+      [...html.matchAll(/<p class="what on">(.*?)<\/p>/g)].map((m) => m[1] as string);
+    const html = towerMenuMarkup('architect3');
+    expect(shown(html)).toHaveLength(1);
+    expect(shown(html)[0]).toContain(towerWhat('architect3'));
+    // Every other variant's text is there, hidden, for the cell to measure.
+    expect(html).toContain(towerWhat('frost2'));
+    expect(html.match(/<p class="what"/g)?.length).toBeGreaterThan(10);
+    // Random's own text only where Random is offered.
+    expect(shown(towerMenuMarkup('drawn', 'frost3'))[0]).toContain(towerWhat('frost3'));
+    expect(shown(towerMenuMarkup(null))).toHaveLength(1);
+  });
+
   it('keeps the cost chosen when the tower changes, else takes the cheapest', () => {
     expect(variantForCard('bertha', null)).toBe('bertha2');
     expect(variantForCard('bertha', 3)).toBe('bertha3');

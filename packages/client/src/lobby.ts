@@ -17,6 +17,7 @@ import type { Seat, TournamentTable } from '@bollwerk/protocol';
 
 import { t } from './i18n.js';
 import { withIcon } from './icons.js';
+import { PREVIEW_ASPECT } from './preview.js';
 import { teamLetter } from './scores.js';
 import { shapeSvg } from './shapes.js';
 import { escape } from './html.js';
@@ -162,7 +163,8 @@ function tableControls(view: LobbyView, isHost: boolean): string {
   const counts = validPlayerCounts(teamSize, view.playerLimits).filter(
     (n) => n >= view.seats.length,
   );
-  const { min, max } = view.settingBounds.maxRounds;
+  // No rounds or lives: the defaults, 10 and 3, were never changed in play, so they stay in
+  // the config and off the screen (the user's, 2026-10-28).
   return `
     <div class="settings">
       <label data-tip="${escape(t('lobby.teamsTitle'))}">${t('lobby.teams')}
@@ -171,17 +173,11 @@ function tableControls(view: LobbyView, isHost: boolean): string {
       <label>${t('lobby.players')}
         <select id="player-count" data-ui="seg" aria-label="${t('lobby.players')}">${options(counts, view.playerCount)}</select>
       </label>
-      <label data-tip="${escape(t('lobby.roundsTitle'))}">${t('lobby.rounds')}
-        <select id="max-rounds" data-ui="step" aria-label="${t('lobby.rounds')}">${rangeOptions(min, max, maxRounds)}</select>
-      </label>
-      <label data-tip="${escape(t('lobby.livesTitle'))}">${t('lobby.lives')}
-        <select id="lives" data-ui="seg" aria-label="${t('lobby.lives')}">${rangeOptions(view.settingBounds.continues.min + 1, view.settingBounds.continues.max + 1, continues + 1)}</select>
-      </label>
       ${specialsSwitch(view.settings.specials)}
     </div>`;
 }
 
-/** The host's switch for special towers, beside lives and rounds. */
+/** The host's switch for special towers, under the table's other settings. */
 export function specialsSwitch(on: boolean): string {
   const option = (value: boolean, label: string): string =>
     `<option value="${value ? 'on' : 'off'}"${value === on ? ' selected' : ''}>${label}</option>`;
@@ -362,9 +358,6 @@ function seatRow(
     else if (isHostSeat && view.hostBot !== null) {
       control = levelControl(view.hostBot, false, '', '');
     }
-    if (isHostSeat && view.hostBot !== null) {
-      blurb = `<small class="blurb">${t('lobby.watches', { name: escape(seat.name) })}</small>`;
-    }
     // A teammate at a tournament's table plays in place of one of the team's bots.
     const stands = view.tournament?.seats[index];
     if (stands?.open === true && stands.level !== null) {
@@ -388,7 +381,8 @@ function seatRow(
 
 /** The map and the seed it comes from: the host may draw another or type one in. */
 function mapControls(view: LobbyView, isHost: boolean): string {
-  const canvas = `<canvas id="map-preview" class="map-preview" aria-label="${t('lobby.mapAria')}"></canvas>`;
+  // Shaped by `PREVIEW_ASPECT`, never by the map, so the lobby keeps its size.
+  const canvas = `<canvas id="map-preview" class="map-preview" style="aspect-ratio:1/${PREVIEW_ASPECT}" aria-label="${t('lobby.mapAria')}"></canvas>`;
   if (!isHost) {
     return `${canvas}<p class="note map-note">${t('lobby.mapSeed', { seed: String(view.seed) })}</p>`;
   }

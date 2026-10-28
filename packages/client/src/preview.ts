@@ -118,6 +118,21 @@ export function castleBreath(timeMs: number, periodMs: number): number {
 }
 
 /**
+ * The preview's height over its width, the same at every table, so the lobby does not
+ * change size with the map (the user's, 2026-10-28). Each map is centred in it on open sea.
+ * The tallest map, four players' at 52x50 tiles, is 0.962 (every table, seeds 0-39); the
+ * widest, 114x46, 0.40.
+ */
+export const PREVIEW_ASPECT = 0.97;
+
+/** The canvas's size for a map of `width` x `height` pixels: `PREVIEW_ASPECT`, around it. */
+export function previewBox(width: number, height: number): { width: number; height: number } {
+  return height > width * PREVIEW_ASPECT
+    ? { width: Math.ceil(height / PREVIEW_ASPECT), height }
+    : { width, height: Math.ceil(width * PREVIEW_ASPECT) };
+}
+
+/**
  * `timeMs` animates the surf and the castles (`surfAt`, `castleBreath`); left at 0 —
  * under reduced motion — the map is still.
  */
@@ -132,13 +147,22 @@ export function drawPreview(
 ): void {
   const { terrain } = preview;
   const scale = Math.max(2, Math.floor(maxWidthPx / terrain.width));
+  const box = previewBox(terrain.width * scale, terrain.height * scale);
   // Resized only when it changes: setting a canvas's size clears it and costs a reflow,
   // which redrawn every frame would do sixty times a second.
-  if (canvas.width !== terrain.width * scale) canvas.width = terrain.width * scale;
-  if (canvas.height !== terrain.height * scale) canvas.height = terrain.height * scale;
+  if (canvas.width !== box.width) canvas.width = box.width;
+  if (canvas.height !== box.height) canvas.height = box.height;
   const ctx = canvas.getContext('2d');
   if (ctx === null) return;
   ctx.imageSmoothingEnabled = false;
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.fillStyle = art.palette.waterMid;
+  ctx.fillRect(0, 0, box.width, box.height);
+  // Whole pixels, so the tiles stay sharp.
+  ctx.translate(
+    Math.floor((box.width - terrain.width * scale) / 2),
+    Math.floor((box.height - terrain.height * scale) / 2),
+  );
 
   const seatOfIsland = new Map<number, number>();
   preview.playerOfSeat.forEach((player, seat) => seatOfIsland.set(player + 1, seat));

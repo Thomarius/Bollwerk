@@ -106,18 +106,35 @@ export function towerMenuMarkup(
     })
     .join('');
   const costs = `<div class="costs"><span>${escape(t('towerMenu.cost'))}</span>${buttons}</div>`;
-  const shown = chosen === 'drawn' ? drawn : chosen;
-  const afford = (v: TowerVariant): string =>
-    `<em>${escape(t(variantCost(v) >= 3 ? 'tower.affordSecond' : 'tower.affordMain'))}</em>`;
-  let what = escape(t(chosen === 'drawn' ? 'towerMenu.randomLater' : 'towerMenu.noneWhat'));
-  if (shown !== null) {
-    const lead =
-      chosen === 'drawn'
-        ? `${escape(t('towerMenu.randomWhat', { tower: variantName(shown) }))} `
-        : '';
-    what = `${lead}${escape(towerWhat(shown))} ${afford(shown)}`;
+  // Every text the menu can show, stacked in one cell with only the chosen one visible, so
+  // the cell is the longest text's height and the menu keeps its size (the user's, 2026-10-28).
+  const choices: BotTower[] = [
+    null,
+    ...towers.flatMap((o) => o.costs.map((cost) => `${o.kind}${cost}` as TowerVariant)),
+    ...(random === '' ? [] : ['drawn' as const]),
+  ];
+  if (!choices.includes(chosen)) choices.push(chosen);
+  const whats = choices
+    .map((c) => {
+      const on = c === chosen;
+      return `<p class="what${on ? ' on' : ''}"${on ? '' : ' aria-hidden="true"'}>${whatOf(c, drawn)}</p>`;
+    })
+    .join('');
+  return `${random}<div class="cards">${cards}</div>${costs}<div class="whats">${whats}</div>`;
+}
+
+/** What a choice does, by its own numbers and when it can be afforded. */
+function whatOf(choice: BotTower, drawn: TowerVariant | null): string {
+  const shown = choice === 'drawn' ? drawn : choice;
+  if (shown === null) {
+    return escape(t(choice === 'drawn' ? 'towerMenu.randomLater' : 'towerMenu.noneWhat'));
   }
-  return `${random}<div class="cards">${cards}</div>${costs}<p class="what">${what}</p>`;
+  const lead =
+    choice === 'drawn'
+      ? `${escape(t('towerMenu.randomWhat', { tower: variantName(shown) }))} `
+      : '';
+  const afford = t(variantCost(shown) >= 3 ? 'tower.affordSecond' : 'tower.affordMain');
+  return `${lead}${escape(towerWhat(shown))} <em>${escape(afford)}</em>`;
 }
 
 /** Remembers the cost of a variant just chosen, for the next click on any tower's card. */
