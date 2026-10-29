@@ -10883,3 +10883,21 @@ had the top bar taken out: without it the demo reads as a screensaver, not a gam
 are kept. In a demo the page carries `demo`, which hides the bar and the time bar under it, and
 the board takes the whole window (no inset for the bar); island banners, team tags and the
 announcements stay.
+
+## 15o. v0.9.25, and a screensaver weighed and dropped (2026-10-29)
+
+Since v0.9.24: the demo without its score bar and time bar, the board the whole window (15n).
+Client only: protocol 33 and recording format 4 as before.
+
+**A Windows screensaver made of the demo** — the user's question, Windows only, to start as
+fast as possible, silent, and behave as screensavers do (`/s`, `/c`, `/p`; any input quits;
+the cursor hidden) — was weighed and **dropped by the user**. The behaviour was all within
+reach; the size was not, by trimming. The portable Windows build measured 414 MB unpacked
+(136–143 MB as the download): Electron's Chromium about 305 MB, its 55 interface languages
+49 MB, its licence text 20 MB, the WebGPU shader compiler 27 MB, our audio 42 MB, our client
+3 MB. Leaving out the audio, the other languages and the WebGPU compiler would bring the
+download only to some 85–95 MB, Electron's floor; and the portable file unpacks itself at every
+start, several seconds, so a screensaver would have to be installed instead. The small way
+would have been a host of its own over Windows' WebView2, some 4–6 MB and quicker to start, at
+the cost of a second program to keep beside the desktop app. Not to be proposed again unless
+the user asks.

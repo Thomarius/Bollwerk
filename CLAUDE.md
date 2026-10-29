@@ -175,7 +175,7 @@ Full detail in PLAN.md §1. The parts that surprise people:
 
 ## Status
 
-**Done** (2026-10-29; the latest release **v0.9.24**, 2026-10-29, protocol 33, recording format 4,
+**Done** (2026-10-29; the latest release **v0.9.25**, 2026-10-29, protocol 33, recording format 4,
 which a test session needs the server rebuilt and every page reloaded for):
 
 - **A demo behind the menu** (ARCHIVE 15m, 2026-10-29, the user's design; an attract mode once
@@ -186,7 +186,8 @@ which a test session needs the server rebuilt and every page reloaded for):
   corner's buttons, or Esc, brings the menu back. Never recorded; paused while the window is
   away (`demo.ts`, `demoTable.ts`, `art.demo`). In v0.9.24, with the fix for a leak it found: every
   `Stamps` had kept its whole stage, some 11 MB a match. Tried by the user: fades and caption
-  good, the score bar taken out after (2026-10-29), the board the whole window.
+  good, the score bar taken out after (2026-10-29, v0.9.25), the board the whole window. A
+  Windows screensaver made of it was weighed and dropped (the user's, ARCHIVE 15o).
 
 - **The end screen in the menus' look** (ARCHIVE 15k, 2026-10-28, v0.9.23, approved by the
   user from screenshots): the headline in the look's lettering and your own place under it, the winner
