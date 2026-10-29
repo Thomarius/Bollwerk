@@ -61,6 +61,7 @@ leave your seat undriven on the way, so you are soon knocked out), `&speed=10`,
 `&bots=thread` to keep a local match's bots off their worker (ARCHIVE 13k),
 `&style=flat|pixel|night|cyberpunk|blueprint|parchment|bricks|glass|chocolate|halloween|sakura|oktoberfest|opera|office|undersea|electric|cartoon|christmas|noir|sports|pirates|anime|mythology|wildwest` for both looks (a one-look style sets only its own)
 (`&buildStyle=`, `&combatStyle=` for one), `&watch=1&level=8` to observe a bot match (`&personality=offensive` fixes every bot's),
+`?demo=1` the demo at once (`&speed=10` to cycle its matches),
 `&rounds=12` for the round cap, `&specials=1` for special towers (`&tower=bertha3`, a tower at its cost, the person's),
 `&teams=2` for teams of two in seat order, `?icons=sheet` every style's cannon icon side by side
 (`?icons=boards` each style's board, for checking a refactor pixel for pixel), `?gaps=preview`
@@ -174,8 +175,17 @@ Full detail in PLAN.md §1. The parts that surprise people:
 
 ## Status
 
-**Done** (2026-10-28; the latest release **v0.9.23**, 2026-10-28, protocol 33, recording format 4,
+**Done** (2026-10-29; the latest release **v0.9.24**, 2026-10-29, protocol 33, recording format 4,
 which a test session needs the server rebuilt and every page reloaded for):
+
+- **A demo behind the menu** (ARCHIVE 15m, 2026-10-29, the user's design; an attract mode once
+  dropped in 11w): after 30 s of the bare menu untouched, or the corner's Demo button, level-5
+  bots play five-round tables — three or four free-for-all, or two against two, special towers
+  on or off — in the menu's looks, under the menu's music with no sounds, without a summary,
+  the winners' camera shot then the next match, through black; a left click anywhere but the
+  corner's buttons, or Esc, brings the menu back. Never recorded; paused while the window is
+  away (`demo.ts`, `demoTable.ts`, `art.demo`). In v0.9.24, with the fix for a leak it found: every
+  `Stamps` had kept its whole stage, some 11 MB a match. Not yet tried by the user.
 
 - **The end screen in the menus' look** (ARCHIVE 15k, 2026-10-28, v0.9.23, approved by the
   user from screenshots): the headline in the look's lettering and your own place under it, the winner

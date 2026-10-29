@@ -323,9 +323,17 @@ export class EndScreen {
     );
   }
 
+  /** A demo's: no summary at all, the winners' camera shot alone (`demo.ts`). */
+  private disabled = false;
+
+  disable(): void {
+    this.disabled = true;
+  }
+
   /** Every frame: the summary once the match is over, nothing before. */
   update(state: MatchState, humanPlayer: number, teamed: boolean): void {
-    this.showEndScreen(state.phase === 'game_over' ? this.markup(state, humanPlayer, teamed) : '');
+    const over = state.phase === 'game_over' && !this.disabled;
+    this.showEndScreen(over ? this.markup(state, humanPlayer, teamed) : '');
   }
 
   private markup(state: MatchState, humanPlayer: number, teamed: boolean): string {

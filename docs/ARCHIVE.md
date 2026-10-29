@@ -10825,3 +10825,55 @@ icons, a chart with a scale and each round's scores on hover, the menus' button 
 view, Show the board, the points counting up, and Pause gone from it. Display and menus only:
 protocol 33 and recording format 4 as before, so v0.9.22 and v0.9.23 play together and
 recordings replay.
+
+## 15m. A demo behind the menu, and a leak it found (2026-10-29)
+
+The user's design, an attract mode as arcade cabinets had: dropped once as too much work (11w),
+cheap now that a match can be watched, its bots think in a worker and the looks rotate. Their
+answers to the questions asked before building:
+
+- **Starting**: after **30 s** of the bare menu untouched — no Options, How to play, Credits or
+  gallery over it, the window in front; a mouse move, click, wheel or key starts the clock
+  afresh — or from the corner's **Demo** button, beside Sound and Full screen, shown on the bare
+  menu only. `?demo=1` goes straight in, for looking at it.
+- **The tables**: three or four free-for-all, or two against two, alike in chance; special
+  towers on or off by a coin, each bot drawing its own from the seed; every bot **Level 5**;
+  **five rounds**; the looks as the menu has them. Rolled by the page (`Math.random`), nothing
+  of it simulated; a match's table named in a caption as it starts (the user's choice).
+- **Like a screensaver**: the menu's music plays on, so the way back is instant, and **no
+  sounds** — the match's `MatchAudio` is not made at all; no Pause, no summary (`EndScreen.disable`);
+  the HUD's bar kept for now, the user to judge it in play; held still while the window is
+  away, going on as it returns. The winners' camera shot for 6 s, then black and the next table,
+  without end. **Never recorded**: `recordings/` is the user's tuning data.
+- **Leaving**: a left click anywhere but the corner's buttons, or Esc, fades to black and back
+  to the menu in a new look, in about half a second. A right click, the wheel or a move does
+  nothing. Leaving while a match is still being made waits for it, then takes it down.
+
+`demo.ts` (the page) and `demoTable.ts` (the table, its caption and the idle clock, tested); the
+timings in `art.demo`.
+
+Checked in a scripted browser: the button shown on the bare menu and hidden over Options and in
+the demo; the demo starting after 30.0 s; Sound switching without leaving; a move and a right
+click staying; a left click, Esc, and a click during "Preparing the board" each back at the menu
+with nothing left behind (no stage, fade, strip or `in-match`); no errors.
+
+**The leak.** Left running at `&speed=10`, the JS heap after a forced collection grew by some
+11 MB a match — 39 MB to 216 MB over fifteen matches — while the page's nodes, listeners and
+canvases stayed flat. Heap snapshots put it on about 7,300 Pixi `Sprite`s a match, and the
+shortest path from the roots ran through `stamps.ts`'s module-level `live` set: every `Stamps`
+registered itself there for `retire` (15a, v0.9.19) and left only in `destroy()`, which most
+styles never call, letting stamps go with their look — so each held its container, and through
+its render group the whole stage of every match since the page opened, and presumably of every
+look thrown away mid-match. Not the demo's: any player's second match onward carried the last.
+The set now holds `WeakRef`s, a `FinalizationRegistry` forgetting a stamp collected without
+being destroyed. Measured again over the same fourteen minutes: 38 MB at the start, then
+between 47 and 59 MB through twenty-six matches, with no trend; no errors.
+
+## 15n. v0.9.24 (2026-10-29)
+
+Since v0.9.23: the demo behind the menu (15m) — after 30 s of the bare menu untouched or from
+the corner's Demo button, level-5 bots play five-round tables of three or four, or two against
+two, towers on or off, under the menu's music without sounds, until a left click or Esc — and
+the leak it found fixed: every `Stamps` had held the whole stage of every match since the page
+opened, some 11 MB a match, since v0.9.19. Client only: protocol 33 and recording format 4 as
+before, so v0.9.23 and v0.9.24 play together and recordings replay.

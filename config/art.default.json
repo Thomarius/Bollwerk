@@ -1601,6 +1601,15 @@
     "mapSurfMs": 3200,
     "mapCastleMs": 2200
   },
+  "demo": {
+    "idleMs": 30000,
+    "rounds": 5,
+    "botLevel": 5,
+    "fadeMs": 450,
+    "quitFadeMs": 220,
+    "winnerHoldMs": 6000,
+    "captionMs": 6000
+  },
   "glass": {
     "paneTiles": 2.6,
     "leadTiles": 0.07,

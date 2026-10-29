@@ -1684,9 +1684,9 @@ every resolution against an independent search, not only on unit pictures.
 
 ## 11. Open work
 
-**Where to start (2026-10-28).** The latest release is **v0.9.23** (2026-10-28, protocol 33,
+**Where to start (2026-10-29).** The latest release is **v0.9.24** (2026-10-29, protocol 33,
 recording format 4). Item 3, the performance plan, is finished, its leftovers measured and the worthwhile ones built
-(ARCHIVE 14zc–14zi, 14zo). Item 4, the UI polish, is done (ARCHIVE 14zr–14zt), and item 5, the menus reviewed (ARCHIVE 15j) and the end screen after them (15k), both in v0.9.23. Next: item 2's last tower, once the users have decided which (ARCHIVE 14zm). The styles' own music's chance is the player's choice in Options (ARCHIVE 14zn). Every feature up to v0.9.16 has been tested and approved by the users (2026-10-27).
+(ARCHIVE 14zc–14zi, 14zo). Item 4, the UI polish, is done (ARCHIVE 14zr–14zt), and item 5, the menus reviewed (ARCHIVE 15j) and the end screen after them (15k), both in v0.9.23; item 6, the demo, in v0.9.24, for the user to try. Next: item 2's last tower, once the users have decided which (ARCHIVE 14zm). The styles' own music's chance is the player's choice in Options (ARCHIVE 14zn). Every feature up to v0.9.16 has been tested and approved by the users (2026-10-27).
 Up to **v0.8.3**: the game and online play, bots as skill levels and personalities, the styles
 with their corner pieces, random looks every round, English and German, the desktop app, UPnP,
 the balance soak and the rendering work (ARCHIVE 12h–12v), the refactoring (12w) and stronger
@@ -1725,7 +1725,8 @@ menus' new look (14zv–14zz) and a crash on a resize during a wipe fixed (15a).
 (15e): a tournament's bots keep their towers (15d) and the lobby after the user's look (15c). **v0.9.21** (15g): the lobby,
 the tower menu and the new tournament keep one size; rounds and lives left to the config (15f). **v0.9.22** (15i): the online link's
 steps shown, and the link found 30 s sooner (15h). **v0.9.23** (15l): the menus reviewed (15j)
-and the end screen in their look (15k).
+and the end screen in their look (15k). **v0.9.24** (15n): the demo behind the menu, and a leak of
+every match's stage fixed (15m).
 
 Tournament mode is finished: its play-testing round, T8, closed with everything working
 (ARCHIVE 13m). The bots' planning is off the page's thread in local matches, measured and felt (ARCHIVE
@@ -1807,6 +1808,12 @@ fit (ARCHIVE 12z), its remaining steps dropped (the user's decision, 2026-10-14;
    after it (ARCHIVE 15k), every suggestion approved by the user, the result approved from screenshots.
    Open: the online-only states (the open games listed, a room's code) with the real server,
    and a tournament match's end and a person's Rematch, which a scripted match could not reach.
+
+6. **The demo** (the user's design, 2026-10-29, ARCHIVE 15m): bots playing behind the menu after
+   30 s idle or from the corner's Demo button, endlessly, until a left click or Esc. Built and
+   checked in a scripted browser, its memory over an endless run measured; open: the user's
+   trial — whether to keep the HUD's top bar in it (their open question), and the feel of the
+   fades and the caption.
 
 Only open work is kept here. Finished packages move to `ARCHIVE.md` under their old
 numbers — 11.1 scoring, 11.7 team mode, 11.8 the visual pass, 11.9 the themes, 11.10 the

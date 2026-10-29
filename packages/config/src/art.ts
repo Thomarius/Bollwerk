@@ -1377,6 +1377,26 @@ export const ArtConfigSchema = z
       mapCastleMs: z.number().int().positive(),
     }),
     /**
+     * The demo (2026-10-29, the user's design): bots playing behind the menu after it has
+     * stood idle, or from the corner's button, until a click or Esc brings the menu back.
+     */
+    demo: z.strictObject({
+      /** How long the bare menu stands untouched before the demo starts. */
+      idleMs: z.number().int().positive(),
+      /** A demo match's rounds, fewer than a real one's, so tables change often. */
+      rounds: z.number().int().positive(),
+      /** Every bot's level. */
+      botLevel: z.number().int().min(1).max(10),
+      /** Into the demo and between its matches, through black. */
+      fadeMs: z.number().int().nonnegative(),
+      /** Back to the menu: short, since the player asked for it. */
+      quitFadeMs: z.number().int().nonnegative(),
+      /** The winner's camera shot held this long before the next match. */
+      winnerHoldMs: z.number().int().nonnegative(),
+      /** How long the table's caption stands as a match starts. */
+      captionMs: z.number().int().nonnegative(),
+    }),
+    /**
      * The icons beside the cursor in the cannon phase, a cannon each still to place: the style's
      * own gun, drawn small (`drawCannonIcon`), or one generic cannon for every style, as before
      * (2026-10-17). The testers chose the style's own (2026-10-19, ARCHIVE 14j); the generic

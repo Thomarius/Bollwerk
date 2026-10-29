@@ -33,6 +33,7 @@ import { createTournament } from '@bollwerk/tournament';
 import { openLobby } from './lobbyFlow.js';
 import { runSession } from './matchScreen.js';
 import { showLoading } from './loading.js';
+import { installDemo, startDemo } from './demo.js';
 
 /**
  * Bollwerk client.
@@ -73,7 +74,13 @@ if (params.get('icons') === 'sheet') {
 
 /** The page the query asks for: a match, a lobby, a tournament's screen, or the menu. */
 function start(): void {
-  if (params.get('autostart') === '1') {
+  // The demo's button and idle clock, for whenever the menu stands bare (`demo.ts`).
+  installDemo();
+  if (params.get('demo') === '1') {
+    // Straight into the demo, for looking at it; a click comes back to the menu.
+    showMenu();
+    startDemo();
+  } else if (params.get('autostart') === '1') {
     const count = Number(params.get('players') ?? 3);
     // ?watch=1 fills every seat with a bot, which is how a match is observed rather
     // than played.

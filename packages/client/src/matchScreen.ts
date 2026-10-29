@@ -85,6 +85,12 @@ export interface MatchExits {
   back?(): void;
   /** The Rematch button's label where it is somebody else's to press. */
   waitLabel?: TextKey;
+  /**
+   * A demo behind the menu (`demo.ts`): bots only, run like a screensaver — none of the
+   * match's music or sounds, the menu's music playing on so the way back is instant; no
+   * Pause and no summary; held still while the window is away, as a played match is.
+   */
+  demo?: boolean;
 }
 
 /** Plays a session; resolves with what takes it down, once it is running. */
@@ -168,20 +174,24 @@ export async function runSession(
   // The styles' own tracks, by the look each style draws as it comes on screen: a random
   // look is in place before the intermission that brings it, whose start chooses its music.
   const { audio: sounds } = defaultConfigBundle;
-  const matchAudio = new MatchAudio(audio, session.humanPlayer, {
-    rules: {
-      // The player's choice in Options or the pause menu, read at every look's start, so a
-      // change mid-match decides the next track and leaves the one playing alone (2026-10-27).
-      get chance() {
-        return styleTrackChance();
-      },
-      pauseRounds: sounds.styleTrackPauseRounds,
-      hasTrack: (style) => sounds.styleMusic[style] !== undefined,
-    },
-    styleOf: (look) => scene.styles[look],
-    // The page's own roll: music is no part of the simulation (ARCHIVE 14za).
-    roll: () => Math.random(),
-  });
+  const demo = exits.demo === true;
+  const matchAudio = demo
+    ? null
+    : new MatchAudio(audio, session.humanPlayer, {
+        rules: {
+          // The player's choice in Options or the pause menu, read at every look's start, so a
+          // change mid-match decides the next track and leaves the one playing alone (2026-10-27).
+          get chance() {
+            return styleTrackChance();
+          },
+          pauseRounds: sounds.styleTrackPauseRounds,
+          hasTrack: (style) => sounds.styleMusic[style] !== undefined,
+        },
+        styleOf: (look) => scene.styles[look],
+        // The page's own roll: music is no part of the simulation (ARCHIVE 14za).
+        roll: () => Math.random(),
+      });
+  if (demo) hud.endScreen.disable();
 
   /**
    * Middle of each player's island, for the banners that sit over them.
@@ -338,36 +348,45 @@ export async function runSession(
 
   // Anyone may pause, and anyone resume: Esc, or the button beside the Sound switch.
   // Paused, the overlay is the match's menu: the settings, and a way out (PLAN 11.18 Y2).
-  const pause = new PauseControls({
-    toggle: (paused) => session.setPaused(paused),
-    leave: leaveMatch,
-    ...(exits.leaveConfirm === undefined ? {} : { leaveConfirm: exits.leaveConfirm }),
-    volumes: audio,
-    click: () => audio.play('select'),
-    // How to play over the pause menu, at the section of the phase being played.
-    howToPlay: () =>
-      openHowToPlay(undefined, () => audio.play('select'), howToSectionFor(session.state)),
-    // The gallery over the pause menu, the looks as chosen; a change is drawn at once and
-    // saved as the menu's choice. Random starts a rotation of its own, from the next
-    // resolution on.
-    looks: () =>
-      openLookGallery({
-        choices: { ...lookChoices },
-        active: 'build',
+  const pause = demo
+    ? null
+    : new PauseControls({
+        toggle: (paused) => session.setPaused(paused),
+        leave: leaveMatch,
+        ...(exits.leaveConfirm === undefined ? {} : { leaveConfirm: exits.leaveConfirm }),
+        volumes: audio,
         click: () => audio.play('select'),
-        onChange: () => undefined,
-        onClose: (chosen) => {
-          if (chosen.build === lookChoices.build && chosen.combat === lookChoices.combat) return;
-          lookChoices = chosen;
-          rotation = new LookRotation(chosen);
-          saveStyles(chosen);
-          void scene.replaceLooks(looksFor(rotation.opening())).then(() => matchAudio.restyled());
-        },
-      }),
-  });
+        // How to play over the pause menu, at the section of the phase being played.
+        howToPlay: () =>
+          openHowToPlay(undefined, () => audio.play('select'), howToSectionFor(session.state)),
+        // The gallery over the pause menu, the looks as chosen; a change is drawn at once and
+        // saved as the menu's choice. Random starts a rotation of its own, from the next
+        // resolution on.
+        looks: () =>
+          openLookGallery({
+            choices: { ...lookChoices },
+            active: 'build',
+            click: () => audio.play('select'),
+            onChange: () => undefined,
+            onClose: (chosen) => {
+              if (chosen.build === lookChoices.build && chosen.combat === lookChoices.combat)
+                return;
+              lookChoices = chosen;
+              rotation = new LookRotation(chosen);
+              saveStyles(chosen);
+              void scene
+                .replaceLooks(looksFor(rotation.opening()))
+                .then(() => matchAudio?.restyled());
+            },
+          }),
+      });
   // A local match pauses as its window loses focus, so a player called away comes back to
   // the pause menu rather than into play (`pausesOnBlur`).
   const onBlur = (): void => {
+    if (demo) {
+      session.setPaused(true);
+      return;
+    }
     const paused = pausesOnBlur({
       online: session.network() !== null,
       humanPlayer: session.humanPlayer,
@@ -377,6 +396,11 @@ export async function runSession(
     if (paused) session.setPaused(true);
   };
   globalThis.addEventListener('blur', onBlur);
+  // A demo goes on as the window comes back; a played match waits in its pause menu.
+  const onFocus = (): void => {
+    if (demo) session.setPaused(false);
+  };
+  globalThis.addEventListener('focus', onFocus);
   // Beside Pause, online only: the connection, where a player will see it.
   const badge = session.network() === null ? null : new NetworkBadge();
   // Out, and watching, with the way back to the menu (PLAN 11.18 Y3).
@@ -386,8 +410,9 @@ export async function runSession(
   const cleanup = (): void => {
     cancelAnimationFrame(frame);
     controls.detach();
-    pause.destroy();
+    pause?.destroy();
     globalThis.removeEventListener('blur', onBlur);
+    globalThis.removeEventListener('focus', onFocus);
     badge?.destroy();
     perf.detach();
     watching.destroy();
@@ -682,7 +707,7 @@ export async function runSession(
     }
     const sealing = board.refresh(structuresChanged, territoryChanged);
     if (sealing !== null) {
-      matchAudio.sealed(session.state, sealing.sealedBefore, sealing.sealedAfter);
+      matchAudio?.sealed(session.state, sealing.sealedBefore, sealing.sealedAfter);
       hints = buildHints(session.state, session.humanPlayer, board.live);
     }
   }
@@ -776,21 +801,27 @@ export async function runSession(
     }
     // Whose the next match is can change as the summary shows: a host who leaves takes it.
     if (next === undefined) hud.endScreen.useRematch(session.rematch, exits.waitLabel);
-    pause.update(
+    pause?.update(
       session.pausedBy,
       session.humanPlayer,
       session.state.players.map((p) => p.name),
       session.finished,
     );
     applyEvents(events);
-    matchAudio.handle(events);
-    matchAudio.frame(session.state);
+    matchAudio?.handle(events);
+    matchAudio?.frame(session.state);
     perf.end('sim');
     perf.begin('hud');
     pointCamera(now);
     drawTransition();
     drawIslandBanners();
-    hud.update(session.state, session.humanPlayer, session.status(), controls.placingTower);
+    // A demo is its own strip (`demo.ts`), not the HUD's "Watching".
+    hud.update(
+      session.state,
+      session.humanPlayer,
+      demo ? '' : session.status(),
+      controls.placingTower,
+    );
     watching.update(session.state, session.humanPlayer);
     const reading = session.network();
     if (reading !== null) badge?.update(reading, session.state.ruleset.tickRateHz);

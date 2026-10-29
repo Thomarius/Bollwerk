@@ -16,9 +16,11 @@ import { release } from './release.js';
 export class Stamps {
   readonly container = new Container();
   private used = 0;
+  private readonly ref = new WeakRef(this);
 
   constructor() {
-    live.add(this);
+    live.add(this.ref);
+    forgotten.register(this, this.ref, this.ref);
   }
 
   begin(): void {
@@ -68,14 +70,23 @@ export class Stamps {
   }
 
   destroy(): void {
-    live.delete(this);
+    live.delete(this.ref);
+    forgotten.unregister(this.ref);
     // The contexts belong to their `StampBook`, which a `Graphics` given one never destroys.
     release(this.container);
   }
 }
 
-/** Every `Stamps` in use, so a book retiring its shapes can find the stamps still showing them. */
-const live = new Set<Stamps>();
+/**
+ * Every `Stamps` in use, so a book retiring its shapes can find the stamps still showing them.
+ * Held weakly: most styles never destroy their stamps but let them go with the look, and a
+ * stamp held here kept its container and through it the whole stage of every match and look
+ * gone — some 11 MB a match, found by the demo running without end (ARCHIVE 15m).
+ */
+const live = new Set<WeakRef<Stamps>>();
+
+/** Forgets a `Stamps` collected without being destroyed. */
+const forgotten = new FinalizationRegistry<WeakRef<Stamps>>((ref) => live.delete(ref));
 
 /** What a stamp shows once its shape is retired and until it is placed again: nothing. */
 const EMPTY = new GraphicsContext();
@@ -90,7 +101,9 @@ const EMPTY = new GraphicsContext();
  * full screen mid-wipe; ARCHIVE 15a).
  */
 function retire(old: ReadonlySet<GraphicsContext>): void {
-  for (const stamps of live) {
+  for (const ref of live) {
+    const stamps = ref.deref();
+    if (stamps === undefined) continue;
     for (const child of stamps.container.children) {
       const g = child as Graphics;
       if (!old.has(g.context)) continue;
