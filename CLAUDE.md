@@ -185,7 +185,8 @@ which a test session needs the server rebuilt and every page reloaded for):
   the winners' camera shot then the next match, through black; a left click anywhere but the
   corner's buttons, or Esc, brings the menu back. Never recorded; paused while the window is
   away (`demo.ts`, `demoTable.ts`, `art.demo`). In v0.9.24, with the fix for a leak it found: every
-  `Stamps` had kept its whole stage, some 11 MB a match. Not yet tried by the user.
+  `Stamps` had kept its whole stage, some 11 MB a match. Tried by the user: fades and caption
+  good, the score bar taken out after (2026-10-29), the board the whole window.
 
 - **The end screen in the menus' look** (ARCHIVE 15k, 2026-10-28, v0.9.23, approved by the
   user from screenshots): the headline in the look's lettering and your own place under it, the winner

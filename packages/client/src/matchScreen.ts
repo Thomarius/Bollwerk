@@ -191,7 +191,11 @@ export async function runSession(
         // The page's own roll: music is no part of the simulation (ARCHIVE 14za).
         roll: () => Math.random(),
       });
-  if (demo) hud.endScreen.disable();
+  if (demo) {
+    hud.endScreen.disable();
+    // No score bar: a screensaver, not a game whose scores are kept (the user's, 2026-10-29).
+    document.body.classList.add('demo');
+  }
 
   /**
    * Middle of each player's island, for the banners that sit over them.
@@ -301,8 +305,10 @@ export async function runSession(
   /** The board as drawn: swept and crumbling walls, the held enclosure, floods and drains. */
   const board = new BoardEffects(scene, session);
 
+  // A demo has no bar, its board the whole window (the user's, 2026-10-29).
+  const barPx = demo ? 0 : HUD_BAR_PX;
   const fit = (): void => {
-    scene.resize(session.state, globalThis.innerWidth, globalThis.innerHeight, HUD_BAR_PX);
+    scene.resize(session.state, globalThis.innerWidth, globalThis.innerHeight, barPx);
     scene.drawTerrain(session.state);
     board.drawFloodedTerritory(performance.now());
     board.drawBoard();
@@ -417,7 +423,7 @@ export async function runSession(
     perf.detach();
     watching.destroy();
     hud.useSkin(null);
-    document.body.classList.remove('in-match');
+    document.body.classList.remove('in-match', 'demo');
     globalThis.removeEventListener('resize', fit);
     stopGraphics();
     scene.destroy();

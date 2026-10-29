@@ -1811,9 +1811,9 @@ fit (ARCHIVE 12z), its remaining steps dropped (the user's decision, 2026-10-14;
 
 6. **The demo** (the user's design, 2026-10-29, ARCHIVE 15m): bots playing behind the menu after
    30 s idle or from the corner's Demo button, endlessly, until a left click or Esc. Built and
-   checked in a scripted browser, its memory over an endless run measured; open: the user's
-   trial — whether to keep the HUD's top bar in it (their open question), and the feel of the
-   fades and the caption.
+   checked in a scripted browser, its memory over an endless run measured. Tried by the user:
+   the fades and caption good; the score bar taken out (2026-10-29), so it reads as a
+   screensaver rather than a game keeping score. Nothing open.
 
 Only open work is kept here. Finished packages move to `ARCHIVE.md` under their old
 numbers — 11.1 scoring, 11.7 team mode, 11.8 the visual pass, 11.9 the themes, 11.10 the

@@ -3036,6 +3036,12 @@ body.reduced-motion .preparing .blocks i {
 /* The demo (demo.ts): black between the menu and its matches, over everything but taking no
    pointer, so the click that leaves is heard wherever it lands; the table's caption as a
    match starts, and the way back at the bottom, as the watching strip stands. */
+/* No score bar or time bar in the demo, and the board the whole window (matchScreen.ts). */
+body.demo #hud .bar,
+body.demo #hud .hud-rest {
+  display: none;
+}
+
 .demo-fade {
   position: fixed;
   inset: 0;

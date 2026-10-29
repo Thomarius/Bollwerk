@@ -10877,3 +10877,9 @@ two, towers on or off, under the menu's music without sounds, until a left click
 the leak it found fixed: every `Stamps` had held the whole stage of every match since the page
 opened, some 11 MB a match, since v0.9.19. Client only: protocol 33 and recording format 4 as
 before, so v0.9.23 and v0.9.24 play together and recordings replay.
+
+**After v0.9.24** (2026-10-29): the user tried the demo — the fades and the caption good — and
+had the top bar taken out: without it the demo reads as a screensaver, not a game whose scores
+are kept. In a demo the page carries `demo`, which hides the bar and the time bar under it, and
+the board takes the whole window (no inset for the bar); island banners, team tags and the
+announcements stay.
