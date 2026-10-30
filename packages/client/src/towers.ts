@@ -30,6 +30,7 @@ const NAME_KEY = {
   laser: 'tower.laser',
   frost: 'tower.frost',
   lullaby: 'tower.lullaby',
+  subwoofer: 'tower.subwoofer',
 } as const;
 
 /** A tower's name, without its cost. */
@@ -116,6 +117,15 @@ export function towerWhat(variant: TowerVariant, ruleset: Ruleset = defaultRules
               t: lulls,
             });
       }
+    case 'subwoofer':
+      // Its cooldown told as how often it fires in a barrage, as the rules will count it: the
+      // first wave a cooldown in too.
+      if (!('cooldownMs' in config)) return '';
+      return t('tower.subwooferWhat', {
+        s: config.cooldownMs / 1000,
+        n: Math.floor(ruleset.phases.combatMs / config.cooldownMs),
+        w: config.waveWidth,
+      });
   }
 }
 

@@ -1013,6 +1013,16 @@
         "Hush",
         "Slumber",
         "Cradle"
+      ],
+      "subwoofer": [
+        "Bassline",
+        "Woofers",
+        "Low End",
+        "Boombox",
+        "Bass Drop",
+        "Thump",
+        "Decibel",
+        "Reverb"
       ]
     }
   }

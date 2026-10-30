@@ -1,5 +1,5 @@
 import type { ArtConfig, MythologyStyleConfig } from '@bollwerk/config';
-import { isLoaded, Structure, type Cannon, type MatchState, type Shot } from '@bollwerk/sim';
+import { Structure, type Cannon, type MatchState, type Shot } from '@bollwerk/sim';
 import { Container, FillPattern, Graphics, Texture, type GraphicsContext } from 'pixi.js';
 
 import { motionReduced } from '../motion.js';
@@ -41,6 +41,7 @@ import { ShapeTheme } from './shapeTheme.js';
 import { Memos, StampBook, Stamps, viewKey } from './stamps.js';
 import { TerrainStrips, whole, type TerrainPass, type TerrainPlan } from './terrainStrips.js';
 import {
+  looksLoaded,
   Fireworks,
   FlagHoist,
   GhostMotion,
@@ -662,7 +663,7 @@ export class MythologyTheme extends ShapeTheme implements Theme {
     const out = state.players[cannon.owner]?.eliminated !== false;
     const asleep = cannon.asleepUntil !== undefined && cannon.asleepUntil > state.tick;
     if (out || asleep || !cannon.active) return { angle: ARM_FIRED + 0.15, stone: false };
-    const loaded = isLoaded(cannon);
+    const loaded = looksLoaded(cannon);
     const swing = this.style.swingMs;
     if (firedAgo < swing) {
       const k = firedAgo / swing;

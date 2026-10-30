@@ -26,6 +26,11 @@ import { repoRoot, usageError, wholeNumber } from './cli.js';
  *     [--set specials.architect.3.repairRadius=3 ...] [--workers 4] [--seed 1000]
  *   npx tsx tools/headless/src/towerSoak.ts --out soaks/towers-x --summary
  *
+ * `--players N` (2 by default) plays N-player free-for-all tables: the pairing's first variant in
+ * one seat and its second in every other, that seat taken by each in turn on the same seeds —
+ * so the first's share is to be read against 1/N (2026-10-30, the user's: a tower aimed down
+ * four lines may meet only one rival of two).
+ *
  * A chunk's outcomes are written under a temporary name and renamed when its process ends,
  * so a chunk whose file exists is complete and is skipped: the same command carries on after
  * a stop, and a pairing already measured into a folder of the same levers is not run again.
@@ -45,6 +50,7 @@ const FLAGS = {
   matches: { type: 'string' },
   seed: { type: 'string' },
   workers: { type: 'string' },
+  players: { type: 'string' },
   set: { type: 'string', multiple: true },
   summary: { type: 'boolean' },
 } as const;
@@ -74,8 +80,11 @@ if (pairs.some((p) => p.length !== 2 || p.some((v) => v === ''))) {
   usageError('--pairs wants a:b[,c:d...], each a variant or none');
 }
 const levels = (values.levels ?? '5').split(',').map((l) => wholeNumber('levels', l, 1));
+const players = wholeNumber('players', values.players ?? '2', 2);
 const matches = wholeNumber('matches', values.matches ?? '96', 2);
-if (matches % (2 * CHUNK) !== 0) usageError(`--matches wants a multiple of ${2 * CHUNK}`);
+if (matches % (players * CHUNK) !== 0) {
+  usageError(`--matches wants a multiple of ${players * CHUNK}`);
+}
 const seed = wholeNumber('seed', values.seed ?? '1000', 0);
 const workers = wholeNumber('workers', values.workers ?? String(cpus().length), 1);
 const overrides = values.set ?? [];
@@ -84,7 +93,8 @@ const commit = execFileSync('git', ['rev-parse', '--short', 'HEAD'], { cwd: repo
   .toString()
   .trim();
 const dirty = execFileSync('git', ['status', '--porcelain'], { cwd: repoRoot }).length > 0;
-const meta = `${JSON.stringify({ set: [...overrides].sort() })}\n`;
+// Two players as before, so a folder of the old soaks still matches its levers.
+const meta = `${JSON.stringify({ set: [...overrides].sort(), ...(players === 2 ? {} : { players }) })}\n`;
 mkdirSync(out, { recursive: true });
 const metaFile = join(out, 'set.json');
 if (existsSync(metaFile) && readFileSync(metaFile, 'utf8') !== meta) {
@@ -103,15 +113,14 @@ if (commits.filter((c) => c !== '').some((c) => c !== stamp)) {
 const chunks: Chunk[] = [];
 for (const [a, b] of pairs as [string, string][]) {
   for (const level of levels) {
-    for (let first = seed; first < seed + matches / 2; first += CHUNK) {
-      for (const [order, towers] of [
-        [0, `${a},${b}`],
-        [1, `${b},${a}`],
-      ] as const) {
+    for (let first = seed; first < seed + matches / players; first += CHUNK) {
+      for (let order = 0; order < players; order++) {
+        // The first variant in seat `order`, the second in every other.
+        const towers = Array.from({ length: players }, (_, s) => (s === order ? a : b)).join(',');
         chunks.push({
           name: `${a}-${b}-L${level}-o${order}-s${first}`,
           args: [
-            ...['--players', '2', '--level', String(level), '--specials', 'on'],
+            ...['--players', String(players), '--level', String(level), '--specials', 'on'],
             ...['--special', towers, '--matches', String(CHUNK), '--seed', String(first)],
             ...overrides.flatMap((o) => ['--set', o]),
           ],
@@ -160,12 +169,12 @@ console.log(`\n${summary(out)}`);
 function summary(dir: string): string {
   const groups = new Map<string, { won: number; n: number; rounds: number; unfinished: number }>();
   for (const file of readdirSync(dir).filter((f) => f.endsWith('.outcomes.csv'))) {
-    const match = /^(.+)-(.+)-L(\d+)-o([01])-s\d+\.outcomes\.csv$/.exec(file);
+    const match = /^(.+)-(.+)-L(\d+)-o(\d+)-s\d+\.outcomes\.csv$/.exec(file);
     if (match === null) continue;
     const [, a, b, level, order] = match as unknown as [string, string, string, string, string];
     const key = `${a} vs ${b}  L${level}`;
     const group = groups.get(key) ?? { won: 0, n: 0, rounds: 0, unfinished: 0 };
-    // In order 1 the pairing's first variant sat in seat 1.
+    // In order k the pairing's first variant sat in seat k.
     const seat = Number(order);
     for (const o of parseOutcomesCsv(readFileSync(join(dir, file), 'utf8'))) {
       group.n++;

@@ -4,6 +4,7 @@ import {
   Structure,
   barrelsOf,
   computeEnclosure,
+  inFlight,
   pieceById,
   poolForRound,
   type Castle,
@@ -217,7 +218,7 @@ export class PlanSearch {
     minGuns = 0,
   ): PlanSearch | null {
     const before = state.phase === 'intermission' && state.pendingPhase === 'build';
-    if ((!before && state.phase !== 'build') || state.shots.length > 0) return null;
+    if ((!before && state.phase !== 'build') || inFlight(state)) return null;
     // The board as it is now, never as it will be: a search that runs on into the build
     // phase must still play every strategy from the same start.
     return new PlanSearch(snapshot(state), playerId, profile, seed, weights, order, minGuns);

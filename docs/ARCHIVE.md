@@ -10901,3 +10901,42 @@ start, several seconds, so a screensaver would have to be installed instead. The
 would have been a host of its own over Windows' WebView2, some 4–6 MB and quicker to start, at
 the cost of a second program to keep beside the desktop app. Not to be proposed again unless
 the user asks.
+
+## 15p. The Subwoofer, the ninth tower (2026-10-30)
+
+The user's design, discussed before building (SPECIAL_TOWERS.md §2.9): the last special tower, the
+one no click fires. Its cooldown starts with each combat phase, so it is never ready at its
+start, and each time it runs out the tower sends a wave in one of the four cardinal directions,
+towards the nearest enemy wall — the nearest lane deciding, ties by the next lanes, then north,
+east, south, west; with no enemy wall on any lane it stays silent. Each lane travels on its own,
+20 tiles a second, and clears the first wall it reaches; a lane whose wall another shot took runs
+off the map; a wave sent late lands in the intermission, which waits for it (the user's). No range
+limit, no chance, lulled as a tower with its cooldown paused. Names weighed: Shockwave, Tsunami, the
+Jericho Horn, a Foghorn; the Subwoofer the user's.
+
+In the sim (`subwoofer.ts`): `aimWave` and `waveLanes`, pure, the waves a list in the match
+(`state.waves`), a lane's front from its launch tick, a gun's next wave its `waveTick`, set as combat
+begins and gone as it ends; both hashed only while there are any, so a match without them hashes as
+before, hash version 4 and recording format 4 standing; the snapshot carries them, protocol 34. No
+barrel (`barrelsOf` 0), so `findReadyCannon`, the reload rings and the bots' ready guns pass it over;
+`inFlight` for "anything still in the air", which the intermission, the bots' planning and the
+looks' priming now ask. Bots site it where its lanes meet the most enemy wall, three deep a lane,
+the nearest first. In the client: a loudspeaker emblem, its cooldown a ring round its badge, a wave
+as arcs bowed forward down each lane in its owner's colour round a white core, a blast where a lane
+clears a wall; the styles that draw a gun's reload draw it ready (`looksLoaded`); the tower menu's
+preview, How to play, and its texts. The user's `tower_subwoofer.mp3` as it fires, once a tick
+however many fire and not again within a second — towers bought alike fire together, the sound is
+1.5 s long, and the user asked that it not get messy.
+
+**Balanced at Level 5**, 96 matches a pairing (±5). The cooldown, the planned lever, did not move
+it: the wave two wide (the tower's own width), from 2 waves a barrage to 7 the cost-2 variant stayed
+at 45–50% against no tower, the cost-3 never above it head to head (table in SPECIAL_TOWERS.md §5
+SW). Replayed, there were targets enough — 92–94% of the possible waves sent at the start, 93–95%
+of lanes hitting — and faster waves cleared 25–40% more walls without winning more: the nearest walls
+on two fixed rows are patched in the next build. The user chose to widen it rather than rule which
+walls it may hit: **four lanes**, one more either side, gave **49 / 55** against no tower and **46**
+head to head at the user's 4 s / 3 s, kept. The user's question whether a two-player table hides
+rivals off its lines: `towerSoak.ts` now plays N-player tables (`--players`), the variant in one
+seat against the other in the rest, each seat in turn. At four players, 192 matches (±3–4), against a
+fair 25%: two wide 27 / 40, four wide **46 / 54**. No other tower had been soaked at four, so a
+reference — the Laser Tower there — is the next session's, before anything is changed.

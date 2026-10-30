@@ -161,7 +161,9 @@ Full detail in PLAN.md §1. The parts that surprise people:
 - **Special towers** (a table's switch, off by default): a tower is bought in the cannon phase
   for 2 or 3 of the cannons a round earns, never at the opening, once a round, three at most on
   the island, and nothing is saved towards one — so cost 3 needs a second castle held. A ready
-  impact tower (Big Bertha) always fires first, whatever the click aims at. `docs/SPECIAL_TOWERS.md`.
+  impact tower (Big Bertha) always fires first, whatever the click aims at; the Subwoofer is never
+  fired by a click at all, sending its waves on its own (no barrel, `barrelsOf` 0).
+  `docs/SPECIAL_TOWERS.md`.
 - **Every match is a team match**; free-for-all is teams of one. Teams share a score (the
   sum of their members') and a pool of lives, and a member failing with the pool empty
   takes the whole team out. Teammates may build on each other's islands — people only by
@@ -175,8 +177,17 @@ Full detail in PLAN.md §1. The parts that surprise people:
 
 ## Status
 
-**Done** (2026-10-29; the latest release **v0.9.25**, 2026-10-29, protocol 33, recording format 4,
-which a test session needs the server rebuilt and every page reloaded for):
+**Done** (2026-10-30; the latest release **v0.9.25**, 2026-10-29, protocol 33, recording format 4,
+which a test session needs the server rebuilt and every page reloaded for; the tree since is
+protocol 34):
+
+- **The Subwoofer** (ARCHIVE 15p, 2026-10-30, the user's design; protocol 34): the ninth and last
+  special tower, the one no click fires — every cooldown of a combat phase (4 s at cost 2, 3 s at
+  cost 3, its first wave a cooldown in) a wave four lanes wide towards the nearest enemy wall in
+  the four cardinal directions, each lane clearing the first wall it reaches (`subwoofer.ts`,
+  `state.waves`, a gun's `waveTick`). Balanced at Level 5 by its width, not its cooldown: 49 / 55
+  against no tower, 46 head to head; at four players 46 / 54 against a fair 25, which a reference
+  is to judge. The soak tool plays N-player tables (`--players`).
 
 - **A demo behind the menu** (ARCHIVE 15m, 2026-10-29, the user's design; an attract mode once
   dropped in 11w): after 30 s of the bare menu untouched, or the corner's Demo button, level-5
@@ -495,9 +506,9 @@ which a test session needs the server rebuilt and every page reloaded for):
 
 **Next** — PLAN §11, towards a first feature-ready version:
 
-- **Special towers** (item 2): **one tower left to build**, the ninth and last, which one still
-  being decided by the users — wait for their design (the test without the cap of three was
-  dropped, ARCHIVE 14zm). Their balance is closed and they are **off by default for
+- **Special towers** (item 2): the ninth and last, the **Subwoofer**, built (ARCHIVE 15p);
+  next, the Laser Tower soaked at four players as a reference (`towerSoak.ts --players 4`,
+  SPECIAL_TOWERS.md §5 SW), then the users' play-test (the test without the cap of three was dropped, ARCHIVE 14zm). Their balance is closed and they are **off by default for
   good** — a wacky addition, not the base game (ARCHIVE 13zw); a new tower is balanced at Level 5
   only, its variants against each other and against no tower (the user's).
 

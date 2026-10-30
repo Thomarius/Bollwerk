@@ -1,11 +1,15 @@
 import { defaultRuleset, variantCost, variantKind, type TowerVariant } from '@bollwerk/config';
 import {
+  advanceWaves,
   applyEnclosure,
   drainEvents,
   fire,
+  inFlight,
   repairWalls,
   resolveImpacts,
+  sendWaves,
   stateFromAscii,
+  ticksFor,
   withSpecials,
   type MatchEvent,
   type MatchState,
@@ -17,7 +21,8 @@ import {
  * or an ordinary cannon, for none — and a rival's on the right, and a loop of shots fired
  * with the sim's own `fire`, landed by `resolveImpacts` and, for the Architect, rebuilt by
  * `repairWalls`. So every number is the chosen variant's own: Bertha's cross and her flight,
- * the Architect's reach, the Rapid's barrels, the Laser's walls pierced. No Pixi here; `towerPreview.ts` draws it.
+ * the Architect's reach, the Rapid's barrels, the Laser's walls pierced, the Subwoofer's waves
+ * and its cooldown between them. No Pixi here; `towerPreview.ts` draws it.
  */
 
 /** `XX` is the chooser's gun, as `stateFromAscii` writes it: `*`, or a tower's letter. */
@@ -77,7 +82,17 @@ const GLYPH: Record<TowerVariant, string> = {
   frost3: 'F',
   lullaby2: 'z',
   lullaby3: 'Z',
+  subwoofer2: 'w',
+  subwoofer3: 'W',
 };
+
+/**
+ * The Subwoofer's waves a loop: two, its cooldown between them — its first sooner than in a
+ * match, at `AIM_MS` as every show's first shot, so the preview does not open on a wait. Its
+ * first clears the rival's west wall facing it, four blocks of it, its second passes through and
+ * clears the east.
+ */
+const WAVES = 2;
 
 /** Before the first shot of a loop, after its last lands, and before the repair. */
 const AIM_MS = 700;
@@ -139,6 +154,8 @@ export class TowerShow {
   private repairAt: number | null = null;
   /** When the loop's last shot landed (and its repair ran); null while it is going on. */
   private doneAt: number | null = null;
+  /** The Subwoofer's waves still to send this loop. */
+  private wavesLeft = 0;
 
   constructor(readonly variant: TowerVariant | null) {
     this.state = showState(variant);
@@ -156,6 +173,12 @@ export class TowerShow {
     while (state.tick < Math.floor(this.ticks)) {
       state.tick++;
       resolveImpacts(state);
+      advanceWaves(state);
+      if (this.wavesLeft > 0) {
+        const before = state.waves.length;
+        sendWaves(state);
+        if (state.waves.length > before && --this.wavesLeft === 0) this.silence();
+      }
     }
     // A gun fires once it is loaded: a plan waits on its barrel, as a click would.
     while (this.plan.length > 0 && this.ms >= (this.plan[0] as Planned).at) {
@@ -163,7 +186,7 @@ export class TowerShow {
       if ('rejection' in fire(state, next.player, next.x, next.y)) break;
       this.plan.shift();
     }
-    const quiet = this.plan.length === 0 && state.shots.length === 0;
+    const quiet = this.plan.length === 0 && this.wavesLeft === 0 && !inFlight(state);
     if (quiet && this.repairAt === null && this.doneAt === null) {
       if (this.isArchitect()) this.repairAt = this.ms + REPAIR_MS;
       else this.doneAt = this.ms;
@@ -179,6 +202,16 @@ export class TowerShow {
       reset = true;
     }
     return { events: drainEvents(state), reset };
+  }
+
+  /** How far into its tick the show is, 0 to 1, for the waves to glide between ticks. */
+  get tickFraction(): number {
+    return this.ticks - Math.floor(this.ticks);
+  }
+
+  /** No more waves this loop: the Subwoofer's cooldown taken away. */
+  private silence(): void {
+    for (const cannon of this.state.cannons) delete cannon.waveTick;
   }
 
   private isArchitect(): boolean {
@@ -201,6 +234,14 @@ export class TowerShow {
       }));
     } else if (variant !== null && variantKind(variant) === 'laser') {
       this.plan = [{ player: 0, ...ALONG_TOP, at: AIM_MS }];
+    } else if (variant !== null && variantKind(variant) === 'subwoofer') {
+      // No click fires it: its first wave at `AIM_MS`, then its cooldown as in a match.
+      this.plan = [];
+      this.wavesLeft = WAVES;
+      const rate = this.state.ruleset.tickRateHz;
+      for (const cannon of this.state.cannons) {
+        if (cannon.kind === 'subwoofer') cannon.waveTick = this.state.tick + ticksFor(AIM_MS, rate);
+      }
     } else {
       this.plan = [{ player: 0, ...FACING[0], at: AIM_MS }];
     }
@@ -212,12 +253,14 @@ export class TowerShow {
     state.structure.set(this.structure);
     state.owner.set(this.owner);
     state.shots = [];
+    state.waves = [];
     state.lostWalls = [];
     state.frozen = [];
     for (const cannon of state.cannons) {
       cannon.shotIds = [];
       delete cannon.asleepUntil;
       delete cannon.lulled;
+      delete cannon.waveTick;
     }
   }
 }

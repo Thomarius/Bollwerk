@@ -752,6 +752,7 @@ export class Scene {
     // The towers' marks in the colours of the look in front, as its banner brings it.
     const art = this.slots[this.shown.to].art;
     this.towers.draw(state, this.view, art, humanPlayer);
+    this.towers.drawWaves(state, this.view, art, tickFraction);
     this.towers.drawEffects(this.view, deltaMs);
     const shown = withoutInstantShots(state);
     for (const slot of this.visible()) {

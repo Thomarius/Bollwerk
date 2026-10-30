@@ -6588,8 +6588,8 @@ body.reduced-motion .look-gallery .card img {
   display: flex;
   flex-direction: column;
   gap: 0.9rem;
-  /* Five cards to a row, two rows for the ten choices — none and the nine towers, the last still
-     to come (2026-10-25) — and wide enough for "Schnellfeuer-" on a card's first line. */
+  /* Five cards to a row, two rows for the ten choices — none and the nine towers, the Subwoofer
+     the last (2026-10-30) — and wide enough for "Schnellfeuer-" on a card's first line. */
   width: min(52rem, 94vw);
   max-height: 92vh;
   overflow-y: auto;

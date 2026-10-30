@@ -209,6 +209,9 @@ SCENES=(
   # cursor's marks need a click or a pointer, so they are seen by script, not here.
   "towers-cannons|$BASE/?autostart=1&players=2&seed=5&specials=1&tower=architect3&snapshot=cannon_place&round=3&style=flat|2500"
   "towers-combat|$BASE/?autostart=1&players=2&seed=5&specials=1&tower=bertha3&snapshot=combat&round=3&style=flat|4200"
+  # The Subwoofer's cooldown ring on its badge, and a wave on its way: its first goes three
+  # seconds into the barrage, so caught a moment after (real time, so nudged on a slower machine).
+  "towers-waves|$BASE/?autostart=1&players=2&seed=5&specials=1&tower=subwoofer3&snapshot=combat&round=3&style=flat|7300"
   # Night's sea: the moon's path, lighthouses and their beams.
   "night-sea|$BASE/?autostart=1&players=3&seed=5&snapshot=combat&round=3&style=night|3000"
 )

@@ -84,6 +84,10 @@
       "file": "sfx/tower_lullaby.mp3",
       "volume": 0.6
     },
+    "subwoofer": {
+      "file": "sfx/tower_subwoofer.mp3",
+      "volume": 0.6
+    },
     "walls_repaired": {
       "file": "sfx/tower_architect.mp3",
       "volume": 0.6

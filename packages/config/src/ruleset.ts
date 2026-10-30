@@ -16,6 +16,7 @@ export const SPECIAL_KINDS = [
   'laser',
   'frost',
   'lullaby',
+  'subwoofer',
 ] as const;
 export const SpecialKindSchema = z.enum(SPECIAL_KINDS);
 export type SpecialKind = z.infer<typeof SpecialKindSchema>;
@@ -48,6 +49,8 @@ export const TOWER_VARIANTS = [
   'frost3',
   'lullaby2',
   'lullaby3',
+  'subwoofer2',
+  'subwoofer3',
 ] as const satisfies readonly `${SpecialKind}${TowerCost}`[];
 export const TowerVariantSchema = z.enum(TOWER_VARIANTS);
 export type TowerVariant = z.infer<typeof TowerVariantSchema>;
@@ -201,6 +204,24 @@ const LullabySchema = z.strictObject({
 });
 
 /**
+ * The Subwoofer (2026-10-30, the user's): never fired by a click. Every `cooldownMs` of a combat
+ * phase, its first included, it sends a wave two lanes wide towards the nearest enemy wall in the
+ * four cardinal directions, each lane clearing the first wall it reaches (`sendWaves`).
+ */
+const SubwooferSchema = z.strictObject({
+  footprint,
+  /** From the combat phase's start to its first wave, and between waves; the balance's lever. */
+  cooldownMs: z.number().int().positive(),
+  /** How fast a wave's lanes travel, in tiles a second. */
+  waveTilesPerSecond: z.number().positive(),
+  /**
+   * Lanes a wave is wide, a row or column each, centred on the footprint; each clears a wall. A
+   * lever (the user's, 2026-10-30): 2 as wide as the tower, 4 a lane more either side.
+   */
+  waveWidth: z.number().int().positive(),
+});
+
+/**
  * Special towers (docs/SPECIAL_TOWERS.md): a cannon with an ability of its own, bought in
  * the cannon phase for several ordinary ones. Whether they are played at all is `enabled`,
  * which a match's settings write; the rest is each variant's balance.
@@ -245,6 +266,11 @@ export const SpecialsSchema = z.strictObject({
    * then not offered.
    */
   lullaby: byCost(LullabySchema).optional(),
+  /**
+   * Sends waves on its own towards the nearest enemy wall (2026-10-30). Absent from rulesets
+   * written before it, and then not offered.
+   */
+  subwoofer: byCost(SubwooferSchema).optional(),
 });
 export type Specials = z.infer<typeof SpecialsSchema>;
 export type BerthaVariant = z.infer<typeof BerthaSchema>;
@@ -255,6 +281,7 @@ export type BiggestVariant = z.infer<typeof BiggestSchema>;
 export type LaserVariant = z.infer<typeof LaserSchema>;
 export type FrostVariant = z.infer<typeof FrostSchema>;
 export type LullabyVariant = z.infer<typeof LullabySchema>;
+export type SubwooferVariant = z.infer<typeof SubwooferSchema>;
 export type VariantConfig =
   | BerthaVariant
   | ArchitectVariant
@@ -263,7 +290,8 @@ export type VariantConfig =
   | BiggestVariant
   | LaserVariant
   | FrostVariant
-  | LullabyVariant;
+  | LullabyVariant
+  | SubwooferVariant;
 
 /** The variants the ruleset offers, in their order everywhere. */
 export function offeredVariants(specials: Specials): TowerVariant[] {

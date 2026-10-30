@@ -87,6 +87,18 @@ const CannonSchema = z.strictObject({
   asleepUntil: z.number().int().optional(),
   /** Lullabies taken towards its sleep; absent at none. */
   lulled: z.number().int().positive().optional(),
+  /** A Subwoofer's next wave, the tick it is due; absent outside combat and on every other gun. */
+  waveTick: z.number().int().optional(),
+});
+
+const WaveSchema = z.strictObject({
+  id: z.number().int().nonnegative(),
+  cannonId: z.number().int().nonnegative(),
+  owner: z.number().int().nonnegative(),
+  cost: z.number().int().positive(),
+  dir: z.union([z.literal(0), z.literal(1), z.literal(2), z.literal(3)]),
+  lanes: z.array(z.strictObject({ x: z.number().int(), y: z.number().int(), done: z.boolean() })),
+  launchTick: z.number().int(),
 });
 
 const ShotSchema = z.strictObject({
@@ -147,6 +159,8 @@ export const SnapshotSchema = z.strictObject({
       }),
     )
     .optional(),
+  /** The Subwoofers' waves in flight; absent from a snapshot of a match without any. */
+  waves: z.array(WaveSchema).optional(),
   nextCannonId: z.number().int().nonnegative(),
   nextShotId: z.number().int().nonnegative(),
   winners: z.array(z.number().int().nonnegative()),
@@ -178,6 +192,9 @@ export function captureSnapshot(state: MatchState): Snapshot {
     shots: state.shots.map((s) => ({ ...s })),
     lostWalls: [...state.lostWalls],
     ...(state.frozen.length > 0 ? { frozen: state.frozen.map((f) => ({ ...f })) } : {}),
+    ...(state.waves.length > 0
+      ? { waves: state.waves.map((w) => ({ ...w, lanes: w.lanes.map((l) => ({ ...l })) })) }
+      : {}),
     nextCannonId: state.nextCannonId,
     nextShotId: state.nextShotId,
     winners: [...state.winners],
@@ -209,14 +226,19 @@ export function applySnapshot(state: MatchState, snapshot: Snapshot): void {
   state.territory = decodeRle(snapshot.territory, size);
   state.castles = snapshot.castles.map((c) => ({ ...c }));
   // A gun awake carries no `asleepUntil` at all, as the match makes it.
-  state.cannons = snapshot.cannons.map(({ asleepUntil, lulled, ...c }) => ({
+  state.cannons = snapshot.cannons.map(({ asleepUntil, lulled, waveTick, ...c }) => ({
     ...c,
     ...(asleepUntil === undefined ? {} : { asleepUntil }),
     ...(lulled === undefined ? {} : { lulled }),
+    ...(waveTick === undefined ? {} : { waveTick }),
   }));
   state.shots = snapshot.shots.map((s) => ({ ...s }));
   state.lostWalls = [...snapshot.lostWalls];
   state.frozen = (snapshot.frozen ?? []).map((f) => ({ ...f }));
+  state.waves = (snapshot.waves ?? []).map((w) => ({
+    ...w,
+    lanes: w.lanes.map((l) => ({ ...l })),
+  }));
   state.nextCannonId = snapshot.nextCannonId;
   state.nextShotId = snapshot.nextShotId;
   state.winners = [...snapshot.winners];

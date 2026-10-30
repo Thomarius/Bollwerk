@@ -105,6 +105,8 @@ const perMatch: string[] = [];
 const byKind = new Map<string, { shots: number; walls: number }>();
 /** The guns Lullaby Towers put to sleep, by group and the kind of gun slept: `bot L5 bertha3`. */
 const slept = new Map<string, number>();
+/** Each Subwoofer wave's cost, by its id, for its lanes' walls as they fall. */
+const waveCost = new Map<number, number>();
 
 /** Chebyshev distance from (x, y) to the nearest live opponent's wall, up to 3; 3 means farther. */
 function nearestOpponentWall(state: MatchState, shooter: number, x: number, y: number): number {
@@ -301,6 +303,20 @@ function shotObserver(
         const k = byKind.get(kind) ?? { shots: 0, walls: 0 };
         k.shots++;
         k.walls += event.destroyed.length;
+        byKind.set(kind, k);
+      } else if (event.kind === 'wave_sent' || event.kind === 'wave_ended') {
+        // A Subwoofer's waves, by its kind: a wave a shot, each lane's wall as it falls.
+        const owner = event.kind === 'wave_sent' ? event.wave.owner : event.owner;
+        const cost =
+          event.kind === 'wave_sent' ? event.wave.cost : (waveCost.get(event.waveId) ?? 0);
+        if (event.kind === 'wave_sent') waveCost.set(event.wave.id, cost);
+        const kind = `${keyOf[owner] as string} subwoofer${cost}`;
+        const k = byKind.get(kind) ?? { shots: 0, walls: 0 };
+        if (event.kind === 'wave_sent') k.shots++;
+        else if (event.destroyed !== null) {
+          k.walls++;
+          destroyedBy.set(event.destroyed, owner);
+        }
         byKind.set(kind, k);
       }
     }

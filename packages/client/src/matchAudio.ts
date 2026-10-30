@@ -1,4 +1,5 @@
 import {
+  defaultRuleset,
   styleTrack,
   type ArtStyle,
   type MusicCue,
@@ -83,6 +84,14 @@ function trackFor(phase: Phase): MusicCue | null {
 /** Between the knocks of an Architect's repair. */
 const KNOCK_MS = 300;
 
+/**
+ * The least time between two Subwoofers' waves heard, in ticks: a second. Towers bought alike
+ * fire on one tick, every combat's cooldowns starting together, and a lullaby can leave one a
+ * moment behind another; its sound is a second and a half long, so two a moment apart only
+ * smeared it (the user's, 2026-10-30: the sound must not get messy).
+ */
+const SUBWOOFER_GAP_TICKS = defaultRuleset.tickRateHz;
+
 export class MatchAudio {
   private phase: Phase | null = null;
   private countedAt = -1;
@@ -90,6 +99,8 @@ export class MatchAudio {
   private readonly heavy = new Map<number, SfxCue>();
   /** The last shot whose lullaby was heard, so several guns asleep to one shot sound once. */
   private lullabied = -1;
+  /** The tick the last Subwoofer's wave was heard on. */
+  private wooferTick = -Infinity;
   /** The look whose music is playing, or null for the menu's, victory's or defeat's. */
   private span: Span | null = null;
   /** When each style's track last played, for its pause; afresh every match. */
@@ -147,6 +158,13 @@ export class MatchAudio {
           // The freeze over the shot's own impact, which `shot_impact` has played on the same
           // tick (the user's tower_frost.mp3, 2026-10-21).
           this.audio.play('frost_impact');
+          break;
+
+        case 'wave_sent':
+          // Once however many Subwoofers fire on a tick, and not again within a second.
+          if (event.tick - this.wooferTick < SUBWOOFER_GAP_TICKS) break;
+          this.wooferTick = event.tick;
+          this.audio.play('subwoofer');
           break;
 
         case 'laser_fired':

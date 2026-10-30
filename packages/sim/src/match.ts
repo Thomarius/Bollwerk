@@ -20,6 +20,7 @@ import { streamFor } from './rng.js';
 import { fire, resolveImpacts } from './shots.js';
 import { startFreezes, thawExpired } from './frost.js';
 import { wakeAll } from './lullaby.js';
+import { advanceWaves, endCooldowns, inFlight, sendWaves, startCooldowns } from './subwoofer.js';
 import { repairWalls } from './specials.js';
 import { denseTeams, tableTeamSize, teamScore } from './teams.js';
 import { generateTerrain } from './terrain.js';
@@ -147,6 +148,7 @@ export function createMatch(options: MatchOptions): MatchState {
     shots: [],
     lostWalls: [],
     frozen: [],
+    waves: [],
     nextCannonId: 0,
     nextShotId: 0,
     winners: [],
@@ -319,6 +321,7 @@ function stripEliminated(state: MatchState, playerId: number): void {
     return false;
   });
   state.shots = state.shots.filter((shot) => shot.owner !== playerId);
+  state.waves = state.waves.filter((wave) => wave.owner !== playerId);
   for (let i = 0; i < state.owner.length; i++) {
     if (state.owner[i] === islandId && state.structure[i] === Structure.Wall) state.owner[i] = 0;
   }
@@ -584,6 +587,8 @@ function beginPendingPhase(state: MatchState): void {
       player.openingPlacement = false;
     }
     enterPhase(state, 'combat', state.ruleset.phases.combatMs);
+    // The Subwoofers' cooldowns run from the barrage's first tick: none is ready as it begins.
+    startCooldowns(state);
     return;
   }
   if (next === 'build') {
@@ -664,6 +669,8 @@ function advancePhase(state: MatchState): void {
       if (state.tick >= state.phaseEndTick) {
         // Every gun a Lullaby Tower put to sleep wakes with the barrage's end: nothing carries over.
         wakeAll(state);
+        // No wave is sent outside combat; those still travelling land in the intermission.
+        endCooldowns(state);
         enterIntermission(state, 'build');
       }
       return;
@@ -708,7 +715,7 @@ function advancePhase(state: MatchState): void {
     case 'intermission': {
       // Hold while anything is still in the air, so the last volley lands and plays
       // out before the announcement starts rather than under it.
-      if (state.shots.length > 0) {
+      if (inFlight(state)) {
         state.phaseEndTick = state.tick + intermissionTicks(state.ruleset);
         return;
       }
@@ -730,6 +737,10 @@ export function step(state: MatchState): void {
   if (state.phase === 'game_over') return;
   state.tick++;
   resolveImpacts(state);
+  // The Subwoofers' waves travel on, and those whose cooldown is over send theirs — before the
+  // phase may end, so a wave due on the barrage's last tick is still sent.
+  advanceWaves(state);
+  sendWaves(state);
   advancePhase(state);
 }
 
@@ -860,6 +871,7 @@ const CANNON_KIND_CODES: readonly string[] = [
   'laser',
   'frost',
   'lullaby',
+  'subwoofer',
 ];
 /** The same for loadouts; a variant added goes at the end. */
 const VARIANT_CODES: readonly TowerVariant[] = [
@@ -879,6 +891,8 @@ const VARIANT_CODES: readonly TowerVariant[] = [
   'frost3',
   'lullaby2',
   'lullaby3',
+  'subwoofer2',
+  'subwoofer3',
 ];
 
 export function hashMatchState(state: MatchState, version = HASH_VERSION): string {
@@ -988,6 +1002,21 @@ export function hashMatchState(state: MatchState, version = HASH_VERSION): strin
       h.i32(c.id)
         .i32(c.asleepUntil ?? -1)
         .i32(c.lulled ?? 0);
+  }
+  // The Subwoofers' cooldowns and waves, only while there are any: a match without them hashes
+  // as it always did.
+  const due = state.cannons.filter((c) => c.waveTick !== undefined);
+  if (due.length > 0) {
+    h.u32(due.length);
+    for (const c of due) h.i32(c.id).i32(c.waveTick ?? -1);
+  }
+  if (state.waves.length > 0) {
+    h.u32(state.waves.length);
+    for (const w of state.waves) {
+      h.i32(w.id).i32(w.cannonId).i32(w.owner).i32(w.cost).u32(w.dir).i32(w.launchTick);
+      h.u32(w.lanes.length);
+      for (const l of w.lanes) h.i32(l.x).i32(l.y).bool(l.done);
+    }
   }
   return h.hex;
 }

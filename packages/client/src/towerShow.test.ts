@@ -13,7 +13,9 @@ function play(variant: TowerVariant | null, ms: number): { show: TowerShow; even
 }
 
 const impacts = (events: readonly MatchEvent[]) => events.filter((e) => e.kind === 'shot_impact');
-const fired = (events: readonly MatchEvent[]) => events.filter((e) => e.kind === 'shot_fired');
+/** Shots fired, a Subwoofer's waves among them. */
+const fired = (events: readonly MatchEvent[]) =>
+  events.filter((e) => e.kind === 'shot_fired' || e.kind === 'wave_sent');
 
 describe('the tower menu’s preview, played by the rules', () => {
   it('fires an ordinary cannon for none, clearing one wall', () => {
@@ -120,6 +122,25 @@ describe('the tower menu’s preview, played by the rules', () => {
       return first.destroyed.length;
     };
     expect(cleared('biggest3')).toBeGreaterThan(cleared('biggest2'));
+  });
+
+  it('sends the Subwoofer’s two waves at its cooldown, the second through to the far wall', () => {
+    for (const variant of ['subwoofer2', 'subwoofer3'] as const) {
+      const { show, events } = play(variant, 9000);
+      const { tickRateHz } = show.state.ruleset;
+      // The first loop's, a second loop beginning within the time for the quicker cooldown.
+      const sent = events.filter((e) => e.kind === 'wave_sent').slice(0, 2);
+      expect(sent).toHaveLength(2);
+      const cooldown = variant === 'subwoofer2' ? 4 : 3;
+      expect((sent[1] as MatchEvent).tick - (sent[0] as MatchEvent).tick).toBe(
+        cooldown * tickRateHz,
+      );
+      // East both times, four lanes: the rival's west wall at column 17, then the east one at 25.
+      const columns = events.flatMap((e) =>
+        e.kind === 'wave_ended' && e.destroyed !== null ? [e.x] : [],
+      );
+      expect(columns.slice(0, 8)).toEqual([17, 17, 17, 17, 25, 25, 25, 25]);
+    }
   });
 
   it('loops: the walls come back and it plays again', () => {

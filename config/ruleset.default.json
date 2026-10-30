@@ -95,6 +95,10 @@
         "asCannons": ["architect"],
         "towerLulls": 2
       }
+    },
+    "subwoofer": {
+      "2": { "footprint": [2, 2], "cooldownMs": 4000, "waveTilesPerSecond": 20, "waveWidth": 4 },
+      "3": { "footprint": [2, 2], "cooldownMs": 3000, "waveTilesPerSecond": 20, "waveWidth": 4 }
     }
   },
   "build": {

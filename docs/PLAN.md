@@ -1686,7 +1686,7 @@ every resolution against an independent search, not only on unit pictures.
 
 **Where to start (2026-10-29).** The latest release is **v0.9.25** (2026-10-29, protocol 33,
 recording format 4). Item 3, the performance plan, is finished, its leftovers measured and the worthwhile ones built
-(ARCHIVE 14zc–14zi, 14zo). Item 4, the UI polish, is done (ARCHIVE 14zr–14zt), and item 5, the menus reviewed (ARCHIVE 15j) and the end screen after them (15k), both in v0.9.23; item 6, the demo, in v0.9.24, its score bar taken out in v0.9.25. Next: item 2's last tower, once the users have decided which (ARCHIVE 14zm). The styles' own music's chance is the player's choice in Options (ARCHIVE 14zn). Every feature up to v0.9.16 has been tested and approved by the users (2026-10-27).
+(ARCHIVE 14zc–14zi, 14zo). Item 4, the UI polish, is done (ARCHIVE 14zr–14zt), and item 5, the menus reviewed (ARCHIVE 15j) and the end screen after them (15k), both in v0.9.23; item 6, the demo, in v0.9.24, its score bar taken out in v0.9.25. Next: item 2's last tower, the Subwoofer, built (ARCHIVE 15p): a reference run at four players, then its play-test. The styles' own music's chance is the player's choice in Options (ARCHIVE 14zn). Every feature up to v0.9.16 has been tested and approved by the users (2026-10-27).
 Up to **v0.8.3**: the game and online play, bots as skill levels and personalities, the styles
 with their corner pieces, random looks every round, English and German, the desktop app, UPnP,
 the balance soak and the rendering work (ARCHIVE 12h–12v), the refactoring (12w) and stronger
@@ -1749,9 +1749,12 @@ fit (ARCHIVE 12z), its remaining steps dropped (the user's decision, 2026-10-14;
    tower was the user's Laser Tower (2026-10-21, ARCHIVE 14k), built, balanced at Level 5 and
    played by the user; then the Frost Cannon (ARCHIVE 14l), a risky one on purpose, built and
    balanced at Level 5; and the Lullaby Tower (ARCHIVE 14m), reworked as an area of effect and
-   balanced at Level 5 — both played by the user, working (2026-10-23, ARCHIVE 14n). Open: **one tower left to
-   build**, the last; which one the users are still deciding, and its design comes from them
-   (2026-10-27). The test without the cap of three is dropped (the user's, ARCHIVE 14zm).
+   balanced at Level 5 — both played by the user, working (2026-10-23, ARCHIVE 14n). The ninth and
+   last, the user's **Subwoofer** (2026-10-30, SPECIAL_TOWERS.md §2.9), the one tower
+   no click fires — a wave four wide every cooldown towards the nearest enemy wall — is built
+   (ARCHIVE 15p), at two players inside the goal; open: a reference at four players, the Laser
+   Tower, since there it wins twice its share (SPECIAL_TOWERS.md §5 SW), then the users' play-test. The test without the cap of three is dropped (the user's,
+   ARCHIVE 14zm).
    Their own sounds are in (TS, ARCHIVE 13zx). The design
    and these packages are in
    [`SPECIAL_TOWERS.md`](./SPECIAL_TOWERS.md).

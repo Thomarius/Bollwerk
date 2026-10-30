@@ -164,9 +164,12 @@ export function inRepairReach(
 /**
  * Shots a gun may have in the air at once. A Rapid Cannon is as many cannons stacked on
  * one footprint as it cost (the user's design, 2026-10-16), a barrel each with its own
- * flight and so its own reload; every other gun has one.
+ * flight and so its own reload; the Subwoofer none, since no click fires it — it sends its
+ * waves on its own (`sendWaves`), so it is never the gun a shot is fired from, nor counted
+ * among those ready; every other gun has one.
  */
 export function barrelsOf(cannon: Pick<Cannon, 'kind' | 'cost'>): number {
+  if (cannon.kind === 'subwoofer') return 0;
   return cannon.kind === 'rapid' ? cannon.cost : 1;
 }
 

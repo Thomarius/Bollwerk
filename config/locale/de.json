@@ -603,6 +603,7 @@
   "tower.laser": "Laserturm",
   "tower.frost": "Frostkanone",
   "tower.lullaby": "Schlafturm",
+  "tower.subwoofer": "Subwoofer",
   "tower.berthaWhat": "Reißt ein Kreuz aus fünf Mauerblöcken und feuert zuerst, sobald sie bereit ist. Ihre Granate fliegt so schnell wie eine Kanonenkugel.",
   "tower.berthaFastWhat": "Reißt ein Kreuz aus fünf Mauerblöcken und feuert zuerst, sobald sie bereit ist. Ihre Granate fliegt schneller als eine Kanonenkugel, also lädt sie früher nach.",
   "tower.berthaSlowWhat": "Reißt ein Kreuz aus fünf Mauerblöcken und feuert zuerst, sobald sie bereit ist. Ihre Granate fliegt langsamer als eine Kanonenkugel, also lädt sie später nach.",
@@ -620,6 +621,7 @@
   "tower.frostShareWhat": "Friert das getroffene Feld für die ersten {p} % der nächsten Bauphase ein: Bis es taut, kann dort nichts gebaut werden — feuert zuerst, sobald sie bereit ist.",
   "tower.lullabyWhat": "Sein Schuss singt die {n} gegnerischen Kanonen in den Schlaf, die dem getroffenen Feld im Umkreis von {r} Blöcken am nächsten stehen: Eine Kanone schläft sofort {s} Sekunden, ein Spezialturm nach {t} Liedern; ein Baumeister wie eine Kanone; die Allerdickste Berta schläft nie — feuert zuerst, sobald er bereit ist.",
   "tower.lullabyAnyWhat": "Sein Schuss singt die {n} gegnerischen Kanonen in den Schlaf, die dem getroffenen Feld am nächsten stehen: Eine Kanone schläft sofort {s} Sekunden, ein Spezialturm nach {t} Liedern; ein Baumeister wie eine Kanone; die Allerdickste Berta schläft nie — feuert zuerst, sobald er bereit ist.",
+  "tower.subwooferWhat": "Feuert von selbst, nie per Klick: {s} Sekunden nach Beginn jeder Kampfphase und danach alle {s} Sekunden, {n}-mal insgesamt, schickt er eine {w} Blöcke breite Welle zur nächsten gegnerischen Mauer genau nach Norden, Osten, Süden oder Westen, die in jeder Bahn den ersten Mauerblock wegreißt.",
   "tower.cost": {
     "one": "{n} Kanone",
     "other": "{n} Kanonen"

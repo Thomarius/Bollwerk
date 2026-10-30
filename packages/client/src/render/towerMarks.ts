@@ -7,7 +7,10 @@ import {
   isFrozen,
   sleepThreshold,
   repairRadiusOf,
+  subwooferOf,
   ticksFor,
+  waveReach,
+  waveStep,
   type CannonKind,
   type Freeze,
   type MatchState,
@@ -94,6 +97,10 @@ function drawEmblem(
   for (let k = 0; k < cost; k++) g.circle(first + k * view.tile * PIP_GAP, py, pip);
   g.fill({ color: fill, alpha });
 }
+
+/** Arcs drawn behind a wave's front on each lane, a tile apart in this share of a tile. */
+const WAVE_ARCS = 3;
+const WAVE_ARC_GAP = 0.42;
 
 /** A Bertha's blast as it plays: where, the tiles it cleared round there, and how far through. */
 interface Blast {
@@ -448,6 +455,9 @@ export class TowerMarks {
   /** The guns a Lullaby Tower has put to sleep, every frame while any sleeps. */
   private readonly sleep = new Graphics();
   private sleepShown = false;
+  /** The Subwoofers' waves and cooldowns, every frame while any counts down or travels. */
+  private readonly waves = new Graphics();
+  private wavesShown = false;
   /** The towers' emblems, drawn again only when one changes. */
   private readonly emblems = new Graphics();
   /** The ghost's emblem, every frame while there is one. */
@@ -462,7 +472,15 @@ export class TowerMarks {
   private repairs: Repair[] = [];
 
   constructor() {
-    this.root.addChild(this.reach, this.ice, this.emblems, this.sleep, this.effects, this.ghost);
+    this.root.addChild(
+      this.reach,
+      this.ice,
+      this.emblems,
+      this.waves,
+      this.sleep,
+      this.effects,
+      this.ghost,
+    );
   }
 
   /** Every tower's emblem: its owner's light colour while it fires, stone grey while inert. */
@@ -556,6 +574,78 @@ export class TowerMarks {
         }
       }
       if (cracked > 0) g.stroke({ width: Math.max(1, t / 14), color: ICE_DARK, alpha: 0.75 });
+    }
+  }
+
+  /**
+   * The Subwoofers' (the user's, 2026-10-30): round each one's badge in combat, its cooldown
+   * filling towards its next wave — no click fires it, so the cursor's rings leave it out — and
+   * every wave travelling, a few arcs bowed forward on each lane still going, in its owner's
+   * colour round a white core, a fraction of a tick on so they glide. Read from the match, where
+   * the waves are, so nothing is kept here; cleared once, then left alone, while there are none.
+   */
+  drawWaves(state: MatchState, view: ViewTransform, art: ArtConfig, tickFraction: number): void {
+    const counting = state.cannons.filter((c) => c.waveTick !== undefined);
+    if (counting.length === 0 && state.waves.length === 0) {
+      if (this.wavesShown) clearDrawn(this.waves);
+      this.wavesShown = false;
+      return;
+    }
+    this.wavesShown = true;
+    const g = this.waves;
+    g.clear();
+    const t = view.tile;
+    const now = state.tick + tickFraction;
+    for (const c of counting) {
+      const span = ticksFor(subwooferOf(state, c.cost).cooldownMs, state.ruleset.tickRateHz);
+      const filled = Math.min(1, Math.max(0, 1 - ((c.waveTick as number) - now) / span));
+      const [cx, cy] = [tileX(view, c.x + c.w / 2), tileY(view, c.y + c.h) + t * DROP];
+      // On a dark band of its own outside the badge's rim: thinner, it vanished at a tile of
+      // 25 pixels (screenshots, 2026-10-30).
+      const r = (t * BADGE) / 2 + Math.max(2.5, t / 7);
+      g.circle(cx, cy, r);
+      g.stroke({ width: Math.max(4, t / 4), color: 0x0a0a12, alpha: 0.8 });
+      if (filled <= 0) continue;
+      g.arc(cx, cy, r, -Math.PI / 2, -Math.PI / 2 + filled * Math.PI * 2);
+      g.stroke({
+        width: Math.max(2.5, t / 6),
+        color: c.active ? playerColour(art, c.owner, 'light') : 0x9a9aa4,
+        alpha: 0.95,
+        cap: 'round',
+      });
+    }
+    for (const wave of state.waves) {
+      // Its front, from the lanes' first tiles' near edge: a tile's wall falls as it passes
+      // the tile's middle (`advanceWaves`).
+      const reach = waveReach(state, wave, now);
+      const [sx, sy] = waveStep(wave.dir);
+      const colour = playerColour(art, wave.owner, 'light');
+      for (const lane of wave.lanes) {
+        if (lane.done) continue;
+        // The lane's first tile's near edge, and the line across the lane there.
+        const ex = lane.x + 0.5 - sx * 0.5;
+        const ey = lane.y + 0.5 - sy * 0.5;
+        for (let k = 0; k < WAVE_ARCS; k++) {
+          const along = reach - k * WAVE_ARC_GAP;
+          if (along < 0) break;
+          const [fx, fy] = [ex + sx * along, ey + sy * along];
+          if (fx < 0 || fy < 0 || fx > state.width || fy > state.height) continue;
+          // Across the lane, from one side to the other, bowed forward through its middle.
+          const [px, py] = [-sy * 0.42, sx * 0.42];
+          const bow = 0.22;
+          const a = { x: tileX(view, fx + px - sx * bow), y: tileY(view, fy + py - sy * bow) };
+          const m = { x: tileX(view, fx + sx * bow), y: tileY(view, fy + sy * bow) };
+          const b = { x: tileX(view, fx - px - sx * bow), y: tileY(view, fy - py - sy * bow) };
+          const alpha = 1 - k / WAVE_ARCS;
+          for (const [width, tint, strength] of [
+            [Math.max(3, t * 0.3), colour, 0.45],
+            [Math.max(1, t / 12), 0xffffff, 0.9],
+          ] as const) {
+            g.moveTo(a.x, a.y).quadraticCurveTo(m.x, m.y, b.x, b.y);
+            g.stroke({ width, color: tint, alpha: strength * alpha, cap: 'round' });
+          }
+        }
+      }
     }
   }
 

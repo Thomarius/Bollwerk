@@ -1,4 +1,11 @@
-import { applyAction, step, type MatchState, type Rng, type RoundResult } from '@bollwerk/sim';
+import {
+  applyAction,
+  inFlight,
+  step,
+  type MatchState,
+  type Rng,
+  type RoundResult,
+} from '@bollwerk/sim';
 
 import { type Builder, type Strategy } from './building.js';
 
@@ -67,7 +74,7 @@ export class RolloutRun {
   static start(state: MatchState, playerId: number, builder: Builder, rng: Rng): RolloutRun | null {
     const before = state.phase === 'intermission' && state.pendingPhase === 'build';
     if (!before && state.phase !== 'build') return null;
-    if (state.shots.length > 0) return null;
+    if (inFlight(state)) return null;
     const board = copyOf(state);
     for (const player of board.players) {
       if (player.id !== playerId) player.eliminated = true;
@@ -152,6 +159,7 @@ function copyOf(state: MatchState, events: MatchState['events'] = []): MatchStat
     // Replaced rather than changed by the sim, but copied all the same: a rollout opening its
     // build phase gives each freeze its thaw tick, which must not reach the match it copies.
     frozen: state.frozen.map((f) => ({ ...f })),
+    waves: state.waves.map((w) => ({ ...w, lanes: w.lanes.map((l) => ({ ...l })) })),
     winners: [...state.winners],
     events: [...events],
   };

@@ -1,12 +1,5 @@
 import type { AnimeStyleConfig, ArtConfig } from '@bollwerk/config';
-import {
-  isLoaded,
-  Structure,
-  type Cannon,
-  type Castle,
-  type MatchState,
-  type Shot,
-} from '@bollwerk/sim';
+import { Structure, type Cannon, type Castle, type MatchState, type Shot } from '@bollwerk/sim';
 import {
   Container,
   FillPattern,
@@ -46,6 +39,7 @@ import { ShapeTheme } from './shapeTheme.js';
 import { Discs, Memos, StampBook, Stamps, viewKey } from './stamps.js';
 import { TerrainStrips, whole, type TerrainPass, type TerrainPlan } from './terrainStrips.js';
 import {
+  looksLoaded,
   Fireworks,
   FlagHoist,
   GhostMotion,
@@ -947,7 +941,7 @@ export class AnimeTheme extends ShapeTheme implements Theme {
     }
     if (!cannon.active) return { look: 'inert', charge: 0 };
     if (firedAgo < this.style.fireMs) return { look: 'fire', charge: 0 };
-    if (isLoaded(cannon)) return { look: 'ready', charge: 1 };
+    if (looksLoaded(cannon)) return { look: 'ready', charge: 1 };
     const shot = flying.get(cannon.shotIds[0] ?? -1);
     return { look: 'charge', charge: shot === undefined ? 0.5 : shotProgress(shot, now) };
   }

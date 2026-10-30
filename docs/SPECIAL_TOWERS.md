@@ -10,9 +10,10 @@ first feedback, the tower menu and its preview (ARCHIVE 13zm, 13zn); ST4's first
 measured (13zk, the Architect's circle 13zl). The users' play-testing, ST8, closed with no
 issues found (2026-10-17, ARCHIVE 13zp), and ST7 put the towers into How to play and the
 screenshot scenes (13zr). ST4 is closed, its remaining soaks dropped, the towers off by default
-for good and the bots' buying rule kept (the user's, ARCHIVE 13zw). Open: one tower left to build, the
-last, which one the users are still deciding (§5; the test without the cap of three dropped, ARCHIVE
-14zm); the towers' own sounds, TS, are
+for good and the bots' buying rule kept (the user's, ARCHIVE 13zw). Open: the ninth and last tower, the
+Subwoofer (§2.9, the user's design, 2026-10-30), built, its wave four wide, a reference run at
+four players next (§5 SW) (the test without the cap of three
+dropped, ARCHIVE 14zm); the towers' own sounds, TS, are
 in (ARCHIVE 13zx). The sixth tower, the Laser Tower (§2.6, 2026-10-21), is built, balanced and
 played by the user; the seventh and eighth, the Frost Cannon (§2.7) and the Lullaby Tower (§2.8),
 built, balanced and played by the user (2026-10-23). Like PLAN.md it says what is configurable and why and leaves the
@@ -368,6 +369,53 @@ whenever it is ready it fires first (the user's).
   a bot's own gun asleep is not ready to it. The statistics' `sleepDealt`: seconds of sleep a
   player's shots put on rival guns a round; `shotStats.ts` counts the guns slept by kind.
 
+### 2.9 The Subwoofer
+
+The user's design (2026-10-30), the ninth and last tower: the first that **fires on its own**.
+No click ever fires it, so its one decision is where it stands — made in the cannon phase, the
+phase without hurry — and it plays the same in a bot's hands as in a person's: there is no aim
+for people to do better than the bots, as they did with the Allerdickste Bertha (§5 BB). The
+name the user's, weighed against Shockwave, Tsunami and the Jericho Horn.
+
+- **A wave on its own, every `cooldownMs`.** As a combat phase begins its cooldown starts — it
+  is never ready at the start, unlike every other gun — and each time it runs out the tower sends a
+  wave, then starts it again. At 4 s it fires at 4 and 8 s of a 10-second combat, at 3 s at 3, 6
+  and 9 s.
+- **One of the four cardinal directions, `waveWidth` tiles wide** — 4: a lane for each row (or
+  column) of its footprint and one more either side (the user's, 2026-10-30; it was the tower's
+  two at first, §5 SW), from the footprint's edge outwards. It turns towards **the nearest enemy
+  wall**: for each direction, the distance along each lane to the first wall it may clear
+  (`strikable`, as every shot judges it); the nearest lane decides, ties broken by the next
+  lanes' distances, then north, east, south, west. No such wall in any direction, and it does not fire; since no
+  wall is built in combat, it stays silent for the rest of the phase.
+- **Each lane travels on its own**, `waveTilesPerSecond` (20, rather fast), and clears the first
+  wall it reaches that it may — one a lane, so four a wave at most — scoring as one each, an
+  Architect rebuilding them as any shot's. It passes over the sea, every castle and gun, its
+  owner's and teammates' walls and the rubble of the eliminated; a lane meeting nothing, or whose
+  wall another shot cleared before it arrived, runs on to the map's edge and disappears. No range
+  limit.
+- **A wave fired late lands in the intermission**, which waits for it as for any shot (the
+  user's). Its cooldown ends with the combat phase: no wave is sent outside it.
+- **A tower like the rest**: 2×2, both costs, under the cap of three, inert outside sealed
+  ground, scoring as the cannons it cost. **Not an impact tower and no barrel**: `findReadyCannon`
+  never chooses it, the cursor's rings leave it out, and its own cooldown shows as a ring on the
+  tower itself. **The Lullaby Tower lulls it** as a tower (two lullabies), its cooldown paused
+  while it sleeps.
+- **Its lever by cost is `cooldownMs`**: 4 s at cost 2, 3 s at cost 3. Since its first wave
+  waits a cooldown too, it moves in whole waves — anything from 3.34 to 5 s is two — so if the
+  soaks need a finer step, the first wave's delay apart from the cooldown is the lever in reserve.
+  The cooldown alone could not balance it; `waveWidth` did (§5 SW).
+- **Determinism**: no chance at all. The waves in flight are a list in the match (`waves`), each
+  its direction, lanes and launch tick, a lane's front `waveTilesPerSecond` from its launch; a
+  gun's next wave its `waveTick`, set as combat begins and gone as it ends. Both hashed only while
+  there are any, so a match without them hashes as before; carried in the snapshot.
+- **Seen and heard**: a loudspeaker for its emblem; a wave a band of arcs rolling down its lanes in
+  its owner's colour, a burst where it hits; the user's `tower_subwoofer.mp3` as it fires. Several
+  Subwoofers bought alike fire on the same tick, each combat's cooldown starting together, so the
+  sound plays **once a tick however many fire**, and not again within a short gap.
+- **Bots** never fire it; they site it where its lanes meet the most enemy wall, nearest first,
+  before room — and buy it as an ordinary gun goes.
+
 ---
 
 ## 3. Where it lives
@@ -715,6 +763,48 @@ anywhere; both dropped. Then against the impact towers: Lullaby 2 against Bertha
 Lightning 2 48 / 52 / 52 — on par, as meant; Lullaby 3 against Bertha 3, Laser 3 and Lightning 3
 43 / 51 / 43, and the Allerdickste Bertha, immune, 48 — on par or a little behind, short of the
 lead meant against cost 3.
+
+### SW — The Subwoofer's balance
+
+Built 2026-10-30 (§2.9). Measured at Level 5 only (§1): each variant against no tower and the two
+head to head, 96 matches a pairing (±5), the cooldown the lever (`soaks/subwoofer-2026-10-30*`).
+Waves a 10-second barrage in brackets; cost 2 / cost 3 against none, then 3 against 2:
+
+| cooldown (cost 2 / 3)        | against none | head to head |
+| ---------------------------- | ------------ | ------------ |
+| 4 s / 3 s (2 / 3), the start | 45 / 43      | 38           |
+| 3 s / 2.4 s (3 / 4)          | 48 / 42      | 42           |
+| 3 s / 1.9 s (3 / 5)          | 48 / 48      | 47           |
+| 2.4 s / 1.9 s (4 / 5)        | 50 / 48      | 42           |
+| 1.4 s / 1 s (7 / 10)         | 48 / 41      | 36           |
+
+**The cooldown does not move it**: from 2 waves to 7 the cheaper variant stays at 45–50%, and the
+dearer one never wins more than the cheaper. A wave clears nearly two walls (1.84–1.93 in bot play),
+so it is not idle; but its walls are the nearest on two fixed rows, not where a breach costs the
+rival a castle, and a gap in a known place is patched in the next build phase. Replayed, at the
+start 92–94% of the possible waves were sent and 93–95% of lanes hit a wall; at 4 / 5 waves 75–78%
+and 82–85%, clearing 25–40% more walls without winning more — targets run short only as waves grow
+frequent, so not the main issue (2026-10-30).
+
+**Wider instead** (the user's, 2026-10-30): `waveWidth` 4, a lane more either side of the tower,
+each clearing a wall, at 4 s / 3 s. And at four players (`towerSoak.ts --players 4`, 192 matches,
+±3–4): the variant in one seat against three with no tower, each seat in turn, a fair share 25%:
+
+| setting               | against none, 2 players | head to head | against none, 4 players |
+| --------------------- | ----------------------- | ------------ | ----------------------- |
+| 2 wide, 4 s / 3 s     | 45 / 43                 | 38           | 27 / 40                 |
+| **4 wide**, 4 s / 3 s | **49 / 55**             | **46**       | **46 / 54**             |
+
+Four wide is what moves it: inside the goal at two players, the dearer the stronger. At four players
+it wins far more than its share, more rivals in its lines; no other tower has been measured at four,
+so whether that is out of line is not known yet. **Kept: 4 wide** (the user's, 2026-10-30).
+**Next session: the reference** — the Laser Tower at four players (it fires along lines too, and is
+balanced at two to 66 / 67), then, if the Subwoofer stands well above it, the cooldown to close the
+gap, not the width:
+
+```bash
+npx tsx tools/headless/src/towerSoak.ts --out soaks/laser-p4 --players 4   --pairs laser2:none,laser3:none --levels 5 --matches 192
+```
 
 ### After ST8 — the decisions
 

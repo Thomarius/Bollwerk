@@ -6,7 +6,13 @@ import {
   type ArtStyle,
   type TowerVariant,
 } from '@bollwerk/config';
-import { computeEnclosure, craterTilesOf, strikesOnFiring, type MatchEvent } from '@bollwerk/sim';
+import {
+  computeEnclosure,
+  craterTilesOf,
+  inFlight,
+  strikesOnFiring,
+  type MatchEvent,
+} from '@bollwerk/sim';
 
 import { LookRotation } from './looks.js';
 import { motionReduced } from './motion.js';
@@ -116,10 +122,11 @@ export class TowerPreview {
             e.kind === 'walls_repaired' ||
             e.kind === 'shot_impact' ||
             e.kind === 'lightning_struck' ||
-            e.kind === 'laser_fired',
+            e.kind === 'laser_fired' ||
+            (e.kind === 'wave_ended' && e.destroyed !== null),
         )
       ) {
-        if (show.state.shots.length === 0) break;
+        if (!inFlight(show.state)) break;
       }
     }
     this.drawFrame(250, true);
@@ -177,6 +184,14 @@ export class TowerPreview {
         case 'tile_frozen':
           scene.noteFrost(event.tile % state.width, Math.floor(event.tile / state.width));
           break;
+        case 'wave_ended': {
+          if (event.destroyed === null) break;
+          const owner = (state.islandId[event.destroyed] as number) - 1;
+          scene.noteImpact(event.x, event.y, [{ x: event.x, y: event.y, owner }]);
+          scene.noteBlast(event.x, event.y, [[0, 0]]);
+          changed = true;
+          break;
+        }
         case 'walls_repaired':
           scene.noteRepair(event.tiles, state.width, event.player);
           changed = true;
@@ -194,7 +209,8 @@ export class TowerPreview {
     if (scene === null || state === undefined) return;
     // Sealed as the show began: a breach in combat leaves the flags flying, as in a match.
     const sealed = this.sealed;
-    scene.drawEffects(state, 0, deltaMs, { build: sealed, combat: sealed }, [], 0);
+    const fraction = this.show?.tickFraction ?? 0;
+    scene.drawEffects(state, fraction, deltaMs, { build: sealed, combat: sealed }, [], 0);
     if (render) scene.render();
   }
 }

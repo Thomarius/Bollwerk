@@ -10,6 +10,7 @@ import {
   craterTilesOf,
   strikesOnFiring,
   footprintOf,
+  inFlight,
   owesCastleChoice,
   type MatchEvent,
   type MatchState,
@@ -480,7 +481,7 @@ export async function runSession(
     }
     // In the pause before a banner that brings the other look — the last shots landed, the
     // board still — that look is readied out of sight, so the line reveals it at no cost.
-    if (progress === null && before !== after && state.shots.length === 0) scene.prime(after);
+    if (progress === null && before !== after && !inFlight(state)) scene.prime(after);
     // So too the person's cannon icon, in the pause before the cannon phase, which it is
     // rendered for once a look (`Scene.cannonIcon`).
     if (
@@ -611,6 +612,18 @@ export async function runSession(
             scene.shake();
           }
           if (debris.length > 0) structuresChanged = true;
+          break;
+        }
+        case 'wave_ended': {
+          // A Subwoofer's lane on the wall it cleared: its blast and debris, as a shot's. The
+          // wave itself is drawn from the match, where its lanes are (`TowerMarks.drawWaves`).
+          if (event.destroyed === null) break;
+          const owner = (session.state.islandId[event.destroyed] as number) - 1;
+          scene.noteImpact(event.x, event.y, [{ x: event.x, y: event.y, owner }]);
+          scene.noteBlast(event.x, event.y, [[0, 0]]);
+          const human = session.humanPlayer;
+          if (human >= 0 && !motionReduced() && owner === human) scene.shake();
+          structuresChanged = true;
           break;
         }
         case 'tile_frozen':

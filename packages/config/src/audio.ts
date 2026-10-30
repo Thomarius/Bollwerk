@@ -43,6 +43,8 @@ export const SFX_CUES = [
   'frost_impact',
   /** A Lullaby Tower's shot putting a gun to sleep, over the ordinary impact. */
   'lullaby',
+  /** A Subwoofer's wave, once a tick however many fire, and not again within a second. */
+  'subwoofer',
   /** The player's own Architect rebuilding their walls as a barrage ends, twice a tower. */
   'walls_repaired',
 ] as const;

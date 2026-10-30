@@ -123,6 +123,38 @@ export interface Cannon {
   asleepUntil?: number;
   /** Lullabies it has taken towards its sleep, short of its threshold; absent at none. */
   lulled?: number;
+  /**
+   * A Subwoofer's next wave, the tick it is due: set as a combat phase begins, a cooldown on,
+   * and gone as it ends. Absent on every other gun, and on a Subwoofer outside combat.
+   */
+  waveTick?: number;
+}
+
+/** A wave's direction: north, east, south, west, the order ties are broken in. */
+export type WaveDirection = 0 | 1 | 2 | 3;
+
+/** One lane of a wave, a row or column of its tower's footprint carried outwards. */
+export interface WaveLane {
+  /** The lane's first tile, just beyond the tower's footprint. */
+  x: number;
+  y: number;
+  /** Whether it has cleared its wall or left the map; a wave is gone once both lanes are. */
+  done: boolean;
+}
+
+/**
+ * A Subwoofer's wave in flight (docs/SPECIAL_TOWERS.md §2.9): its lanes travel from the tower
+ * `waveTilesPerSecond` from `launchTick`, each clearing the first wall it may that it reaches.
+ */
+export interface Wave {
+  /** From the shots' ids, so every event names a wave as it names a shot. */
+  id: number;
+  cannonId: number;
+  owner: number;
+  cost: number;
+  dir: WaveDirection;
+  lanes: WaveLane[];
+  launchTick: number;
 }
 
 /**
@@ -264,6 +296,24 @@ export type MatchEvent =
       ms: number;
     }
   | {
+      /** A Subwoofer has sent a wave. */
+      kind: 'wave_sent';
+      tick: number;
+      wave: Wave;
+    }
+  | {
+      /** A wave's lane has ended: on the wall it cleared (`destroyed`), or past the map's edge. */
+      kind: 'wave_ended';
+      tick: number;
+      waveId: number;
+      owner: number;
+      lane: number;
+      /** Where its front stopped: the wall's tile, or the first tile off the map. */
+      x: number;
+      y: number;
+      destroyed: number | null;
+    }
+  | {
       /** A Frost Cannon's shot has landed: the tile it froze for the next build phase. */
       kind: 'tile_frozen';
       tick: number;
@@ -351,6 +401,11 @@ export interface MatchState {
    * and then not hashed, so its fingerprint is as it always was.
    */
   frozen: Freeze[];
+  /**
+   * The Subwoofers' waves still travelling (docs/SPECIAL_TOWERS.md §2.9); the intermission
+   * waits for them as for shots. Empty in a match without them, and then not hashed.
+   */
+  waves: Wave[];
 
   nextCannonId: number;
   nextShotId: number;

@@ -11,6 +11,7 @@ import {
   Structure,
   canPlacePiece,
   currentPieceId,
+  inFlight,
   pieceAt,
   pieceById,
   type Action,
@@ -167,7 +168,7 @@ export class Bot {
     if (this.chosen?.round === state.round) return true;
     if (this.search?.round !== state.round) {
       if (state.phase !== 'intermission' || state.pendingPhase !== 'build') return true;
-      if (state.shots.length > 0) return false;
+      if (inFlight(state)) return false;
       if (!this.slots.takeStart(state.tick)) return false;
       const offered = strategiesFor(state, this.playerId);
       const order =
