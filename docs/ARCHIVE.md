@@ -11020,3 +11020,18 @@ Since v0.9.26: the end screen's Show the board pulls the camera out to the whole
 with the summary (15t). The special towers are finished: play-tested by the user, and the team
 soaks planned in SPECIAL_TOWERS.md §5 BS dropped (the user's, 2026-10-30) — nothing of item 2 is
 open. Protocol 34 and recording format 4 as before: a v0.9.26 page can join a v0.9.27 room.
+
+## 15v. The Frost Cannon's and the Subwoofer's signs on the cursor (2026-10-30)
+
+The user's question after v0.9.27: do all impact towers have an effect of their own round the
+cursor while ready? Four did — the Berthas' flames, the Lightning's crackle, the Lullaby's Zs —
+while the Laser, the Frost Cannon and the Subwoofer wore the shared amber glow, the Laser and the
+Subwoofer with their aiming lines. The user's choices: for the **Frost Cannon** snowflakes, now a
+ring of frost round the cursor with six snowflakes drifting round it, each turning on its own
+(`drawFrostFlakes`, Christmas's `drawSnowflake`); for the **Subwoofer** rings of sound pulsing out
+from the cursor (`drawBassRings`), and in place of a laser's line a lane, which did not fit, **the
+band its wave will sweep** — one shape from the tower through the cursor to the board's edge, as
+wide as its lanes together, its ends cut square to the axis the lanes are spaced along, as
+`waveRays` sends them (`drawSubwoofer`). The shared glow is now the Laser's alone. Under reduced
+motion the flakes and rings stand still. Checked in screenshots, Minimal and Christmas, over either
+island.

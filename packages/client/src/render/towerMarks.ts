@@ -21,6 +21,7 @@ import { motionReduced } from '../motion.js';
 import { EMBLEMS } from '../towerIcons.js';
 import { clearDrawn } from './clearDrawn.js';
 import { viewKey } from './stamps.js';
+import { drawSnowflake } from './yule.js';
 import {
   IMPACT_GLOW,
   playerColour,
@@ -436,6 +437,67 @@ function drawFlames(g: Graphics, cx: number, cy: number, r: number, nowMs: numbe
   }
 }
 
+/** The Frost Cannon's snowflakes circling the cursor while it is ready, and one turn's length. */
+const FROST_FLAKES = 6;
+const FROST_TURN_MS = 5200;
+
+/**
+ * The Frost Cannon's sign round the cursor while it is ready (the user's, 2026-10-30): a ring of
+ * frost and snowflakes drifting slowly round it, each turning on its own, dark under white so
+ * they read on snow-white styles as on the sea.
+ */
+function drawFrostFlakes(g: Graphics, cx: number, cy: number, r: number, nowMs: number): void {
+  const t = motionReduced() ? 0 : nowMs;
+  g.circle(cx, cy, r);
+  g.stroke({ width: r * 0.22, color: ICE, alpha: 0.3 });
+  g.circle(cx, cy, r);
+  g.stroke({ width: Math.max(1, r * 0.05), color: ICE_RIM, alpha: 0.7 });
+  const turn = (t / FROST_TURN_MS) * Math.PI * 2;
+  const flakes = [];
+  for (let k = 0; k < FROST_FLAKES; k++) {
+    const a = turn + (k / FROST_FLAKES) * Math.PI * 2;
+    // Every other flake a little smaller and further out, so the ring is not a clock face.
+    const out = k % 2 === 0 ? 1 : 1.12;
+    flakes.push({
+      x: cx + Math.cos(a) * r * out,
+      y: cy + Math.sin(a) * r * out,
+      size: r * (k % 2 === 0 ? 0.3 : 0.22),
+      angle: t / (900 + 130 * k) + k,
+    });
+  }
+  for (const f of flakes) drawSnowflake(g, f.x, f.y, f.size * 1.15, f.angle, ICE_DARK, 0.55);
+  for (const f of flakes) drawSnowflake(g, f.x, f.y, f.size, f.angle, ICE_RIM, 1);
+}
+
+/** The Subwoofer's rings pulsing out from the cursor while it is ready, and one ring's life. */
+const BASS_RINGS = 3;
+const BASS_PULSE_MS = 1100;
+
+/**
+ * The Subwoofer's sign round the cursor while it is ready (the user's, 2026-10-30): rings of
+ * sound pulsing out from the cursor's ring and fading as they go, a beat apart, in the player's
+ * colour round a white core as its wave is; under reduced motion, standing still at their steps.
+ */
+function drawBassRings(
+  g: Graphics,
+  cx: number,
+  cy: number,
+  r: number,
+  colour: number,
+  nowMs: number,
+): void {
+  const reduced = motionReduced();
+  for (let k = 0; k < BASS_RINGS; k++) {
+    const age = reduced ? (k + 0.5) / BASS_RINGS : (nowMs / BASS_PULSE_MS + k / BASS_RINGS) % 1;
+    const radius = r * (0.6 + 0.9 * age);
+    const fade = 1 - age;
+    g.circle(cx, cy, radius);
+    g.stroke({ width: Math.max(3, r * 0.2), color: colour, alpha: 0.35 * fade });
+    g.circle(cx, cy, radius);
+    g.stroke({ width: Math.max(1, r * 0.06), color: 0xffffff, alpha: 0.85 * fade });
+  }
+}
+
 export class TowerMarks {
   readonly root = new Container({ label: 'towers' });
   /** The player's Architects' reach, drawn again only when it changes. */
@@ -757,7 +819,24 @@ export class TowerMarks {
         performance.now(),
       );
     }
-    this.drawLaserLine(state, view, ghost, playerColour(art, humanPlayer, 'light'));
+    const own = playerColour(art, humanPlayer, 'light');
+    this.drawLaserLine(state, view, ghost, own);
+    this.drawSubwoofer(state, view, ghost, own);
+    if (
+      ghost.aiming &&
+      ghost.tile !== null &&
+      ghost.impact?.ready === true &&
+      ghost.nextTower?.kind === 'frost'
+    ) {
+      const { x, y } = ghost.tile;
+      drawFrostFlakes(
+        this.ghost,
+        tileX(view, x + 0.5),
+        tileY(view, y + 0.5),
+        view.tile * 1.1,
+        performance.now(),
+      );
+    }
     this.drawLullaby(state, view, ghost);
     this.drawFrozenUnderPiece(state, view, ghost);
     const variant = ghost.tower;
@@ -879,8 +958,8 @@ export class TowerMarks {
   }
 
   /**
-   * A ready Laser Tower's line (the user's, 2026-10-21) — or a Subwoofer's, a line a lane: faint,
-   * from the tower through the cursor to the board's edge, since the click sets only its direction, in the player's colour
+   * A ready Laser Tower's line (the user's, 2026-10-21): faint, from the tower through the
+   * cursor to the board's edge, since the click sets only its direction, in the player's colour
    * as their beam is (the users', 2026-10-21; red at first). Not the walls it would clear — that
    * is for the player to read.
    */
@@ -891,38 +970,77 @@ export class TowerMarks {
     colour: number,
   ): void {
     const next = ghost.nextTower;
-    const kind = next?.kind;
-    if (!ghost.aiming || ghost.tile === null || next === null || next === undefined) return;
-    if (kind !== 'laser' && kind !== 'subwoofer') return;
+    if (!ghost.aiming || ghost.tile === null || next?.kind !== 'laser') return;
     if (ghost.impact?.ready !== true) return;
     const { x, y } = ghost.tile;
     if (x === next.fromX && y === next.fromY) return;
-    // The Subwoofer's: a line for each lane of its wave, as the rules will send them.
-    const lines =
-      kind === 'subwoofer'
-        ? (
-            waveRays(next.fromX, next.fromY, x, y, subwooferOf(state, next.cost).waveWidth) ?? []
-          ).map((r) => ({
-            fromX: r.ax / 2,
-            fromY: r.ay / 2,
-            toX: (r.ax + r.dx) / 2,
-            toY: (r.ay + r.dy) / 2,
-          }))
-        : [{ fromX: next.fromX, fromY: next.fromY, toX: x, toY: y }];
-    for (const line of lines) {
-      const end = edgeOf(line.fromX, line.fromY, line.toX, line.toY, state.width, state.height);
-      const [ax, ay] = [tileX(view, line.fromX + 0.5), tileY(view, line.fromY + 0.5)];
-      const [bx, by] = [tileX(view, end.x + 0.5), tileY(view, end.y + 0.5)];
-      // A glow round a white core, as the beam is: the colour alone vanished over an island
-      // of the same colour.
+    const end = edgeOf(next.fromX, next.fromY, x, y, state.width, state.height);
+    const [ax, ay] = [tileX(view, next.fromX + 0.5), tileY(view, next.fromY + 0.5)];
+    const [bx, by] = [tileX(view, end.x + 0.5), tileY(view, end.y + 0.5)];
+    // A glow round a white core, as the beam is: the colour alone vanished over an island
+    // of the same colour.
+    for (const [width, tint, alpha] of [
+      [Math.max(3, view.tile * 0.3), colour, 0.3],
+      [Math.max(1, view.tile / 14), 0xffffff, 0.6],
+    ] as const) {
+      this.ghost.moveTo(ax, ay).lineTo(bx, by);
+      this.ghost.stroke({ width, color: tint, alpha, cap: 'round' });
+    }
+  }
+
+  /**
+   * A ready Subwoofer under the cursor (the user's, 2026-10-30): the band its wave will sweep,
+   * from the tower through the cursor to the board's edge, as wide as its lanes together — one
+   * shape rather than a laser's line a lane, which did not read as a wave — and rings of sound
+   * pulsing out from the cursor. The lanes as the rules send them (`waveRays`): a whole tile
+   * apart across rows or columns, whichever the line runs along less, so the band's ends are cut
+   * square to that axis rather than to the line.
+   */
+  private drawSubwoofer(
+    state: MatchState,
+    view: ViewTransform,
+    ghost: Ghost,
+    colour: number,
+  ): void {
+    const next = ghost.nextTower;
+    if (!ghost.aiming || ghost.tile === null || next?.kind !== 'subwoofer') return;
+    if (ghost.impact?.ready !== true) return;
+    const t = view.tile;
+    const { x, y } = ghost.tile;
+    const [cx, cy] = [tileX(view, x + 0.5), tileY(view, y + 0.5)];
+    const rays = waveRays(next.fromX, next.fromY, x, y, subwooferOf(state, next.cost).waveWidth);
+    const first = rays?.[0];
+    const last = rays?.[rays.length - 1];
+    if (first !== undefined && last !== undefined) {
+      // The outer lanes' centres, then half a tile beyond each across the lanes: the band's sides.
+      const acrossRows = Math.abs(first.dx) >= Math.abs(first.dy);
+      const side = (
+        ray: typeof first,
+        out: number,
+      ): { ax: number; ay: number; bx: number; by: number } => {
+        const [fx, fy] = [ray.ax / 2 + (acrossRows ? 0 : out), ray.ay / 2 + (acrossRows ? out : 0)];
+        const end = edgeOf(fx, fy, fx + ray.dx / 2, fy + ray.dy / 2, state.width, state.height);
+        return {
+          ax: tileX(view, fx + 0.5),
+          ay: tileY(view, fy + 0.5),
+          bx: tileX(view, end.x + 0.5),
+          by: tileY(view, end.y + 0.5),
+        };
+      };
+      const a = side(first, -0.5);
+      const b = side(last, 0.5);
+      this.ghost.poly([a.ax, a.ay, a.bx, a.by, b.bx, b.by, b.ax, b.ay]);
+      this.ghost.fill({ color: colour, alpha: 0.16 });
+      // Its two long sides as the beam's line is, a glow round a white core.
       for (const [width, tint, alpha] of [
-        [Math.max(3, view.tile * 0.3), colour, 0.3],
-        [Math.max(1, view.tile / 14), 0xffffff, 0.6],
+        [Math.max(3, t * 0.24), colour, 0.3],
+        [Math.max(1, t / 14), 0xffffff, 0.6],
       ] as const) {
-        this.ghost.moveTo(ax, ay).lineTo(bx, by);
+        for (const s of [a, b]) this.ghost.moveTo(s.ax, s.ay).lineTo(s.bx, s.by);
         this.ghost.stroke({ width, color: tint, alpha, cap: 'round' });
       }
     }
+    drawBassRings(this.ghost, cx, cy, t * 1.1, colour, performance.now());
   }
 
   /**

@@ -182,7 +182,8 @@ which a test session needs the server rebuilt and every page reloaded for):
   user, great; the team soaks dropped (the user's). Their balance is closed and they are **off by
   default for good** — a wacky addition, not the base game (ARCHIVE 13zw); a new tower is
   balanced at Level 5 only, its variants against each other and against no tower (the user's).
-  And the end screen's Show the board pulls the camera out to the whole map (15t).
+  And the end screen's Show the board pulls the camera out to the whole map (15t); since, the
+  Frost Cannon's snowflakes and the Subwoofer's pulsing rings and band on the cursor (15v).
 
 - **The towers' emblems by the cursor** (ARCHIVE 15r, 2026-10-30, the user's): in place of a
   second reload ring, each impact tower's emblem below and right of the reticle, filling from the

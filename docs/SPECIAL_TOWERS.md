@@ -132,7 +132,8 @@ keeps only what is open.
   none. They replaced a second reload ring inside the guns' one, which every test mixed up with
   it. While an impact tower is ready **the aiming cursor glows** too — one glow for every kind at
   first, each kind's own animation later (the Lightning Tower's crackle, the Berthas' flames, the
-  Laser's and the Subwoofer's lines). Neither shows for a player with no impact tower.
+  Lullaby's Zs, the Frost Cannon's snowflakes and the Subwoofer's rings and band, 2026-10-30), so
+  only the Laser's line keeps the glow. Neither shows for a player with no impact tower.
 - Passive abilities (the Architect's repair) need no firing.
 
 ### 2.3 The first three towers
@@ -326,7 +327,8 @@ first.
   it lasts through the overtime and its thaw tick, given as the build phase opens
   (`startFreezes`); hashed only while there are any, so a match without them hashes as it always
   did, and copied by a rollout, which opens that phase too.
-- **Seen and heard**: a snowflake for its emblem; each frozen tile a block of ice over the board
+- **Seen and heard**: a snowflake for its emblem; while it is ready, a ring of frost round the
+  cursor and snowflakes drifting round it (the user's, 2026-10-30); each frozen tile a block of ice over the board
   in every style, the whole tile, a dark rim outside a white one and a shadow, so it reads on any
   ground and colour, a glint running across it now and then; solid to the end, cracks spreading
   across it as its thaw nears, then shattering (the users': shrinking read as passable); a red
@@ -407,8 +409,10 @@ user's, weighed against Shockwave, Tsunami and the Jericho Horn.
 - **Determinism**: no chance at all. The waves in flight are a list in the match (`waves`), each
   lane a ray in doubled coordinates and whether it is done, hashed only while there are any, so a
   match without them hashes as before; carried in the snapshot.
-- **Seen and heard**: a loudspeaker for its emblem; while it is ready, a faint line from the tower
-  through the cursor for each lane, as the Laser's one; a wave as arcs bowed forward down each lane
+- **Seen and heard**: a loudspeaker for its emblem; while it is ready, the band its wave will sweep,
+  from the tower through the cursor to the board's edge, as wide as its lanes (a line a lane at
+  first, as the Laser's, which did not read as a wave — the user's, 2026-10-30), and rings of sound
+  pulsing out from the cursor; a wave as arcs bowed forward down each lane
   in its owner's colour round a white core, a blast where a lane clears a wall; the user's
   `tower_subwoofer.mp3` as it fires, once a tick however many fire and not again within half a
   second — it is a second and a half long (the user's: it must not get messy).

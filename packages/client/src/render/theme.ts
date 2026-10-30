@@ -366,7 +366,8 @@ export const IMPACT_GLOW = 0xffa83a;
 /**
  * The cursor's word on the player's impact towers (docs/SPECIAL_TOWERS.md §2.2), drawn under
  * the reticle while one is ready — the next shot is its, and the cursor glows; one glow for
- * every kind but those with a sign of their own (Big Bertha's flames, play-testing, 2026-10-16).
+ * every kind but those with a sign of their own (Big Bertha's flames, play-testing, 2026-10-16) —
+ * which is now every kind but the Laser Tower's.
  * While they reload, their emblems beside the cursor say so (`drawTowerBadges`).
  */
 function drawImpactReadiness(
@@ -379,10 +380,10 @@ function drawImpactReadiness(
 ): void {
   const impact = ghost.impact;
   if (impact === null || impact === undefined || !impact.ready) return;
-  // Both Berthas and the Lightning Tower bring their own, drawn over both looks (`TowerMarks`):
-  // their flames and crater, its crackle.
-  const own = ghost.nextTower?.kind;
-  if (own === 'bertha' || own === 'biggest' || own === 'lightning' || own === 'lullaby') return;
+  // The Laser Tower alone wears it: the others bring their own, drawn over both looks
+  // (`TowerMarks`) — the Berthas' flames and crater, the Lightning's crackle, the Lullaby's Zs,
+  // the Frost Cannon's snowflakes and the Subwoofer's rings (2026-10-30).
+  if (ghost.nextTower?.kind !== 'laser') return;
   const r = view.tile * 1.1;
   g.circle(cx, cy, r);
   g.stroke({ width: width * 6, color: IMPACT_GLOW, alpha: 0.18 });
