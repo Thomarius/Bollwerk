@@ -11,10 +11,6 @@ import {
   sameTeam,
   repairRadiusOf,
   specialRefusal,
-  strikable,
-  subwooferOf,
-  waveLanes,
-  waveStep,
   type Action,
   type CannonKind,
   type MatchState,
@@ -27,13 +23,6 @@ import type { IslandCentres } from './botTurn.js';
 import { rivalsOf, ticksFor } from './botTurn.js';
 import { type PlanningSlots } from './planning.js';
 import { SealGraph, weakestWall } from './tactics.js';
-
-/**
- * Walls a lane of a Subwoofer's counts towards its site, at most: as many as its waves could
- * drill through on that lane in a combat phase or two, so a lane along a long wall is not
- * worth more than one through three.
- */
-const WAVE_DEPTH = 3;
 
 /** Castles an opening choice may weigh beyond cost: those within this of the cheapest. */
 const CASTLE_CHOICE_SLACK = 1.2;
@@ -192,7 +181,6 @@ export class Siting {
     const [cw, ch] = footprintOf(state.ruleset, kind, cost);
     const main = special ? this.castleGround(state, player.islandId) : null;
     const guarded = kind === 'architect' ? this.guardedWall(state, player.islandId) : null;
-    const waves = kind === 'subwoofer';
 
     // A careless placement weighs proximity half by chance; decided once a gun, and drawn
     // only by a level with any carelessness.
@@ -226,15 +214,7 @@ export class Siting {
 
         let better: boolean;
         let score: number;
-        if (waves) {
-          // The Subwoofer: where its lanes meet the most enemy wall, the nearest first, before
-          // room — it fires only down its lanes, so a site facing nothing is a tower wasted.
-          score = this.lanesMet(state, x, y, cw, ch, subwooferOf(state, cost).waveWidth);
-          better =
-            pinned < bestPinned ||
-            (pinned === bestPinned &&
-              (score > bestScore || (score === bestScore && room > bestRoom)));
-        } else if (guarded !== null) {
+        if (guarded !== null) {
           // The Architect: the most of its wall within reach, the weakest counting most, before
           // room — with the larger reach it can stand clear of the wall and still reach it.
           score = this.reach(state, guarded, repairRadiusOf(state.ruleset, cost), x, y, cw, ch);
@@ -294,41 +274,6 @@ export class Siting {
       }
     }
     return mark;
-  }
-
-  /**
-   * How much enemy wall a Subwoofer on this footprint would meet down its lanes, in all four
-   * directions: on each lane, the walls it may clear up to `WAVE_DEPTH`, then the nearer the
-   * first of them the better — a wave is sent towards the nearest (`aimWave`), and lanes facing
-   * two ways keep it firing once one way is cleared.
-   */
-  private lanesMet(
-    state: MatchState,
-    x: number,
-    y: number,
-    w: number,
-    h: number,
-    width: number,
-  ): number {
-    let walls = 0;
-    let nearest = Number.MAX_SAFE_INTEGER;
-    for (const dir of [0, 1, 2, 3] as const) {
-      const [sx, sy] = waveStep(dir);
-      for (const lane of waveLanes({ x, y, w, h }, dir, width)) {
-        let met = 0;
-        for (let k = 0; met < WAVE_DEPTH; k++) {
-          const tx = lane.x + sx * k;
-          const ty = lane.y + sy * k;
-          if (tx < 0 || ty < 0 || tx >= state.width || ty >= state.height) break;
-          if (!strikable(state, this.playerId, ty * state.width + tx)) continue;
-          if (met === 0) nearest = Math.min(nearest, k);
-          met++;
-        }
-        walls += met;
-      }
-    }
-    // Walls first; a tile nearer only breaks a tie, the map never wider than this.
-    return walls * 1000 - Math.min(nearest, 999);
   }
 
   /**

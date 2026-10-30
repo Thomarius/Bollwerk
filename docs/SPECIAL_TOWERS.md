@@ -178,7 +178,11 @@ apart by levers of their own — the thing that defines the tower stays the same
   repaired walls are the island's own again. The attacker keeps the points for them: the shot
   did land.
 - Levers: the radius by cost, a real number (round a 2×2: 2.2 → 16 tiles, 2.6 → 24, 3 → 32). It
-  repairs only walls lost to shots, never walls swept as orphans.
+  repairs only walls lost to shots, never walls swept as orphans. And its gun's reload: **at cost
+  2 a flight factor of 2**, the gun firing about half as often (the user's, 2026-10-30, §5 BS) —
+  as good as the dearer one against no tower, it had been the strongest of the cost-2 towers; a
+  smaller reach without the ring's corners, which are what a breach takes, and a cap on walls
+  rebuilt, a rule not seen, were weighed and dropped.
 
 **Rapid Cannon** — more guns in less room (redesigned by the user, 2026-10-16).
 
@@ -213,7 +217,8 @@ whenever it is ready it fires first, as Big Bertha does.
   nothing, so every reload rule and the cursor's ring hold as for any gun.
 - **Levers by cost**: `jumps` — 2 at cost 2, 3 at cost 3 (so up to 3 and 4 strikes), the main one;
   `missChance` — the user prefers more jumps that may miss to fewer that do not, and the soaks put
-  it at 0.6 at both costs (§5 LT); `jumpRadius`, 4 tiles, a circle from the last strike's centre.
+  it at 0.6 at both costs (§5 LT), **0.67 at cost 3** since (2026-10-30, §5 BS: the strongest of
+  the cost-3 towers); `jumpRadius`, 4 tiles, a circle from the last strike's centre.
 - **Chance from the seed**: a stream of its own for every shot (`streamFor(seed, lightning:id)`),
   so every client draws the same chain.
 - **Seen and heard**: a lightning-bolt emblem; on the cursor while it is ready, a crackle of short
@@ -306,8 +311,10 @@ first.
 - **Counters**: an Architect thaws every frozen tile of its owner's island in its reach as the
   barrage ends, as it rebuilds the walls (the user's); and a continue wipes the island's freezes
   with the rest of it — the island starts afresh (the user's). No cap on freezes (the user's).
-- **The levers by cost**: **60% of the phase at cost 2; the whole phase at cost 3, thawing as the
-  clock runs out, before the overtime** — set by the soaks (§5 FR), the reload a cannon's.
+- **The levers by cost**: **60% of the phase at cost 2; the whole phase at cost 3, the overtime
+  too** — set by the soaks (§5 FR; until the clock ran out at first, through the overtime since
+  2026-10-30, the user's: cleaner, and about as strong). **Its reload a flight factor of 0.85**
+  at both costs (2026-10-30, §5 BS: the weakest of the towers at both costs).
   Dropped as levers, by the user: a wider area, freezing only some shots a phase, and a cap a
   victim — hard to explain or to grasp.
 - **Determinism**: the freezes are a list in the match (`frozen`), each a tile, its share, whether
@@ -371,50 +378,43 @@ whenever it is ready it fires first (the user's).
 
 ### 2.9 The Subwoofer
 
-The user's design (2026-10-30), the ninth and last tower: the first that **fires on its own**.
-No click ever fires it, so its one decision is where it stands — made in the cannon phase, the
-phase without hurry — and it plays the same in a bot's hands as in a person's: there is no aim
-for people to do better than the bots, as they did with the Allerdickste Bertha (§5 BB). The
-name the user's, weighed against Shockwave, Tsunami and the Jericho Horn.
+The user's design (2026-10-30), the ninth and last tower, reworked the same day: a wave several
+walls wide. An impact tower: whenever it is ready it fires first, as Big Bertha does. The name the
+user's, weighed against Shockwave, Tsunami and the Jericho Horn.
 
-- **A wave on its own, every `cooldownMs`.** As a combat phase begins its cooldown starts — it
-  is never ready at the start, unlike every other gun — and each time it runs out the tower sends a
-  wave, then starts it again. At 4 s it fires at 4 and 8 s of a 10-second combat, at 3 s at 3, 6
-  and 9 s.
-- **One of the four cardinal directions, `waveWidth` tiles wide** — 4: a lane for each row (or
-  column) of its footprint and one more either side (the user's, 2026-10-30; it was the tower's
-  two at first, §5 SW), from the footprint's edge outwards. It turns towards **the nearest enemy
-  wall**: for each direction, the distance along each lane to the first wall it may clear
-  (`strikable`, as every shot judges it); the nearest lane decides, ties broken by the next
-  lanes' distances, then north, east, south, west. No such wall in any direction, and it does not fire; since no
-  wall is built in combat, it stays silent for the rest of the phase.
-- **Each lane travels on its own**, `waveTilesPerSecond` (20, rather fast), and clears the first
-  wall it reaches that it may — one a lane, so four a wave at most — scoring as one each, an
-  Architect rebuilding them as any shot's. It passes over the sea, every castle and gun, its
-  owner's and teammates' walls and the rubble of the eliminated; a lane meeting nothing, or whose
-  wall another shot cleared before it arrived, runs on to the map's edge and disappears. No range
-  limit.
-- **A wave fired late lands in the intermission**, which waits for it as for any shot (the
-  user's). Its cooldown ends with the combat phase: no wave is sent outside it.
-- **A tower like the rest**: 2×2, both costs, under the cap of three, inert outside sealed
-  ground, scoring as the cannons it cost. **Not an impact tower and no barrel**: `findReadyCannon`
-  never chooses it, the cursor's rings leave it out, and its own cooldown shows as a ring on the
-  tower itself. **The Lullaby Tower lulls it** as a tower (two lullabies), its cooldown paused
-  while it sleeps.
-- **Its lever by cost is `cooldownMs`**: 4 s at cost 2, 3 s at cost 3. Since its first wave
-  waits a cooldown too, it moves in whole waves — anything from 3.34 to 5 s is two — so if the
-  soaks need a finer step, the first wave's delay apart from the cooldown is the lever in reserve.
-  The cooldown alone could not balance it; `waveWidth` did (§5 SW).
+- **The click sets only the direction**, as the Laser Tower's does, at any angle: the wave runs
+  from the tower's centre through the tile clicked and on to the map's edge.
+- **`waveWidth` lanes side by side, a tile apart** — **2 at cost 2, 3 at cost 3** — centred on the
+  line aimed, shifted across the rows where the line runs mostly along a row, across the columns
+  otherwise, so every lane is an exact ray (`waveRays`, the Laser's walk, `walkRay`). Each lane
+  clears **the first wall it reaches** that its owner may (`strikable`): any live opponent's,
+  across a channel too; its own, a teammate's and the rubble of the eliminated it passes over. So
+  a wave opens a gap as wide as itself in one wall, where the Laser goes deep through several.
+- **It travels**, `waveTilesPerSecond` (20) along the line's longer axis, exact without a square
+  root, a wall falling as the front passes the middle of its tile. A lane whose wall another shot
+  cleared first runs on to the next, or off the map. A wave still travelling as combat ends lands
+  in the intermission, which waits for it as for any shot.
+- **Its reload is an ordinary shot's flight to the nearest wall a lane would clear** as it fires,
+  times `flightFactor` — to the tile clicked if none — as the Laser's is; the shot stays in the air
+  that long, landing nothing (`strikesOnFiring`).
+- **Its levers by cost**: the width, 2 and 3, and the flight factor — 1 at cost 2, **1.15 at cost
+  3**, set by the soaks (§5 SW, §5 BS).
 - **Determinism**: no chance at all. The waves in flight are a list in the match (`waves`), each
-  its direction, lanes and launch tick, a lane's front `waveTilesPerSecond` from its launch; a
-  gun's next wave its `waveTick`, set as combat begins and gone as it ends. Both hashed only while
-  there are any, so a match without them hashes as before; carried in the snapshot.
-- **Seen and heard**: a loudspeaker for its emblem; a wave a band of arcs rolling down its lanes in
-  its owner's colour, a burst where it hits; the user's `tower_subwoofer.mp3` as it fires. Several
-  Subwoofers bought alike fire on the same tick, each combat's cooldown starting together, so the
-  sound plays **once a tick however many fire**, and not again within a short gap.
-- **Bots** never fire it; they site it where its lanes meet the most enemy wall, nearest first,
-  before room — and buy it as an ordinary gun goes.
+  lane a ray in doubled coordinates and whether it is done, hashed only while there are any, so a
+  match without them hashes as before; carried in the snapshot.
+- **Seen and heard**: a loudspeaker for its emblem; while it is ready, a faint line from the tower
+  through the cursor for each lane, as the Laser's one; a wave as arcs bowed forward down each lane
+  in its owner's colour round a white core, a blast where a lane clears a wall; the user's
+  `tower_subwoofer.mp3` as it fires, once a tick however many fire and not again within half a
+  second — it is a second and a half long (the user's: it must not get messy).
+- **Bots** aim it at the block of the chosen opponent's wall where its lanes' first walls, traced
+  as the rules will send them (`waveTargets`), take most — the weakest wall's counting three, any
+  other rival's one — and buy and site it as an ordinary gun goes.
+- **The first design**, built and soaked first: no click fired it — every `cooldownMs` of a combat
+  phase, its first wave a cooldown in, a wave in one of the four cardinal directions towards the
+  nearest enemy wall, two lanes wide and then four. The cooldown did not move it; four lanes
+  balanced it at two players; but against the other towers it was the weakest at both costs (§5
+  SW, BS), and the user chose to aim it instead.
 
 ---
 
@@ -808,6 +808,74 @@ too, and the Subwoofer is not out of line: kept as it is, the cooldown not touch
 npx tsx tools/headless/src/towerSoak.ts --out soaks/laser-p4 --players 4 \
   --pairs laser2:none,laser3:none --levels 5 --matches 192
 ```
+
+### BS — The balance session (2026-10-30)
+
+Every tower now built, all of them measured on one commit (3c4dbe3), Level 5, two-player tables,
+96 matches a pairing (±5), the same seeds throughout (`soaks/balance-2026-10-30-*`). The team runs
+(2v2 against none, and tower against tower with a cost-2 and a cost-3 member a team) are planned,
+not run: the soak tool has no team mode yet.
+
+**Each variant against no tower** (cost 2 / cost 3; the goal 50–70):
+
+| tower        | cost 2 | cost 3 |
+| ------------ | ------ | ------ |
+| Big Bertha   | 71     | 58     |
+| Architect    | 69     | 69     |
+| Rapid Cannon | 54     | 67     |
+| Lightning    | 67     | 69     |
+| Allerdickste | 63     | 64     |
+| Laser        | 66     | 67     |
+| Frost        | 59     | 70     |
+| Lullaby      | 57     | 71     |
+| Subwoofer    | 49     | 55     |
+
+All inside the goal or at its edge (Bertha 2 at 71, the Subwoofer 2 at 49), as their own soaks
+left them: nothing has drifted.
+
+**Each variant against every other at its cost**, its mean share of the eight pairings (fewest –
+most):
+
+| cost 2       | mean | range | cost 3       | mean | range |
+| ------------ | ---- | ----- | ------------ | ---- | ----- |
+| Architect    | 61   | 47–67 | Lightning    | 64   | 57–76 |
+| Lullaby      | 54   | 48–65 | Big Bertha   | 55   | 39–65 |
+| Lightning    | 54   | 42–61 | Rapid Cannon | 51   | 42–58 |
+| Big Bertha   | 53   | 39–64 | Lullaby      | 51   | 43–58 |
+| Laser        | 51   | 38–61 | Allerdickste | 51   | 37–61 |
+| Allerdickste | 47   | 34–63 | Laser        | 50   | 34–60 |
+| Rapid Cannon | 45   | 33–53 | Architect    | 47   | 34–53 |
+| Frost        | 44   | 35–58 | Subwoofer    | 42   | 24–64 |
+| Subwoofer    | 41   | 35–47 | Frost        | 41   | 33–48 |
+
+Against no tower every variant is fine; against each other the spread is wider than the goal's
+40–60 at both ends: the **Architect at cost 2** (61, and 69 against none at either cost — its
+cheap variant as good as its dear one) and the **Lightning Tower at cost 3** (64, 76 against the
+Subwoofer 3) on top; the **Subwoofer** (41 / 42) and the **Frost Cannon** (44 / 41) at the bottom
+at both costs.
+
+**Evened out** (the user's: no obvious outliers): Architect 2's gun a flight factor of 2, firing
+about half as often; Lightning 3's miss chance 0.67; the Frost Cannon's reload a flight factor of
+0.85 at both costs, and cost 3's freeze through the overtime; and the Subwoofer reworked as a gun
+aimed as the Laser is, a wave 2 or 3 lanes wide (§2.9), cost 3's flight factor 1.15 after a first
+soak at 1 put it on top (60). Each changed variant measured again, against no tower and against
+every other at its cost, on the same seeds, the pairings neither side of which changed kept:
+
+| cost 2       | mean | was | cost 3       | mean | was |
+| ------------ | ---- | --- | ------------ | ---- | --- |
+| Lightning    | 56   | 54  | Lightning    | 55   | 64  |
+| Laser        | 53   | 51  | Big Bertha   | 53   | 55  |
+| Architect    | 52   | 61  | Laser        | 51   | 50  |
+| Big Bertha   | 51   | 53  | Rapid Cannon | 50   | 51  |
+| Lullaby      | 51   | 54  | Allerdickste | 50   | 51  |
+| Subwoofer    | 49   | 41  | Lullaby      | 49   | 51  |
+| Frost        | 48   | 44  | Frost        | 49   | 41  |
+| Rapid Cannon | 46   | 45  | Subwoofer    | 48   | 42  |
+| Allerdickste | 44   | 47  | Architect    | 46   | 47  |
+
+Every tower now averages 44–56 against the others at its cost. Against no tower the changed ones:
+Architect 2 64 (69 before), Lightning 3 74 (69), Frost 2 58 (59), Frost 3 74 (70), the Subwoofer
+61 / 67 — Lightning 3 and Frost 3 at the goal's edge, within the noise of their old figures.
 
 ### After ST8 — the decisions
 

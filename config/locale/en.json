@@ -624,7 +624,8 @@
   "tower.frostShareWhat": "Freezes the tile it hits for the first {p}% of the next build phase: nothing can be built there until it thaws — fires first whenever it is ready.",
   "tower.lullabyWhat": "Its shot lulls the {n} enemy guns nearest the tile it hits, within {r} blocks: a cannon falls asleep for {s} seconds at once, a special tower after {t} lullabies; an Architect as a cannon; the Allerdickste Bertha never sleeps — fires first whenever it is ready.",
   "tower.lullabyAnyWhat": "Its shot lulls the {n} enemy guns nearest the tile it hits: a cannon falls asleep for {s} seconds at once, a special tower after {t} lullabies; an Architect as a cannon; the Allerdickste Bertha never sleeps — fires first whenever it is ready.",
-  "tower.subwooferWhat": "Fires by itself, never by a click: {s} seconds into each combat phase and every {s} seconds after, {n} times in all, it sends a wave {w} blocks wide towards the nearest enemy wall straight north, east, south or west, clearing the first wall block in each lane.",
+  "tower.subwooferWhat": "Sends a wave {w} blocks wide towards the tile clicked and on to the map's edge; each of its {w} lanes clears the first wall block it reaches, however far — fires first whenever it is ready.",
+  "tower.subwooferSlowWhat": "Sends a wave {w} blocks wide towards the tile clicked and on to the map's edge; each of its {w} lanes clears the first wall block it reaches, however far — fires first whenever it is ready. Its wave reloads slower than a cannon's shot.",
   "tower.cost": {
     "one": "{n} cannon",
     "other": "{n} cannons"

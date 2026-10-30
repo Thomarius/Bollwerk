@@ -123,22 +123,18 @@ export interface Cannon {
   asleepUntil?: number;
   /** Lullabies it has taken towards its sleep, short of its threshold; absent at none. */
   lulled?: number;
-  /**
-   * A Subwoofer's next wave, the tick it is due: set as a combat phase begins, a cooldown on,
-   * and gone as it ends. Absent on every other gun, and on a Subwoofer outside combat.
-   */
-  waveTick?: number;
 }
 
-/** A wave's direction: north, east, south, west, the order ties are broken in. */
-export type WaveDirection = 0 | 1 | 2 | 3;
-
-/** One lane of a wave, a row or column of its tower's footprint carried outwards. */
+/**
+ * One lane of a wave: a ray in doubled coordinates, where every tile's centre is an even integer
+ * (`walkRay`) — from (ax, ay) through (ax + dx, ay + dy) and on to the map's edge.
+ */
 export interface WaveLane {
-  /** The lane's first tile, just beyond the tower's footprint. */
-  x: number;
-  y: number;
-  /** Whether it has cleared its wall or left the map; a wave is gone once both lanes are. */
+  ax: number;
+  ay: number;
+  dx: number;
+  dy: number;
+  /** Whether it has cleared its wall or left the map; a wave is gone once all its lanes are. */
   done: boolean;
 }
 
@@ -147,12 +143,11 @@ export interface WaveLane {
  * `waveTilesPerSecond` from `launchTick`, each clearing the first wall it may that it reaches.
  */
 export interface Wave {
-  /** From the shots' ids, so every event names a wave as it names a shot. */
+  /** The shot that sent it: the tower's reload, which lands nothing. */
   id: number;
   cannonId: number;
   owner: number;
   cost: number;
-  dir: WaveDirection;
   lanes: WaveLane[];
   launchTick: number;
 }
@@ -308,7 +303,7 @@ export type MatchEvent =
       waveId: number;
       owner: number;
       lane: number;
-      /** Where its front stopped: the wall's tile, or the first tile off the map. */
+      /** Where its front stopped: the wall's tile, or the point where it left the map. */
       x: number;
       y: number;
       destroyed: number | null;

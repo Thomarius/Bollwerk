@@ -18,7 +18,7 @@ import { SnapshotSchema } from './snapshot.js';
  * snapshot's freezes (2026-10-21). 31: the Lullaby Tower, the same and a gun's sleep (2026-10-21).
  * 32: the bots' towers, set by the host in the lobby (2026-10-25). 33: a tournament's bots'
  * towers, fixed for its whole length and sent with its table (2026-10-28). 34: the Subwoofer,
- * its variants, its ruleset key, a gun's cooldown and the snapshot's waves (2026-10-30).
+ * its variants, its ruleset key and the snapshot's waves (2026-10-30).
  */
 export const PROTOCOL_VERSION = 34;
 

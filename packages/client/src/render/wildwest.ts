@@ -1,5 +1,5 @@
 import type { ArtConfig, WildWestStyleConfig } from '@bollwerk/config';
-import { Structure, type MatchState, type Shot } from '@bollwerk/sim';
+import { isLoaded, Structure, type MatchState, type Shot } from '@bollwerk/sim';
 import { Container, Graphics, Text, type GraphicsContext } from 'pixi.js';
 
 import { t as text } from '../i18n.js';
@@ -19,7 +19,6 @@ import { ShapeTheme } from './shapeTheme.js';
 import { Memos, StampBook, Stamps, viewKey } from './stamps.js';
 import { TerrainStrips, whole, type TerrainPass, type TerrainPlan } from './terrainStrips.js';
 import {
-  looksLoaded,
   Fireworks,
   FlagHoist,
   GhostMotion,
@@ -850,7 +849,7 @@ export class WildWestTheme extends ShapeTheme implements Theme {
       const out = state.players[cannon.owner]?.eliminated !== false;
       const asleep = cannon.asleepUntil !== undefined && cannon.asleepUntil > state.tick;
       const silenced = !out && (asleep || !cannon.active);
-      const loaded = looksLoaded(cannon);
+      const loaded = isLoaded(cannon);
       const scale = Math.max(1, Math.min(cannon.w, cannon.h) / 2);
       const x = tileX(view, cannon.x + cannon.w / 2);
       const foot = tileY(view, cannon.y + cannon.h) - t * 0.2;

@@ -20,7 +20,7 @@ import { streamFor } from './rng.js';
 import { fire, resolveImpacts } from './shots.js';
 import { startFreezes, thawExpired } from './frost.js';
 import { wakeAll } from './lullaby.js';
-import { advanceWaves, endCooldowns, inFlight, sendWaves, startCooldowns } from './subwoofer.js';
+import { advanceWaves, inFlight } from './subwoofer.js';
 import { repairWalls } from './specials.js';
 import { denseTeams, tableTeamSize, teamScore } from './teams.js';
 import { generateTerrain } from './terrain.js';
@@ -587,8 +587,6 @@ function beginPendingPhase(state: MatchState): void {
       player.openingPlacement = false;
     }
     enterPhase(state, 'combat', state.ruleset.phases.combatMs);
-    // The Subwoofers' cooldowns run from the barrage's first tick: none is ready as it begins.
-    startCooldowns(state);
     return;
   }
   if (next === 'build') {
@@ -669,8 +667,6 @@ function advancePhase(state: MatchState): void {
       if (state.tick >= state.phaseEndTick) {
         // Every gun a Lullaby Tower put to sleep wakes with the barrage's end: nothing carries over.
         wakeAll(state);
-        // No wave is sent outside combat; those still travelling land in the intermission.
-        endCooldowns(state);
         enterIntermission(state, 'build');
       }
       return;
@@ -737,10 +733,8 @@ export function step(state: MatchState): void {
   if (state.phase === 'game_over') return;
   state.tick++;
   resolveImpacts(state);
-  // The Subwoofers' waves travel on, and those whose cooldown is over send theirs — before the
-  // phase may end, so a wave due on the barrage's last tick is still sent.
+  // The Subwoofers' waves travel on, landing in the intermission too, which waits for them.
   advanceWaves(state);
-  sendWaves(state);
   advancePhase(state);
 }
 
@@ -1003,19 +997,13 @@ export function hashMatchState(state: MatchState, version = HASH_VERSION): strin
         .i32(c.asleepUntil ?? -1)
         .i32(c.lulled ?? 0);
   }
-  // The Subwoofers' cooldowns and waves, only while there are any: a match without them hashes
-  // as it always did.
-  const due = state.cannons.filter((c) => c.waveTick !== undefined);
-  if (due.length > 0) {
-    h.u32(due.length);
-    for (const c of due) h.i32(c.id).i32(c.waveTick ?? -1);
-  }
+  // The Subwoofers' waves, only while there are any: a match without them hashes as it always did.
   if (state.waves.length > 0) {
     h.u32(state.waves.length);
     for (const w of state.waves) {
-      h.i32(w.id).i32(w.cannonId).i32(w.owner).i32(w.cost).u32(w.dir).i32(w.launchTick);
+      h.i32(w.id).i32(w.cannonId).i32(w.owner).i32(w.cost).i32(w.launchTick);
       h.u32(w.lanes.length);
-      for (const l of w.lanes) h.i32(l.x).i32(l.y).bool(l.done);
+      for (const l of w.lanes) h.i32(l.ax).i32(l.ay).i32(l.dx).i32(l.dy).bool(l.done);
     }
   }
   return h.hex;

@@ -10942,3 +10942,36 @@ fair 25%: two wide 27 / 40, four wide **46 / 54**. No other tower had been soake
 Laser Tower was, the same tables, as a reference: **38 / 55**. At cost 3 the two are alike, at cost
 2 the Subwoofer 8 points above, within about one and a half standard errors: four players lift a
 balanced tower to twice its share too, and the Subwoofer was kept as it is.
+
+## 15q. Every tower against every other, and the Subwoofer aimed (2026-10-30)
+
+With all nine towers built, the user planned a longer balance session; two of its four runs were
+made, on one commit, Level 5, two-player tables, 96 matches a pairing (±5), the same seeds
+throughout (SPECIAL_TOWERS.md §5 BS): every variant against no tower, and every variant against
+every other at its cost — 90 pairings, 8,640 matches. The team runs (2v2 against none, and tower
+against tower with a cost-2 and a cost-3 member a team) wait for a team mode in `towerSoak.ts`.
+Run as background tasks, which a harness stops at two hours: a soak's task stopped leaves the soak
+running, but its workers can no longer start (Windows' 0xC0000142, no console), so a long run is
+split into tasks under two hours, the tool resuming where it stopped.
+
+Against no tower every variant was inside the goal or at its edge, as its own soak had left it.
+Against each other the spread was wider: Architect 2 at 61 on average and Lightning 3 at 64 on top,
+the Subwoofer and the Frost Cannon at the bottom of both costs (41–44). The user's choice, tower by
+tower: **Architect 2's gun slower**, a flight factor of 2 — a reach without the ring's corners, which
+are what a breach takes, and a cap on walls rebuilt, a rule not seen, were dropped, the slower gun
+asked for again despite the debuff once declined (13zl); **Lightning 3's miss chance 0.67**; **the
+Frost Cannon faster**, 0.85 at both costs, and cost 3's freeze through the overtime (cleaner, and
+measured before at about the same strength); and **the Subwoofer aimed**: the click sets a direction
+as the Laser's does, at any angle, and a wave 2 (cost 2) or 3 (cost 3) lanes wide, a tile apart,
+travels through it, each lane clearing the first wall it reaches; its reload the flight to the
+nearest of those walls. The lanes are exact rays, the Laser's walk made a shared `walkRay`, and a
+lane's progress is measured along the line's longer axis, so no square root enters the sim. The
+first Subwoofer's cooldown, its ring, its cardinal aim and its bots' siting were taken out; the
+waves and their sound kept, the sound now not again within half a second.
+
+Measured again, each changed variant against no tower and against every other at its cost:
+Subwoofer 3 at a cannon's reload went to the top (60, 73 against the Allerdickste); at a flight
+factor of 1.15 it came to 48. **Every tower now averages 44–56 against the others at its cost**
+(table in SPECIAL_TOWERS.md §5 BS). Against no tower: Architect 2 64, Lightning 3 74, Frost 2 58,
+Frost 3 74, the Subwoofer 61 / 67 — Lightning 3 and Frost 3 at the goal's edge, within the noise of
+their old 69 and 70.

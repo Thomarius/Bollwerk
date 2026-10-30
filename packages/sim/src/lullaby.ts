@@ -95,9 +95,7 @@ export function singLullaby(state: MatchState, shot: Shot): void {
     delete gun.lulled;
     // Its reload paused: the sleep runs from when it could next have fired.
     let free = state.tick;
-    // A Subwoofer could next fire as its cooldown ends; that is what its sleep pushes back.
-    if (gun.waveTick !== undefined) free = Math.max(state.tick, gun.waveTick);
-    else if (!isLoaded(gun)) {
+    if (!isLoaded(gun)) {
       free = Infinity;
       for (const s of state.shots) if (s.cannonId === gun.id) free = Math.min(free, s.impactTick);
       if (!Number.isFinite(free)) free = state.tick;

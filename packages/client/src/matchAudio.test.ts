@@ -414,16 +414,16 @@ describe('special towers in the sound', () => {
     expect(audio.sfx).toEqual(['cannon_fire', 'shot_impact', 'lullaby']);
   });
 
-  it('hears Subwoofers once a tick however many fire, and not again within a second', () => {
+  it('hears Subwoofers once a tick however many fire, and not again within half a second', () => {
     const { audio, match } = setup();
     const wave = (id: number, tick: number): MatchEvent => ({
       kind: 'wave_sent',
       tick,
-      wave: { id, cannonId: id, owner: 1, cost: 3, dir: 1, lanes: [], launchTick: tick },
+      wave: { id, cannonId: id, owner: 1, cost: 3, lanes: [], launchTick: tick },
     });
     match.handle([wave(1, 90), wave(2, 90), wave(3, 90)]);
-    match.handle([wave(4, 110)]);
-    match.handle([wave(5, 120)]);
+    match.handle([wave(4, 100)]);
+    match.handle([wave(5, 105)]);
     expect(audio.sfx).toEqual(['subwoofer', 'subwoofer']);
   });
 

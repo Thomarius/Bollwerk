@@ -1,5 +1,5 @@
 import type { ArtConfig, PiratesStyleConfig } from '@bollwerk/config';
-import { Structure, Terrain, type MatchState, type Shot } from '@bollwerk/sim';
+import { isLoaded, Structure, Terrain, type MatchState, type Shot } from '@bollwerk/sim';
 import { Container, Graphics, type GraphicsContext } from 'pixi.js';
 
 import { motionReduced } from '../motion.js';
@@ -21,7 +21,6 @@ import { ShapeTheme } from './shapeTheme.js';
 import { Discs, StampBook, Stamps, viewKey } from './stamps.js';
 import { TerrainStrips, whole, type TerrainPass, type TerrainPlan } from './terrainStrips.js';
 import {
-  looksLoaded,
   Fireworks,
   FlagHoist,
   GhostMotion,
@@ -1096,7 +1095,7 @@ export class PiratesTheme extends ShapeTheme implements Theme {
 
       // The parrot, on its gun while the gun is ready, over it while it reloads.
       if (out || !cannon.active) continue;
-      const perched = looksLoaded(cannon);
+      const perched = isLoaded(cannon);
       let seen = this.parrots.get(cannon.id);
       if (seen === undefined) {
         seen = { perched, since: -1e9 };

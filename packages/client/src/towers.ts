@@ -118,12 +118,9 @@ export function towerWhat(variant: TowerVariant, ruleset: Ruleset = defaultRules
             });
       }
     case 'subwoofer':
-      // Its cooldown told as how often it fires in a barrage, as the rules will count it: the
-      // first wave a cooldown in too.
-      if (!('cooldownMs' in config)) return '';
-      return t('tower.subwooferWhat', {
-        s: config.cooldownMs / 1000,
-        n: Math.floor(ruleset.phases.combatMs / config.cooldownMs),
+      // Its reload told against a cannon's where it differs, as Big Bertha's is.
+      if (!('waveWidth' in config)) return '';
+      return t(config.flightFactor > 1 ? 'tower.subwooferSlowWhat' : 'tower.subwooferWhat', {
         w: config.waveWidth,
       });
   }

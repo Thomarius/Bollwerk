@@ -309,7 +309,11 @@ function shotObserver(
         const owner = event.kind === 'wave_sent' ? event.wave.owner : event.owner;
         const cost =
           event.kind === 'wave_sent' ? event.wave.cost : (waveCost.get(event.waveId) ?? 0);
-        if (event.kind === 'wave_sent') waveCost.set(event.wave.id, cost);
+        // Its shot is only its reload, landing nothing: neither a hit nor a miss of the tile clicked.
+        if (event.kind === 'wave_sent') {
+          waveCost.set(event.wave.id, cost);
+          launched.delete(event.wave.id);
+        }
         const kind = `${keyOf[owner] as string} subwoofer${cost}`;
         const k = byKind.get(kind) ?? { shots: 0, walls: 0 };
         if (event.kind === 'wave_sent') k.shots++;

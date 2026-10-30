@@ -34,14 +34,42 @@ export function traceLaser(
   ty: number,
   count: number,
 ): LaserBeam {
-  const { width, height } = state;
   const ax = Math.round(2 * fromX);
   const ay = Math.round(2 * fromY);
-  const dx = 2 * tx - ax;
-  const dy = 2 * ty - ay;
   const cleared: number[] = [];
-  if (dx === 0 && dy === 0) return { cleared, endX: tx, endY: ty };
+  const ray = { ax, ay, dx: 2 * tx - ax, dy: 2 * ty - ay };
+  if (ray.dx === 0 && ray.dy === 0) return { cleared, endX: tx, endY: ty };
+  const end = walkRay(state, ray, (i) => {
+    if (strikable(state, owner, i)) cleared.push(i);
+    return cleared.length >= count;
+  });
+  return { cleared, endX: end.x, endY: end.y };
+}
 
+/**
+ * A ray in doubled coordinates, where tile i spans 2i - 1 to 2i + 1 and every tile's centre is
+ * an even integer: from (ax, ay), through (ax + dx, ay + dy) and on. Not both of dx, dy 0.
+ */
+export interface Ray {
+  ax: number;
+  ay: number;
+  dx: number;
+  dy: number;
+}
+
+/**
+ * Every tile a ray passes through, in order, by an exact walk (`traceLaser`): `visit` is handed
+ * each tile and the share of the way from the ray's start to its second point at which the ray
+ * crosses that tile's middle — where it enters and where it leaves, halved — and stops the walk
+ * by returning true. Where the walk ended: the middle of the tile it stopped on, or the map's
+ * edge, as a point in tiles and as that share (`at`), with whether it was the edge.
+ */
+export function walkRay(
+  state: Pick<MatchState, 'width' | 'height'>,
+  { ax, ay, dx, dy }: Ray,
+  visit: (i: number, at: number) => boolean,
+): { x: number; y: number; at: number; edge: boolean } {
+  const { width, height } = state;
   const sx = Math.sign(dx);
   const sy = Math.sign(dy);
   // The start tile; a centre on a boundary (a footprint of even size) starts in the tile the
@@ -58,9 +86,11 @@ export function traceLaser(
   const crossX = (): number => (sx === 0 ? Infinity : Math.abs(2 * ix + sx - ax) * mx);
   const crossY = (): number => (sy === 0 ? Infinity : Math.abs(2 * iy + sy - ay) * my);
   const scale = sx === 0 ? ady : adx * mx;
-  const pointAt = (n: number): { x: number; y: number } => ({
+  const endAt = (n: number, edge: boolean) => ({
     x: (ax + (dx * n) / scale) / 2,
     y: (ay + (dy * n) / scale) / 2,
+    at: n / scale,
+    edge,
   });
 
   let entered = 0;
@@ -68,21 +98,14 @@ export function traceLaser(
     const nx = crossX();
     const ny = crossY();
     const left = Math.min(nx, ny);
-    const i = iy * width + ix;
-    if (strikable(state, owner, i)) {
-      cleared.push(i);
-      if (cleared.length >= count) {
-        const end = pointAt((entered + left) / 2);
-        return { cleared, endX: end.x, endY: end.y };
-      }
+    if (ix < 0 || iy < 0 || ix >= width || iy >= height) return endAt(entered, true);
+    if (visit(iy * width + ix, (entered + left) / 2 / scale)) {
+      return endAt((entered + left) / 2, false);
     }
     if (nx <= ny) ix += sx;
     if (ny <= nx) iy += sy;
     entered = left;
-    if (ix < 0 || iy < 0 || ix >= width || iy >= height) {
-      const end = pointAt(left);
-      return { cleared, endX: end.x, endY: end.y };
-    }
+    if (ix < 0 || iy < 0 || ix >= width || iy >= height) return endAt(left, true);
   }
 }
 

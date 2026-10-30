@@ -6,6 +6,7 @@ import { freezeTile } from './frost.js';
 import { isAwake, singLullaby } from './lullaby.js';
 import { fireLaser, laserCount, traceLaser } from './laser.js';
 import { strikeLightning } from './lightning.js';
+import { sendWave, subwooferOf, waveRays, waveTargets } from './subwoofer.js';
 import {
   craterTilesOf,
   fixedFlightMsOf,
@@ -183,7 +184,14 @@ export function fire(
     shot.kind === 'laser'
       ? traceLaser(state, playerId, fromX, fromY, tx, ty, laserCount(state, shot))
       : null;
-  const first = beam?.cleared[0];
+  // The Subwoofer's wave likewise: its reload the flight to the nearest wall a lane would clear.
+  const rays =
+    shot.kind === 'subwoofer'
+      ? waveRays(fromX, fromY, tx, ty, subwooferOf(state, cannon.cost).waveWidth)
+      : null;
+  const first =
+    beam?.cleared[0] ??
+    (rays === null ? undefined : (waveTargets(state, playerId, rays).nearest ?? undefined));
   if (first !== undefined) {
     const factor = flightFactorOf(state.ruleset, cannon.kind, cannon.cost);
     const wx = first % state.width;
@@ -195,6 +203,7 @@ export function fire(
   state.events.push({ kind: 'shot_fired', tick: state.tick, shot });
   if (shot.kind === 'lightning') strikeLightning(state, shot);
   if (beam !== null) fireLaser(state, shot, beam);
+  if (rays !== null) sendWave(state, shot, rays);
   return { shot };
 }
 

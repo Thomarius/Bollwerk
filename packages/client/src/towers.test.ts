@@ -245,12 +245,16 @@ describe('the lobby with special towers', () => {
     };
     expect(towerWhat('laser2', fractional)).toContain('first 3 wall blocks');
     expect(towerWhat('laser2', fractional)).toContain('one more 25%');
-    // The Frost Cannon's freeze: the whole phase until the clock runs out at cost 3, its first
-    // 60% at cost 2.
-    expect(towerWhat('frost3')).toContain('until its clock runs out');
+    // The Frost Cannon's freeze: the whole phase, overtime too, at cost 3, its first 60% at cost 2.
+    expect(towerWhat('frost3')).toContain('overtime too');
     expect(towerWhat('frost2')).toContain('first 60%');
     // The Lullaby Tower's guns lulled by its cost, its reach and its sleep.
     expect(towerWhat('lullaby2')).toContain('lulls the 2 enemy guns');
+    // The Subwoofer's wave by its width, and cost 3's slower reload told.
+    expect(towerWhat('subwoofer2')).toContain('2 blocks wide');
+    expect(towerWhat('subwoofer2')).not.toContain('slower');
+    expect(towerWhat('subwoofer3')).toContain('3 blocks wide');
+    expect(towerWhat('subwoofer3')).toContain('reloads slower');
     expect(towerWhat('lullaby3')).toContain('lulls the 3 enemy guns');
     expect(towerWhat('lullaby3')).toContain('within 8 blocks');
     expect(towerWhat('lullaby3')).toContain('for 3 seconds');

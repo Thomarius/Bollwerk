@@ -85,12 +85,11 @@ function trackFor(phase: Phase): MusicCue | null {
 const KNOCK_MS = 300;
 
 /**
- * The least time between two Subwoofers' waves heard, in ticks: a second. Towers bought alike
- * fire on one tick, every combat's cooldowns starting together, and a lullaby can leave one a
- * moment behind another; its sound is a second and a half long, so two a moment apart only
- * smeared it (the user's, 2026-10-30: the sound must not get messy).
+ * The least time between two Subwoofers' waves heard, in ticks: half a second. Its sound is a
+ * second and a half long, so several fired a moment apart only smeared it (the user's,
+ * 2026-10-30: the sound must not get messy); a player's next wave is a reload away.
  */
-const SUBWOOFER_GAP_TICKS = defaultRuleset.tickRateHz;
+const SUBWOOFER_GAP_TICKS = Math.round(defaultRuleset.tickRateHz / 2);
 
 export class MatchAudio {
   private phase: Phase | null = null;
@@ -129,6 +128,8 @@ export class MatchAudio {
           // and the Rapid Cannon too (the user's, 2026-10-17); either Bertha's shot is kept for
           // its landing. The other two are heard as they strike, on the same tick.
           if (event.shot.kind === 'lightning' || event.shot.kind === 'laser') break;
+          // The Subwoofer's is heard as its wave sets off (`wave_sent`), on the same tick.
+          if (event.shot.kind === 'subwoofer') break;
           if (event.shot.kind === 'bertha') this.heavy.set(event.shot.id, 'tower_impact');
           if (event.shot.kind === 'biggest') this.heavy.set(event.shot.id, 'tower_biggest_impact');
           this.audio.play('cannon_fire');
@@ -161,7 +162,7 @@ export class MatchAudio {
           break;
 
         case 'wave_sent':
-          // Once however many Subwoofers fire on a tick, and not again within a second.
+          // Once however many Subwoofers fire on a tick, and not again within half a second.
           if (event.tick - this.wooferTick < SUBWOOFER_GAP_TICKS) break;
           this.wooferTick = event.tick;
           this.audio.play('subwoofer');

@@ -621,7 +621,8 @@
   "tower.frostShareWhat": "Friert das getroffene Feld für die ersten {p} % der nächsten Bauphase ein: Bis es taut, kann dort nichts gebaut werden — feuert zuerst, sobald sie bereit ist.",
   "tower.lullabyWhat": "Sein Schuss singt die {n} gegnerischen Kanonen in den Schlaf, die dem getroffenen Feld im Umkreis von {r} Blöcken am nächsten stehen: Eine Kanone schläft sofort {s} Sekunden, ein Spezialturm nach {t} Liedern; ein Baumeister wie eine Kanone; die Allerdickste Berta schläft nie — feuert zuerst, sobald er bereit ist.",
   "tower.lullabyAnyWhat": "Sein Schuss singt die {n} gegnerischen Kanonen in den Schlaf, die dem getroffenen Feld am nächsten stehen: Eine Kanone schläft sofort {s} Sekunden, ein Spezialturm nach {t} Liedern; ein Baumeister wie eine Kanone; die Allerdickste Berta schläft nie — feuert zuerst, sobald er bereit ist.",
-  "tower.subwooferWhat": "Feuert von selbst, nie per Klick: {s} Sekunden nach Beginn jeder Kampfphase und danach alle {s} Sekunden, {n}-mal insgesamt, schickt er eine {w} Blöcke breite Welle zur nächsten gegnerischen Mauer genau nach Norden, Osten, Süden oder Westen, die in jeder Bahn den ersten Mauerblock wegreißt.",
+  "tower.subwooferWhat": "Schickt eine {w} Blöcke breite Welle in Richtung des angeklickten Felds bis zum Kartenrand; jede ihrer {w} Bahnen reißt den ersten Mauerblock weg, den sie erreicht, wie weit auch immer — feuert zuerst, sobald er bereit ist.",
+  "tower.subwooferSlowWhat": "Schickt eine {w} Blöcke breite Welle in Richtung des angeklickten Felds bis zum Kartenrand; jede ihrer {w} Bahnen reißt den ersten Mauerblock weg, den sie erreicht, wie weit auch immer — feuert zuerst, sobald er bereit ist. Er lädt langsamer nach als eine Kanone.",
   "tower.cost": {
     "one": "{n} Kanone",
     "other": "{n} Kanonen"

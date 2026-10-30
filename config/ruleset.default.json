@@ -39,7 +39,7 @@
       "3": { "footprint": [2, 2], "flightFactor": 0.85, "crater": "plus5" }
     },
     "architect": {
-      "2": { "footprint": [2, 2], "flightFactor": 1, "repairRadius": 2.2 },
+      "2": { "footprint": [2, 2], "flightFactor": 2, "repairRadius": 2.2 },
       "3": { "footprint": [2, 2], "flightFactor": 1, "repairRadius": 2.6 }
     },
     "rapid": {
@@ -59,7 +59,7 @@
         "flightFactor": 1,
         "jumps": 3,
         "jumpRadius": 4,
-        "missChance": 0.6
+        "missChance": 0.67
       }
     },
     "biggest": {
@@ -71,8 +71,13 @@
       "3": { "footprint": [2, 2], "flightFactor": 1, "pierce": 2.5 }
     },
     "frost": {
-      "2": { "footprint": [2, 2], "flightFactor": 1, "freezeShare": 0.6, "throughOvertime": false },
-      "3": { "footprint": [2, 2], "flightFactor": 1, "freezeShare": 1, "throughOvertime": false }
+      "2": {
+        "footprint": [2, 2],
+        "flightFactor": 0.85,
+        "freezeShare": 0.6,
+        "throughOvertime": false
+      },
+      "3": { "footprint": [2, 2], "flightFactor": 0.85, "freezeShare": 1, "throughOvertime": true }
     },
     "lullaby": {
       "2": {
@@ -97,8 +102,8 @@
       }
     },
     "subwoofer": {
-      "2": { "footprint": [2, 2], "cooldownMs": 4000, "waveTilesPerSecond": 20, "waveWidth": 4 },
-      "3": { "footprint": [2, 2], "cooldownMs": 3000, "waveTilesPerSecond": 20, "waveWidth": 4 }
+      "2": { "footprint": [2, 2], "flightFactor": 1, "waveTilesPerSecond": 20, "waveWidth": 2 },
+      "3": { "footprint": [2, 2], "flightFactor": 1.15, "waveTilesPerSecond": 20, "waveWidth": 3 }
     }
   },
   "build": {

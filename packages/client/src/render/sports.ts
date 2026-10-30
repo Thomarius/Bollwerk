@@ -1,5 +1,5 @@
 import type { ArtConfig, SportsStyleConfig } from '@bollwerk/config';
-import { Structure, type Cannon, type MatchState, type Shot } from '@bollwerk/sim';
+import { isLoaded, Structure, type Cannon, type MatchState, type Shot } from '@bollwerk/sim';
 import { Container, FillPattern, Graphics, Texture, type GraphicsContext } from 'pixi.js';
 
 import { motionReduced } from '../motion.js';
@@ -33,7 +33,6 @@ import { drawStands, standsSize } from './sports/stands.js';
 import { Discs, Memos, StampBook, Stamps, viewKey } from './stamps.js';
 import { TerrainStrips, whole, type TerrainPass, type TerrainPlan } from './terrainStrips.js';
 import {
-  looksLoaded,
   Fireworks,
   FlagHoist,
   GhostMotion,
@@ -941,7 +940,7 @@ export class SportsTheme extends ShapeTheme implements Theme {
         options: { scale: dir, scaleY: 1 + bob * 0.015, tint },
       });
       // The ball, while the gun has one: back in hand as its shot lands, growing in.
-      const loaded = looksLoaded(cannon);
+      const loaded = isLoaded(cannon);
       const seen = this.caught.get(cannon.id);
       if (seen === undefined) this.caught.set(cannon.id, { loaded, since: -1e9 });
       else if (loaded !== seen.loaded) {

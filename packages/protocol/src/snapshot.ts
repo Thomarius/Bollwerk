@@ -87,8 +87,6 @@ const CannonSchema = z.strictObject({
   asleepUntil: z.number().int().optional(),
   /** Lullabies taken towards its sleep; absent at none. */
   lulled: z.number().int().positive().optional(),
-  /** A Subwoofer's next wave, the tick it is due; absent outside combat and on every other gun. */
-  waveTick: z.number().int().optional(),
 });
 
 const WaveSchema = z.strictObject({
@@ -96,8 +94,15 @@ const WaveSchema = z.strictObject({
   cannonId: z.number().int().nonnegative(),
   owner: z.number().int().nonnegative(),
   cost: z.number().int().positive(),
-  dir: z.union([z.literal(0), z.literal(1), z.literal(2), z.literal(3)]),
-  lanes: z.array(z.strictObject({ x: z.number().int(), y: z.number().int(), done: z.boolean() })),
+  lanes: z.array(
+    z.strictObject({
+      ax: z.number().int(),
+      ay: z.number().int(),
+      dx: z.number().int(),
+      dy: z.number().int(),
+      done: z.boolean(),
+    }),
+  ),
   launchTick: z.number().int(),
 });
 
@@ -226,11 +231,10 @@ export function applySnapshot(state: MatchState, snapshot: Snapshot): void {
   state.territory = decodeRle(snapshot.territory, size);
   state.castles = snapshot.castles.map((c) => ({ ...c }));
   // A gun awake carries no `asleepUntil` at all, as the match makes it.
-  state.cannons = snapshot.cannons.map(({ asleepUntil, lulled, waveTick, ...c }) => ({
+  state.cannons = snapshot.cannons.map(({ asleepUntil, lulled, ...c }) => ({
     ...c,
     ...(asleepUntil === undefined ? {} : { asleepUntil }),
     ...(lulled === undefined ? {} : { lulled }),
-    ...(waveTick === undefined ? {} : { waveTick }),
   }));
   state.shots = snapshot.shots.map((s) => ({ ...s }));
   state.lostWalls = [...snapshot.lostWalls];

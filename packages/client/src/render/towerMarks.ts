@@ -9,8 +9,8 @@ import {
   repairRadiusOf,
   subwooferOf,
   ticksFor,
+  waveRays,
   waveReach,
-  waveStep,
   type CannonKind,
   type Freeze,
   type MatchState,
@@ -578,15 +578,13 @@ export class TowerMarks {
   }
 
   /**
-   * The Subwoofers' (the user's, 2026-10-30): round each one's badge in combat, its cooldown
-   * filling towards its next wave — no click fires it, so the cursor's rings leave it out — and
-   * every wave travelling, a few arcs bowed forward on each lane still going, in its owner's
-   * colour round a white core, a fraction of a tick on so they glide. Read from the match, where
-   * the waves are, so nothing is kept here; cleared once, then left alone, while there are none.
+   * The Subwoofers' waves (the user's, 2026-10-30): on each lane still travelling, a few arcs bowed
+   * forward across it, in its owner's colour round a white core, a fraction of a tick on so they
+   * glide. Read from the match, where the waves are, so nothing is kept here; cleared once, then
+   * left alone, while there are none.
    */
   drawWaves(state: MatchState, view: ViewTransform, art: ArtConfig, tickFraction: number): void {
-    const counting = state.cannons.filter((c) => c.waveTick !== undefined);
-    if (counting.length === 0 && state.waves.length === 0) {
+    if (state.waves.length === 0) {
       if (this.wavesShown) clearDrawn(this.waves);
       this.wavesShown = false;
       return;
@@ -595,50 +593,33 @@ export class TowerMarks {
     const g = this.waves;
     g.clear();
     const t = view.tile;
-    const now = state.tick + tickFraction;
-    for (const c of counting) {
-      const span = ticksFor(subwooferOf(state, c.cost).cooldownMs, state.ruleset.tickRateHz);
-      const filled = Math.min(1, Math.max(0, 1 - ((c.waveTick as number) - now) / span));
-      const [cx, cy] = [tileX(view, c.x + c.w / 2), tileY(view, c.y + c.h) + t * DROP];
-      // On a dark band of its own outside the badge's rim: thinner, it vanished at a tile of
-      // 25 pixels (screenshots, 2026-10-30).
-      const r = (t * BADGE) / 2 + Math.max(2.5, t / 7);
-      g.circle(cx, cy, r);
-      g.stroke({ width: Math.max(4, t / 4), color: 0x0a0a12, alpha: 0.8 });
-      if (filled <= 0) continue;
-      // From its top, moved to first: an arc opening a path is joined to the path's last point,
-      // the board's top left corner after a stroke, and drew a line there (the user's, 2026-10-30).
-      g.moveTo(cx, cy - r);
-      g.arc(cx, cy, r, -Math.PI / 2, -Math.PI / 2 + filled * Math.PI * 2);
-      g.stroke({
-        width: Math.max(2.5, t / 6),
-        color: c.active ? playerColour(art, c.owner, 'light') : 0x9a9aa4,
-        alpha: 0.95,
-        cap: 'round',
-      });
-    }
     for (const wave of state.waves) {
-      // Its front, from the lanes' first tiles' near edge: a tile's wall falls as it passes
-      // the tile's middle (`advanceWaves`).
-      const reach = waveReach(state, wave, now);
-      const [sx, sy] = waveStep(wave.dir);
+      // Its front, in tiles along the line's longer axis from the tower's centre: a tile's wall
+      // falls as it passes the tile's middle (`advanceWaves`).
+      const reach = waveReach(state, wave, state.tick + tickFraction);
       const colour = playerColour(art, wave.owner, 'light');
       for (const lane of wave.lanes) {
         if (lane.done) continue;
-        // The lane's first tile's near edge, and the line across the lane there.
-        const ex = lane.x + 0.5 - sx * 0.5;
-        const ey = lane.y + 0.5 - sy * 0.5;
+        // In tiles: the lane's start, a step a tile along the longer axis, and its direction.
+        const longer = Math.max(Math.abs(lane.dx), Math.abs(lane.dy));
+        const [sx, sy] = [lane.dx / longer, lane.dy / longer];
+        const norm = Math.hypot(lane.dx, lane.dy);
+        const [ux, uy] = [lane.dx / norm, lane.dy / norm];
         for (let k = 0; k < WAVE_ARCS; k++) {
           const along = reach - k * WAVE_ARC_GAP;
           if (along < 0) break;
-          const [fx, fy] = [ex + sx * along, ey + sy * along];
-          if (fx < 0 || fy < 0 || fx > state.width || fy > state.height) continue;
+          const [fx, fy] = [lane.ax / 2 + sx * along, lane.ay / 2 + sy * along];
+          if (fx < -0.5 || fy < -0.5 || fx > state.width - 0.5 || fy > state.height - 0.5) continue;
           // Across the lane, from one side to the other, bowed forward through its middle.
-          const [px, py] = [-sy * 0.42, sx * 0.42];
+          const [px, py] = [-uy * 0.42, ux * 0.42];
           const bow = 0.22;
-          const a = { x: tileX(view, fx + px - sx * bow), y: tileY(view, fy + py - sy * bow) };
-          const m = { x: tileX(view, fx + sx * bow), y: tileY(view, fy + sy * bow) };
-          const b = { x: tileX(view, fx - px - sx * bow), y: tileY(view, fy - py - sy * bow) };
+          const at = (x: number, y: number) => ({
+            x: tileX(view, x + 0.5),
+            y: tileY(view, y + 0.5),
+          });
+          const a = at(fx + px - ux * bow, fy + py - uy * bow);
+          const m = at(fx + ux * bow, fy + uy * bow);
+          const b = at(fx - px - ux * bow, fy - py - uy * bow);
           const alpha = 1 - k / WAVE_ARCS;
           for (const [width, tint, strength] of [
             [Math.max(3, t * 0.3), colour, 0.45],
@@ -898,8 +879,8 @@ export class TowerMarks {
   }
 
   /**
-   * A ready Laser Tower's line (the user's, 2026-10-21): faint, from the tower through the
-   * cursor to the board's edge, since the click sets only its direction, in the player's colour
+   * A ready Laser Tower's line (the user's, 2026-10-21) — or a Subwoofer's, a line a lane: faint,
+   * from the tower through the cursor to the board's edge, since the click sets only its direction, in the player's colour
    * as their beam is (the users', 2026-10-21; red at first). Not the walls it would clear — that
    * is for the player to read.
    */
@@ -910,21 +891,37 @@ export class TowerMarks {
     colour: number,
   ): void {
     const next = ghost.nextTower;
-    if (!ghost.aiming || ghost.tile === null || next?.kind !== 'laser') return;
+    const kind = next?.kind;
+    if (!ghost.aiming || ghost.tile === null || next === null || next === undefined) return;
+    if (kind !== 'laser' && kind !== 'subwoofer') return;
     if (ghost.impact?.ready !== true) return;
     const { x, y } = ghost.tile;
     if (x === next.fromX && y === next.fromY) return;
-    const end = edgeOf(next.fromX, next.fromY, x, y, state.width, state.height);
-    const [ax, ay] = [tileX(view, next.fromX + 0.5), tileY(view, next.fromY + 0.5)];
-    const [bx, by] = [tileX(view, end.x + 0.5), tileY(view, end.y + 0.5)];
-    // A glow round a white core, as the beam is: the colour alone vanished over an island
-    // of the same colour.
-    for (const [width, tint, alpha] of [
-      [Math.max(3, view.tile * 0.3), colour, 0.3],
-      [Math.max(1, view.tile / 14), 0xffffff, 0.6],
-    ] as const) {
-      this.ghost.moveTo(ax, ay).lineTo(bx, by);
-      this.ghost.stroke({ width, color: tint, alpha, cap: 'round' });
+    // The Subwoofer's: a line for each lane of its wave, as the rules will send them.
+    const lines =
+      kind === 'subwoofer'
+        ? (
+            waveRays(next.fromX, next.fromY, x, y, subwooferOf(state, next.cost).waveWidth) ?? []
+          ).map((r) => ({
+            fromX: r.ax / 2,
+            fromY: r.ay / 2,
+            toX: (r.ax + r.dx) / 2,
+            toY: (r.ay + r.dy) / 2,
+          }))
+        : [{ fromX: next.fromX, fromY: next.fromY, toX: x, toY: y }];
+    for (const line of lines) {
+      const end = edgeOf(line.fromX, line.fromY, line.toX, line.toY, state.width, state.height);
+      const [ax, ay] = [tileX(view, line.fromX + 0.5), tileY(view, line.fromY + 0.5)];
+      const [bx, by] = [tileX(view, end.x + 0.5), tileY(view, end.y + 0.5)];
+      // A glow round a white core, as the beam is: the colour alone vanished over an island
+      // of the same colour.
+      for (const [width, tint, alpha] of [
+        [Math.max(3, view.tile * 0.3), colour, 0.3],
+        [Math.max(1, view.tile / 14), 0xffffff, 0.6],
+      ] as const) {
+        this.ghost.moveTo(ax, ay).lineTo(bx, by);
+        this.ghost.stroke({ width, color: tint, alpha, cap: 'round' });
+      }
     }
   }
 

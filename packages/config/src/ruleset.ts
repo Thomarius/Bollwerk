@@ -204,19 +204,18 @@ const LullabySchema = z.strictObject({
 });
 
 /**
- * The Subwoofer (2026-10-30, the user's): never fired by a click. Every `cooldownMs` of a combat
- * phase, its first included, it sends a wave two lanes wide towards the nearest enemy wall in the
- * four cardinal directions, each lane clearing the first wall it reaches (`sendWaves`).
+ * The Subwoofer (2026-10-30, the user's, reworked the same day): the click sets a direction, as
+ * the Laser Tower's does, and a wave `waveWidth` lanes wide travels from the tower through it,
+ * each lane clearing the first wall it reaches (`sendWave`). Its reload an ordinary shot's flight
+ * to the nearest wall a lane would clear, times `flightFactor`.
  */
 const SubwooferSchema = z.strictObject({
-  footprint,
-  /** From the combat phase's start to its first wave, and between waves; the balance's lever. */
-  cooldownMs: z.number().int().positive(),
-  /** How fast a wave's lanes travel, in tiles a second. */
+  ...towerFields,
+  /** How fast a wave's lanes travel, in tiles a second along the line's longer axis. */
   waveTilesPerSecond: z.number().positive(),
   /**
-   * Lanes a wave is wide, a row or column each, centred on the footprint; each clears a wall. A
-   * lever (the user's, 2026-10-30): 2 as wide as the tower, 4 a lane more either side.
+   * Lanes a wave is wide, side by side a tile apart, centred on the line aimed; each clears a
+   * wall. The lever by cost (the user's, 2026-10-30): 2 at cost 2, 3 at cost 3.
    */
   waveWidth: z.number().int().positive(),
 });

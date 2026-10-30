@@ -41,17 +41,18 @@ export function isImpactTower(kind: CannonKind): boolean {
     kind === 'biggest' ||
     kind === 'laser' ||
     kind === 'frost' ||
-    kind === 'lullaby'
+    kind === 'lullaby' ||
+    kind === 'subwoofer'
   );
 }
 
 /**
- * Whether a kind's shot does all it does on the tick it is fired — the Lightning Tower's
- * strike, the Laser Tower's beam — so nothing of it flies: what stays in the air is only its
- * reload, which lands nothing.
+ * Whether a kind's shot does nothing where it lands — the Lightning Tower's strike and the Laser
+ * Tower's beam are done on the tick it is fired, the Subwoofer's wave travels on its own
+ * (`state.waves`) — so no shell flies: what stays in the air is only its reload.
  */
 export function strikesOnFiring(kind: CannonKind): boolean {
-  return kind === 'lightning' || kind === 'laser';
+  return kind === 'lightning' || kind === 'laser' || kind === 'subwoofer';
 }
 
 /** The variant a tower of this kind and cost is; null for an ordinary cannon. */
@@ -164,12 +165,9 @@ export function inRepairReach(
 /**
  * Shots a gun may have in the air at once. A Rapid Cannon is as many cannons stacked on
  * one footprint as it cost (the user's design, 2026-10-16), a barrel each with its own
- * flight and so its own reload; the Subwoofer none, since no click fires it — it sends its
- * waves on its own (`sendWaves`), so it is never the gun a shot is fired from, nor counted
- * among those ready; every other gun has one.
+ * flight and so its own reload; every other gun has one.
  */
 export function barrelsOf(cannon: Pick<Cannon, 'kind' | 'cost'>): number {
-  if (cannon.kind === 'subwoofer') return 0;
   return cannon.kind === 'rapid' ? cannon.cost : 1;
 }
 

@@ -1,5 +1,5 @@
 import type { ArtConfig, ArtStyle, SpecialKind, TowerVariant } from '@bollwerk/config';
-import { findReadyCannon, isLoaded, type Cannon, type MatchState, type Shot } from '@bollwerk/sim';
+import { findReadyCannon, type Cannon, type MatchState, type Shot } from '@bollwerk/sim';
 import { Graphics, type Container } from 'pixi.js';
 
 import type { CornerGap } from '../cornerGaps.js';
@@ -15,15 +15,6 @@ import { COPPER, drawArc, jag } from './spark.js';
 import { INK, PAPER, drawGlove, drawStar } from './toon.js';
 import { GOLD, drawSnowflake, drawStocking } from './yule.js';
 import { BONE, TAR, drawDoubloon, drawJewel, drawSkullAndBones } from './jolly.js';
-
-/**
- * Whether a gun is drawn ready to fire: a barrel free — or a Subwoofer, which has none, since no
- * click fires it (`barrelsOf`); its cooldown shows on its badge (`TowerMarks.drawWaves`), and its
- * gun stands ready rather than forever reloading.
- */
-export function looksLoaded(cannon: Pick<Cannon, 'kind' | 'cost' | 'shotIds'>): boolean {
-  return cannon.kind === 'subwoofer' || isLoaded(cannon);
-}
 
 /**
  * A visual style.

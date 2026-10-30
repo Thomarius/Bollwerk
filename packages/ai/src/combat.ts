@@ -20,6 +20,9 @@ import {
   sameTeam,
   strikable,
   traceLaser,
+  subwooferOf,
+  waveRays,
+  waveTargets,
   type Action,
   type Cannon,
   type Holding,
@@ -247,6 +250,7 @@ export class Gunner {
     if (weakest.size === 0) return null;
     if (tower.kind === 'lightning') return this.lightningTarget(state, tower, weakest, taken);
     if (tower.kind === 'laser') return this.laserTarget(state, tower, opponent, weakest, taken);
+    if (tower.kind === 'subwoofer') return this.waveTarget(state, tower, opponent, weakest, taken);
     if (tower.kind === 'lullaby') return this.lullabyTarget(state, tower, opponent, weakest, taken);
     const offsets = craterTilesOf(state.ruleset, tower.kind, tower.cost);
     const rivalWall = (i: number): boolean => {
@@ -375,6 +379,44 @@ export class Gunner {
       const beam = traceLaser(state, this.playerId, fromX, fromY, x, (i - x) / state.width, count);
       let score = 0;
       for (const t of beam.cleared) score += weakest.has(t) ? 3 : 1;
+      if (score > bestScore) {
+        bestScore = score;
+        best = i;
+      }
+    }
+    return best;
+  }
+
+  /**
+   * Where a Subwoofer's wave clears most: aimed at a block of the opponent's wall, its lanes traced
+   * as the rules will send them (`waveTargets`), each lane's first wall counting three on the
+   * weakest wall and one on any other rival's — so a wave across the weakest wall, its gap as wide
+   * as itself, wins. Its own shots' tiles are passed over.
+   */
+  private waveTarget(
+    state: MatchState,
+    tower: Cannon,
+    opponent: number,
+    weakest: ReadonlySet<number>,
+    taken: ReadonlySet<number>,
+  ): number | null {
+    const width = subwooferOf(state, tower.cost).waveWidth;
+    const fromX = tower.x + (tower.w - 1) / 2;
+    const fromY = tower.y + (tower.h - 1) / 2;
+    const island = state.players[opponent]?.islandId;
+    let best: number | null = null;
+    let bestScore = 0;
+    for (let i = 0; i < state.structure.length; i++) {
+      if (state.structure[i] !== Structure.Wall || state.owner[i] !== island || taken.has(i)) {
+        continue;
+      }
+      const x = i % state.width;
+      const rays = waveRays(fromX, fromY, x, (i - x) / state.width, width);
+      if (rays === null) continue;
+      let score = 0;
+      for (const t of waveTargets(state, this.playerId, rays).walls) {
+        if (t !== null) score += weakest.has(t) ? 3 : 1;
+      }
       if (score > bestScore) {
         bestScore = score;
         best = i;

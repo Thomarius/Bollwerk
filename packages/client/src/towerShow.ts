@@ -7,9 +7,7 @@ import {
   inFlight,
   repairWalls,
   resolveImpacts,
-  sendWaves,
   stateFromAscii,
-  ticksFor,
   withSpecials,
   type MatchEvent,
   type MatchState,
@@ -54,6 +52,12 @@ const FACING = [
  */
 const ALONG_TOP = { x: 22, y: 2 } as const;
 /**
+ * The Subwoofer's aim: the board's east edge, level with its gun, so its lanes cross the rival's
+ * west wall and then its east wall each in a row of its own. From a 2x2 gun's centre no aim is
+ * quite level; aimed at the wall itself, its upper lane crept a row up by the far wall.
+ */
+const FAR_EAST = { x: 27, y: 4 } as const;
+/**
  * The rival's barrage on the chooser's Architect, at (8, 4): the east wall beside it, which
  * both costs rebuild; the top wall above it, which only cost 3's wider reach takes in; and a
  * corner far from it, which neither does — so the reach is seen where it ends.
@@ -85,14 +89,6 @@ const GLYPH: Record<TowerVariant, string> = {
   subwoofer2: 'w',
   subwoofer3: 'W',
 };
-
-/**
- * The Subwoofer's waves a loop: two, its cooldown between them — its first sooner than in a
- * match, at `AIM_MS` as every show's first shot, so the preview does not open on a wait. Its
- * first clears the rival's west wall facing it, four blocks of it, its second passes through and
- * clears the east.
- */
-const WAVES = 2;
 
 /** Before the first shot of a loop, after its last lands, and before the repair. */
 const AIM_MS = 700;
@@ -154,8 +150,6 @@ export class TowerShow {
   private repairAt: number | null = null;
   /** When the loop's last shot landed (and its repair ran); null while it is going on. */
   private doneAt: number | null = null;
-  /** The Subwoofer's waves still to send this loop. */
-  private wavesLeft = 0;
 
   constructor(readonly variant: TowerVariant | null) {
     this.state = showState(variant);
@@ -174,11 +168,6 @@ export class TowerShow {
       state.tick++;
       resolveImpacts(state);
       advanceWaves(state);
-      if (this.wavesLeft > 0) {
-        const before = state.waves.length;
-        sendWaves(state);
-        if (state.waves.length > before && --this.wavesLeft === 0) this.silence();
-      }
     }
     // A gun fires once it is loaded: a plan waits on its barrel, as a click would.
     while (this.plan.length > 0 && this.ms >= (this.plan[0] as Planned).at) {
@@ -186,7 +175,7 @@ export class TowerShow {
       if ('rejection' in fire(state, next.player, next.x, next.y)) break;
       this.plan.shift();
     }
-    const quiet = this.plan.length === 0 && this.wavesLeft === 0 && !inFlight(state);
+    const quiet = this.plan.length === 0 && !inFlight(state);
     if (quiet && this.repairAt === null && this.doneAt === null) {
       if (this.isArchitect()) this.repairAt = this.ms + REPAIR_MS;
       else this.doneAt = this.ms;
@@ -207,11 +196,6 @@ export class TowerShow {
   /** How far into its tick the show is, 0 to 1, for the waves to glide between ticks. */
   get tickFraction(): number {
     return this.ticks - Math.floor(this.ticks);
-  }
-
-  /** No more waves this loop: the Subwoofer's cooldown taken away. */
-  private silence(): void {
-    for (const cannon of this.state.cannons) delete cannon.waveTick;
   }
 
   private isArchitect(): boolean {
@@ -235,13 +219,9 @@ export class TowerShow {
     } else if (variant !== null && variantKind(variant) === 'laser') {
       this.plan = [{ player: 0, ...ALONG_TOP, at: AIM_MS }];
     } else if (variant !== null && variantKind(variant) === 'subwoofer') {
-      // No click fires it: its first wave at `AIM_MS`, then its cooldown as in a match.
-      this.plan = [];
-      this.wavesLeft = WAVES;
-      const rate = this.state.ruleset.tickRateHz;
-      for (const cannon of this.state.cannons) {
-        if (cannon.kind === 'subwoofer') cannon.waveTick = this.state.tick + ticksFor(AIM_MS, rate);
-      }
+      // Two waves at the rival's wall facing it, the second once reloaded: the first opens a gap
+      // as wide as the wave, the second goes through it to the wall behind.
+      this.plan = [0, 1].map(() => ({ player: 0, ...FAR_EAST, at: AIM_MS }));
     } else {
       this.plan = [{ player: 0, ...FACING[0], at: AIM_MS }];
     }
@@ -260,7 +240,6 @@ export class TowerShow {
       cannon.shotIds = [];
       delete cannon.asleepUntil;
       delete cannon.lulled;
-      delete cannon.waveTick;
     }
   }
 }
