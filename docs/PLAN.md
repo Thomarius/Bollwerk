@@ -1684,7 +1684,7 @@ every resolution against an independent search, not only on unit pictures.
 
 ## 11. Open work
 
-**Where to start (2026-10-30).** The latest release is **v0.9.27** (2026-10-30, protocol 34,
+**Where to start (2026-10-30).** The latest release is **v0.9.28** (2026-10-30, protocol 34,
 recording format 4). Item 3, the performance plan, is finished, its leftovers measured and the worthwhile ones built
 (ARCHIVE 14zc–14zi, 14zo). Item 4, the UI polish, is done (ARCHIVE 14zr–14zt), and item 5, the menus reviewed (ARCHIVE 15j) and the end screen after them (15k), both in v0.9.23; item 6, the demo, in v0.9.24, its score bar taken out in v0.9.25. Item 2, the special towers, is done: the Subwoofer built, every tower evened out and play-tested (ARCHIVE 15p, 15q, 15t), the team soaks dropped (15u). Next: the online session for item 5's online-only states. The styles' own music's chance is the player's choice in Options (ARCHIVE 14zn). Every feature up to v0.9.16 has been tested and approved by the users (2026-10-27).
 Up to **v0.8.3**: the game and online play, bots as skill levels and personalities, the styles
@@ -1728,7 +1728,8 @@ steps shown, and the link found 30 s sooner (15h). **v0.9.23** (15l): the menus 
 and the end screen in their look (15k). **v0.9.24** (15n): the demo behind the menu, and a leak of
 every match's stage fixed (15m). **v0.9.25** (15o): the demo without its score bar. **v0.9.26**
 (15s): the Subwoofer, every tower evened out, and the towers' emblems by the cursor. **v0.9.27**
-(15u): Show the board pulled out to the whole map (15t).
+(15u): Show the board pulled out to the whole map (15t). **v0.9.28** (15w): the Frost Cannon's
+and the Subwoofer's own signs on the cursor (15v).
 
 Tournament mode is finished: its play-testing round, T8, closed with everything working
 (ARCHIVE 13m). The bots' planning is off the page's thread in local matches, measured and felt (ARCHIVE

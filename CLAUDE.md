@@ -175,7 +175,7 @@ Full detail in PLAN.md §1. The parts that surprise people:
 
 ## Status
 
-**Done** (2026-10-30; the latest release **v0.9.27**, 2026-10-30, protocol 34, recording format 4,
+**Done** (2026-10-30; the latest release **v0.9.28**, 2026-10-30, protocol 34, recording format 4,
 which a test session needs the server rebuilt and every page reloaded for):
 
 - **Special towers finished** (ARCHIVE 15t, 15u, 2026-10-30): the nine towers play-tested by the

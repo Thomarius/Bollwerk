@@ -11035,3 +11035,9 @@ wide as its lanes together, its ends cut square to the axis the lanes are spaced
 `waveRays` sends them (`drawSubwoofer`). The shared glow is now the Laser's alone. Under reduced
 motion the flakes and rings stand still. Checked in screenshots, Minimal and Christmas, over either
 island.
+
+## 15w. v0.9.28 (2026-10-30)
+
+Since v0.9.27: the Frost Cannon's snowflakes and the Subwoofer's pulsing rings and the band its
+wave will sweep on the aiming cursor, the shared glow now the Laser's alone (15v). Protocol 34 and
+recording format 4 as before: a v0.9.26 or v0.9.27 page can join a v0.9.28 room.
