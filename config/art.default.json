@@ -1579,7 +1579,8 @@
     "openingZoom": 2.4,
     "openingHold": 0.3,
     "winnerZoom": 1.35,
-    "winnerPushMs": 7000
+    "winnerPushMs": 7000,
+    "peekMs": 700
   },
   "summary": {
     "delayMs": 4000

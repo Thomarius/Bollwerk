@@ -72,6 +72,11 @@ export class EndScreen {
   /** Each round's scores as the chart's hover shows them, by the round's place on it. */
   private roundTips: string[] = [];
 
+  /** Whether Show the board has the summary folded, for the camera to pull out. */
+  get peeking(): boolean {
+    return this.endScreen?.classList.contains('peeking') === true;
+  }
+
   /** What the end screen's button does: back to the menu, whether played or watched. */
   onLeave(handler: () => void): void {
     this.leave = handler;

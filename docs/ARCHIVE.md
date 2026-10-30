@@ -11003,3 +11003,13 @@ cursor in place of a second reload ring, with the Tower emblems setting (15r). P
 Subwoofer's variants, ruleset key and waves in the snapshot: a v0.9.25 page cannot join a v0.9.26
 room. Recording format 4 as before. For the users' test: the Subwoofer, the changed towers and the
 emblems.
+
+## 15t. The towers' play-test, and Show the board pulled out (2026-10-30)
+
+The user's play-test of v0.9.26: the Subwoofer and the evened-out towers great, the emblems by the
+cursor working well. The online functions are for a session with the real server, to be
+scheduled. One report: the end screen's **Show the board** showed only the winners' islands, the
+camera still pushed in on them. Now the camera pulls out to the whole map while the board is shown
+and pushes in again as the summary comes back, eased over `art.camera.peekMs` (700 ms) either way
+from wherever the push has got to (`peek` in `winnerShot`, `peekTowards`, `EndScreen.peeking`).
+Under reduced motion the camera never pushes in, so there was nothing to pull out.

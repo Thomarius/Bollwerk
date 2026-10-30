@@ -65,22 +65,41 @@ export function openingShot(
 /**
  * Game over: a slow push onto the winners' islands, over `winnerPushMs` from the moment
  * the match ended, and held there — about the islands where they stand, since the middle
- * of the screen is the summary's, and pushed there they sat behind it. Null for a draw, or
- * nobody to push onto.
+ * of the screen is the summary's, and pushed there they sat behind it. `peek`, from 0 to 1,
+ * pulls back out to the whole map while the end screen's Show the board has it folded
+ * (`peekTowards`): the board is shown to be looked at whole (the user's, 2026-10-30). Null
+ * for a draw, or nobody to push onto.
  */
 export function winnerShot(
   state: MatchState,
   sinceOverMs: number,
   winners: readonly { x: number; y: number }[],
   art: CameraArt,
+  peek = 0,
 ): CameraShot | null {
   if (state.phase !== 'game_over' || winners.length === 0) return null;
   const x = winners.reduce((sum, w) => sum + w.x, 0) / winners.length + 0.5;
   const y = winners.reduce((sum, w) => sum + w.y, 0) / winners.length + 0.5;
-  const zoom = between(
+  const pushed = between(
     { zoom: 1, focusX: x, focusY: y },
     { zoom: art.winnerZoom, focusX: x, focusY: y },
     sinceOverMs / art.winnerPushMs,
-  ).zoom;
+  );
+  const { zoom } = between(pushed, { zoom: 1, focusX: x, focusY: y }, peek);
   return { zoom, focusX: x, focusY: y, inPlace: true };
+}
+
+/**
+ * How far the camera has pulled out for Show the board, eased towards 1 while the board is
+ * shown and back to 0 with the summary, over `peekMs` either way — so the push resumes where
+ * it stands rather than jumping.
+ */
+export function peekTowards(
+  peek: number,
+  peeking: boolean,
+  elapsedMs: number,
+  art: CameraArt,
+): number {
+  const step = elapsedMs / art.peekMs;
+  return peeking ? Math.min(1, peek + step) : Math.max(0, peek - step);
 }

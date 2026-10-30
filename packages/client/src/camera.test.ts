@@ -1,9 +1,9 @@
 import type { MatchState } from '@bollwerk/sim';
 import { describe, expect, it } from 'vitest';
 
-import { between, openingShot, winnerShot } from './camera.js';
+import { between, openingShot, peekTowards, winnerShot } from './camera.js';
 
-const art = { openingZoom: 2, openingHold: 0.25, winnerZoom: 1.5, winnerPushMs: 1000 };
+const art = { openingZoom: 2, openingHold: 0.25, winnerZoom: 1.5, winnerPushMs: 1000, peekMs: 500 };
 
 function state(fields: Partial<Record<string, unknown>>): MatchState {
   return {
@@ -60,6 +60,23 @@ describe('the push onto the winner', () => {
     const end = { ...start, zoom: 1.5 };
     expect(winnerShot(over, 1000, [island], art)).toEqual(end);
     expect(winnerShot(over, 60_000, [island], art)).toEqual(end);
+  });
+
+  it('pulls back out to the whole map while the board is shown, about the same spot', () => {
+    const end = { zoom: 1.5, focusX: 9.5, focusY: 4.5, inPlace: true };
+    expect(winnerShot(over, 1000, [island], art, 0)).toEqual(end);
+    expect(winnerShot(over, 1000, [island], art, 1)).toEqual({ ...end, zoom: 1 });
+    // Mid-push, from wherever the push has got to.
+    const midway = winnerShot(over, 500, [island], art)!.zoom;
+    expect(winnerShot(over, 500, [island], art, 0.5)!.zoom).toBeGreaterThan(1);
+    expect(winnerShot(over, 500, [island], art, 0.5)!.zoom).toBeLessThan(midway);
+  });
+
+  it('eases the pull out over peekMs either way, and holds at its ends', () => {
+    expect(peekTowards(0, true, 250, art)).toBe(0.5);
+    expect(peekTowards(0.5, true, 1000, art)).toBe(1);
+    expect(peekTowards(1, false, 250, art)).toBe(0.5);
+    expect(peekTowards(0.2, false, 1000, art)).toBe(0);
   });
 
   it('frames shared winners together, and nobody for a draw', () => {

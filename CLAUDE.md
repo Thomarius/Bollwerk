@@ -510,9 +510,13 @@ which a test session needs the server rebuilt and every page reloaded for):
 
 **Next** — PLAN §11, towards a first feature-ready version:
 
+- **An online session** (PLAN §11 item 5, to be scheduled with the users): the online-only states
+  not yet checked with the real server — the open games listed, a room's code — and a tournament
+  match's end and a person's Rematch.
+
 - **Special towers** (item 2): the ninth and last, the **Subwoofer**, built and every tower
-  evened out against the others (ARCHIVE 15p, 15q); next, the users' play-test of the Subwoofer
-  and the changed towers, then perhaps the team soaks (2v2, planned in SPECIAL_TOWERS.md §5 BS) (the test without the cap of three was dropped, ARCHIVE 14zm). Their balance is closed and they are **off by default for
+  evened out against the others (ARCHIVE 15p, 15q), play-tested by the user, great (15t); next
+  perhaps the team soaks (2v2, planned in SPECIAL_TOWERS.md §5 BS) (the test without the cap of three was dropped, ARCHIVE 14zm). Their balance is closed and they are **off by default for
   good** — a wacky addition, not the base game (ARCHIVE 13zw); a new tower is balanced at Level 5
   only, its variants against each other and against no tower (the user's).
 

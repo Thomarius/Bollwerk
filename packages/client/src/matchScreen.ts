@@ -41,7 +41,7 @@ import { motionReduced, storedMotion } from './motion.js';
 import { styleTrackChance } from './styleMusicSetting.js';
 import { PauseControls, pausesOnBlur } from './pause.js';
 import { howToSectionFor, openHowToPlay } from './howToPlay.js';
-import { openingShot, winnerShot } from './camera.js';
+import { openingShot, peekTowards, winnerShot } from './camera.js';
 import { perf } from './perf.js';
 import { bannerProgress, looksAround, type Look } from './transition.js';
 import { Scene, createTheme, type Ghost, type SceneLook } from './render/scene.js';
@@ -734,6 +734,10 @@ export async function runSession(
   /** When this client first saw the match over, for the push onto the winner. */
   let overAt: number | null = null;
 
+  /** How far Show the board has pulled the camera out, 0 to 1, and when it last moved. */
+  let peek = 0;
+  let peekAt: number | null = null;
+
   /**
    * The camera, moving only while nothing is playable (PLAN 11.11 W6): onto the viewer's
    * island as the match opens and out to the whole map, and slowly onto the winners at
@@ -744,11 +748,13 @@ export async function runSession(
     const state = session.state;
     if (state.phase === 'game_over') overAt ??= now;
     const art = defaultConfigBundle.art.camera;
+    peek = peekTowards(peek, hud.endScreen.peeking, now - (peekAt ?? now), art);
+    peekAt = now;
     const winners = state.winners.flatMap((id) => islandCentre.get(id) ?? []);
     const shot = motionReduced()
       ? null
       : (openingShot(state, session.tickFraction, islandCentre.get(session.humanPlayer), art) ??
-        winnerShot(state, now - (overAt ?? now), winners, art));
+        winnerShot(state, now - (overAt ?? now), winners, art, peek));
     scene.setCamera(state, shot);
 
     // "You are here", from the start of the match until the viewer has chosen a castle:

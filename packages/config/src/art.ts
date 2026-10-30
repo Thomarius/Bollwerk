@@ -1330,6 +1330,8 @@ export const ArtConfigSchema = z
       winnerZoom: z.number().min(1),
       /** How long the push onto the winner takes. */
       winnerPushMs: z.number().int().positive(),
+      /** How long the pull out to the whole map takes for Show the board, and back in. */
+      peekMs: z.number().int().positive(),
     }),
     /** The end-of-match summary. */
     summary: z.strictObject({
