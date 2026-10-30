@@ -1,4 +1,4 @@
-import { variantCost, variantKind } from '@bollwerk/config';
+import { variantCost, variantKind, type SpecialKind } from '@bollwerk/config';
 import {
   barrelsOf,
   canPlaceAnyCannon,
@@ -24,7 +24,7 @@ import {
 } from '@bollwerk/sim';
 
 import type { Ghost, Scene } from './render/scene.js';
-import type { Cell, NextTower } from './render/theme.js';
+import type { Cell, NextTower, TowerBadge } from './render/theme.js';
 import { sealingCells } from './sealPreview.js';
 
 /** What a click means for this player right now. */
@@ -148,6 +148,49 @@ export function impactReadiness(
   const span = soonest.impactTick - soonest.launchTick;
   const reload = span <= 0 ? 1 : Math.min(1, Math.max(0, (now - soonest.launchTick) / span));
   return { ready: false, reload };
+}
+
+/**
+ * The player's impact towers as the cursor's emblems show them (2026-10-30, the user's, in place
+ * of a second reload ring): each one's kind and cost, whether it is ready, how far its reload has
+ * come, 0 to 1, and whether it sleeps — ready ones first, then the one ready soonest. Left out:
+ * one inert, and one whose reload ends only after the barrage, which will not be ready in it —
+ * the Allerdickste Bertha once fired.
+ */
+export function towerBadges(state: MatchState, playerId: number, tickFraction = 0): TowerBadge[] {
+  const now = state.tick + tickFraction;
+  const badges: (TowerBadge & { left: number })[] = [];
+  for (const cannon of state.cannons) {
+    if (cannon.owner !== playerId || !cannon.active || !isImpactTower(cannon.kind)) continue;
+    const asleep = !isAwake(state, cannon);
+    if (isLoaded(cannon)) {
+      badges.push({
+        kind: cannon.kind as SpecialKind,
+        cost: cannon.cost,
+        ready: !asleep,
+        fill: 1,
+        asleep,
+        left: 0,
+      });
+      continue;
+    }
+    const shot = landingFirst(state, cannon);
+    if (shot === null) continue;
+    if (state.phase === 'combat' && shot.impactTick > state.phaseEndTick) continue;
+    const span = shot.impactTick - shot.launchTick;
+    const fill = span <= 0 ? 1 : Math.min(1, Math.max(0, (now - shot.launchTick) / span));
+    const left = shot.impactTick - now;
+    badges.push({
+      kind: cannon.kind as SpecialKind,
+      cost: cannon.cost,
+      ready: false,
+      fill,
+      asleep,
+      left,
+    });
+  }
+  badges.sort((a, b) => Number(b.ready) - Number(a.ready) || a.left - b.left);
+  return badges.map(({ left: _, ...badge }) => badge);
 }
 
 /**
@@ -459,6 +502,7 @@ export class Controls {
           aiming: true,
           reload: nextReload(state, player, tickFraction),
           impact: impactReadiness(state, player, tickFraction),
+          badges: towerBadges(state, player, tickFraction),
           nextTower: nextTowerShot(state, player, tile.x, tile.y),
         };
       case 'fire': {
@@ -475,6 +519,7 @@ export class Controls {
           aiming: true,
           reload: nextReload(state, player, tickFraction),
           impact: impactReadiness(state, player, tickFraction),
+          badges: towerBadges(state, player, tickFraction),
           nextTower: nextTowerShot(state, player, tile.x, tile.y),
         };
       }

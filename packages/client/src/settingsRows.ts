@@ -9,11 +9,17 @@ import {
   storedStyleMusic,
   styleMusicOptions,
 } from './styleMusicSetting.js';
+import {
+  parseTowerBadges,
+  saveTowerBadges,
+  storedTowerBadges,
+  towerBadgesOptions,
+} from './towerBadgesSetting.js';
 import { refreshVolumeSliders, volumeSliders, type VolumeTarget } from './volume.js';
 
 /**
- * The player's settings — the language, the Graphics, the Motion, the two volumes and how
- * often the styles' own music plays — as one column of rows, built here for the menu's Options
+ * The player's settings — the language, the Graphics, the Motion, the two volumes, how
+ * often the styles' own music plays and the towers' emblems by the cursor — as one column of rows, built here for the menu's Options
  * and the pause menu alike, so the two look and order them the same (2026-10-28: the pause
  * menu's had been smaller, dimmer and in another order).
  */
@@ -34,7 +40,8 @@ export function settingsRows(actions: SettingsActions): HTMLElement {
     `<label>${t('settings.language')} <select class="language" data-ui="seg">${languageOptions()}</select></label>` +
     `<label data-tip="${escape(t('settings.graphicsTitle'))}">${t('settings.graphics')} <select class="graphics" data-ui="seg">${graphicsOptions()}</select></label>` +
     `<label>${t('settings.motion')} <select class="motion" data-ui="seg">${motionOptions()}</select></label>` +
-    `<label data-tip="${escape(t('settings.styleMusicTitle'))}">${t('settings.styleMusic')} <select class="style-music" data-ui="seg">${styleMusicOptions()}</select></label>`;
+    `<label data-tip="${escape(t('settings.styleMusicTitle'))}">${t('settings.styleMusic')} <select class="style-music" data-ui="seg">${styleMusicOptions()}</select></label>` +
+    `<label data-tip="${escape(t('settings.towerBadgesTitle'))}">${t('settings.towerBadges')} <select class="tower-badges" data-ui="seg">${towerBadgesOptions()}</select></label>`;
   node.querySelector('.motion')?.closest('label')?.after(volumeSliders(actions.volumes));
 
   const language = node.querySelector<HTMLSelectElement>('.language')!;
@@ -63,6 +70,12 @@ export function settingsRows(actions: SettingsActions): HTMLElement {
     actions.click();
     saveStyleMusic(parseStyleMusic(styleMusic.value) ?? 'always');
   });
+  // Taken at the next frame the cursor is drawn.
+  const badges = node.querySelector<HTMLSelectElement>('.tower-badges')!;
+  badges.addEventListener('change', () => {
+    actions.click();
+    saveTowerBadges(parseTowerBadges(badges.value) ?? 'next');
+  });
   showStored(node);
   // Each choice a row of buttons in front of its select, now the selects stand as stored.
   enhanceChoices(node);
@@ -74,6 +87,7 @@ function showStored(node: HTMLElement): void {
   node.querySelector<HTMLSelectElement>('.graphics')!.value = storedGraphics();
   node.querySelector<HTMLSelectElement>('.motion')!.value = storedMotion();
   node.querySelector<HTMLSelectElement>('.style-music')!.value = storedStyleMusic();
+  node.querySelector<HTMLSelectElement>('.tower-badges')!.value = storedTowerBadges();
 }
 
 /** The rows brought up to date with the settings as they stand, as a menu reopens. */

@@ -4,6 +4,8 @@ import { Graphics, type Container } from 'pixi.js';
 
 import type { CornerGap } from '../cornerGaps.js';
 import { motionReduced } from '../motion.js';
+import { storedTowerBadges } from '../towerBadgesSetting.js';
+import { EMBLEMS } from '../towerIcons.js';
 import type { DrainWash, SealGlow } from '../seal.js';
 
 import { viewKey } from './stamps.js';
@@ -147,6 +149,18 @@ export interface NextTower {
   cost: number;
 }
 
+/** An impact tower's emblem beside the aiming cursor (`towerBadges`). */
+export interface TowerBadge {
+  kind: SpecialKind;
+  cost: number;
+  /** Whether its shot is the next one: loaded and awake. */
+  ready: boolean;
+  /** How far its reload has come, 0 to 1; 1 while ready. */
+  fill: number;
+  /** Put to sleep by a Lullaby Tower: shown dimmed, its fill held. */
+  asleep: boolean;
+}
+
 export interface Ghost {
   /** Tile the pointer is over, or null when off the map. */
   tile: { x: number; y: number } | null;
@@ -191,6 +205,8 @@ export interface Ghost {
    * or absent when they own none that can fire.
    */
   impact?: { ready: true } | { ready: false; reload: number } | null;
+  /** While aiming, the player's impact towers' emblems beside the cursor (`towerBadges`). */
+  badges?: readonly TowerBadge[];
   /**
    * While aiming, the impact tower a click here would fire and the crater it would clear
    * (`nextTowerShot`): Big Bertha's cross outlined under the cursor, and her flames round it;
@@ -300,6 +316,7 @@ export function drawFireReticle(
   const cy = tileY(view, ghost.tile.y + 0.5);
   const width = Math.max(2, Math.round(view.tile / 9));
   drawImpactReadiness(g, view, ghost, cx, cy, width);
+  if (ghost.badges !== undefined) drawTowerBadges(g, view, ghost.badges, cx, cy);
   if (ghost.valid) {
     const r = view.tile * 1.1;
     const ink = playerColour(art, humanPlayer, 'light');
@@ -348,10 +365,9 @@ export const IMPACT_GLOW = 0xffa83a;
 
 /**
  * The cursor's word on the player's impact towers (docs/SPECIAL_TOWERS.md §2.2), drawn under
- * the reticle: while one is ready the next shot is its, and the cursor glows; while they are
- * loading, an inner ring fills toward the next, as the outer one does for the guns. One glow
- * for every kind but Big Bertha, whose flames are her own (play-testing, 2026-10-16); a later
- * kind may bring its own too (sparks for Chain Lightning).
+ * the reticle while one is ready — the next shot is its, and the cursor glows; one glow for
+ * every kind but those with a sign of their own (Big Bertha's flames, play-testing, 2026-10-16).
+ * While they reload, their emblems beside the cursor say so (`drawTowerBadges`).
  */
 function drawImpactReadiness(
   g: Graphics,
@@ -362,33 +378,76 @@ function drawImpactReadiness(
   width: number,
 ): void {
   const impact = ghost.impact;
-  if (impact === null || impact === undefined) return;
+  if (impact === null || impact === undefined || !impact.ready) return;
   // Both Berthas and the Lightning Tower bring their own, drawn over both looks (`TowerMarks`):
   // their flames and crater, its crackle.
   const own = ghost.nextTower?.kind;
-  if (
-    impact.ready &&
-    (own === 'bertha' || own === 'biggest' || own === 'lightning' || own === 'lullaby')
-  ) {
-    return;
-  }
-  if (impact.ready) {
-    const r = view.tile * 1.1;
-    g.circle(cx, cy, r);
-    g.stroke({ width: width * 6, color: IMPACT_GLOW, alpha: 0.18 });
-    g.circle(cx, cy, r);
-    g.stroke({ width: width * 3, color: IMPACT_GLOW, alpha: 0.35 });
-    g.circle(cx, cy, r * 0.62);
-    g.stroke({ width: width + 1, color: IMPACT_GLOW, alpha: 0.9 });
-    return;
-  }
-  const ring = view.tile * 0.62;
-  g.circle(cx, cy, ring);
-  g.stroke({ width: width + 2, color: 0x000000, alpha: 0.4 });
-  if (impact.reload <= 0) return;
-  g.moveTo(cx, cy - ring);
-  g.arc(cx, cy, ring, -Math.PI / 2, -Math.PI / 2 + impact.reload * Math.PI * 2);
-  g.stroke({ width: width + 1, color: IMPACT_GLOW });
+  if (own === 'bertha' || own === 'biggest' || own === 'lightning' || own === 'lullaby') return;
+  const r = view.tile * 1.1;
+  g.circle(cx, cy, r);
+  g.stroke({ width: width * 6, color: IMPACT_GLOW, alpha: 0.18 });
+  g.circle(cx, cy, r);
+  g.stroke({ width: width * 3, color: IMPACT_GLOW, alpha: 0.35 });
+  g.circle(cx, cy, r * 0.62);
+  g.stroke({ width: width + 1, color: IMPACT_GLOW, alpha: 0.9 });
+}
+
+/** Badges beside the cursor, at most, with every tower shown: the cap on towers an island holds. */
+const MOST_BADGES = 3;
+
+/**
+ * The player's impact towers' emblems beside the aiming cursor (2026-10-30, the user's): below
+ * and right of the reticle, clear of its arms, each a dark disc filling from the bottom in amber
+ * as the tower reloads — a glass filling, not a ring, since a second ring inside the guns' one
+ * was mixed up with it in every test — and lit amber whole, its emblem dark, while it is ready.
+ * A tower asleep is greyed. Only the one ready soonest, or every one, as the player chose
+ * (`towerBadgesSetting.ts`).
+ */
+function drawTowerBadges(
+  g: Graphics,
+  view: ViewTransform,
+  badges: readonly TowerBadge[],
+  cx: number,
+  cy: number,
+): void {
+  const shown = badges.slice(0, storedTowerBadges() === 'all' ? MOST_BADGES : 1);
+  if (shown.length === 0) return;
+  const b = Math.max(9, view.tile * 0.55);
+  const reach = view.tile * 1.1 * 1.35;
+  const rim = Math.max(1.5, b / 8);
+  shown.forEach((badge, k) => {
+    const bx = cx + reach + k * b * 2.3;
+    const by = cy + reach;
+    g.circle(bx, by, b);
+    g.fill({ color: badge.ready ? IMPACT_GLOW : 0x0a0a12, alpha: badge.ready ? 0.95 : 0.82 });
+    // The level reached, from the bottom: the circle below a chord, as a polygon.
+    if (!badge.ready && badge.fill > 0) {
+      const h = Math.max(-1, Math.min(1, 1 - 2 * badge.fill));
+      const from = Math.asin(h);
+      const points: number[] = [];
+      for (let i = 0; i <= 16; i++) {
+        const a = from + ((Math.PI - 2 * from) * i) / 16;
+        points.push(bx + b * Math.cos(a), by + b * Math.sin(a));
+      }
+      g.poly(points);
+      g.fill({ color: badge.asleep ? 0x9a9aa4 : IMPACT_GLOW, alpha: 0.55 });
+    }
+    g.circle(bx, by, b);
+    g.stroke({ width: rim, color: badge.ready ? 0xffffff : 0x9a9aa4, alpha: 0.9 });
+    const size = b * 2 * 0.62;
+    const [left, top] = [bx - size / 2, by - size / 2];
+    for (const part of EMBLEMS[badge.kind]) {
+      const points: number[] = [];
+      for (let i = 0; i < part.length; i += 2) {
+        points.push(left + (part[i] as number) * size, top + (part[i + 1] as number) * size);
+      }
+      g.poly(points);
+      g.fill({
+        color: badge.ready ? 0x0a0a12 : 0xffffff,
+        alpha: badge.asleep ? 0.45 : badge.ready ? 1 : 0.9,
+      });
+    }
+  });
 }
 
 /**

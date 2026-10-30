@@ -179,6 +179,10 @@ Full detail in PLAN.md §1. The parts that surprise people:
 which a test session needs the server rebuilt and every page reloaded for; the tree since is
 protocol 34):
 
+- **The towers' emblems by the cursor** (ARCHIVE 15r, 2026-10-30, the user's): in place of a
+  second reload ring, each impact tower's emblem below and right of the reticle, filling from the
+  bottom as it reloads and lit while ready; **Tower emblems** in Options, Next or All.
+
 - **The Subwoofer, and the towers evened out** (ARCHIVE 15p, 15q, 2026-10-30, the user's design;
   protocol 34): the ninth and last special tower, aimed as the Laser Tower is — a wave 2 (cost 2)
   or 3 (cost 3) lanes wide through the tile clicked, each lane clearing the first wall it reaches

@@ -48,7 +48,7 @@ keeps only what is open.
   cannon or the special tower. Mouse only, as every action.
 - **Firing uses the left button only** (the user's design, 2026-10-14): a ready special tower
   whose shot does something on impact is always first in line, the nearest of them if several are
-  ready. Its readiness is shown by a second reload ring and a glow on the aiming cursor (§2.2).
+  ready. Its readiness is shown by its emblem beside the aiming cursor and a glow on it (§2.2).
 - **A tower scores as the cannons it cost** (`gunPoints`, `gunsWorth`; the user's balance after
   ST3, 2026-10-14): a variant of cost 3 as three guns firing, one of cost 2 as two. At
   first it counted as one gun, which made a tower of cost 3 cost two guns' points every round it
@@ -124,10 +124,15 @@ keeps only what is open.
 - **Every shot is a left click**, and the sim chooses the gun (`findReadyCannon`): the nearest
   ready impact tower if any is ready, otherwise the nearest ready gun of the rest, as today. So
   the player decides where a Bertha's shot lands by when they click, not which button.
-- **Two reload rings** on the cursor: the one of today for the ordinary guns, and a second for
-  the impact towers, filling towards the next one to be ready. While an impact tower is ready
-  **the aiming cursor glows** — one glow for every kind at first, each kind's own animation later
-  (the Lightning Tower's crackle, the Berthas' flames, the Laser's line). Neither shows for a player with no impact tower.
+- **The towers' emblems beside the cursor** (the user's, 2026-10-30): below and right of the
+  reticle, each impact tower's emblem on a dark disc filling from the bottom in amber as it
+  reloads, lit amber whole while it is ready, greyed asleep — the one ready soonest, or all of
+  them, as the player sets **Tower emblems** in Options and the pause menu (Next by default). A
+  tower that will not be ready before the barrage ends, the Allerdickste Bertha once fired, shows
+  none. They replaced a second reload ring inside the guns' one, which every test mixed up with
+  it. While an impact tower is ready **the aiming cursor glows** too — one glow for every kind at
+  first, each kind's own animation later (the Lightning Tower's crackle, the Berthas' flames, the
+  Laser's and the Subwoofer's lines). Neither shows for a player with no impact tower.
 - Passive abilities (the Architect's repair) need no firing.
 
 ### 2.3 The first three towers

@@ -10975,3 +10975,20 @@ factor of 1.15 it came to 48. **Every tower now averages 44–56 against the oth
 (table in SPECIAL_TOWERS.md §5 BS). Against no tower: Architect 2 64, Lightning 3 74, Frost 2 58,
 Frost 3 74, the Subwoofer 61 / 67 — Lightning 3 and Frost 3 at the goal's edge, within the noise of
 their old 69 and 70.
+
+## 15r. The towers' emblems by the cursor (2026-10-30)
+
+The user's report from the tests: the impact towers' reload, a second ring inside the guns' one
+on the aiming cursor, was always confusing. Weighed: the tower's emblem beside the cursor,
+filling; showing only that a tower is ready; a bar under the reticle; a pip for each tower. Kept,
+the user's: **the emblem**, below and right of the reticle, clear of its arms — a dark disc
+filling from the bottom in amber as the tower reloads, a glass rather than a ring, lit amber whole
+with its emblem dark while it is ready, greyed while a lullaby has it asleep (`towerBadges` in
+`controls.ts`, drawn by the shared fire reticle, so in every style). A new setting, **Tower
+emblems**, in Options and the pause menu: Next, the one ready soonest (the default), or All, side
+by side, three at most (`towerBadgesSetting.ts`, read every frame, so kept in memory). A tower
+that will not be ready before the barrage ends shows none — the Allerdickste Bertha once fired,
+the user's case, and any tower whose shot lands after the clock. No ready sound (the user's). The
+ready glow and each kind's own sign stay; the Subwoofer, aimed since the morning, has the Laser's
+sign, a faint line a lane through the cursor, and the shared glow. Checked in screenshots, ready
+and reloading, Next and All.

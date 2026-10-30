@@ -4,7 +4,7 @@ import type { Seat } from '@bollwerk/protocol';
 import { applyEnclosure, stateFromAscii, withSpecials, type MatchState } from '@bollwerk/sim';
 import { describe, expect, it } from 'vitest';
 
-import { impactReadiness } from './controls.js';
+import { impactReadiness, towerBadges } from './controls.js';
 import { lobbyMarkup, type LobbyView } from './lobby.js';
 import { offeredTowers, towerMenuMarkup, variantForCard } from './towerChoice.js';
 import { language, setLanguage } from './i18n.js';
@@ -108,6 +108,57 @@ describe('the cursor and the impact towers', () => {
     const state = armed();
     for (const cannon of state.cannons) if (cannon.kind === 'bertha') cannon.active = false;
     expect(impactReadiness(state, 0)).toBeNull();
+  });
+  /** A shot in the air from this gun, launched at 30, landing at `lands`. */
+  function loading(state: MatchState, kind: string, lands: number): void {
+    const gun = state.cannons.find((c) => c.kind === kind)!;
+    gun.shotIds = [gun.id + 100];
+    state.shots.push({
+      id: gun.id + 100,
+      cannonId: gun.id,
+      owner: 0,
+      kind: gun.kind,
+      cost: gun.cost,
+      fromX: gun.x,
+      fromY: gun.y,
+      toX: 9,
+      toY: 1,
+      launchTick: 30,
+      impactTick: lands,
+    });
+  }
+
+  it('shows each impact tower’s emblem, ready ones first, then the one ready soonest', () => {
+    const state = stateFromAscii(`
+      ..............
+      .BB.LL.XX..**.
+      .BB.LL.XX..**.
+    `);
+    for (const cannon of state.cannons) cannon.active = true;
+    state.phase = 'combat';
+    state.phaseEndTick = 300;
+    state.tick = 40;
+    loading(state, 'bertha', 50);
+    loading(state, 'lightning', 70);
+    const badges = towerBadges(state, 0);
+    expect(badges.map((b) => b.kind)).toEqual(['laser', 'bertha', 'lightning']);
+    expect(badges.map((b) => b.ready)).toEqual([true, false, false]);
+    expect(badges[1]!.fill).toBe(0.5);
+    expect(badges[2]!.fill).toBe(0.25);
+  });
+
+  it('leaves out a tower that will not be ready before the barrage ends: the Allerdickste fired', () => {
+    const state = stateFromAscii(`
+      ..........
+      .GG....**.
+      .GG....**.
+    `);
+    for (const cannon of state.cannons) cannon.active = true;
+    state.phase = 'combat';
+    state.phaseEndTick = 300;
+    state.tick = 40;
+    loading(state, 'biggest', 330);
+    expect(towerBadges(state, 0)).toEqual([]);
   });
 });
 
