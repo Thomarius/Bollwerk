@@ -1684,9 +1684,9 @@ every resolution against an independent search, not only on unit pictures.
 
 ## 11. Open work
 
-**Where to start (2026-10-30).** The latest release is **v0.9.26** (2026-10-30, protocol 34,
+**Where to start (2026-10-30).** The latest release is **v0.9.27** (2026-10-30, protocol 34,
 recording format 4). Item 3, the performance plan, is finished, its leftovers measured and the worthwhile ones built
-(ARCHIVE 14zc–14zi, 14zo). Item 4, the UI polish, is done (ARCHIVE 14zr–14zt), and item 5, the menus reviewed (ARCHIVE 15j) and the end screen after them (15k), both in v0.9.23; item 6, the demo, in v0.9.24, its score bar taken out in v0.9.25. Item 2's last tower, the Subwoofer, built, every tower evened out and play-tested (ARCHIVE 15p, 15q, 15t). Next: the online session for item 5's online-only states. The styles' own music's chance is the player's choice in Options (ARCHIVE 14zn). Every feature up to v0.9.16 has been tested and approved by the users (2026-10-27).
+(ARCHIVE 14zc–14zi, 14zo). Item 4, the UI polish, is done (ARCHIVE 14zr–14zt), and item 5, the menus reviewed (ARCHIVE 15j) and the end screen after them (15k), both in v0.9.23; item 6, the demo, in v0.9.24, its score bar taken out in v0.9.25. Item 2, the special towers, is done: the Subwoofer built, every tower evened out and play-tested (ARCHIVE 15p, 15q, 15t), the team soaks dropped (15u). Next: the online session for item 5's online-only states. The styles' own music's chance is the player's choice in Options (ARCHIVE 14zn). Every feature up to v0.9.16 has been tested and approved by the users (2026-10-27).
 Up to **v0.8.3**: the game and online play, bots as skill levels and personalities, the styles
 with their corner pieces, random looks every round, English and German, the desktop app, UPnP,
 the balance soak and the rendering work (ARCHIVE 12h–12v), the refactoring (12w) and stronger
@@ -1727,7 +1727,8 @@ the tower menu and the new tournament keep one size; rounds and lives left to th
 steps shown, and the link found 30 s sooner (15h). **v0.9.23** (15l): the menus reviewed (15j)
 and the end screen in their look (15k). **v0.9.24** (15n): the demo behind the menu, and a leak of
 every match's stage fixed (15m). **v0.9.25** (15o): the demo without its score bar. **v0.9.26**
-(15s): the Subwoofer, every tower evened out, and the towers' emblems by the cursor.
+(15s): the Subwoofer, every tower evened out, and the towers' emblems by the cursor. **v0.9.27**
+(15u): Show the board pulled out to the whole map (15t).
 
 Tournament mode is finished: its play-testing round, T8, closed with everything working
 (ARCHIVE 13m). The bots' planning is off the page's thread in local matches, measured and felt (ARCHIVE
@@ -1740,7 +1741,7 @@ fit (ARCHIVE 12z), its remaining steps dropped (the user's decision, 2026-10-14;
 13zg). French is not to be done
 (the user's decision, 2026-10-06). Still open:
 
-2. **Special towers** (the user's idea, 2026-10-11): each player may bring one special tower,
+2. **Special towers — done** (the user's idea, 2026-10-11): each player may bring one special tower,
    bought in the cannon phase for two or three cannons — Big Bertha, Architect, Rapid Cannon,
    the Lightning Tower (ARCHIVE 13zs), the Allerdickste Bertha (13zz), the Laser Tower (14k), the Frost Cannon (14l) and the Lullaby Tower (14m),
    each at both costs — chosen in the tower menu, with an on/off switch among the match settings
@@ -1754,9 +1755,8 @@ fit (ARCHIVE 12z), its remaining steps dropped (the user's decision, 2026-10-14;
    last, the user's **Subwoofer** (2026-10-30, SPECIAL_TOWERS.md §2.9), a wave 2 or 3 walls wide
    aimed as the Laser is, is built (ARCHIVE 15p), and every tower evened out against the others at
    its cost, 44–56% (ARCHIVE 15q, SPECIAL_TOWERS.md §5 BS), and play-tested by the user, great, the
-   emblems by the cursor too (ARCHIVE 15t); open: perhaps
-   the team soaks, which need a team mode in `towerSoak.ts`. The test without the cap of three is dropped (the user's,
-   ARCHIVE 14zm).
+   emblems by the cursor too (ARCHIVE 15t). Nothing open: the team soaks are dropped (the user's,
+   2026-10-30, ARCHIVE 15u), as is the test without the cap of three (ARCHIVE 14zm).
    Their own sounds are in (TS, ARCHIVE 13zx). The design
    and these packages are in
    [`SPECIAL_TOWERS.md`](./SPECIAL_TOWERS.md).

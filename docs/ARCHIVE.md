@@ -11013,3 +11013,10 @@ camera still pushed in on them. Now the camera pulls out to the whole map while 
 and pushes in again as the summary comes back, eased over `art.camera.peekMs` (700 ms) either way
 from wherever the push has got to (`peek` in `winnerShot`, `peekTowards`, `EndScreen.peeking`).
 Under reduced motion the camera never pushes in, so there was nothing to pull out.
+
+## 15u. v0.9.27 (2026-10-30)
+
+Since v0.9.26: the end screen's Show the board pulls the camera out to the whole map and back in
+with the summary (15t). The special towers are finished: play-tested by the user, and the team
+soaks planned in SPECIAL_TOWERS.md §5 BS dropped (the user's, 2026-10-30) — nothing of item 2 is
+open. Protocol 34 and recording format 4 as before: a v0.9.26 page can join a v0.9.27 room.

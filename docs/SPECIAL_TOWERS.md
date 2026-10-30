@@ -10,10 +10,10 @@ first feedback, the tower menu and its preview (ARCHIVE 13zm, 13zn); ST4's first
 measured (13zk, the Architect's circle 13zl). The users' play-testing, ST8, closed with no
 issues found (2026-10-17, ARCHIVE 13zp), and ST7 put the towers into How to play and the
 screenshot scenes (13zr). ST4 is closed, its remaining soaks dropped, the towers off by default
-for good and the bots' buying rule kept (the user's, ARCHIVE 13zw). Open: the ninth and last tower, the
-Subwoofer (§2.9, the user's design, 2026-10-30), built and balanced, its wave four wide, in line
-with the Laser Tower at four players (§5 SW); its play-test by the users is open (the test without the cap of three
-dropped, ARCHIVE 14zm); the towers' own sounds, TS, are
+for good and the bots' buying rule kept (the user's, ARCHIVE 13zw). The ninth and last tower, the
+Subwoofer (§2.9, the user's design, 2026-10-30), is built, balanced and play-tested by the user
+with the evened-out towers (ARCHIVE 15t); nothing is open — the team soaks and the test without
+the cap of three dropped (ARCHIVE 15u, 14zm); the towers' own sounds, TS, are
 in (ARCHIVE 13zx). The sixth tower, the Laser Tower (§2.6, 2026-10-21), is built, balanced and
 played by the user; the seventh and eighth, the Frost Cannon (§2.7) and the Lullaby Tower (§2.8),
 built, balanced and played by the user (2026-10-23). Like PLAN.md it says what is configurable and why and leaves the
@@ -818,8 +818,8 @@ npx tsx tools/headless/src/towerSoak.ts --out soaks/laser-p4 --players 4 \
 
 Every tower now built, all of them measured on one commit (3c4dbe3), Level 5, two-player tables,
 96 matches a pairing (±5), the same seeds throughout (`soaks/balance-2026-10-30-*`). The team runs
-(2v2 against none, and tower against tower with a cost-2 and a cost-3 member a team) are planned,
-not run: the soak tool has no team mode yet.
+(2v2 against none, and tower against tower with a cost-2 and a cost-3 member a team) were planned,
+never run, and dropped (the user's, 2026-10-30, ARCHIVE 15u): the soak tool has no team mode.
 
 **Each variant against no tower** (cost 2 / cost 3; the goal 50–70):
 
