@@ -606,6 +606,9 @@ export class TowerMarks {
       g.circle(cx, cy, r);
       g.stroke({ width: Math.max(4, t / 4), color: 0x0a0a12, alpha: 0.8 });
       if (filled <= 0) continue;
+      // From its top, moved to first: an arc opening a path is joined to the path's last point,
+      // the board's top left corner after a stroke, and drew a line there (the user's, 2026-10-30).
+      g.moveTo(cx, cy - r);
       g.arc(cx, cy, r, -Math.PI / 2, -Math.PI / 2 + filled * Math.PI * 2);
       g.stroke({
         width: Math.max(2.5, t / 6),
