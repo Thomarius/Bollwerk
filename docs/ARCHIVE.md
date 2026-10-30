@@ -10938,5 +10938,7 @@ walls it may hit: **four lanes**, one more either side, gave **49 / 55** against
 head to head at the user's 4 s / 3 s, kept. The user's question whether a two-player table hides
 rivals off its lines: `towerSoak.ts` now plays N-player tables (`--players`), the variant in one
 seat against the other in the rest, each seat in turn. At four players, 192 matches (±3–4), against a
-fair 25%: two wide 27 / 40, four wide **46 / 54**. No other tower had been soaked at four, so a
-reference — the Laser Tower there — is the next session's, before anything is changed.
+fair 25%: two wide 27 / 40, four wide **46 / 54**. No other tower had been soaked at four, so the
+Laser Tower was, the same tables, as a reference: **38 / 55**. At cost 3 the two are alike, at cost
+2 the Subwoofer 8 points above, within about one and a half standard errors: four players lift a
+balanced tower to twice its share too, and the Subwoofer was kept as it is.

@@ -11,8 +11,8 @@ measured (13zk, the Architect's circle 13zl). The users' play-testing, ST8, clos
 issues found (2026-10-17, ARCHIVE 13zp), and ST7 put the towers into How to play and the
 screenshot scenes (13zr). ST4 is closed, its remaining soaks dropped, the towers off by default
 for good and the bots' buying rule kept (the user's, ARCHIVE 13zw). Open: the ninth and last tower, the
-Subwoofer (§2.9, the user's design, 2026-10-30), built, its wave four wide, a reference run at
-four players next (§5 SW) (the test without the cap of three
+Subwoofer (§2.9, the user's design, 2026-10-30), built and balanced, its wave four wide, in line
+with the Laser Tower at four players (§5 SW); its play-test by the users is open (the test without the cap of three
 dropped, ARCHIVE 14zm); the towers' own sounds, TS, are
 in (ARCHIVE 13zx). The sixth tower, the Laser Tower (§2.6, 2026-10-21), is built, balanced and
 played by the user; the seventh and eighth, the Frost Cannon (§2.7) and the Lullaby Tower (§2.8),
@@ -798,12 +798,15 @@ each clearing a wall, at 4 s / 3 s. And at four players (`towerSoak.ts --players
 Four wide is what moves it: inside the goal at two players, the dearer the stronger. At four players
 it wins far more than its share, more rivals in its lines; no other tower has been measured at four,
 so whether that is out of line is not known yet. **Kept: 4 wide** (the user's, 2026-10-30).
-**Next session: the reference** — the Laser Tower at four players (it fires along lines too, and is
-balanced at two to 66 / 67), then, if the Subwoofer stands well above it, the cooldown to close the
-gap, not the width:
+**The reference** (2026-10-30): the Laser Tower at four players, the same tables (it fires along
+lines too, and is balanced at two to 66 / 67): **38 / 55** against a fair 25, where the Subwoofer
+won 46 / 54. At cost 3 the two are alike; at cost 2 the Subwoofer stands 8 points above, within
+about one and a half standard errors. So four players lift a balanced tower to twice its share
+too, and the Subwoofer is not out of line: kept as it is, the cooldown not touched.
 
 ```bash
-npx tsx tools/headless/src/towerSoak.ts --out soaks/laser-p4 --players 4   --pairs laser2:none,laser3:none --levels 5 --matches 192
+npx tsx tools/headless/src/towerSoak.ts --out soaks/laser-p4 --players 4 \
+  --pairs laser2:none,laser3:none --levels 5 --matches 192
 ```
 
 ### After ST8 — the decisions
