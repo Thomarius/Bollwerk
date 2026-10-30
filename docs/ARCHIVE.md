@@ -10992,3 +10992,14 @@ the user's case, and any tower whose shot lands after the clock. No ready sound 
 ready glow and each kind's own sign stay; the Subwoofer, aimed since the morning, has the Laser's
 sign, a faint line a lane through the cursor, and the shared glow. Checked in screenshots, ready
 and reloading, Next and All.
+
+## 15s. v0.9.26 (2026-10-30)
+
+Since v0.9.25: the ninth and last special tower, the Subwoofer, a wave 2 or 3 walls wide aimed as
+the Laser is (15p, reworked in 15q); every tower evened out against the others at its cost,
+44-56% — Architect 2's gun slower, Lightning 3's miss chance 0.67, the Frost Cannon faster and
+cost 3's freeze through the overtime, Subwoofer 3 at 1.15 (15q); and the towers' emblems by the
+cursor in place of a second reload ring, with the Tower emblems setting (15r). Protocol 34, the
+Subwoofer's variants, ruleset key and waves in the snapshot: a v0.9.25 page cannot join a v0.9.26
+room. Recording format 4 as before. For the users' test: the Subwoofer, the changed towers and the
+emblems.

@@ -1684,7 +1684,7 @@ every resolution against an independent search, not only on unit pictures.
 
 ## 11. Open work
 
-**Where to start (2026-10-29).** The latest release is **v0.9.25** (2026-10-29, protocol 33,
+**Where to start (2026-10-30).** The latest release is **v0.9.26** (2026-10-30, protocol 34,
 recording format 4). Item 3, the performance plan, is finished, its leftovers measured and the worthwhile ones built
 (ARCHIVE 14zc–14zi, 14zo). Item 4, the UI polish, is done (ARCHIVE 14zr–14zt), and item 5, the menus reviewed (ARCHIVE 15j) and the end screen after them (15k), both in v0.9.23; item 6, the demo, in v0.9.24, its score bar taken out in v0.9.25. Next: item 2's last tower, the Subwoofer, built and every tower evened out (ARCHIVE 15p, 15q): their play-test. The styles' own music's chance is the player's choice in Options (ARCHIVE 14zn). Every feature up to v0.9.16 has been tested and approved by the users (2026-10-27).
 Up to **v0.8.3**: the game and online play, bots as skill levels and personalities, the styles
@@ -1726,7 +1726,8 @@ menus' new look (14zv–14zz) and a crash on a resize during a wipe fixed (15a).
 the tower menu and the new tournament keep one size; rounds and lives left to the config (15f). **v0.9.22** (15i): the online link's
 steps shown, and the link found 30 s sooner (15h). **v0.9.23** (15l): the menus reviewed (15j)
 and the end screen in their look (15k). **v0.9.24** (15n): the demo behind the menu, and a leak of
-every match's stage fixed (15m). **v0.9.25** (15o): the demo without its score bar.
+every match's stage fixed (15m). **v0.9.25** (15o): the demo without its score bar. **v0.9.26**
+(15s): the Subwoofer, every tower evened out, and the towers' emblems by the cursor.
 
 Tournament mode is finished: its play-testing round, T8, closed with everything working
 (ARCHIVE 13m). The bots' planning is off the page's thread in local matches, measured and felt (ARCHIVE

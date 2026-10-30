@@ -175,9 +175,8 @@ Full detail in PLAN.md §1. The parts that surprise people:
 
 ## Status
 
-**Done** (2026-10-30; the latest release **v0.9.25**, 2026-10-29, protocol 33, recording format 4,
-which a test session needs the server rebuilt and every page reloaded for; the tree since is
-protocol 34):
+**Done** (2026-10-30; the latest release **v0.9.26**, 2026-10-30, protocol 34, recording format 4,
+which a test session needs the server rebuilt and every page reloaded for):
 
 - **The towers' emblems by the cursor** (ARCHIVE 15r, 2026-10-30, the user's): in place of a
   second reload ring, each impact tower's emblem below and right of the reticle, filling from the
